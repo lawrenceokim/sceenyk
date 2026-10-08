@@ -1,0 +1,377 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+/* Toggle .dark on <html>; include the theme root in dark utilities. */
+@custom-variant dark (&:is(.dark, .dark *));
+
+@theme inline {
+  --font-sans: var(--font-inter), Arial, Helvetica, sans-serif;
+  --font-mono: var(--font-geist-mono), monospace;
+  --font-heading: var(--font-inter), Arial, Helvetica, sans-serif;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-hover: var(--primary-hover);
+  --color-link: var(--link);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-destructive-surface: var(--destructive-surface);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-field: var(--field);
+  --color-ring: var(--ring);
+  --color-brand-purple: var(--brand-purple);
+  --color-brand-blue: var(--brand-blue);
+  --color-brand-violet: var(--brand-violet);
+  --color-brand-cyan: var(--brand-cyan);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-success-surface: var(--success-surface);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+  --color-info-surface: var(--info-surface);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-warning-surface: var(--warning-surface);
+  --color-overlay: var(--overlay);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --radius-sm: calc(var(--radius) * 0.5);
+  --radius-md: calc(var(--radius) * 0.666667);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.333333);
+  --radius-2xl: calc(var(--radius) * 2);
+  --radius-3xl: calc(var(--radius) * 2.666667);
+  --radius-4xl: calc(var(--radius) * 4);
+  --shadow-card: var(--elevation-card);
+  --shadow-popover: var(--elevation-popover);
+  --shadow-glow: var(--glow-primary);
+  --text-display-xl: 4.5rem;
+  --text-display-xl--line-height: 5rem;
+  --text-display-lg: 3.5rem;
+  --text-display-lg--line-height: 4rem;
+  --text-heading-1: 2.5rem;
+  --text-heading-1--line-height: 3rem;
+  --text-heading-2: 2rem;
+  --text-heading-2--line-height: 2.5rem;
+  --text-heading-3: 1.5rem;
+  --text-heading-3--line-height: 2rem;
+  --text-body-lg: 1.125rem;
+  --text-body-lg--line-height: 1.75rem;
+  --text-body: 1rem;
+  --text-body--line-height: 1.5rem;
+  --text-body-sm: 0.875rem;
+  --text-body-sm--line-height: 1.25rem;
+  --text-caption: 0.75rem;
+  --text-caption--line-height: 1rem;
+}
+
+:root {
+  color-scheme: light;
+
+  /* Reference palette; semantic colors below handle text contrast. */
+  --brand-purple: #8b5cf6;
+  --brand-blue: #3b82f6;
+  --brand-violet: #a855f7;
+  --brand-cyan: #06b6d4;
+  --neutral-950: #080b0f;
+  --neutral-900: #111118;
+  --neutral-800: #1e1e28;
+  --neutral-700: #2a2a37;
+  --neutral-200: #e5e7eb;
+  --neutral-50: #fcfcff;
+  --white: #ffffff;
+
+  --background: var(--neutral-50);
+  --foreground: var(--neutral-900);
+  --card: var(--white);
+  --card-foreground: var(--foreground);
+  --popover: var(--card);
+  --popover-foreground: var(--foreground);
+  --primary: #7c3aed;
+  --primary-foreground: var(--white);
+  --primary-hover: #6d28d9;
+  --primary-end: #9333ea;
+  --link: var(--primary);
+  --secondary: #eaf2ff;
+  --secondary-foreground: #1d4ed8;
+  --muted: #f4f4fa;
+  --muted-foreground: #646477;
+  --accent: #f1eaff;
+  --accent-foreground: #6d28d9;
+  --destructive: #b91c1c;
+  --destructive-foreground: var(--white);
+  --destructive-surface: #fff1f2;
+  --border: var(--neutral-200);
+  --input: #d9d9e6;
+  --field: #f8f9fd;
+  --ring: var(--primary);
+  --success: #047857;
+  --success-foreground: #065f46;
+  --success-surface: #ecfdf5;
+  --info: #1d4ed8;
+  --info-foreground: #1e40af;
+  --info-surface: #eff6ff;
+  --warning: #b45309;
+  --warning-foreground: #92400e;
+  --warning-surface: #fffbeb;
+  --overlay: rgb(8 11 15 / 48%);
+  --chart-1: var(--primary);
+  --chart-2: var(--brand-blue);
+  --chart-3: var(--brand-cyan);
+  --chart-4: var(--brand-violet);
+  --chart-5: var(--success);
+  --radius: 0.75rem;
+  --sidebar: var(--card);
+  --sidebar-foreground: var(--foreground);
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-accent: var(--accent);
+  --sidebar-accent-foreground: var(--accent-foreground);
+  --sidebar-border: var(--border);
+  --sidebar-ring: var(--ring);
+
+  --gradient-purple: linear-gradient(135deg, var(--brand-purple), var(--brand-violet));
+  --gradient-blue: linear-gradient(135deg, var(--brand-blue), var(--brand-cyan));
+  --gradient-brand: linear-gradient(110deg, var(--brand-purple), var(--brand-blue) 65%, var(--brand-cyan));
+  --gradient-dark: linear-gradient(145deg, var(--neutral-950), var(--neutral-800));
+  /* White action labels meet contrast at both ends of this purple ramp. */
+  --gradient-action: linear-gradient(110deg, var(--primary), var(--primary-end));
+  --gradient-action-hover: linear-gradient(110deg, var(--primary-hover), var(--primary));
+  --gradient-surface: linear-gradient(135deg, var(--card), var(--accent));
+  --elevation-card: 0 2px 8px rgb(17 17 24 / 4%), 0 8px 24px rgb(17 17 24 / 3%);
+  --elevation-popover: 0 12px 40px rgb(17 17 24 / 12%);
+  --glow-primary: 0 4px 16px rgb(139 92 246 / 18%);
+  --glow-primary-hover: 0 6px 22px rgb(139 92 246 / 26%);
+  --focus-shadow: 0 0 0 3px color-mix(in srgb, var(--ring) 24%, transparent);
+  --duration-fast: 150ms;
+  --duration-normal: 200ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+  --control-height: 2.75rem;
+  --content-width: 80rem;
+  --page-gutter: clamp(1rem, 3vw, 2rem);
+}
+
+.dark {
+  color-scheme: dark;
+  --background: var(--neutral-950);
+  --foreground: #f5f5fa;
+  --card: var(--neutral-900);
+  --popover: var(--neutral-800);
+  --secondary: #13233d;
+  --secondary-foreground: #93c5fd;
+  --muted: var(--neutral-800);
+  --muted-foreground: #b8b8c8;
+  --accent: #26183d;
+  --accent-foreground: #d8b4fe;
+  --destructive: #f87171;
+  --destructive-foreground: var(--neutral-950);
+  --destructive-surface: #2b121a;
+  --border: var(--neutral-700);
+  --input: #45455b;
+  --field: #14141e;
+  --ring: #a78bfa;
+  --link: var(--ring);
+  --success: #34d399;
+  --success-foreground: #6ee7b7;
+  --success-surface: #07271f;
+  --info: #60a5fa;
+  --info-foreground: #93c5fd;
+  --info-surface: #0c203a;
+  --warning: #fbbf24;
+  --warning-foreground: #fde68a;
+  --warning-surface: #2c200b;
+  --overlay: rgb(0 0 0 / 72%);
+  --elevation-card: 0 4px 16px rgb(0 0 0 / 20%);
+  --elevation-popover: 0 16px 48px rgb(0 0 0 / 48%);
+  --glow-primary: 0 0 16px rgb(139 92 246 / 22%);
+  --glow-primary-hover: 0 0 24px rgb(139 92 246 / 32%);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-size: var(--text-body);
+    line-height: var(--text-body--line-height);
+  }
+  html {
+    @apply font-sans;
+  }
+  ::selection {
+    background: var(--accent);
+    color: var(--accent-foreground);
+  }
+}
+
+/* Opt-in composition styles: no blanket overrides of shadcn internals. */
+@layer components {
+  .sceenyk-container {
+    width: 100%;
+    max-width: var(--content-width);
+    margin-inline: auto;
+    padding-inline: var(--page-gutter);
+  }
+  .sceenyk-card {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xl);
+    background: var(--card);
+    color: var(--card-foreground);
+    box-shadow: var(--elevation-card);
+  }
+  .sceenyk-feature-card {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xl);
+    background: var(--gradient-surface);
+    color: var(--card-foreground);
+    box-shadow: var(--elevation-card);
+  }
+  .sceenyk-field {
+    width: 100%;
+    min-height: var(--control-height);
+    border: 1px solid var(--input);
+    border-radius: var(--radius-md);
+    padding: var(--space-3) var(--space-4);
+    background: var(--field);
+    color: var(--foreground);
+    transition: border-color var(--duration-fast), box-shadow var(--duration-fast);
+  }
+  .sceenyk-field::placeholder {
+    color: var(--muted-foreground);
+    opacity: 1;
+  }
+  .sceenyk-upload {
+    display: grid;
+    place-items: center;
+    min-width: 0;
+    gap: var(--space-2);
+    padding: var(--space-6);
+    border: 1px dashed var(--primary);
+    border-radius: var(--radius-lg);
+    background: var(--field);
+    color: var(--foreground);
+    transition: border-color var(--duration-fast), background-color var(--duration-fast);
+  }
+  .sceenyk-upload > * {
+    min-width: 0;
+    max-width: 100%;
+  }
+  .sceenyk-upload:focus-within {
+    border-color: var(--ring);
+    box-shadow: var(--focus-shadow);
+  }
+  .sceenyk-upload[data-dragging="true"] {
+    background: var(--accent);
+    border-color: var(--ring);
+  }
+  .sceenyk-action {
+    background-color: var(--primary);
+    background-image: var(--gradient-action);
+    color: var(--primary-foreground);
+    box-shadow: var(--glow-primary);
+    transition: background-color var(--duration-fast), box-shadow var(--duration-fast), transform var(--duration-fast);
+  }
+  .sceenyk-field:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+    border-color: var(--ring);
+    box-shadow: var(--focus-shadow);
+  }
+  .sceenyk-field[aria-invalid="true"] {
+    border-color: var(--destructive);
+  }
+  .sceenyk-field[aria-invalid="true"]:focus-visible {
+    outline-color: var(--destructive);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--destructive) 24%, transparent);
+  }
+  .sceenyk-field:disabled,
+  .sceenyk-upload[aria-disabled="true"] {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  /* Only interactive cards should opt into this class. */
+  .sceenyk-interactive {
+    transition: border-color var(--duration-fast), box-shadow var(--duration-fast);
+  }
+  .sceenyk-interactive:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 3px;
+  }
+  .sceenyk-action:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 3px;
+  }
+  @media (hover: hover) {
+    .sceenyk-action:hover:not(:disabled, [aria-disabled="true"], [data-disabled]) {
+      background-image: var(--gradient-action-hover);
+      box-shadow: var(--glow-primary-hover);
+    }
+    .sceenyk-interactive:hover:not(:disabled, [aria-disabled="true"]) {
+      border-color: var(--ring);
+      box-shadow: var(--elevation-card), var(--glow-primary);
+    }
+    .sceenyk-upload:hover:not([aria-disabled="true"]) {
+      background: var(--accent);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .sceenyk-action,
+    .sceenyk-field,
+    .sceenyk-upload,
+    .sceenyk-interactive,
+    [data-slot="button"] {
+      transition: none;
+    }
+    [data-slot="button"]:active {
+      transform: none;
+      translate: none;
+    }
+  }
+}
+
+/* Decorative ramps: use .sceenyk-action for controls with white labels. */
+@utility bg-gradient-brand {
+  background-image: var(--gradient-brand);
+}
+@utility bg-gradient-purple {
+  background-image: var(--gradient-purple);
+}
+@utility bg-gradient-blue {
+  background-image: var(--gradient-blue);
+}
+@utility bg-gradient-dark {
+  background-image: var(--gradient-dark);
+}
