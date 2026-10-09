@@ -4,26 +4,26 @@ Technical boundaries for Sceenyk's prompt/media-to-finished-video platform. Read
 
 **Repository inspection: 2026-10-09.** **Confirmed** means present in current source/dependencies; it does not establish live external-service behavior. **Planned** means specified architecture or the preferred direction supplied for this document, with no integration yet. **Undecided** identifies details still requiring a decision. All service/data-flow diagrams and contracts below are planned unless explicitly identified as implemented.
 
-The public UI foundation includes a server-composed landing page and shared navigation/footer. The Clerk development authentication unit replaces the sign-in notice with official modal/account controls and makes `/dashboard` server protected. Integration is in progress; live verification requires locally configured development keys. Showcase artwork is illustrative, not generated video. No database, storage, payments, application API, generation, or worker integration exists.
+The public UI foundation includes a server-composed landing page and shared navigation/footer. Clerk development authentication and minimal hosted application identity are verified. The current owned-project unit adds draft save/list/reopen/update source, a minimal projects migration and server ownership checks. Its isolated database/service and responsive browser checks pass; hosted migration application and real saved-record acceptance remain pending. Showcase artwork is illustrative. No generation, media storage, credits, payments or workers exist.
 
 **Public UI contract (2026-10-09):** use existing CSS tokens and shadcn/Base UI controls. Theme initialization runs before paint; saved `sceenyk-theme` overrides system preference, otherwise follow the system. Preserve root font classes, keep the landing page static, and tolerate unavailable browser storage. Public navigation uses working section anchors. Paid pricing remains unpriced preview copy until product rates are approved.
 
-**Creation workspace unit (2026-10-09, UI only):** `/create` remains a public local preview after Clerk integration because no protected generation/save exists. Its server page supplies metadata/header and renders a scoped client workspace under the existing shell. Category, prompt, selected browser Files, preview selection, aspect ratio, duration, style, and tone live only in component state; nothing is persisted or sent to a service. Browser object URLs are created only for the currently previewed file, revoked on removal/switch/unmount, and renewed if React reactivates a cached route. MIME/extension checks are browser-preview hints, not production upload validation or an approved storage policy; no size/credit/generation tariff is inferred. The listed duration/style options are exploratory UI, not backend capabilities or free allowance eligibility. Generate requires non-whitespace prompt text and opens an informational dialog; it never starts a job, shows processing, saves a project, or changes credits. The generated-output area stays empty; source media is separately labeled as local. Creation CTAs link to this public preview; Sign In now uses the Clerk modal integration when configured.
+**Creation workspace (updated 2026-10-09):** public `/create` retains category, prompt, temporary local Files, previews and the four existing creative settings. Explicit authenticated Save draft now saves only a validated creative brief through the server-only project service when its new migration is applied. The user can edit a title; first-save retries retain one UUID, and later saves update that same owned record. Saving state disables repeat submissions; confirmed success, unsaved edits and safe failure messages are distinct. A link opens the stable private `/projects/[id]` route, reusing the same workspace after a server-owned query. New creation stays on `/create` after save to retain its local media; refresh-safe reopening uses the saved link or dashboard. Local media has a warning, remains in component state, and is excluded from every save payload/schema. Object URL lifecycle and all existing preview behavior remain intact. Generate requires prompt text and opens an informational notice; it performs no generation or accounting. Options remain creative-brief choices, not provider capabilities or free eligibility.
 
 **Development payment invariant:** all future payment development/testing uses PayPal Sandbox only, with no real-money transactions or Live credentials. Future payment configuration must separate environment/credentials behind the payment service so production can deliberately switch to Live later. This UI unit adds no payment code or credentials.
 
-**Dashboard/authentication contract (2026-10-09):** `/dashboard` requires a verified Clerk session; a missing configuration must fail closed. Keep one root Clerk provider when configured, one root document/theme controller, and existing route-group shells. `/` and local `/create` remain public. Signed-out dashboard requests return to `/?auth=sign-in`, where Clerk opens its official modal; authentication completes at the fixed local `/dashboard` destination. Never accept a browser-supplied return URL or user identity. Check the session again at the protected server rendering boundary behind Suspense, without shared auth caching. Sidebar sections, honest empty counts, unavailable credits, and local creation links retain their existing UI contract. Use the official Clerk UserButton for accounts; do not create another profile dropdown or dedicated auth page. Future data reads and mutations must independently authenticate and authorize close to the resource.
+**Dashboard/authentication contract (updated 2026-10-09):** `/dashboard` and `/projects/[id]` require verified Clerk sessions and fail closed when configuration is missing. One root Clerk provider/theme and existing shells remain. `/` and `/create` are public. Signed-out private routes/actions redirect to the fixed `/?auth=sign-in` modal entry; authentication completes at `/dashboard`. Browser return URLs/owner claims never authorize access. Every project service independently uses `ensureAppUser` without a supplied owner. Dashboard queries only owned project summaries/counts, ordered by updated time and ID descending, eight per page. Project read/update queries include both ID and owner. Genuine database failure is distinct from empty/not found. Credits, generation and templates remain previews. Private workspace state is keyed by account/project, and hidden until the active Clerk identity matches its server-resolved viewer. No private shared cache is introduced.
 
 ## Stack
 
 | Layer | Technology | Role |
 | --- | --- | --- |
-| Application — Confirmed foundation | Next.js 16.4.0 App Router, React/React DOM 19.3.0 | Public `/` and local `/create` preview under `(public)`; server-protected `/dashboard` preview in its own layout, sharing one root document. Persistent workflows and Route Handlers are Planned. |
-| Language/tooling — Confirmed | TypeScript 5.9.3, ESLint 9.39.5, `eslint-config-next` 16.4.0, npm | Strict typed code, linting, and lockfile-managed dependencies. No test framework/script is configured. |
+| Application — Confirmed foundation | Next.js 16.4.0 App Router, React/React DOM 19.3.0 | Static public `/` and `/create`; protected request-time dashboard and `/projects/[id]`; thin authenticated project Server Action. Hosted project acceptance pending migration. |
+| Language/tooling — Confirmed | TypeScript 5.9.3, ESLint 9.39.5, npm, Zod 4 | Strict typed code and runtime project validation. No persistent test framework/script configured. |
 | UI — Confirmed foundation | Tailwind CSS 4.3.3, `@tailwindcss/turbopack` 4.3.3, shadcn 4.21.3 (`base-nova`), Base UI 1.8.0, Lucide React 1.52.0 | Button/Dialog/Sheet, public and dashboard shells, shared EmptyState, themes, and local creation previews. Real progress/results remain Planned. |
 | Typography — Confirmed | Inter and Geist Mono via `next/font/google` | UI/headline and mono fonts; global aliases live in CSS. |
-| Authentication — Source implemented, live verification pending | Clerk Next.js 7.9.13, Clerk UI 1.39.1 | Development-only provider, official modal/account controls, proxy plus server resource protection; keys and live session checks pending. No dedicated auth pages. |
-| Database — Planned | Supabase PostgreSQL | Structured application data, ownership, relationships, workflow state, entitlements, and financial metadata. No database access library/schema is configured. Drizzle is not installed or active; the access layer remains Undecided. |
+| Authentication — Development verified | Clerk Next.js 7.9.13, Clerk UI 1.39.1 | Development-only provider, centered official modals/account controls, proxy plus server resource protection. No dedicated auth pages. |
+| Database — Minimal identity verified in development | Supabase PostgreSQL via `@supabase/supabase-js` 2.117.3 | One server-only SDK layer and applied `app_users` migration. Projects migration/service added; isolated ownership/constraints/grants verified, hosted application pending. No ORM/browser database/Supabase Auth. |
 | Object storage — Planned preferred | Cloudflare R2 | Uploaded media, generated scenes/images/audio, thumbnails, voiceovers, intermediate assets where needed, and final rendered videos. No bucket/client/signing setup exists. |
 | AI orchestration — Planned boundary | Shared internal Sceenyk AI services; Vercel AI SDK is a preferred option | Common language/multimodal provider boundary. Whether to adopt the SDK is Undecided; it is not installed. |
 | Video understanding — Planned preferred | Google Gemini | Analyze prompt/uploaded media, scenes/actions/timestamps, and support production planning. Exact models and contracts are Undecided. |
@@ -38,7 +38,7 @@ The public UI foundation includes a server-composed landing page and shared navi
 
 Installed versions above were checked with `npm ls --depth=0`; its extraneous platform/WASM packages are not product integrations. `.gitignore` mentioning `.vercel` and the starter page linking Vercel are not evidence of deployment.
 
-**Environment baseline (2026-10-09):** the committed `.env.example` documents two empty values: `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` and server-only `CLERK_SECRET_KEY`. Configure matching development-instance keys in ignored `.env.local`; require `pk_test_` / `sk_test_`, reject production credentials, and never print secrets. Both keys are currently absent. Missing configuration preserves public browsing and denies dashboard access; restart/rebuild after adding keys. External accounts remain unverified. See [authentication.md](authentication.md).
+**Environment baseline (2026-10-09):** ignored `.env.local` contains working Clerk development and new Supabase development project credentials. The blank committed `.env.example` lists `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, server-only `CLERK_SECRET_KEY`, `SUPABASE_URL`, `SUPABASE_SECRET_KEY`, and the optional legacy `SUPABASE_SERVICE_ROLE_KEY` alternative. Clerk requires `pk_test_`/`sk_test_` and rejects production prefixes. Privileged Supabase keys stay server-only. Missing Clerk configuration denies the dashboard; database/profile failure produces a distinct signed-in workspace error. No secret value is logged or committed. See [authentication.md](authentication.md) and [database.md](database.md).
 
 ## System Boundaries
 
@@ -48,10 +48,10 @@ The repository uses root-level folders, not `src/`. The `@/*` TypeScript alias r
 
 | Existing location | Current responsibility |
 | --- | --- |
-| `app/` | Root document/fonts/theme and CSS; `(public)/layout.tsx` wraps unchanged `/` and `/create` URLs; `dashboard/layout.tsx` supplies app shell. No authored API routes. |
+| `app/` | Root document/theme/CSS; public shell for `/`, `/create` and visually shared private `/projects/[id]`; dashboard shell. `actions/projects.ts` is a thin authenticated mutation boundary; no Route Handlers. |
 | `components/ui/` | shadcn/Base UI Button and token-adapted Dialog/Sheet. |
-| `components/` | Shared brand/navigation/footer/themes/auth controls/artwork/EmptyState; `landing/`, `creation/`, and `dashboard/` own scoped UI composition. No data services. |
-| `lib/` | `utils.ts` reexports `cn`; `theme.ts` owns the preference key and static initialization script. `auth/` validates development configuration and verifies dashboard sessions; no data services yet. |
+| `components/` | Shared brand/navigation/footer/themes/auth/artwork/EmptyState; landing/creation/dashboard composition, explicit draft save states, project metadata cards and load-failure UI. No database access in presentation. |
+| `lib/` | Theme/utilities; `auth/` verifies Clerk and resolves application identity; `db/` owns the sole privileged SDK/config/schema contract; `projects/` owns shared choices/types/validation and authenticated owned persistence. |
 | `public/` | Sceenyk preview brand mark and unused stock SVGs. |
 | `context/` | Product/UI/design specifications, workflow, coding standards, progress, and this architecture. |
 | `designs/` | Two PNG references for the same UI in light and dark modes. |
@@ -69,7 +69,7 @@ These are future locations/contracts, not created folders. Add only what the req
 | `components/ui/` and `components/` | Generic shadcn primitives and shared Sceenyk UI composition. No secrets or server-only accounting/provider logic. |
 | `features/<feature>/` | Feature-specific components/hooks/logic when the feature is large enough to justify it. |
 | `lib/auth/` | Verified Clerk identity/session helpers and application identity resolution. |
-| `lib/db/` | Connection/access layer, queries/repositories, ownership enforcement, and transactional persistence. ORM/access method not yet chosen. |
+| `lib/db/` | Server-only Supabase SDK/config/types. Authenticated owned project operations live in `lib/projects/`; no second database library. |
 | `lib/storage/` | Asset keys/metadata, upload authorization, signed URLs, download/deletion, and storage-provider adapter. |
 | `lib/ai/` | Language/multimodal analysis and planning contracts; SDK/provider-specific implementation below this boundary. |
 | `lib/video-ai/` | Video-generation/transformation interface and provider implementations, e.g. future `providers/runway.ts`. |
@@ -79,13 +79,31 @@ These are future locations/contracts, not created folders. Add only what the req
 | `lib/generation/` | Request-to-production orchestration, stage contracts, persistent job state, and coordination of provider/worker services. |
 | `lib/validation/` | Shared runtime schemas for untrusted request/provider/webhook/configuration data. |
 | `types/` | Genuinely shared domain types, including the adopted job-state contract. |
-| Future workflow/worker and migration locations | Choose with actual workflow/database tooling. Keep rendering execution separate from web hosting; no worker/migration layout is currently established. |
+| Future workflow/worker and migration locations | SQL migrations now live in `supabase/migrations/`; preserve applied files. Workers remain future work separate from web hosting. |
 
 Prefer Server Components; use small client components for interactive state and controls. The installed Next.js configuration enables `cacheComponents` and `partialPrefetching`; read its local guides before implementing request-time/session reads, use appropriate Suspense boundaries, and never share authentication decisions or private data through an unscoped cache. Thin routes/services validate, authenticate, authorize, and delegate; no application framework setting should be disabled to conceal an integration error.
 
 ## Storage Model
 
-### Supabase PostgreSQL — Planned
+### Owned draft projects — current unit, implementation in progress
+
+The 2026-10-09 project unit implements saved creative briefs in source. Hosted Data API inspection exposes only `app_users` with eight verified columns; the new projects migration is pending user application. `projects` has UUID ID/owner FK, title, category, prompt, current aspect ratio/duration/style/tone choices, draft status and database timestamps. Browser roles have no access; service_role can insert/read and update only editable fields. An owner/update-time/ID index supports newest-first pagination. Duration remains a constrained text value matching the current controls (10/15/30 seconds).
+
+Every exported project service resolves the request through `ensureAppUser`; no operation accepts an owner. Reads and updates filter by both ID and that application identity. Strict Zod validation rejects unknown ownership/status/media fields. A new workspace retains one UUID across save attempts; insert uniqueness plus an owner-scoped update on a duplicate ID makes retries safe without an unrestricted upsert. Existing project saves only update and never recreate a missing or foreign record.
+
+Missing/foreign/invalid project reads return the same explicit unavailable UI inside the streamed boundary; they expose no workspace fields or existence details. This expected result retains the Clerk provider rather than throwing during streamed rendering. Private-route metadata is always noindex; streamed responses use 200. Workspace controls use per-instance React IDs and radio groups to preserve associations across retained routes.
+
+Public `/create` stays available. Save is explicit, authenticated, and confirmed by the server. A saved draft has the private stable URL `/projects/[id]`, reusing the same workspace under the public visual shell with request-time authentication/ownership behind Suspense. No private shared cache is introduced; saves invalidate dashboard/project router data. Only brief fields are restored; local Files, object URLs and paths never enter persistence. There is no autosave, delete, sharing, generation, credit, storage or payment work. Migration application and live acceptance remain pending until recorded in the tracker.
+
+### Supabase PostgreSQL — Minimal identity verified in development
+
+The first database unit adds `lib/db/config.ts`, `server.ts`, and `types.ts` with the official Supabase JavaScript SDK, no second ORM or browser client. `lib/auth/ensure-app-user.ts` has no identity argument: it verifies the request through Clerk, retrieves that account's server profile, and atomically upserts only `clerk_user_id`, verified primary email, nullable first/last names, and image URL. `onConflict: clerk_user_id` preserves the application's UUID and creation time; the database owns update timestamps. It returns the application record to server code. No Clerk password/session/token, browser-supplied ID, or Supabase Auth session is stored or used.
+
+`ensureAppUser` awaits `connection()` before real-request identity work. The dashboard layout and every project service independently resolve identity; auth/framework signals propagate, never becoming application failures. Database fetches remain uncached and bounded. Configuration/profile failures log only constrained codes and render controlled signed-in failures. No cross-request identity cache or client synchronization exists.
+
+`supabase/migrations/20261009000100_app_users.sql` is the **initial migration applied by the user through SQL Editor**, authored for the new development database selected by the user. Repository inspection found no existing database client, schema, or migration convention. The privileged Data API metadata initially exposed no application tables; after user-confirmed application, its eight-column app-user contract and real writes were verified. The migration transaction inspects public table existence and refuses an existing application schema rather than guessing or replacing a user table. It introduces only `app_users` (UUID primary key, unique nonempty Clerk ID, nullable profile fields, timestamps), its timestamp trigger, RLS enabled with no browser policies, and SELECT/INSERT/UPDATE for `service_role`. `anon`, `authenticated`, and PUBLIC have no table grants. The privileged SDK bypasses RLS, so verified Clerk identity at the server remains mandatory. Other domains/tables and webhook synchronization remain planned.
+
+Set server-only `SUPABASE_URL` and `SUPABASE_SECRET_KEY` (preferred `sb_secret_` key) for that development project; legacy `SUPABASE_SERVICE_ROLE_KEY` is an alternative. No `NEXT_PUBLIC_*` database variable is required. Configuration rejects public privileged-key variables, invalid endpoint URLs and public/anon key classes. `.env.example` is blank and actual keys remain ignored. The user confirmed migration application; real hosted unique-key rejection, two-account synchronization, repeated refresh/re-login, profile updates/null restoration and stable UUID/creation time passed. Isolated PostgreSQL verified RLS and grants. A separate hosted catalog/browser-role audit was not performed without a SQL connection or public key; applying the migration and successful service-role writes are the available hosted evidence.
 
 PostgreSQL records application relationships and workflow truth:
 
@@ -95,7 +113,7 @@ PostgreSQL records application relationships and workflow truth:
 - Credit balances/reservations and ledger/transactions, payments, and eventual subscriptions.
 - Later creator templates, listings/purchases, and creator earnings metadata.
 
-These are conceptual data categories, not existing tables/columns or a complete schema. Introduce migrations only for the current unit after defining relationships, constraints, indexes, and access policies. Never rewrite a migration that may have been applied; record application/verification status. Privileged database access must still enforce ownership. No remote schema was inspected in this documentation task.
+These are conceptual data categories, not existing tables/columns or a complete schema. Introduce migrations only for the current unit after defining relationships, constraints, indexes, and access policies. Never rewrite a migration that may have been applied; record application/verification status. Privileged database access must still enforce ownership. Only the current identity unit inspected the new development Data API schema; future tables remain unspecified.
 
 ### Object storage — Planned, R2 preferred
 
@@ -117,16 +135,16 @@ Workers may download stage inputs into temporary local files for FFmpeg/Remotion
 
 Clerk is the specified identity/session source of truth. Visitors can explore the public product without signing in. Starting generations, creating/saving/viewing private projects, buying credits, subscribing, and account-dependent creator/marketplace features require authentication.
 
-Sign-in/sign-up opens through centered Clerk modals/overlays; there are no dedicated `/signin` or `/signup` pages and no second custom password/auth system. The SDK/provider, official modal actions, account controls, and dashboard server guard exist in source; development credentials and live flow verification remain pending. See [authentication.md](authentication.md).
+Sign-in/sign-up opens through centered Clerk modals/overlays; there are no dedicated `/signin` or `/signup` pages and no second custom password/auth system. The development SDK/provider, official centered modals/account controls, server guard and real session flows are verified. See [authentication.md](authentication.md).
 
-Protected server operations derive the user from verified Clerk sessions. If an application profile exists in Supabase, it maps uniquely to the Clerk user ID and contains application metadata; Clerk continues to own authentication. Synchronization must tolerate repeat delivery without duplicate profiles. The provisioning/synchronization mechanism and database access strategy remain to be specified.
+Protected server operations derive the user from verified Clerk sessions. `ensureAppUser` maps that request identity uniquely to `app_users` through the server-only Supabase SDK. Clerk continues to own authentication. Database-safe upsert tolerates repeat/concurrent requests without duplicate profiles; account updates independent of activity via webhooks remain deferred.
 
 ### Ownership and authorization
 
 - Each private project has an owner. Generations/jobs belong to a project and/or user with consistent ownership; input/output assets are associated with their user/project.
 - Balances, ledger entries, subscriptions, and payments belong to the relevant user. Later marketplace listings belong to their creator; public listing metadata does not make private project/media data public.
 - Server/data access checks enforce authentication, resource ownership, permissions, and entitlements where required. Changing a URL/request ID must never reveal another user's private data.
-- Resolve the Clerk-to-Supabase authorization design before data implementation: direct/session-aware access versus server-mediated access, relevant database policies, and privileged credential handling. Supabase Auth must not become a competing identity system. No RLS policy or access enforcement currently exists in source.
+- Access is server-mediated: browser grants are revoked and RLS has no browser policies. The privileged SDK bypasses RLS, so every project operation derives its owner through Clerk/application identity; read/update queries filter owner plus project ID. Project source and isolated checks exist; hosted project acceptance is pending the new migration. Supabase Auth remains unused.
 - Signed media URLs and job-status/result endpoints need ownership enforcement as well as project mutations. Worker/provider callbacks use verified service identities and job association, not browser-supplied ownership claims.
 
 ## Generation Architecture
@@ -253,26 +271,26 @@ PostgreSQL records workflow truth; object storage holds the actual media. Worker
 - Next.js/React/strict TypeScript web foundation, npm tooling, ESLint, Tailwind 4, shadcn/Base UI Button/Dialog, and Lucide.
 - Public landing page, responsive navigation/footer, preview brand mark, reusable category/step/media/pricing compositions, and original illustrative vector scenes.
 - Global semantic light/dark tokens and Inter/Geist Mono; before-paint system/saved theme initialization, toggle persistence, and system/storage synchronization.
-- Public `/create` with category, prompt, local media selection/previews/removal, basic settings, creative-brief summary, empty output, and informational Generate dialog. All workspace state is local; source previews do not implement remote uploads or rendering.
-- `/dashboard` preview with fixed desktop sidebar, mobile Sheet, header/Create/theme controls, empty summaries, project/generation/template empty states, and informational credits plus Clerk account controls (live verification pending). One visible main per route; public `main-content` and dashboard `dashboard-content` skip targets remain distinct in cached layouts. No fake user, balances, activity, records, or extra destination routes.
+- Public `/create` and private `/projects/[id]` reuse category/prompt/local media/settings/output/brief UI, adding editable title and explicit authenticated Save draft with confirmed states. No media or generated content persists.
+- `/dashboard` keeps its fixed sidebar, mobile Sheet, account/header/theme controls and unique skip target. It now has owned metadata cards, exact project count and pagination in source; hosted migration acceptance is pending. Generation/templates/credits remain honest previews.
 - Product, UI/design, workflow, standards, and progress documents.
 
-Public and local creation UI verification is recorded in the progress tracker. Lint/build/browser verification does not establish any live external-service behavior.
+UI, real Clerk development flows and real Supabase identity verification are recorded in the progress tracker. Checks do not establish any unimplemented service or production deployment behavior.
 
 ### Planned
 
-- Live Clerk development authentication verification; Supabase application persistence and ownership enforcement; PayPal verification and ledger-backed credit purchases.
+- Apply and verify the current owned-project migration with real two-account saved-record acceptance; later PayPal verification and ledger-backed credit purchases remain unstarted.
 - Persistent generation/jobs, provider interfaces, recoverable background stages, separate heavy rendering, object storage, and stable final result delivery.
 - Preferred technology direction supplied by this architecture request: R2, Gemini, Runway as the initial video candidate, ElevenLabs, Remotion/FFmpeg, Inngest, Vercel web hosting, and Render/Docker workers. These are documented preferences, not installed integrations or verified deployments; Vercel AI SDK versus a minimal internal orchestration implementation is still open.
-- Real project data/actions, persistent creation workflows, and progress/results, then later subscriptions and marketplace/creator economy within approved scope.
+- Owned project source is implemented, hosted acceptance pending; persistent generations/progress/results, subscriptions and marketplace remain later units.
 
 ### Undecided
 
 - First supported MVP creation path; concrete analysis/video/voice models and validated stage contracts. Runway remains the preferred candidate, subject to that path's requirements.
 - Final adoption/configuration of preferred providers, account availability, exact SDK needs, storage limits/formats/CORS, retention/deletion, and access/delivery rules.
-- Database access layer (no Drizzle), Clerk profile synchronization, database authorization/RLS strategy, and minimal schema/migration contracts.
+- The owned-draft schema/access rule is specified and implemented in source; hosted project migration application remains pending. Other domains and independent-of-activity Clerk webhooks remain unspecified/deferred.
 - Workflow-to-worker dispatch/authentication, deployment capacity/resources, retry/recovery rules, progress transport, and exact job/stage state machine.
 - Credit tariffs, paid bundles/prices/currency, exact free eligibility/duration options, reservation/settlement/restoration/refund rules, and later subscription/creator economics. The two-free-generation count is already specified.
 - Final production logo assets and future workspace layouts. The public theme preference contract is now implemented above.
 
-**Documentation synchronization (2026-10-09):** `AGENTS.md` references the existing `context/overview.md`. Standards/workflow/tracker recognize this architecture document, the public foundation, and the local creation preview. Preferred provider directions remain planned and do not imply configured integrations. No dependency versions, migrations, payment services, or external accounts changed in this unit.
+**Documentation synchronization (2026-10-09):** project source/migration/validation/routing decisions are reflected in database, UI, standards, workflow and tracker. The existing app-user migration is preserved unchanged. Hosted project verification remains pending and is not implied by static or isolated checks. No storage, generation, payment or later unit was added.

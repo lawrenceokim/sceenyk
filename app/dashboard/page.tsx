@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
-import { requireClerkUser } from "@/lib/auth/require-user";
+import { AppUserSyncError } from "@/lib/auth/ensure-app-user";
+import { listOwnedProjects, ProjectAccessError } from "@/lib/projects/server";
+import { WorkspaceUnavailable } from "@/components/dashboard/workspace-unavailable";
 import { DashboardGreeting } from "@/components/auth/account-controls";
 import {
   CreditsPreview,
@@ -16,9 +18,25 @@ export const metadata: Metadata = {
     "Explore the Sceenyk creative workspace: project library, generation activity, and creation tools.",
 };
 
-export default async function DashboardPage() {
-  // Authorize the page as well as its shell; future data/actions need their own checks.
-  await requireClerkUser();
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string | string[] }>;
+}) {
+  const { page } = await searchParams;
+  let projects;
+  try {
+    projects = await listOwnedProjects(
+      typeof page === "string" ? Number(page) : 1,
+    );
+  } catch (error: unknown) {
+    if (
+      error instanceof ProjectAccessError ||
+      error instanceof AppUserSyncError
+    )
+      return <WorkspaceUnavailable />;
+    throw error;
+  }
   return (
     <>
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
@@ -31,14 +49,14 @@ export default async function DashboardPage() {
           </p>
         </div>
         <span className="inline-flex w-fit shrink-0 rounded-full border border-border bg-accent px-3 py-2 text-caption font-medium text-accent-foreground">
-          Dashboard preview
+          Your workspace
         </span>
       </div>
       <QuickCreate />
-      <DashboardOverview />
+      <DashboardOverview projectCount={projects.total} />
       <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
         <div className="min-w-0 space-y-6">
-          <ProjectsSection />
+          <ProjectsSection data={projects} />
           <RecentGenerationsSection />
         </div>
         <div className="min-w-0 space-y-6">
@@ -47,8 +65,8 @@ export default async function DashboardPage() {
         </div>
       </div>
       <p className="pb-2 text-caption leading-relaxed text-muted-foreground">
-        You’re exploring the workspace preview. Saved projects and generation
-        are coming soon.
+        Your creative briefs are saved privately. Generation, templates and
+        credits are coming later.
       </p>
     </>
   );

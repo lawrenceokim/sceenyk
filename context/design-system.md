@@ -18,7 +18,7 @@ Evidence labels used throughout:
 - **Inferred**: implementation choices consistent with the references, including accessibility and responsive recommendations.
 - **Needs confirmation**: information that the PNGs do not resolve.
 
-**Exact repository baseline (updated 2026-10-09):** Next.js 16.4 App Router, Tailwind CSS 4 with `@tailwindcss/turbopack`, shadcn `base-nova`, Base UI primitives, Lucide, and CSS variables enabled in `components.json`. `app/globals.css` is imported by the root layout. Button, Dialog, and Sheet are installed locally. Landing/public shell, local creation, dashboard shell/empty states, and system/saved themes are implemented. Clerk Next.js/UI are installed; supported shadcn appearance uses these same tokens, with field/backdrop/focus/radius/font/action adjustments. Actual Clerk modal rendering awaits development keys and live verification. Preserve CSS import order and existing Turbopack configuration.
+**Exact repository baseline (updated 2026-10-09):** Next.js 16.4 App Router, Tailwind CSS 4 with `@tailwindcss/turbopack`, shadcn `base-nova`, Base UI primitives, Lucide, and CSS variables enabled in `components.json`. `app/globals.css` is imported by the root layout. Button, Dialog, and Sheet are installed locally. Landing/public shell, local creation, dashboard shell/empty states, and system/saved themes are implemented. Clerk Next.js/UI are installed; supported shadcn appearance uses these same tokens, with field/backdrop/focus/radius/font/action adjustments. Actual Clerk development modals/account overlays passed live, centered, keyboard and responsive theme checks. Appearance elements use safe centering and existing gutters; identity failure UI shares the same tokens. Preserve CSS import order and existing Turbopack configuration.
 
 ## Brand style and visual direction
 
@@ -311,7 +311,7 @@ Other shared classes/utilities: `.sceenyk-feature-card`, `.sceenyk-interactive`,
 
 ## Implementation boundaries and remaining decisions
 
-Implemented: shared tokens/type/spacing/radii/effects, Inter, opt-in surface/field/upload/action styles, Button/Dialog/Sheet, landing sections, public/dashboard shells, themes, shared EmptyState, and local creation controls. See the progress tracker for current verification evidence.
+Implemented: shared tokens/type/spacing/radii/effects, Inter, Button/Dialog/Sheet, landing/public/dashboard shells, themes, EmptyState and creation controls. Draft persistence adds explicit title/save states, a shared private reopen workspace and metadata-only project cards in source. Hosted migration acceptance is pending in the tracker. No palette change or generated thumbnail/result was introduced.
 
 **Inferred public-page composition (2026-10-09):** sticky 80px navigation, links collapsing below 1024px into an accessible disclosure, a split scene-board hero, six static category cards, three explanatory steps, connected-production value section, three concept-media cards, free/paid pricing preview, and final CTA. Section spacing scales from 48px to 96px; desktop hero uses the existing 56px type token and mobile uses 40px. Local artwork is original vector illustration with purple/blue/cyan and existing dark neutral variables. It is labeled concept artwork and has no fake playback or generation state. The exported star/circle favicon uses fixed equivalents of the primary/white tokens because an external SVG cannot inherit page CSS variables. The wordmark and mark are preview branding, not final approved production artwork. Added `neutral-950` is only a Tailwind alias of the existing neutral variable; no palette values changed.
 
@@ -319,11 +319,13 @@ Implemented: shared tokens/type/spacing/radii/effects, Inter, opt-in surface/fie
 
 **Inferred dashboard composition (2026-10-09):** 240px desktop sidebar uses `sidebar-*` with purple-tinted current Home; the same items move to a left Sheet below 1024px. The Sheet uses existing overlay/shadow tokens, dynamic viewport height, a maximum 320px width with mobile gutter, 44px close action, scrolling, and reduced-motion handling. Main content uses shared page gutters and 32–40px vertical spacing. A single restrained feature-card tint and existing concept illustration anchor Quick Create; summary cards use supporting blue, and the three shared empty states use lavender icon tiles. Counts are labeled preview defaults, not account data; credits show an unavailable balance. These dimensions are implementation choices, not exact PNG measurements. No palette changes or billing capabilities were introduced.
 
+**Inferred owned-draft composition (2026-10-09):** title and Save draft use existing field/button/card/status tokens. Saving disables the actual control; confirmed/unsaved/error feedback is polite and visible. Local media receives the existing warning surface. Private reopening reuses the same studio with a projects back link. Dashboard project cards use category icons, title, draft badge, saved settings and updated date, with no fake artwork. Eight-item pagination uses real route links. Layout and color tokens stay shared across themes. Live saved-record verification remains pending the migration.
+
 Still to implement or confirm:
 
 - Production vector logo and any licensed General Sans font assets; Inter is the authorized board alternative currently used.
 - Ambiguous blue/neutral/dark-gradient source labels; a vector design source could settle exact values.
-- Real project screens/data, generation results, and the remaining reference controls; dashboard and creation previews do not establish backend features.
+- Owned draft screens/data source is implemented; hosted migration acceptance is pending. Generation results and remaining controls remain future units.
 - Final tab pattern, sidebar dimensions, mobile navigation, touch sizing, overlay behavior, and page breakpoints through real content/viewport review.
 - Busy/upload/progress/error behavior, payment and media integration, and accessible player controls; PNG examples do not establish those systems.
 - Screen-level keyboard, screen-reader, contrast, zoom, and responsive verification when the real components are built.

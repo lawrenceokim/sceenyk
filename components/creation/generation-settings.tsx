@@ -1,3 +1,4 @@
+import { useId } from "react";
 import { ChevronDown } from "lucide-react";
 import {
   aspectRatios,
@@ -20,14 +21,19 @@ function SettingSelect<T extends string>({
   choices: readonly { value: T; label: string }[];
   onChange: (value: T) => void;
 }) {
+  const instanceId = useId();
   return (
     <div className="min-w-0">
-      <label htmlFor={id} className="text-body-sm font-medium">
+      <label
+        htmlFor={`${instanceId}-${id}`}
+        className="text-body-sm font-medium"
+      >
         {label}
       </label>
       <div className="relative mt-2">
         <select
-          id={id}
+          id={`${instanceId}-${id}`}
+          name={id}
           value={value}
           onChange={(event) => {
             const choice = choices.find(
@@ -59,13 +65,11 @@ export function GenerationSettings({
   settings: CreationSettings;
   onChange: (settings: CreationSettings) => void;
 }) {
+  const headingId = useId();
   return (
-    <section
-      className="sceenyk-card p-5 sm:p-6"
-      aria-labelledby="settings-heading"
-    >
+    <section className="sceenyk-card p-5 sm:p-6" aria-labelledby={headingId}>
       <h2
-        id="settings-heading"
+        id={headingId}
         className="flex items-center gap-3 text-lg font-semibold tracking-tight"
       >
         <span className="font-mono text-caption text-link">04</span>Set the
@@ -102,8 +106,8 @@ export function GenerationSettings({
         />
       </div>
       <p className="mt-5 text-caption text-muted-foreground">
-        Explore these settings locally. Available generation options will be
-        confirmed at launch.
+        Save these settings with your draft. Available generation options will
+        be confirmed at launch.
       </p>
     </section>
   );

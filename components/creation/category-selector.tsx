@@ -1,3 +1,4 @@
+import { useId } from "react";
 import { Check } from "lucide-react";
 import { creationCategories, type CategoryId } from "./creation-options";
 
@@ -8,6 +9,7 @@ export function CategorySelector({
   selected: CategoryId;
   onChange: (id: CategoryId) => void;
 }) {
+  const groupName = useId();
   return (
     <fieldset>
       <legend className="mb-4 flex items-center gap-3 text-lg font-semibold tracking-tight">
@@ -19,7 +21,7 @@ export function CategorySelector({
           <label key={id} className="relative min-w-0 cursor-pointer">
             <input
               type="radio"
-              name="creation-category"
+              name={groupName}
               value={id}
               checked={selected === id}
               onChange={() => onChange(id)}

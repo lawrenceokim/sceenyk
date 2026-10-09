@@ -1,6 +1,8 @@
+import { useId } from "react";
 import { Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { CreationCategory } from "./creation-options";
+import { projectPromptLimit } from "@/lib/projects/options";
 
 export function PromptComposer({
   prompt,
@@ -11,40 +13,43 @@ export function PromptComposer({
   category: CreationCategory;
   onChange: (value: string) => void;
 }) {
+  const id = useId();
   return (
     <section
       className="sceenyk-card p-5 sm:p-6"
-      aria-labelledby="prompt-heading"
+      aria-labelledby={`${id}-heading`}
     >
       <h2
-        id="prompt-heading"
+        id={`${id}-heading`}
         className="flex items-center gap-3 text-lg font-semibold tracking-tight"
       >
         <span className="font-mono text-caption text-link">02</span>Describe
         your scene
       </h2>
       <label
-        htmlFor="creation-prompt"
+        htmlFor={`${id}-prompt`}
         className="mt-5 block text-body-sm font-medium"
       >
         Your creative direction
       </label>
       <textarea
-        id="creation-prompt"
+        id={`${id}-prompt`}
         name="prompt"
         value={prompt}
         onChange={(event) => onChange(event.target.value)}
         rows={6}
+        maxLength={projectPromptLimit}
         placeholder="Describe what you want Sceenyk to create..."
-        aria-describedby="prompt-help prompt-count"
+        aria-describedby={`${id}-help ${id}-count`}
         className="sceenyk-field mt-2 min-h-44 resize-y text-body"
       />
       <div className="mt-2 flex flex-wrap justify-between gap-2 text-caption text-muted-foreground">
-        <p id="prompt-help">
+        <p id={`${id}-help`}>
           Think subject, mood, movement, and the story you want to tell.
         </p>
-        <span id="prompt-count">
-          {prompt.length.toLocaleString()} characters
+        <span id={`${id}-count`}>
+          {prompt.length.toLocaleString()} /{" "}
+          {projectPromptLimit.toLocaleString()} characters
         </span>
       </div>
       <div className="mt-5 border-t border-border pt-4">

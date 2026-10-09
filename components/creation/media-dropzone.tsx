@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useId, useRef, useState } from "react";
 import { AudioLines, FileVideo, ImageIcon, Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -21,6 +21,7 @@ export function MediaDropzone({
   onSelect: (id: string) => void;
   onRemove: (id: string) => void;
 }) {
+  const id = useId();
   const input = useRef<HTMLInputElement>(null);
   const browse = useRef<HTMLButtonElement>(null);
   const dragDepth = useRef(0);
@@ -28,11 +29,11 @@ export function MediaDropzone({
   return (
     <section
       className="sceenyk-card p-5 sm:p-6"
-      aria-labelledby="media-heading"
+      aria-labelledby={`${id}-heading`}
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2
-          id="media-heading"
+          id={`${id}-heading`}
           className="flex items-center gap-3 text-lg font-semibold tracking-tight"
         >
           <span className="font-mono text-caption text-link">03</span>Bring your
@@ -80,7 +81,7 @@ export function MediaDropzone({
             : "Drop a little inspiration here"}
         </p>
         <p className="text-caption text-muted-foreground">
-          Video, images, or audio · local preview only
+          Video, images, or audio · temporary local preview, not saved
         </p>
         <input
           ref={input}
@@ -88,7 +89,7 @@ export function MediaDropzone({
           multiple
           accept="image/*,video/*,audio/*"
           aria-label="Choose local media files"
-          aria-describedby="media-help"
+          aria-describedby={`${id}-help`}
           className="sr-only"
           tabIndex={-1}
           onChange={(event) => {
@@ -106,7 +107,7 @@ export function MediaDropzone({
           Browse files
         </Button>
       </div>
-      <p id="media-help" className="mt-3 text-caption text-muted-foreground">
+      <p id={`${id}-help`} className="mt-3 text-caption text-muted-foreground">
         Nothing is uploaded or saved. Preview support depends on your browser.
       </p>
       <p

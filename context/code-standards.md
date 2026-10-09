@@ -2,7 +2,7 @@
 
 These rules apply to developers and AI coding agents building Sceenyk. Read [overview.md](overview.md), [ui-context.md](ui-context.md), [design-system.md](design-system.md), [ai-workflow-rules.md](ai-workflow-rules.md), and [progress-tracker.md](progress-tracker.md) before relevant implementation work.
 
-**Verified baseline (2026-10-09):** root-level Next.js 16.4.0 App Router, React 19.3.0, strict TypeScript, Tailwind 4, shadcn `base-nova`/Base UI Button/Dialog/Sheet, Lucide, shared themes, landing, local creation, dashboard shell, and Clerk development authentication source. Clerk Next.js/UI are installed; credentials and live verification are pending. Supabase/PayPal are specified but unimplemented. No application API routes, schema/migrations, workers, or configured test runner exist. See architecture.md and authentication.md for current boundaries.
+**Verified baseline (updated 2026-10-09):** Next.js 16.4/React/strict TypeScript/Tailwind/shadcn/Lucide/themes and Clerk development authentication remain. Server-only Supabase SDK identity is hosted-verified. Owned draft project source, one thin Server Action, private reopen route and new SQL migration now exist; hosted project acceptance is pending application. Zod 4 is the one runtime validator. No browser database client/Supabase Auth, worker or persistent test runner exists.
 
 Read [architecture.md](architecture.md) for planned provider boundaries and implemented UI contracts. `AGENTS.md` now references the actual product document, `context/overview.md`.
 
@@ -61,14 +61,14 @@ Read [architecture.md](architecture.md) for planned provider boundaries and impl
 - Treat Route Handlers and Server Actions as externally callable boundaries. Verify authentication for protected operations, validate the request, and enforce authorization before data access/mutations or provider work.
 - Never trust browser-supplied user IDs, ownership, permissions, prices, model tariffs, credits, or entitlement decisions. Derive identity from the verified session and amounts/rules from authoritative server configuration.
 - Keep routes thin: request parsing, verification, service invocation, and response mapping. Put reusable business logic in server services rather than importing routes into application code.
-- Use Zod or an established equivalent for runtime validation. No validation library is currently installed; select one when needed and reuse it rather than adding competing validators.
+- Use the installed Zod 4 for runtime input validation. Project choices/limits are shared in `lib/projects/options.ts`; strict schemas reject ownership/status/media/unknown fields. Reuse this validator rather than adding a competing library.
 - Define consistent typed response contracts for new endpoints, with a stable error code and safe message. Use appropriate HTTP status codes, including validation errors, 401 for missing authentication, 403 for denied access, and 409 for conflicting state where appropriate. Do not expose internal/provider errors in responses.
 - Make mutations safe against duplicate requests where needed using persisted idempotency keys/constraints or equivalent transactional enforcement. Client-side disabling alone is insufficient.
 - Job submission should return a job reference/status promptly; do not perform the entire AI/video pipeline in a normal API request. Authenticate and validate provider webhooks under their own contract rather than assuming an interactive Clerk session.
 
 ## Authentication and Authorization
 
-**Clerk is the authentication source of truth.** The development SDK/provider, modal controls, and server-protected dashboard are implemented; configuration and live verification remain pending. See [authentication.md](authentication.md). Authentication establishes who the user is; authorization determines what that user may access or change.
+**Clerk is the authentication source of truth.** The development SDK/provider, centered modal/account controls and server-protected dashboard are live verified. See [authentication.md](authentication.md). Authentication establishes who the user is; authorization determines what that user may access or change.
 
 - Use centered Clerk modal/overlay sign-in and sign-up at the point of need. Do not add dedicated `/signin` or `/signup` pages or a second custom password/session system.
 - Preserve public exploration defined in the overview. Generation, private projects, purchases, and other account-dependent operations require verified server-side Clerk authentication.
@@ -78,7 +78,7 @@ Read [architecture.md](architecture.md) for planned provider boundaries and impl
 
 ## Data and Storage
 
-**Supabase PostgreSQL is specified for structured application data; no schema or integration exists yet.** Users, projects, generations/jobs/states, asset metadata, credit transactions, subscriptions, payments, templates, and marketplace metadata are data categories, not existing table names or permission to scaffold all of them.
+**Supabase PostgreSQL has hosted-verified app_users identity.** The current project unit adds a minimal projects migration and owned save/read/update/list source; hosted application/acceptance remains pending in the tracker. Other domain schemas remain unspecified. Do not scaffold jobs/assets/credits/payments/templates/marketplace as part of draft persistence.
 
 - Store large videos, audio, images, temporary artifacts, and rendered output in object/blob storage. PostgreSQL stores stable object references and relevant metadata; generate short-lived access URLs when needed instead of treating expiring signed URLs as permanent asset identity.
 - Introduce only the schema required by the requested unit. Verify actual tables/columns and constraints before writing queries or migrations; do not infer deployed schema from documentation examples.

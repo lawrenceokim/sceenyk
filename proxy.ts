@@ -8,17 +8,26 @@ import { getClerkDevelopmentConfig } from "@/lib/auth/config";
 
 const withClerk = clerkMiddleware(async (auth, request) => {
   const path = request.nextUrl.pathname;
-  if (path === "/dashboard" || path.startsWith("/dashboard/")) {
+  if (isPrivatePath(path)) {
     await auth.protect({
       unauthenticatedUrl: new URL("/?auth=sign-in", request.url).toString(),
     });
   }
 });
 
+function isPrivatePath(path: string) {
+  return (
+    path === "/dashboard" ||
+    path.startsWith("/dashboard/") ||
+    path === "/projects" ||
+    path.startsWith("/projects/")
+  );
+}
+
 export default function proxy(request: NextRequest, event: NextFetchEvent) {
   if (!getClerkDevelopmentConfig().enabled) {
     const path = request.nextUrl.pathname;
-    if (path === "/dashboard" || path.startsWith("/dashboard/")) {
+    if (isPrivatePath(path)) {
       return NextResponse.redirect(new URL("/?auth=sign-in", request.url));
     }
     return NextResponse.next();
@@ -31,6 +40,7 @@ export const config = {
   matcher: [
     "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
     "/dashboard/:path*",
+    "/projects/:path*",
     "/(api|trpc)(.*)",
   ],
 };

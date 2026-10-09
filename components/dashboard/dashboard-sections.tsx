@@ -12,6 +12,8 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/empty-state";
 import { SceneArtwork } from "@/components/scene-artwork";
 import { DashboardStatCard } from "./dashboard-stat-card";
+import { ProjectCard } from "./project-card";
+import type { ProjectPage } from "@/lib/projects/types";
 
 export function QuickCreate() {
   return (
@@ -56,7 +58,7 @@ export function QuickCreate() {
   );
 }
 
-export function DashboardOverview() {
+export function DashboardOverview({ projectCount }: { projectCount: number }) {
   return (
     <section aria-labelledby="overview-heading">
       <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
@@ -67,15 +69,15 @@ export function DashboardOverview() {
           At a glance
         </h2>
         <p className="text-caption text-muted-foreground">
-          Empty preview · no account data connected
+          Saved projects · generation, credits and templates coming later
         </p>
       </div>
       <dl className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <DashboardStatCard
           icon={<FolderOpen className="size-5" />}
           label="Projects"
-          value="0"
-          description="No saved projects in this preview"
+          value={projectCount.toLocaleString()}
+          description="Your saved project drafts"
         />
         <DashboardStatCard
           icon={<Clapperboard className="size-5" />}
@@ -100,7 +102,8 @@ export function DashboardOverview() {
   );
 }
 
-export function ProjectsSection() {
+export function ProjectsSection({ data }: { data: ProjectPage }) {
+  const lastPage = Math.max(1, Math.ceil(data.total / data.pageSize));
   return (
     <section
       id="projects"
@@ -116,24 +119,100 @@ export function ProjectsSection() {
           Your projects
         </h2>
         <span className="text-caption text-muted-foreground">
-          Project library preview
+          {data.total.toLocaleString()} {data.total === 1 ? "draft" : "drafts"}{" "}
+          · newest first
         </span>
       </div>
-      <EmptyState
-        icon={<FolderOpen className="size-7" />}
-        title="No projects yet"
-        description="Your projects will have a home here once saving is connected. For now, explore an idea in the creation workspace."
-        primaryAction={
-          <Button
-            nativeButton={false}
-            render={<Link href="/create" />}
-            className="h-auto min-h-11 whitespace-normal text-center"
+      {data.total === 0 ? (
+        <EmptyState
+          icon={<FolderOpen className="size-7" />}
+          title="No projects yet"
+          description="Save a creative brief in the creation workspace, then return here to pick up where you left off."
+          primaryAction={
+            <Button
+              nativeButton={false}
+              render={<Link href="/create" />}
+              className="h-auto min-h-11 whitespace-normal text-center"
+            >
+              <Plus className="size-4" aria-hidden="true" />
+              Create your first project
+            </Button>
+          }
+        />
+      ) : data.projects.length === 0 ? (
+        <EmptyState
+          title="No projects on this page"
+          description="Return to your latest saved drafts."
+          primaryAction={
+            <Button
+              variant="outline"
+              nativeButton={false}
+              render={<Link href="/dashboard#projects" />}
+            >
+              Latest projects
+            </Button>
+          }
+        />
+      ) : (
+        <>
+          <ul
+            className="grid gap-4 p-5 sm:grid-cols-2 sm:p-6"
+            aria-label="Saved projects"
           >
-            <Plus className="size-4" aria-hidden="true" />
-            Create your first project
-          </Button>
-        }
-      />
+            {data.projects.map((project) => (
+              <li key={project.id} className="min-w-0">
+                <ProjectCard project={project} />
+              </li>
+            ))}
+          </ul>
+          {lastPage > 1 && (
+            <nav
+              aria-label="Project pagination"
+              className="flex flex-wrap items-center justify-between gap-3 border-t border-border p-5 sm:px-6"
+            >
+              {data.page > 1 ? (
+                <Button
+                  variant="outline"
+                  nativeButton={false}
+                  render={
+                    <Link
+                      href={`/dashboard?page=${data.page - 1}#projects`}
+                      prefetch={false}
+                    />
+                  }
+                >
+                  Previous
+                </Button>
+              ) : (
+                <Button variant="outline" disabled>
+                  Previous
+                </Button>
+              )}
+              <span className="text-caption text-muted-foreground">
+                Page {data.page} of {lastPage}
+              </span>
+              {data.page < lastPage ? (
+                <Button
+                  variant="outline"
+                  nativeButton={false}
+                  render={
+                    <Link
+                      href={`/dashboard?page=${data.page + 1}#projects`}
+                      prefetch={false}
+                    />
+                  }
+                >
+                  Next
+                </Button>
+              ) : (
+                <Button variant="outline" disabled>
+                  Next
+                </Button>
+              )}
+            </nav>
+          )}
+        </>
+      )}
     </section>
   );
 }

@@ -34,6 +34,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           borderRadius: "var(--radius)",
         },
         elements: {
+          modalBackdrop: "[align-items:safe_center]! p-4",
+          modalContent: "m-0!",
           formButtonPrimary: "sceenyk-action",
           userButtonTrigger:
             "size-11 justify-center focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",

@@ -1,3 +1,4 @@
+import { useId } from "react";
 import { Clapperboard, ImagePlay } from "lucide-react";
 import { LocalMediaPreview } from "./local-media-preview";
 import {
@@ -18,14 +19,15 @@ export function CreationPreview({
   prompt: string;
   media?: LocalMedia;
 }) {
+  const id = useId();
   return (
     <aside className="min-w-0 space-y-5" aria-label="Creation preview">
       <section
         className="sceenyk-card overflow-hidden"
-        aria-labelledby="result-heading"
+        aria-labelledby={`${id}-result`}
       >
         <div className="flex items-center justify-between gap-2 border-b border-border px-5 py-4">
-          <h2 id="result-heading" className="text-body-sm font-semibold">
+          <h2 id={`${id}-result`} className="text-body-sm font-semibold">
             Your creation
           </h2>
           <span className="text-caption text-muted-foreground">
@@ -92,12 +94,9 @@ export function CreationPreview({
         </div>
       </section>
       {media && (
-        <section
-          className="sceenyk-card p-5"
-          aria-labelledby="local-source-heading"
-        >
+        <section className="sceenyk-card p-5" aria-labelledby={`${id}-source`}>
           <h2
-            id="local-source-heading"
+            id={`${id}-source`}
             className="mb-4 flex items-center gap-2 text-body-sm font-semibold"
           >
             <ImagePlay className="size-4 text-link" aria-hidden="true" />

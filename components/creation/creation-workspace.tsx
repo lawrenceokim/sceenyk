@@ -1,7 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useRef, useState } from "react";
+import { useAuth } from "@clerk/nextjs";
 import { Sparkles } from "lucide-react";
+import { useAuthAvailable } from "@/components/auth/auth-availability";
+import { AccountAction } from "@/components/account-action";
+import { saveProjectAction } from "@/app/actions/projects";
+import type { ProjectDraft, SavedProject } from "@/lib/projects/types";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -16,6 +21,7 @@ import { CreationPreview } from "./creation-preview";
 import { GenerationSettings } from "./generation-settings";
 import { MediaDropzone } from "./media-dropzone";
 import { PromptComposer } from "./prompt-composer";
+import { ProjectSaveControls, type SaveState } from "./project-save-controls";
 import {
   creationCategories,
   getMediaKind,
@@ -25,14 +31,12 @@ import {
 } from "./creation-options";
 
 function GenerateButton({ disabled }: { disabled: boolean }) {
+  const helpId = useId();
   return (
     <div className="sceenyk-card flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
       <div>
         <p className="text-body-sm font-medium">Ready for the next scene?</p>
-        <p
-          id="generate-help"
-          className="mt-1 text-caption text-muted-foreground"
-        >
+        <p id={helpId} className="mt-1 text-caption text-muted-foreground">
           Preview only. Generation isn’t connected yet.
         </p>
       </div>
@@ -43,7 +47,7 @@ function GenerateButton({ disabled }: { disabled: boolean }) {
               type="button"
               size="lg"
               disabled={disabled}
-              aria-describedby="generate-help"
+              aria-describedby={helpId}
               className="w-full sm:w-auto"
             />
           }
@@ -59,8 +63,8 @@ function GenerateButton({ disabled }: { disabled: boolean }) {
             Generation is coming soon
           </DialogTitle>
           <DialogDescription className="text-body leading-relaxed">
-            This is a local workspace preview. You can explore your prompt,
-            media, and settings, but no content will be generated or saved.
+            You can save your creative brief as a draft. Generation isn’t
+            connected yet, so this action won’t create content or use credits.
           </DialogDescription>
           <DialogClose render={<Button variant="outline" className="mt-2" />}>
             Keep creating your brief
@@ -71,25 +75,134 @@ function GenerateButton({ disabled }: { disabled: boolean }) {
   );
 }
 
-export function CreationWorkspace() {
-  const [selectedCategory, setSelectedCategory] =
-    useState<CategoryId>("cinematic");
-  const [prompt, setPrompt] = useState("");
+type WorkspaceProps = { initialProject?: SavedProject; viewerUserId?: string };
+
+function AccountWorkspace(props: WorkspaceProps) {
+  const { isLoaded, isSignedIn, userId } = useAuth();
+  if (props.initialProject && (!isLoaded || userId !== props.viewerUserId)) {
+    return (
+      <div className="sceenyk-card p-6" role="status">
+        <p className="text-body-sm text-muted-foreground">
+          {!isLoaded
+            ? "Opening your draft…"
+            : "Sign in to open your saved project."}
+        </p>
+        {isLoaded && (
+          <AccountAction intent="sign-in" className="mt-4">
+            Sign in
+          </AccountAction>
+        )}
+      </div>
+    );
+  }
+  return (
+    <WorkspaceEditor
+      key={`${userId ?? "visitor"}:${props.initialProject?.id ?? "new"}`}
+      initialProject={props.initialProject}
+      signedIn={!!isSignedIn}
+      authReady={isLoaded}
+    />
+  );
+}
+
+export function CreationWorkspace(props: WorkspaceProps) {
+  const available = useAuthAvailable();
+  return available ? (
+    <AccountWorkspace {...props} />
+  ) : (
+    <WorkspaceEditor signedIn={false} authReady />
+  );
+}
+
+function WorkspaceEditor({
+  initialProject,
+  signedIn,
+  authReady,
+}: {
+  initialProject?: SavedProject;
+  signedIn: boolean;
+  authReady: boolean;
+}) {
+  const [selectedCategory, setSelectedCategory] = useState<CategoryId>(
+    initialProject?.category ?? "cinematic",
+  );
+  const [prompt, setPrompt] = useState(initialProject?.prompt ?? "");
+  const [title, setTitle] = useState(
+    initialProject?.title ?? "Untitled Project",
+  );
+  const [projectId, setProjectId] = useState(initialProject?.id ?? null);
+  const attemptId = useRef(initialProject?.id ?? null);
+  const saveInFlight = useRef(false);
+  const [saveState, setSaveState] = useState<SaveState>(
+    initialProject ? { status: "saved" } : { status: "idle" },
+  );
+  const [savedBrief, setSavedBrief] = useState<ProjectDraft | null>(
+    initialProject ?? null,
+  );
   const [selectedFiles, setSelectedFiles] = useState<LocalMedia[]>([]);
   const [selectedFileId, setSelectedFileId] = useState<string | null>(null);
   const [mediaError, setMediaError] = useState("");
-  const [settings, setSettings] = useState<CreationSettings>({
-    aspectRatio: "16:9",
-    duration: "10",
-    visualStyle: "Original",
-    tone: "Storytelling",
-  });
+  const [settings, setSettings] = useState<CreationSettings>(
+    initialProject?.settings ?? {
+      aspectRatio: "16:9",
+      duration: "10",
+      visualStyle: "Original",
+      tone: "Storytelling",
+    },
+  );
   const category =
     creationCategories.find((item) => item.id === selectedCategory) ??
     creationCategories[2];
   const activeMedia =
     selectedFiles.find((media) => media.id === selectedFileId) ??
     selectedFiles[0];
+  const brief: ProjectDraft = {
+    title,
+    category: selectedCategory,
+    prompt,
+    settings,
+  };
+  const dirty =
+    savedBrief !== null &&
+    (title !== savedBrief.title ||
+      prompt !== savedBrief.prompt ||
+      selectedCategory !== savedBrief.category ||
+      settings.aspectRatio !== savedBrief.settings.aspectRatio ||
+      settings.duration !== savedBrief.settings.duration ||
+      settings.visualStyle !== savedBrief.settings.visualStyle ||
+      settings.tone !== savedBrief.settings.tone);
+
+  async function saveDraft() {
+    if (saveInFlight.current || !signedIn) return;
+    saveInFlight.current = true;
+    setSaveState({ status: "saving" });
+    // Keep this ID even if the response is lost after a committed first save.
+    const id = attemptId.current ?? crypto.randomUUID();
+    attemptId.current = id;
+    try {
+      const result = await saveProjectAction({
+        ...brief,
+        id,
+        mode: projectId ? "update" : "create",
+      });
+      if (!result.ok) {
+        setSaveState({ status: "error", message: result.message });
+        return;
+      }
+      setProjectId(result.project.id);
+      // Edits made while saving remain unsaved rather than being overwritten.
+      setSavedBrief(brief);
+      setSaveState({ status: "saved" });
+    } catch {
+      setSaveState({
+        status: "error",
+        message:
+          "Your draft couldn’t be saved. Check your connection and try again.",
+      });
+    } finally {
+      saveInFlight.current = false;
+    }
+  }
 
   function addFiles(files: File[]) {
     const accepted: LocalMedia[] = [];
@@ -134,6 +247,17 @@ export function CreationWorkspace() {
   return (
     <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] lg:gap-8">
       <div className="min-w-0 space-y-6">
+        <ProjectSaveControls
+          title={title}
+          onTitleChange={setTitle}
+          onSave={saveDraft}
+          state={saveState}
+          dirty={dirty}
+          projectId={projectId}
+          signedIn={signedIn}
+          authReady={authReady}
+          hasLocalMedia={selectedFiles.length > 0}
+        />
         <CategorySelector
           selected={selectedCategory}
           onChange={setSelectedCategory}

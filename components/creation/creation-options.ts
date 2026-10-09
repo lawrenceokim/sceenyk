@@ -6,6 +6,15 @@ import {
   Clapperboard,
   WandSparkles,
 } from "lucide-react";
+import type { CategoryId } from "@/lib/projects/options";
+export {
+  aspectRatios,
+  durations,
+  visualStyles,
+  tones,
+  type CategoryId,
+  type CreationSettings,
+} from "@/lib/projects/options";
 
 export const creationCategories = [
   {
@@ -56,42 +65,15 @@ export const creationCategories = [
     example:
       "A playful short about a coffee-fueled morning, with quick cuts and witty captions.",
   },
-] as const;
+] as const satisfies readonly {
+  id: CategoryId;
+  title: string;
+  description: string;
+  icon: typeof Film;
+  example: string;
+}[];
 
 export type CreationCategory = (typeof creationCategories)[number];
-export type CategoryId = CreationCategory["id"];
-
-export const aspectRatios = [
-  { value: "9:16", label: "9:16 · Portrait" },
-  { value: "16:9", label: "16:9 · Landscape" },
-  { value: "1:1", label: "1:1 · Square" },
-] as const;
-export const durations = [
-  { value: "10", label: "10 seconds" },
-  { value: "15", label: "15 seconds" },
-  { value: "30", label: "30 seconds" },
-] as const;
-export const visualStyles = [
-  "Original",
-  "Cartoon",
-  "Cinematic",
-  "Anime",
-  "Realistic",
-] as const;
-export const tones = [
-  "Funny",
-  "Dramatic",
-  "Professional",
-  "Energetic",
-  "Storytelling",
-] as const;
-
-export interface CreationSettings {
-  aspectRatio: (typeof aspectRatios)[number]["value"];
-  duration: (typeof durations)[number]["value"];
-  visualStyle: (typeof visualStyles)[number];
-  tone: (typeof tones)[number];
-}
 
 export interface LocalMedia {
   id: string;
