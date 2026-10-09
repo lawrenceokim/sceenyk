@@ -3,6 +3,8 @@ import { Inter, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeController } from "@/components/theme-toggle";
 import { themeInitScript } from "@/lib/theme";
+import { Suspense } from "react";
+import { AuthProvider } from "@/components/auth/auth-provider";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -33,7 +35,18 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       </head>
       <body className="min-h-full flex flex-col">
         <ThemeController />
-        {children}
+        <Suspense
+          fallback={
+            <p
+              role="status"
+              className="sceenyk-container py-10 text-muted-foreground"
+            >
+              Loading Sceenyk…
+            </p>
+          }
+        >
+          <AuthProvider>{children}</AuthProvider>
+        </Suspense>
       </body>
     </html>
   );

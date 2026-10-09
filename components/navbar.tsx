@@ -2,17 +2,16 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Menu, X, ArrowUpRight } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { Brand } from "@/components/brand";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { AccountAction } from "@/components/account-action";
+import { AccountControls } from "@/components/auth/account-controls";
 import { Button } from "@/components/ui/button";
 
 const navigation = [
   { label: "Features", href: "/#features" },
   { label: "How it works", href: "/#how-it-works" },
   { label: "Pricing", href: "/#pricing" },
-  { label: "Dashboard", href: "/dashboard" },
 ];
 
 export function Navbar() {
@@ -51,12 +50,7 @@ export function Navbar() {
         <div className="flex items-center gap-2">
           <ThemeToggle />
           <div className="hidden items-center gap-2 lg:flex">
-            <AccountAction variant="ghost" intent="sign-in">
-              Sign in
-            </AccountAction>
-            <AccountAction>
-              Get Started <ArrowUpRight aria-hidden="true" />
-            </AccountAction>
+            <AccountControls />
           </div>
           <Button
             ref={toggle}
@@ -93,13 +87,8 @@ export function Navbar() {
               {item.label}
             </Link>
           ))}
-          <div className="mt-2 grid grid-cols-2 gap-3 border-t border-border pt-4">
-            <AccountAction variant="outline" intent="sign-in">
-              Sign in
-            </AccountAction>
-            <AccountAction onClick={() => setOpen(false)}>
-              Get Started
-            </AccountAction>
+          <div className="mt-2 flex flex-wrap items-center gap-3 border-t border-border pt-4">
+            <AccountControls onNavigate={() => setOpen(false)} />
           </div>
         </div>
       </nav>

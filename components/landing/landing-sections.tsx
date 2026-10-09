@@ -431,7 +431,7 @@ export function PricingPreview() {
             "Explore the creation experience at launch",
           ]}
         >
-          <AccountAction variant="outline" className="w-full">
+          <AccountAction intent="sign-up" variant="outline" className="w-full">
             Get Started <ArrowRight aria-hidden="true" />
           </AccountAction>
         </PricingCard>

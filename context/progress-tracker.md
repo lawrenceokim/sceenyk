@@ -8,15 +8,15 @@ Last implementation and verification: **2026-10-09 (Africa/Lagos)**. Read [overv
 
 ## Current Phase
 
-**Dashboard shell and empty states — Complete within this UI unit.** `/dashboard` now previews the creative workspace with responsive navigation, honest empty states, and working links into `/create`. The landing and creation experiences remain intact. Authentication, private/saved projects, and production workflows are not implemented.
+**Clerk development authentication — In Progress: source implemented, configuration/live verification pending.** Official modal/account controls and server dashboard protection are implemented. Missing keys deny dashboard content while public `/` and local `/create` remain available. Private/saved projects and production workflows are not implemented. See [authentication.md](authentication.md) for setup and outstanding acceptance checks.
 
 | Phase | Status | Repository evidence |
 | --- | --- | --- |
-| Project Foundation | In Progress | Public shell/landing, themes, local creation, and dashboard shell exist. Authentication and service setup remain. |
+| Project Foundation | In Progress | Public shell/landing, themes, local creation, dashboard shell, and Clerk auth source exist. Live auth verification and other service setup remain. |
 | Global UI & Public Landing Page | Complete | All requested landing sections, reusable compositions, responsive navigation, and both themes are implemented and browser-checked. |
 | Creation Workspace UI | Complete as local preview | Six categories, prompt, local media, four settings, empty output/brief/source panels, and honest Generate notice. No production execution. |
-| Dashboard Shell UI | Complete as preview | Desktop sidebar/mobile Sheet, app header, Quick Create, empty summary cards, project/generation/template empty states, informational credits/account areas. Public preview until Clerk. |
-| Authentication | Not Started | No Clerk dependency/provider/session integration or live sign-in. Sign In opens an informational notice; creation CTAs link to public `/create`. |
+| Dashboard Shell UI | Complete as preview | Existing UI retained behind server protection; official account avatar/menu and optional first-name greeting added. Empty records/counts and credits stay honest previews. New live account checks pending. |
+| Authentication | In Progress | Clerk Next.js 7.9.13/UI 1.39.1 installed; root provider, sign-in/sign-up modals, account/loading controls, proxy plus layout/page server guards implemented. Test keys absent; live session flows unverified. |
 | Database & User Sync | Not Started | No Supabase client, schema, migrations, or Clerk-to-database synchronization. |
 | Projects | UI empty state only | Shared projects empty state links to local creation; no real project cards, queries, creation, saved data, or management actions. |
 | Media Uploads | Not Started as backend | Local multiple-file browse/drop, metadata, image/video/audio previews, and removal exist; nothing is remotely uploaded or persisted. |
@@ -29,7 +29,7 @@ Last implementation and verification: **2026-10-09 (Africa/Lagos)**. Read [overv
 
 ## Current Goal
 
-**Complete: dashboard shell and empty states.** All scoped acceptance checks passed. `/dashboard` is a public, labeled preview because Clerk remains unconfigured. No invented auth, user, saved projects, generation activity, balances, purchases, or services were added. Workspace data and source files remain local to `/create`. The next unit has not started.
+**Clerk development authentication and dashboard protection: implementation delivered, live acceptance pending.** No development keys are available yet. Missing configuration fails closed and public previews still work. No fake identity, secrets, custom cookies, dedicated auth pages, database, generation, credits, or payments were added. Do not mark authentication Complete or begin the next unit until real development session checks pass.
 
 ## Completed
 
@@ -41,18 +41,27 @@ Last implementation and verification: **2026-10-09 (Africa/Lagos)**. Read [overv
 | Theme experience | Complete | Before-paint system/saved preference, explicit toggle, localStorage persistence, system change handling, and actual cross-tab synchronization. Storage-restricted in-page switching works. |
 | Public landing content | Complete | Hero, six creation categories, three how-it-works steps, connected-production value section, three concept-media cards, free/paid pricing preview, final CTA, and footer. |
 | Reusable UI | Complete | Existing Button retained; shadcn/Base UI Dialog installed and adapted to tokens, touch targets, viewport-safe scrolling, and reduced motion. Reusable brand, theme, account entry, art, category, step, media, and pricing components extracted without provider scaffolding. |
-| Account-entry readiness | Complete as UI boundary only | `AccountAction` routes creation intents to `/create`; Sign In keeps the centered accessible notice. Mobile Get Started collapses navigation. No fake session, alternative auth system, `/signin`, or `/signup` page. Integrate Clerk centered modals in the auth unit. |
+| Account-entry integration | Source implemented; live checks pending | Sign In/Get Started use official Clerk modal sign-in/sign-up when configured. Signed-in actions use Dashboard/Create/UserButton; neutral loading avoids false auth state. Creative CTAs remain public `/create` links. Missing keys show an unavailable notice, never fake authentication. |
 | Creation route/header/layout | Complete | `/create` metadata, back link, studio header, preview badge, responsive desktop input/output columns and stacked mobile flow, using existing tokens and shell. |
 | Category/prompt/settings | Complete as local UI | Six single-select native radio tiles with keyboard/focus treatment; multiline labeled prompt, count, category-specific example; ratio/duration/style/tone selects update the creative-brief summary. Changing category or theme preserves other inputs. |
 | Local media input/preview | Complete as local UI | Multiple browse/drop; metadata, deduplication, unsupported/empty-file feedback, long filenames, preview switching/removal, valid image/video/audio previews, browser decode fallback. Only active media owns an object URL; switching, removal, route exit clean it up and cached-route return renews it. |
 | Result/Generate boundary | Complete as preview | Generated output stays intentionally empty; local source is separately labeled. Generate is disabled for empty/whitespace prompt; enabled action opens an informational dialog without API requests, processing, saved data, or credit changes. |
-| Dashboard app structure | Complete | One root document/fonts/theme controller; existing pages moved under `(public)` without changing `/` or `/create`; nested dashboard layout owns sidebar/header/main. Public navigation adds Dashboard. Distinct main IDs keep skip links reliable with cached layouts. |
-| Dashboard navigation/header | Complete | 240px desktop sidebar from 1024px; modal left Sheet below that; brand, current Home route, Create links, Projects/Templates/Credits section anchors, noninteractive Marketplace/Settings Soon entries, theme control, account-notice area. Drawer supports title/description, keyboard trapping, Escape/close/focus return, nested account notice, navigation dismissal, desktop resize, and scrolling at short heights. |
+| Dashboard app structure | Complete UI; auth source added | One root document/fonts/theme controller and configured ClerkProvider; public route group URLs unchanged; nested dashboard shell guarded with request-time auth behind Suspense. Page independently checks auth. Distinct main IDs remain. |
+| Dashboard navigation/header | UI retained; live account checks pending | 240px desktop sidebar from 1024px; mobile Sheet, brand/current Home/Create, section anchors, noninteractive Soon entries, and theme control retained. Clerk UserButton is in the desktop sidebar and mobile header; mobile drawer shows a noninteractive Clerk avatar. Historical Sheet focus/scroll/navigation checks passed before auth; actual account-overlay checks remain pending. |
 | Dashboard content/EmptyState | Complete as UI | Welcome, concept-art Quick Create, labeled preview counts (0 projects/generations/templates; unavailable credits), shared optional-icon/action EmptyState for three sections. No fake records or timelines. Project/template creation actions reach `/create`; they do not save or generate content. |
 | Preview branding/metadata | Complete as preview | Sceenyk title/description and star/circle SVG icon replace starter branding; starter favicon removed. Final production logo approval remains open. |
 | Context synchronization | Complete | AGENTS overview path corrected; architecture existence, public UI/theme contracts, Sandbox-only payment rule, design composition, and workflow/standards status synchronized. |
 
 ## Verification
+
+- **Clerk unit (2026-10-09):** lint, standalone TypeScript, production build, and diff whitespace checks passed. Missing-key build keeps public pages static; no dedicated auth route. Three configuration security assertions passed: missing keys closed and production public/secret prefixes rejected without logging values.
+- **37 unconfigured-mode browser checks passed:** public landing, no direct/subtree dashboard content, constant local redirect despite a supplied return URL, browser identity hints cannot bypass missing-configuration guard, absent `/signin` and `/signup`, fallback notices/focus/Escape on desktop/mobile, and both themes at 1440/1024/768/390/320px. Reviewed desktop light and mobile dark screenshots. No browser errors or external auth requests.
+- **47 creation regression checks passed** after auth integration, including local prompt/settings/media lifecycle, keyboard/focus/preview dialogs, public access/navigation, theme state, and responsiveness. Temporary harness expectations reflect Get Started's auth intent and wait for exit animations.
+- **Pending:** real Clerk sign-in/sign-up modal rendering and completion, signed-in navbar/account controls/dashboard, real signed-out and sign-out denial, authenticated refresh, OAuth transfers if configured, and Clerk-specific theme/mobile/keyboard checks. These require locally configured development keys; fallback/browser/static evidence is not live authentication evidence.
+- npm audit reports nine high findings in existing shadcn/ESLint tooling chains; every affected package version matches the pre-task lockfile. No Clerk package is listed. No unrelated downgrade/force fix was applied.
+- Temporary artifacts: `C:\Users\USER\AppData\Local\Temp\sceenyk-auth-FvXd49` (37 checks/screenshots) and `sceenyk-create-fjS8rL` (47 regression checks). No test framework or generated tooling was committed.
+
+### Historical dashboard/creation UI verification (before Clerk)
 
 - `npm run lint` — passed against final application code; no lint suppression.
 - `npx tsc --noEmit` — passed against the final production build types.
@@ -70,7 +79,19 @@ Last implementation and verification: **2026-10-09 (Africa/Lagos)**. Read [overv
 
 The browser harness/screenshots and media fixtures are temporary local verification artifacts, not app features or a committed test framework. No test dependency was added. Native codec support remains browser-dependent; actual mobile devices, screen readers, a broader browser matrix, and fully offline clean builds remain unverified. The existing parent-directory lockfile warning appears during build/start; compilation and serving succeed. The dashboard and public layouts use unique skip-target IDs to avoid cached-route collisions. No unresolved issue from this unit remains in the required checks.
 
-## Files Changed
+## Files Changed — Clerk Unit
+
+| Area | Files |
+| --- | --- |
+| Packages/environment | `package.json`, `package-lock.json`, `.gitignore`, empty `.env.example` |
+| Auth foundation | New `lib/auth/config.ts`, `require-user.ts`, `proxy.ts`; new `components/auth/auth-availability.tsx`, `auth-provider.tsx`, `auth-modal-return.tsx`, `account-controls.tsx` |
+| Auth entry/navigation | `components/account-action.tsx`, `navbar.tsx`, `landing/landing-sections.tsx` (free Get Started intent) |
+| Layout/dashboard/theme | `app/layout.tsx`, `app/globals.css`, `app/dashboard/layout.tsx`, `page.tsx`, `components/dashboard/dashboard-header.tsx`, `dashboard-sidebar.tsx` |
+| Context | New `context/authentication.md`; updated `architecture.md`, `ui-context.md`, `design-system.md`, `code-standards.md`, `ai-workflow-rules.md`, this tracker |
+
+No secret `.env.local`, application API, database/schema, auth page, payment code, or Next.js configuration change added. The committed environment example contains no credential values.
+
+## Historical Files Changed — Dashboard Unit
 
 | Area | Files |
 | --- | --- |
@@ -84,8 +105,8 @@ This table describes the dashboard unit. Existing landing and creation page cont
 
 ## Still Incomplete
 
-- Clerk configuration and real centered sign-in/sign-up are absent. Preview notices are intentionally informational and do not authenticate.
-- Real account controls, private/saved projects, remote uploads, AI jobs, rendering, credits, marketplace, and checkout remain future units. `/create` and `/dashboard` are public previews with no protected operations/data. Clerk protection is required before introducing account data; the sidebar account notice does not create a session.
+- Real Clerk development keys and live acceptance checks remain absent. Source integration is implemented; unavailable notices shown without configuration do not authenticate.
+- Private/saved projects, remote uploads, AI jobs, rendering, credits, marketplace, and checkout remain future units. `/create` stays public/local; `/dashboard` now requires a verified session and denies access when unconfigured. Official account controls exist in source but await live testing. Future private data/actions need resource-level auth and ownership enforcement.
 - Dashboard counts are safe UI defaults, not query results. No project cards/actions, history, generation statuses, template records, computed balance/free allowance, or purchases exist. Marketplace/Settings Soon entries do not navigate; implemented section items use anchors.
 - Workspace data is memory-only, with no save/reopen contract. No generated progress, completed result, or retry state exists. Those require a real pipeline and persisted state.
 - Listed durations/styles/tones are exploratory options, not approved provider capabilities, credit tariffs, or free-generation eligibility. Production file size/type/security policies remain open.
@@ -95,11 +116,11 @@ This table describes the dashboard unit. Existing landing and creation page cont
 
 ## Next Up
 
-**Recommended next small unit: Clerk development modal authentication and dashboard protection.** Requires a Clerk development instance and keys. Connect real centered Sign In/Get Started and account controls, preserve public `/` and local `/create` exploration, and protect `/dashboard` with the installed Next.js/Clerk server approach. No dedicated auth pages, alternative auth, database, payments, or generation in that unit. It has not started.
+**Immediate next step: complete this unit's live Clerk development verification.** Configure matching test keys locally, restart/rebuild, and run the pending modal/session/account/protection/theme/mobile checks in [authentication.md](authentication.md). After those pass, the recommended next implementation unit is **Supabase identity mapping and minimal user synchronization**, with an explicit access/RLS design and idempotent identity mapping; no projects, media, AI, billing, or marketplace expansion. That unit has not started.
 
 | Order | Planned unit | Minimum outcome / prerequisites |
 | --- | --- | --- |
-| 1 | Clerk development modal authentication | Development instance/keys; centered sign-in/sign-up, real account/session controls, server-protected dashboard, public browsing preserved. No dedicated auth pages. |
+| 1 | Finish Clerk development acceptance | Source implemented; matching development keys and actual modal/session/account/protection/refresh/theme/mobile checks required. No dedicated auth pages. |
 | 2 | Supabase minimal schema and identity sync | Decide access/RLS strategy, add only needed migrations, verify owned data access and idempotent Clerk identity synchronization. |
 | 3 | Project persistence | Create/save/list/reopen a project; cross-account access rejected server-side. |
 | 4 | Media upload | Authorized direct object-store upload with project metadata, validation, progress, failure handling, and access enforcement. |
@@ -132,7 +153,7 @@ Resolve before dependent implementation; prefer the planned directions in archit
 
 - Keep one root-level Next.js/Tailwind/shadcn/Base UI design system; landing and creation page headers stay server-composed/static and browser interactions stay in scoped client boundaries.
 - Use the existing token palette in both themes. Default to system preference with a light CSS fallback; explicit choice persists under `sceenyk-theme`, is applied before paint, and synchronizes across tabs.
-- Use Clerk centered modals as the future identity source. The shared account-entry notice is a temporary presentation boundary and has no authentication behavior.
+- Clerk is the only identity source. Use official centered modals/UserButton, development keys only, neutral loading, and server guard checks at proxy/layout/page boundaries. Missing configuration denies dashboard access. No browser-supplied identity/return URL, shared auth cache, or custom auth system.
 - Public pricing and media concepts are explicit UI previews; they do not establish billing configuration, generated content, or backend capacity.
 - Workspace browser Files and options stay in component state. Object URLs are subscription-owned browser resources created only for active previews and revoked when inactive. Browser preview format checks are advisory; server upload validation must be defined separately.
 - All payment development/testing uses **PayPal Sandbox only**. No Live credentials, Live checkout, or real-money transactions. Eventual production environment selection belongs behind the payment service and is not implemented here.
@@ -140,12 +161,12 @@ Resolve before dependent implementation; prefer the planned directions in archit
 
 ## Session Notes
 
-- **Last work:** dashboard shell and empty states, 2026-10-09. No next unit started.
+- **Last work:** Clerk development authentication source and server dashboard protection, 2026-10-09. Configuration/live verification pending; no next unit started.
 - **Worktree:** initially clean; existing public/creation work preserved, no changes reset or committed by this task.
-- **Source inspection:** read current AGENTS and required context in exact order, followed by the design system and both PNG references; inspected existing UI and relevant installed Next.js page/layout/client/Link/Image guidance before code changes.
-- **Migrations/environment:** none added; no credentials or environment variables required for this unit. Clerk remains unconfigured in source. Service credentials and server contracts must be established within their own units.
-- **Verification tooling:** temporary local production server (stopped after checks) and headless Chrome harness; no new package dependency or committed test runner.
-- **Resume:** request Clerk development modal authentication/protection with its prerequisites. Do not automatically expand into database, generation, billing, remote uploads, or marketplace implementation.
+- **Source inspection:** read current AGENTS/context in exact order, design system and both PNGs; inspected installed Next.js authentication-with-cache-components/Proxy guidance and Clerk 7.9.13 types/source before coding. Used official Clerk references for provider/modal/appearance APIs.
+- **Migrations/environment:** no migrations or secret values added. Set development `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` and server-only `CLERK_SECRET_KEY` in ignored `.env.local`; restart/rebuild before verification. Production prefixes are rejected.
+- **Verification tooling:** temporary local production server and headless Chrome harness; Clerk packages added, no committed test runner. Test server stopped after checks.
+- **Resume:** finish live Clerk acceptance with development keys before dependent work. Do not automatically expand into database, generation, billing, remote uploads, or marketplace implementation.
 
 ## Update Rules
 

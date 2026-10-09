@@ -12,10 +12,9 @@ import {
   Settings2,
   Sparkles,
   Store,
-  UserRound,
 } from "lucide-react";
 import { Brand } from "@/components/brand";
-import { AccountAction } from "@/components/account-action";
+import { DashboardAccount } from "@/components/auth/account-controls";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -78,27 +77,6 @@ function DashboardNavigation({ onNavigate }: { onNavigate?: () => void }) {
   );
 }
 
-function AccountPreview() {
-  return (
-    <div className="space-y-4 border-t border-sidebar-border p-5">
-      <div className="flex items-start gap-3">
-        <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-          <UserRound className="size-5" aria-hidden="true" />
-        </span>
-        <div className="min-w-0">
-          <p className="text-body-sm font-medium">Your account</p>
-          <p className="mt-1 text-caption leading-relaxed text-muted-foreground">
-            Account access is coming soon.
-          </p>
-        </div>
-      </div>
-      <AccountAction intent="sign-in" variant="outline" className="w-full">
-        Sign in
-      </AccountAction>
-    </div>
-  );
-}
-
 export function DashboardSidebar() {
   return (
     <aside
@@ -114,7 +92,7 @@ export function DashboardSidebar() {
       <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-6">
         <DashboardNavigation />
       </div>
-      <AccountPreview />
+      <DashboardAccount />
     </aside>
   );
 }
@@ -157,7 +135,7 @@ export function DashboardMobileNavigation() {
         <div className="flex-1 px-3 pb-6">
           <DashboardNavigation onNavigate={() => setOpen(false)} />
         </div>
-        <AccountPreview />
+        <DashboardAccount interactive={false} />
       </SheetContent>
     </Sheet>
   );

@@ -2,7 +2,7 @@
 
 These rules apply to developers and AI coding agents building Sceenyk. Read [overview.md](overview.md), [ui-context.md](ui-context.md), [design-system.md](design-system.md), [ai-workflow-rules.md](ai-workflow-rules.md), and [progress-tracker.md](progress-tracker.md) before relevant implementation work.
 
-**Verified baseline (2026-10-08):** root-level Next.js 16.4.0 App Router, React 19.3.0, strict TypeScript, Tailwind 4, shadcn `base-nova`/Base UI, Lucide, shared theme CSS, and one Button. Clerk, Supabase PostgreSQL, and PayPal are specified product choices, but are not installed or integrated. AI, voice, object-storage, and worker providers remain undecided. There are no application API routes, schema/migrations, services, workers, or configured test runner. Standards below govern those concerns when introduced; they do not claim existing implementation.
+**Verified baseline (2026-10-09):** root-level Next.js 16.4.0 App Router, React 19.3.0, strict TypeScript, Tailwind 4, shadcn `base-nova`/Base UI Button/Dialog/Sheet, Lucide, shared themes, landing, local creation, dashboard shell, and Clerk development authentication source. Clerk Next.js/UI are installed; credentials and live verification are pending. Supabase/PayPal are specified but unimplemented. No application API routes, schema/migrations, workers, or configured test runner exist. See architecture.md and authentication.md for current boundaries.
 
 Read [architecture.md](architecture.md) for planned provider boundaries and implemented UI contracts. `AGENTS.md` now references the actual product document, `context/overview.md`.
 
@@ -68,7 +68,7 @@ Read [architecture.md](architecture.md) for planned provider boundaries and impl
 
 ## Authentication and Authorization
 
-**Clerk is the specified authentication source of truth; integration is Not Started.** Authentication establishes who the user is; authorization determines what that user may access or change.
+**Clerk is the authentication source of truth.** The development SDK/provider, modal controls, and server-protected dashboard are implemented; configuration and live verification remain pending. See [authentication.md](authentication.md). Authentication establishes who the user is; authorization determines what that user may access or change.
 
 - Use centered Clerk modal/overlay sign-in and sign-up at the point of need. Do not add dedicated `/signin` or `/signup` pages or a second custom password/session system.
 - Preserve public exploration defined in the overview. Generation, private projects, purchases, and other account-dependent operations require verified server-side Clerk authentication.

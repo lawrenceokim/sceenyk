@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { requireClerkUser } from "@/lib/auth/require-user";
+import { DashboardGreeting } from "@/components/auth/account-controls";
 import {
   CreditsPreview,
   DashboardOverview,
@@ -14,15 +16,15 @@ export const metadata: Metadata = {
     "Explore the Sceenyk creative workspace: project library, generation activity, and creation tools.",
 };
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
+  // Authorize the page as well as its shell; future data/actions need their own checks.
+  await requireClerkUser();
   return (
     <>
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
         <div>
           <p className="eyebrow">YOUR CREATIVE SPACE</p>
-          <h1 className="mt-3 text-heading-2 font-bold tracking-tight md:text-heading-1">
-            Welcome to Sceenyk
-          </h1>
+          <DashboardGreeting />
           <p className="mt-3 max-w-xl text-body text-muted-foreground">
             A home for the scenes you imagine, and the stories you’ll bring to
             life.
@@ -45,8 +47,8 @@ export default function DashboardPage() {
         </div>
       </div>
       <p className="pb-2 text-caption leading-relaxed text-muted-foreground">
-        You’re exploring the workspace preview. Account access, saved projects,
-        and generation are coming soon.
+        You’re exploring the workspace preview. Saved projects and generation
+        are coming soon.
       </p>
     </>
   );

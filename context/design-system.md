@@ -18,7 +18,7 @@ Evidence labels used throughout:
 - **Inferred**: implementation choices consistent with the references, including accessibility and responsive recommendations.
 - **Needs confirmation**: information that the PNGs do not resolve.
 
-**Exact repository baseline (updated 2026-10-09):** Next.js 16.4 App Router, Tailwind CSS 4 with `@tailwindcss/turbopack`, shadcn `base-nova`, Base UI primitives, Lucide, and CSS variables enabled in `components.json`. `app/globals.css` is imported by the root layout. Button, Dialog, and Sheet are installed locally. Landing/public shell, local creation, dashboard shell/empty states, and system/saved themes are implemented. Preserve CSS import order and existing Turbopack configuration.
+**Exact repository baseline (updated 2026-10-09):** Next.js 16.4 App Router, Tailwind CSS 4 with `@tailwindcss/turbopack`, shadcn `base-nova`, Base UI primitives, Lucide, and CSS variables enabled in `components.json`. `app/globals.css` is imported by the root layout. Button, Dialog, and Sheet are installed locally. Landing/public shell, local creation, dashboard shell/empty states, and system/saved themes are implemented. Clerk Next.js/UI are installed; supported shadcn appearance uses these same tokens, with field/backdrop/focus/radius/font/action adjustments. Actual Clerk modal rendering awaits development keys and live verification. Preserve CSS import order and existing Turbopack configuration.
 
 ## Brand style and visual direction
 

@@ -2,7 +2,8 @@
 
 import type { ComponentProps } from "react";
 import Link from "next/link";
-import { Sparkles } from "lucide-react";
+import { SignInButton, SignUpButton, useAuth } from "@clerk/nextjs";
+import { useAuthAvailable } from "@/components/auth/auth-availability";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -13,13 +14,43 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
-// Creation is public preview navigation. Sign-in remains a Clerk-ready notice.
-// This component never collects credentials or creates an authenticated session.
+type AccountActionProps = ComponentProps<typeof Button> & {
+  intent?: "sign-in" | "sign-up" | "create";
+};
+
+function ClerkAction({ children, intent, ...props }: AccountActionProps) {
+  const { isLoaded, isSignedIn } = useAuth();
+  if (!isLoaded)
+    return (
+      <Button {...props} disabled aria-busy="true">
+        {children}
+      </Button>
+    );
+  if (isSignedIn) {
+    return (
+      <Button
+        {...props}
+        nativeButton={false}
+        render={<Link href="/dashboard" />}
+      >
+        {children}
+      </Button>
+    );
+  }
+  const action = <Button {...props}>{children}</Button>;
+  return intent === "sign-up" ? (
+    <SignUpButton mode="modal">{action}</SignUpButton>
+  ) : (
+    <SignInButton mode="modal">{action}</SignInButton>
+  );
+}
+
 export function AccountAction({
   children,
   intent = "create",
   ...props
-}: ComponentProps<typeof Button> & { intent?: "sign-in" | "create" }) {
+}: AccountActionProps) {
+  const available = useAuthAvailable();
   if (intent === "create") {
     return (
       <Button {...props} nativeButton={false} render={<Link href="/create" />}>
@@ -27,20 +58,22 @@ export function AccountAction({
       </Button>
     );
   }
+  if (available)
+    return (
+      <ClerkAction {...props} intent={intent}>
+        {children}
+      </ClerkAction>
+    );
   return (
     <Dialog>
       <DialogTrigger render={<Button {...props} />}>{children}</DialogTrigger>
       <DialogContent className="text-center">
-        <span className="mx-auto mt-2 flex size-14 items-center justify-center rounded-xl bg-accent text-accent-foreground">
-          <Sparkles className="size-7" aria-hidden="true" />
-        </span>
         <DialogTitle className="text-heading-3 font-semibold">
-          Sign in is coming soon
+          Account access is unavailable
         </DialogTitle>
         <DialogDescription className="text-body leading-relaxed">
-          You’re exploring the Sceenyk preview. Account access is coming soon.
-          You can explore the creation workspace without signing in during this
-          preview.
+          Sign in is temporarily unavailable. You can still explore Sceenyk and
+          the creation workspace.
         </DialogDescription>
         <DialogClose
           render={<Button variant="outline" className="mt-2 w-full" />}
