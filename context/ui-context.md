@@ -8,7 +8,7 @@ Sceenyk supports light and dark styling with a modern, bold, minimal, creative, 
 
 Light mode uses clean white/light surfaces. Dark mode uses layered near-black surfaces with brighter text and localized purple glow. Both themes share geometry, spacing, hierarchy, and behavior: they must feel like the same product.
 
-Light is the `:root` default. Add/remove `.dark` on `<html>` to switch tokens, Tailwind `dark:` utilities, and native `color-scheme`; preserve the root font classes. A theme controller/toggle and preference persistence are not yet implemented. Reuse `shadow-card`, `shadow-popover`, and `shadow-glow` instead of introducing independent effects.
+Light is the `:root` fallback. The public UI follows system preference until the user toggles light/dark, then persists that explicit choice in `localStorage` under `sceenyk-theme`. Apply `.dark` on `<html>` before first paint, preserving font classes. Follow system changes when there is no saved choice and synchronize changes across tabs. Storage restrictions must not prevent the toggle from working. Reuse `shadow-card`, `shadow-popover`, and `shadow-glow` instead of introducing independent effects.
 
 ## Colors
 
@@ -119,13 +119,13 @@ The size utilities carry line heights, not weights; apply weight classes explici
 - Build with React/Next.js, TypeScript, Tailwind CSS, and shadcn/ui. Tailwind 4 is CSS-first: `@theme inline` and the dark variant live in `app/globals.css`; there is no separate Tailwind config. CSS is processed by `@tailwindcss/turbopack` in `next.config.ts`.
 - shadcn is the base library: `components.json` uses `base-nova`, Base UI primitives, CSS variables, Lucide, and `@/components/ui`. Its `baseColor: neutral` is generator metadata; Sceenyk tokens own the runtime appearance.
 - Reuse existing components first. Normally add common primitives through `npx shadcn add <component>`, then review their token use and density. Do not reinitialize the theme or replace the customized stylesheet.
-- Currently `components/ui/` contains only `Button`. It supports default, secondary, outline, ghost, destructive, and link variants; primary uses `.sceenyk-action`. Heights are xs 28, sm 36, default 44, lg 48px, with matching icon-button sizes.
+- `components/ui/` contains `Button` and `Dialog`. Button supports default, secondary, outline, ghost, destructive, and link variants; primary uses `.sceenyk-action`. Heights are xs 28, sm 36, default 44, lg 48px, with matching icon-button sizes. Dialog uses the semantic overlay/popover, viewport-safe scrolling, 24px padding, and 44px close control with reduced-motion support.
 - Reuse `.sceenyk-card`, `.sceenyk-feature-card`, `.sceenyk-field`, `.sceenyk-upload`, `.sceenyk-container`, and `.sceenyk-interactive`. Classes supply styling; use real links/buttons/inputs and preserve primitive behavior.
 - Customize through shared tokens, variants, and classes. Preserve accessible labels, keyboard navigation, focus/disabled states, responsive behavior, and dialog focus management. Inspect the relevant installed Next.js guide before writing application code, as required by `AGENTS.md`.
 
 ## Layout Patterns
 
-These are the required patterns for new screens; the current app is a starter with a styling foundation. The workspace, navigation, and Clerk integration are still to be implemented.
+The public landing page and shared navigation/footer implement these patterns. Workspace screens and Clerk integration remain unimplemented. Public navigation collapses below 1024px into a disclosure with Escape dismissal; its links close the menu. Account CTAs share an accessible preview notice until centered Clerk modals are configured. Concept artwork is illustrative and has no fake video playback or generation progress.
 
 - **Public pages:** top navigation with responsive mobile navigation; keep public exploration available without authentication.
 - **App workspace:** persistent sidebar on desktop and an accessible mobile drawer on smaller screens. Use sidebar tokens and clearly mark the active destination.

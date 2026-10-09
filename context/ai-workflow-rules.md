@@ -12,8 +12,8 @@ Current context and implementation baseline:
 - [UI-context.md](ui-context.md) defines UI construction rules; its current on-disk filename is `ui-context.md`.
 - [design-system.md](design-system.md) defines visual tokens, component appearance, and reference uncertainty.
 - [code-standards.md](code-standards.md) defines coding conventions and required implementation boundaries for existing and future concerns.
-- [progress-tracker.md](progress-tracker.md) records verified implementation status, next units, and open questions. `architecture.md` does not yet exist; treat it as a documentation gap, not a completed deliverable.
-- The current codebase contains the Next.js/React/TypeScript starter, Tailwind 4, shadcn Base UI/Lucide setup, shared CSS tokens, and an existing Button. Clerk, Supabase, PayPal, AI providers, storage, and background-job integrations are planned, not installed or working features. Reinspect this baseline before relying on it in a future task.
+- [progress-tracker.md](progress-tracker.md) records verified implementation status, next units, and open questions. [architecture.md](architecture.md) records planned service boundaries and implemented UI contracts.
+- The current codebase contains the public landing page, shared navigation/footer, system/saved theme controls, Tailwind 4 tokens, shadcn/Base UI Button/Dialog, and Lucide. Clerk, Supabase, PayPal, AI providers, storage, and background-job integrations remain planned, not installed or working features. Reinspect this baseline before relying on it in a future task.
 
 Complete one working **vertical slice** at a time: a small feature that includes its UI, backend, and database behavior where required. For example: a user creates a project → it is saved to Supabase → it appears in My Projects → the user can reopen it. Do not combine project UI, marketplace schema, subscription billing, generation workers, and dashboard redesign in one unit.
 
@@ -103,7 +103,7 @@ These are required product boundaries; they do not imply that the integrations a
 | Authentication | Clerk owns user authentication and sessions. Sign-in/sign-up opens in centered modal/overlay experiences; public exploration remains available without authentication. |
 | Database | Supabase PostgreSQL stores application data and metadata, including projects, generations/jobs, balances, transactions, and payment records. |
 | UI | Next.js + React + TypeScript + Tailwind CSS + shadcn/ui, using shared Sceenyk tokens and Lucide icons. |
-| Payments | PayPal is the hackathon payment provider. Use authoritative server verification before granting purchased capacity; browser success callbacks alone cannot change balances. |
+| Payments | PayPal is the hackathon payment provider. Development/testing uses Sandbox only, never Live or real-money transactions. Keep environment/credential selection behind the future service. Use authoritative server verification before granting purchased capacity; browser success callbacks alone cannot change balances. |
 | Media | Large videos, images, audio, and generated assets belong in object storage; PostgreSQL holds their references and metadata. No storage provider has been selected. |
 | AI | Access video, language-model, and voice providers through shared Sceenyk service/provider layers where practical. Do not invent provider/model-selection policies. |
 | Background processing | Long production work runs as jobs/workflows rather than one long browser request. The background-job provider is not selected. |

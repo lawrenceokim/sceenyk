@@ -36,6 +36,7 @@
   --color-brand-blue: var(--brand-blue);
   --color-brand-violet: var(--brand-violet);
   --color-brand-cyan: var(--brand-cyan);
+  --color-neutral-950: var(--neutral-950);
   --color-success: var(--success);
   --color-success-foreground: var(--success-foreground);
   --color-success-surface: var(--success-surface);
@@ -230,6 +231,8 @@
   }
   html {
     @apply font-sans;
+    scroll-behavior: smooth;
+    scroll-padding-top: 7rem;
   }
   ::selection {
     background: var(--accent);
@@ -239,6 +242,75 @@
 
 /* Opt-in composition styles: no blanket overrides of shadcn internals. */
 @layer components {
+  .landing-section {
+    padding-block: clamp(var(--space-12), 7vw, 6rem);
+  }
+  .nav-link {
+    display: inline-flex;
+    min-height: var(--control-height);
+    align-items: center;
+    gap: var(--space-1);
+    color: var(--muted-foreground);
+    font-size: var(--text-body-sm);
+    font-weight: 500;
+    transition: color var(--duration-fast);
+  }
+  .nav-link:hover {
+    color: var(--link);
+  }
+  .nav-link:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 4px;
+  }
+  .eyebrow {
+    color: var(--link);
+    font-size: var(--text-caption);
+    font-weight: 600;
+    letter-spacing: 0.12em;
+  }
+  .hero-section {
+    background:
+      radial-gradient(
+        ellipse at 85% 35%,
+        color-mix(in srgb, var(--brand-purple) 11%, transparent),
+        transparent 55%
+      ),
+      var(--background);
+  }
+  .scene-board {
+    box-shadow: var(--elevation-popover), var(--glow-primary);
+  }
+  .art-caption {
+    background: linear-gradient(transparent, var(--neutral-950));
+  }
+  .final-cta {
+    background:
+      radial-gradient(
+        ellipse at 0% 100%,
+        color-mix(in srgb, var(--brand-blue) 12%, transparent),
+        transparent 55%
+      ),
+      radial-gradient(
+        ellipse at 100% 0%,
+        color-mix(in srgb, var(--brand-purple) 15%, transparent),
+        transparent 55%
+      ),
+      var(--card);
+  }
+  .skip-link {
+    position: fixed;
+    top: var(--space-3);
+    left: var(--space-4);
+    z-index: 60;
+    padding: var(--space-3) var(--space-4);
+    border-radius: var(--radius-lg);
+    background: var(--primary);
+    color: var(--primary-foreground);
+    transform: translateY(-200%);
+  }
+  .skip-link:focus {
+    transform: translateY(0);
+  }
   .sceenyk-container {
     width: 100%;
     max-width: var(--content-width);
@@ -348,6 +420,8 @@
     }
   }
   @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    .nav-link { transition: none; }
     .sceenyk-action,
     .sceenyk-field,
     .sceenyk-upload,

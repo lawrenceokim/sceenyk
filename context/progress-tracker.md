@@ -2,155 +2,137 @@
 
 Update this file after every meaningful implementation change.
 
-Last repository audit: **2026-10-08 (Africa/Lagos)**. Read [overview.md](overview.md), [UI-context.md](ui-context.md), [design-system.md](design-system.md), and [AI Workflow Rules.md](ai-workflow-rules.md) alongside this tracker. Their current filenames are lowercase/hyphenated where shown in the links.
+Last implementation and verification: **2026-10-09 (Africa/Lagos)**. Read [overview.md](overview.md), [architecture.md](architecture.md), [ui-context.md](ui-context.md), [design-system.md](design-system.md), [code-standards.md](code-standards.md), and [ai-workflow-rules.md](ai-workflow-rules.md).
 
-Status labels: **Complete** = verified within the stated scope; **In Progress** = implementation exists but required work remains; **Blocked** = a specific obstacle prevents completion; **Planned** = an intended future unit; **Not Started** = no implementation exists. A specified provider or feature is not an implemented integration.
+**Complete** means verified within the stated scope. **In Progress** means required work remains. **Blocked** means a specific obstacle prevents completion. **Planned** and **Not Started** do not imply implemented integrations. UI previews do not complete backend features.
 
 ## Current Phase
 
-**Project Foundation — In Progress.** The web scaffold, styling foundation, and context documents exist. The product remains a starter page, with no authentication, database, projects, payments, uploads, or generation pipeline.
+**Public UI foundation — Complete within this unit.** The starter homepage has been replaced with Sceenyk's landing page and shared navigation, footer, branding, and theme experience. The broader product remains in Project Foundation; account/workspace and production workflows are not implemented.
 
 | Phase | Status | Repository evidence |
 | --- | --- | --- |
-| Project Foundation | In Progress | Tooling, tokens, Button, and context documents exist; architecture documentation and product UI adoption remain. |
-| Authentication | Not Started | No Clerk dependency, provider, session enforcement, or modal flow. |
-| Database & User Sync | Not Started | No Supabase dependency/client, schema, migrations, or Clerk-to-database synchronization. |
-| Projects | Not Started | No project routes, persistence, or project management UI. |
-| Media Uploads | Not Started | Upload styling exists; no file-upload implementation or storage integration. |
-| Credits & Usage | Not Started | Free allowance and credits are specified, but no balances, ledger, or enforcement exist. |
-| Payments | Not Started | PayPal is specified; no checkout or verification implementation. |
-| AI Production Pipeline | Not Started | No analysis, planning, provider integration, or persistent generation jobs. |
-| Video Rendering | Not Started | No assembly, rendering, final asset delivery, or player implementation. |
-| Marketplace | Planned | Longer-term product direction; full creator economy is outside the initial MVP. |
-| Testing & Hackathon Polish | Not Started | Static tooling works; no committed automated test suite or complete MVP flow exists. |
+| Project Foundation | In Progress | Tooling, design tokens, context documents, public UI, and theme experience exist. Workspace screens and service setup remain. |
+| Global UI & Public Landing Page | Complete | All requested landing sections, reusable compositions, responsive navigation, and both themes are implemented and browser-checked. |
+| Authentication | Not Started | No Clerk dependency/provider/session integration or live sign-in. Account actions open an informational preview dialog. |
+| Database & User Sync | Not Started | No Supabase client, schema, migrations, or Clerk-to-database synchronization. |
+| Projects | Not Started | Concept media cards only; no project creation, saved data, or management UI. |
+| Media Uploads | Not Started | No file input, upload implementation, or storage integration. |
+| Credits & Usage | Not Started | Free allowance appears in pricing copy; no balance, ledger, or eligibility enforcement. |
+| Payments | Not Started | No checkout, PayPal SDK, credentials, server verification, or real-money transactions. Future development/testing is Sandbox only. |
+| AI Production Pipeline | Not Started | No APIs, providers, analysis, generation, or job execution. |
+| Video Rendering | Not Started | Artwork is original static vector illustration; no generated videos, rendering, or playback. |
+| Marketplace | Planned | No marketplace UI/backend or creator economy implementation. |
+| Testing & Hackathon Polish | Not Started | Public-unit verification passed; complete MVP integration testing remains future work. |
 
 ## Current Goal
 
-Prepare the verified foundation for the first small **Clerk modal-authentication** implementation unit. Coding standards are now documented; no application feature is currently being implemented or claimed as underway.
+The authorized **global foundation and public landing-page UI unit is complete**. Do not move into a new unit automatically. Recommended next UI unit: a focused **creation workspace preview** with creation-type selection, prompt entry, relevant local settings, and honest empty/unavailable result states. Keep submission, media uploads, credits, payments, and AI execution out of that UI unit.
 
 ## Completed
 
-| Work | Status | What was verified |
+| Work | Status | Verified scope |
 | --- | --- | --- |
-| Next.js web scaffold | Complete | Next.js 16.4.0, React/React DOM 19.3.0 installed; root layout and `/` starter route build and serve. Production HTTP check returned 200 for `/`. |
-| TypeScript and lint configuration | Complete | Strict TypeScript configuration and `@/*` alias exist; `npx tsc --noEmit` and `npm run lint` passed during this audit. |
-| Tailwind 4 integration | Complete | Installed Tailwind 4.3.3 and `@tailwindcss/turbopack`; CSS-first `@theme inline` configuration in `app/globals.css`, imported by `app/layout.tsx`, compiles in the production build. |
-| shadcn/UI foundation | Complete | `components.json` uses `base-nova`, CSS variables, Base UI, and Lucide; `components/ui/button.tsx` provides themed variants, sizing, focus/invalid/disabled styles, and reduced-motion handling. This completes the existing foundation component, not all reference components. |
-| Shared visual tokens and styles | Complete | Light `:root` and `.dark` tokens, semantic colors, gradients, spacing, radii, shadows/glows, and shared container/card/field/upload/action classes exist and compile. Classes alone do not implement uploads or other workflows. |
-| Typography setup | Complete | Inter and Geist Mono are configured through `next/font/google`; font aliases are mapped in CSS. The network-enabled production build successfully resolved both fonts. |
-| Design references and visual documentation | Complete | Both light/dark PNGs exist in `designs/`; `design-system.md` describes the same visual system, component groups, implemented tokens, and uncertain reference values. |
-| Product, UI, and agent context | Complete | `overview.md`, `ui-context.md`, and `ai-workflow-rules.md` exist and define scope, construction rules, and incremental workflow. This records documentation completion, not completion of the features they describe. |
-| Living progress tracker | Complete | This source-audited tracker records implementation status, remaining decisions, ordered units, and verification evidence. Workflow documentation was synchronized with its creation. |
-| Coding standards | Complete | `code-standards.md` documents verified root-level conventions, shared UI tokens, server/data/provider/job boundaries, security, accounting, dependencies, and verification rules. Structure, local links, source claims, whitespace, and documentation-only scope were checked; future integrations remain Not Started. |
+| Web/tooling foundation | Complete | Next.js 16.4, React 19.3, strict TypeScript, Tailwind 4, npm/lockfile, ESLint, and root-level alias retained. |
+| Shared design system | Complete | Existing semantic palette, typography, spacing, radii, and effects preserved; only an alias for the existing darkest-neutral token added. |
+| Public shared shell | Complete | Sticky desktop navigation, mobile disclosure below 1024px, brand link, working section links, skip link, shared container/main/footer. |
+| Theme experience | Complete | Before-paint system/saved preference, explicit toggle, localStorage persistence, system change handling, and actual cross-tab synchronization. Storage-restricted in-page switching works. |
+| Public landing content | Complete | Hero, six creation categories, three how-it-works steps, connected-production value section, three concept-media cards, free/paid pricing preview, final CTA, and footer. |
+| Reusable UI | Complete | Existing Button retained; shadcn/Base UI Dialog installed and adapted to tokens, touch targets, viewport-safe scrolling, and reduced motion. Reusable brand, theme, account entry, art, category, step, media, and pricing components extracted without provider scaffolding. |
+| Account-entry readiness | Complete as UI boundary only | Sign In/Get Started/Create actions share `AccountAction`; an accessible informational notice opens. No credential fields, fake session, alternative auth system, `/signin`, or `/signup` page. Replace this boundary with Clerk centered modal triggers in the auth unit. |
+| Preview branding/metadata | Complete as preview | Sceenyk title/description and star/circle SVG icon replace starter branding; starter favicon removed. Final production logo approval remains open. |
+| Context synchronization | Complete | AGENTS overview path corrected; architecture existence, public UI/theme contracts, Sandbox-only payment rule, design composition, and workflow/standards status synchronized. |
 
-Current validation: `npm ls --depth=0`, lint, TypeScript, and a network-enabled production build passed. The build lists `/` and the framework `_not-found` fallback. Production HTTP checks returned 404 for `/signin`, `/signup`, and `/dashboard`, consistent with the absence of those application routes.
+## Verification
 
-The design-system document records earlier isolated browser checks for shared styles at desktop/mobile widths, focus, contrast, disabled appearance, and reduced motion. Those are historical component-fixture checks; this audit did not repeat them or validate a complete product UI.
+- `npm run lint` — passed after fixing footer navigation to use Next.js Link.
+- `npx tsc --noEmit` — passed against the final production build types.
+- `npm run build` — passed; `/` and framework `_not-found` are statically prerendered. No API or auth routes added.
+- Production HTTP smoke checks: `/` returns 200; `/signin` and `/signup` return 404.
+- **30 headless Chrome checks passed** against the final `next start` build: both themes at **1440, 1024, 768, 390, and 320px**; no page-level horizontal overflow; desktop/mobile navigation visibility matches its breakpoint.
+- Verified mobile menu opening, Escape dismissal/focus return, section-link navigation/menu collapse, and viewport-safe centered preview dialog with associated title, initial focus, keyboard focus trapping, Escape dismissal, and trigger focus return.
+- Verified saved light/dark across reloads, system changes without a saved choice, saved preference overriding system changes, real browser-tab synchronization, and working toggle with blocked storage.
+- Verified reduced-motion scrolling/button behavior and no browser exceptions or console errors during these flows. Original scene concepts and light/dark screenshots reviewed visually.
+- No live authentication, generation, database, upload, credit, payment, or rendering checks apply; these integrations do not exist. Screen-reader/device-matrix audits and a persistent automated test suite remain future work.
 
-## In Progress
+The browser harness/screenshots are temporary local verification artifacts, not app features or a committed test framework. No test dependency was added. The existing parent-directory lockfile warning appears during build/start; compilation and serving succeed. This run's font downloads succeeded without changing font configuration; a fully offline clean build remains unverified.
 
-| Area | Status | Remaining work |
-| --- | --- | --- |
-| Foundation/UI adoption | In Progress | The home page, metadata, favicon, and public SVGs still use the Next.js starter identity. Sceenyk navigation, workspace, creation/project screens, pricing, and media components are not implemented. |
-| Theme experience | In Progress | The CSS switches cleanly with a root `.dark` class, but no user-facing toggle, initial preference controller, or persistence exists. Confirm initial/system preference behavior before implementing the controller. |
-| Foundation documentation | In Progress | `code-standards.md` exists; `architecture.md` is absent. Establish relevant contracts when scoping the next implementation unit; do not silently invent provider architecture. |
-| Builds without font-download access | Blocked | A restricted-network build failed fetching Inter and Geist Mono from Google Fonts. The same build passed with network access; application code was not changed. Offline/restricted build support is not verified. |
+## Files Changed
 
-No Clerk, Supabase, payments, or AI implementation is partially complete. They remain Not Started. No application feature is currently blocked by an observed code failure; external-service credentials/configuration are prerequisites for their future units.
+| Area | Files |
+| --- | --- |
+| Routes/layout/styles | `app/page.tsx`, `app/layout.tsx`, `app/globals.css`; removed starter `app/favicon.ico` |
+| Shared composition | `components/brand.tsx`, `components/navbar.tsx`, `components/footer.tsx`, `components/theme-toggle.tsx`, `components/account-action.tsx`, `components/scene-artwork.tsx` |
+| Landing composition | `components/landing/hero.tsx`, `components/landing/landing-sections.tsx` |
+| Generic primitive | `components/ui/dialog.tsx`; existing `button.tsx` preserved |
+| Initialization/assets | `lib/theme.ts`, `public/brand-mark.svg` |
+| Instructions/specifications | `AGENTS.md`, `context/architecture.md`, `context/ui-context.md`, `context/design-system.md`, `context/code-standards.md`, `context/ai-workflow-rules.md`, this tracker |
+
+No dependency versions, lockfile, Next.js settings, database schema, migrations, secrets, or external accounts were changed.
+
+## Still Incomplete
+
+- Clerk configuration and real centered sign-in/sign-up are absent. Preview notices are intentionally informational and do not authenticate.
+- Creation studio, account workspace, projects, uploads, AI jobs, rendering, credits, marketplace, and checkout remain future units.
+- Paid prices, credit bundles/tariffs, and subscriptions are not defined. Pricing cards show no invented rates or purchasable actions.
+- Artwork represents illustrative ideas, not generated output or playable video. No fabricated processing state or playback controls are shown.
+- Final logo artwork remains unapproved; the wordmark/mark are preview interpretations of the references.
 
 ## Next Up
 
-Implement one requested unit at a time. The next application unit is **Clerk modal authentication**. Before editing, specify its acceptance criteria and record its auth boundary in the appropriate context document. Do not bundle database setup or generation into that unit.
+Build one explicitly requested unit at a time.
 
-| Order | Planned unit | Minimum verification outcome |
+| Order | Planned unit | Minimum outcome / prerequisites |
 | --- | --- | --- |
-| 1 | Clerk modal authentication | Public browsing remains accessible; centered sign-in/sign-up works without dedicated auth pages; sessions survive reload; a scoped account-dependent operation is rejected server-side when signed out. Requires a configured Clerk development instance and keys. |
-| 2 | Supabase connection and minimal application schema | A documented connection/access strategy and new migration support a verified server-side application data operation. Do not add a competing auth system. |
-| 3 | Clerk-to-database user synchronization | A Clerk identity maps to one application user; repeated synchronization does not duplicate the user. |
-| 4 | Theme controller | Approved initial preference and toggle behavior work without losing state or flashing the wrong theme; desktop/mobile checks cover both modes. |
-| 5 | App/dashboard shell | Public navigation and account workspace use existing tokens; persistent desktop sidebar and accessible mobile drawer work. |
-| 6 | Project creation vertical slice | Create → save to Supabase → list in My Projects → reopen; server-side ownership checks reject access by another account. |
-| 7 | Media upload vertical slice | A permitted upload reaches the chosen object store, with project-linked metadata, usable progress/errors, and server-side access checks. |
-| 8 | Persistent generation jobs | A request creates an owned job with queued/processing/completed/failed state, recoverable progress, and an agreed background-job boundary. A test job is not yet a working AI pipeline. |
-| 9 | Free-generation and credit accounting | Enforce two free short generations and the approved credit costs server-side; verify concurrent requests, transaction history, and failure compensation. Gate paid AI work before enabling it. |
-| 10 | PayPal credit purchases | Verified successful payment grants credits once; duplicate callbacks/events and unsuccessful payments do not grant duplicate capacity. Keep subscriptions/payouts separate. |
-| 11 | AI input analysis | The selected provider produces a validated analysis result for the first supported creation path, with persistent failure state. |
-| 12 | Production planning | Analysis and prompt produce the agreed scene/script plan; output and ownership contracts are documented. |
-| 13 | First AI video provider | One bounded generation/transformation path produces real scene assets behind the shared service interface. |
-| 14 | Voice generation | The agreed voice provider produces audio from the script when the supported creation path needs it. |
-| 15 | Video assembly | Scene/audio/caption/effect inputs form a documented assembly output for the selected path. |
-| 16 | Rendering and final delivery | Rendered video is stored with persistent result references and can be previewed/downloaded from its project. |
-| 17 | Hackathon flow testing and polish | Prove the focused MVP from public discovery through generation, usage accounting, result delivery, and paid capacity; verify both themes, mobile/desktop, accessibility, and failure cases. |
-| Later | Creator templates/marketplace | Begin only after the core MVP and marketplace policy are defined; the full publishing/purchase/payout economy remains deferred. |
-
-Testing, appropriate error states, and documentation updates belong to every unit, not just the final polish step. Missing architecture contracts are scoped documentation prerequisites; undecided providers do not justify scaffolding several integrations at once.
+| 1 | Creation workspace preview — UI only | Choose a creation type, edit a prompt/local options, and see honest empty/unavailable output states. Reuse existing tokens and account-entry boundary; no AI requests, uploads, or submission backend. |
+| 2 | Clerk centered modal authentication | Configured Clerk development instance/keys; real centered sign-in/sign-up, session persistence, public browsing, and server rejection for a scoped protected operation. No dedicated auth pages. |
+| 3 | Dashboard shell — UI only | Desktop sidebar/mobile drawer and clear project empty states; no fabricated saved projects or credit balances. |
+| 4 | Supabase minimal schema and identity sync | Decide access/RLS strategy, add only needed migrations, verify owned data access and idempotent Clerk identity synchronization. |
+| 5 | Project persistence | Create/save/list/reopen a project; cross-account access rejected server-side. |
+| 6 | Media upload | Authorized direct object-store upload with project metadata, validation, progress, failure handling, and access enforcement. |
+| 7 | Persistent generation/job boundary | Owned persistent state, durable dispatch, recovery, and a defined first production path. A test job is not real AI creation. |
+| 8 | Free allowance and credits | Server-enforced two free short generations, approved tariffs, race-safe reservations/settlement/restoration, and ledger history. |
+| 9 | PayPal Sandbox credit purchases | Sandbox only; verified successful capture grants credits once, duplicates/failures do not. Keep environment/credential selection behind a payment service for a later intentional production switch. |
+| 10 | Production stages, separately scoped | Analysis → planning → first video provider → voice where needed → assembly → rendering/storage/delivery. Each unit verifies real stage outputs, ownership, and failures. |
+| 11 | Complete MVP polish | Prove the complete public-to-result and Sandbox free-to-paid flow, responsive themes, accessibility, and recovery. |
+| Later | Creator marketplace/subscriptions/payouts | Defined economics and core MVP first; not part of this UI phase. |
 
 ## Open Questions
 
-Resolve each question before implementing its dependent behavior. Move resolved major decisions to Architecture Decisions and remove them here.
+Resolve before dependent implementation; prefer the planned directions in architecture.md without treating them as installed services.
 
-| Question | Blocks/affects |
+| Question | Affected unit |
 | --- | --- |
-| Which content category and concrete prompt-to-video use case will prove the first MVP? | Production planning, provider selection, generation/rendering acceptance. |
-| Which AI video, analysis/language-model, and voice providers/models are used first, and when is voice required? | AI/voice units and their service contracts. |
-| Which object-storage provider, maximum upload sizes, accepted formats, and media retention/deletion rules apply? | Uploads and final delivery. |
-| Which background-job/workflow provider and deployment/runtime will host long generation/rendering work? | Persistent execution, recovery, and production deployment. |
-| How will Clerk identities map to Supabase access enforcement and database ownership policies? | Database setup, user sync, and private project access. |
-| What are the paid credit bundles, prices/currency, per-generation tariffs, and eventual subscription limits? | Credits and payments. Reference PNG prices are illustrative. |
-| How is capacity reserved for concurrent jobs, settled after completion, and restored after provider/render failures? What refund policy applies? | Credit accounting and safe failure handling. |
-| What exact duration/options qualify for a free short generation? | Eligibility checks. Two free generations of about 10 seconds each are already decided; do not reopen the count without a scope change. |
-| What content moderation and AI model-selection rules apply? | Real provider execution and generation policy. |
-| Should initial theme follow light mode, system preference, or a saved choice, and how is preference persisted? | Theme controller. Current CSS defaults to light. |
-| Which production logo assets and authoritative readings resolve ambiguous PNG palette labels? | Final branding/design fidelity; current CSS palette remains authoritative for implementation. |
-| What marketplace fees and creator revenue/payout rules apply? | Later marketplace economy; not a prerequisite for the initial credit-purchase MVP. |
-
-Credentials and external account availability are setup prerequisites, not undecided provider choices for Clerk, Supabase, or PayPal. Their services are already specified; configuration outside this repository was not verified.
+| Which creation category and concrete use case proves the first MVP? | Actual creation form contract and production pipeline. |
+| Which exact analysis/video/voice models and stage contracts are adopted? | Gemini/Runway/ElevenLabs are preferred planned directions, not final configured integrations. |
+| What storage limits, formats, CORS, retention, and media-access policies apply? | R2 is preferred; real uploads and delivery. |
+| What workflow-to-worker dispatch, authentication, deployment resources, and recovery contracts apply? | Inngest and Render/Docker are preferred; actual job implementation. |
+| How do Clerk identities map to Supabase ownership/RLS and the data-access layer? | Database, user synchronization, and projects. |
+| What paid bundles, prices/currency, credit tariffs, and subscription limits are approved? | Pricing configuration, credits, and payments. PNG rates are illustrative. |
+| How are concurrent capacity reservations, settlements, failures, and refunds handled? | Accounting and paid provider execution. |
+| Which exact duration/options qualify for the two free short generations? | Server eligibility. The count of two and approximate 10-second duration are already specified. |
+| What moderation and model-fallback rules apply? | Actual AI execution. |
+| Which final production logo assets and ambiguous PNG labels are authoritative? | Final branding. Current tokens remain authoritative for UI. |
+| What marketplace fees and creator earnings/payout rules apply? | Deferred creator economy. |
 
 ## Architecture Decisions
 
-These decisions are confirmed by source or the existing product/workflow specifications. The status column describes implementation, not whether the product choice has been made.
-
-| Decision | Reason | Implementation status |
-| --- | --- | --- |
-| Next.js + React + TypeScript web app | Typed application foundation for the specified browser-based creation experience. | Complete scaffold; product routes remain Not Started. |
-| Tailwind 4 + shadcn/Base UI + Lucide | Reusable primitives and shared CSS tokens keep UI behavior and visual styling consistent. | Complete foundation; most primitives/screens are not installed. |
-| One light/dark Sceenyk design system | Preserve the same product hierarchy while adapting surfaces and contrast. | Complete CSS tokens; theme controller Not Started. |
-| Clerk authentication through centered modals | Provide account access at the point of need while preserving public browsing and avoiding custom auth pages. | Not Started. |
-| Supabase PostgreSQL for application data | Persist users, projects, generations/jobs, balances, transactions, and related metadata. | Not Started. |
-| Large media in object storage, references in PostgreSQL | Keep video/image/audio blobs outside relational application records. | Not Started; provider unresolved. |
-| PayPal for hackathon payments | Use the payment provider named by the MVP definition for the paid credit path. | Not Started. |
-| External AI behind shared service/provider boundaries | Keep provider-specific code contained and providers replaceable. | Not Started; actual providers unresolved. |
-| Background jobs for long AI/video work | Avoid holding browser requests open and support persistent progress/failure recovery. | Not Started; execution provider unresolved. |
-| Server-authoritative credits, ownership, and permissions with ledger history | Prevent client-controlled entitlements and preserve auditable balance changes. | Not Started. |
-| Persistent generation state | Reopening a project must recover job status, failures, and final asset references. | Not Started. |
-| Two free short generations per new user | Prove the specified free-to-paid experience before expanding monetization. | Product decision confirmed; enforcement Not Started. |
-| Incremental vertical slices | Verify complete behavior and prevent unrelated features from accumulating partial implementations. | Workflow documented; apply to upcoming units. |
+- Keep one root-level Next.js/Tailwind/shadcn/Base UI design system; landing content stays server-composed/static and browser interactions stay in small client boundaries.
+- Use the existing token palette in both themes. Default to system preference with a light CSS fallback; explicit choice persists under `sceenyk-theme`, is applied before paint, and synchronizes across tabs.
+- Use Clerk centered modals as the future identity source. The shared account-entry notice is a temporary presentation boundary and has no authentication behavior.
+- Public pricing and media concepts are explicit UI previews; they do not establish billing configuration, generated content, or backend capacity.
+- All payment development/testing uses **PayPal Sandbox only**. No Live credentials, Live checkout, or real-money transactions. Eventual production environment selection belongs behind the payment service and is not implemented here.
+- Preserve planned service boundaries: Supabase for structured data, object storage for media, background execution for long AI/rendering work, and server-authoritative ownership/credits with ledger-backed idempotency.
 
 ## Session Notes
 
-- **Last work:** 2026-10-08 source/configuration/context inspection and coding-standards documentation. Only context documentation changed; no new application features were implemented.
-- **Changed files:** `context/code-standards.md` added; `context/ai-workflow-rules.md` and this tracker synchronized to remove the obsolete standards-document gap.
-- **Current application:** only the authored `/` starter page, root layout, global stylesheet, favicon, one Button, and `lib/utils.ts`; no API routes, proxy/middleware, database migrations, schema, services, or workers. Framework `_not-found` is generated fallback behavior.
-- **Latest checks:** standards structure, local links, source consistency, whitespace, and authorized file scope checked. No application lint/build/runtime checks were repeated for this documentation-only change. Earlier foundation audit: dependency inventory, lint, TypeScript, and network-enabled production build passed; production smoke checks returned `/` 200 and `/signin`, `/signup`, `/dashboard` 404. Its temporary server was stopped. No live auth/database/payment/generation flow exists to test.
-- **Known limitations:** no persistent automated test suite; no browser/product-flow validation in this audit. Restricted builds cannot currently fetch Google Fonts. Build/start warn about a parent-directory lockfile outside this repository; no config workaround was added. Dependency inventory also reports extraneous platform/WASM packages; no dependency cleanup was performed.
-- **Migrations:** none exist, so none are waiting to run. Future schema work must add migrations and record application status.
-- **Environment:** no `.env*` files or `.env.example` exist, and application code has no environment-variable reads. No Clerk/Supabase/PayPal-prefixed configuration was found in the inspected shell environment. `.gitignore` excludes `.env*`; never record secret values here.
-- **Services/configuration still needed:** Clerk development instance and client/server credentials first; Supabase project/access configuration next; PayPal account/credentials and verification configuration during its unit. Storage, AI, voice, and background-job credentials depend on unresolved provider choices. Document exact variable names when the corresponding integration is specified; none are currently configured by this application.
-- **Documentation gaps:** `architecture.md` remains absent. `code-standards.md` now exists. `AGENTS.md` references `context/project-overview.md`, but the existing product document is `context/overview.md`; resolve that reference before the next implementation unit. Existing filenames are `ui-context.md` and `ai-workflow-rules.md`; use their actual paths/casing when linking.
-- **Git state:** `.gitignore` has a pre-existing modification; application/context/config files are largely untracked. A concurrent change to `AGENTS.md` was observed and preserved. This audit did not edit that file, commit, or reset anything.
-- **Resume:** read `AGENTS.md` and the relevant installed Next.js guides, then scope the first Clerk modal-authentication unit with its required configuration and server-side acceptance check. Keep Supabase and generation out of that unit.
+- **Last work:** first real public UI unit, 2026-10-09. No follow-on unit started.
+- **Initial worktree:** clean. No user changes were reset or committed.
+- **Source inspection:** read AGENTS and all required context in order using existing `overview.md` in place of its missing referenced filename; inspected both PNGs and installed Next.js page/layout/client/metadata/theme-flash guidance.
+- **Migrations/environment:** none added; no credentials or environment variables required for this unit. Clerk remains unconfigured in source. Service credentials and server contracts must be established within their own units.
+- **Verification tooling:** temporary local production server (stopped after checks) and headless Chrome harness; no new package dependency or committed test runner.
+- **Resume:** request the next small UI unit above, or separately configure Clerk development authentication. Do not automatically expand into database, generation, billing, uploads, or marketplace implementation.
 
 ## Update Rules
 
-Every AI coding agent working on Sceenyk must update this file after a meaningful implementation change: completing a feature, starting a major feature, changing architecture/schema/providers/authentication/payments/credits/generation workflow, discovering an important blocker, or resolving an open question. Formatting-only changes, typos, and other trivial edits do not require a progress update.
-
-When moving a feature from In Progress to Completed:
-
-1. Verify its defined behavior and move it to Completed with evidence and scope limits.
-2. Update Current Goal.
-3. Reorder Next Up around the first unfinished unit.
-4. Remove resolved Open Questions.
-5. Record any major Architecture Decisions.
-6. Refresh Session Notes, including tests, incomplete work, migrations, and configuration needs.
-
-Track actual repository behavior, not the intended feature list. Do not mark installed dependencies, UI-only implementations, mock progress, or untested integrations as Complete. If verification is unavailable or fails, record the limitation and retain an appropriate incomplete/blocked status. Keep session notes concise and replace obsolete details rather than accumulating a permanent log.
+After each meaningful implementation unit: record actual behavior, changed files, validation evidence and limitations, incomplete work, migrations/configuration needs, resolved decisions, and the next bounded unit. Move work to Complete only after its scoped acceptance checks pass. UI-only work cannot complete a feature requiring backend enforcement. Keep context and source synchronized and distinguish preferred/installed/configured/verified integrations.

@@ -4,7 +4,7 @@ These rules apply to developers and AI coding agents building Sceenyk. Read [ove
 
 **Verified baseline (2026-10-08):** root-level Next.js 16.4.0 App Router, React 19.3.0, strict TypeScript, Tailwind 4, shadcn `base-nova`/Base UI, Lucide, shared theme CSS, and one Button. Clerk, Supabase PostgreSQL, and PayPal are specified product choices, but are not installed or integrated. AI, voice, object-storage, and worker providers remain undecided. There are no application API routes, schema/migrations, services, workers, or configured test runner. Standards below govern those concerns when introduced; they do not claim existing implementation.
 
-`architecture.md` is absent. `AGENTS.md` references `context/project-overview.md`, while the actual product document is `context/overview.md`. Report and resolve that reference before dependent implementation; do not duplicate the overview or invent architecture to fill the gap.
+Read [architecture.md](architecture.md) for planned provider boundaries and implemented UI contracts. `AGENTS.md` now references the actual product document, `context/overview.md`.
 
 ## General
 
@@ -51,8 +51,8 @@ These rules apply to developers and AI coding agents building Sceenyk. Read [ove
 - Tailwind 4 is CSS-first: use the existing `@theme inline`, utilities, and shared classes. No separate Tailwind config exists; do not introduce one or a competing palette/theme system without a documented need.
 - Use semantic pairs such as `bg-card text-card-foreground`, `text-muted-foreground`, `border-border`, and `ring-ring`. Never hardcode theme hex colors in components when a token applies.
 - Reuse the existing spacing, type, radius, shadow, gradient, and motion scales. Inter is the UI/display font; Geist Mono is for code/mono content. Purple leads, with supporting blue/cyan and selective gradients/glow.
-- Support light `:root` and `.dark` on `<html>` equally, preserving root font classes. The CSS supports themes; a toggle/controller/persistence is still unimplemented.
-- Use shadcn as the common-control base, normally adding needed primitives through `npx shadcn add <component>`. Review generated changes; do not reinitialize or overwrite Sceenyk's theme. Only Button currently exists.
+- Support light `:root` and `.dark` on `<html>` equally, preserving root font classes. Use the implemented system/saved preference controller and toggle; preserve before-paint initialization and `sceenyk-theme` persistence.
+- Use shadcn as the common-control base, normally adding needed primitives through `npx shadcn add <component>`. Review generated changes; do not reinitialize or overwrite Sceenyk's theme. Button and Dialog currently exist.
 - Prefer shared variants, composition, and `cn` over repeated large class strings or primitive rewrites. Reuse `@/lib/utils` for `cn`; the existing Button imports it directly from the installed `cn` package.
 - Build responsive layouts from the start. Maintain contrast, focus, keyboard behavior, touch targets, and disabled states. Keep animation purposeful and respect reduced motion; effects must not substitute for accessible state cues.
 
@@ -109,6 +109,8 @@ These rules apply to developers and AI coding agents building Sceenyk. Read [ove
 
 **PayPal is specified for hackathon payments; integration and accounting are Not Started.** Two free short generations of about 10 seconds each are specified; exact eligibility, tariffs, reservation/settlement, and failure-restoration rules need definition before implementation.
 
+Development and testing must use **PayPal Sandbox only**. Do not use Live credentials or real-money transactions. Keep eventual environment/credential selection behind the payment service; production switching is a later explicitly scoped task.
+
 - Never grant credits from a browser success callback alone. Verify payment results server-side and verify webhook authenticity before processing. Confirm the expected payment identity, owner, amount/currency, and final provider status.
 - Keep PayPal logic behind a payment service where practical. Credit/free-allowance changes happen on the server through transactional accounting with ledger/history recording the reason and related payment/job.
 - Payment finalization must be idempotent: repeating a payment/webhook request must not credit the user twice. Enforce this persistently, including concurrent callbacks/events; an in-memory flag is insufficient.
@@ -156,10 +158,11 @@ The repository uses root-level folders, **not `src/`**. Preserve that organizati
 
 | Existing location | Responsibility |
 | --- | --- |
-| `app/` | App Router pages/layouts, `globals.css`, and favicon; currently only the starter home page. Add route handlers/layout boundaries as needed. |
-| `components/ui/` | shadcn/Base UI primitives; currently `button.tsx` only. |
-| `lib/` | Shared utilities; currently `utils.ts` reexports `cn`. |
-| `public/` | Static assets; currently stock Next.js SVGs. |
+| `app/` | App Router landing page/shared layout, metadata, and `globals.css`. Add route handlers/layout boundaries as needed. |
+| `components/ui/` | shadcn/Base UI Button and Dialog. |
+| `components/` | Shared brand/navigation/footer/theme/account-preview/artwork; `landing/` holds public sections. |
+| `lib/` | `utils.ts` reexports `cn`; `theme.ts` owns initialization and the preference key. |
+| `public/` | Preview brand mark and unused stock SVGs. |
 | `context/` | Product, UI/design, workflow, progress, and coding specifications. |
 | `designs/` | Light/dark PNG visual references. |
 | Root configuration | `package.json`/lockfile, TypeScript, ESLint, Next.js, and `components.json`; no Tailwind config file. |

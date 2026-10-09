@@ -18,7 +18,7 @@ Evidence labels used throughout:
 - **Inferred**: implementation choices consistent with the references, including accessibility and responsive recommendations.
 - **Needs confirmation**: information that the PNGs do not resolve.
 
-**Exact repository baseline:** Next.js 16.4 App Router, Tailwind CSS 4 with `@tailwindcss/turbopack`, shadcn `base-nova`, Base UI primitives, Lucide icons, and CSS variables enabled in `components.json`. The global stylesheet is `app/globals.css`, imported by `app/layout.tsx`. The only installed local shadcn component is `components/ui/button.tsx`; the home route is the Next.js starter. No theme provider, preference persistence, or toggle UI exists. Preserve the CSS import order and existing Turbopack configuration.
+**Exact repository baseline (updated 2026-10-09):** Next.js 16.4 App Router, Tailwind CSS 4 with `@tailwindcss/turbopack`, shadcn `base-nova`, Base UI primitives, Lucide, and CSS variables enabled in `components.json`. `app/globals.css` is imported by the root layout. Button and Dialog are installed locally. The public home page, navigation/footer, and system/saved theme controller/toggle are implemented. Preserve the CSS import order and existing Turbopack configuration.
 
 ## Brand style and visual direction
 
@@ -291,7 +291,7 @@ Theme switching is CSS-ready:
 <html lang="en" className="...font variables... dark">
 ```
 
-At runtime, a future controller can add/remove `dark` on `document.documentElement`, preserving existing font/layout classes. `color-scheme` follows the selected theme so native controls agree. There is no automatic OS preference override, persistence, or toggle shipped with this foundation. Keep the theme class at the document root so inherited semantic aliases and portal content resolve consistently. If a future controller changes the root before hydration, follow the installed Next.js guidance to prevent hydration mismatches and theme flash.
+The implemented controller adds/removes `dark` on `document.documentElement`, preserving font/layout classes. `color-scheme` follows the selected theme. A static inline head script uses saved `sceenyk-theme` or system preference before first paint, following the installed Next.js guide. The toggle persists explicit light/dark choices; the controller follows system changes when no choice is saved and synchronizes browser tabs. Blocked storage does not prevent in-page switching. Keep the theme root on the document so portals resolve the same tokens.
 
 Shared compositions available now:
 
@@ -311,14 +311,15 @@ Other shared classes/utilities: `.sceenyk-feature-card`, `.sceenyk-interactive`,
 
 ## Implementation boundaries and remaining decisions
 
-Implemented: this document, themed semantic/brand/status tokens, typography utilities and Inter loading, spacing/radii/effects tokens, opt-in surface/field/upload/action styles, existing Button styling, and semantic colors on the existing starter route. Existing starter content, links, and navigation behavior are preserved.
+Implemented: shared tokens/type/spacing/radii/effects, Inter, opt-in surface/field/upload/action styles, Button/Dialog, public landing sections, responsive shared navigation/footer, and theme controls. See the progress tracker for current verification evidence.
+
+**Inferred public-page composition (2026-10-09):** sticky 80px navigation, links collapsing below 1024px into an accessible disclosure, a split scene-board hero, six static category cards, three explanatory steps, connected-production value section, three concept-media cards, free/paid pricing preview, and final CTA. Section spacing scales from 48px to 96px; desktop hero uses the existing 56px type token and mobile uses 40px. Local artwork is original vector illustration with purple/blue/cyan and existing dark neutral variables. It is labeled concept artwork and has no fake playback or generation state. The exported star/circle favicon uses fixed equivalents of the primary/white tokens because an external SVG cannot inherit page CSS variables. The wordmark and mark are preview branding, not final approved production artwork. Added `neutral-950` is only a Tailwind alias of the existing neutral variable; no palette values changed.
 
 Still to implement or confirm:
 
 - Production vector logo and any licensed General Sans font assets; Inter is the authorized board alternative currently used.
 - Ambiguous blue/neutral/dark-gradient source labels; a vector design source could settle exact values.
-- A theme toggle/controller with initial preference, persistence, and hydration strategy; CSS switching is already available.
-- Real screen layouts and the remaining 20 reference groups; their appearance is specified here, but they are not installed application features.
+- Workspace/creation/project screens and the remaining reference controls; appearance guidance does not establish functional backend features.
 - Final tab pattern, sidebar dimensions, mobile navigation, touch sizing, overlay behavior, and page breakpoints through real content/viewport review.
 - Busy/upload/progress/error behavior, payment and media integration, and accessible player controls; PNG examples do not establish those systems.
 - Screen-level keyboard, screen-reader, contrast, zoom, and responsive verification when the real components are built.

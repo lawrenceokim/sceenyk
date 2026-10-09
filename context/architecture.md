@@ -4,15 +4,19 @@ Technical boundaries for Sceenyk's prompt/media-to-finished-video platform. Read
 
 **Repository inspection: 2026-10-08.** **Confirmed** means present in current source/dependencies; it does not establish live external-service behavior. **Planned** means specified architecture or the preferred direction supplied for this document, with no integration yet. **Undecided** identifies details still requiring a decision. All service/data-flow diagrams and contracts below are planned unless explicitly identified as implemented.
 
-The application currently renders the Next.js starter home page with Sceenyk's styling foundation. No auth, database, storage, payments, application API, generation, or worker integration exists. This document defines their boundaries without creating those systems or selecting undocumented business rules.
+The first public UI unit replaces the starter with a server-composed landing page and shared navigation/footer. Interactive boundaries are limited to theme selection, mobile navigation, and a reusable account-entry preview notice. Clerk is not configured: the notice has no credential fields, session, or authentication behavior and will be replaced by centered Clerk modals in the authentication unit. Showcase artwork is illustrative, not generated video. No auth, database, storage, payments, application API, generation, or worker integration exists.
+
+**Public UI contract (2026-10-09):** use existing CSS tokens and shadcn/Base UI controls. Theme initialization runs before paint; saved `sceenyk-theme` overrides system preference, otherwise follow the system. Preserve root font classes, keep the landing page static, and tolerate unavailable browser storage. Public navigation uses working section anchors. Paid pricing remains unpriced preview copy until product rates are approved.
+
+**Development payment invariant:** all future payment development/testing uses PayPal Sandbox only, with no real-money transactions or Live credentials. Future payment configuration must separate environment/credentials behind the payment service so production can deliberately switch to Live later. This UI unit adds no payment code or credentials.
 
 ## Stack
 
 | Layer | Technology | Role |
 | --- | --- | --- |
-| Application — Confirmed foundation | Next.js 16.4.0 App Router, React/React DOM 19.3.0 | Server-rendered application, layouts, page composition, and future Route Handlers. Only the starter `/` page exists; public product pages, dashboard, and workflows are Planned. |
+| Application — Confirmed foundation | Next.js 16.4.0 App Router, React/React DOM 19.3.0 | Server-composed public `/` landing page and shared layout. Dashboard, creation workflows, and Route Handlers are Planned. |
 | Language/tooling — Confirmed | TypeScript 5.9.3, ESLint 9.39.5, `eslint-config-next` 16.4.0, npm | Strict typed code, linting, and lockfile-managed dependencies. No test framework/script is configured. |
-| UI — Confirmed foundation | Tailwind CSS 4.3.3, `@tailwindcss/turbopack` 4.3.3, shadcn 4.21.3 (`base-nova`), Base UI 1.8.0, Lucide React 1.52.0 | Responsive shared component system and semantic light/dark tokens. Only Button is installed locally; other controls/screens remain Planned. |
+| UI — Confirmed foundation | Tailwind CSS 4.3.3, `@tailwindcss/turbopack` 4.3.3, shadcn 4.21.3 (`base-nova`), Base UI 1.8.0, Lucide React 1.52.0 | Shared Button/Dialog, responsive public navigation/footer, landing compositions, original vector concept art, and persisted/system light/dark theme. Workspace controls/screens remain Planned. |
 | Typography — Confirmed | Inter and Geist Mono via `next/font/google` | UI/headline and mono fonts; global aliases live in CSS. |
 | Authentication — Planned | Clerk | Identity, sessions, sign-in/sign-up, and authentication state through centered modals/overlays. No dedicated `/signin` or `/signup` pages. |
 | Database — Planned | Supabase PostgreSQL | Structured application data, ownership, relationships, workflow state, entitlements, and financial metadata. No database access library/schema is configured. Drizzle is not installed or active; the access layer remains Undecided. |
@@ -40,15 +44,16 @@ The repository uses root-level folders, not `src/`. The `@/*` TypeScript alias r
 
 | Existing location | Current responsibility |
 | --- | --- |
-| `app/` | Root layout, starter home page, global CSS, and favicon. No authored API routes, loading/error files, or app workspace yet. |
-| `components/ui/` | The existing generic Base UI Button with Sceenyk variants. |
-| `lib/` | `utils.ts`, reexporting `cn`; no server services yet. |
-| `public/` | Stock Next.js SVGs. |
+| `app/` | Shared root layout, Sceenyk landing page, global CSS, and metadata. No authored API routes or app workspace yet. |
+| `components/ui/` | shadcn/Base UI Button and token-adapted Dialog. |
+| `components/` | Brand, navigation, footer, theme controls, account-entry preview, and concept artwork; `landing/` composes the public page. |
+| `lib/` | `utils.ts` reexports `cn`; `theme.ts` owns the preference key and static initialization script. No server services yet. |
+| `public/` | Sceenyk preview brand mark and unused stock SVGs. |
 | `context/` | Product/UI/design specifications, workflow, coding standards, progress, and this architecture. |
 | `designs/` | Two PNG references for the same UI in light and dark modes. |
 | Root configuration | npm manifest/lockfile, TypeScript, ESLint, Next.js, shadcn configuration, and agent instructions. |
 
-`app/globals.css` owns semantic theme tokens and Tailwind 4's CSS-first configuration. Light is `:root`; `.dark` on `<html>` switches themed tokens and utilities. Inter/Geist Mono are loaded in the root layout. Theme controller, saved/system preference handling, and product UI adoption remain Planned. Keep one shared visual system and generic shadcn primitives, preserving behavior/accessibility.
+`app/globals.css` owns semantic theme tokens and Tailwind 4's CSS-first configuration. Light is `:root`; `.dark` on `<html>` switches themed tokens and utilities. Inter/Geist Mono are loaded in the root layout. `ThemeController` synchronizes system/storage events and `ThemeToggle` persists explicit choices. The inline root-head initialization follows the installed Next.js flash-prevention guide; only the root receives `suppressHydrationWarning` for the class change. Landing content remains server-rendered and statically prerendered. Keep one shared visual system and generic shadcn primitives, preserving behavior/accessibility.
 
 ### Intended boundaries as features are introduced
 
@@ -241,18 +246,19 @@ PostgreSQL records workflow truth; object storage holds the actual media. Worker
 
 ### Implemented
 
-- Next.js/React/strict TypeScript starter, npm tooling, ESLint, Tailwind 4 CSS processing, shadcn/Base UI Button, and Lucide dependency.
-- Global semantic light/dark tokens, shared typography/spacing/radii/effects/classes, and Inter/Geist Mono loading. CSS switching exists; theme controller/persistence does not.
-- Product, UI/design, workflow, standards, and progress documents; this file adds architecture specifications only.
+- Next.js/React/strict TypeScript web foundation, npm tooling, ESLint, Tailwind 4, shadcn/Base UI Button/Dialog, and Lucide.
+- Public landing page, responsive navigation/footer, preview brand mark, reusable category/step/media/pricing compositions, and original illustrative vector scenes.
+- Global semantic light/dark tokens and Inter/Geist Mono; before-paint system/saved theme initialization, toggle persistence, and system/storage synchronization.
+- Product, UI/design, workflow, standards, and progress documents.
 
-Source, installed dependencies, and local environment names were inspected for this task. Documentation structure/links/whitespace and file scope were checked. No new lint/build/browser or live external-service tests were run; prior checks in the tracker are historical evidence for that foundation, not implementation of this planned architecture.
+The current public UI unit is verified separately in the progress tracker. Lint/build/browser verification does not establish any live external-service behavior.
 
 ### Planned
 
 - Clerk modal authentication; Supabase application persistence and ownership enforcement; PayPal verification and ledger-backed credit purchases.
 - Persistent generation/jobs, provider interfaces, recoverable background stages, separate heavy rendering, object storage, and stable final result delivery.
 - Preferred technology direction supplied by this architecture request: R2, Gemini, Runway as the initial video candidate, ElevenLabs, Remotion/FFmpeg, Inngest, Vercel web hosting, and Render/Docker workers. These are documented preferences, not installed integrations or verified deployments; Vercel AI SDK versus a minimal internal orchestration implementation is still open.
-- Responsive public/workspace/creation/project UI, theme controller, progress/results, then later subscriptions and marketplace/creator economy within approved scope.
+- Workspace/creation/project UI and real progress/results, then later subscriptions and marketplace/creator economy within approved scope.
 
 ### Undecided
 
@@ -261,8 +267,6 @@ Source, installed dependencies, and local environment names were inspected for t
 - Database access layer (no Drizzle), Clerk profile synchronization, database authorization/RLS strategy, and minimal schema/migration contracts.
 - Workflow-to-worker dispatch/authentication, deployment capacity/resources, retry/recovery rules, progress transport, and exact job/stage state machine.
 - Credit tariffs, paid bundles/prices/currency, exact free eligibility/duration options, reservation/settlement/restoration/refund rules, and later subscription/creator economics. The two-free-generation count is already specified.
-- Initial theme/system preference and persistence behavior, plus final product assets/layout adoption.
+- Final production logo assets and future workspace layouts. The public theme preference contract is now implemented above.
 
-**Context discrepancies and follow-up:** older workflow, standards, and tracker text says architecture is absent and lists provider choices as wholly undecided. This file now supplies the preferred planned direction above; none became implemented. `AGENTS.md` points to absent `context/project-overview.md` instead of the actual `context/overview.md`. The user-requested `UI-context.md` and `AI Workflow Rules.md` correspond to actual `ui-context.md` and `ai-workflow-rules.md`. The app still has starter content/metadata rather than product screens; that is unfinished implementation, not proof of working features described in the overview.
-
-This task explicitly permits changing only `context/architecture.md`, so those other references and the tracker were preserved. Synchronize them in the next authorized documentation/implementation unit, including distinguishing preferred providers from unresolved configuration and recording this architecture document's existence. No application code, dependencies, migrations, external services, or additional folders were changed.
+**Documentation synchronization (2026-10-09):** `AGENTS.md` now references the existing `context/overview.md`. Standards/workflow/tracker recognize this architecture document and the public UI unit. Preferred provider directions remain planned and do not imply configured integrations. No dependency versions, migrations, payment services, or external accounts changed in this unit.
