@@ -125,12 +125,13 @@ The size utilities carry line heights, not weights; apply weight classes explici
 
 ## Layout Patterns
 
-The public landing page and shared navigation/footer implement these patterns. Workspace screens and Clerk integration remain unimplemented. Public navigation collapses below 1024px into a disclosure with Escape dismissal; its links close the menu. Account CTAs share an accessible preview notice until centered Clerk modals are configured. Concept artwork is illustrative and has no fake video playback or generation progress.
+The landing page, shared navigation/footer, and local `/create` preview implement these patterns. Dashboard/project screens and Clerk integration remain unimplemented. Public navigation collapses below 1024px into a disclosure with Escape dismissal; its links close the menu. Creation CTAs link to `/create`; Sign In retains an accessible preview notice until centered Clerk modals are configured. Concept artwork is illustrative and has no fake video playback or generation progress.
 
 - **Public pages:** top navigation with responsive mobile navigation; keep public exploration available without authentication.
 - **App workspace:** persistent sidebar on desktop and an accessible mobile drawer on smaller screens. Use sidebar tokens and clearly mark the active destination.
 - **Main content:** centered, responsive regions with intentional maximum widths. `.sceenyk-container` uses `--content-width: 80rem` (1280px) and `--page-gutter: clamp(1rem, 3vw, 2rem)`; use narrower regions for focused forms.
 - **Creation:** choose a content type, then group prompt, optional uploaded media, relevant settings, and generation progress in a focused workspace. Stack controls on mobile.
+- **Implemented creation preview:** `/create` reuses the public shell. Six native radio tiles have purple selected/focus treatment; prompt, local-media area, and four labeled native selects use existing field/card/upload classes. Inputs occupy the larger desktop column from 1024px; the output/brief/source column stacks below them on mobile. Generate follows settings so it is reached before the output on mobile. Source files are explicitly local and separate from the empty generated result. Settings are exploratory, Generate opens an informational notice, and no progress is fabricated. Preserve local inputs/files through theme changes.
 - **Cards:** reusable responsive grids for creation options, projects, templates, and marketplace content; preserve readable media thumbnails and supporting text.
 - **Modals/authentication:** centered panels over `--overlay`, optionally with restrained backdrop blur. Use accessible primitives with viewport-safe sizing. Clerk sign-in/sign-up must open in centered modals/overlays; do not add dedicated `/signin` or `/signup` pages.
 - **Pricing:** responsive cards with aligned prices/actions and a clear featured/popular tier using a purple outline and badge.

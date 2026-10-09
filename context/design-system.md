@@ -311,15 +311,17 @@ Other shared classes/utilities: `.sceenyk-feature-card`, `.sceenyk-interactive`,
 
 ## Implementation boundaries and remaining decisions
 
-Implemented: shared tokens/type/spacing/radii/effects, Inter, opt-in surface/field/upload/action styles, Button/Dialog, public landing sections, responsive shared navigation/footer, and theme controls. See the progress tracker for current verification evidence.
+Implemented: shared tokens/type/spacing/radii/effects, Inter, opt-in surface/field/upload/action styles, Button/Dialog, landing sections, responsive shared shell/themes, and local creation preview controls. See the progress tracker for current verification evidence.
 
 **Inferred public-page composition (2026-10-09):** sticky 80px navigation, links collapsing below 1024px into an accessible disclosure, a split scene-board hero, six static category cards, three explanatory steps, connected-production value section, three concept-media cards, free/paid pricing preview, and final CTA. Section spacing scales from 48px to 96px; desktop hero uses the existing 56px type token and mobile uses 40px. Local artwork is original vector illustration with purple/blue/cyan and existing dark neutral variables. It is labeled concept artwork and has no fake playback or generation state. The exported star/circle favicon uses fixed equivalents of the primary/white tokens because an external SVG cannot inherit page CSS variables. The wordmark and mark are preview branding, not final approved production artwork. Added `neutral-950` is only a Tailwind alias of the existing neutral variable; no palette values changed.
+
+**Inferred creation composition (2026-10-09):** the boards guide component styling, not a complete workspace wireframe. `/create` uses a 1.5:1 inputs/preview grid at 1024px and above; cards have 20–24px padding and 24–32px gaps. Single-choice category tiles use semantic purple selection/focus, with native radios for keyboard behavior. Prompt/settings reuse field tokens; the local dropzone reuses upload tokens. Output remains empty and source media has a separate labeled card. Browser-native video/audio controls apply only to selected local media, never concept art or generated output. All colors/effects reuse existing tokens; no new palette or production option contract was introduced. Both themes were checked at 1440/1024/768/390/320px, including long filenames at 320px.
 
 Still to implement or confirm:
 
 - Production vector logo and any licensed General Sans font assets; Inter is the authorized board alternative currently used.
 - Ambiguous blue/neutral/dark-gradient source labels; a vector design source could settle exact values.
-- Workspace/creation/project screens and the remaining reference controls; appearance guidance does not establish functional backend features.
+- Dashboard/project screens, real generation results, and the remaining reference controls; the creation preview does not establish functional backend features.
 - Final tab pattern, sidebar dimensions, mobile navigation, touch sizing, overlay behavior, and page breakpoints through real content/viewport review.
 - Busy/upload/progress/error behavior, payment and media integration, and accessible player controls; PNG examples do not establish those systems.
 - Screen-level keyboard, screen-reader, contrast, zoom, and responsive verification when the real components are built.

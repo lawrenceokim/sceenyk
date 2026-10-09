@@ -158,9 +158,9 @@ The repository uses root-level folders, **not `src/`**. Preserve that organizati
 
 | Existing location | Responsibility |
 | --- | --- |
-| `app/` | App Router landing page/shared layout, metadata, and `globals.css`. Add route handlers/layout boundaries as needed. |
+| `app/` | App Router landing and `/create` preview pages/shared layout, metadata, and `globals.css`. Add route handlers/layout boundaries as needed. |
 | `components/ui/` | shadcn/Base UI Button and Dialog. |
-| `components/` | Shared brand/navigation/footer/theme/account-preview/artwork; `landing/` holds public sections. |
+| `components/` | Shared brand/navigation/footer/theme/sign-in notice/artwork; `landing/` holds public sections and `creation/` holds the local workspace UI/options. |
 | `lib/` | `utils.ts` reexports `cn`; `theme.ts` owns initialization and the preference key. |
 | `public/` | Preview brand mark and unused stock SVGs. |
 | `context/` | Product, UI/design, workflow, progress, and coding specifications. |

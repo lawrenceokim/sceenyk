@@ -96,7 +96,9 @@ export function Navbar() {
             <AccountAction variant="outline" intent="sign-in">
               Sign in
             </AccountAction>
-            <AccountAction>Get Started</AccountAction>
+            <AccountAction onClick={() => setOpen(false)}>
+              Get Started
+            </AccountAction>
           </div>
         </div>
       </nav>
