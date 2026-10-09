@@ -52,7 +52,7 @@ Read [architecture.md](architecture.md) for planned provider boundaries and impl
 - Use semantic pairs such as `bg-card text-card-foreground`, `text-muted-foreground`, `border-border`, and `ring-ring`. Never hardcode theme hex colors in components when a token applies.
 - Reuse the existing spacing, type, radius, shadow, gradient, and motion scales. Inter is the UI/display font; Geist Mono is for code/mono content. Purple leads, with supporting blue/cyan and selective gradients/glow.
 - Support light `:root` and `.dark` on `<html>` equally, preserving root font classes. Use the implemented system/saved preference controller and toggle; preserve before-paint initialization and `sceenyk-theme` persistence.
-- Use shadcn as the common-control base, normally adding needed primitives through `npx shadcn add <component>`. Review generated changes; do not reinitialize or overwrite Sceenyk's theme. Button and Dialog currently exist.
+- Use shadcn as the common-control base, normally adding needed primitives through `npx shadcn add <component>`. Review generated changes; do not reinitialize or overwrite Sceenyk's theme. Button, Dialog, and Sheet currently exist.
 - Prefer shared variants, composition, and `cn` over repeated large class strings or primitive rewrites. Reuse `@/lib/utils` for `cn`; the existing Button imports it directly from the installed `cn` package.
 - Build responsive layouts from the start. Maintain contrast, focus, keyboard behavior, touch targets, and disabled states. Keep animation purposeful and respect reduced motion; effects must not substitute for accessible state cues.
 
@@ -158,9 +158,9 @@ The repository uses root-level folders, **not `src/`**. Preserve that organizati
 
 | Existing location | Responsibility |
 | --- | --- |
-| `app/` | App Router landing and `/create` preview pages/shared layout, metadata, and `globals.css`. Add route handlers/layout boundaries as needed. |
-| `components/ui/` | shadcn/Base UI Button and Dialog. |
-| `components/` | Shared brand/navigation/footer/theme/sign-in notice/artwork; `landing/` holds public sections and `creation/` holds the local workspace UI/options. |
+| `app/` | Root document/theme, CSS and metadata; `(public)/` layout for `/` and `/create`; `dashboard/` layout/page for the app-shell preview. URL paths are unchanged by route groups. |
+| `components/ui/` | shadcn/Base UI Button, Dialog, and Sheet. |
+| `components/` | Shared brand/navigation/footer/theme/sign-in notice/artwork/EmptyState; `landing/`, `creation/`, and `dashboard/` hold scoped UI. |
 | `lib/` | `utils.ts` reexports `cn`; `theme.ts` owns initialization and the preference key. |
 | `public/` | Preview brand mark and unused stock SVGs. |
 | `context/` | Product, UI/design, workflow, progress, and coding specifications. |

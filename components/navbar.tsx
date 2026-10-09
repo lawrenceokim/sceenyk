@@ -12,6 +12,7 @@ const navigation = [
   { label: "Features", href: "/#features" },
   { label: "How it works", href: "/#how-it-works" },
   { label: "Pricing", href: "/#pricing" },
+  { label: "Dashboard", href: "/dashboard" },
 ];
 
 export function Navbar() {

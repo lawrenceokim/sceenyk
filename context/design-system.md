@@ -18,7 +18,7 @@ Evidence labels used throughout:
 - **Inferred**: implementation choices consistent with the references, including accessibility and responsive recommendations.
 - **Needs confirmation**: information that the PNGs do not resolve.
 
-**Exact repository baseline (updated 2026-10-09):** Next.js 16.4 App Router, Tailwind CSS 4 with `@tailwindcss/turbopack`, shadcn `base-nova`, Base UI primitives, Lucide, and CSS variables enabled in `components.json`. `app/globals.css` is imported by the root layout. Button and Dialog are installed locally. The public home page, navigation/footer, and system/saved theme controller/toggle are implemented. Preserve the CSS import order and existing Turbopack configuration.
+**Exact repository baseline (updated 2026-10-09):** Next.js 16.4 App Router, Tailwind CSS 4 with `@tailwindcss/turbopack`, shadcn `base-nova`, Base UI primitives, Lucide, and CSS variables enabled in `components.json`. `app/globals.css` is imported by the root layout. Button, Dialog, and Sheet are installed locally. Landing/public shell, local creation, dashboard shell/empty states, and system/saved themes are implemented. Preserve CSS import order and existing Turbopack configuration.
 
 ## Brand style and visual direction
 
@@ -311,17 +311,19 @@ Other shared classes/utilities: `.sceenyk-feature-card`, `.sceenyk-interactive`,
 
 ## Implementation boundaries and remaining decisions
 
-Implemented: shared tokens/type/spacing/radii/effects, Inter, opt-in surface/field/upload/action styles, Button/Dialog, landing sections, responsive shared shell/themes, and local creation preview controls. See the progress tracker for current verification evidence.
+Implemented: shared tokens/type/spacing/radii/effects, Inter, opt-in surface/field/upload/action styles, Button/Dialog/Sheet, landing sections, public/dashboard shells, themes, shared EmptyState, and local creation controls. See the progress tracker for current verification evidence.
 
 **Inferred public-page composition (2026-10-09):** sticky 80px navigation, links collapsing below 1024px into an accessible disclosure, a split scene-board hero, six static category cards, three explanatory steps, connected-production value section, three concept-media cards, free/paid pricing preview, and final CTA. Section spacing scales from 48px to 96px; desktop hero uses the existing 56px type token and mobile uses 40px. Local artwork is original vector illustration with purple/blue/cyan and existing dark neutral variables. It is labeled concept artwork and has no fake playback or generation state. The exported star/circle favicon uses fixed equivalents of the primary/white tokens because an external SVG cannot inherit page CSS variables. The wordmark and mark are preview branding, not final approved production artwork. Added `neutral-950` is only a Tailwind alias of the existing neutral variable; no palette values changed.
 
 **Inferred creation composition (2026-10-09):** the boards guide component styling, not a complete workspace wireframe. `/create` uses a 1.5:1 inputs/preview grid at 1024px and above; cards have 20–24px padding and 24–32px gaps. Single-choice category tiles use semantic purple selection/focus, with native radios for keyboard behavior. Prompt/settings reuse field tokens; the local dropzone reuses upload tokens. Output remains empty and source media has a separate labeled card. Browser-native video/audio controls apply only to selected local media, never concept art or generated output. All colors/effects reuse existing tokens; no new palette or production option contract was introduced. Both themes were checked at 1440/1024/768/390/320px, including long filenames at 320px.
 
+**Inferred dashboard composition (2026-10-09):** 240px desktop sidebar uses `sidebar-*` with purple-tinted current Home; the same items move to a left Sheet below 1024px. The Sheet uses existing overlay/shadow tokens, dynamic viewport height, a maximum 320px width with mobile gutter, 44px close action, scrolling, and reduced-motion handling. Main content uses shared page gutters and 32–40px vertical spacing. A single restrained feature-card tint and existing concept illustration anchor Quick Create; summary cards use supporting blue, and the three shared empty states use lavender icon tiles. Counts are labeled preview defaults, not account data; credits show an unavailable balance. These dimensions are implementation choices, not exact PNG measurements. No palette changes or billing capabilities were introduced.
+
 Still to implement or confirm:
 
 - Production vector logo and any licensed General Sans font assets; Inter is the authorized board alternative currently used.
 - Ambiguous blue/neutral/dark-gradient source labels; a vector design source could settle exact values.
-- Dashboard/project screens, real generation results, and the remaining reference controls; the creation preview does not establish functional backend features.
+- Real project screens/data, generation results, and the remaining reference controls; dashboard and creation previews do not establish backend features.
 - Final tab pattern, sidebar dimensions, mobile navigation, touch sizing, overlay behavior, and page breakpoints through real content/viewport review.
 - Busy/upload/progress/error behavior, payment and media integration, and accessible player controls; PNG examples do not establish those systems.
 - Screen-level keyboard, screen-reader, contrast, zoom, and responsive verification when the real components are built.

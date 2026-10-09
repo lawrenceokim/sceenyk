@@ -4,7 +4,7 @@ Technical boundaries for Sceenyk's prompt/media-to-finished-video platform. Read
 
 **Repository inspection: 2026-10-08.** **Confirmed** means present in current source/dependencies; it does not establish live external-service behavior. **Planned** means specified architecture or the preferred direction supplied for this document, with no integration yet. **Undecided** identifies details still requiring a decision. All service/data-flow diagrams and contracts below are planned unless explicitly identified as implemented.
 
-The public UI foundation includes a server-composed landing page and shared navigation/footer. Interactive boundaries cover themes, mobile navigation, a sign-in preview notice, and the component-local `/create` workspace described below. Clerk is not configured: the notice has no credential fields, session, or authentication behavior and will be replaced by centered Clerk modals in the authentication unit. Showcase artwork is illustrative, not generated video. No auth, database, storage, payments, application API, generation, or worker integration exists.
+The public UI foundation includes a server-composed landing page and shared navigation/footer. Interactive boundaries cover themes, navigation/overlays, a sign-in preview notice, the local `/create` workspace, and the `/dashboard` shell described below. Clerk is not configured: the notice has no credential fields, session, or authentication behavior and will be replaced by centered Clerk modals in the authentication unit. Showcase artwork is illustrative, not generated video. No auth, database, storage, payments, application API, generation, or worker integration exists.
 
 **Public UI contract (2026-10-09):** use existing CSS tokens and shadcn/Base UI controls. Theme initialization runs before paint; saved `sceenyk-theme` overrides system preference, otherwise follow the system. Preserve root font classes, keep the landing page static, and tolerate unavailable browser storage. Public navigation uses working section anchors. Paid pricing remains unpriced preview copy until product rates are approved.
 
@@ -12,13 +12,15 @@ The public UI foundation includes a server-composed landing page and shared navi
 
 **Development payment invariant:** all future payment development/testing uses PayPal Sandbox only, with no real-money transactions or Live credentials. Future payment configuration must separate environment/credentials behind the payment service so production can deliberately switch to Live later. This UI unit adds no payment code or credentials.
 
+**Dashboard UI contract (2026-10-09):** `/dashboard` is a public, explicitly labeled shell preview while Clerk is unconfigured; it has no user identity, private records, or authenticated operations. Keep one root document/theme controller. Place existing `/` and `/create` pages under `(public)` with their unchanged URLs and public navigation/main/footer; give `/dashboard` its own nested layout and sidebar/header/main. No pathname-dependent root shell or duplicate main landmarks. Sidebar Home links to `/dashboard`, Create to `/create`, and Projects/Templates/Credits to dashboard section anchors; Marketplace/Settings are visibly unavailable without new placeholder routes. Reuse shadcn/Base UI Sheet for the mobile drawer and existing tokens/theme/account-entry notice. Summary values are labeled empty preview counts; credits are unavailable, not a fabricated balance. Projects, generations, and templates use a shared empty-state presentation. Creation actions open the existing local workspace and never imply saved projects. Clerk development modal integration and protection remain a separate unit before private data is introduced.
+
 ## Stack
 
 | Layer | Technology | Role |
 | --- | --- | --- |
-| Application — Confirmed foundation | Next.js 16.4.0 App Router, React/React DOM 19.3.0 | Public `/` and local-preview `/create` pages in the shared layout. Dashboard, persistent creation workflows, and Route Handlers are Planned. |
+| Application — Confirmed foundation | Next.js 16.4.0 App Router, React/React DOM 19.3.0 | Public `/` and local `/create` preview under `(public)`; `/dashboard` preview in its own layout, sharing one root document. Persistent workflows and Route Handlers are Planned. |
 | Language/tooling — Confirmed | TypeScript 5.9.3, ESLint 9.39.5, `eslint-config-next` 16.4.0, npm | Strict typed code, linting, and lockfile-managed dependencies. No test framework/script is configured. |
-| UI — Confirmed foundation | Tailwind CSS 4.3.3, `@tailwindcss/turbopack` 4.3.3, shadcn 4.21.3 (`base-nova`), Base UI 1.8.0, Lucide React 1.52.0 | Shared Button/Dialog, responsive shell, landing, theme controls, and local creation inputs/source previews. Dashboard and real progress/results remain Planned. |
+| UI — Confirmed foundation | Tailwind CSS 4.3.3, `@tailwindcss/turbopack` 4.3.3, shadcn 4.21.3 (`base-nova`), Base UI 1.8.0, Lucide React 1.52.0 | Button/Dialog/Sheet, public and dashboard shells, shared EmptyState, themes, and local creation previews. Real progress/results remain Planned. |
 | Typography — Confirmed | Inter and Geist Mono via `next/font/google` | UI/headline and mono fonts; global aliases live in CSS. |
 | Authentication — Planned | Clerk | Identity, sessions, sign-in/sign-up, and authentication state through centered modals/overlays. No dedicated `/signin` or `/signup` pages. |
 | Database — Planned | Supabase PostgreSQL | Structured application data, ownership, relationships, workflow state, entitlements, and financial metadata. No database access library/schema is configured. Drizzle is not installed or active; the access layer remains Undecided. |
@@ -46,9 +48,9 @@ The repository uses root-level folders, not `src/`. The `@/*` TypeScript alias r
 
 | Existing location | Current responsibility |
 | --- | --- |
-| `app/` | Shared root layout, landing page, `/create` preview page, global CSS, and metadata. No authored API routes. |
-| `components/ui/` | shadcn/Base UI Button and token-adapted Dialog. |
-| `components/` | Shared brand/navigation/footer/themes/sign-in notice/artwork; `landing/` composes the homepage and `creation/` owns local creation UI and preview-only option types. |
+| `app/` | Root document/fonts/theme and CSS; `(public)/layout.tsx` wraps unchanged `/` and `/create` URLs; `dashboard/layout.tsx` supplies app shell. No authored API routes. |
+| `components/ui/` | shadcn/Base UI Button and token-adapted Dialog/Sheet. |
+| `components/` | Shared brand/navigation/footer/themes/sign-in notice/artwork/EmptyState; `landing/`, `creation/`, and `dashboard/` own scoped UI composition. No data services. |
 | `lib/` | `utils.ts` reexports `cn`; `theme.ts` owns the preference key and static initialization script. No server services yet. |
 | `public/` | Sceenyk preview brand mark and unused stock SVGs. |
 | `context/` | Product/UI/design specifications, workflow, coding standards, progress, and this architecture. |
@@ -252,6 +254,7 @@ PostgreSQL records workflow truth; object storage holds the actual media. Worker
 - Public landing page, responsive navigation/footer, preview brand mark, reusable category/step/media/pricing compositions, and original illustrative vector scenes.
 - Global semantic light/dark tokens and Inter/Geist Mono; before-paint system/saved theme initialization, toggle persistence, and system/storage synchronization.
 - Public `/create` with category, prompt, local media selection/previews/removal, basic settings, creative-brief summary, empty output, and informational Generate dialog. All workspace state is local; source previews do not implement remote uploads or rendering.
+- `/dashboard` preview with fixed desktop sidebar, mobile Sheet, header/Create/theme controls, empty summaries, project/generation/template empty states, and informational credits/account areas. One visible main per route; public `main-content` and dashboard `dashboard-content` skip targets remain distinct in cached layouts. No fake user, balances, activity, records, or extra destination routes.
 - Product, UI/design, workflow, standards, and progress documents.
 
 Public and local creation UI verification is recorded in the progress tracker. Lint/build/browser verification does not establish any live external-service behavior.
@@ -261,7 +264,7 @@ Public and local creation UI verification is recorded in the progress tracker. L
 - Clerk modal authentication; Supabase application persistence and ownership enforcement; PayPal verification and ledger-backed credit purchases.
 - Persistent generation/jobs, provider interfaces, recoverable background stages, separate heavy rendering, object storage, and stable final result delivery.
 - Preferred technology direction supplied by this architecture request: R2, Gemini, Runway as the initial video candidate, ElevenLabs, Remotion/FFmpeg, Inngest, Vercel web hosting, and Render/Docker workers. These are documented preferences, not installed integrations or verified deployments; Vercel AI SDK versus a minimal internal orchestration implementation is still open.
-- Dashboard/project UI, persistent creation workflows, and real progress/results, then later subscriptions and marketplace/creator economy within approved scope.
+- Real project data/actions, persistent creation workflows, and progress/results, then later subscriptions and marketplace/creator economy within approved scope.
 
 ### Undecided
 
