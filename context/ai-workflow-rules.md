@@ -13,7 +13,7 @@ Current context and implementation baseline:
 - [design-system.md](design-system.md) defines visual tokens, component appearance, and reference uncertainty.
 - [code-standards.md](code-standards.md) defines coding conventions and required implementation boundaries for existing and future concerns.
 - [progress-tracker.md](progress-tracker.md) records verified implementation status, next units, and open questions. [architecture.md](architecture.md) records planned service boundaries and implemented UI contracts.
-- The codebase contains landing/themes, local media previews, dashboard shell and verified Clerk/application identity. The current project unit adds explicit authenticated draft save/list/reopen/update source with strict validation and a minimal migration; hosted migration acceptance is pending. Local Files stay temporary. Credits/templates/generation remain previews and all AI/storage/payments/jobs remain unstarted. Reinspect current source/tracker before relying on this baseline.
+- The codebase contains landing/themes, local media previews, dashboard shell and verified Clerk/application identity. Hosted projects/assets exist. Real R2 direct uploads, storage-verified finalization, private retrieval, refresh/reopen and two-account media ownership now pass in development. Local Files stay temporary until an explicit verified upload. Credits/templates/generation remain previews and AI/payments/jobs remain unstarted. Broader project acceptance, production deployment and hosted catalog auditing remain separate; reinspect current source/tracker before relying on this baseline.
 
 Complete one working **vertical slice** at a time: a small feature that includes its UI, backend, and database behavior where required. For example: a user creates a project → it is saved to Supabase → it appears in My Projects → the user can reopen it. Do not combine project UI, marketplace schema, subscription billing, generation workers, and dashboard redesign in one unit.
 
@@ -79,7 +79,7 @@ Use the existing `context/progress-tracker.md` for unresolved questions and deli
 
 Use reasonable engineering judgment for small details that do not change product behavior. Never guess pricing, credit costs, subscription limits, free-generation eligibility/limits, payment behavior, refunds, creator revenue shares, marketplace fees, access permissions, ownership, deletion behavior, AI model-selection rules, or content moderation rules. Use the specification or obtain clarification.
 
-The overview already defines two free short generations of about 10 seconds each; preserve that rule. It does not define exact credit tariffs, refund rules, or model selection. Pricing text in reference PNGs is illustrative, not an approved billing policy. Storage, AI, voice, and background-job providers remain undecided until specified.
+The overview already defines two free short generations of about 10 seconds each; preserve that rule. It does not define exact credit tariffs, refund rules, or model selection. Pricing text in reference PNGs is illustrative, not an approved billing policy. Cloudflare R2 is specified by the authorized media unit; AI, voice and background-job providers remain planned until their units are specified.
 
 ## Protected Files
 
@@ -104,7 +104,7 @@ These are required product boundaries; they do not imply that the integrations a
 | Database | Supabase PostgreSQL stores application data and metadata, including projects, generations/jobs, balances, transactions, and payment records. |
 | UI | Next.js + React + TypeScript + Tailwind CSS + shadcn/ui, using shared Sceenyk tokens and Lucide icons. |
 | Payments | PayPal is the hackathon payment provider. Development/testing uses Sandbox only, never Live or real-money transactions. Keep environment/credential selection behind the future service. Use authoritative server verification before granting purchased capacity; browser success callbacks alone cannot change balances. |
-| Media | Large videos, images, audio, and generated assets belong in object storage; PostgreSQL holds their references and metadata. No storage provider has been selected. |
+| Media | Cloudflare R2 is implemented in source for private project inputs through `lib/storage/`; Supabase holds metadata. Configuration/live acceptance is tracked separately. Generated media and retention/deletion are later work. |
 | AI | Access video, language-model, and voice providers through shared Sceenyk service/provider layers where practical. Do not invent provider/model-selection policies. |
 | Background processing | Long production work runs as jobs/workflows rather than one long browser request. The background-job provider is not selected. |
 | Credits | Validate credits and free generations on the server. Record balance changes through transaction/ledger history and protect against duplicate mutations. |

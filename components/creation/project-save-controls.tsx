@@ -74,8 +74,8 @@ export function ProjectSaveControls({
       </p>
       {hasLocalMedia && (
         <p className="mt-4 rounded-lg border border-warning/30 bg-warning-surface p-3 text-body-sm text-warning-foreground">
-          Local media isn’t saved with your draft. Select it again when you
-          reopen.
+          Selected local media isn’t saved with your draft. Use Upload to project
+          to keep it when you reopen.
         </p>
       )}
       <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

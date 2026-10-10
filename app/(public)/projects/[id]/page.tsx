@@ -7,6 +7,8 @@ import { ProjectUnavailable } from "@/components/creation/project-unavailable";
 import { requireClerkUser } from "@/lib/auth/require-user";
 import { AppUserSyncError } from "@/lib/auth/ensure-app-user";
 import { getOwnedProject, ProjectAccessError } from "@/lib/projects/server";
+import { listOwnedAssets, MediaAccessError } from "@/lib/media/server";
+import type { ProjectAsset } from "@/lib/media/types";
 
 export const metadata: Metadata = {
   title: "Project draft — Sceenyk",
@@ -30,11 +32,23 @@ async function OwnedWorkspace({ params }: { params: Promise<{ id: string }> }) {
   // Missing and foreign projects are expected results. Keep the streamed
   // boundary/provider intact rather than interrupting it with a render error.
   if (!project) return <ProjectUnavailable />;
+  let assets: ProjectAsset[] = [];
+  let mediaError = "";
+  try {
+    assets = await listOwnedAssets(project.id);
+  } catch (error: unknown) {
+    if (error instanceof MediaAccessError || error instanceof AppUserSyncError)
+      mediaError =
+        "Your project opened, but its media couldn’t be loaded. Refresh to try again.";
+    else throw error;
+  }
   return (
     <CreationWorkspace
       key={project.id}
       initialProject={project}
       viewerUserId={userId}
+      initialAssets={assets}
+      initialMediaError={mediaError}
     />
   );
 }

@@ -22,6 +22,8 @@ import { GenerationSettings } from "./generation-settings";
 import { MediaDropzone } from "./media-dropzone";
 import { PromptComposer } from "./prompt-composer";
 import { ProjectSaveControls, type SaveState } from "./project-save-controls";
+import { useProjectMedia } from "./use-project-media";
+import type { ProjectAsset } from "@/lib/media/types";
 import {
   creationCategories,
   getMediaKind,
@@ -75,7 +77,12 @@ function GenerateButton({ disabled }: { disabled: boolean }) {
   );
 }
 
-type WorkspaceProps = { initialProject?: SavedProject; viewerUserId?: string };
+type WorkspaceProps = {
+  initialProject?: SavedProject;
+  viewerUserId?: string;
+  initialAssets?: ProjectAsset[];
+  initialMediaError?: string;
+};
 
 function AccountWorkspace(props: WorkspaceProps) {
   const { isLoaded, isSignedIn, userId } = useAuth();
@@ -99,6 +106,8 @@ function AccountWorkspace(props: WorkspaceProps) {
     <WorkspaceEditor
       key={`${userId ?? "visitor"}:${props.initialProject?.id ?? "new"}`}
       initialProject={props.initialProject}
+      initialAssets={props.initialAssets}
+      initialMediaError={props.initialMediaError}
       signedIn={!!isSignedIn}
       authReady={isLoaded}
     />
@@ -116,10 +125,14 @@ export function CreationWorkspace(props: WorkspaceProps) {
 
 function WorkspaceEditor({
   initialProject,
+  initialAssets = [],
+  initialMediaError = "",
   signedIn,
   authReady,
 }: {
   initialProject?: SavedProject;
+  initialAssets?: ProjectAsset[];
+  initialMediaError?: string;
   signedIn: boolean;
   authReady: boolean;
 }) {
@@ -132,7 +145,8 @@ function WorkspaceEditor({
   );
   const [projectId, setProjectId] = useState(initialProject?.id ?? null);
   const attemptId = useRef(initialProject?.id ?? null);
-  const saveInFlight = useRef(false);
+  const saveInFlight = useRef<Promise<string | null> | null>(null);
+  const persistedId = useRef(initialProject?.id ?? null);
   const [saveState, setSaveState] = useState<SaveState>(
     initialProject ? { status: "saved" } : { status: "idle" },
   );
@@ -155,7 +169,7 @@ function WorkspaceEditor({
     creationCategories[2];
   const activeMedia =
     selectedFiles.find((media) => media.id === selectedFileId) ??
-    selectedFiles[0];
+    (selectedFileId ? undefined : selectedFiles[0]);
   const brief: ProjectDraft = {
     title,
     category: selectedCategory,
@@ -172,37 +186,65 @@ function WorkspaceEditor({
       settings.visualStyle !== savedBrief.settings.visualStyle ||
       settings.tone !== savedBrief.settings.tone);
 
-  async function saveDraft() {
-    if (saveInFlight.current || !signedIn) return;
-    saveInFlight.current = true;
+  function saveDraft(): Promise<string | null> {
+    if (saveInFlight.current) return saveInFlight.current;
+    if (!signedIn) return Promise.resolve(null);
     setSaveState({ status: "saving" });
     // Keep this ID even if the response is lost after a committed first save.
     const id = attemptId.current ?? crypto.randomUUID();
     attemptId.current = id;
-    try {
-      const result = await saveProjectAction({
-        ...brief,
-        id,
-        mode: projectId ? "update" : "create",
-      });
-      if (!result.ok) {
-        setSaveState({ status: "error", message: result.message });
-        return;
+    const saving = (async () => {
+      try {
+        const result = await saveProjectAction({
+          ...brief,
+          id,
+          mode: persistedId.current ? "update" : "create",
+        });
+        if (!result.ok) {
+          setSaveState({ status: "error", message: result.message });
+          return null;
+        }
+        setProjectId(result.project.id);
+        persistedId.current = result.project.id;
+        // Edits made while saving remain unsaved rather than being overwritten.
+        setSavedBrief(brief);
+        setSaveState({ status: "saved" });
+        return result.project.id;
+      } catch {
+        setSaveState({
+          status: "error",
+          message:
+            "Your draft couldn’t be saved. Check your connection and try again.",
+        });
+        return null;
+      } finally {
+        saveInFlight.current = null;
       }
-      setProjectId(result.project.id);
-      // Edits made while saving remain unsaved rather than being overwritten.
-      setSavedBrief(brief);
-      setSaveState({ status: "saved" });
-    } catch {
-      setSaveState({
-        status: "error",
-        message:
-          "Your draft couldn’t be saved. Check your connection and try again.",
-      });
-    } finally {
-      saveInFlight.current = false;
-    }
+    })();
+    saveInFlight.current = saving;
+    return saving;
   }
+
+  const mediaUpload = useProjectMedia({
+    initialAssets,
+    initialError: initialMediaError,
+    projectId,
+    ensureProject: () =>
+      persistedId.current ? Promise.resolve(persistedId.current) : saveDraft(),
+    onUploaded: (localId, assetId) => {
+      setSelectedFiles((files) =>
+        files.filter((media) => media.id !== localId),
+      );
+      setSelectedFileId(assetId);
+    },
+  });
+  const activeAsset =
+    mediaUpload.assets.find(
+      (asset) => asset.id === selectedFileId && asset.status === "uploaded",
+    ) ??
+    (!selectedFileId && !activeMedia
+      ? mediaUpload.assets.find((asset) => asset.status === "uploaded")
+      : undefined);
 
   function addFiles(files: File[]) {
     const accepted: LocalMedia[] = [];
@@ -239,6 +281,7 @@ function WorkspaceEditor({
   }
 
   function removeFile(id: string) {
+    if (mediaUpload.busy) return;
     setSelectedFiles((files) => files.filter((media) => media.id !== id));
     if (selectedFileId === id) setSelectedFileId(null);
     setMediaError("");
@@ -269,11 +312,19 @@ function WorkspaceEditor({
         />
         <MediaDropzone
           files={selectedFiles}
-          selectedId={activeMedia?.id}
+          selectedId={activeMedia?.id ?? activeAsset?.id}
           error={mediaError}
           onAdd={addFiles}
           onSelect={setSelectedFileId}
           onRemove={removeFile}
+          onUpload={mediaUpload.upload}
+          uploadStates={mediaUpload.uploadStates}
+          busy={mediaUpload.busy}
+          signedIn={signedIn}
+          authReady={authReady}
+          assets={mediaUpload.assets}
+          assetError={mediaUpload.assetError}
+          onRecover={mediaUpload.recover}
         />
         <GenerationSettings settings={settings} onChange={setSettings} />
         <GenerateButton disabled={!prompt.trim()} />
@@ -283,6 +334,7 @@ function WorkspaceEditor({
         settings={settings}
         prompt={prompt}
         media={activeMedia}
+        asset={activeAsset}
       />
     </div>
   );

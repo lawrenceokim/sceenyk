@@ -3,6 +3,10 @@ import { AudioLines, FileVideo, ImageIcon, Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { formatFileSize, type LocalMedia } from "./creation-options";
+import type { UploadState } from "@/lib/media/upload-client";
+import type { ProjectAsset } from "@/lib/media/types";
+import { ProjectMediaList } from "./project-media-list";
+import { AccountAction } from "@/components/account-action";
 
 const mediaIcons = { image: ImageIcon, video: FileVideo, audio: AudioLines };
 
@@ -13,6 +17,14 @@ export function MediaDropzone({
   onAdd,
   onSelect,
   onRemove,
+  onUpload,
+  uploadStates,
+  busy,
+  signedIn,
+  authReady,
+  assets,
+  assetError,
+  onRecover,
 }: {
   files: LocalMedia[];
   selectedId?: string;
@@ -20,6 +32,14 @@ export function MediaDropzone({
   onAdd: (files: File[]) => void;
   onSelect: (id: string) => void;
   onRemove: (id: string) => void;
+  onUpload: (media: LocalMedia) => void;
+  uploadStates: Record<string, UploadState>;
+  busy: boolean;
+  signedIn: boolean;
+  authReady: boolean;
+  assets: ProjectAsset[];
+  assetError: string;
+  onRecover: (asset: ProjectAsset) => void;
 }) {
   const id = useId();
   const input = useRef<HTMLInputElement>(null);
@@ -40,7 +60,7 @@ export function MediaDropzone({
           media
         </h2>
         <span className="text-caption text-muted-foreground">
-          Optional · stays on your device
+          Optional · private project media
         </span>
       </div>
       <div
@@ -81,7 +101,7 @@ export function MediaDropzone({
             : "Drop a little inspiration here"}
         </p>
         <p className="text-caption text-muted-foreground">
-          Video, images, or audio · temporary local preview, not saved
+          Video, images, or audio · preview locally, then upload
         </p>
         <input
           ref={input}
@@ -108,7 +128,9 @@ export function MediaDropzone({
         </Button>
       </div>
       <p id={`${id}-help`} className="mt-3 text-caption text-muted-foreground">
-        Nothing is uploaded or saved. Preview support depends on your browser.
+        Upload to keep media in your private project. A new draft is saved
+        first. Preview support depends on your browser. SVG files are local
+        previews only.
       </p>
       <p
         role="status"
@@ -126,11 +148,12 @@ export function MediaDropzone({
         <ul className="mt-4 space-y-2" aria-label="Selected local media">
           {files.map((media) => {
             const Icon = mediaIcons[media.kind];
+            const state = uploadStates[media.id];
             return (
               <li
                 key={media.id}
                 className={cn(
-                  "flex min-w-0 items-center gap-2 rounded-lg border border-border p-2",
+                  "flex min-w-0 flex-wrap items-center gap-2 rounded-lg border border-border p-2",
                   selectedId === media.id && "border-ring bg-accent/50",
                 )}
               >
@@ -159,6 +182,7 @@ export function MediaDropzone({
                   type="button"
                   variant="ghost"
                   size="icon"
+                  disabled={busy}
                   aria-label={`Remove ${media.file.name}`}
                   onClick={() => {
                     onRemove(media.id);
@@ -167,11 +191,69 @@ export function MediaDropzone({
                 >
                   <X className="size-4" aria-hidden="true" />
                 </Button>
+                <div className="w-full px-2 pb-1">
+                  {signedIn ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      disabled={busy}
+                      onClick={() => onUpload(media)}
+                    >
+                      {state?.status === "failed"
+                        ? "Retry upload"
+                        : "Upload to project"}
+                    </Button>
+                  ) : (
+                    <AccountAction
+                      intent="sign-in"
+                      variant="outline"
+                      disabled={!authReady}
+                    >
+                      Sign in to upload
+                    </AccountAction>
+                  )}
+                  <p
+                    role="status"
+                    className={cn(
+                      "mt-2 break-words text-caption",
+                      state?.status === "failed"
+                        ? "text-destructive"
+                        : "text-muted-foreground",
+                    )}
+                  >
+                    {state?.status === "preparing"
+                      ? "Preparing your project and upload…"
+                      : state?.status === "uploading"
+                        ? `Uploading${state.progress !== undefined ? ` · ${state.progress}%` : "…"}`
+                        : state?.status === "verifying"
+                          ? "Verifying stored media…"
+                          : state?.status === "failed"
+                            ? state.message
+                            : "Selected · local preview only"}
+                  </p>
+                  {state?.status === "uploading" &&
+                    state.progress !== undefined && (
+                      <progress
+                        value={state.progress}
+                        max={100}
+                        aria-label={`Upload progress for ${media.file.name}`}
+                        className="mt-2 w-full accent-primary"
+                      />
+                    )}
+                </div>
               </li>
             );
           })}
         </ul>
       )}
+      <ProjectMediaList
+        assets={assets}
+        selectedId={selectedId}
+        error={assetError}
+        busy={busy}
+        onSelect={onSelect}
+        onRecover={onRecover}
+      />
     </section>
   );
 }

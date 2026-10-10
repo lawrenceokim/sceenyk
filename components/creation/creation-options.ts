@@ -81,7 +81,7 @@ export interface LocalMedia {
   kind: "image" | "video" | "audio";
 }
 
-// Advisory preview detection only; production upload validation is a later unit.
+// Advisory local preview detection; permanent upload uses lib/media/validation.
 export function getMediaKind(file: File): LocalMedia["kind"] | null {
   if (file.type.startsWith("image/")) return "image";
   if (file.type.startsWith("video/")) return "video";

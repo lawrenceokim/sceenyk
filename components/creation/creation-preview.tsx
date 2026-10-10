@@ -1,6 +1,8 @@
 import { useId } from "react";
 import { Clapperboard, ImagePlay } from "lucide-react";
 import { LocalMediaPreview } from "./local-media-preview";
+import { PersistentMediaPreview } from "./persistent-media-preview";
+import type { ProjectAsset } from "@/lib/media/types";
 import {
   formatFileSize,
   type CreationCategory,
@@ -13,11 +15,13 @@ export function CreationPreview({
   settings,
   prompt,
   media,
+  asset,
 }: {
   category: CreationCategory;
   settings: CreationSettings;
   prompt: string;
   media?: LocalMedia;
+  asset?: ProjectAsset;
 }) {
   const id = useId();
   return (
@@ -109,6 +113,30 @@ export function CreationPreview({
           <p className="mt-1 text-caption capitalize text-muted-foreground">
             {media.kind} · {formatFileSize(media.file.size)} · On this device
             only
+          </p>
+          <p className="mt-3 text-caption text-muted-foreground">
+            This is your source media, not a generated result.
+          </p>
+        </section>
+      )}
+      {asset && (
+        <section
+          className="sceenyk-card p-5"
+          aria-labelledby={`${id}-stored-source`}
+        >
+          <h2
+            id={`${id}-stored-source`}
+            className="mb-4 text-body-sm font-semibold"
+          >
+            Project source preview
+          </h2>
+          <PersistentMediaPreview key={asset.id} asset={asset} />
+          <p className="mt-3 break-all text-body-sm font-medium">
+            {asset.filename}
+          </p>
+          <p className="mt-1 text-caption capitalize text-muted-foreground">
+            {asset.kind} · {formatFileSize(asset.sizeBytes)} · Uploaded ·
+            Private
           </p>
           <p className="mt-3 text-caption text-muted-foreground">
             This is your source media, not a generated result.

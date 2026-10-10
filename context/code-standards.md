@@ -2,7 +2,7 @@
 
 These rules apply to developers and AI coding agents building Sceenyk. Read [overview.md](overview.md), [ui-context.md](ui-context.md), [design-system.md](design-system.md), [ai-workflow-rules.md](ai-workflow-rules.md), and [progress-tracker.md](progress-tracker.md) before relevant implementation work.
 
-**Verified baseline (updated 2026-10-09):** Next.js 16.4/React/strict TypeScript/Tailwind/shadcn/Lucide/themes and Clerk development authentication remain. Server-only Supabase SDK identity is hosted-verified. Owned draft project source, one thin Server Action, private reopen route and new SQL migration now exist; hosted project acceptance is pending application. Zod 4 is the one runtime validator. No browser database client/Supabase Auth, worker or persistent test runner exists.
+**Verified baseline (updated 2026-10-10):** Next.js/React/strict TypeScript/Tailwind/shadcn/Lucide/themes and Clerk development authentication remain. Hosted Supabase identity/projects/assets and real browser R2 upload/finalization/private retrieval/persistence/two-account media acceptance pass. Broader prior project acceptance and hosted catalog auditing remain separate. Zod is the one request validator; server file-type signature detection and AWS S3/signing SDKs belong to storage. No browser database client/Supabase Auth, worker or persistent test runner exists.
 
 Read [architecture.md](architecture.md) for planned provider boundaries and implemented UI contracts. `AGENTS.md` now references the actual product document, `context/overview.md`.
 
@@ -78,14 +78,14 @@ Read [architecture.md](architecture.md) for planned provider boundaries and impl
 
 ## Data and Storage
 
-**Supabase PostgreSQL has hosted-verified app_users identity.** The current project unit adds a minimal projects migration and owned save/read/update/list source; hosted application/acceptance remains pending in the tracker. Other domain schemas remain unspecified. Do not scaffold jobs/assets/credits/payments/templates/marketplace as part of draft persistence.
+**Supabase PostgreSQL has hosted identity/projects/assets.** The media unit verifies project-first save/reopen and owned asset persistence against live R2; broader prior project acceptance and full hosted grant/catalog auditing remain tracked separately. Other domain schemas remain unspecified. Keep jobs/credits/payments/templates/marketplace outside the authorized media unit.
 
 - Store large videos, audio, images, temporary artifacts, and rendered output in object/blob storage. PostgreSQL stores stable object references and relevant metadata; generate short-lived access URLs when needed instead of treating expiring signed URLs as permanent asset identity.
 - Introduce only the schema required by the requested unit. Verify actual tables/columns and constraints before writing queries or migrations; do not infer deployed schema from documentation examples.
 - Protect invariants with constraints and transactional operations where possible. Index frequent ownership/lookups/filter fields based on actual query needs; select only needed columns and avoid unnecessary queries.
 - Enforce cross-user isolation in the chosen server/database access strategy, including associated jobs and assets. Document access policies and test them with separate users.
 - Use migrations for schema changes. Never rewrite migrations that may have been applied; add a new one and record whether it was applied/verified. Avoid destructive migrations without explicit approval.
-- Storage provider, limits, retention/deletion, and authorization policies remain open decisions. Do not silently invent them or introduce Supabase Auth as a competing authentication source.
+- Cloudflare R2 is the implemented private project-media provider; see [media-storage.md](media-storage.md). Final product limits and retention/deletion remain open; the configurable single-PUT development safeguard is not a product limit. Do not introduce Supabase Auth as a competing authentication source.
 
 ## AI and External Providers
 

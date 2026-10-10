@@ -1,7 +1,8 @@
 import type { CategoryId, CreationSettings } from "@/lib/projects/options";
+import type { MediaKind } from "@/lib/media/types";
 
-// Authored migration contracts. app_users is hosted-verified; projects is
-// pending hosted application/verification until recorded in the tracker.
+// Authored migration contracts. Hosted identity/projects/assets are exercised
+// in development acceptance; full catalog/grant auditing remains separate.
 export type AppUser = {
   id: string;
   clerk_user_id: string;
@@ -35,9 +36,35 @@ export type ProjectRow = ProjectFields & {
   updated_at: string;
 };
 
+export type AssetRow = {
+  id: string;
+  owner_user_id: string;
+  project_id: string;
+  upload_request_id: string;
+  storage_provider: "r2";
+  storage_key: string;
+  original_filename: string;
+  mime_type: string;
+  size_bytes: number;
+  media_type: MediaKind;
+  upload_status: "pending" | "uploaded" | "rejected";
+  verified_etag: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
 export type Database = {
   public: {
     Tables: {
+      project_assets: {
+        Row: AssetRow;
+        Insert: Omit<
+          AssetRow,
+          "created_at" | "updated_at" | "upload_status" | "verified_etag"
+        >;
+        Update: Partial<Pick<AssetRow, "upload_status" | "verified_etag">>;
+        Relationships: [];
+      };
       app_users: {
         Row: AppUser;
         Insert: AppUserProfile;

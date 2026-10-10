@@ -49,9 +49,11 @@ The following hosted acceptance now passed using two reserved Clerk development 
 5. The hosted unique constraint rejected duplicate insertion with `23505`; actual service-role writes and schema were verified. RLS and browser-role denial/limited grants passed against the actual migration in isolated PostgreSQL. Hosted catalog/grant inspection and a public-key browser-role test remain unperformed without a SQL connection/public key.
 6. Repeat public access/protection/theme checks and scan client payloads for privileged secrets.
 
-Owned project source and a new pending migration are documented below. No uploads, AI/jobs, credits, payments, subscriptions, marketplace or settings schema is included.
+Owned project source is documented below. The authorized project-assets addition is described at the end; AI/jobs, credits, payments, subscriptions, marketplace and settings remain excluded.
 
-## Owned draft projects - current unit
+## Owned draft projects - previous unit and historical verification
+
+Current 2026-10-09 inspection now exposes `projects` in the hosted Data API. The media unit verified a real Clerk-owned project-first save, retry keeping its ID and refresh/reopen; the historical pending-application notes below describe the previous unit. Its broader option/update/list acceptance is not retroactively marked complete.
 
 The existing app-user migration stays unchanged. Hosted metadata was reinspected on 2026-10-09 and exposed only app_users, including its UUID id and all eight expected columns. Data API metadata is not a full catalog/grant audit. The new [projects migration](../supabase/migrations/20261009000200_projects.sql) is transactional, verifies the app_users UUID prerequisite and refuses an existing projects relation. It is pending user application through the same development SQL Editor. API credentials cannot execute DDL; no SQL connection or Management API token was added.
 
@@ -68,3 +70,11 @@ Current evidence: production build/lint/TypeScript and client secret scan pass; 
 References: [Supabase filtered updates](https://supabase.com/docs/reference/javascript/update), [range pagination](https://supabase.com/docs/reference/javascript/range), [Zod strict schemas](https://zod.dev/api). Installed Next.js mutation/security/dynamic-route/auth-with-Cache-Components/revalidation guides were read; existing framework settings remain enabled.
 
 Workspace controls use per-instance React IDs/radio groups so retained routes do not cross-link labels or native choices. Five two-workspace SSR association checks and five real local-media exclusion/retention checks pass. Missing/foreign/invalid reads are an explicit unavailable result within the streamed boundary (200/noindex), rather than a rendering interruption; they expose neither ownership nor brief fields.
+
+## Private project assets - current authorized media unit
+
+New [project-assets migration](../supabase/migrations/20261009000300_project_assets.sql) adds metadata only. Requires the prior identity/projects migrations; existing migration files remain unchanged. Adds a composite unique `(id, owner_user_id)` constraint to projects and a matching asset project/owner FK. Asset fields: server UUID ID, owner/project UUIDs, upload-request UUID, R2 provider/key, original filename, canonical MIME, byte size, media category, pending/uploaded/rejected status, verified ETag and DB timestamps. No file/base64, expiring URL, inferred duration or dimensions. Request uniqueness deduplicates retry/concurrent authorizations; key uniqueness and namespace check prevent inconsistent paths. Uploaded status requires a verified ETag.
+
+RLS is enabled with no browser policies. PUBLIC/anon/authenticated have no grants; service_role has SELECT/INSERT and UPDATE only on status/ETag, with no delete grant. Every media service derives identity with Clerk/ensureAppUser, checks project ownership and filters asset reads/updates by owner plus project plus asset ID. Client metadata DTOs omit owner/storage key/request ID. Privileged server enforcement is required because the service bypasses RLS.
+
+Migration/service/SDK constraints pass isolated PostgreSQL tests including separate users, injected identity/key rejection, mismatched owner FK, limited grants/RLS, absent/mismatched storage, duplicate/concurrent authorization/finalization and real signed-header/expiry checks. Verified identity/REST/storage inspection are mocked in that suite. On 2026-10-10, hosted assets and real R2 browser image/video/audio uploads, finalization, retry, refresh/reopen and A/B ownership pass separately. A pending row never establishes object existence. No migrations or credentials were changed during live debugging. Hosted SQL catalog/grant auditing remains unperformed without an appropriate connection. See [media-storage.md](media-storage.md) and [progress-tracker.md](progress-tracker.md) for exact evidence.
