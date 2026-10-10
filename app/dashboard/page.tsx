@@ -4,6 +4,12 @@ import { listOwnedProjects, ProjectAccessError } from "@/lib/projects/server";
 import { WorkspaceUnavailable } from "@/components/dashboard/workspace-unavailable";
 import { DashboardGreeting } from "@/components/auth/account-controls";
 import {
+  GenerationAccessError,
+  getLatestProjectGenerations,
+} from "@/lib/generation/server";
+import type { GenerationStatus } from "@/lib/generation/contract";
+import { ProjectJobStatusesProvider } from "@/components/dashboard/project-job-statuses";
+import {
   CreditsPreview,
   DashboardOverview,
   ProjectsSection,
@@ -37,6 +43,24 @@ export default async function DashboardPage({
       return <WorkspaceUnavailable />;
     throw error;
   }
+  let jobStatuses: Record<string, GenerationStatus | "unavailable" | null> = {};
+  try {
+    const jobs = await getLatestProjectGenerations(
+      projects.projects.map(({ id }) => id),
+    );
+    jobStatuses = Object.fromEntries(
+      projects.projects.map(({ id }) => [id, jobs[id]?.status ?? null]),
+    );
+  } catch (error: unknown) {
+    if (
+      error instanceof GenerationAccessError ||
+      error instanceof AppUserSyncError
+    )
+      jobStatuses = Object.fromEntries(
+        projects.projects.map(({ id }) => [id, "unavailable"]),
+      );
+    else throw error;
+  }
   return (
     <>
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
@@ -56,7 +80,12 @@ export default async function DashboardPage({
       <DashboardOverview projectCount={projects.total} />
       <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
         <div className="min-w-0 space-y-6">
-          <ProjectsSection data={projects} />
+          <ProjectJobStatusesProvider
+            key={projects.projects.map(({ id }) => id).join(",")}
+            initial={jobStatuses}
+          >
+            <ProjectsSection data={projects} jobStatuses={jobStatuses} />
+          </ProjectJobStatusesProvider>
           <RecentGenerationsSection />
         </div>
         <div className="min-w-0 space-y-6">
@@ -65,8 +94,8 @@ export default async function DashboardPage({
         </div>
       </div>
       <p className="pb-2 text-caption leading-relaxed text-muted-foreground">
-        Your creative briefs are saved privately. Generation, templates and
-        credits are coming later.
+        Your creative briefs and generation requests are saved privately.
+        Processing, templates and credits are coming later.
       </p>
     </>
   );

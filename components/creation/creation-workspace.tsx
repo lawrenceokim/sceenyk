@@ -1,21 +1,13 @@
 "use client";
 
-import { useId, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useAuth } from "@clerk/nextjs";
-import { Sparkles } from "lucide-react";
 import { useAuthAvailable } from "@/components/auth/auth-availability";
 import { AccountAction } from "@/components/account-action";
 import { saveProjectAction } from "@/app/actions/projects";
 import type { ProjectDraft, SavedProject } from "@/lib/projects/types";
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import type { GenerationJob } from "@/lib/generation/types";
+import { ProjectGeneration } from "./project-generation";
 import { CategorySelector } from "./category-selector";
 import { CreationPreview } from "./creation-preview";
 import { GenerationSettings } from "./generation-settings";
@@ -32,56 +24,13 @@ import {
   type LocalMedia,
 } from "./creation-options";
 
-function GenerateButton({ disabled }: { disabled: boolean }) {
-  const helpId = useId();
-  return (
-    <div className="sceenyk-card flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
-      <div>
-        <p className="text-body-sm font-medium">Ready for the next scene?</p>
-        <p id={helpId} className="mt-1 text-caption text-muted-foreground">
-          Preview only. Generation isn’t connected yet.
-        </p>
-      </div>
-      <Dialog>
-        <DialogTrigger
-          render={
-            <Button
-              type="button"
-              size="lg"
-              disabled={disabled}
-              aria-describedby={helpId}
-              className="w-full sm:w-auto"
-            />
-          }
-        >
-          <Sparkles className="size-5" aria-hidden="true" />
-          Generate
-        </DialogTrigger>
-        <DialogContent>
-          <span className="flex size-12 items-center justify-center rounded-xl bg-accent text-accent-foreground">
-            <Sparkles className="size-6" aria-hidden="true" />
-          </span>
-          <DialogTitle className="text-heading-3 font-semibold">
-            Generation is coming soon
-          </DialogTitle>
-          <DialogDescription className="text-body leading-relaxed">
-            You can save your creative brief as a draft. Generation isn’t
-            connected yet, so this action won’t create content or use credits.
-          </DialogDescription>
-          <DialogClose render={<Button variant="outline" className="mt-2" />}>
-            Keep creating your brief
-          </DialogClose>
-        </DialogContent>
-      </Dialog>
-    </div>
-  );
-}
-
 type WorkspaceProps = {
   initialProject?: SavedProject;
   viewerUserId?: string;
   initialAssets?: ProjectAsset[];
   initialMediaError?: string;
+  initialGeneration?: GenerationJob | null;
+  initialGenerationError?: string;
 };
 
 function AccountWorkspace(props: WorkspaceProps) {
@@ -108,6 +57,8 @@ function AccountWorkspace(props: WorkspaceProps) {
       initialProject={props.initialProject}
       initialAssets={props.initialAssets}
       initialMediaError={props.initialMediaError}
+      initialGeneration={props.initialGeneration}
+      initialGenerationError={props.initialGenerationError}
       signedIn={!!isSignedIn}
       authReady={isLoaded}
     />
@@ -127,12 +78,16 @@ function WorkspaceEditor({
   initialProject,
   initialAssets = [],
   initialMediaError = "",
+  initialGeneration = null,
+  initialGenerationError = "",
   signedIn,
   authReady,
 }: {
   initialProject?: SavedProject;
   initialAssets?: ProjectAsset[];
   initialMediaError?: string;
+  initialGeneration?: GenerationJob | null;
+  initialGenerationError?: string;
   signedIn: boolean;
   authReady: boolean;
 }) {
@@ -327,7 +282,24 @@ function WorkspaceEditor({
           onRecover={mediaUpload.recover}
         />
         <GenerationSettings settings={settings} onChange={setSettings} />
-        <GenerateButton disabled={!prompt.trim()} />
+        <ProjectGeneration
+          projectId={projectId}
+          initialJob={initialGeneration}
+          initialError={initialGenerationError}
+          inputs={{
+            prompt,
+            category: selectedCategory,
+            settings,
+            assetIds: mediaUpload.assets
+              .filter((asset) => asset.status === "uploaded")
+              .map((asset) => asset.id),
+          }}
+          hasLocalFiles={selectedFiles.length > 0}
+          mediaBusy={mediaUpload.busy}
+          mediaError={!!mediaUpload.assetError}
+          signedIn={signedIn}
+          authReady={authReady}
+        />
       </div>
       <CreationPreview
         category={category}

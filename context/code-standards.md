@@ -22,7 +22,7 @@ Read [architecture.md](architecture.md) for planned provider boundaries and impl
 - Avoid `any`; use `unknown` for untrusted values until runtime validation establishes their shape. Types alone do not validate JSON, webhook data, or database input.
 - Validate form input, external API responses, webhook payloads, environment configuration, and database-facing values at their boundaries. Narrow errors safely before reading their properties.
 - Use explicit types/interfaces where they clarify public contracts; let obvious local values be inferred. Use `import type` for type-only imports.
-- Prefer discriminated unions for known domain states. An illustrative generation status is `queued | analyzing | generating | rendering | completed | failed`; only define states that the actual pipeline supports.
+- Prefer discriminated unions for known domain states. The generation contract is `queued | processing | completed | failed`, with a separate current stage, centralized in `lib/generation/contract.ts` and enforced by migration 004. Never simulate stages or percentages.
 - Keep genuinely shared domain types in one owned module, such as future `types/generation.ts`. Do not duplicate slightly different status or asset types across client/server code.
 - Avoid unsafe assertions and non-null assertions that conceal missing configuration. Document a necessary exception and the invariant that makes it safe.
 
@@ -78,7 +78,7 @@ Read [architecture.md](architecture.md) for planned provider boundaries and impl
 
 ## Data and Storage
 
-**Supabase PostgreSQL has hosted identity/projects/assets.** The media unit verifies project-first save/reopen and owned asset persistence against live R2; broader prior project acceptance and full hosted grant/catalog auditing remain tracked separately. Other domain schemas remain unspecified. Keep jobs/credits/payments/templates/marketplace outside the authorized media unit.
+**Supabase PostgreSQL has hosted identity/projects/assets.** The media unit verifies project-first save/reopen and owned asset persistence against live R2; broader prior project acceptance and full hosted grant/catalog auditing remain tracked separately. The separately authorized job foundation adds immutable owned snapshots and trusted server-only transitions in migration 004 (hosted application/acceptance pending). Other domain schemas remain unspecified. Credits/payments/templates/marketplace and actual processing stay excluded.
 
 - Store large videos, audio, images, temporary artifacts, and rendered output in object/blob storage. PostgreSQL stores stable object references and relevant metadata; generate short-lived access URLs when needed instead of treating expiring signed URLs as permanent asset identity.
 - Introduce only the schema required by the requested unit. Verify actual tables/columns and constraints before writing queries or migrations; do not infer deployed schema from documentation examples.

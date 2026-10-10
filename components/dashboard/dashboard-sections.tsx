@@ -14,6 +14,7 @@ import { SceneArtwork } from "@/components/scene-artwork";
 import { DashboardStatCard } from "./dashboard-stat-card";
 import { ProjectCard } from "./project-card";
 import type { ProjectPage } from "@/lib/projects/types";
+import type { GenerationStatus } from "@/lib/generation/contract";
 
 export function QuickCreate() {
   return (
@@ -69,7 +70,8 @@ export function DashboardOverview({ projectCount }: { projectCount: number }) {
           At a glance
         </h2>
         <p className="text-caption text-muted-foreground">
-          Saved projects · generation, credits and templates coming later
+          Saved projects and generation requests · credits and templates coming
+          later
         </p>
       </div>
       <dl className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -82,8 +84,8 @@ export function DashboardOverview({ projectCount }: { projectCount: number }) {
         <DashboardStatCard
           icon={<Clapperboard className="size-5" />}
           label="Generations"
-          value="0"
-          description="No generation activity in this preview"
+          value="—"
+          description="Latest job status appears on each project"
         />
         <DashboardStatCard
           icon={<Coins className="size-5" />}
@@ -102,7 +104,13 @@ export function DashboardOverview({ projectCount }: { projectCount: number }) {
   );
 }
 
-export function ProjectsSection({ data }: { data: ProjectPage }) {
+export function ProjectsSection({
+  data,
+  jobStatuses,
+}: {
+  data: ProjectPage;
+  jobStatuses: Record<string, GenerationStatus | "unavailable" | null>;
+}) {
   const lastPage = Math.max(1, Math.ceil(data.total / data.pageSize));
   return (
     <section
@@ -161,7 +169,10 @@ export function ProjectsSection({ data }: { data: ProjectPage }) {
           >
             {data.projects.map((project) => (
               <li key={project.id} className="min-w-0">
-                <ProjectCard project={project} />
+                <ProjectCard
+                  project={project}
+                  jobStatus={jobStatuses[project.id]}
+                />
               </li>
             ))}
           </ul>
@@ -230,8 +241,8 @@ export function RecentGenerationsSection() {
       </div>
       <EmptyState
         icon={<Clapperboard className="size-7" />}
-        title="No generations yet"
-        description="Processing and completed generations will appear here when generation is connected. Nothing is running in this preview."
+        title="Requests live with your projects"
+        description="Open a project to view its latest generation request. Requests remain queued until processing is available; no generated results are available yet."
       />
     </section>
   );

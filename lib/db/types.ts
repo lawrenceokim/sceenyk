@@ -1,5 +1,11 @@
 import type { CategoryId, CreationSettings } from "@/lib/projects/options";
 import type { MediaKind } from "@/lib/media/types";
+import type { GenerationSnapshot } from "@/lib/generation/types";
+import type {
+  GenerationFailureCode,
+  GenerationStage,
+  GenerationStatus,
+} from "@/lib/generation/contract";
 
 // Authored migration contracts. Hosted identity/projects/assets are exercised
 // in development acceptance; full catalog/grant auditing remains separate.
@@ -56,6 +62,20 @@ export type AssetRow = {
 export type Database = {
   public: {
     Tables: {
+      generation_jobs: {
+        Row: GenerationRow;
+        Insert: Pick<
+          GenerationRow,
+          "owner_user_id" | "project_id" | "request_id" | "input_snapshot"
+        >;
+        Update: Partial<
+          Pick<
+            GenerationRow,
+            "status" | "current_stage" | "error_code" | "error_message"
+          >
+        >;
+        Relationships: [];
+      };
       project_assets: {
         Row: AssetRow;
         Insert: Omit<
@@ -91,4 +111,21 @@ export type Database = {
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;
   };
+};
+
+export type GenerationRow = {
+  id: string;
+  owner_user_id: string;
+  project_id: string;
+  request_id: string;
+  input_snapshot: GenerationSnapshot;
+  status: GenerationStatus;
+  current_stage: GenerationStage | null;
+  error_code: GenerationFailureCode | null;
+  error_message: string | null;
+  started_at: string | null;
+  completed_at: string | null;
+  failed_at: string | null;
+  created_at: string;
+  updated_at: string;
 };

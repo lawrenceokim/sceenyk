@@ -2,8 +2,16 @@ import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 import { creationCategories } from "@/components/creation/creation-options";
 import type { ProjectSummary } from "@/lib/projects/types";
+import type { GenerationStatus } from "@/lib/generation/contract";
+import { ProjectJobBadge } from "./project-job-statuses";
 
-export function ProjectCard({ project }: { project: ProjectSummary }) {
+export function ProjectCard({
+  project,
+  jobStatus,
+}: {
+  project: ProjectSummary;
+  jobStatus?: GenerationStatus | "unavailable" | null;
+}) {
   const category = creationCategories.find(
     (item) => item.id === project.category,
   );
@@ -19,9 +27,7 @@ export function ProjectCard({ project }: { project: ProjectSummary }) {
         <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-accent text-accent-foreground">
           {Icon && <Icon className="size-5" aria-hidden="true" />}
         </span>
-        <span className="rounded-full bg-muted px-2.5 py-1 text-caption font-medium capitalize text-muted-foreground">
-          {project.status}
-        </span>
+        <ProjectJobBadge projectId={project.id} initialStatus={jobStatus} />
       </div>
       <h3 className="mt-4 break-words text-body font-semibold">
         {project.title}
@@ -47,7 +53,7 @@ export function ProjectCard({ project }: { project: ProjectSummary }) {
           }).format(new Date(project.updatedAt))}
         </time>
         <span className="inline-flex items-center gap-1 text-body-sm font-medium text-link">
-          Open draft
+          Open project
           <ArrowUpRight className="size-4" aria-hidden="true" />
         </span>
       </div>

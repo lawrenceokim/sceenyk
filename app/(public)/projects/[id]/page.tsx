@@ -9,6 +9,11 @@ import { AppUserSyncError } from "@/lib/auth/ensure-app-user";
 import { getOwnedProject, ProjectAccessError } from "@/lib/projects/server";
 import { listOwnedAssets, MediaAccessError } from "@/lib/media/server";
 import type { ProjectAsset } from "@/lib/media/types";
+import {
+  GenerationAccessError,
+  getLatestProjectGeneration,
+} from "@/lib/generation/server";
+import type { GenerationJob } from "@/lib/generation/types";
 
 export const metadata: Metadata = {
   title: "Project draft — Sceenyk",
@@ -42,6 +47,19 @@ async function OwnedWorkspace({ params }: { params: Promise<{ id: string }> }) {
         "Your project opened, but its media couldn’t be loaded. Refresh to try again.";
     else throw error;
   }
+  let generation: GenerationJob | null = null;
+  let generationError = "";
+  try {
+    generation = await getLatestProjectGeneration(project.id);
+  } catch (error: unknown) {
+    if (
+      error instanceof GenerationAccessError ||
+      error instanceof AppUserSyncError
+    )
+      generationError =
+        "Your project opened, but generation status couldn’t be loaded. Check status to try again.";
+    else throw error;
+  }
   return (
     <CreationWorkspace
       key={project.id}
@@ -49,6 +67,8 @@ async function OwnedWorkspace({ params }: { params: Promise<{ id: string }> }) {
       viewerUserId={userId}
       initialAssets={assets}
       initialMediaError={mediaError}
+      initialGeneration={generation}
+      initialGenerationError={generationError}
     />
   );
 }
