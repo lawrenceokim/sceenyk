@@ -4,11 +4,11 @@ Technical boundaries for Sceenyk's prompt/media-to-finished-video platform. Read
 
 **Repository inspection: 2026-10-10.** **Confirmed** means present in current source/dependencies; live verification is explicitly identified below and in the tracker. **Planned** means specified architecture or the preferred direction supplied for this document, with no integration yet. **Undecided** identifies details still requiring a decision. All service/data-flow diagrams and contracts below are planned unless explicitly identified as implemented.
 
-The public UI foundation includes a server-composed landing page and shared navigation/footer. Clerk development authentication and minimal hosted application identity are verified. Owned projects and `project_assets` exist in hosted Supabase; broader project acceptance is tracked separately. The authorized media unit now verifies real browser direct uploads to Cloudflare R2, storage-verified finalization, private previews, refresh/reopen and two-account ownership in development. Showcase artwork is illustrative. The persistent generation-job foundation is implemented in source; hosted migration/acceptance is pending. No processing, credits, payments or workers exist.
+The public UI foundation includes landing/themes and verified Clerk/application identity, owned projects and private R2 media. Generation persistence and Inngest dispatch now have real development acceptance: trusted preparation, atomic claims, retries, duplicates and cron recovery. Broader prior project acceptance is tracked separately. No AI production, output, credits, payments or heavy rendering worker exists.
 
 **Public UI contract (2026-10-09):** use existing CSS tokens and shadcn/Base UI controls. Theme initialization runs before paint; saved `sceenyk-theme` overrides system preference, otherwise follow the system. Preserve root font classes, keep the landing page static, and tolerate unavailable browser storage. Public navigation uses working section anchors. Paid pricing remains unpriced preview copy until product rates are approved.
 
-**Creation workspace (updated 2026-10-09):** public `/create` retains category, prompt, local Files/previews and four creative settings. Explicit Save draft stores only the validated brief. Permanent Upload to project first successfully saves an unsaved project through the same stable UUID/in-flight promise, then retains Files while changing to `/projects/[id]`. Browser XHR sends files directly to private R2 with real progress; server finalization verifies stored content before the UI shows uploaded media. Reopen restores owned asset metadata and authorized active previews. Selected local Files remain outside brief payloads/schema and temporary object URLs are cleaned up. Permanent deletion is deferred. Generate now queues a validated immutable request for a saved owned project. Jobs remain queued without a processor, and no accounting occurs; options remain creative-brief choices.
+**Creation workspace (updated 2026-10-10):** public `/create` retains category, prompt, local Files/previews and settings. Explicit Save draft stores the validated brief. Upload first saves an unsaved project using the stable UUID/in-flight promise, retains Files while changing URL, sends bytes directly to private R2 and verifies stored content before success. Reopen restores owned metadata/private previews. Local Files stay outside brief payloads; temporary URLs are cleaned up. Permanent deletion is deferred. Generate commits an immutable owned request before durable dispatch. Preparation/delivery feedback shows persisted truth; the unsupported provider handoff safely fails without output or accounting.
 
 **Development payment invariant:** all future payment development/testing uses PayPal Sandbox only, with no real-money transactions or Live credentials. Future payment configuration must separate environment/credentials behind the payment service so production can deliberately switch to Live later. This UI unit adds no payment code or credentials.
 
@@ -20,7 +20,7 @@ The public UI foundation includes a server-composed landing page and shared navi
 | --- | --- | --- |
 | Application — Confirmed foundation | Next.js 16.4.0 App Router, React/React DOM 19.3.0 | Static public `/` and `/create`; protected request-time dashboard and `/projects/[id]`; thin authenticated project/media Server Actions. Hosted project-first save/reopen verified; broader project acceptance remains separate. |
 | Language/tooling — Confirmed | TypeScript 5.9.3, ESLint 9.39.5, npm, Zod 4 | Strict typed code and runtime project validation. `npm run test:generation` runs isolated SQL/service integration checks using development-only PGlite and Node assertions. |
-| UI — Confirmed foundation | Tailwind CSS 4.3.3, `@tailwindcss/turbopack` 4.3.3, shadcn 4.21.3 (`base-nova`), Base UI 1.8.0, Lucide React 1.52.0 | Button/Dialog/Sheet, public and dashboard shells, shared EmptyState, themes, and local creation previews. Upload progress is real; persisted job-state UI is implemented in source, with hosted acceptance pending. Processing/results remain Planned. |
+| UI — Confirmed foundation | Tailwind CSS 4.3.3, `@tailwindcss/turbopack` 4.3.3, shadcn 4.21.3 (`base-nova`), Base UI 1.8.0, Lucide React 1.52.0 | Shared shells/EmptyState/themes and media previews. Upload progress and persisted queued/preparing/failed feedback have live development acceptance. AI production/results remain Planned. |
 | Typography — Confirmed | Inter and Geist Mono via `next/font/google` | UI/headline and mono fonts; global aliases live in CSS. |
 | Authentication — Development verified | Clerk Next.js 7.9.13, Clerk UI 1.39.1 | Development-only provider, centered official modals/account controls, proxy plus server resource protection. No dedicated auth pages. |
 | Database — Development persistence verified | Supabase PostgreSQL via `@supabase/supabase-js` 2.117.3 | One server-only SDK layer with hosted identity/projects/assets. Live media ownership/persistence verified; SQL grants/constraints tested in isolated PostgreSQL, not a full hosted catalog audit. No ORM/browser database/Supabase Auth. |
@@ -31,7 +31,7 @@ The public UI foundation includes a server-composed landing page and shared navi
 | Voice — Planned preferred | ElevenLabs | Narration/voiceovers when required by the chosen creation path; model/voice policy remains Undecided. |
 | Video assembly — Planned preferred | Remotion | Programmatic compositions combining scenes, captions, audio, overlays, and animations. Not installed/configured. |
 | Video processing — Planned | FFmpeg | Cutting, resizing, transcoding, audio extraction, frame-rate conversion, compression, thumbnails, and final processing. No worker invocation or repository-managed binary exists; host availability was not tested. |
-| Background workflow — Planned preferred | Inngest, or the workflow provider adopted for implementation | Durable stage execution, retries, and resumable orchestration. No workflow definitions/SDK exist. |
+| Background workflow — Development verified | Inngest SDK 4.23.0; official test engine 1.0.0 | Signed endpoint, atomic claims, four retries and minute reconciliation. Real persistent Dev Server 1.46.0 acceptance passed. Keys are configured; the actual local production signature gate passes. Deployed Cloud delivery is unverified. No AI execution. |
 | Heavy processing — Planned preferred | Render + Docker | Worker environment for FFmpeg, Remotion, and long/CPU-heavy media work outside lightweight web hosting. No Dockerfile/worker deployment configuration exists. |
 | Payments — Planned | PayPal | Hackathon credit purchases first; subscriptions, marketplace purchases, and eventual creator payouts are later capabilities. No checkout/webhook/service implementation exists. |
 | Deployment — Planned preferred | Vercel for Next.js; Render for media workers | Separate web/request handling from heavy processing. Repository inspection does not confirm active deployments or external accounts. |
@@ -48,7 +48,7 @@ The repository uses root-level folders, not `src/`. The `@/*` TypeScript alias r
 
 | Existing location | Current responsibility |
 | --- | --- |
-| `app/` | Root document/theme/CSS; public shell for `/`, `/create` and visually shared private `/projects/[id]`; dashboard shell. `actions/projects.ts` is a thin authenticated mutation boundary; no Route Handlers. |
+| `app/` | Root document/theme/CSS, public/private workspace/dashboard composition and thin authenticated project/media/generation actions. `/api/inngest` is the official signature-protected workflow Route Handler. |
 | `components/ui/` | shadcn/Base UI Button and token-adapted Dialog/Sheet. |
 | `components/` | Shared brand/navigation/footer/themes/auth/artwork/EmptyState; landing/creation/dashboard composition, explicit draft save states, project metadata cards and load-failure UI. No database access in presentation. |
 | `lib/` | Theme/utilities; `auth/` verifies Clerk and resolves application identity; `db/` owns the sole privileged SDK/config/schema contract; `projects/` owns shared choices/types/validation and authenticated owned persistence. |
@@ -79,21 +79,21 @@ These are future locations/contracts, not created folders. Add only what the req
 | `lib/generation/` | Request-to-production orchestration, stage contracts, persistent job state, and coordination of provider/worker services. |
 | `lib/validation/` | Shared runtime schemas for untrusted request/provider/webhook/configuration data. |
 | `types/` | Genuinely shared domain types, including the adopted job-state contract. |
-| Future workflow/worker and migration locations | SQL migrations now live in `supabase/migrations/`; preserve applied files. Workers remain future work separate from web hosting. |
+| Workflow and migrations | `lib/workflows/` owns Inngest client/functions; `lib/generation/dispatch.ts` owns outbox sending; `supabase/migrations/` holds SQL. Preserve applied files. Heavy media workers remain future work. |
 
 Prefer Server Components; use small client components for interactive state and controls. The installed Next.js configuration enables `cacheComponents` and `partialPrefetching`; read its local guides before implementing request-time/session reads, use appropriate Suspense boundaries, and never share authentication decisions or private data through an unscoped cache. Thin routes/services validate, authenticate, authorize, and delegate; no application framework setting should be disabled to conceal an integration error.
 
 ## Storage Model
 
-### Persistent generation-job contract — source implemented 2026-10-10, hosted acceptance pending
+### Persistent generation-job contract — hosted development persistence verified
 
-This unit adds only the persistent request/state boundary in `lib/generation/`, not dispatch, providers, accounting or outputs. Generate requires a saved owned project and a nonempty validated prompt. It snapshots the current prompt, category and four settings plus all currently uploaded project asset IDs; unfinished local Files must be uploaded or removed first. A snapshot is independent of subsequent draft edits. There is no implicit autosave on Generate.
+The foundation in `lib/generation/` persists requests/state; the separately authorized dispatch unit extends it through Inngest below, without providers/accounting/output. Generate requires a saved owned project and nonempty prompt. Its immutable snapshot contains current prompt/category/settings and all uploaded project asset IDs. Local Files must be uploaded or removed first. Later brief edits do not change a job; Generate does not implicitly save the draft.
 
 `generation_jobs` has a server-generated UUID, verified owner/project composite FK, request UUID unique per project, validated versioned JSON input snapshot, status/stage, safe failure code/message and database timestamps. Snapshot, ownership and request identity are immutable. Creation retries reuse the request UUID and identical normalized snapshot; a changed payload conflicts. Multiple jobs per project remain possible. No progress percentage, provider fields, result asset, credit fields or one-job-ever restriction is introduced.
 
-See [generation-jobs.md](generation-jobs.md) for setup, action boundaries and the pending live acceptance checklist. The shared TypeScript contract is `lib/generation/contract.ts`; the SQL migration enforces the same contract, verified by integration checks. States are `queued → processing → completed|failed`, with `queued → failed` also allowed. Stages are preparing, analyzing, planning, generating, voice and rendering; processing may skip optional stages but cannot move backward. Queued and completed have no current stage; failed may retain the stage where it stopped. Terminal jobs are immutable. Failure messages come from a fixed safe code map. Server-only transition functions use owner/project/job filters and compare-and-set against expected status/stage. No status mutation Server Action is exported. Without a worker, real user jobs remain queued; terminal development fixtures do not claim a generated result.
+See [generation-jobs.md](generation-jobs.md) and [generation-dispatch.md](generation-dispatch.md) for setup/evidence. Shared `lib/generation/contract.ts` rules are SQL-enforced. States are queued → processing → completed|failed, also queued → failed; stages preparing/analyzing/planning/generating/voice/rendering move forward only. Queued/completed have no stage; failed may retain its last stage. Terminal jobs are immutable and errors use fixed safe messages. Request-authenticated helpers use owned compare-and-set; workers use separate service-only atomic RPCs. No browser status-mutation action exists. This worker stops at preparing and fails its unsupported handoff; it never completes an output.
 
-Workspace recovery reads the latest job ordered by creation time and ID descending, limited to one. Reads independently verify Clerk → app user → project → job. Initial server data plus explicit refresh and route activation/pageshow/visibility recovery use uncached owned reads; no timer simulates progress. Dashboard cards use at most one latest-job query for each of the eight visible owned projects, with bounded activation/pageshow/visibility recovery; status failure is distinct from Draft. Job actions return DTOs without owner identity; the owned request UUID supports exact retry recovery. They do not invalidate the active route, preserving local Files. A future worker needs a separately authorized dispatch/authentication and output-finalization contract before using these transitions.
+Workspace recovery reads the latest job by creation time and ID descending, limited to one, independently checking Clerk → app user → project → job. Explicit refresh and activation/pageshow/visibility use uncached owned reads; no progress timer exists. Dashboard reads at most one latest job for each of eight visible projects; read failure differs from Draft. DTOs omit owner/worker identity while retaining request UUID and safe dispatch status. Actions preserve local Files. Worker authority is the separate signed/RPC boundary below; future output finalization is unimplemented.
 
 ### Owned draft projects — prior unit and historical baseline
 
@@ -192,9 +192,19 @@ Protected server operations derive the user from verified Clerk sessions. `ensur
 
 Paths may omit unnecessary stages. The first supported creation category and stage contracts must be defined before implementation; this is not permission to build every category/provider. Job submission returns a reference promptly. The browser displays persisted progress and can revisit later rather than holding a normal request open for production.
 
-### Persistent state and recovery — Planned
+### Durable dispatch and recovery — development verified
 
-No job state machine is implemented. Candidate states are `queued`, `uploading`, `analyzing`, `planning`, `generating`, `voice`, `rendering`, `completed`, and `failed`. Adopt only states that represent actual processing; upload may be a separate asset state. Define allowed transitions and stage completion separately where needed, centralizing types rather than duplicating enums.
+Inngest is the sole workflow coordinator. A generation row is also the transactional outbox: creation commits `queued/pending` before sending `sceenyk/generation.requested`, with only `generationJobId` in event data. Database RPCs reserve numbered attempts with a two-minute cooldown and acknowledge only the current attempt. A late acknowledgement cannot overwrite a claim. A minute cron reconciles bounded batches, including accepted events that remain unclaimed; recovery needs no browser. Each attempt has a stable event ID; the database claim provides durable duplicate protection beyond event deduplication windows.
+
+Official SDK signature verification protects cloud execution. Unsigned local development is explicit and disabled in production. Workers use the server-only database client without interactive Clerk auth, revalidate the authoritative job/project/application-user/assets relationship and claim atomically using the Inngest run ID. The same run can resume after a lost database response; another delivery exits. Browser roles cannot invoke worker RPCs or alter dispatch metadata. Temporary errors use four Inngest retries; invalid events/integrity failures are non-retryable.
+
+This unit stops at `processing/preparing`. After a durable one-minute pause it records a safe failure because no production pipeline is connected, never a completed output. The cron also fails claims older than fifteen minutes, covering exhausted retries and crashes. Terminal jobs cannot be reclaimed. No heartbeat or automatic replay of possibly expensive work is introduced. Future providers must replace this explicit handoff and revisit execution limits/idempotency before extending it.
+
+Recovery requires registered, active Inngest functions or a running local Dev Server. During service downtime rows remain recoverable when it returns; monitor cron failures/pauses and oldest queued age. Deployment is not yet verified. See [generation-dispatch.md](generation-dispatch.md) for setup and evidence.
+
+### Persistent state and recovery — future production stages
+
+The persistent job state machine is implemented: `queued`, `processing`, `completed`, `failed`, with separate forward-only stages. Upload remains a separate asset state. Production stage inputs/outputs and accounting are future work.
 
 Persist enough information to show progress after reload, diagnose failures, and safely resume: job/generation/project owner, validated request/configuration, current state/stage, stage inputs/outputs, provider job IDs, attempt/timing information, safe error context, accounting reference, and final asset reference.
 
@@ -206,7 +216,7 @@ Application → Sceenyk generation service → provider interface → provider a
 
 For example, a future `generateVideo()` contract delegates to `lib/video-ai/providers/runway.ts`; pages and shared UI do not depend on that provider's payloads. Apply the same principle to language/multimodal models, voice, storage, and payments. Validate adapter outputs into shared Sceenyk contracts, keep keys server-side, and record external job references.
 
-Inngest is the preferred workflow coordinator; Render/Docker is the preferred heavy processing environment. Workflow orchestration and rendering execution are separate responsibilities. Their dispatch protocol, worker/service authentication, limits, completion callbacks, retry ownership, and deployment configuration remain Undecided. Do not run heavy FFmpeg/Remotion work in lightweight Next.js request handling.
+Inngest is the implemented workflow coordinator; Render/Docker remains the preferred future heavy processing environment. Signed Inngest execution, claims, retries and recovery are defined above. Rendering-service authentication, limits, completion callbacks and deployment remain future decisions. Do not run heavy FFmpeg/Remotion work in lightweight web requests.
 
 ## Payments and Credits
 
@@ -306,8 +316,8 @@ UI, real Clerk development flows and real Supabase identity verification are rec
 ### Planned
 
 - Complete the broader prior owned-project options/edit/update/list acceptance; later PayPal verification and ledger-backed credit purchases remain unstarted.
-- Durable dispatch and recoverable background execution, separate heavy rendering and stable generated-result delivery. The persistent job/state foundation is implemented in source with hosted acceptance pending. Private input-media storage is development-verified; production deployment remains separate.
-- Preferred technology direction supplied by this architecture request: R2, Gemini, Runway as the initial video candidate, ElevenLabs, Remotion/FFmpeg, Inngest, Vercel web hosting, and Render/Docker workers. R2 is now development-verified; the remaining choices are documented preferences, not installed integrations or verified deployments. Vercel AI SDK versus a minimal internal orchestration implementation is still open.
+- Cloud deployment/operations for development-verified Inngest dispatch, separate heavy rendering and stable generated-result delivery. Production deployment remains unverified.
+- R2 and Inngest are development-verified. Gemini, Runway, ElevenLabs, Remotion/FFmpeg, Vercel hosting and Render/Docker remain planned. The internal AI boundary/possible Vercel AI SDK choice is still open.
 - Broader prior project acceptance remains separate. Actual AI processing/results, subscriptions and marketplace remain later units.
 
 ### Undecided
@@ -315,8 +325,8 @@ UI, real Clerk development flows and real Supabase identity verification are rec
 - First supported MVP creation path; concrete analysis/video/voice models and validated stage contracts. Runway remains the preferred candidate, subject to that path's requirements.
 - Final adoption/configuration of preferred providers, account availability, exact SDK needs, storage limits/formats/CORS, retention/deletion, and access/delivery rules.
 - The owned-draft/asset schema and media access rule are implemented with live development persistence; broader project acceptance and hosted catalog auditing remain separate. Other domains and independent-of-activity Clerk webhooks remain unspecified/deferred.
-- Workflow-to-worker dispatch/authentication, deployment capacity/resources, retry/recovery rules, progress transport, and exact job/stage state machine.
+- Future workflow-to-Render authentication, deployment capacity, provider retry/output contracts and live progress transport. The current state machine and dispatch recovery contract are implemented above.
 - Credit tariffs, paid bundles/prices/currency, exact free eligibility/duration options, reservation/settlement/restoration/refund rules, and later subscription/creator economics. The two-free-generation count is already specified.
 - Final production logo assets and future workspace layouts. The public theme preference contract is now implemented above.
 
-**Documentation synchronization (2026-10-10):** private R2 project-input media, hosted asset access, retrieval, CORS diagnosis and live development evidence are reflected in database, UI, workflow, storage setup and tracker. Existing migrations remain unchanged. Live checks are distinct from earlier isolated/simulated evidence and do not establish production deployment or a full hosted catalog audit. The separately authorized generation-job foundation now adds migration 004 and persistent state only; hosted application/acceptance is pending. Payments and execution remain excluded.
+**Documentation synchronization (2026-10-10):** private R2 media and persistent generation jobs/dispatch have live development evidence. Migrations 001–004 are unchanged; user-applied 005 adds outbox/claim RPCs. Live checks differ from isolated evidence and do not establish Cloud deployment or a full hosted catalog audit. AI production, rendering/output and accounting remain excluded.

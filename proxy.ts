@@ -25,6 +25,9 @@ function isPrivatePath(path: string) {
 }
 
 export default function proxy(request: NextRequest, event: NextFetchEvent) {
+  // Worker requests use the official Inngest signature gate, independent of
+  // browser sessions and Clerk availability. No other API bypass is added.
+  if (request.nextUrl.pathname === "/api/inngest") return NextResponse.next();
   if (!getClerkDevelopmentConfig().enabled) {
     const path = request.nextUrl.pathname;
     if (isPrivatePath(path)) {

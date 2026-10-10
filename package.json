@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test:generation": "node scripts/check-generation.mjs"
+    "test:generation": "node scripts/check-generation.mjs",
+    "test:dispatch": "node scripts/check-dispatch.mjs",
+    "test:client-secrets": "node scripts/check-client-secrets.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1148.0",
@@ -19,6 +21,7 @@
     "class-variance-authority": "^0.7.1",
     "cn": "^0.4.0",
     "file-type": "^22.1.1",
+    "inngest": "^4.23.0",
     "lucide-react": "^1.52.0",
     "next": "16.4.0",
     "react": "19.3.0",
@@ -29,6 +32,7 @@
   },
   "devDependencies": {
     "@electric-sql/pglite": "^0.5.8",
+    "@inngest/test": "^1.0.0",
     "@tailwindcss/turbopack": "^4",
     "@types/node": "^20",
     "@types/react": "^19",

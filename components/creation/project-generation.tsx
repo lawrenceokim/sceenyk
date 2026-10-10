@@ -95,8 +95,9 @@ export function ProjectGeneration({
         )}
       </div>
       <p className="text-caption leading-relaxed text-muted-foreground">
-        Requests are saved now. Processing will be available in a later update;
-        no content is generated and no credits are used.
+        Requests are saved and sent for background preparation. Video production
+        is not connected yet, so preparation ends without generated content. No
+        credits are used.
       </p>
       {state.retrying && (
         <p className="text-caption text-muted-foreground">
@@ -118,7 +119,10 @@ export function ProjectGeneration({
             </p>
             {state.job.status === "queued" && (
               <p className="text-body-sm text-muted-foreground">
-                Your request is saved. You can leave and return to this project.
+                {state.job.dispatchStatus === "dispatch_failed" ||
+                state.job.dispatchStatus === "pending"
+                  ? "Your request is saved and waiting for delivery. Background recovery will retry; you can leave and return."
+                  : "Your request is queued for background preparation. You can leave and return to this project."}
               </p>
             )}
             {state.job.status === "processing" && state.job.stage && (

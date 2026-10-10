@@ -1,6 +1,8 @@
 # Progress Tracker
 
-**Current authorized unit (2026-10-10): persistent generation-job foundation — In Progress.** Hosted Data API inspection exposes only app_users, projects and project_assets; no existing job table. Implemented in source: owned queued requests, immutable snapshots, retry identity, server-only transitions, latest-job recovery and minimal dashboard status. `npm run test:generation` passes 87 isolated PostgreSQL/SDK/service checks; lint and production build pass. No worker, AI provider, credits or payments. New migration and live acceptance are pending; prior media verification remains intact.
+**Current authorized unit: durable generation dispatch — Complete within local development acceptance (2026-10-10).** Real Chrome/Clerk → hosted Supabase → persistent Inngest Dev Server delivery, claims, duplicates, browser closure, reopen/refresh, outage and independent cron recovery pass. User-applied migration 005 and worker RPCs are verified. Inngest keys are now configured; the actual local production endpoint rejects unsigned requests and accepts the configured signature to claim a hosted fixture. Deployed Cloud delivery remains unverified. No AI production, rendering/output, credits or payments are included.
+
+**Historical foundation baseline before hosted migration application:** persistent generation requests/state were source-ready with hosted acceptance pending. That table now exists and is exercised during dispatch acceptance. The prior detailed notes below preserve the earlier evidence and do not override current dispatch status.
 
 Update this file after every meaningful implementation change.
 
@@ -10,7 +12,23 @@ Last implementation and verification: **2026-10-10 (Africa/Lagos)**. Read [overv
 
 ## Current Phase
 
-**Generation foundation — source ready; live acceptance pending migration 004.**
+**Durable dispatch evidence and boundaries (2026-10-10):**
+
+- Technology: Inngest SDK 4.23.0, official test engine 1.0.0 and real Dev Server CLI 1.46.0 with persistent SQLite. One coordinator; `/api/inngest` uses official signature verification in cloud mode and bypasses interactive Clerk only for that exact route. Production forces cloud mode, even if the local dev opt-in is accidentally deployed.
+- Schema: user-confirmed application of `20261010000500_generation_dispatch.sql`; fresh hosted metadata includes all seven dispatch/claim fields. Existing migrations 001–004 and auth/project/media schemas are preserved. Service-only RPCs reserve/acknowledge attempts, load/validate/claim jobs, fail owned claims and reconcile. Browser roles cannot invoke them; direct service table writes cannot supply claim/dispatch metadata. Full hosted SQL catalog/grant audit remains separate; authored grants/constraints pass isolated PostgreSQL.
+- Delivery: job commits queued/pending before send. Event `sceenyk/generation.requested` contains only `generationJobId`, with stable job/attempt event ID. A failed/uncertain send preserves the original row. Two-minute DB reservation cooldown and conditional acknowledgement cover concurrent sends, process exit and ack/claim races; worker receipt is proven separately.
+- Worker: atomic authoritative job/project/application-user/assets verification and claim using the Inngest run ID. Another run exits; the same run resumes after an uncertain DB response. Four supported retries handle temporary failures; malformed/missing/integrity failures are non-retryable. No client status mutation or arbitrary dispatch action exists.
+- Recovery: minute cron considers at most 25 oldest queued jobs, including pending/failed and accepted-but-unclaimed attempts. Separate durable per-row steps prevent one failed send from blocking the batch. A fifteen-minute safety timeout fails stale preparing claims without transferring ownership/replaying expensive work. Service downtime preserves outbox rows; active cron registration and operational monitoring are required when it returns.
+- Honest boundary: actual worker sets processing/preparing, sleeps durably one minute, then records safe failure because no production pipeline is connected. It never marks completed or invents output. Workspace copy explains this; current UI uses real persisted stage/status without percentages. Future provider work must replace this handoff and revisit timeouts/provider idempotency.
+- Isolated verification: **87 existing generation checks + 55 dispatch checks pass** against all five actual migrations and real Supabase/Inngest SDKs/official execution engine. Coverage includes grants/RLS, ownership, request identity, failure/ack/claim races, resumed claims, duplicate/invalid events, bounded retries, reconciliation, stale-claim expiry and official valid/invalid signature requests. Stale expiry uses time-aged isolated fixtures; no fifteen-minute hosted crash soak was performed.
+- Live local-workflow acceptance: **42 checks pass** across actual Chrome/Clerk, hosted Supabase and the real persistent Dev Server. Includes exactly-one UI creation/double click, actual receipt/preparing claim, duplicate and malformed delivery, closing Chrome before handoff finishes, reopened/refreshed exact jobs/dashboard, A/B access/redispatch denial, client identity/status claim rejection, retry identity, real stopped-service dispatch failure and cron recovery after restart with Chrome closed. A separate committed-before-send development fixture also recovers without another row. Real uploaded-media snapshots are claimed; existing private R2 GET returns 200 and image decodes. Preparing/delivery states fit 1440px, 390px and 320px in both themes. Temporary acceptance fixtures/scripts stay outside production routes/UI.
+- Production-mode signature acceptance: **six additional real checks pass** against the built app on localhost:3001 and hosted Supabase. Official SDK rejects unsigned/invalid execution without mutation, accepts a correct signature made with the configured signing key, and claims the authoritative job. The explicit development fixture is closed through its claim-bound RPC, without output. This is locally signed acceptance, not Cloud-delivered execution; total local live checks are **48**.
+- Required checks: lint, standalone TypeScript and production build pass. `npm run test:client-secrets` scans 21 production client files against six configured Clerk/Supabase/R2/Inngest secret values and workflow server markers: zero leaks/markers. No Next.js framework feedback candidate arose during this unit.
+- Setup: server-only `INNGEST_EVENT_KEY`, `INNGEST_SIGNING_KEY`; optional `INNGEST_SIGNING_KEY_FALLBACK`. Local-only `INNGEST_DEV=1` plus `npx --yes inngest-cli@1.46.0 dev --persist --no-discovery --host 127.0.0.1 -u http://localhost:3000/api/inngest` from a dedicated persistent directory. See [generation-dispatch.md](generation-dispatch.md) for exact PowerShell setup, trust/recovery contracts and operational limitations.
+- Pending outside local acceptance: deployed HTTPS endpoint/function sync, actual Cloud event delivery/execution/retries/cron monitoring and hosting availability. Event/signing keys are configured; the event key has not been validated through Cloud delivery. Broader prior project options/edit/list acceptance and hosted catalog auditing remain separate. No claim of production readiness.
+- Recommended next small unit: register the deployed Inngest endpoint with the configured keys and verify signed Cloud dispatch/recovery, before separately scoping the first provider contract. Do not begin providers or another unit automatically.
+
+**Historical generation foundation notes — recorded before hosted migration 004 application:**
 
 - Model: `generation_jobs` stores UUID owner/project/request identity, immutable version-1 prompt/category/settings/uploaded-asset snapshot, queued/processing/completed/failed status, current stage, safe error and database timestamps. Composite owned-project FK, per-project request uniqueness, latest-job index, RLS and restricted grants enforce the contract.
 - Service: `lib/generation/{contract,validation,types,server}.ts` and thin `app/actions/generation.ts`. Every read/create/transition verifies Clerk → app user → owned project; asset references must be owned, uploaded and project-scoped. Requests reject browser owner/status/progress/credit claims. Compare-and-set transitions are server-only, with no browser status-update endpoint. Stages move forward; terminal jobs stay terminal.
@@ -33,7 +51,7 @@ Project implementation exists: explicit Save draft/title/status controls; one Zo
 
 | Phase | Status | Repository evidence |
 | --- | --- | --- |
-| Project Foundation | In Progress | Web/UI, Clerk/Supabase development identity and private R2 project media work. Workflows/other providers and production deployment remain future units. |
+| Project Foundation | In Progress | Web/UI, Clerk/Supabase, private R2 media and Inngest dispatch work in development. AI production and deployment remain future work. |
 | Global UI & Public Landing Page | Complete | All requested landing sections, reusable compositions, responsive navigation, and both themes are implemented and browser-checked. |
 | Creation Workspace UI | Complete as local preview | Six categories, prompt, local media, four settings, empty output/brief/source panels, and honest Generate notice. No production execution. |
 | Dashboard Shell UI | Complete as preview | Existing shell/empty states retained with verified Clerk account controls and application identity initialization. Counts/credits remain honest previews. |
@@ -41,6 +59,7 @@ Project implementation exists: explicit Save draft/title/status controls; one Zo
 | Database & User Sync | Complete as minimal development identity | Connected server-only Supabase SDK, user-applied `app_users` migration, unique Clerk mapping, nullable profiles, DB timestamps and RLS/grant strategy. Real two-account, profile, refresh/re-login and unique-constraint checks passed; broader hosted catalog/browser-role audit remains outside verified evidence. |
 | Projects | In Progress | Hosted projects and real project-first save/retry/reopen/ownership verified during media acceptance. Prior broader options/edit/update/list acceptance remains separate and unfinished. |
 | Media Uploads | Complete in development | Real R2 browser image/video/audio PUT, hosted metadata verification, private previews, retry, refresh/reopen, A/B and signed-storage security checks pass. |
+| Generation Dispatch | Complete in local development | Persistent requests → real Inngest delivery → authoritative claims; duplicates, retries, browser independence and cron recovery verified. Cloud deployment remains unverified; no AI output. |
 | Credits & Usage | Not Started | Free allowance appears in pricing copy; no balance, ledger, or eligibility enforcement. |
 | Payments | Not Started | No checkout, PayPal SDK, credentials, server verification, or real-money transactions. Future development/testing is Sandbox only. |
 | AI Production Pipeline | Not Started | No APIs, providers, analysis, generation, or job execution. |
@@ -49,6 +68,10 @@ Project implementation exists: explicit Save draft/title/status controls; one Zo
 | Testing & Hackathon Polish | Not Started as full MVP | Public, creation, and dashboard UI checks passed; complete integration testing remains future work. |
 
 ## Current Goal
+
+Durable dispatch development acceptance is complete. Stop after documenting the result. Next separately authorized unit should verify the Cloud deployment/signing/cron operation; do not connect providers, rendering or accounting here.
+
+### Historical media goal
 
 Implement only authorized upload → R2 storage → Supabase metadata → owned project association → private retrieval. Required variables: `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME`; optional `MEDIA_MAX_UPLOAD_BYTES`. No public credentials. Temporary single-PUT safeguard defaults to 100 MiB, centrally configurable up to R2's 5 GiB single-PUT ceiling; this is not a final commercial limit. See [media-storage.md](media-storage.md).
 
@@ -237,7 +260,7 @@ This table describes the dashboard unit. Existing landing and creation page cont
 
 ## Next Up
 
-**Current media unit complete in development:** real configuration, hosted assets, image/video/audio transfers, retry, private retrieval, persistence, A/B and signed-storage security acceptance pass. **Recommended next bounded work:** finish the separate broader owned-project acceptance; afterward scope the first owned persistent generation-job contract with new authorization. No AI provider, generation/job, billing or later implementation has begun. Production/retention/quotas and hosted catalog auditing remain explicit limitations.
+**Current dispatch unit complete in local development:** durable delivery, claims, browser independence, recovery and configured-key local production signature acceptance pass. Recommended next bounded work: register/verify the deployed Cloud endpoint and cron. Broader prior project acceptance remains separate. AI production, rendering/output and accounting remain unstarted; production/retention/quotas and hosted catalog auditing remain explicit limitations.
 
 | Order | Planned unit | Minimum outcome / prerequisites |
 | --- | --- | --- |
@@ -245,7 +268,8 @@ This table describes the dashboard unit. Existing landing and creation page cont
 | 2 | Minimal application identity — Complete in development | Applied app-user migration, real unique two-account mapping, repeat login/refresh and safe profile updates passed. |
 | 3 | Project persistence - In Progress | Hosted schema/save/retry/reopen/media ownership verified; broader prior options/edit/update/list acceptance remains unfinished. |
 | 4 | Media upload - Complete in development | Actual browser/hosted Supabase/R2 transfers, verification, persistence, two-account and signed-storage security pass. |
-| 5 | Persistent generation/job foundation — In Progress | Owned queued requests, immutable snapshots, trusted transitions and bounded refresh/reopen recovery. Hosted migration/live acceptance pending. Dispatch/providers/outputs are separately scoped later work. |
+| 5 | Persistent generation/jobs and durable dispatch — Complete in development | Owned snapshots/identity, real Inngest preparation/claims, retry/recovery and browser independence verified. Cloud deployment and provider/output work remain separate. |
+| 5a | Inngest Cloud deployment acceptance | Register deployed HTTPS endpoint using configured keys; verify actual Cloud delivery/signatures, retries, cron recovery and monitoring. Separately authorized next unit. |
 | 6 | Free allowance and credits | Server-enforced two free short generations, approved tariffs, race-safe reservations/settlement/restoration, and ledger history. |
 | 7 | PayPal Sandbox credit purchases | Sandbox only; verified successful capture grants credits once, duplicates/failures do not. Keep environment/credential selection behind a payment service for a later intentional production switch. |
 | 8 | Production stages, separately scoped | Analysis → planning → first video provider → voice where needed → assembly → rendering/storage/delivery. Each unit verifies real stage outputs, ownership, and failures. |
@@ -261,7 +285,7 @@ Resolve before dependent implementation; prefer the planned directions in archit
 | Which creation category and concrete use case proves the first MVP? | Actual creation form contract and production pipeline. |
 | Which exact analysis/video/voice models and stage contracts are adopted? | Gemini/Runway/ElevenLabs are preferred planned directions, not final configured integrations. |
 | What final product upload limits/quotas and abandoned/pending/rejected retention rules apply? | R2 private development access/formats/CORS verified; commercial limits/cleanup remain pending. Temporary configurable 100 MiB safeguard is not a commercial rule. |
-| What workflow-to-worker dispatch, authentication, deployment resources, and recovery contracts apply? | Inngest and Render/Docker are preferred; actual job implementation. |
+| What remains for workflow deployment and future heavy workers? | Current Inngest signatures, service-only claims, retries and cron recovery are implemented/tested locally. Deployed Cloud delivery and future Render authentication/resources/output contracts remain unverified/undecided. |
 | What access is available for an independent hosted SQL grant/catalog and Cloudflare settings audit? | Object/data access verifies scoped development behavior; no SQL/Management API or R2 administration credential is available. Public settings were confirmed by the user. |
 | What paid bundles, prices/currency, credit tariffs, and subscription limits are approved? | Pricing configuration, credits, and payments. PNG rates are illustrative. |
 | How are concurrent capacity reservations, settlements, failures, and refunds handled? | Accounting and paid provider execution. |
@@ -283,12 +307,12 @@ Resolve before dependent implementation; prefer the planned directions in archit
 
 ## Session Notes
 
-- **Last work:** separately authorized generation-job foundation, 2026-10-10. Source, migration and 87 isolated integration checks implemented; hosted migration/live acceptance pending. Prior real media/security acceptance preserved.
+- **Last work:** separately authorized durable generation dispatch, 2026-10-10. User-applied migration 005, Inngest 4.23.0, atomic claims, four retries and cron/stale recovery. 142 isolated and 48 local live checks pass; deployed Cloud delivery remains unverified. Prior media/security behavior preserved.
 - **Worktree:** clean at generation-task start. Existing identity/projects/media and prior migrations preserved. New job code/migration/tests and synchronized context remain uncommitted; no changes reset.
-- **Source inspection:** read current AGENTS/context in the required order, design-system conventions, existing Clerk implementation and database/environment/package state. Read installed Next.js authentication/Proxy/data-security/connection/rethrow guidance and official Clerk/Supabase references before dependent code.
-- **Migrations/environment:** existing migrations/ignored secrets unchanged. Hosted identity/projects/assets exercised with configured Clerk/Supabase/R2 credentials; bucket CORS corrected by the user, public access disabled per confirmation. Zod/AWS/file-type dependencies from the existing unit retained. The generation unit adds only development-time PGlite for isolated PostgreSQL verification; no provider SDK.
-- **Verification tooling:** actual localhost:3000 development server and isolated headless Chrome via DevTools protocol, real Supabase/R2, reserved A/B accounts, scoped failure injection and separate signing tests. Earlier media simulation remains labeled historical. Generation now adds a reproducible Node/PGlite SQL/service suite (`npm run test:generation`) with a development-only dependency. Existing fixtures/pending/rejected objects are retained and no user data is deleted. Current generation preflight has not created any hosted jobs; the migration is absent. Test browser/server are stopped after checks.
-- **Resume:** apply generation migration 004 through the development SQL Editor, then complete real Clerk/Supabase/browser A/B acceptance. No provider, worker, billing or marketplace work. Broader prior project acceptance remains tracked separately.
+- **Source inspection:** read current AGENTS/context in order, design conventions, generation/auth/media implementation and database/environment/dependencies. Read installed Next.js Route Handler/data-security guidance and current official Inngest docs/installed SDK types before dependent code.
+- **Migrations/environment:** migrations 001–004 preserved; user applied new 005. Configured Clerk/Supabase/R2/Inngest credentials remain ignored/server-only. No R2 configuration changes in this unit. Added Inngest SDK and its development-only official test engine; retained PGlite. No AI provider SDK or accounting integration.
+- **Verification tooling:** actual Next.js development and built production servers, isolated Chrome/DevTools, hosted Supabase/R2 and real persistent Inngest Dev Server. Reserved A/B fixtures verify browser independence, outage recovery and actual configured-key signature execution. Reproducible suites: `test:generation`, `test:dispatch`, `test:client-secrets`. Fixtures remain retained; no user data is deleted. All reserved acceptance jobs finished, and owned test servers/CLI/browser were stopped after checks. Local persistent workflow state remains available for restart.
+- **Resume only with authorization:** register the deployed HTTPS Inngest endpoint using the configured keys, then verify Cloud-delivered signatures, retries and independent cron recovery. Do not connect AI providers, rendering, accounting or marketplace automatically. Broader prior project acceptance remains separate.
 
 ## Update Rules
 

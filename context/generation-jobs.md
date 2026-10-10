@@ -1,12 +1,12 @@
 # Persistent generation jobs
 
-Source implemented 2026-10-10. **Hosted migration and live job acceptance remain pending.** This is a request/state foundation; it does not process content or consume an allowance/credits.
+Source implemented 2026-10-10. Hosted table/persistence is now verified during the separately authorized dispatch unit. This document records the foundation; [generation-dispatch.md](generation-dispatch.md) describes current trusted preparation/recovery. No content or allowance/credits are consumed. Pre-migration acceptance notes below are historical.
 
 ## Development setup
 
-Use the existing Clerk development and server-only Supabase configuration. No new environment variables or paid-provider credentials are needed. The configured Data API credential cannot apply SQL schema changes; no SQL connection or Management API credential is configured in this checkout.
+Use existing Clerk development and server-only Supabase configuration. The foundation needs no additional variables; dispatch requires Inngest configuration documented separately. Data API credentials cannot apply schema changes; no SQL/Management connection is configured.
 
-The development database already exposes `app_users`, `projects` and `project_assets` with the prerequisite UUID ownership and verified-upload columns. Run only [migration 004](../supabase/migrations/20261010000400_generation_jobs.sql) in its SQL Editor. It transactionally adds `generation_jobs`, its snapshot/state guards and restricted grants; it preserves existing tables. It refuses an existing job table rather than replacing data. If already applied, inspect it instead of dropping/recreating it.
+The development database exposes all four application tables. Migration 004 adds generation jobs/guards/grants; migration 005 extends dispatch. Both are present hosted, with user-confirmed 005 application. Preserve applied files and inspect an existing schema before migration; never drop/recreate user data.
 
 ## Contract
 
@@ -16,22 +16,22 @@ The development database already exposes `app_users`, `projects` and `project_as
 - Generate requires an explicitly saved project; it snapshots current controls without implicitly saving draft edits. All uploaded project media is included. Local Files must be uploaded/removed first. Server creation checks every ID is uploaded, has a verified ETag, and belongs to this owner and project. Database insertion independently checks references.
 - A request UUID and normalized snapshot identify one submission. Concurrent retries recover the same row; changed inputs under that UUID conflict. The client retains both UUID and attempted inputs on uncertain responses and recognizes that UUID during owned status recovery. Multiple jobs per project remain possible; no advanced concurrent-job or capacity policy is introduced.
 - [server.ts](../lib/generation/server.ts) independently resolves Clerk identity, app user and owned project for every operation. Reads/transitions also filter job ID and owner/project. DTOs expose only owned job fields, including request UUID for exact recovery, never owner records or credentials.
-- Narrow start/advance/complete/fail functions are server-only, authenticate independently, compare expected status/stage, and rely on SQL guards/timestamps. The browser has create/read/latest/bounded-status actions only. A future worker requires a separately authorized dispatch/authentication, recovery and output-finalization contract; it cannot assume these request-authenticated helpers establish worker authority.
+- Request-authenticated transition helpers remain server-only with owned compare-and-set. Browsers have create/read/latest/bounded-status actions only. Workers use the separate Inngest signature/service-only RPC boundary, not these interactive Clerk helpers. Output finalization remains future work.
 
 ## Recovery and UI
 
 The workspace loads the latest job by `created_at desc, id desc`, limited to one. Check generation status, activation, pageshow and visibility changes use uncached owned reads; there is no timer or simulated percentage. Existing private workspace account/project isolation is retained. Actions do not revalidate the active route or discard local Files.
 
-UI supports no job, creating, queued, actual processing stage, completed with explicit no-output copy, safe failed state and unavailable status. Active jobs disable Generate. New generation after a terminal state creates a new request; it is not worker retry orchestration. Without a worker, user jobs stay queued. No generated result is invented.
+UI supports no job, creating, queued, actual processing stage, completed with explicit no-output copy, safe failed and unavailable states. Active jobs disable Generate; New generation creates a new request after terminal state. Dispatch failure retains the saved request with recoverable feedback and independent cron recovery. The current worker prepares then safely fails its unsupported provider handoff; no output is invented.
 
 Dashboard cards load at most one latest job per visible project (eight per page), then refresh the same bounded IDs on activation/pageshow/visibility. Missing/foreign projects are omitted; status failures show Status unavailable rather than Draft. Draft means an owned project has no job. There is no unbounded history view, fake count or fake thumbnail.
 
 ## Verification
 
-`npm run test:generation` runs the real four SQL migrations, Supabase SDK and generation service/actions against isolated PGlite PostgreSQL. Only Clerk identity and the HTTP transport are fixtures; there is no network or provider access. It verifies ownership, input/media validation, retry/concurrent uniqueness, lost-response recovery, immutable snapshots, transitions/CAS, timestamps, terminal protection, RLS/grants and safe failures. PGlite is a development-only dependency.
+`npm run test:generation` runs all five real migrations, Supabase SDK and generation services/actions in isolated PGlite. Clerk identity/HTTP transport are fixtures; dispatch is separately covered by `npm run test:dispatch`. Checks cover ownership/assets, request identity/lost responses, immutable snapshots, state/CAS/timestamps, terminal protection, grants/RLS and bounded reads. PGlite is development-only.
 
-Lint, standalone TypeScript and production build pass. Actual Chrome/Clerk browser preflight verifies signed-out modal entry, preserved existing owned project/media, controlled missing-table errors and desktop/390px/320px layout in light/dark. Client build scanning finds no configured server secrets. These checks **do not establish hosted job persistence**.
+Historical foundation preflight: lint/TypeScript/build and real Chrome/Clerk signed-out modal, missing-job-table failure, existing project/media preservation and responsive themes passed before migration 004. Those checks alone did not establish hosted job persistence. Current live dispatch/persistence evidence is in the tracker.
 
-After migration application, complete real A/B browser/Data API checks: Generate/double click/lost-response retry; exact job recovery after refresh/reopen/leave; immutable snapshot after draft edits; owned uploaded media selection; foreign project/job/media and browser status claims denied; separate B creation; signed-out denial; queued/processing/failure/completed UI and both themes/mobile. Any trusted development transition helper must operate only on reserved development fixtures outside production routes/UI, produce no output, and remain clearly separate from actual processing. Record results in [progress-tracker.md](progress-tracker.md).
+Historical pre-migration acceptance plan: real A/B creation, retry identity, immutable snapshots, owned media, refresh/reopen, client claim denial and state/theme checks. Current live/isolated evidence and any remaining gaps are in [progress-tracker.md](progress-tracker.md). Development fixtures remain outside production routes/UI and produce no output.
 
-AI providers, dispatch/workflow/worker, rendering, output delivery, free-generation deduction, credits, refunds, payments and subscriptions remain excluded. Recommended next unit after live acceptance: define durable dispatch, worker authentication and failure recovery separately; do not start it automatically.
+Dispatch/workflow acceptance is now recorded separately. AI production, rendering/output, allowance deductions, credits and payments remain excluded. Recommended next unit: configure and verify Cloud workflow deployment before separately scoping a first provider contract. Do not start it automatically.

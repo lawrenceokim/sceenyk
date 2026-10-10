@@ -166,6 +166,10 @@ function load(file) {
   }).outputText;
   const localRequire = (name) => {
     if (name === "server-only") return {};
+    // Dispatch has its own SQL/SDK integration suite; isolate the original
+    // authenticated persistence checks from external workflow transport.
+    if (name === "./dispatch")
+      return { attemptGenerationDispatch: async () => {} };
     if (name === "@/lib/auth/ensure-app-user")
       return {
         ensureAppUser: async () => {
@@ -225,7 +229,7 @@ try {
     await pg.exec(
       fs.readFileSync(path.join(root, "supabase/migrations", file), "utf8"),
     );
-  check("all four migrations apply in sequence", migrations.length === 4);
+  check("all five migrations apply in sequence", migrations.length === 5);
   for (const name of ["A", "B"]) {
     users[name] = (
       await pg.query(

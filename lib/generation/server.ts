@@ -3,6 +3,7 @@ import { ensureAppUser } from "@/lib/auth/ensure-app-user";
 import { createDatabaseClient } from "@/lib/db/server";
 import type { GenerationRow } from "@/lib/db/types";
 import { projectIdSchema } from "@/lib/projects/validation";
+import { attemptGenerationDispatch } from "./dispatch";
 import {
   canAdvanceStage,
   canTransition,
@@ -23,7 +24,7 @@ import type {
 } from "./types";
 
 const columns =
-  "id,request_id,project_id,input_snapshot,status,current_stage,error_code,error_message,started_at,completed_at,failed_at,created_at,updated_at";
+  "id,request_id,project_id,input_snapshot,status,current_stage,error_code,error_message,started_at,completed_at,failed_at,created_at,updated_at,dispatch_status";
 export class GenerationAccessError extends Error {
   constructor() {
     super("Generation status couldn’t be loaded. Please try again.");
@@ -54,13 +55,25 @@ function logError(operation: string, error: { code?: string } | null) {
       : "UNAVAILABLE";
   console.error("Generation database operation failed.", { operation, code });
 }
-function toJob(row: Omit<GenerationRow, "owner_user_id">): GenerationJob {
+function toJob(
+  row: Omit<
+    GenerationRow,
+    | "owner_user_id"
+    | "dispatch_attempts"
+    | "last_dispatch_at"
+    | "dispatched_at"
+    | "dispatch_error"
+    | "worker_run_id"
+    | "worker_started_at"
+  >,
+): GenerationJob {
   return {
     id: row.id,
     requestId: row.request_id,
     projectId: row.project_id,
     input: row.input_snapshot,
     status: row.status,
+    dispatchStatus: row.dispatch_status,
     stage: row.current_stage,
     errorCode: row.error_code,
     errorMessage: row.error_code ? generationFailures[row.error_code] : null,
@@ -133,7 +146,10 @@ export async function createGenerationJob(
       return matches ? { ok: true, value: toJob(data) } : conflict;
     };
   const previous = await existing();
-  if (previous) return previous;
+  if (previous) {
+    if (previous.ok) await attemptGenerationDispatch(previous.value.id);
+    return previous;
+  }
   if (inputs.assetIds.length) {
     const { data, error } = await database
       .from("project_assets")
@@ -165,12 +181,26 @@ export async function createGenerationJob(
     })
     .select(columns)
     .single();
-  if (error?.code === "23505") return (await existing()) ?? unavailable;
+  if (error?.code === "23505") {
+    const found = await existing();
+    if (found?.ok) await attemptGenerationDispatch(found.value.id);
+    return found ?? unavailable;
+  }
   if (error || !data) {
     logError("create", error);
     return unavailable;
   }
-  return { ok: true, value: toJob(data) };
+  await attemptGenerationDispatch(data.id);
+  // Re-read for the dispatch hint when possible; the committed row still wins
+  // if a later read is temporarily unavailable. Never lose a saved request.
+  const refreshed = await database
+    .from("generation_jobs")
+    .select(columns)
+    .eq("id", data.id)
+    .eq("project_id", projectId)
+    .eq("owner_user_id", owner)
+    .maybeSingle();
+  return { ok: true, value: toJob(refreshed.data ?? data) };
 }
 
 export async function getOwnedGenerationJob(

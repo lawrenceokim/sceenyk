@@ -1,6 +1,7 @@
 import type { CategoryId, CreationSettings } from "@/lib/projects/options";
 import type { MediaKind } from "@/lib/media/types";
 import type { GenerationSnapshot } from "@/lib/generation/types";
+import type { DispatchStatus } from "@/lib/generation/dispatch-contract";
 import type {
   GenerationFailureCode,
   GenerationStage,
@@ -107,13 +108,45 @@ export type Database = {
       };
     };
     Views: Record<string, never>;
-    Functions: Record<string, never>;
+    Functions: {
+      reserve_generation_dispatch: {
+        Args: { p_job_id: string };
+        Returns: number;
+      };
+      acknowledge_generation_dispatch: {
+        Args: { p_job_id: string; p_attempt: number; p_success: boolean };
+        Returns: boolean;
+      };
+      claim_generation_job: {
+        Args: { p_job_id: string; p_run_id: string };
+        Returns: string;
+      };
+      fail_generation_claim: {
+        Args: { p_job_id: string; p_run_id: string };
+        Returns: boolean;
+      };
+      generation_dispatch_candidates: {
+        Args: Record<string, never>;
+        Returns: { job_id: string }[];
+      };
+      expire_generation_claims: {
+        Args: Record<string, never>;
+        Returns: number;
+      };
+    };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;
   };
 };
 
 export type GenerationRow = {
+  dispatch_status: DispatchStatus;
+  dispatch_attempts: number;
+  last_dispatch_at: string | null;
+  dispatched_at: string | null;
+  dispatch_error: "SEND_FAILED" | null;
+  worker_run_id: string | null;
+  worker_started_at: string | null;
   id: string;
   owner_user_id: string;
   project_id: string;

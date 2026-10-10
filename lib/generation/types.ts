@@ -1,5 +1,6 @@
 import type { z } from "zod";
 import type { generationInputsSchema } from "./validation";
+import type { DispatchStatus } from "./dispatch-contract";
 import type {
   GenerationFailureCode,
   GenerationStage,
@@ -13,6 +14,7 @@ export type GenerationJob = {
   requestId: string;
   projectId: string;
   status: GenerationStatus;
+  dispatchStatus: DispatchStatus;
   stage: GenerationStage | null;
   input: GenerationSnapshot;
   errorCode: GenerationFailureCode | null;

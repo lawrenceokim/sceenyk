@@ -97,10 +97,10 @@ Read [architecture.md](architecture.md) for planned provider boundaries and impl
 
 ## Background Jobs and Video Processing
 
-- Run long AI/video work outside normal request-response flows. The background-job provider/runtime is not selected; a timer or in-process promise in a request is not a durable worker.
+- Run long AI/video work outside request-response flows. Inngest owns durable orchestration; its signed endpoint and service-only database claims are the worker boundary. An in-process promise or request timer is not a durable worker. Heavy rendering remains a separate future service.
 - Persist job ownership, states, stage progress, provider references, results, and failures. Users must be able to leave/reload and recover status; the browser must not remain blocked waiting for completion.
 - Define clear inputs/outputs for each stage and make state transitions safe under concurrent workers/retries. Retry recoverable stages without restarting successful work; use bounded retry rules and prevent duplicate paid execution.
-- Suggested states include queued, uploading, analyzing, planning, generating, voice, rendering, completed, and failed. They are examples, not an imposed enum. Use only states matching the implemented architecture and centralize their type/transition rules.
+- Use implemented queued/processing/completed/failed states and separate forward-only stage/dispatch state. Centralize TypeScript rules and SQL constraints. Never complete a generation without verified durable output.
 - Run FFmpeg/Remotion or equivalent rendering in a worker environment that supports the actual compute, disk, and duration needs. These tools are not currently selected or installed; do not place heavy rendering in lightweight frontend hosting.
 - Clean up temporary files after success/failure according to the agreed retention policy. Upload final output to object storage and persist the stable result reference before reporting completion.
 - Recover stale/stalled jobs through the chosen workflow mechanism; a failed job must not remain indefinitely in processing.
