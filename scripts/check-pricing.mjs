@@ -45,9 +45,9 @@ const database = {
 function load(file) {
   file = path.resolve(file);
   if (modules.has(file)) return modules.get(file).exports;
-  const module = { exports: {} }; modules.set(file, module);
+  const loadedModule = { exports: {} }; modules.set(file, loadedModule);
   const code = ts.transpileModule(fs.readFileSync(file, "utf8"), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true } }).outputText;
-  vm.runInNewContext(code, { module, exports: module.exports, process: { env }, console: { error: (...args) => logs.push(args) }, require(name) {
+  vm.runInNewContext(code, { module: loadedModule, exports: loadedModule.exports, process: { env }, console: { error: (...args) => logs.push(args) }, require(name) {
     if (name === "server-only") return {};
     if (name === "@/lib/auth/ensure-app-user") return { ensureAppUser: async () => { if (!signedIn) throw new AuthRedirect(); return { id: active.owner }; } };
     if (name === "@/lib/db/server") return { createDatabaseClient: () => database };
@@ -57,7 +57,7 @@ function load(file) {
     if (name.startsWith(".")) return load(path.resolve(path.dirname(file), name+".ts"));
     return require(name);
   } });
-  return module.exports;
+  return loadedModule.exports;
 }
 const snapshot = { version: 1, category: "cinematic", prompt: "Isolated retail pricing fixture", settings: { duration: "10", aspectRatio: "16:9", visualStyle: "Original", tone: "Storytelling" }, assetIds: [] };
 async function fixture() {

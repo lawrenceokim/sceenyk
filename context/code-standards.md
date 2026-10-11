@@ -107,7 +107,7 @@ Read [architecture.md](architecture.md) for planned provider boundaries and impl
 
 ## Payments and Credits
 
-**PayPal is specified for hackathon payments; integration and accounting are Not Started.** Two free short generations of about 10 seconds each are specified; exact eligibility, tariffs, reservation/settlement, and failure-restoration rules need definition before implementation.
+**PayPal purchases are Not Started.** The accounting contract grants two lifetime free generations of at most ten seconds with atomic reservation and exactly-once failure restoration. The commercial quote boundary is implemented in `lib/pricing/`; see [pricing.md](pricing.md). Never scatter tariffs or accept browser cost/tier/free/version claims. Show a server-issued quote before explicit confirmation and reserve its validated server cost before dispatch. Production retail prices remain unresolved; optional rates are visibly development/test-only.
 
 Development and testing must use **PayPal Sandbox only**. Do not use Live credentials or real-money transactions. Keep eventual environment/credential selection behind the payment service; production switching is a later explicitly scoped task.
 
@@ -147,7 +147,7 @@ Development and testing must use **PayPal Sandbox only**. Do not use Live creden
 - Define testable end-to-end acceptance criteria for each meaningful feature. Verify success, relevant failure paths, unauthorized/cross-account access, and duplicate/concurrent payment or credit actions.
 - Check mobile/desktop, keyboard/focus behavior, and both themes for UI changes. Use payment sandbox/test environments; mock expensive AI calls for automated tests and label mocks honestly. Real integration claims require appropriate runtime evidence.
 - Existing package scripts are `npm run dev`, `npm run start`, `npm run lint`, and `npm run build`. Before marking application work complete, run lint/build and `npx tsc --noEmit` (a direct TypeScript command, not a package script).
-- There is no `test` or `typecheck` script or test framework configured. Add proportionate tests/tooling when needed; do not document nonexistent commands or create tests that merely mirror trivial styling.
+- There is no generic `test` or `typecheck` script. Reproducible Node/PGlite suites are `test:pricing`, `test:accounting`, `test:generation`, and `test:dispatch`; `test:client-secrets` scans the production build. Tests use clearly labeled external-service fixtures where relevant; live acceptance is recorded separately. Add proportionate checks for behavior rather than tests mirroring trivial styling.
 - Builds currently fetch Inter and Geist Mono through `next/font/google`; restricted-network font failure is a verification limitation, not justification to suppress errors. Record actual results and prerequisites.
 - For documentation-only work, verify structure, links, source consistency, whitespace, and file scope; application lint/build/runtime checks need not be repeated merely because a document changed. Never claim unperformed checks passed.
 - Update the tracker with evidence, limitations, migrations/configuration needs, and the next unit. Installed dependencies, mocked progress, and successful compilation do not establish a working product integration.

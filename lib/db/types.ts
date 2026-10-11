@@ -63,6 +63,37 @@ export type AssetRow = {
 export type Database = {
   public: {
     Tables: {
+      generation_quotes: {
+        Row: {
+          id: string;
+          owner_user_id: string;
+          project_id: string;
+          request_id: string;
+          input_snapshot: GenerationSnapshot;
+          eligible_free: boolean;
+          required_credits: number | null;
+          available_credits: number;
+          free_remaining: number;
+          pricing_version: string;
+          pricing_mode: "unconfigured" | "test";
+          created_at: string;
+          expires_at: string;
+        };
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
+      generation_pricing_records: {
+        Row: {
+          job_id: string;
+          owner_user_id: string;
+          quote_id: string;
+          created_at: string;
+        };
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
       generation_accounts: {
         Row: {
           owner_user_id: string;

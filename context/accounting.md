@@ -1,5 +1,7 @@
 # Generation accounting contract
 
+**Commercial quote extension (2026-10-11):** [pricing.md](pricing.md) adds owner/input-bound cost review and confirmation before the unchanged reservation/execute/consume-or-restore model. New migration 007 restricts direct admission and adds immutable quote/version provenance; existing 006 jobs/history and settlement are preserved. Paid production rates remain unresolved and default unavailable.
+
 Approved 2026-10-11. Every user receives **two lifetime free video generations, each at most ten seconds**. Free generations are entitlements, not credits. Eligibility depends only on authentication, duration and available entitlement. Current duration choices are 10/15/30, so only 10 qualifies. No model, quality or commercial-use restriction is added.
 
 ## Admission

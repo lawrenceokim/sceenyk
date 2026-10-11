@@ -72,7 +72,7 @@ export function ProjectGeneration({
             aria-busy={state.creating || state.quoting}
             aria-describedby={helpId}
             className="w-full sm:w-auto"
-            onClick={() => void (state.retrying || state.quote ? state.generate(inputs) : state.reviewCost())}
+            onClick={() => void (state.retrying || state.quote ? state.generate() : state.reviewCost())}
           >
             <Sparkles className="size-5" aria-hidden="true" />
             {state.creating

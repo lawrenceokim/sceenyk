@@ -39,9 +39,10 @@ export function useProjectGeneration(
   const [retrying, setRetrying] = useState(false);
 
   function remember(next: GenerationJob | null) {
-    if (next?.requestId === attempt.current?.requestId) {
+    if (next && next.requestId === attempt.current?.requestId) {
       attempt.current = null;
       setRetrying(false);
+      setQuoted(null);
       setError("");
     }
     setJob((current) => {
@@ -73,6 +74,7 @@ export function useProjectGeneration(
           if (!inFlight.current) {
             setCreating(false);
             setRefreshing(false);
+            setQuoting(false);
             setRetrying(!!attempt.current);
             if (attempt.current)
               setError(
@@ -88,6 +90,7 @@ export function useProjectGeneration(
             if (!inFlight.current) {
               setCreating(false);
               setRefreshing(false);
+              setQuoting(false);
             }
           }
         });
@@ -126,7 +129,7 @@ export function useProjectGeneration(
     }
   }
 
-  async function generate(inputs: GenerationInputs) {
+  async function generate() {
     if (
       !projectId ||
       inFlight.current ||
