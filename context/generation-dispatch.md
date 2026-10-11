@@ -1,6 +1,6 @@
 # Durable generation dispatch
 
-**Accounting extension (2026-10-11):** migration 006 gates new dispatch and authoritative claims on a committed live reservation. Job and reservation are created atomically; transient send failures retain recoverable holds, while the existing terminal handoff/invalid-input/stale-claim failures atomically restore them. New direct job INSERT is denied. Apply between active jobs, then redeploy the accounting-aware server. Current worker remains failure-only; no output/provider stage is added. See [accounting.md](accounting.md).
+**Accounting extension (2026-10-11):** user-applied migration 006 gates new dispatch and authoritative claims on a committed live reservation. Job and reservation are created atomically; transient send failures retain recoverable holds, while the existing terminal handoff/invalid-input/stale-claim failures atomically restore them. New direct job INSERT is denied. Matching accounting-aware code is deployed to Vercel Production; actual signed Cloud claim, failure restoration with Chrome closed and duplicate protection pass. Current worker remains failure-only; no output/provider stage is added. See [accounting.md](accounting.md).
 
 Implemented in the authorized dispatch unit, 2026-10-10. Inngest SDK **4.23.0** is the only workflow coordinator; `@inngest/test` **1.0.0** exercises its real execution engine. No providers, renderer, billing, credits or generated output are connected.
 

@@ -22,7 +22,9 @@ Historical jobs are explicitly unaccounted and never retroactively charged. The 
 
 ## Rollout and verification
 
-Apply `supabase/migrations/20261011000600_generation_accounting.sql` after 001–005. This checkout has only a Data API credential; hosted schema application requires the development SQL Editor. Test migrations/grants, admission/retry/rollback, free/paid lifecycle, contention, ownership and recovery first, then real Clerk/hosted reserve→worker failure→restoration and refresh/reopen. Hosted acceptance remains separate until applied.
+The user applied `supabase/migrations/20261011000600_generation_accounting.sql` after 001–005 through the development SQL Editor, then committed the matching code in `59d598d` for Vercel Production deployment. Existing credentials remain unchanged; deployed `INNGEST_DEV` remains absent. Hosted backfill, new-user initialization, independent simultaneous admission requests and real Clerk → deployed action → Supabase reservation → signed Inngest Cloud claim → safe failure → exact restoration are verified. Chrome was fully closed before the handoff and remained closed through restoration. Repeated admission/failure calls retain one job/reservation/outcome. See [progress-tracker.md](progress-tracker.md) for identifiers and final acceptance evidence.
+
+The isolated suites pass 115 accounting, 96 generation and 55 dispatch checks, including successful free/paid consumption using explicit stored-result fixtures, storage/claim rejection and transactional rollback. No live generated-video success or paid purchase is claimed: the current worker produces no output, paid cost remains unavailable and real failure workflows consume nothing. Full independent hosted SQL grant/catalog auditing and usable-video production remain outside this foundation.
 
 ## Unresolved commercial decisions
 
