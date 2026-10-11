@@ -1,5 +1,9 @@
 # Development application identity
 
+## Gemini plan extension — 2026-10-11
+
+Migration [008](../supabase/migrations/20261011000800_generation_plans.sql) adds immutable owned `generation_plans`, bounded claim-bound `generation_analysis_attempts` with server-only usage and safe outcomes, and `generation_jobs.production_plan_ready_at`. Restricted RPCs advance AI stages, reserve an attempt slot and atomically commit a validated plan/usage/readiness. Browser roles have no grants or RLS policies; service_role can read but cannot directly write these artifacts. Existing migrations, quote admission, accounting balances/ledger and result settlement are preserved. Plan readiness remains processing/planning and holds the existing reservation; unfinished stale AI claims fail/restore through the existing trigger. All eight migrations apply in isolated PostgreSQL, including actual Gemini text/image/video results across disk-backed database close/reopen. **User applied migration 008; real hosted workflow plan/usage persistence and duplicate reuse pass.** Full independent hosted SQL grant/catalog auditing remains separate; browser and deployed Cloud acceptance scope is in the tracker.
+
 ## Commercial quote extension — 2026-10-11
 
 Migration [007](../supabase/migrations/20261011000700_generation_pricing.sql) adds immutable `generation_quotes` and `generation_pricing_records`, owner/project/job composite relationships, RLS/browser denial and service-only issue/confirm RPCs. Direct 006 admission is revoked from the service role; confirmation calls it internally under its existing account lock. Existing 006 balances/reservations/ledger/settlement and in-flight/history rows are preserved. Quotes retain original input, exact cost, pricing version/mode and expiry; immutable association links to the reservation/job. The new-insert deferred constraint requires quote provenance. See [pricing.md](pricing.md) and current verification in the tracker.

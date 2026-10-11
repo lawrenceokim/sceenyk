@@ -25,7 +25,7 @@ import type {
 } from "./types";
 
 const columns =
-  "id,request_id,project_id,input_snapshot,status,current_stage,error_code,error_message,started_at,completed_at,failed_at,created_at,updated_at,dispatch_status";
+  "id,request_id,project_id,input_snapshot,status,current_stage,error_code,error_message,started_at,completed_at,failed_at,created_at,updated_at,dispatch_status,production_plan_ready_at";
 export class GenerationAccessError extends Error {
   constructor() {
     super("Generation status couldn’t be loaded. Please try again.");
@@ -77,6 +77,7 @@ function toJob(
     status: row.status,
     dispatchStatus: row.dispatch_status,
     stage: row.current_stage,
+    productionPlanReadyAt: row.production_plan_ready_at ?? null,
     errorCode: row.error_code,
     errorMessage: row.error_code ? generationFailures[row.error_code] : null,
     startedAt: row.started_at,

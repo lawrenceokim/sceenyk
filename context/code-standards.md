@@ -89,6 +89,8 @@ Read [architecture.md](architecture.md) for planned provider boundaries and impl
 
 ## AI and External Providers
 
+The Gemini understanding/planning unit introduces `lib/ai/` with a server-only service, central configuration and isolated REST provider adapter. Keep the strict Zod plan and contextual source/timeline checks before persistence. Usage/model/attempt metadata stay server-only; the browser receives readiness through owned job DTOs. Never replay a started uncertain paid attempt or overwrite a saved plan. Native REST uses the existing validation approach and adds no Google/Vercel AI SDK. Current verification/rollout limits are in the tracker; video/voice/rendering providers remain planned.
+
 - Application code should call shared Sceenyk services, with provider-specific SDK calls isolated behind small interfaces/adapters. Keep providers replaceable without building an unused universal framework.
 - Future boundaries may include `lib/ai/`, `lib/video-ai/`, and `lib/voice/`, with a `providers/` folder when needed. Example filenames `runway.ts`, `gemini.ts`, and `elevenlabs.ts` illustrate organization only; these providers are neither selected nor installed.
 - Keep API keys server-side and validate requests and provider responses. Handle bounded timeouts, rate limits, unavailable services, malformed output, and partial failures with useful persisted outcomes.

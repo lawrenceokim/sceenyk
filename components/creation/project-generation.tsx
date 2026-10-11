@@ -36,6 +36,8 @@ export function ProjectGeneration({
   const state = useProjectGeneration(projectId, initialJob, initialError, inputs);
   const active =
     state.job?.status === "queued" || state.job?.status === "processing";
+  const planReady = state.job?.status === "processing" &&
+    state.job.stage === "planning" && !!state.job.productionPlanReadyAt;
   const disabled =
     !authReady ||
     !projectId ||
@@ -102,10 +104,10 @@ export function ProjectGeneration({
         )}
       </div>
       <p className="text-caption leading-relaxed text-muted-foreground">
-        Requests are saved and sent for background preparation. Video production
-        is not connected yet, so preparation ends without generated content.
-        Confirming reserves the displayed free allowance or credits; preparation
-        restores the reservation when it ends without a usable result.
+        Requests are saved for media analysis and production planning. This
+        version stops at a saved plan; final video production is not connected.
+        Confirming reserves the displayed allowance or credits. The reservation
+        stays held with a ready plan and is restored if processing fails.
       </p>
       {state.quote && (
         <div className="space-y-3 rounded-lg border border-border bg-muted p-4" role="status" aria-live="polite">
@@ -153,8 +155,7 @@ export function ProjectGeneration({
         {state.job && (
           <>
             <p className="text-body-sm font-semibold">
-              Generation{" "}
-              {generationStatusLabels[state.job.status].toLowerCase()}
+              {planReady ? "Production plan ready" : `Generation ${generationStatusLabels[state.job.status].toLowerCase()}`}
             </p>
             {state.job.status === "queued" && (
               <p className="text-body-sm text-muted-foreground">
@@ -164,7 +165,10 @@ export function ProjectGeneration({
                   : "Your request is queued for background preparation. You can leave and return to this project."}
               </p>
             )}
-            {state.job.status === "processing" && state.job.stage && (
+            {planReady && (
+              <p className="text-body-sm text-muted-foreground">Your plan is saved. Video generation is the next stage and is not available yet.</p>
+            )}
+            {state.job.status === "processing" && state.job.stage && !planReady && (
               <p className="text-body-sm text-muted-foreground">
                 {generationStageLabels[state.job.stage]}
               </p>

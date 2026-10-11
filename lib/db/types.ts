@@ -63,6 +63,14 @@ export type AssetRow = {
 export type Database = {
   public: {
     Tables: {
+      generation_plans: {
+        Row: { job_id: string; owner_user_id: string; schema_version: number; provider: "gemini"; model: string; plan: import("@/lib/ai/plan").ProductionPlan; created_at: string };
+        Insert: never; Update: never; Relationships: [];
+      };
+      generation_analysis_attempts: {
+        Row: { id: string; job_id: string; owner_user_id: string; worker_run_id: string; attempt: number; provider: "gemini"; requested_model: string; model: string | null; state: "started" | "succeeded" | "failed" | "invalid"; failure_code: string | null; response_id: string | null; usage: import("@/lib/ai/types").ProviderUsage | null; started_at: string; finished_at: string | null };
+        Insert: never; Update: never; Relationships: [];
+      };
       generation_quotes: {
         Row: {
           id: string;
@@ -201,6 +209,9 @@ export type Database = {
     };
     Views: Record<string, never>;
     Functions: {
+      advance_generation_analysis: { Args: { p_job_id: string; p_run_id: string; p_stage: "analyzing" | "planning" }; Returns: boolean };
+      begin_generation_analysis: { Args: { p_job_id: string; p_run_id: string; p_attempt: number; p_model: string }; Returns: { code: string; attempt_id?: string } };
+      finish_generation_analysis: { Args: { p_job_id: string; p_run_id: string; p_attempt_id: string; p_plan: import("@/lib/ai/plan").ProductionPlan | null; p_usage: import("@/lib/ai/types").ProviderUsage | null; p_model: string | null; p_response_id: string | null; p_failure: string | null }; Returns: boolean };
       issue_generation_quote: {
         Args: {
           p_owner_user_id: string;
@@ -278,6 +289,7 @@ export type Database = {
 };
 
 export type GenerationRow = {
+  production_plan_ready_at: string | null;
   accounting_version: 0 | 1;
   dispatch_status: DispatchStatus;
   dispatch_attempts: number;

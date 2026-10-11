@@ -10,6 +10,7 @@ import type {
 export type GenerationInputs = z.output<typeof generationInputsSchema>;
 export type GenerationSnapshot = GenerationInputs & { version: 1 };
 export type GenerationJob = {
+  productionPlanReadyAt: string | null;
   id: string;
   requestId: string;
   projectId: string;

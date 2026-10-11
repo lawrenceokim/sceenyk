@@ -10,6 +10,16 @@ import { getStorageConfig } from "./config";
 
 const uploadLifetimeSeconds = 5 * 60;
 const readLifetimeSeconds = 15 * 60;
+// Trusted AI input transfer. No signed R2 URL leaves this process.
+export async function readR2AnalysisMedia(key: string, etag: string, sizeBytes: number, signal: AbortSignal) {
+  const { bucket, sdk } = client();
+  const result = await sdk.send(new GetObjectCommand({ Bucket: bucket, Key: key, IfMatch: etag }), { abortSignal: signal });
+  if (!result.Body || result.ContentLength !== sizeBytes || result.ETag !== etag) {
+    if (result.Body && "destroy" in result.Body) result.Body.destroy();
+    throw new Error("MEDIA_UNAVAILABLE");
+  }
+  return result.Body.transformToWebStream();
+}
 function client() {
   const config = getStorageConfig();
   return {

@@ -11,6 +11,7 @@
     "test:dispatch": "node scripts/check-dispatch.mjs",
     "test:accounting": "node scripts/check-accounting.mjs",
     "test:pricing": "node scripts/check-pricing.mjs",
+    "test:analysis": "node scripts/check-analysis.mjs && node scripts/check-gemini.mjs",
     "test:client-secrets": "node scripts/check-client-secrets.mjs"
   },
   "dependencies": {

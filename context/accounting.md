@@ -1,5 +1,7 @@
 # Generation accounting contract
 
+**Gemini planning extension (2026-10-11):** analysis is part of the already-admitted job, with no second debit. A valid persisted production plan pauses at processing/planning and retains its original reservation for future production; it is not a usable final video and cannot consume allowance/credits. Terminal analysis failures, invalid output, unsupported media and unfinished stale claims restore through the existing exactly-once trigger. Ready plans are excluded from stale AI expiry. No user cancellation/refund policy is invented. Migration 008 and hosted acceptance status are tracked separately.
+
 **Commercial quote extension (2026-10-11):** [pricing.md](pricing.md) adds owner/input-bound cost review and confirmation before the unchanged reservation/execute/consume-or-restore model. New migration 007 restricts direct admission and adds immutable quote/version provenance; existing 006 jobs/history and settlement are preserved. Paid production rates remain unresolved and default unavailable.
 
 Approved 2026-10-11. Every user receives **two lifetime free video generations, each at most ten seconds**. Free generations are entitlements, not credits. Eligibility depends only on authentication, duration and available entitlement. Current duration choices are 10/15/30, so only 10 qualifies. No model, quality or commercial-use restriction is added.

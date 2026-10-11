@@ -5,6 +5,7 @@ import nextEnv from "@next/env";
 
 nextEnv.loadEnvConfig(process.cwd(), false, { info() {}, error() {} });
 const names = [
+  "GEMINI_API_KEY",
   "CLERK_SECRET_KEY",
   "SUPABASE_SECRET_KEY",
   "SUPABASE_SERVICE_ROLE_KEY",
@@ -16,7 +17,7 @@ const names = [
 ];
 const secrets = names.map((name) => process.env[name]).filter(Boolean);
 const markers =
-  /SUPABASE_SECRET_KEY|SUPABASE_SERVICE_ROLE_KEY|INNGEST_EVENT_KEY|INNGEST_SIGNING_KEY|SCEENYK_TEST_PRICING_JSON|issue_generation_quote|confirm_generation_quote|reserve_generation_dispatch|claim_generation_job|admit_generation|complete_generation_with_result|trustedGenerationCost|WORKFLOW_NOT_CONFIGURED|GENERATION_UNAVAILABLE_OR_INVALID/;
+  /GEMINI_API_KEY|generativelanguage\.googleapis\.com|begin_generation_analysis|finish_generation_analysis|SUPABASE_SECRET_KEY|SUPABASE_SERVICE_ROLE_KEY|INNGEST_EVENT_KEY|INNGEST_SIGNING_KEY|SCEENYK_TEST_PRICING_JSON|issue_generation_quote|confirm_generation_quote|reserve_generation_dispatch|claim_generation_job|admit_generation|complete_generation_with_result|trustedGenerationCost|WORKFLOW_NOT_CONFIGURED|GENERATION_UNAVAILABLE_OR_INVALID/;
 let files = 0,
   leaks = 0,
   serverMarkers = 0;

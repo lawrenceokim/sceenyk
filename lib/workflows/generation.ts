@@ -1,6 +1,8 @@
 import "server-only";
 import { NonRetriableError } from "inngest";
 import { createDatabaseClient } from "@/lib/db/server";
+import { advanceAnalysis, runAnalysisAttempt } from "@/lib/ai/server";
+import { AnalysisError } from "@/lib/ai/types";
 import { dispatchGeneration, dispatchLog } from "@/lib/generation/dispatch";
 import {
   generationEventSchema,
@@ -35,10 +37,21 @@ export const generationWorkflow = inngest.createFunction(
     });
     if (claim !== "claimed" && claim !== "resumed") return { claim };
 
-    // Durable pause proves this run outlives the submitting web request.
-    // Replace this explicit unsupported handoff only in the next provider unit.
-    await step.sleep("preparing-handoff", "1m");
-    await step.run("close-unsupported-handoff", async () => {
+    await step.run("start-media-analysis", () => advanceAnalysis(generationJobId, runId, "analyzing"));
+    const attempt = (number: number) => step.run(`gemini-plan-attempt-${number}`, async () => {
+      try { return await runAnalysisAttempt(generationJobId, runId, number); }
+      catch (error) {
+        if (error instanceof AnalysisError) return { ready: false, failure: error.code };
+        throw new Error("ANALYSIS_STEP_UNAVAILABLE");
+      }
+    });
+    let result = await attempt(1);
+    if (!result.ready && ["RATE_LIMIT", "PROVIDER_UNAVAILABLE", "INVALID_OUTPUT"].includes(result.failure ?? "")) {
+      await step.sleep("analysis-retry-backoff", "10s");
+      result = await attempt(2);
+    }
+    if (result.ready) return { claim, handoff: "production_plan_ready" };
+    await step.run("close-failed-analysis", async () => {
       const { error } = await createDatabaseClient().rpc(
         "fail_generation_claim",
         {
@@ -47,9 +60,9 @@ export const generationWorkflow = inngest.createFunction(
         },
       );
       if (error) throw new Error("HANDOFF_DATABASE_UNAVAILABLE");
-      dispatchLog("pipeline_not_connected", generationJobId);
+      dispatchLog("analysis_failed", generationJobId);
     });
-    return { claim, handoff: "pipeline_not_connected" };
+    return { claim, handoff: "analysis_failed", reason: result.failure };
   },
 );
 

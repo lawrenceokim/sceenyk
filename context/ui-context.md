@@ -125,6 +125,8 @@ The size utilities carry line heights, not weights; apply weight classes explici
 
 ## Layout Patterns
 
+Gemini planning slice: show persisted `Analyzing your media`, `Planning your content`, and `Production plan ready` in the existing generation panel. Readiness is `processing/planning` with a saved plan timestamp; no raw JSON, storyboard editor, completed video or simulated progress. A ready plan keeps its original reservation held for later production. Terminal AI failures restore it through existing accounting. Earlier preparation-only descriptions below are historical. The new UI has desktop/mobile light/dark presentation checks; hosted plan persistence acceptance is tracked separately.
+
 Commercial quotes: creation requires Review generation cost, then explicit Confirm free generation/Confirm X credits. A changed form hides its prior quote. Show actual insufficient required/available credits, unavailable pricing and safe stale-quote feedback; Buy credits is disabled and marked coming soon. Optional test rates must visibly say development/test, not final pricing. See [pricing.md](pricing.md).
 
 Accounting foundation: dashboard and creation show actual owned free allowance through an authenticated uncached action, with loading/error/retry states, held reservations and activation/status-refresh recovery. Use singular/plural/none wording and the exact two-lifetime/10-second explanation. Paid access is explicitly unavailable; do not invent balances, prices or checkout. Generation preparation reserves entitlement and its current unsupported handoff restores it on failure. Existing design tokens/components/layouts remain unchanged.

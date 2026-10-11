@@ -113,6 +113,9 @@ function load(file) {
       error: (...args) => logs.push(args),
     },
     require: (name) => {
+      // Provider behavior is verified separately in test:analysis. Preserve
+      // dispatch's terminal failure/restoration transport fixture here.
+      if (name === "@/lib/ai/server") return { advanceAnalysis: async () => {}, runAnalysisAttempt: async () => ({ ready: false, failure: "UNSUPPORTED_MEDIA" }) };
       if (name === "server-only") return {};
       if (name === "@/lib/db/server")
         return { createDatabaseClient: () => ({ rpc }) };
@@ -168,7 +171,7 @@ try {
     .filter((x) => x.endsWith(".sql"))
     .sort())
     await pg.exec(fs.readFileSync("supabase/migrations/" + file, "utf8"));
-  check("seven actual migrations apply", true);
+  check("eight actual migrations apply", true);
   owner = await value(
     "insert into app_users(clerk_user_id) values('fixture') returning id as value",
   );
@@ -350,7 +353,7 @@ try {
       function: generationWorkflow,
       // Sleep registration is real; the isolated test engine supplies wake-up.
       // Browser acceptance separately waits for the actual durable sleep.
-      steps: [{ id: "preparing-handoff", handler: () => null }],
+      steps: [{ id: "analysis-retry-backoff", handler: () => null }],
       events: [{ name: "sceenyk/generation.requested", data }],
       transformCtx: (ctx) => ({ ...ctx, runId: id }),
     });
@@ -371,7 +374,7 @@ try {
   const resumed = await makeEngine("engine-run").execute();
   check(
     "actual same-run retry finishes honest handoff",
-    resumed.result.handoff === "pipeline_not_connected" &&
+    resumed.result.handoff === "analysis_failed" &&
       (await row(engineJob)).status === "failed",
   );
   const lostJob = await job();
