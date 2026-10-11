@@ -10,7 +10,7 @@ import {
 import type { GenerationStatus } from "@/lib/generation/contract";
 import { ProjectJobStatusesProvider } from "@/components/dashboard/project-job-statuses";
 import {
-  CreditsPreview,
+  FreeAllowanceCard,
   DashboardOverview,
   ProjectsSection,
   QuickCreate,
@@ -89,13 +89,13 @@ export default async function DashboardPage({
           <RecentGenerationsSection />
         </div>
         <div className="min-w-0 space-y-6">
-          <CreditsPreview />
+          <FreeAllowanceCard />
           <TemplatesSection />
         </div>
       </div>
       <p className="pb-2 text-caption leading-relaxed text-muted-foreground">
         Your creative briefs and generation requests are saved privately.
-        Processing, templates and credits are coming later.
+        Video production, templates and paid access are coming later.
       </p>
     </>
   );

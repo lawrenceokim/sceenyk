@@ -38,7 +38,7 @@ async function rawBridge(input, init) {
     typeof input === "string" ? input : input.url || input.href,
   );
   const table = url.pathname.split("/").pop();
-  assert.ok(["projects", "project_assets", "generation_jobs"].includes(table));
+  assert.ok(["projects", "project_assets", "generation_jobs", "generation_accounts", "admit_generation"].includes(table));
   assert.equal(init.cache, "no-store");
   assert.ok(init.signal);
   if (unavailable)
@@ -48,6 +48,18 @@ async function rawBridge(input, init) {
     );
   try {
     await pg.exec("set role service_role");
+    if (table === "admit_generation") {
+      const args = JSON.parse(init.body);
+      assert.equal(args.p_owner_user_id, users[active].id);
+      assert.equal(args.p_credit_cost, null, "no invented tariff");
+      const names = Object.keys(args);
+      const result = (await pg.query(`select public.admit_generation(${names.map((key, i) => `${key} => $${i + 1}`).join(",")}) as value`, Object.values(args))).rows[0].value;
+      if (loseInsert) {
+        loseInsert = false;
+        return Response.json({ code: "UNAVAILABLE" }, { status: 503 });
+      }
+      return Response.json(result);
+    }
     let rows;
     if (init.method === "POST") {
       const fields = JSON.parse(init.body),
@@ -229,7 +241,7 @@ try {
     await pg.exec(
       fs.readFileSync(path.join(root, "supabase/migrations", file), "utf8"),
     );
-  check("all five migrations apply in sequence", migrations.length === 5);
+  check("all six migrations apply in sequence", migrations.length === 6);
   for (const name of ["A", "B"]) {
     users[name] = (
       await pg.query(
@@ -258,6 +270,8 @@ try {
   const service = load(path.join(root, "lib/generation/server.ts"));
   const actions = load(path.join(root, "app/actions/generation.ts"));
   const contract = load(path.join(root, "lib/generation/contract.ts"));
+  const accounting = load(path.join(root, "app/actions/accounting.ts"));
+  check("new identity has exactly two actual allowances", (await accounting.freeAllowanceAction()).value.available === 2);
   const inputs = {
     prompt: "  A new scene  ",
     category: "cinematic",
@@ -303,6 +317,9 @@ try {
     "concurrent duplicate requests persist one job",
     both.every((item) => item.ok) && both[0].value.id === both[1].value.id,
   );
+  // Release this independent fixture so later persistence checks can exercise
+  // lost-response creation within the real two-generation entitlement.
+  await service.failGenerationJob({ projectId: projects.A.id, jobId: both[0].value.id }, { status: "queued", stage: null });
   loseInsert = true;
   const lost = { ...base, requestId: randomUUID() };
   r = await actions.createGenerationAction(lost);
@@ -330,6 +347,11 @@ try {
       )
     ).rows[0].n === 3,
   );
+  check("allowance read reflects two held reservations", (await accounting.freeAllowanceAction()).value.available === 0);
+  r = await actions.createGenerationAction({ ...base, requestId: randomUUID() });
+  check("exhausted allowance does not dispatch or create", !r.ok && r.code === "PAID_ACCESS_UNAVAILABLE");
+  r = await actions.createGenerationAction({ ...base, requestId: randomUUID(), inputs: { ...inputs, settings: { ...inputs.settings, duration: "15" } } });
+  check("longer generation requires unavailable approved paid cost", !r.ok && r.code === "PAID_ACCESS_UNAVAILABLE");
   await pg.query(
     "update projects set prompt='Edited later',duration='30' where id=$1",
     [projects.A.id],
@@ -371,6 +393,9 @@ try {
     { status: "completed" },
     { progress: 100 },
     { creditEligible: true },
+    { creditCost: 1 },
+    { free: true },
+    { restore: true },
   ]) {
     r = await actions.createGenerationAction({ ...base, ...extra });
     check(
@@ -428,6 +453,7 @@ try {
   });
   check("rejected asset rejected", !r.ok && r.code === "INVALID_ASSETS");
   active = "B";
+  check("B allowance read never returns A accounting", (await accounting.freeAllowanceAction()).value.available === 2);
   r = await actions.readGenerationAction(ref);
   check("B cannot read A job by ID", r.ok && r.value === null);
   r = await actions.readGenerationAction({
@@ -471,6 +497,7 @@ try {
     () => actions.readGenerationAction(ref),
     () => actions.latestGenerationAction(base.projectId),
     () => service.startGenerationJob(ref),
+    () => accounting.freeAllowanceAction(),
   ])
     await assert.rejects(call, AuthRedirect);
   check("signed-out reads/create/transitions preserve auth denial", true);
@@ -509,7 +536,8 @@ try {
   );
   r = await service.startGenerationJob(ref);
   check("failed job cannot requeue/restart", !r.ok);
-  const completeRef = { projectId: projects.A.id, jobId: both[0].value.id };
+  const lostRow = (await pg.query("select id from generation_jobs where request_id=$1", [lost.requestId])).rows[0];
+  const completeRef = { projectId: projects.A.id, jobId: lostRow.id };
   await service.startGenerationJob(completeRef);
   r = await service.advanceGenerationStage(
     completeRef,
@@ -519,17 +547,16 @@ try {
   check("optional stages may be skipped", r.ok);
   r = await service.completeGenerationJob(completeRef, "rendering");
   check(
-    "completed persists without invented output",
-    r.ok &&
-      !!r.value.completedAt &&
-      r.value.stage === null &&
-      !("result" in r.value),
+    "completion without verified stored result is blocked",
+    !r.ok && !(await pg.query("select completed_at from generation_jobs where id=$1", [completeRef.jobId])).rows[0].completed_at,
   );
+  await service.failGenerationJob(completeRef, { status: "processing", stage: "rendering" });
   r = await service.failGenerationJob(completeRef, {
     status: "completed",
     stage: null,
   });
-  check("completed is terminal", !r.ok);
+  check("released terminal fixture is immutable", !r.ok);
+  check("failure restores original free reservation", (await accounting.freeAllowanceAction()).value.available === 2);
   r = await actions.createGenerationAction({
     ...base,
     requestId: randomUUID(),

@@ -9,6 +9,7 @@
     "lint": "eslint",
     "test:generation": "node scripts/check-generation.mjs",
     "test:dispatch": "node scripts/check-dispatch.mjs",
+    "test:accounting": "node scripts/check-accounting.mjs",
     "test:client-secrets": "node scripts/check-client-secrets.mjs"
   },
   "dependencies": {

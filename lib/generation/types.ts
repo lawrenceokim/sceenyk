@@ -35,6 +35,8 @@ export type GenerationResult<T> =
         | "NOT_FOUND"
         | "INVALID_ASSETS"
         | "CONFLICT"
+        | "PAID_ACCESS_UNAVAILABLE"
+        | "INSUFFICIENT_CREDITS"
         | "UNAVAILABLE";
       message: string;
     };

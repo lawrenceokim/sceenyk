@@ -3,6 +3,7 @@ import { useId } from "react";
 import { Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AccountAction } from "@/components/account-action";
+import { FreeAllowanceSummary } from "@/components/free-allowance";
 import {
   generationStageLabels,
   generationStatusLabels,
@@ -97,8 +98,10 @@ export function ProjectGeneration({
       <p className="text-caption leading-relaxed text-muted-foreground">
         Requests are saved and sent for background preparation. Video production
         is not connected yet, so preparation ends without generated content. No
-        credits are used.
+        paid credits are used. Free allowance is reserved during preparation and
+        restored when it ends without a result.
       </p>
+      <FreeAllowanceSummary signedIn={signedIn} refreshKey={state.job?.updatedAt ?? ""} />
       {state.retrying && (
         <p className="text-caption text-muted-foreground">
           Retry keeps the original submitted inputs, including any settings you

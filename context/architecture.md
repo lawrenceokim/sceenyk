@@ -1,10 +1,12 @@
 # Architecture Context
 
+**Authorized accounting foundation (2026-10-11, implementation in progress):** see [accounting.md](accounting.md) for the approved exact two-lifetime/10-second contract. Separate free counters and paid balances, one owner-bound reservation per job, immutable paid movement ledger, transactional admission before dispatch, claim-bound verified stored-result settlement, and atomic terminal-failure restoration. Stable request/job references and account-row locking protect retries and contention. Existing jobs are explicitly historical/unaccounted, never retrocharged. Trusted paid cost is unavailable until tariffs are approved; no payment/provider/rendering unit is authorized here. Earlier no-accounting descriptions below record the pre-unit baseline.
+
 Technical boundaries for Sceenyk's prompt/media-to-finished-video platform. Read with [overview.md](overview.md), [ui-context.md](ui-context.md), [design-system.md](design-system.md), [ai-workflow-rules.md](ai-workflow-rules.md), [code-standards.md](code-standards.md), and [progress-tracker.md](progress-tracker.md).
 
 **Repository inspection: 2026-10-10.** **Confirmed** means present in current source/dependencies; live verification is explicitly identified below and in the tracker. **Planned** means specified architecture or the preferred direction supplied for this document, with no integration yet. **Undecided** identifies details still requiring a decision. All service/data-flow diagrams and contracts below are planned unless explicitly identified as implemented.
 
-The public UI foundation includes landing/themes and verified Clerk/application identity, owned projects and private R2 media. Generation persistence and Inngest dispatch now have real development acceptance: trusted preparation, atomic claims, retries, duplicates and cron recovery. Broader prior project acceptance is tracked separately. No AI production, output, credits, payments or heavy rendering worker exists.
+The public UI foundation includes landing/themes and verified Clerk/application identity, deployed owned projects and private R2 media. Generation persistence and Inngest dispatch have local/deployed Cloud acceptance: trusted preparation, atomic claims, retries, duplicates and cron recovery. Accounting now has separate entitlement/credit balances, immutable ledger and atomic reservations/settlement; its current verification is in the tracker. No AI production, output production, payments or heavy rendering worker exists.
 
 **Public UI contract (2026-10-09):** use existing CSS tokens and shadcn/Base UI controls. Theme initialization runs before paint; saved `sceenyk-theme` overrides system preference, otherwise follow the system. Preserve root font classes, keep the landing page static, and tolerate unavailable browser storage. Public navigation uses working section anchors. Paid pricing remains unpriced preview copy until product rates are approved.
 
@@ -31,12 +33,14 @@ The public UI foundation includes landing/themes and verified Clerk/application 
 | Voice — Planned preferred | ElevenLabs | Narration/voiceovers when required by the chosen creation path; model/voice policy remains Undecided. |
 | Video assembly — Planned preferred | Remotion | Programmatic compositions combining scenes, captions, audio, overlays, and animations. Not installed/configured. |
 | Video processing — Planned | FFmpeg | Cutting, resizing, transcoding, audio extraction, frame-rate conversion, compression, thumbnails, and final processing. No worker invocation or repository-managed binary exists; host availability was not tested. |
-| Background workflow — Development verified | Inngest SDK 4.23.0; official test engine 1.0.0 | Signed endpoint, atomic claims, four retries and minute reconciliation. Real persistent Dev Server 1.46.0 acceptance passed. Keys are configured; the actual local production signature gate passes. Deployed Cloud delivery is unverified. No AI execution. |
+| Background workflow — Local and deployed Cloud acceptance verified | Inngest SDK 4.23.0; official test engine 1.0.0 | Real Vercel/Cloud generation delivery, signed authoritative claim, duplicate handling, browser-independent missed-dispatch recovery and persisted reopen verified. Four retries and minute reconciliation remain. Workflow succeeds while its unsupported pipeline handoff safely fails the generation; no AI/output execution. |
 | Heavy processing — Planned preferred | Render + Docker | Worker environment for FFmpeg, Remotion, and long/CPU-heavy media work outside lightweight web hosting. No Dockerfile/worker deployment configuration exists. |
 | Payments — Planned | PayPal | Hackathon credit purchases first; subscriptions, marketplace purchases, and eventual creator payouts are later capabilities. No checkout/webhook/service implementation exists. |
-| Deployment — Planned preferred | Vercel for Next.js; Render for media workers | Separate web/request handling from heavy processing. Repository inspection does not confirm active deployments or external accounts. |
+| Deployment — Web hosting confirmed; heavy workers planned | Vercel for Next.js; Render preferred for future media workers | `https://sceenyk.vercel.app` is deployed in Vercel Production, confirmed by the user and live endpoint checks. Inngest uses its stable `/api/inngest` URL. No Render/worker deployment exists. |
 
 Installed versions above were checked with `npm ls --depth=0`; its extraneous platform/WASM packages are not product integrations. `.gitignore` mentioning `.vercel` and the starter page linking Vercel are not evidence of deployment.
+
+**Deployed acceptance boundary (2026-10-10):** real Chrome/Clerk → Vercel Production → Inngest Cloud `production` → Supabase generation delivery and claim pass. User redeployment resolved the initial missing-Clerk configuration. Official signed introspection succeeds, unsigned/invalid execution is rejected, duplicates exit without a second claim, and real minute reconciliation recovers a deliberately unsent development row while Chrome is fully closed. Reopened/refreshed original and recovered generations, A/B isolation, strict browser input and deployed secret checks pass. The user confirms `INNGEST_DEV` is absent. Cloud workflow COMPLETED means its honest handoff succeeded; generation rows safely fail because no production pipeline/output exists. No provider or accounting work was added. See [progress-tracker.md](progress-tracker.md) for exact event/run identifiers and limits.
 
 **Environment baseline (2026-10-10):** ignored `.env.local` contains working Clerk development and new Supabase development project credentials. The blank committed `.env.example` lists `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, server-only `CLERK_SECRET_KEY`, `SUPABASE_URL`, `SUPABASE_SECRET_KEY`, and the optional legacy `SUPABASE_SERVICE_ROLE_KEY` alternative. Clerk requires `pk_test_`/`sk_test_` and rejects production prefixes. Privileged Supabase and configured `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME` stay server-only; `MEDIA_MAX_UPLOAD_BYTES` is optional. Missing Clerk configuration denies the dashboard; database/profile failure produces a distinct signed-in workspace error. No secret value is logged or committed. See [authentication.md](authentication.md) and [database.md](database.md).
 
@@ -75,7 +79,7 @@ These are future locations/contracts, not created folders. Add only what the req
 | `lib/video-ai/` | Video-generation/transformation interface and provider implementations, e.g. future `providers/runway.ts`. |
 | `lib/voice/` | Voice-generation interface and adapters. |
 | `lib/payments/` | PayPal checkout, verification, webhook handling, payment finalization, and later subscription/payment capabilities. |
-| `lib/credits/` | Server-authoritative free allowance, costs, reservations, spending/restoration, and ledger operations. |
+| `lib/accounting/` | Server-only owned allowance read, unavailable-until-approved cost boundary and verified-storage settlement adapter; transactional reservation/ledger operations live in migration 006 RPCs/triggers. |
 | `lib/generation/` | Request-to-production orchestration, stage contracts, persistent job state, and coordination of provider/worker services. |
 | `lib/validation/` | Shared runtime schemas for untrusted request/provider/webhook/configuration data. |
 | `types/` | Genuinely shared domain types, including the adopted job-state contract. |
@@ -200,11 +204,11 @@ Official SDK signature verification protects cloud execution. Unsigned local dev
 
 This unit stops at `processing/preparing`. After a durable one-minute pause it records a safe failure because no production pipeline is connected, never a completed output. The cron also fails claims older than fifteen minutes, covering exhausted retries and crashes. Terminal jobs cannot be reclaimed. No heartbeat or automatic replay of possibly expensive work is introduced. Future providers must replace this explicit handoff and revisit execution limits/idempotency before extending it.
 
-Recovery requires registered, active Inngest functions or a running local Dev Server. During service downtime rows remain recoverable when it returns; monitor cron failures/pauses and oldest queued age. Deployment is not yet verified. See [generation-dispatch.md](generation-dispatch.md) for setup and evidence.
+Recovery requires registered, active Inngest functions or a running local Dev Server. During service downtime rows remain recoverable when it returns; monitor cron failures/pauses and oldest queued age. Actual Cloud reconciliation recovered a deliberately unsent development generation with Chrome closed and preserved one row/claim. No temporary Cloud handler failure or fifteen-minute hosted crash soak was injected. See [generation-dispatch.md](generation-dispatch.md) and [progress-tracker.md](progress-tracker.md) for setup and evidence.
 
 ### Persistent state and recovery — future production stages
 
-The persistent job state machine is implemented: `queued`, `processing`, `completed`, `failed`, with separate forward-only stages. Upload remains a separate asset state. Production stage inputs/outputs and accounting are future work.
+The persistent job state machine is implemented: `queued`, `processing`, `completed`, `failed`, with separate forward-only stages. Upload remains a separate asset state. Production stage inputs/outputs are future work. Accounting gates admission/dispatch and terminal settlement; only verified stored-result completion consumes a reservation.
 
 Persist enough information to show progress after reload, diagnose failures, and safely resume: job/generation/project owner, validated request/configuration, current state/stage, stage inputs/outputs, provider job IDs, attempt/timing information, safe error context, accounting reference, and final asset reference.
 
@@ -220,17 +224,17 @@ Inngest is the implemented workflow coordinator; Render/Docker remains the prefe
 
 ## Payments and Credits
 
-### Free usage and entitlement — Planned
+### Free usage and entitlement — Accounting foundation
 
-New users receive **two free short video generations, approximately 10 seconds each**. After free use, subscription entitlement or purchased credits can cover further work. The hackathon must first prove a working PayPal credit-purchase path; complete subscription management, marketplace commerce, and creator payouts remain later scope.
+Every application user receives **two lifetime free video generations, each limited to ten seconds**. This is a separate entitlement, not paid credits. Authenticated identity, duration and available allowance are the only eligibility conditions. Migration 006 backfills existing users and initializes new app-user inserts once; profile upserts do not reset counters. Current 10/15/30-second options make 10 seconds the eligible choice. Paid pricing/access is unavailable; longer/exhausted requests fail safely without a job. See [accounting.md](accounting.md).
 
-The server determines eligibility, available capacity, generation cost, and subscription access. Longer/more expensive supported requests may cost more, but no tariff, bundle price/currency, model fallback, exact free eligibility, or refund rule is defined here. PNG prices are illustrative; these decisions come from product rules.
+The server determines entitlement and trusted credit cost. The cost resolver currently returns unavailable; no browser cost override exists. Subscription pricing, credit-pack pricing, credits by generation type/duration and provider-cost conversion remain unresolved. PNG prices are illustrative. There is no purchase or subscription implementation.
 
-### Ledger and concurrency — Planned
+### Ledger, reservations and settlement — Accounting foundation
 
-Record every balance/free-allowance change with a reason and durable reference. Event categories may include free allowance/grants, purchased credits, generation debit, failed-generation restoration, and future approved administrative adjustments. These are accounting examples, not a fixed schema or a decision to represent the free allowance as fungible credits.
+`generation_accounts` holds separate free total/reserved/consumed counters and available/reserved paid credits. `generation_reservations` binds one free/credits outcome to each owned job. `credit_ledger` is immutable, recording each paid reservation/consumption/release with owner/job, amount, direction, signed balance deltas, reason, unique job/type reference and timestamp. No grant/purchase/adjustment API is added. Exact integer accounting units are bounded to JavaScript's safe integer range; this defines representation, not commercial pricing.
 
-Prevent double-spending and duplicate free use with atomic database enforcement. Generation submission needs persisted request identity so retries map to the same accepted operation without multiple charges/jobs. Define reserve/debit/settlement and restoration semantics before implementation; account for failures between database, workflow dispatch, provider acceptance, and rendering. Balance updates and their ledger entries must stay transactionally consistent, including duplicate restoration attempts.
+Atomic admission locks the user's account and commits job + reservation together before durable dispatch. Stable project/request UUID and immutable snapshot return the same job without another hold. Constraints prevent negative balances or free reserved+consumed exceeding two. Dispatch and claims require reservation. Terminal failures atomically release exactly once; recoverable send outages retain holds for cron recovery. Completion requires a claim-bound verified private R2 video receipt in `generation_result_receipts`, job completion and reservation consumption in one transaction. The server-only adapter verifies canonical storage key, size/MIME/signature/ETag; future renderers must validate usable output and publish immutably first. No current worker produces output or consumes a success. Browser roles have no accounting access; service_role can read tables and execute restricted RPCs but cannot directly write balances/history. Historical jobs are marked unaccounted and never retrocharged.
 
 ### PayPal verification — Planned
 
@@ -316,8 +320,8 @@ UI, real Clerk development flows and real Supabase identity verification are rec
 ### Planned
 
 - Complete the broader prior owned-project options/edit/update/list acceptance; later PayPal verification and ledger-backed credit purchases remain unstarted.
-- Cloud deployment/operations for development-verified Inngest dispatch, separate heavy rendering and stable generated-result delivery. Production deployment remains unverified.
-- R2 and Inngest are development-verified. Gemini, Runway, ElevenLabs, Remotion/FFmpeg, Vercel hosting and Render/Docker remain planned. The internal AI boundary/possible Vercel AI SDK choice is still open.
+- Separately scope provider stages, heavy rendering and stable generated-result delivery after remaining owned-project acceptance. Deployed Inngest delivery/claim, duplicates, recovery and browser persistence are verified without production output or accounting.
+- R2 and local Inngest dispatch are development-verified; Vercel/Cloud generation dispatch has scoped live evidence above. Gemini, Runway, ElevenLabs, Remotion/FFmpeg and Render/Docker remain planned. The internal AI boundary/possible Vercel AI SDK choice is still open.
 - Broader prior project acceptance remains separate. Actual AI processing/results, subscriptions and marketplace remain later units.
 
 ### Undecided
@@ -326,7 +330,7 @@ UI, real Clerk development flows and real Supabase identity verification are rec
 - Final adoption/configuration of preferred providers, account availability, exact SDK needs, storage limits/formats/CORS, retention/deletion, and access/delivery rules.
 - The owned-draft/asset schema and media access rule are implemented with live development persistence; broader project acceptance and hosted catalog auditing remain separate. Other domains and independent-of-activity Clerk webhooks remain unspecified/deferred.
 - Future workflow-to-Render authentication, deployment capacity, provider retry/output contracts and live progress transport. The current state machine and dispatch recovery contract are implemented above.
-- Credit tariffs, paid bundles/prices/currency, exact free eligibility/duration options, reservation/settlement/restoration/refund rules, and later subscription/creator economics. The two-free-generation count is already specified.
+- Subscription pricing, credit-pack pricing, credits by generation type/duration, provider-cost-to-credit formula, future user cancellation/refund rules and creator economics. Free eligibility and failure restoration are approved in accounting.md.
 - Final production logo assets and future workspace layouts. The public theme preference contract is now implemented above.
 
-**Documentation synchronization (2026-10-10):** private R2 media and persistent generation jobs/dispatch have live development evidence. Migrations 001–004 are unchanged; user-applied 005 adds outbox/claim RPCs. Live checks differ from isolated evidence and do not establish Cloud deployment or a full hosted catalog audit. AI production, rendering/output and accounting remain excluded.
+**Documentation synchronization (2026-10-10):** private R2 media and generation persistence have live development evidence; deployed Vercel/Inngest Cloud acceptance now verifies actual delivery, claims, duplicates, independent recovery and browser persistence. Migrations 001–004 are unchanged; user-applied 005 adds outbox/claim RPCs. A full hosted catalog/private-log audit remains separate. AI production, rendering/output and accounting remain excluded.

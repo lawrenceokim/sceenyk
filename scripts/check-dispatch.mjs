@@ -143,10 +143,12 @@ async function denied(sql, params = [], role = "anon") {
 }
 let owner, project;
 async function job() {
-  return value(
-    "insert into generation_jobs(owner_user_id,project_id,request_id,input_snapshot) values($1,$2,$3,$4) returning id as value",
-    [owner, project, randomUUID(), snapshot],
-  );
+  // Distinct accounts keep transport fixtures independent of the lifetime cap.
+  const user = await value("insert into app_users(clerk_user_id) values($1) returning id as value", [randomUUID()]);
+  const ownedProject = await value("insert into projects(owner_user_id,title,category,aspect_ratio,duration,visual_style,tone) values($1,'Fixture','cinematic','16:9','10','Original','Storytelling') returning id as value", [user]);
+  const admitted = await value("select public.admit_generation($1,$2,$3,$4) as value", [user, ownedProject, randomUUID(), snapshot]);
+  assert.equal(admitted.code, "ACCEPTED");
+  return admitted.job_id;
 }
 async function ageDispatch(id) {
   await pg.query(
@@ -165,7 +167,7 @@ try {
     .filter((x) => x.endsWith(".sql"))
     .sort())
     await pg.exec(fs.readFileSync("supabase/migrations/" + file, "utf8"));
-  check("five actual migrations apply", true);
+  check("six actual migrations apply", true);
   owner = await value(
     "insert into app_users(clerk_user_id) values('fixture') returning id as value",
   );

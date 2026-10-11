@@ -2,6 +2,7 @@ import "server-only";
 import { ensureAppUser } from "@/lib/auth/ensure-app-user";
 import { createDatabaseClient } from "@/lib/db/server";
 import type { GenerationRow } from "@/lib/db/types";
+import { trustedGenerationCost } from "@/lib/accounting/server";
 import { projectIdSchema } from "@/lib/projects/validation";
 import { attemptGenerationDispatch } from "./dispatch";
 import {
@@ -59,6 +60,7 @@ function toJob(
   row: Omit<
     GenerationRow,
     | "owner_user_id"
+    | "accounting_version"
     | "dispatch_attempts"
     | "last_dispatch_at"
     | "dispatched_at"
@@ -171,36 +173,43 @@ export async function createGenerationJob(
           "Use only successfully uploaded media from this project. Refresh media and try again.",
       };
   }
-  const { data, error } = await database
-    .from("generation_jobs")
-    .insert({
-      owner_user_id: owner,
-      project_id: projectId,
-      request_id: requestId,
-      input_snapshot: snapshot,
-    })
-    .select(columns)
-    .single();
-  if (error?.code === "23505") {
-    const found = await existing();
-    if (found?.ok) await attemptGenerationDispatch(found.value.id);
-    return found ?? unavailable;
-  }
+  const { data, error } = await database.rpc("admit_generation", {
+    p_owner_user_id: owner,
+    p_project_id: projectId,
+    p_request_id: requestId,
+    p_snapshot: snapshot,
+    p_credit_cost: trustedGenerationCost(snapshot),
+  });
   if (error || !data) {
     logError("create", error);
     return unavailable;
   }
-  await attemptGenerationDispatch(data.id);
+  if (data.code !== "ACCEPTED" || !data.job_id) {
+    if (data.code === "PAID_ACCESS_UNAVAILABLE")
+      return { ok: false, code: "PAID_ACCESS_UNAVAILABLE", message: "Free generations are limited to 10 seconds and your remaining allowance. Paid access is not available yet." };
+    if (data.code === "INSUFFICIENT_CREDITS")
+      return { ok: false, code: "INSUFFICIENT_CREDITS", message: "There are not enough available credits for this request." };
+    if (data.code === "CONFLICT") return conflict;
+    if (data.code === "NOT_FOUND") return notFound;
+    if (data.code === "INVALID_ASSETS")
+      return { ok: false, code: "INVALID_ASSETS", message: "Refresh your uploaded project media and try again." };
+    return unavailable;
+  }
+  await attemptGenerationDispatch(data.job_id);
   // Re-read for the dispatch hint when possible; the committed row still wins
   // if a later read is temporarily unavailable. Never lose a saved request.
   const refreshed = await database
     .from("generation_jobs")
     .select(columns)
-    .eq("id", data.id)
+    .eq("id", data.job_id)
     .eq("project_id", projectId)
     .eq("owner_user_id", owner)
     .maybeSingle();
-  return { ok: true, value: toJob(refreshed.data ?? data) };
+  if (refreshed.error || !refreshed.data) {
+    logError("admission-read", refreshed.error);
+    return unavailable; // Same request UUID recovers the committed reservation/job.
+  }
+  return { ok: true, value: toJob(refreshed.data) };
 }
 
 export async function getOwnedGenerationJob(

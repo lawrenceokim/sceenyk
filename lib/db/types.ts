@@ -63,12 +63,73 @@ export type AssetRow = {
 export type Database = {
   public: {
     Tables: {
+      generation_accounts: {
+        Row: {
+          owner_user_id: string;
+          free_total: number;
+          free_reserved: number;
+          free_consumed: number;
+          credit_available: number;
+          credit_reserved: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
+      generation_reservations: {
+        Row: {
+          job_id: string;
+          owner_user_id: string;
+          kind: "free" | "credits";
+          amount: number;
+          state: "reserved" | "consumed" | "released";
+          reason: "generation_admission" | "stored_result_verified" | "generation_failed";
+          created_at: string;
+          settled_at: string | null;
+        };
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
+      credit_ledger: {
+        Row: {
+          id: string;
+          owner_user_id: string;
+          job_id: string;
+          amount: number;
+          type: "reservation" | "consumption" | "release";
+          direction: "hold" | "debit" | "restore";
+          available_delta: number;
+          reserved_delta: number;
+          reason: string;
+          reference_key: string;
+          created_at: string;
+        };
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
+      generation_result_receipts: {
+        Row: {
+          job_id: string;
+          owner_user_id: string;
+          worker_run_id: string;
+          storage_provider: "r2";
+          storage_key: string;
+          mime_type: "video/mp4" | "video/webm";
+          size_bytes: number;
+          verified_etag: string;
+          verified_at: string;
+        };
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
       generation_jobs: {
         Row: GenerationRow;
-        Insert: Pick<
-          GenerationRow,
-          "owner_user_id" | "project_id" | "request_id" | "input_snapshot"
-        >;
+        Insert: never; // New jobs are admitted with their reservation via RPC.
         Update: Partial<
           Pick<
             GenerationRow,
@@ -109,6 +170,27 @@ export type Database = {
     };
     Views: Record<string, never>;
     Functions: {
+      admit_generation: {
+        Args: {
+          p_owner_user_id: string;
+          p_project_id: string;
+          p_request_id: string;
+          p_snapshot: GenerationSnapshot;
+          p_credit_cost: number | null;
+        };
+        Returns: { code: string; job_id?: string };
+      };
+      complete_generation_with_result: {
+        Args: {
+          p_job_id: string;
+          p_run_id: string;
+          p_storage_key: string;
+          p_mime_type: string;
+          p_size_bytes: number;
+          p_etag: string;
+        };
+        Returns: boolean;
+      };
       reserve_generation_dispatch: {
         Args: { p_job_id: string };
         Returns: number;
@@ -140,6 +222,7 @@ export type Database = {
 };
 
 export type GenerationRow = {
+  accounting_version: 0 | 1;
   dispatch_status: DispatchStatus;
   dispatch_attempts: number;
   last_dispatch_at: string | null;

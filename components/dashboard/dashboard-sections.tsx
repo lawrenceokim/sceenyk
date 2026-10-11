@@ -11,6 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/empty-state";
 import { SceneArtwork } from "@/components/scene-artwork";
+import { FreeAllowanceSummary } from "@/components/free-allowance";
 import { DashboardStatCard } from "./dashboard-stat-card";
 import { ProjectCard } from "./project-card";
 import type { ProjectPage } from "@/lib/projects/types";
@@ -91,7 +92,7 @@ export function DashboardOverview({ projectCount }: { projectCount: number }) {
           icon={<Coins className="size-5" />}
           label="Available credits"
           value="—"
-          description="Balance not connected"
+          description="Paid access is not available yet"
         />
         <DashboardStatCard
           icon={<Layers3 className="size-5" />}
@@ -283,7 +284,7 @@ export function TemplatesSection() {
   );
 }
 
-export function CreditsPreview() {
+export function FreeAllowanceCard() {
   return (
     <section
       id="credits"
@@ -300,20 +301,11 @@ export function CreditsPreview() {
             Room for your next idea
           </h2>
           <p className="mt-1 text-caption text-muted-foreground">
-            Credits preview · balance unavailable
+            Your free allowance
           </p>
         </div>
       </div>
-      <p className="mt-5 text-body-sm leading-relaxed text-muted-foreground">
-        New users will receive{" "}
-        <span className="font-medium text-foreground">
-          2 free short generations
-        </span>
-        . Paid plans or credits will support more creation afterward.
-      </p>
-      <p className="mt-3 text-caption leading-relaxed text-muted-foreground">
-        This preview has no balance, free allowance tracking, or purchases.
-      </p>
+      <div className="mt-5"><FreeAllowanceSummary /></div>
     </section>
   );
 }

@@ -125,6 +125,8 @@ The size utilities carry line heights, not weights; apply weight classes explici
 
 ## Layout Patterns
 
+Accounting foundation: dashboard and creation show actual owned free allowance through an authenticated uncached action, with loading/error/retry states, held reservations and activation/status-refresh recovery. Use singular/plural/none wording and the exact two-lifetime/10-second explanation. Paid access is explicitly unavailable; do not invent balances, prices or checkout. Generation preparation reserves entitlement and its current unsupported handoff restores it on failure. Existing design tokens/components/layouts remain unchanged.
+
 The landing page, public `/create`, private `/projects/[id]` and `/dashboard` share the same visual system. Clerk modal/account flows remain verified. Owned project source now adds draft title/save states and metadata cards; hosted project/media persistence is verified, with broader prior project acceptance tracked separately. Database failures display safe refresh UI separately from empty projects. Public navigation/account/loading/missing-configuration behavior remains unchanged, and artwork/output never fabricate generation.
 
 - **Public pages:** top navigation with responsive mobile navigation; keep public exploration available without authentication.

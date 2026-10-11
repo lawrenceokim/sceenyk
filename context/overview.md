@@ -58,7 +58,7 @@ Authentication is required for generation, project management, credit purchases,
 
 ### Free Generations, Credits, and Payments
 
-New users receive two free short video generations of about 10 seconds each. After those generations are used, further generation requires a subscription or purchased credits. Longer or more expensive AI requests should consume more credits, with the requirement clear before submission.
+Every user receives **2 lifetime free video generations, each limited to 10 seconds**. Free generations are separate entitlements, not paid credits. Eligibility requires authentication, duration at most 10 seconds, and remaining allowance. Reservation precedes execution; a verified stored result consumes it and a Sceenyk failure without a usable result restores it once. Additional/longer generations require paid credits once trusted pricing and paid access exist. Subscription pricing, credit-pack pricing, credits by type/duration, and the provider-cost-to-credit formula remain unresolved. See [accounting.md](accounting.md).
 
 The hackathon version uses PayPal for payments and should provide a working credit-purchase path when users need additional generation capacity. The broader monetization direction includes subscriptions, credit purchases, marketplace purchases, and creator payouts; the full economy is a later phase.
 
@@ -123,7 +123,7 @@ These are acceptance conditions for the MVP, not claims about the current implem
 7. The supported production flow produces a finished video matching the submitted creation type and instructions sufficiently to demonstrate the core use case.
 8. A completed video can be played in the project view and downloaded as an accessible video file.
 9. Reloading or revisiting a project retrieves its saved generation state and completed result from persisted records. Large media files are referenced rather than stored directly in PostgreSQL.
-10. A new account can use two free short generations of about 10 seconds each. A third generation cannot proceed using the exhausted free allowance.
+10. A new account receives two lifetime free generations, each limited to 10 seconds. A third generation cannot use exhausted allowance; retries/concurrent requests cannot overspend it.
 11. A request that requires credits can proceed only when sufficient generation capacity is available. Longer or more expensive configured requests consume more credits than the baseline short request, and the requirement is shown before submission.
 12. Completed generation usage updates the user's free allowance or credit balance and leaves an appropriate usage/transaction record. Revisiting the project shows the updated allowance or balance.
 13. When capacity is insufficient, the user can enter the PayPal credit-purchase flow. A successful purchase increases available credits, and those credits can fund a subsequent generation.

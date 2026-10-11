@@ -1,5 +1,9 @@
 # Development application identity
 
+## Accounting foundation — 2026-10-11
+
+New migration [006](../supabase/migrations/20261011000600_generation_accounting.sql) applies after the five existing migrations, which remain unchanged. Adds `generation_accounts`, `generation_reservations`, `credit_ledger` and `generation_result_receipts`, plus immutable `generation_jobs.accounting_version` and owned-job composite uniqueness. Account insertion/backfill initializes two lifetime free entitlements once; paid balances start at zero. Service-only admission/completion RPCs and job triggers keep reservation, status, counters and ledger atomic. Browser roles have no grants/policies; service_role has accounting SELECT only and restricted RPC execution. Direct job INSERT is removed in favor of transactional admission. Existing jobs are historical/unaccounted, not retrocharged. Exact rules, output-verification boundary, rollout ordering and unresolved commercial choices: [accounting.md](accounting.md). Hosted application/acceptance is pending; Data API credentials cannot run DDL.
+
 2026-10-09: minimal identity implementation with `@supabase/supabase-js` 2.117.3, verified against real Clerk development accounts and the new hosted Supabase development database. Clerk acceptance passed before this unit began. Privileged Data API metadata initially exposed no application tables. The user applied the initial migration through SQL Editor; hosted metadata now matches its eight columns and real identity writes/upserts passed. No prior repository database client, schema, or migration convention existed.
 
 ## Configuration and migration

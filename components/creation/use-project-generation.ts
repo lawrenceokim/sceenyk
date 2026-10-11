@@ -97,6 +97,7 @@ export function useProjectGeneration(
     const revision = epoch.current;
     try {
       const result = await latestGenerationAction(projectId);
+      window.dispatchEvent(new Event("sceenyk:allowance"));
       if (revision !== epoch.current) return;
       if (result.ok) {
         remember(result.value);
@@ -134,6 +135,7 @@ export function useProjectGeneration(
     const submitted = attempt.current;
     try {
       const result = await createGenerationAction(submitted);
+      window.dispatchEvent(new Event("sceenyk:allowance"));
       if (result.ok && attempt.current?.requestId === submitted.requestId)
         attempt.current = null;
       if (revision !== epoch.current) return;
