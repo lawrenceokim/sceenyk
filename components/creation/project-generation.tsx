@@ -33,7 +33,7 @@ export function ProjectGeneration({
   authReady: boolean;
 }) {
   const helpId = useId();
-  const state = useProjectGeneration(projectId, initialJob, initialError);
+  const state = useProjectGeneration(projectId, initialJob, initialError, inputs);
   const active =
     state.job?.status === "queued" || state.job?.status === "processing";
   const disabled =
@@ -45,7 +45,7 @@ export function ProjectGeneration({
     mediaError ||
     active ||
     !!state.statusError ||
-    state.creating;
+    state.creating || state.quoting;
   return (
     <section
       aria-label="Project generation"
@@ -68,22 +68,28 @@ export function ProjectGeneration({
           <Button
             type="button"
             size="lg"
-            disabled={disabled}
-            aria-busy={state.creating}
+            disabled={disabled || (!!state.quote && state.quote.status !== "ready")}
+            aria-busy={state.creating || state.quoting}
             aria-describedby={helpId}
             className="w-full sm:w-auto"
-            onClick={() => void state.generate(inputs)}
+            onClick={() => void (state.retrying || state.quote ? state.generate(inputs) : state.reviewCost())}
           >
             <Sparkles className="size-5" aria-hidden="true" />
             {state.creating
               ? "Creating request…"
               : state.retrying
                 ? "Retry request"
+                : state.quoting
+                  ? "Checking generation cost…"
+                  : state.quote
+                    ? state.quote.eligibleFreeGeneration
+                      ? "Confirm free generation"
+                      : `Confirm ${state.quote.requiredCredits ?? ""} credits`
                 : active
                   ? "Generation requested"
                   : state.job
-                    ? "New generation"
-                    : "Generate"}
+                    ? "Review new generation cost"
+                    : "Review generation cost"}
           </Button>
         ) : (
           <AccountAction
@@ -97,10 +103,40 @@ export function ProjectGeneration({
       </div>
       <p className="text-caption leading-relaxed text-muted-foreground">
         Requests are saved and sent for background preparation. Video production
-        is not connected yet, so preparation ends without generated content. No
-        paid credits are used. Free allowance is reserved during preparation and
-        restored when it ends without a result.
+        is not connected yet, so preparation ends without generated content.
+        Confirming reserves the displayed free allowance or credits; preparation
+        restores the reservation when it ends without a usable result.
       </p>
+      {state.quote && (
+        <div className="space-y-3 rounded-lg border border-border bg-muted p-4" role="status" aria-live="polite">
+          <p className="text-body-sm font-semibold">
+            {state.quote.eligibleFreeGeneration
+              ? `Free generation — ${state.quote.freeGenerationsRemaining} of 2 remaining`
+              : state.quote.requiredCredits === null
+                ? "Paid generation pricing is not available yet"
+                : `This generation requires ${state.quote.requiredCredits} credits`}
+          </p>
+          <p className="text-caption text-muted-foreground">
+            {state.quote.breakdown.durationSeconds} seconds · {state.quote.breakdown.operation === "transformation" ? "Video transformation" : "New generation"}.
+            {state.quote.pricingMode === "test" && " Development/test credit configuration — not final pricing."}
+            {" "}Quotes expire after five minutes. Editing your request requires a new quote.
+          </p>
+          {state.quote.status === "insufficient_credits" && (
+            <p className="text-body-sm text-destructive">
+              You need {state.quote.requiredCredits} credits but currently have {state.quote.availableCredits}. You need more credits to create this video.
+            </p>
+          )}
+          {state.quote.status === "pricing_unavailable" && (
+            <p className="text-body-sm text-muted-foreground">Free generations are limited to 10 seconds and your remaining allowance. Paid credit rates are awaiting approval.</p>
+          )}
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" variant="outline" disabled={disabled} onClick={() => void state.reviewCost()}>Update quote</Button>
+            {state.quote.status !== "ready" && (
+              <Button type="button" variant="outline" disabled>Buy credits — coming soon</Button>
+            )}
+          </div>
+        </div>
+      )}
       <FreeAllowanceSummary signedIn={signedIn} refreshKey={state.job?.updatedAt ?? ""} />
       {state.retrying && (
         <p className="text-caption text-muted-foreground">
@@ -157,7 +193,7 @@ export function ProjectGeneration({
         <Button
           variant="outline"
           type="button"
-          disabled={state.refreshing || state.creating}
+          disabled={state.refreshing || state.creating || state.quoting}
           aria-busy={state.refreshing}
           onClick={() => void state.refresh()}
         >

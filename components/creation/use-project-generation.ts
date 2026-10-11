@@ -5,23 +5,36 @@ import {
   latestGenerationAction,
 } from "@/app/actions/generation";
 import type { GenerationInputs, GenerationJob } from "@/lib/generation/types";
+import { quoteGenerationAction } from "@/app/actions/pricing";
+import type { GenerationQuote } from "@/lib/pricing/types";
 
 export function useProjectGeneration(
   projectId: string | null,
   initialJob: GenerationJob | null,
   initialError: string,
+  inputs: GenerationInputs,
 ) {
   const [job, setJob] = useState(initialJob);
   const [error, setError] = useState("");
   const [statusError, setStatusError] = useState(initialError);
   const [creating, setCreating] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [quoting, setQuoting] = useState(false);
+  const [quoted, setQuoted] = useState<{
+    key: string;
+    requestId: string;
+    inputs: GenerationInputs;
+    value: GenerationQuote;
+  } | null>(null);
+  const inputKey = JSON.stringify({ projectId, inputs });
+  const quote = quoted?.key === inputKey ? quoted.value : null;
   const inFlight = useRef(false);
   const epoch = useRef(0);
   const attempt = useRef<{
     projectId: string;
     requestId: string;
     inputs: GenerationInputs;
+    quoteId: string;
   } | null>(null);
   const [retrying, setRetrying] = useState(false);
 
@@ -122,19 +135,22 @@ export function useProjectGeneration(
       job?.status === "processing"
     )
       return;
+    if (!attempt.current && (!quote || quote.status !== "ready" || !quoted)) return;
     inFlight.current = true;
     const revision = ++epoch.current;
     setCreating(true);
     setError("");
     // Retain both UUID and submitted inputs after uncertain/lost responses.
-    attempt.current ??= {
+    if (!attempt.current && quoted && quote) attempt.current = {
       projectId,
-      requestId: crypto.randomUUID(),
-      inputs: structuredClone(inputs),
+      requestId: quoted.requestId,
+      inputs: structuredClone(quoted.inputs),
+      quoteId: quote.id,
     };
     const submitted = attempt.current;
+    if (!submitted) return;
     try {
-      const result = await createGenerationAction(submitted);
+      const result = await createGenerationAction({ quoteId: submitted.quoteId });
       window.dispatchEvent(new Event("sceenyk:allowance"));
       if (result.ok && attempt.current?.requestId === submitted.requestId)
         attempt.current = null;
@@ -144,12 +160,14 @@ export function useProjectGeneration(
         if (result.code !== "UNAVAILABLE") {
           attempt.current = null;
           setRetrying(false);
+          setQuoted(null);
         } else setRetrying(true);
         return;
       }
       remember(result.value);
       setStatusError("");
       attempt.current = null;
+      setQuoted(null);
       setRetrying(false);
       if (location.pathname === "/create")
         window.history.replaceState(null, "", `/projects/${projectId}`);
@@ -167,6 +185,33 @@ export function useProjectGeneration(
       }
     }
   }
+  async function reviewCost() {
+    if (!projectId || inFlight.current || attempt.current) return;
+    inFlight.current = true;
+    const revision = ++epoch.current;
+    setQuoting(true);
+    setError("");
+    setQuoted(null);
+    const requestId = crypto.randomUUID();
+    const submittedInputs = structuredClone(inputs);
+    try {
+      const result = await quoteGenerationAction({ projectId, requestId, inputs: submittedInputs });
+      if (revision !== epoch.current) return;
+      if (result.ok) setQuoted({
+        key: inputKey, requestId,
+        inputs: submittedInputs, value: result.value,
+      });
+      else setError(result.message);
+    } catch {
+      if (revision === epoch.current)
+        setError("Generation cost couldn’t be checked. Please try again.");
+    } finally {
+      if (revision === epoch.current) {
+        inFlight.current = false;
+        setQuoting(false);
+      }
+    }
+  }
   // A cached route can reactivate after an in-flight action completed while hidden.
   // Its owned reload recovers the database result; React state is never authority.
   return {
@@ -175,6 +220,9 @@ export function useProjectGeneration(
     statusError,
     creating,
     refreshing,
+    quoting,
+    quote,
+    reviewCost,
     retrying,
     generate,
     refresh,

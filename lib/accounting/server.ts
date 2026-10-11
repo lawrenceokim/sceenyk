@@ -1,7 +1,6 @@
 import "server-only";
 import { ensureAppUser } from "@/lib/auth/ensure-app-user";
 import { createDatabaseClient } from "@/lib/db/server";
-import type { GenerationSnapshot } from "@/lib/generation/types";
 import type { FreeAllowance } from "./types";
 
 export async function getFreeAllowance(): Promise<FreeAllowance> {
@@ -20,11 +19,3 @@ export async function getFreeAllowance(): Promise<FreeAllowance> {
   };
 }
 
-// Deliberately no prices or client override. A later approved tariff resolver
-// can return an exact positive integer cost for this authoritative snapshot.
-export function trustedGenerationCost(
-  snapshot: GenerationSnapshot,
-): number | null {
-  void snapshot;
-  return null;
-}

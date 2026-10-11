@@ -38,7 +38,7 @@ async function rawBridge(input, init) {
     typeof input === "string" ? input : input.url || input.href,
   );
   const table = url.pathname.split("/").pop();
-  assert.ok(["projects", "project_assets", "generation_jobs", "generation_accounts", "admit_generation"].includes(table));
+  assert.ok(["projects", "project_assets", "generation_jobs", "generation_accounts", "issue_generation_quote", "confirm_generation_quote"].includes(table));
   assert.equal(init.cache, "no-store");
   assert.ok(init.signal);
   if (unavailable)
@@ -48,13 +48,13 @@ async function rawBridge(input, init) {
     );
   try {
     await pg.exec("set role service_role");
-    if (table === "admit_generation") {
+    if (["issue_generation_quote", "confirm_generation_quote"].includes(table)) {
       const args = JSON.parse(init.body);
       assert.equal(args.p_owner_user_id, users[active].id);
-      assert.equal(args.p_credit_cost, null, "no invented tariff");
+      if (table === "issue_generation_quote") assert.equal(args.p_credit_cost, null, "no invented tariff");
       const names = Object.keys(args);
-      const result = (await pg.query(`select public.admit_generation(${names.map((key, i) => `${key} => $${i + 1}`).join(",")}) as value`, Object.values(args))).rows[0].value;
-      if (loseInsert) {
+      const result = (await pg.query(`select public.${table}(${names.map((key, i) => `${key} => $${i + 1}`).join(",")}) as value`, Object.values(args))).rows[0].value;
+      if (loseInsert && table === "confirm_generation_quote") {
         loseInsert = false;
         return Response.json({ code: "UNAVAILABLE" }, { status: 503 });
       }
@@ -241,7 +241,7 @@ try {
     await pg.exec(
       fs.readFileSync(path.join(root, "supabase/migrations", file), "utf8"),
     );
-  check("all six migrations apply in sequence", migrations.length === 6);
+  check("all seven migrations apply in sequence", migrations.length === 7);
   for (const name of ["A", "B"]) {
     users[name] = (
       await pg.query(
@@ -269,6 +269,24 @@ try {
   }
   const service = load(path.join(root, "lib/generation/server.ts"));
   const actions = load(path.join(root, "app/actions/generation.ts"));
+  const pricing = load(path.join(root, "app/actions/pricing.ts"));
+  const validation = load(path.join(root, "lib/generation/validation.ts"));
+  const rawConfirm = actions.createGenerationAction;
+  const issued = new Map();
+  // Legacy persistence cases now perform the real quote -> confirm flow.
+  actions.createGenerationAction = async (input) => {
+    const parsed = validation.createGenerationSchema.safeParse(input);
+    const key = parsed.success ? JSON.stringify([active, parsed.data]) : null;
+    let pending = key && issued.get(key);
+    if (!pending) {
+      pending = pricing.quoteGenerationAction(input);
+      if (key) issued.set(key, pending);
+    }
+    const result = await pending;
+    if (!result.ok) { if (key) issued.delete(key); return result; }
+    return rawConfirm({ quoteId: result.value.id });
+  };
+  check("direct browser admission without quote rejected", !(await rawConfirm({})).ok);
   const contract = load(path.join(root, "lib/generation/contract.ts"));
   const accounting = load(path.join(root, "app/actions/accounting.ts"));
   check("new identity has exactly two actual allowances", (await accounting.freeAllowanceAction()).value.available === 2);

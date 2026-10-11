@@ -146,7 +146,8 @@ async function job() {
   // Distinct accounts keep transport fixtures independent of the lifetime cap.
   const user = await value("insert into app_users(clerk_user_id) values($1) returning id as value", [randomUUID()]);
   const ownedProject = await value("insert into projects(owner_user_id,title,category,aspect_ratio,duration,visual_style,tone) values($1,'Fixture','cinematic','16:9','10','Original','Storytelling') returning id as value", [user]);
-  const admitted = await value("select public.admit_generation($1,$2,$3,$4) as value", [user, ownedProject, randomUUID(), snapshot]);
+  const quoted = await value("select public.issue_generation_quote($1,$2,$3,$4,null,'fixture','unconfigured') as value", [user, ownedProject, randomUUID(), snapshot]);
+  const admitted = await value("select public.confirm_generation_quote($1,$2,'fixture') as value", [user, quoted.quote.id]);
   assert.equal(admitted.code, "ACCEPTED");
   return admitted.job_id;
 }
@@ -167,7 +168,7 @@ try {
     .filter((x) => x.endsWith(".sql"))
     .sort())
     await pg.exec(fs.readFileSync("supabase/migrations/" + file, "utf8"));
-  check("six actual migrations apply", true);
+  check("seven actual migrations apply", true);
   owner = await value(
     "insert into app_users(clerk_user_id) values('fixture') returning id as value",
   );

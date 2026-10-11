@@ -37,6 +37,7 @@ export type GenerationResult<T> =
         | "CONFLICT"
         | "PAID_ACCESS_UNAVAILABLE"
         | "INSUFFICIENT_CREDITS"
+        | "QUOTE_STALE"
         | "UNAVAILABLE";
       message: string;
     };

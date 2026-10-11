@@ -22,6 +22,7 @@ export const createGenerationSchema = z.strictObject({
   requestId: z.uuid(),
   inputs: generationInputsSchema,
 });
+export const confirmGenerationSchema = z.strictObject({ quoteId: z.uuid() });
 export const generationReferenceSchema = z.strictObject({
   projectId: z.uuid(),
   jobId: z.uuid(),

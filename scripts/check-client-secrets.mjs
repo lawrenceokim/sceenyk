@@ -16,7 +16,7 @@ const names = [
 ];
 const secrets = names.map((name) => process.env[name]).filter(Boolean);
 const markers =
-  /SUPABASE_SECRET_KEY|SUPABASE_SERVICE_ROLE_KEY|INNGEST_EVENT_KEY|INNGEST_SIGNING_KEY|reserve_generation_dispatch|claim_generation_job|admit_generation|complete_generation_with_result|trustedGenerationCost|WORKFLOW_NOT_CONFIGURED|GENERATION_UNAVAILABLE_OR_INVALID/;
+  /SUPABASE_SECRET_KEY|SUPABASE_SERVICE_ROLE_KEY|INNGEST_EVENT_KEY|INNGEST_SIGNING_KEY|SCEENYK_TEST_PRICING_JSON|issue_generation_quote|confirm_generation_quote|reserve_generation_dispatch|claim_generation_job|admit_generation|complete_generation_with_result|trustedGenerationCost|WORKFLOW_NOT_CONFIGURED|GENERATION_UNAVAILABLE_OR_INVALID/;
 let files = 0,
   leaks = 0,
   serverMarkers = 0;

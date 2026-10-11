@@ -170,6 +170,31 @@ export type Database = {
     };
     Views: Record<string, never>;
     Functions: {
+      issue_generation_quote: {
+        Args: {
+          p_owner_user_id: string;
+          p_project_id: string;
+          p_request_id: string;
+          p_snapshot: GenerationSnapshot;
+          p_credit_cost: number | null;
+          p_pricing_version: string;
+          p_pricing_mode: "unconfigured" | "test";
+        };
+        Returns: { code: string; quote?: {
+          id: string;
+          eligible_free: boolean;
+          required_credits: number | null;
+          available_credits: number;
+          free_remaining: number;
+          pricing_version: string;
+          pricing_mode: "unconfigured" | "test";
+          expires_at: string;
+        } };
+      };
+      confirm_generation_quote: {
+        Args: { p_owner_user_id: string; p_quote_id: string; p_current_pricing_version: string };
+        Returns: { code: string; job_id?: string };
+      };
       admit_generation: {
         Args: {
           p_owner_user_id: string;

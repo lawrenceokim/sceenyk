@@ -2,7 +2,7 @@ import "server-only";
 import { ensureAppUser } from "@/lib/auth/ensure-app-user";
 import { createDatabaseClient } from "@/lib/db/server";
 import type { GenerationRow } from "@/lib/db/types";
-import { trustedGenerationCost } from "@/lib/accounting/server";
+import { getPricingConfiguration } from "@/lib/pricing/config";
 import { projectIdSchema } from "@/lib/projects/validation";
 import { attemptGenerationDispatch } from "./dispatch";
 import {
@@ -13,7 +13,7 @@ import {
   type GenerationStage,
 } from "./contract";
 import {
-  createGenerationSchema,
+  confirmGenerationSchema,
   generationReferenceSchema,
   generationVersionSchema,
   generationProjectIdsSchema,
@@ -106,89 +106,27 @@ export async function createGenerationJob(
 ): Promise<GenerationResult<GenerationJob>> {
   // Authenticate even malformed requests; ownership is resolved independently.
   const user = await ensureAppUser();
-  const parsed = createGenerationSchema.safeParse(input);
+  const parsed = confirmGenerationSchema.safeParse(input);
   if (!parsed.success)
-    return {
-      ok: false,
-      code: "INVALID_INPUT",
-      message:
-        "Enter a prompt and check your creation settings and uploaded media.",
-    };
-  const { projectId, requestId, inputs } = parsed.data;
-  const ctx = await context(projectId, user.id);
-  if (!ctx) return notFound;
-  const { database, owner } = ctx;
-  const snapshot = { version: 1 as const, ...inputs };
-  const existing =
-    async (): Promise<GenerationResult<GenerationJob> | null> => {
-      const { data, error } = await database
-        .from("generation_jobs")
-        .select(columns)
-        .eq("project_id", projectId)
-        .eq("owner_user_id", owner)
-        .eq("request_id", requestId)
-        .maybeSingle();
-      if (error) {
-        logError("request", error);
-        return unavailable;
-      }
-      if (!data) return null;
-      // JSONB key ordering differs from JS; compare normalized validated fields.
-      const old = data.input_snapshot;
-      const matches =
-        old.version === 1 &&
-        old.prompt === snapshot.prompt &&
-        old.category === snapshot.category &&
-        old.settings.aspectRatio === snapshot.settings.aspectRatio &&
-        old.settings.duration === snapshot.settings.duration &&
-        old.settings.visualStyle === snapshot.settings.visualStyle &&
-        old.settings.tone === snapshot.settings.tone &&
-        old.assetIds.length === snapshot.assetIds.length &&
-        [...old.assetIds].sort().every((id, i) => id === snapshot.assetIds[i]);
-      return matches ? { ok: true, value: toJob(data) } : conflict;
-    };
-  const previous = await existing();
-  if (previous) {
-    if (previous.ok) await attemptGenerationDispatch(previous.value.id);
-    return previous;
-  }
-  if (inputs.assetIds.length) {
-    const { data, error } = await database
-      .from("project_assets")
-      .select("id")
-      .eq("owner_user_id", owner)
-      .eq("project_id", projectId)
-      .eq("upload_status", "uploaded")
-      .not("verified_etag", "is", null)
-      .in("id", inputs.assetIds);
-    if (error) {
-      logError("assets", error);
-      return unavailable;
-    }
-    if (!data || data.length !== inputs.assetIds.length)
-      return {
-        ok: false,
-        code: "INVALID_ASSETS",
-        message:
-          "Use only successfully uploaded media from this project. Refresh media and try again.",
-      };
-  }
-  const { data, error } = await database.rpc("admit_generation", {
+    return { ok: false, code: "INVALID_INPUT", message: "Review the generation cost before confirming." };
+  const database = createDatabaseClient();
+  const owner = user.id;
+  const { data, error } = await database.rpc("confirm_generation_quote", {
     p_owner_user_id: owner,
-    p_project_id: projectId,
-    p_request_id: requestId,
-    p_snapshot: snapshot,
-    p_credit_cost: trustedGenerationCost(snapshot),
+    p_quote_id: parsed.data.quoteId,
+    p_current_pricing_version: getPricingConfiguration().version,
   });
   if (error || !data) {
     logError("create", error);
     return unavailable;
   }
   if (data.code !== "ACCEPTED" || !data.job_id) {
+    if (data.code === "QUOTE_STALE")
+      return { ok: false, code: "QUOTE_STALE", message: "Your quote has changed or expired. Review a new quote before confirming." };
     if (data.code === "PAID_ACCESS_UNAVAILABLE")
       return { ok: false, code: "PAID_ACCESS_UNAVAILABLE", message: "Free generations are limited to 10 seconds and your remaining allowance. Paid access is not available yet." };
     if (data.code === "INSUFFICIENT_CREDITS")
-      return { ok: false, code: "INSUFFICIENT_CREDITS", message: "There are not enough available credits for this request." };
+      return { ok: false, code: "INSUFFICIENT_CREDITS", message: "You need more credits to create this video. Review a new quote for your current balance." };
     if (data.code === "CONFLICT") return conflict;
     if (data.code === "NOT_FOUND") return notFound;
     if (data.code === "INVALID_ASSETS")
@@ -202,7 +140,6 @@ export async function createGenerationJob(
     .from("generation_jobs")
     .select(columns)
     .eq("id", data.job_id)
-    .eq("project_id", projectId)
     .eq("owner_user_id", owner)
     .maybeSingle();
   if (refreshed.error || !refreshed.data) {

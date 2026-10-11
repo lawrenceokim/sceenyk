@@ -24,8 +24,8 @@ The initial hackathon/MVP should demonstrate a complete experience for a focused
 2. The visitor selects a supported content type. The interface guides them with inputs and options relevant to that choice.
 3. When generation requires authentication, sign-in or sign-up opens in a centered Clerk modal/overlay. There is no dedicated `/signin` or `/signup` page.
 4. The signed-in user enters a prompt and optionally uploads relevant video, image, product, or other media.
-5. The user configures the basic generation options available for the selected creation type. Sceenyk checks whether the request is covered by an unused free generation or the user's available credits.
-6. Sceenyk creates a project and generation job associated with the user.
+5. The user configures generation options and reviews a server-issued quote showing free eligibility or required credits before confirming. Insufficient balance or unavailable pricing blocks admission. Credits are internal usage units with no assumed dollar or provider-unit conversion.
+6. Sceenyk verifies the quote against current pricing and allowance, reserves entitlement, and creates the owned generation job before dispatch.
 7. AI processes the request through the production stages required for that creation type, including planning, scene generation or transformation, commentary/voiceover, captions/effects, and video assembly where applicable.
 8. The user sees the job's progress and processing state.
 9. When processing completes, the finished video becomes available in the project for preview and download.
@@ -58,9 +58,9 @@ Authentication is required for generation, project management, credit purchases,
 
 ### Free Generations, Credits, and Payments
 
-Every user receives **2 lifetime free video generations, each limited to 10 seconds**. Free generations are separate entitlements, not paid credits. Eligibility requires authentication, duration at most 10 seconds, and remaining allowance. Reservation precedes execution; a verified stored result consumes it and a Sceenyk failure without a usable result restores it once. Additional/longer generations require paid credits once trusted pricing and paid access exist. Subscription pricing, credit-pack pricing, credits by type/duration, and the provider-cost-to-credit formula remain unresolved. See [accounting.md](accounting.md).
+Every user receives **2 lifetime free video generations, each limited to 10 seconds**. Free generations are separate entitlements, not paid credits. Eligibility requires authentication, duration at most 10 seconds, and remaining allowance. Reservation precedes execution; a verified stored result consumes it and a Sceenyk failure without a usable result restores it once. Additional/longer generations require paid credits once trusted pricing and paid access exist. Subscription pricing, credit-pack pricing, credits by type/duration, and the provider-cost-to-credit formula remain unresolved. See [accounting.md](accounting.md) and [pricing.md](pricing.md).
 
-The hackathon version uses PayPal for payments and should provide a working credit-purchase path when users need additional generation capacity. The broader monetization direction includes subscriptions, credit purchases, marketplace purchases, and creator payouts; the full economy is a later phase.
+Future hackathon purchases use PayPal Sandbox only; Live is prohibited during development and requires an intentional later configuration switch. Purchases are not implemented in the commercial-cost unit. The broader monetization direction includes subscriptions, credit purchases, marketplace purchases, and creator payouts; the full economy is a later phase.
 
 ### Creator Templates and Marketplace
 
