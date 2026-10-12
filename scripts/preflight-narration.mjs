@@ -31,6 +31,10 @@ if (!process.env.ELEVENLABS_API_KEY || process.env.NEXT_PUBLIC_ELEVENLABS_API_KE
     provider('selected_model', 'models', value => Array.isArray(value) && value.some(m => m.model_id === 'eleven_multilingual_v2' && m.can_do_text_to_speech)),
     provider('stock_voice', 'voices/JBFqnCBsd6RMkjVDRZzb', value => value.voice_id === 'JBFqnCBsd6RMkjVDRZzb' && value.category === 'premade'),
   ]);
-  console.log(JSON.stringify({ credentialConfigured: true, results, paidCalls: 0 }));
-  if (results.some(r => !r.available)) process.exitCode = 2;
+  // Voice Library/model metadata permissions are independent of TTS access.
+  // In particular, a Free-plan stock-voice lookup rejection must not block
+  // the separately authorized single speech acceptance.
+  const persistentExecutionReady = results.filter(r => ['narration_segments', 'narration_assets', 'generation_jobs'].includes(r.check)).every(r => r.available);
+  console.log(JSON.stringify({ credentialConfigured: true, persistentExecutionReady, results, metadataRequiredForTts: false, ttsVerified: false, paidCalls: 0 }));
+  if (!persistentExecutionReady) process.exitCode = 2;
 }
