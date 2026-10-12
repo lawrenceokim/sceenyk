@@ -9,6 +9,7 @@ import {
   generationRequested,
 } from "@/lib/generation/dispatch-contract";
 import { inngest } from "./client";
+import { visualsRequested } from "./visuals";
 
 export const generationWorkflow = inngest.createFunction(
   {
@@ -95,6 +96,14 @@ export const generationRecovery = inngest.createFunction(
         step.run(`dispatch-${job_id}`, () => dispatchGeneration(job_id)),
       ),
     );
+    const visualCandidates = await step.run("load-visual-dispatch-candidates", async () => {
+      const result = await createDatabaseClient().rpc("visual_dispatch_candidates");
+      if (result.error) throw new Error("VISUAL_RECOVERY_DATABASE_UNAVAILABLE");
+      return result.data;
+    });
+    for (const candidate of visualCandidates) {
+      await step.sendEvent(`dispatch-visuals-${candidate.job_id}`, { id: `${candidate.job_id}:visuals`, name: visualsRequested, data: { generationJobId: candidate.job_id } });
+    }
     return { inspected: candidates.length };
   },
 );

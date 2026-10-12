@@ -12,7 +12,11 @@ require("@next/env").loadEnvConfig(process.cwd(),false,{info(){},error(){}});
 const dir=fs.mkdtempSync(path.join(os.tmpdir(),"sceenyk-analysis-ui-"));
 const fixture=JSON.parse(fs.readFileSync(path.join(os.tmpdir(),"sceenyk-hosted-identity-fixture.json"),"utf8"));
 const hosted=process.argv.includes("--hosted");
-const hostedResult=hosted?JSON.parse(fs.readFileSync(path.join(os.tmpdir(),"sceenyk-hosted-analysis.json"),"utf8")):null;
+const visuals=process.argv.includes("--visuals");
+const hostedResult=hosted?JSON.parse(fs.readFileSync(path.join(os.tmpdir(),visuals?"sceenyk-visual-acceptance.json":"sceenyk-hosted-analysis.json"),"utf8")):null;
+if (hosted && visuals) fixture.clerkUserId=hostedResult.clerkUserId;
+const failure=process.argv.includes("--failure");
+const readyLabel=failure?"Generation failed":visuals?"Visuals ready":"Production plan ready";
 const backend=require("@clerk/backend").createClerkClient({secretKey:process.env.CLERK_SECRET_KEY,publishableKey:process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,telemetry:{disabled:true}});
 const chrome=spawn("C:/Program Files/Google/Chrome/Application/chrome.exe",["--headless=new","--disable-gpu","--no-first-run","--no-default-browser-check","--remote-debugging-port=9341","--user-data-dir="+path.join(dir,"profile"),"about:blank"],{windowsHide:true,stdio:"ignore"});
 const checks=[],errors=[];let ws;
@@ -38,20 +42,25 @@ try{
   const project=hostedResult?.projectId??"f38ccbee-7c61-4d40-941d-de1a0cbf7f71";
   const job={id:"455c7d0e-82d4-4fbc-ae77-97a7aa3d9f4b",requestId:"155c7d0e-82d4-4fbc-ae77-97a7aa3d9f4b",projectId:project,status:"processing",dispatchStatus:"claimed",stage:"planning",productionPlanReadyAt:"2028-01-01T00:00:00Z",input:{version:1,prompt:"UI presentation fixture",category:"cinematic",settings:{duration:"10",aspectRatio:"16:9",visualStyle:"Original",tone:"Storytelling"},assetIds:[]},errorCode:null,errorMessage:null,startedAt:"2028-01-01T00:00:00Z",completedAt:null,failedAt:null,createdAt:"2028-01-01T00:00:00Z",updatedAt:"2028-01-01T00:00:00Z"};
   if(!hosted)await call("Page.addScriptToEvaluateOnNewDocument",{source:`(()=>{window.__analysisJob=${JSON.stringify(job)};const original=window.fetch;window.fetch=async function(resource,options){const r=await original.apply(this,arguments);if(new Headers(options?.headers).get('Next-Action')!==${JSON.stringify(action)})return r;const body=await r.text();const lines=body.split(String.fromCharCode(10));for(let i=0;i<lines.length;i++){const at=lines[i].indexOf(':');try{const v=JSON.parse(lines[i].slice(at+1));if(v?.ok!==undefined){lines[i]=lines[i].slice(0,at+1)+JSON.stringify({ok:true,value:window.__analysisJob});break;}}catch{}}return new Response(lines.join(String.fromCharCode(10)),{status:r.status,headers:{'Content-Type':'text/x-component'}});};})()`});
-  await navigate("/projects/"+project);await wait("document.body.innerText.includes('Production plan ready')");
+  if (visuals && !hosted) await call("Page.addScriptToEvaluateOnNewDocument",{source:"window.__analysisJob={...window.__analysisJob,stage:'generating',visualsReadyAt:'2028-01-01T00:00:00Z',visualsPendingAt:null}"});
+  await navigate("/projects/"+project);await wait("document.body.innerText.includes("+JSON.stringify(readyLabel)+")");
   check(hosted?"real hosted job readiness appears for owner":"ready state uses persisted-job DTO presentation",true);
   check("no fabricated completed video or raw plan JSON",await evaluate("!document.body.innerText.includes('schemaVersion')&&!document.body.innerText.includes('Generation completed')"));
   const refresh=async()=>{await evaluate("Array.from(document.querySelectorAll('button')).find(b=>b.textContent.trim()==='Check generation status').click()");await wait("!document.body.innerText.includes('Checking status…')");};
-  if(!hosted){
+  if(!hosted && visuals){
+    await evaluate("window.__analysisJob={...window.__analysisJob,visualsReadyAt:null,updatedAt:new Date(Date.now()+86400000000).toISOString()}");await refresh();await wait("document.body.innerText.includes('Generating visuals')");check("honest visual generation label",true);
+    await evaluate("window.__analysisJob={...window.__analysisJob,visualsPendingAt:new Date().toISOString(),updatedAt:new Date(Date.now()+86400000001).toISOString()}");await refresh();await wait("document.body.innerText.includes('Visual scenes need attention')");check("unsupported or uncertain scenes remain pending",true);
+    await evaluate("window.__analysisJob={...window.__analysisJob,visualsPendingAt:null,visualsReadyAt:new Date().toISOString(),updatedAt:new Date(Date.now()+86400000002).toISOString()}");await refresh();await wait("document.body.innerText.includes('Visuals ready')");
+  } else if(!hosted){
     for(const stage of ["analyzing","planning"]){await evaluate(`window.__analysisJob={...window.__analysisJob,productionPlanReadyAt:null,stage:${JSON.stringify(stage)},updatedAt:new Date(Date.now()+86400000000).toISOString()}`);await refresh();await wait("document.body.innerText.includes("+JSON.stringify(stage==="analyzing"?"Analyzing your media":"Planning your content")+")");check("honest "+stage+" label",true);}
     await evaluate("window.__analysisJob={...window.__analysisJob,productionPlanReadyAt:new Date().toISOString(),updatedAt:new Date(Date.now()+86400000001).toISOString()}");await refresh();await wait("document.body.innerText.includes('Production plan ready')");
   }else{
-    await refresh();check("explicit refresh retains hosted plan readiness",await evaluate("document.body.innerText.includes('Production plan ready')"));
-    await call("Page.reload",{ignoreCache:true});await wait("document.body.innerText.includes('Production plan ready')");check("full reload retains hosted plan readiness",true);
-    await navigate("/dashboard");await wait("document.body.innerText.includes('Your projects')");await navigate("/projects/"+project);await wait("document.body.innerText.includes('Production plan ready')");check("leave and reopen retains hosted plan readiness",true);
+    await refresh();check("explicit refresh retains hosted readiness",await evaluate("document.body.innerText.includes("+JSON.stringify(readyLabel)+")"));
+    await call("Page.reload",{ignoreCache:true});await wait("document.body.innerText.includes("+JSON.stringify(readyLabel)+")");check("full reload retains hosted readiness",true);
+    await navigate("/dashboard");await wait("document.body.innerText.includes('Your projects')");await navigate("/projects/"+project);await wait("document.body.innerText.includes("+JSON.stringify(readyLabel)+")");check("leave and reopen retains hosted readiness",true);
   }
   for(const width of [1440,390,320]){await call("Emulation.setDeviceMetricsOverride",{width,height:960,deviceScaleFactor:1,mobile:width<768});for(const dark of [false,true]){await evaluate("document.documentElement.classList.toggle('dark',"+dark+")");await delay(150);check("ready plan fits "+width+" "+(dark?"dark":"light"),await evaluate("document.documentElement.scrollWidth<=innerWidth+1"));await evaluate("document.querySelector('section[aria-label=\"Project generation\"]').scrollIntoView({block:'start',behavior:'instant'})");await delay(150);if(width===320){const shot=await call("Page.captureScreenshot",{format:"png"});fs.writeFileSync(path.join(dir,"ready-320-"+(dark?"dark":"light")+".png"),Buffer.from(shot.data,"base64"));}}}
-  await evaluate("document.querySelector('section[aria-label=\"Project generation\"] button:last-child').focus()");check("status refresh remains keyboard focusable",await evaluate("document.activeElement?.textContent.includes('Check generation status')"));
+  await evaluate("Array.from(document.querySelectorAll('section[aria-label=\"Project generation\"] button')).find(b=>b.textContent.trim()==='Check generation status').focus()");check("status refresh remains keyboard focusable",await evaluate("document.activeElement?.textContent.includes('Check generation status')"));
   if(hosted){
     const second=JSON.parse(fs.readFileSync(path.join(os.tmpdir(),"sceenyk-hosted-identity-fixture-2.json"),"utf8"));
     assert.notEqual(second.clerkUserId,fixture.clerkUserId);
@@ -66,6 +75,6 @@ try{
     check("second account cannot read owned generation through action",!denied.includes(hostedResult.jobId)&&!denied.includes('productionPlanReadyAt'));
   }
   check("no uncaught browser exceptions",errors.length===0);
-  fs.writeFileSync(path.join(os.tmpdir(),hosted?"sceenyk-analysis-hosted-ui.json":"sceenyk-analysis-ui.json"),JSON.stringify({passed:checks.length,checks,artifacts:dir,scope:hosted?"real hosted plan/job and Clerk A/B; no mocked responses":"job presentation fixtures; real Clerk; no hosted-plan persistence claim"},null,2));
+  fs.writeFileSync(path.join(os.tmpdir(),visuals?(hosted?"sceenyk-visual-hosted-ui.json":"sceenyk-visual-ui.json"):(hosted?"sceenyk-analysis-hosted-ui.json":"sceenyk-analysis-ui.json")),JSON.stringify({passed:checks.length,checks,artifacts:dir,scope:hosted?"real hosted job and Clerk A/B; no mocked responses":"job presentation fixtures; real Clerk; no hosted persistence claim"},null,2));
   console.log(JSON.stringify({passed:checks.length,artifacts:dir}));await call("Browser.close");
 }finally{ws?.close();chrome.kill();}

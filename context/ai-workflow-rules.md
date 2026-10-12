@@ -8,12 +8,14 @@ Use a spec-driven workflow. `/context` is the source of truth for product behavi
 
 Current context and implementation baseline:
 
+- Runway visual execution is source-implemented behind `lib/video-ai/` and a separate trusted Inngest function; it remains In Progress until real funded provider/output acceptance passes. Preserve immutable Gemini plans and existing accounting. Intermediate readiness never completes/consumes a generation. Check the tracker for migration 009/010 status, actual observed provider costs and unsupported scene/recovery limits before relying on this integration.
+
 - [overview.md](overview.md) defines intended product behavior, the MVP, and success criteria.
 - [UI-context.md](ui-context.md) defines UI construction rules; its current on-disk filename is `ui-context.md`.
 - [design-system.md](design-system.md) defines visual tokens, component appearance, and reference uncertainty.
 - [code-standards.md](code-standards.md) defines coding conventions and required implementation boundaries for existing and future concerns.
 - [progress-tracker.md](progress-tracker.md) records verified implementation status, next units, and open questions. [architecture.md](architecture.md) records planned service boundaries and implemented UI contracts.
-- Landing/themes, Clerk/application identity, owned projects/private R2 media, deployed generation dispatch, accounting and quote confirmation have scoped acceptance in the tracker. Local Files remain temporary until verified upload. Gemini understanding and immutable validated plans now have actual text/image/video, hosted persistence and real deployed Inngest Cloud acceptance, including refresh/reopen, duplicates and terminal restoration. A ready plan holds its reservation and is never final-video completion. Scene generation, voice, rendering, purchases and marketplace remain unstarted; hosted catalog auditing remains separate. Reinspect the tracker before relying on historical baseline notes.
+- Landing/themes, Clerk/application identity, owned projects/private R2 media, deployed generation dispatch, accounting and quote confirmation have scoped acceptance in the tracker. Local Files remain temporary until verified upload. Gemini understanding and immutable validated plans have actual text/image/video, hosted persistence and real deployed Inngest Cloud acceptance, including refresh/reopen, duplicates and terminal restoration. A ready plan holds its reservation and is never final-video completion. Runway visual execution is source-implemented with real acceptance blocked as recorded above. Voice, rendering, purchases and marketplace remain unstarted; hosted catalog auditing remains separate. Reinspect the tracker before relying on historical baseline notes.
 
 Complete one working **vertical slice** at a time: a small feature that includes its UI, backend, and database behavior where required. For example: a user creates a project → it is saved to Supabase → it appears in My Projects → the user can reopen it. Do not combine project UI, marketplace schema, subscription billing, generation workers, and dashboard redesign in one unit.
 
@@ -79,7 +81,7 @@ Use the existing `context/progress-tracker.md` for unresolved questions and deli
 
 Use reasonable engineering judgment for small details that do not change product behavior. Never guess pricing, credit costs, subscription limits, free-generation eligibility/limits, payment behavior, refunds, creator revenue shares, marketplace fees, access permissions, ownership, deletion behavior, AI model-selection rules, or content moderation rules. Use the specification or obtain clarification.
 
-The overview already defines two free short generations of about 10 seconds each; preserve that rule. It does not define exact credit tariffs, refund rules, or model selection. Pricing text in reference PNGs is illustrative, not an approved billing policy. Cloudflare R2 is specified by the authorized media unit; AI, voice and background-job providers remain planned until their units are specified.
+The overview defines two free short generations of about 10 seconds each; preserve that rule and the approved accounting contract. Pricing text in reference PNGs is illustrative, not an approved billing policy. Cloudflare R2, Inngest, Gemini and the initial Runway visual contract are specified by their authorized units; inspect the tracker for actual acceptance limits. Voice and later providers remain planned until separately specified.
 
 ## Protected Files
 

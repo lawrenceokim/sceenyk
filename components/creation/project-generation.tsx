@@ -104,10 +104,11 @@ export function ProjectGeneration({
         )}
       </div>
       <p className="text-caption leading-relaxed text-muted-foreground">
-        Requests are saved for media analysis and production planning. This
-        version stops at a saved plan; final video production is not connected.
+        Requests are saved for media analysis, production planning and supported
+        visual scenes. Final video assembly is not connected.
         Confirming reserves the displayed allowance or credits. The reservation
-        stays held with a ready plan and is restored if processing fails.
+        stays held for later production and is restored after a total failure
+        without usable scenes.
       </p>
       {state.quote && (
         <div className="space-y-3 rounded-lg border border-border bg-muted p-4" role="status" aria-live="polite">
@@ -155,7 +156,7 @@ export function ProjectGeneration({
         {state.job && (
           <>
             <p className="text-body-sm font-semibold">
-              {planReady ? "Production plan ready" : `Generation ${generationStatusLabels[state.job.status].toLowerCase()}`}
+              {state.job.visualsReadyAt ? "Visuals ready" : state.job.visualsPendingAt ? "Visual scenes need attention" : planReady ? "Production plan ready" : `Generation ${generationStatusLabels[state.job.status].toLowerCase()}`}
             </p>
             {state.job.status === "queued" && (
               <p className="text-body-sm text-muted-foreground">
@@ -166,9 +167,11 @@ export function ProjectGeneration({
               </p>
             )}
             {planReady && (
-              <p className="text-body-sm text-muted-foreground">Your plan is saved. Video generation is the next stage and is not available yet.</p>
+              <p className="text-body-sm text-muted-foreground">Your plan is saved. Supported visual scenes are next.</p>
             )}
-            {state.job.status === "processing" && state.job.stage && !planReady && (
+            {state.job.visualsReadyAt && <p className="text-body-sm text-muted-foreground">Visual scenes are saved. Voice, editing and final rendering are later stages; your reservation remains held.</p>}
+            {state.job.visualsPendingAt && <p className="text-body-sm text-muted-foreground">Some scenes need an unsupported operation or background recovery. Your saved plan and any completed scenes are preserved.</p>}
+            {state.job.status === "processing" && state.job.stage && !planReady && !state.job.visualsReadyAt && !state.job.visualsPendingAt && (
               <p className="text-body-sm text-muted-foreground">
                 {generationStageLabels[state.job.stage]}
               </p>

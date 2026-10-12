@@ -63,6 +63,8 @@ export type AssetRow = {
 export type Database = {
   public: {
     Tables: {
+      scene_executions: { Row: import("@/lib/video-ai/contract").SceneExecution; Insert: never; Update: never; Relationships: [] };
+      scene_assets: { Row: import("@/lib/video-ai/contract").SceneAsset; Insert: never; Update: never; Relationships: [] };
       generation_plans: {
         Row: { job_id: string; owner_user_id: string; schema_version: number; provider: "gemini"; model: string; plan: import("@/lib/ai/plan").ProductionPlan; created_at: string };
         Insert: never; Update: never; Relationships: [];
@@ -209,6 +211,15 @@ export type Database = {
     };
     Views: Record<string, never>;
     Functions: {
+      claim_visual_generation: { Args: { p_job_id: string; p_run_id: string }; Returns: string };
+      prepare_visual_scenes: { Args: { p_job_id: string; p_run_id: string; p_scenes: ReturnType<typeof import("@/lib/video-ai/mapping").mapVisualScenes> }; Returns: boolean };
+      begin_visual_submission: { Args: { p_scene_id: string; p_run_id: string }; Returns: boolean };
+      retry_rejected_visual_submission: { Args: { p_scene_id: string; p_run_id: string }; Returns: boolean };
+      record_visual_task: { Args: { p_scene_id: string; p_run_id: string; p_task_id: string; p_estimated_credits: number | null }; Returns: boolean };
+      record_visual_status: { Args: { p_scene_id: string; p_run_id: string; p_status: string; p_credits: number | null; p_error: string | null }; Returns: boolean };
+      complete_visual_scene: { Args: { p_scene_id: string; p_run_id: string; p_size_bytes: number; p_etag: string }; Returns: boolean };
+      finish_visual_generation: { Args: { p_job_id: string; p_run_id: string }; Returns: string };
+      visual_dispatch_candidates: { Args: Record<string, never>; Returns: { job_id: string }[] };
       advance_generation_analysis: { Args: { p_job_id: string; p_run_id: string; p_stage: "analyzing" | "planning" }; Returns: boolean };
       begin_generation_analysis: { Args: { p_job_id: string; p_run_id: string; p_attempt: number; p_model: string }; Returns: { code: string; attempt_id?: string } };
       finish_generation_analysis: { Args: { p_job_id: string; p_run_id: string; p_attempt_id: string; p_plan: import("@/lib/ai/plan").ProductionPlan | null; p_usage: import("@/lib/ai/types").ProviderUsage | null; p_model: string | null; p_response_id: string | null; p_failure: string | null }; Returns: boolean };
@@ -289,6 +300,11 @@ export type Database = {
 };
 
 export type GenerationRow = {
+  visual_execution_version: 0 | 1;
+  visual_run_id: string | null;
+  visuals_started_at: string | null;
+  visuals_ready_at: string | null;
+  visuals_pending_at: string | null;
   production_plan_ready_at: string | null;
   accounting_version: 0 | 1;
   dispatch_status: DispatchStatus;

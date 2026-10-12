@@ -10,6 +10,15 @@ import { getStorageConfig } from "./config";
 
 const uploadLifetimeSeconds = 5 * 60;
 const readLifetimeSeconds = 15 * 60;
+// Trusted intermediate output only. Conditional PUT also covers lost DB replies.
+export async function putR2SceneOutput(key: string, bytes: Uint8Array) {
+  const { bucket, sdk } = client();
+  try {
+    await sdk.send(new PutObjectCommand({ Bucket: bucket, Key: key, Body: bytes, ContentLength: bytes.byteLength, ContentType: "video/mp4", IfNoneMatch: "*" }), { abortSignal: AbortSignal.timeout(60_000) });
+  } catch (error) {
+    if (!error || typeof error !== "object" || !("$metadata" in error) || !error.$metadata || typeof error.$metadata !== "object" || !("httpStatusCode" in error.$metadata) || error.$metadata.httpStatusCode !== 412) throw new Error("SCENE_STORAGE_UNAVAILABLE");
+  }
+}
 // Trusted AI input transfer. No signed R2 URL leaves this process.
 export async function readR2AnalysisMedia(key: string, etag: string, sizeBytes: number, signal: AbortSignal) {
   const { bucket, sdk } = client();
