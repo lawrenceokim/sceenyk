@@ -63,6 +63,8 @@ export type AssetRow = {
 export type Database = {
   public: {
     Tables: {
+      render_jobs: { Row: import("@/lib/final-render/contract").RenderJob; Insert: never; Update: never; Relationships: [] };
+      final_video_assets: { Row: import("@/lib/final-render/contract").FinalVideoAsset; Insert: never; Update: never; Relationships: [] };
       composition_plans: { Row: import("@/lib/composition/contract").CompositionRow; Insert: never; Update: never; Relationships: [] };
       composition_asset_checks: { Row: import("@/lib/composition/contract").CompositionAssetCheck; Insert: never; Update: never; Relationships: [] };
       narration_segments: { Row: import("@/lib/voice-ai/contract").NarrationSegment; Insert: never; Update: never; Relationships: [] };
@@ -216,6 +218,14 @@ export type Database = {
     };
     Views: Record<string, never>;
     Functions: {
+      ensure_render_job: { Args: { p_job_id: string }; Returns: string | null };
+      claim_render_job: { Args: { p_render_id: string; p_lease_id: string }; Returns: string };
+      advance_render_job: { Args: { p_render_id: string; p_lease_id: string; p_status: string }; Returns: boolean };
+      release_render_lease: { Args: { p_render_id: string; p_lease_id: string }; Returns: boolean };
+      complete_render_job: { Args: { p_render_id: string; p_lease_id: string; p_metadata: Record<string, unknown> }; Returns: boolean };
+      finalize_render_generation: { Args: { p_render_id: string }; Returns: boolean };
+      fail_render_job: { Args: { p_render_id: string; p_lease_id: string; p_error: string }; Returns: boolean };
+      render_dispatch_candidates: { Args: Record<string, never>; Returns: { job_id: string }[] };
       composition_asset_ref: { Args: { p_scene_id: string; p_track: string }; Returns: Record<string, unknown> | null };
       claim_composition_generation: { Args: { p_job_id: string; p_run_id: string; p_configuration: typeof import("@/lib/composition/contract").compositionConfiguration }; Returns: string };
       record_composition_asset_check: { Args: { p_job_id: string; p_run_id: string; p_scene_id: string; p_track: string; p_duration_ms: number | null; p_issue: string | null }; Returns: boolean };

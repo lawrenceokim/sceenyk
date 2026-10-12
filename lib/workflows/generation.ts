@@ -12,6 +12,7 @@ import { inngest } from "./client";
 import { visualsRequested } from "./visuals";
 import { narrationRequested } from "./narration";
 import { compositionRequested } from "./composition";
+import { finalRenderRequested } from "./final-render";
 
 export const generationWorkflow = inngest.createFunction(
   {
@@ -121,6 +122,16 @@ export const generationRecovery = inngest.createFunction(
     });
     for (const candidate of compositionCandidates) {
       await step.sendEvent(`dispatch-composition-${candidate.job_id}`, { id: `${candidate.job_id}:composition`, name: compositionRequested, data: { generationJobId: candidate.job_id } });
+    }
+    const renderCandidates = await step.run("load-render-dispatch-candidates", async () => {
+      const result = await createDatabaseClient().rpc("render_dispatch_candidates");
+      if (result.error) throw new Error("RENDER_DATABASE_UNAVAILABLE");
+      return result.data;
+    });
+    for (const candidate of renderCandidates) {
+      // Fresh recovery events avoid suppressing an exhausted Cloud run forever.
+      // Database leases and canonical output identity serialize actual work.
+      await step.sendEvent(`dispatch-render-${candidate.job_id}`, { name: finalRenderRequested, data: { generationJobId: candidate.job_id } });
     }
     return { inspected: candidates.length };
   },

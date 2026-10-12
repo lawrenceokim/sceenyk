@@ -20,20 +20,21 @@ export async function compositionFixtureDatabase() {
     } catch(e) { return {data:null,error:{code:e.code,message:e.message}}; } finally { await pg.exec('reset role'); } }); },
     from(table) { const filters=[],args=[];let fields='*',sort=''; return {
       select(v){fields=v;return this;},eq(k,v){args.push(v);filters.push(`${k}=$${args.length}`);return this;},order(k){sort=` order by ${k}`;return this;},
-      then(resolve,reject){return this.execute(false).then(resolve,reject);},maybeSingle(){return this.execute(true);},
+      then(resolve,reject){return this.execute(false).then(resolve,reject);},maybeSingle(){return this.execute(true);},single(){return this.execute(true);},
       execute(single){return serialize(async()=>{try {const rows=(await pg.query(`select ${fields} from ${table}${filters.length?' where '+filters.join(' and '):''}${sort}`,args)).rows;return {data:single?rows[0]??null:rows,error:null};}catch(e){return {data:null,error:{code:e.code,message:e.message}};}});},
     }; },
   };
   const call = async(name,args) => { const r=await db.rpc(name,args); assert.equal(r.error,null,r.error?.message);return r.data; };
   const load=typescriptLoader();
-  async function fixture({generated=false,speechMs=1280,offsetMs=0,transition='Cut',durations=[5,5]}={}) {
+  async function fixture({generated=false,speechMs=1280,offsetMs=0,transition='Cut',durations=[5,5],paidCredits=null}={}) {
     if(generated)durations=[6,4];
     const owner=await scalar('insert into app_users(clerk_user_id) values($1) returning id as value',[randomUUID()]);
+    if(paidCredits!==null)await pg.query('update generation_accounts set free_consumed=2,credit_available=100 where owner_user_id=$1',[owner]);
     const project=await scalar("insert into projects(owner_user_id,title,category,aspect_ratio,duration,visual_style,tone) values($1,'Composition fixture','cinematic','16:9','10','Original','Storytelling') returning id as value",[owner]);
     const asset=randomUUID();
     await pg.query("insert into project_assets(id,owner_user_id,project_id,upload_request_id,storage_key,original_filename,mime_type,size_bytes,media_type,upload_status,verified_etag) values($1,$2,$3,$4,$5,'fixture.png','image/png',100,'image','uploaded','fixture-etag')",[asset,owner,project,randomUUID(),`users/${owner}/projects/${project}/${asset}/${randomUUID()}`]);
     const input={version:1,prompt:'Composition acceptance',category:'cinematic',settings:{duration:'10',aspectRatio:'16:9',visualStyle:'Original',tone:'Storytelling'},assetIds:[asset]};
-    const quote=await call('issue_generation_quote',{p_owner_user_id:owner,p_project_id:project,p_request_id:randomUUID(),p_snapshot:input,p_credit_cost:null,p_pricing_version:'fixture',p_pricing_mode:'unconfigured'});
+    const quote=await call('issue_generation_quote',{p_owner_user_id:owner,p_project_id:project,p_request_id:randomUUID(),p_snapshot:input,p_credit_cost:paidCredits,p_pricing_version:'fixture',p_pricing_mode:paidCredits===null?'unconfigured':'test'});
     const admitted=await call('confirm_generation_quote',{p_owner_user_id:owner,p_quote_id:quote.quote.id,p_current_pricing_version:'fixture'});assert.equal(admitted.code,'ACCEPTED');
     const job=admitted.job_id,run=randomUUID();
     await call('claim_generation_job',{p_job_id:job,p_run_id:run});

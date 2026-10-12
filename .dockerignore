@@ -7,6 +7,10 @@
 !lib/**
 !scripts/
 !scripts/media-preparation-worker.ts
+!scripts/build-renderer.mjs
 !workers/
 !workers/media-preparation/
 !workers/media-preparation/Dockerfile
+!workers/final-render/
+!workers/final-render/**
+workers/final-render/bundle/

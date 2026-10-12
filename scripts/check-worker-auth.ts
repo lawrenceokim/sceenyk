@@ -16,6 +16,8 @@ async function main() {
   const body = JSON.stringify({ generationJobId: randomUUID(), sceneExecutionId: randomUUID() });
   let calls = 0, failure: Error | undefined;
   let inspections = 0;
+  let renders = 0;
+  const renderBody = JSON.stringify({renderJobId:randomUUID()});
   let hold: Promise<void> | undefined;
   // Explicit HTTP-test fixture. Durable SQL/restart checks live in check-worker-replay.mjs.
   const accepted = new Set<string>();
@@ -37,6 +39,10 @@ async function main() {
     inspections++;
     assert.deepEqual(input, JSON.parse(body));
     return { ready: true };
+  }, async input => {
+    renders++;
+    assert.deepEqual(input, JSON.parse(renderBody));
+    return { ready: false };
   });
   server.listen(0, "127.0.0.1");
   await once(server, "listening");
@@ -123,6 +129,13 @@ async function main() {
     const inspectNonce = randomUUID(), inspection = await send({ path: "/inspect", nonce: inspectNonce });
     check("composition inspection accepts only signed persisted identifiers", inspection.status === 200 && inspection.body === '{"ready":true}' && inspections === 1);
     check("composition exact replay cannot inspect twice", (await send({ path: "/inspect", nonce: inspectNonce })).status === 409 && inspections === 1);
+    check("render rejects unsigned requests", (await send({path:"/render",body:renderBody,unsigned:true})).status===401);
+    check("render rejects browser-origin requests", (await send({path:"/render",body:renderBody,headers:{Origin:"https://browser.invalid"}})).status===401);
+    check("render rejects browser composition and receipt claims", (await send({path:"/render",body:JSON.stringify({...JSON.parse(renderBody),plan:{status:"ready"},storageKey:"foreign",completed:true})})).status===400);
+    check("prepare signature cannot authorize rendering", (await send({path:"/render",body:renderBody,timestamp,nonce,signature})).status===401);
+    const renderNonce=randomUUID();
+    check("render accepts only signed stable identity", (await send({path:"/render",body:renderBody,nonce:renderNonce})).status===200&&renders===1);
+    check("render exact replay cannot dispatch again", (await send({path:"/render",body:renderBody,nonce:renderNonce})).status===409&&renders===1);
     process.env.WORKER_SHARED_SECRET = secret;
     delete process.env.NEXT_PUBLIC_WORKER_SHARED_SECRET;
     process.env.MEDIA_WORKER_URL = "https://worker.invalid";

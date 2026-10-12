@@ -13,8 +13,8 @@ const resultSchema = z
   .strict();
 
 // Trusted worker adapter only: no action/route exposes this operation. The
-// future renderer must validate a usable video and publish it immutably first.
-// Existing worker has no output and must continue through failure restoration.
+// renderer validates usable persisted bytes and publishes immutable metadata
+// first. Migration016 also enforces that verified-asset gate inside this RPC.
 export async function completeStoredGeneration(
   input: unknown,
 ): Promise<boolean> {

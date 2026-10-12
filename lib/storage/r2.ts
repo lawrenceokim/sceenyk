@@ -1,4 +1,5 @@
 import "server-only";
+import { createReadStream } from "node:fs";
 import {
   GetObjectCommand,
   HeadObjectCommand,
@@ -10,6 +11,17 @@ import { getStorageConfig } from "./config";
 
 const uploadLifetimeSeconds = 5 * 60;
 const readLifetimeSeconds = 15 * 60;
+// Final worker only: bounded file is streamed, with canonical immutable identity.
+export async function putR2FinalOutput(key: string, file: string, sizeBytes: number) {
+  const { bucket, sdk } = client();
+  try {
+    await sdk.send(new PutObjectCommand({ Bucket: bucket, Key: key, Body: createReadStream(file), ContentLength: sizeBytes, ContentType: "video/mp4", IfNoneMatch: "*" }), { abortSignal: AbortSignal.timeout(120_000) });
+    return true;
+  } catch (error) {
+    if (!error || typeof error !== "object" || !("$metadata" in error) || !error.$metadata || typeof error.$metadata !== "object" || !("httpStatusCode" in error.$metadata) || error.$metadata.httpStatusCode !== 412) throw new Error("FINAL_STORAGE_UNAVAILABLE");
+    return false;
+  }
+}
 export async function putR2NarrationOutput(key: string, bytes: Uint8Array) {
   const { bucket, sdk } = client();
   try {
@@ -133,7 +145,7 @@ export async function inspectR2Object(key: string) {
     throw error;
   }
 }
-export async function signR2Read(key: string, etag: string, mimeType: string) {
+export async function signR2Read(key: string, etag: string, mimeType: string, download = false) {
   if (!etag) throw new Error("Unverified object.");
   const { bucket, sdk } = client();
   const url = await getSignedUrl(
@@ -143,6 +155,7 @@ export async function signR2Read(key: string, etag: string, mimeType: string) {
       Key: key,
       ResponseContentType: mimeType,
       ResponseCacheControl: "private, no-store",
+      ...(download ? { ResponseContentDisposition: 'attachment; filename="sceenyk-video.mp4"' } : {}),
       // IfNoneMatch on every authorized PUT makes this key immutable.
     }),
     { expiresIn: readLifetimeSeconds },

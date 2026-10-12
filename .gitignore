@@ -19,6 +19,7 @@
 
 # production
 /build
+/workers/final-render/bundle/
 
 # misc
 .DS_Store

@@ -241,7 +241,7 @@ try {
     await pg.exec(
       fs.readFileSync(path.join(root, "supabase/migrations", file), "utf8"),
     );
-  check("all fifteen migrations apply in sequence", migrations.length === 15);
+  check("all sixteen migrations apply in sequence", migrations.length === 16);
   for (const name of ["A", "B"]) {
     users[name] = (
       await pg.query(

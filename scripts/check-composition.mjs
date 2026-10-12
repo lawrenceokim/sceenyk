@@ -33,7 +33,7 @@ const plan=async f=>schema.parse((await one('select plan from composition_plans 
 const held=f=>scalar("select count(*)::int as value from generation_reservations where job_id=$1 and state='reserved'",[f.job]);
 async function denied(name,sql,args=[],role='authenticated'){await pg.exec('set role '+role);let failed=false;try{await pg.query(sql,args);}catch{failed=true;}finally{await pg.exec('reset role');}check(name,failed);}
 try {
-  check('all fifteen migrations apply',true);
+  check('all sixteen migrations apply',true);
   const f=await fixture();const result=await run(f);check('official Inngest engine persists ready composition',result.result.handoff==='ready');
   const p=await plan(f);check('versioned strict safe contract',p.schema_version===1&&p.status==='ready');
   const tamperedTimeline=structuredClone(p);tamperedTimeline.scenes[1].start_ms++;

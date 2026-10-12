@@ -77,6 +77,12 @@ async function toJob(
     | "narration_started_at"
   >,
 ): Promise<GenerationJob> {
+  let renderStatus: GenerationJob["renderStatus"] = null;
+  if (row.composition_ready_at) {
+    const render = await createDatabaseClient().from("render_jobs").select("status").eq("generation_job_id",row.id).eq("owner_user_id",row.owner_user_id).eq("project_id",row.project_id).maybeSingle();
+    if (render.error) throw new GenerationAccessError();
+    renderStatus=render.data?.status??null;
+  }
   let compositionIssues: GenerationJob["compositionIssues"] = [];
   if (row.composition_pending_at) {
     const result = await createDatabaseClient().from("composition_plans").select("plan").eq("job_id", row.id).eq("project_id", row.project_id).eq("owner_user_id", row.owner_user_id).maybeSingle();
@@ -84,6 +90,7 @@ async function toJob(
     compositionIssues = compositionPlanSchema.parse(result.data.plan).issues;
   }
   return {
+    renderStatus,
     compositionStartedAt: row.composition_started_at ?? null,
     compositionReadyAt: row.composition_ready_at ?? null,
     compositionPendingAt: row.composition_pending_at ?? null,

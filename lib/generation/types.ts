@@ -10,6 +10,7 @@ import type {
 export type GenerationInputs = z.output<typeof generationInputsSchema>;
 export type GenerationSnapshot = GenerationInputs & { version: 1 };
 export type GenerationJob = {
+  renderStatus?: import("@/lib/final-render/contract").RenderStatus | null;
   compositionStartedAt?: string | null;
   compositionReadyAt?: string | null;
   compositionPendingAt?: string | null;
