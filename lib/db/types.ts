@@ -217,6 +217,7 @@ export type Database = {
       retry_rejected_visual_submission: { Args: { p_scene_id: string; p_run_id: string }; Returns: boolean };
       record_visual_task: { Args: { p_scene_id: string; p_run_id: string; p_task_id: string; p_estimated_credits: number | null }; Returns: boolean };
       record_visual_status: { Args: { p_scene_id: string; p_run_id: string; p_status: string; p_credits: number | null; p_error: string | null }; Returns: boolean };
+      record_visual_usage: { Args: { p_scene_id: string; p_run_id: string; p_usage: Record<string, unknown>; p_estimated_usd: number | null }; Returns: boolean };
       complete_visual_scene: { Args: { p_scene_id: string; p_run_id: string; p_size_bytes: number; p_etag: string }; Returns: boolean };
       finish_visual_generation: { Args: { p_job_id: string; p_run_id: string }; Returns: string };
       visual_dispatch_candidates: { Args: Record<string, never>; Returns: { job_id: string }[] };

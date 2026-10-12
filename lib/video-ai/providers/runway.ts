@@ -1,7 +1,7 @@
 import "server-only";
 import RunwayML, { toFile } from "@runwayml/sdk";
 import { z } from "zod";
-import { getVisualConfiguration } from "../config";
+import { getVisualConfiguration } from "../legacy-runway-config";
 import { VisualError, type SceneExecution } from "../contract";
 
 function client() {

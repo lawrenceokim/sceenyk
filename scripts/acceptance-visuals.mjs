@@ -1,6 +1,6 @@
 // Explicit real integration acceptance. --prepare creates a reserved Clerk DEV
 // identity and copies local synthetic test fixtures through owned media services.
-// --execute spends real Runway credits, only within the central guards.
+// --execute spends real fal credits, only within the central guards.
 // Re-running resumes persisted IDs; it never invents a replacement paid task.
 import fs from "node:fs";
 import os from "node:os";
@@ -11,15 +11,30 @@ import { setTimeout as delay } from "node:timers/promises";
 import nextEnv from "@next/env";
 import { createClerkClient } from "@clerk/backend";
 import { InngestTestEngine } from "@inngest/test";
-import RunwayML from "@runwayml/sdk";
 import { typescriptLoader } from "./lib/load-typescript.mjs";
 
 nextEnv.loadEnvConfig(process.cwd(), false, { info() {}, error() {} });
-const artifact = path.join(os.tmpdir(), "sceenyk-visual-acceptance.json");
+const image = process.argv.includes("--image");
+const failure = process.argv.includes("--failure");
+if (failure) process.env.FAL_MAX_SCENE_SECONDS = "10";
+const artifact = path.join(os.tmpdir(), failure ? "sceenyk-fal-failure-acceptance.json" : image ? "sceenyk-fal-image-acceptance.json" : "sceenyk-fal-acceptance.json");
 let state; try { state = JSON.parse(fs.readFileSync(artifact, "utf8")); } catch { state = { createdAt: new Date().toISOString(), checks: [] }; }
+if (!state.clerkUserId && !failure) {
+  const previous = JSON.parse(fs.readFileSync(path.join(os.tmpdir(), "sceenyk-visual-acceptance.json"), "utf8"));
+  for (const key of ["clerkUserId", "ownerId", "projectId", "assets", "uploadRequests"]) state[key] = previous[key];
+}
 const save = () => fs.writeFileSync(artifact, JSON.stringify(state, null, 2));
 const check = (name, value) => { assert.ok(value, name); if (!state.checks.includes(name)) state.checks.push(name); save(); console.log(JSON.stringify({ passed: name })); };
-const baseLoad = typescriptLoader(), db = baseLoad("lib/db/server.ts").createDatabaseClient();
+// A deliberate invalid duration is injected only by the failure harness to
+// exercise a real fal rejection. The saved plan and production adapter stay intact.
+const transport = async (input, init) => {
+  if (failure && new URL(String(input)).hostname === "queue.fal.run" && init?.method === "POST") {
+    const body = JSON.parse(init.body); body.duration = 7;
+    return fetch(input, { ...init, body: JSON.stringify(body) });
+  }
+  return fetch(input, init);
+};
+const baseLoad = typescriptLoader({}, { fetch: transport }), db = baseLoad("lib/db/server.ts").createDatabaseClient();
 const clerk = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY, publishableKey: process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY, telemetry: { disabled: true } });
 const row = async (table, id, key = "id") => { const result = await db.from(table).select("*").eq(key, id).single(); assert.ok(!result.error, table + " persists"); return result.data; };
 const digest = value => createHash("sha256").update(JSON.stringify(value)).digest("hex");
@@ -39,9 +54,10 @@ if (process.argv.includes("--prepare")) {
   const owner = await identity();
   const load = typescriptLoader({ "@/lib/auth/ensure-app-user": { ensureAppUser: async () => owner }, "./dispatch": { attemptGenerationDispatch: async () => {} } });
   state.projectId ??= randomUUID(); save();
-  const prompt = "Plan exactly three visual shots totaling ten seconds. Shot 1 is a new text-generated shot of a bright cyan cube sliding on a purple surface, exactly 2 seconds. Shot 2 transforms the ENTIRE supplied short video to a polished 2D cartoon, preserving timing, cyan-square movement, camera and background layout, without modifying text/HUD; use the video's actual full observed duration, startTime 0 and endTime its full duration. Shot 3 reuses the supplied still image for the remaining seconds. No narration. Keep each shot prompt under 800 characters. These are synthetic test shapes, not real people or footage.";
+  const prompt = image ? "Plan exactly two visual shots totaling ten seconds. Shot 1 transforms the supplied still IMAGE into a gently animated polished illustrated shot, exactly 6 seconds, source transformed, assetId of the image, no startTime or endTime. Shot 2 reuses the same still IMAGE unchanged, exactly 4 seconds, source original. Do not use the video. No narration. Keep shot instructions under 800 characters. Synthetic cyan square on purple background only." : "Plan exactly two visual shots totaling ten seconds. Shot 1 is a new text-generated shot of a bright cyan cube sliding on a purple surface, exactly 6 seconds, source generated, no assetId. Shot 2 transforms the ENTIRE supplied short VIDEO to polished 2D cartoon, exactly 4 seconds, source transformed, video assetId, startTime 0 endTime 4. Preserve timing, cyan-square movement, camera and background layout; preserve text/HUD. Do not use the still image. No narration. Keep shot instructions under 800 characters. Synthetic shapes only.";
+  const requestedPrompt = failure ? "Plan exactly ONE new text-generated visual shot lasting exactly TEN seconds. No source assets, no reuse, no transform, no narration. Synthetic cyan cube moves gently across purple background. source generated, assetId null, startTime and endTime null. Keep shot description under 800 characters." : prompt;
   const settings = { duration: "10", aspectRatio: "16:9", visualStyle: "Original", tone: "Storytelling" };
-  const saved = await load("lib/projects/server.ts").saveOwnedProject({ id: state.projectId, mode: state.assets ? "update" : "create", title: "Visual scene synthetic acceptance", category: "cinematic", prompt, settings });
+  const saved = await load("lib/projects/server.ts").saveOwnedProject({ id: state.projectId, mode: state.assets ? "update" : "create", title: "Visual scene synthetic acceptance", category: "cinematic", prompt: requestedPrompt, settings });
   assert.ok(saved.ok, "owned synthetic project saved");
   if (!state.assets || state.assets.length < 2) {
     const source = JSON.parse(fs.readFileSync(path.join(os.tmpdir(), "sceenyk-analysis-media-fixture.json"), "utf8"));
@@ -62,7 +78,7 @@ if (process.argv.includes("--prepare")) {
   }
   check("real owned synthetic inputs verified in private R2", state.assets.length === 2);
   if (!state.jobId) {
-    const inputs = { prompt, category: "cinematic", settings, assetIds: state.assets.map(a => a.id).sort() };
+    const inputs = { prompt: requestedPrompt, category: "cinematic", settings, assetIds: state.assets.map(a => a.id).sort() };
     const quote = await load("lib/pricing/server.ts").quoteGeneration({ projectId: state.projectId, requestId: randomUUID(), inputs });
     assert.ok(quote.ok && quote.value.eligibleFreeGeneration);
     const accepted = await load("lib/generation/server.ts").createGenerationJob({ quoteId: quote.value.id });
@@ -79,26 +95,49 @@ if (process.argv.includes("--prepare")) {
 if (process.argv.includes("--execute")) {
   assert.ok(state.jobId && state.planDigest, "prepare real plan first");
   check("hosted bounded-retry schema applied", !(await db.from("scene_executions").select("submission_attempts").limit(0)).error);
-  const runway = new RunwayML({ maxRetries: 0, timeout: 15_000 });
-  const organization = await runway.organization.retrieve();
+  check("hosted fal schema applied", !(await db.from("scene_executions").select("estimated_cost_usd,pricing_snapshot,provider_usage").limit(0)).error);
   const config = baseLoad("lib/video-ai/config.ts").getVisualConfiguration();
   const job = await row("generation_jobs", state.jobId);
   const plan = await row("generation_plans", state.jobId, "job_id");
   const attempt = await db.from("generation_analysis_attempts").select("usage").eq("job_id", state.jobId).eq("state", "succeeded").single();
   const media = state.assets.map(a => ({ id: a.id, mimeType: a.mimeType, sizeBytes: a.sizeBytes, durationSeconds: attempt.data?.usage?.media.find(m => m.assetId === a.id)?.durationSeconds }));
   const mapped = baseLoad("lib/video-ai/mapping.ts").mapVisualScenes(plan.plan, media);
-  const required = mapped.filter(s => !s.error_code).reduce((sum, s) => sum + (s.estimated_credits ?? 0), 0);
-  assert.ok(required <= config.maximumJobUsd * 100 && organization.creditBalance >= required, "funded provider credits must cover bounded acceptance workload");
-  console.log(JSON.stringify({ estimatedCredits: required, mapped: mapped.map(s => ({ operation: s.operation, duration: s.duration_seconds, unsupported: s.error_code })) }));
+  const required = mapped.reduce((sum, s) => sum + (s.estimated_cost_usd ?? 0), 0);
+  assert.ok(required <= config.maximumJobUsd && mapped.every(s => !s.error_code), "real plan must fit reviewed models and central cost guard before any paid call");
+  console.log(JSON.stringify({ estimatedUsd: required, mapped: mapped.map(s => ({ operation: s.operation, duration: s.duration_seconds, unsupported: s.error_code })) }));
+  if (!state.resumeVerified && !failure) {
+    const claim = await db.rpc("claim_visual_generation", { p_job_id: job.id, p_run_id: state.visualRunId });
+    assert.ok(!claim.error && ["claimed", "resumed"].includes(claim.data), "acceptance owns the trusted visual run");
+    const service = baseLoad("lib/video-ai/server.ts");
+    const prepared = await service.prepareVisuals(job.id, state.visualRunId);
+    await service.submitVisualScene(prepared[0].id, job.id, state.visualRunId);
+    const submitted = await row("scene_executions", prepared[0].id);
+    assert.ok(submitted.provider_task_id, "real fal request ID persisted immediately");
+    await service.submitVisualScene(prepared[0].id, job.id, state.visualRunId);
+    const resumed = await row("scene_executions", prepared[0].id);
+    check("worker resume reuses actual fal ID without second submission", resumed.provider_task_id === submitted.provider_task_id && resumed.submission_attempts === 1);
+    state.resumeVerified = true; save();
+  }
   const workflow = baseLoad("lib/workflows/visuals.ts").visualWorkflow;
   const execute = runId => new InngestTestEngine({ function: workflow, events: [{ name: "sceenyk/generation.visuals.requested", data: { generationJobId: job.id } }], transformCtx: ctx => ({ ...ctx, runId, step: { ...ctx.step, sleep: () => delay(10_000) } }) }).execute();
   const result = await execute(state.visualRunId);
-  check("real visual workflow reaches visuals_ready", result.result?.handoff === "visuals_ready");
+  if (failure) {
+    const failedScenes = (await db.from("scene_executions").select("*").eq("job_id", job.id)).data;
+    check("real fal invalid-schema failure is safely persisted", failedScenes.every(s => s.status === "failed" && ["PROVIDER_FAILED", "PROVIDER_REJECTED"].includes(s.error_code)));
+    check("real total failure releases original accounting reservation", (await row("generation_jobs", job.id)).status === "failed" && (await row("generation_reservations", job.id, "job_id")).state === "released");
+    const before = digest(failedScenes);
+    await execute(state.visualRunId);
+    check("failure duplicate neither resubmits nor restores twice", digest((await db.from("scene_executions").select("*").eq("job_id", job.id)).data) === before && (await row("generation_reservations", job.id, "job_id")).state === "released");
+    check("failure preserves immutable actual Gemini plan", digest(await row("generation_plans", job.id, "job_id")) === state.planDigest);
+    console.log(JSON.stringify({ passed: state.checks.length, scope: "real fal queue rejection; deliberately invalid duration injected at acceptance transport only; actual charge unverified" }));
+    process.exit(0);
+  }
+  check("real visual workflow reaches visuals_ready", result.result?.handoff === "visuals_ready" || result.result?.claim === "terminal" && !!(await row("generation_jobs", job.id)).visuals_ready_at);
   const scenes = (await db.from("scene_executions").select("*").eq("job_id", job.id).order("scene_order")).data;
-  check("one actual generated and one transformed scene succeed", scenes.some(s => s.operation === "text_to_video" && s.status === "completed") && scenes.some(s => s.operation === "video_to_video" && s.status === "completed"));
-  check("reuse completes without a provider task", scenes.some(s => s.operation === "reuse" && s.status === "completed" && !s.provider_task_id));
+  check("required actual fal operations succeed", (image ? ["image_to_video", "reuse"] : ["text_to_video", "video_to_video"]).every(operation => scenes.some(s => s.operation === operation && s.status === "completed")));
+  if (image) check("reuse completes without a provider task", scenes.some(s => s.operation === "reuse" && s.status === "completed" && !s.provider_task_id));
   const paid = scenes.filter(s => s.provider_task_id);
-  check("provider IDs and actual credit costs persisted", paid.every(s => s.provider_task_id && s.provider_credits !== null && s.cost_measured_at));
+  check("fal IDs and usage estimates persisted without invented charges", paid.every(s => s.provider === "fal" && s.provider_task_id && s.provider_credits === null && s.provider_cost_usd === null && s.cost_measured_at && s.estimated_cost_usd !== null));
   const storage = baseLoad("lib/storage/r2.ts");
   for (const scene of paid) {
     const asset = await row("scene_assets", scene.output_asset_id);
@@ -118,7 +157,7 @@ if (process.argv.includes("--execute")) {
   const current = await row("generation_jobs", job.id);
   check("visual readiness never completes overall generation", current.status === "processing" && !!current.visuals_ready_at && !current.completed_at);
   check("customer reservation remains held without consumption", (await row("generation_reservations", job.id, "job_id")).state === "reserved");
-  state.costs = paid.map(s => ({ operation: s.operation, model: s.model, duration: s.duration_seconds, resolution: s.resolution, credits: s.provider_credits, estimatedUsd: s.provider_cost_usd, timestamp: s.cost_measured_at })); save();
+  state.costs = paid.map(s => ({ operation: s.operation, model: s.model, duration: s.duration_seconds, resolution: s.resolution, usage: s.provider_usage, estimatedUsd: s.estimated_cost_usd, actualChargeUsd: s.provider_cost_usd, timestamp: s.cost_measured_at })); save();
 }
 if (process.argv.includes("--inspect")) {
   assert.ok(state.jobId && state.assets?.length, "prepare the real synthetic fixture first");
@@ -151,6 +190,6 @@ if (process.argv.includes("--inspect")) {
   const reservation = await row("generation_reservations", state.jobId, "job_id");
   const attempts = await db.from("generation_analysis_attempts").select("attempt,state,failure_code").eq("job_id", state.jobId).order("attempt");
   assert.ok(!attempts.error);
-  console.log(JSON.stringify({ jobStatus: job.status, reservationState: reservation.state, analysisAttempts: attempts.data, boundedRetrySchemaAvailable: !(await db.from("scene_executions").select("submission_attempts").limit(0)).error, runwayCreditBalance: (await new RunwayML({ maxRetries: 0, timeout: 15_000 }).organization.retrieve()).creditBalance }));
+  console.log(JSON.stringify({ jobStatus: job.status, reservationState: reservation.state, analysisAttempts: attempts.data, boundedRetrySchemaAvailable: !(await db.from("scene_executions").select("submission_attempts").limit(0)).error }));
 }
 console.log(JSON.stringify({ passed: state.checks.length, costs: state.costs ?? null, artifact, scope: "real hosted services and official engine; deployed Cloud/browser acceptance separate" }));

@@ -1,12 +1,11 @@
 import "server-only";
 import { createDatabaseClient } from "@/lib/db/server";
 import { validateProductionPlan } from "@/lib/ai/plan";
-import { readR2AnalysisMedia } from "@/lib/storage/r2";
-import { getVisualConfiguration } from "./config";
+import { inspectR2Object, signR2Read } from "@/lib/storage/r2";
 import { mapVisualScenes } from "./mapping";
 import { VisualError } from "./contract";
-import { generateScene, transformScene, getTaskStatus, uploadSceneInput } from "./providers/runway";
-import { boundedBytes, persistSceneOutput } from "./storage";
+import { generateScene, transformScene, getTaskStatus } from "./provider";
+import { persistSceneOutput } from "./storage";
 
 async function load(jobId: string, runId: string) {
   const db = createDatabaseClient();
@@ -56,13 +55,16 @@ async function status(sceneId: string, runId: string, state: string, credits: nu
 }
 export async function submitVisualScene(sceneId: string, jobId: string, runId: string) {
   const { scene, inputs, plan, media } = await sceneContext(sceneId, jobId, runId);
+  if (!["completed", "failed", "skipped"].includes(scene.status) && scene.provider === "runway") {
+    await status(scene.id, runId, "pending", null, "PROVIDER_INACTIVE"); return { poll: false };
+  }
   if (scene.status === "completed" || scene.status === "failed" || scene.status === "skipped" || scene.provider_task_id) return { poll: !!scene.provider_task_id && scene.status !== "completed" && scene.status !== "failed" };
   if (scene.error_code && scene.error_code !== "RATE_LIMIT") return { poll: false };
   if (scene.submission_attempts >= 3 && !scene.provider_task_id) return { poll: false };
   // Recheck current guards immediately before spending; never silently change
   // the persisted operation/model to satisfy a configuration change.
   const current = mapVisualScenes(plan, media).find(s => s.scene_order === scene.scene_order);
-  if (!current || current.error_code || current.model !== scene.model) {
+  if (!current || current.error_code || current.model !== scene.model || Object.entries(current.pricing_snapshot).some(([key, value]) => value !== scene.pricing_snapshot[key])) {
     await status(scene.id, runId, "pending", null, current?.error_code ?? "CONFIGURATION_CHANGED"); return { poll: false };
   }
   if (scene.submission_started_at) {
@@ -72,16 +74,13 @@ export async function submitVisualScene(sceneId: string, jobId: string, runId: s
   if (scene.input_asset_id) {
     const asset = inputs.find(a => a.id === scene.input_asset_id);
     if (!asset?.verified_etag) throw new VisualError("MEDIA_UNAVAILABLE");
-    const stream = await readR2AnalysisMedia(asset.storage_key, asset.verified_etag, asset.size_bytes, AbortSignal.timeout(30_000));
-    try {
-      inputUri = await uploadSceneInput(await boundedBytes(stream, getVisualConfiguration().maximumInputBytes), asset.mime_type);
-    } catch (error) {
-      if (error instanceof VisualError && ["PROVIDER_REJECTED", "UNSUPPORTED_MEDIA", "MEDIA_TOO_LARGE"].includes(error.code)) {
-        await status(scene.id, runId, "failed", null, error.code);
-        return { poll: false };
-      }
-      throw error;
+    const stored = await inspectR2Object(asset.storage_key);
+    if (!stored || stored.etag !== asset.verified_etag || stored.sizeBytes !== asset.size_bytes || stored.mimeType !== asset.mime_type) {
+      await status(scene.id, runId, "failed", null, "MEDIA_UNAVAILABLE"); return { poll: false };
     }
+    // Existing signed read lifetime is 15 minutes. Queue start is bounded at
+    // three minutes; no temporary URL is persisted or returned by a step.
+    inputUri = (await signR2Read(asset.storage_key, asset.verified_etag, asset.mime_type)).url;
   }
   const db = createDatabaseClient();
   const begun = await db.rpc("begin_visual_submission", { p_scene_id: scene.id, p_run_id: runId });
@@ -111,13 +110,21 @@ export async function pollVisualScene(sceneId: string, jobId: string, runId: str
   if (["completed", "failed", "skipped"].includes(scene.status)) return { done: true };
   if (!scene.provider_task_id) return { done: true };
   let task;
-  try { task = await getTaskStatus(scene.provider_task_id); }
+  try { task = await getTaskStatus(scene); }
   catch {
     await status(scene.id, runId, "processing", null, "PROVIDER_UNAVAILABLE");
     throw new Error("VISUAL_POLL_UNAVAILABLE");
   }
   if (task.status === "FAILED" || task.status === "CANCELLED") {
     await status(scene.id, runId, "failed", task.credits, "PROVIDER_FAILED"); return { done: true };
+  }
+  if (task.usage) {
+    const u = task.usage;
+    const rate = Number(scene.pricing_snapshot.unitPrice);
+    const measured = scene.operation === "video_to_video" ? !!(u.width && u.height && u.numFrames) : !!u.outputDuration;
+    const estimate = measured ? (scene.operation === "video_to_video" ? Math.ceil(u.width! * u.height! * u.numFrames! / 1e6) : u.outputDuration!) * rate : scene.estimated_cost_usd;
+    const saved = await createDatabaseClient().rpc("record_visual_usage", { p_scene_id: scene.id, p_run_id: runId, p_usage: { ...u, costBasis: measured ? "output_estimate" : "request_estimate" }, p_estimated_usd: estimate });
+    if (saved.error || !saved.data) throw new Error("VISUAL_USAGE_UNAVAILABLE");
   }
   await status(scene.id, runId, "processing", task.credits, null);
   if (task.status !== "SUCCEEDED") return { done: false };

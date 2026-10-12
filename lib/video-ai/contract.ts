@@ -4,13 +4,15 @@ export type VisualOperation = "reuse" | "text_to_video" | "image_to_video" | "vi
 export type SceneExecution = {
   id: string; job_id: string; owner_user_id: string; project_id: string;
   scene_order: number; operation: VisualOperation; status: SceneStatus;
-  provider: "runway" | null; model: string | null; prompt: string;
+  provider: "fal" | "runway" | null; model: string | null; prompt: string;
   duration_seconds: number; resolution: string | null;
   input_asset_id: string | null; source_start: number | null; source_end: number | null;
   provider_task_id: string | null; submission_started_at: string | null;
   submission_attempts: number;
   estimated_credits: number | null; provider_credits: number | null;
   provider_cost_usd: number | null; cost_measured_at: string | null;
+  estimated_cost_usd: number | null; pricing_snapshot: Record<string, unknown>;
+  provider_usage: Record<string, unknown>;
   error_code: string | null; output_asset_id: string | null;
   created_at: string; updated_at: string; completed_at: string | null;
 };

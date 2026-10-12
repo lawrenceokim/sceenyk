@@ -34,7 +34,8 @@ export async function persistSceneOutput(scene: SceneExecution, outputUrl: strin
   const url = new URL(outputUrl);
   // Only provider-returned CDN URLs, never browser URLs. No redirects or
   // arbitrary/internal hosts; no URL is returned to a durable step or saved.
-  if (url.protocol !== "https:" || url.username || url.password || url.port || !/^[a-z0-9-]+\.cloudfront\.net$/.test(url.hostname)) throw new VisualError("INVALID_OUTPUT_URL");
+  const trustedHost = scene.provider === "fal" ? /^(?:[a-z0-9-]+\.)?fal\.media$/.test(url.hostname) : scene.provider === "runway" && /^[a-z0-9-]+\.cloudfront\.net$/.test(url.hostname);
+  if (url.protocol !== "https:" || url.username || url.password || url.port || !trustedHost) throw new VisualError("INVALID_OUTPUT_URL");
   const response = await fetch(url, { redirect: "error", cache: "no-store", signal: AbortSignal.timeout(60_000) });
   if (!response.ok || !response.body) { await response.body?.cancel(); throw new VisualError("OUTPUT_DOWNLOAD_FAILED", true); }
   const bytes = await boundedBytes(response.body, getVisualConfiguration().maximumOutputBytes);

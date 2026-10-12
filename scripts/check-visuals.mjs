@@ -1,4 +1,4 @@
-// Real migrations/services/official durable workflow engine. Runway/R2 are
+// Real migrations/services/official durable workflow engine. Provider/R2 are
 // explicit fixtures here; use acceptance-visuals.mjs for real paid calls.
 import assert from "node:assert/strict";
 import fs from "node:fs";
@@ -35,11 +35,10 @@ const db = {
 };
 const load = typescriptLoader({
   "@/lib/db/server": { createDatabaseClient: () => db },
-  "@/lib/storage/r2": { readR2AnalysisMedia: async () => new ReadableStream({ start(c) { c.enqueue(new Uint8Array([1])); c.close(); } }) },
-  "./providers/runway": {
-    async uploadSceneInput() { uploads++; if (rejectUpload) throw new (load("lib/video-ai/contract.ts").VisualError)("PROVIDER_REJECTED"); return "runway://fixture"; },
+  "@/lib/storage/r2": { inspectR2Object: async () => rejectUpload ? null : {etag:'fixture-etag',sizeBytes:1,mimeType:'video/mp4'}, signR2Read: async () => { uploads++; return {url:'https://fixture-r2.example/short-lived'}; } },
+  "./provider": {
     generateScene: submit, transformScene: submit,
-    async getTaskStatus(id) { if (pollMode === "outage") throw new Error("TEMPORARY_PROVIDER_OUTAGE"); return { status: pollMode === "failed" ? "FAILED" : pollMode === "waiting" ? "RUNNING" : "SUCCEEDED", credits: pollMode === "failed" ? 0 : tasks.get(id), outputUrl: pollMode === "missing_output" ? null : "https://fixture.cloudfront.net/output.mp4" }; },
+    async getTaskStatus(scene) { if (pollMode === "outage") throw new Error("TEMPORARY_PROVIDER_OUTAGE"); return { status: pollMode === "failed" ? "FAILED" : pollMode === "waiting" ? "RUNNING" : "SUCCEEDED", credits: null, usage: {outputDuration:scene.duration_seconds,width:1280,height:720,numFrames:Math.round(scene.duration_seconds*24)+1,fps:24,nativeAudio:false}, outputUrl: pollMode === "missing_output" ? null : "https://fixture.cloudfront.net/output.mp4" }; },
   },
   "./storage": { boundedBytes: async () => new Uint8Array([1]), async persistSceneOutput() { if (rejectOutput) throw new Error("FIXTURE_R2_UNAVAILABLE"); writes++; return { sizeBytes: 100, etag: "fixture-etag" }; } },
   "@/lib/workflows/client": { inngest: new Inngest({ id: "visual-test", isDev: true }) },
@@ -49,7 +48,7 @@ async function submit(scene) {
   if (providerMode === "uncertain") throw new (load("lib/video-ai/contract.ts").VisualError)("UNCERTAIN_SUBMISSION");
   if (providerMode === "rejected") throw new (load("lib/video-ai/contract.ts").VisualError)("PROVIDER_REJECTED");
   if (providerMode === "rate") throw new (load("lib/video-ai/contract.ts").VisualError)("RATE_LIMIT", true);
-  const id = randomUUID(); tasks.set(id, scene.estimated_credits); return { taskId: id, estimatedCredits: scene.estimated_credits };
+  const id = randomUUID(); tasks.set(id, scene.estimated_cost_usd); return { taskId: id, estimatedCredits: null };
 }
 const settings = { duration: "10", aspectRatio: "16:9", visualStyle: "Original", tone: "Storytelling" };
 async function fixture(kind = "mixed") {
@@ -65,9 +64,9 @@ async function fixture(kind = "mixed") {
   await db.rpc("claim_generation_job", { p_job_id: job, p_run_id: run });
   await db.rpc("advance_generation_analysis", { p_job_id: job, p_run_id: run, p_stage: "planning" });
   const attempt = await db.rpc("begin_generation_analysis", { p_job_id: job, p_run_id: run, p_attempt: 1, p_model: "fixture" });
-  const base = { order: 1, durationSeconds: 2, purpose: "Opening", source: "generated", assetId: null, startTime: null, endTime: null, description: "A sunny landscape", transformationInstruction: null, narration: null, caption: null, transition: "Cut" };
+  const base = { order: 1, durationSeconds: 6, purpose: "Opening", source: "generated", assetId: null, startTime: null, endTime: null, description: "A sunny landscape", transformationInstruction: null, narration: null, caption: null, transition: "Cut" };
   const plan = { schemaVersion: 1, summary: "A short story", contentIntent: "Tell a short story", sourceMediaSummary: [{ assetId: asset, summary: "Synthetic fixture", durationSeconds: 3 }], targetDuration: 10, aspectRatio: "16:9", tone: "Storytelling", visualStyle: "Original", narrationRequired: false,
-    scenePlan: kind === "mixed" ? [base, { ...base, order: 2, durationSeconds: 3, source: "transformed", assetId: asset, startTime: 0, endTime: 3, transformationInstruction: "Polished cartoon, preserve movement and camera intent" }, { ...base, order: 3, durationSeconds: 5, source: "original", assetId: asset, startTime: 0, endTime: 3 }] : [{ ...base, durationSeconds: 5 }, { ...base, order: 2, durationSeconds: 5 }], audioNotes: [], editingNotes: [] };
+    scenePlan: kind === "mixed" ? [base, { ...base, order: 2, durationSeconds: 3, source: "transformed", assetId: asset, startTime: 0, endTime: 3, transformationInstruction: "Polished cartoon, preserve movement and camera intent" }, { ...base, order: 3, durationSeconds: 1, source: "original", assetId: asset, startTime: 0, endTime: 3 }] : [{ ...base, durationSeconds: 10 }], audioNotes: [], editingNotes: [] };
   const saved = await db.rpc("finish_generation_analysis", { p_job_id: job, p_run_id: run, p_attempt_id: attempt.data.attempt_id, p_plan: plan, p_usage: { media: [{ assetId: asset, durationSeconds: 3 }] }, p_model: "fixture", p_response_id: null, p_failure: null });
   assert.ok(saved.data, saved.error?.message);
   return { owner, project, job, plan, asset, run: "visual-" + randomUUID() };
@@ -76,13 +75,24 @@ async function denied(name, sql, args = [], role = "authenticated") { await pg.e
 const jobRow = id => one("select * from generation_jobs where id=$1", [id]);
 const scenes = id => pg.query("select * from scene_executions where job_id=$1 order by scene_order", [id]).then(r => r.rows);
 const reserved = id => scalar("select state as value from generation_reservations where job_id=$1", [id]);
-const savedKey = process.env.RUNWAYML_API_SECRET;
-process.env.RUNWAYML_API_SECRET = "fixture-no-real-requests";
+const savedKey = process.env.FAL_KEY;
+process.env.FAL_KEY = "fixture-no-real-requests"; process.env.FAL_MAX_SCENE_SECONDS = "10";
 try {
   await pg.exec("create role anon; create role authenticated; create role service_role bypassrls;");
-  for (const file of fs.readdirSync("supabase/migrations").filter(f => f.endsWith(".sql")).sort()) await pg.exec(fs.readFileSync("supabase/migrations/" + file, "utf8"));
-  check("all ten migrations apply", true);
+  const migrations = fs.readdirSync("supabase/migrations").filter(f => f.endsWith(".sql")).sort();
+  for (const file of migrations.slice(0, 10)) await pg.exec(fs.readFileSync("supabase/migrations/" + file, "utf8"));
+  const historical = await fixture(), historicalTask = randomUUID();
+  await pg.query("insert into scene_executions(job_id,owner_user_id,project_id,scene_order,operation,provider,model,prompt,duration_seconds,resolution,provider_task_id,provider_credits,status) values($1,$2,$3,1,'text_to_video','runway','gen4.5','Historical',6,'1280:720',$4,24,'processing')", [historical.job, historical.owner, historical.project, historicalTask]);
+  await pg.exec(fs.readFileSync("supabase/migrations/" + migrations[10], "utf8"));
+  const retained = (await scenes(historical.job))[0];
+  check("migration preserves historical Runway task and stored charge", retained.provider === "runway" && retained.provider_task_id === historicalTask && Number(retained.provider_cost_usd) === .24);
+  check("all eleven migrations apply", true);
   const service = load("lib/video-ai/server.ts"), workflow = load("lib/workflows/visuals.ts").visualWorkflow;
+  await db.rpc("claim_visual_generation", { p_job_id: historical.job, p_run_id: historical.run });
+  const inactiveBefore = submissions;
+  await service.submitVisualScene(retained.id, historical.job, historical.run);
+  const inactive = (await scenes(historical.job))[0];
+  check("historical Runway work is retained inactive without fal purchase", inactive.error_code === "PROVIDER_INACTIVE" && inactive.provider_task_id === historicalTask && submissions === inactiveBefore);
   async function execute(f) { return new InngestTestEngine({ function: workflow, events: [{ name: "sceenyk/generation.visuals.requested", data: { generationJobId: f.job } }], transformCtx: ctx => ({ ...ctx, runId: f.run, step: { ...ctx.step, sleep: async () => null } }) }).execute(); }
   const f = await fixture(), before = submissions;
   const result = await execute(f);
@@ -91,7 +101,7 @@ try {
   check("one text and one transformation task, reuse is free", submissions - before === 2 && rows.length === 3 && rows[2].provider_task_id === null);
   check("real task IDs persisted before polling", rows.slice(0, 2).every(s => s.provider_task_id && s.submission_started_at));
   check("intermediate assets persisted exactly once", (await scalar("select count(*)::int as value from scene_assets where job_id=$1", [f.job])) === 2 && writes === 2);
-  check("reported provider credits remain separate from user credits", Number(rows[0].provider_credits) === 24 && Number(rows[1].provider_cost_usd) === .84);
+  check("fal USD estimates never invent Runway credits or verified charges", rows[0].provider_credits === null && rows[0].provider_cost_usd === null && Number(rows[0].estimated_cost_usd) === .54);
   check("reservation stays held, no final output or completed job", await reserved(f.job) === "reserved" && (await jobRow(f.job)).status === "processing" && !(await jobRow(f.job)).completed_at);
   assert.deepEqual((await one("select plan from generation_plans where job_id=$1", [f.job])).plan, f.plan); check("immutable Gemini plan unchanged", true);
   const duplicateCount = submissions;
@@ -120,16 +130,16 @@ try {
   check("uncertain paid submission never automatically replays", submissions === uncertainCount && (await scenes(uncertain.job))[0].error_code === "UNCERTAIN_SUBMISSION");
   check("uncertain job holds reservation and shows pending", await reserved(uncertain.job) === "reserved" && !!(await jobRow(uncertain.job)).visuals_pending_at);
   providerMode = "success"; pollMode = "failed"; const failed = await fixture("generated"); await execute(failed);
-  check("permanent provider failure persists measured zero cost", (await scenes(failed.job)).every(s => s.status === "failed" && Number(s.provider_credits) === 0));
+  check("permanent provider failure never invents a charge", (await scenes(failed.job)).every(s => s.status === "failed" && s.provider_credits === null && s.provider_cost_usd === null));
   check("total failure restores original reservation exactly once", await reserved(failed.job) === "released" && (await jobRow(failed.job)).status === "failed");
   check("repeat finalization does not release twice", (await db.rpc("finish_visual_generation", { p_job_id: failed.job, p_run_id: failed.run })).data === "terminal");
   const map = load("lib/video-ai/mapping.ts").mapVisualScenes;
   const partialPlan = structuredClone(f.plan); partialPlan.scenePlan[1].startTime = 1;
   check("selected segment of longer source is unsupported, never whole-video transformed", map(partialPlan, [{ id: f.asset, mimeType: "video/mp4", sizeBytes: 1, durationSeconds: 10 }])[1].error_code === "SOURCE_SEGMENT_REQUIRED");
   check("square text generation is explicitly unsupported", map({ ...f.plan, aspectRatio: "1:1" }, [])[0].error_code === "UNSUPPORTED_ASPECT_RATIO");
-  process.env.RUNWAY_MAX_SCENE_USD = ".01";
-  check("central cost guard blocks spending", map(f.plan, [])[0].error_code === "COST_GUARD"); delete process.env.RUNWAY_MAX_SCENE_USD;
-  const img = structuredClone(f.plan); img.scenePlan[1].durationSeconds = 5;
+  process.env.FAL_MAX_SCENE_USD = ".01";
+  check("central cost guard blocks spending", map(f.plan, [])[0].error_code === "COST_GUARD"); delete process.env.FAL_MAX_SCENE_USD;
+  const img = structuredClone(f.plan); img.scenePlan[1].durationSeconds = 6;
   check("image transformation maps to image-to-video", map(img, [{ id: f.asset, mimeType: "image/png", sizeBytes: 1 }])[1].operation === "image_to_video");
   check("reuse requires no upload", uploads === 1);
   providerMode = "rate"; const rate = await fixture("generated");
@@ -142,16 +152,24 @@ try {
   await db.rpc("claim_visual_generation", { p_job_id: errors.job, p_run_id: errors.run });
   await service.prepareVisuals(errors.job, errors.run); const errorScenes = await scenes(errors.job);
   const beforeReject = submissions; rejectUpload = true;
-  check("rejected source upload fails scene before any paid submission", !(await service.submitVisualScene(errorScenes[1].id, errors.job, errors.run)).poll && submissions === beforeReject && (await scenes(errors.job))[1].status === "failed");
+  check("invalid private source fails before any paid submission", !(await service.submitVisualScene(errorScenes[1].id, errors.job, errors.run)).poll && submissions === beforeReject && (await scenes(errors.job))[1].status === "failed");
   rejectUpload = false;
   await service.submitVisualScene(errorScenes[0].id, errors.job, errors.run); pollMode = "missing_output";
   await assert.rejects(service.pollVisualScene(errorScenes[0].id, errors.job, errors.run), /VISUAL_OUTPUT_UNAVAILABLE/);
-  check("missing successful output records safe error and measured cost", (await scenes(errors.job))[0].error_code === "INVALID_OUTPUT" && Number((await scenes(errors.job))[0].provider_credits) === 24 && await reserved(errors.job) === "reserved");
+  check("missing successful output records safe error and usage estimate", (await scenes(errors.job))[0].error_code === "INVALID_OUTPUT" && Number((await scenes(errors.job))[0].estimated_cost_usd) === .54 && await reserved(errors.job) === "reserved");
   pollMode = "success"; rejectOutput = true;
   await assert.rejects(service.pollVisualScene(errorScenes[0].id, errors.job, errors.run), /VISUAL_OUTPUT_UNAVAILABLE/);
   check("R2 outage preserves provider task and accounting hold", (await scenes(errors.job))[0].error_code === "OUTPUT_PERSISTENCE_FAILED" && !!(await scenes(errors.job))[0].provider_task_id && await reserved(errors.job) === "reserved");
   rejectOutput = false; const beforeResume = submissions;
   await service.pollVisualScene(errorScenes[0].id, errors.job, errors.run);
   check("output persistence resumes without buying another task", submissions === beforeResume && (await scenes(errors.job))[0].status === "completed");
-  console.log(JSON.stringify({ passed: checks.length, checks, externalServices: "explicit Runway/R2 fixtures" }, null, 2));
-} finally { if (savedKey === undefined) delete process.env.RUNWAYML_API_SECRET; else process.env.RUNWAYML_API_SECRET = savedKey; await pg.close(); }
+  const drift = await fixture("generated");
+  await db.rpc("claim_visual_generation", { p_job_id: drift.job, p_run_id: drift.run });
+  await service.prepareVisuals(drift.job, drift.run);
+  const driftBefore = submissions;
+  process.env.FAL_VIDEO_SECOND_USD = ".1";
+  await service.submitVisualScene((await scenes(drift.job))[0].id, drift.job, drift.run);
+  delete process.env.FAL_VIDEO_SECOND_USD;
+  check("pricing drift cannot silently purchase against an old snapshot", submissions === driftBefore && (await scenes(drift.job))[0].error_code === "CONFIGURATION_CHANGED");
+  console.log(JSON.stringify({ passed: checks.length, checks, externalServices: "explicit provider/R2 fixtures" }, null, 2));
+} finally { if (savedKey === undefined) delete process.env.FAL_KEY; else process.env.FAL_KEY = savedKey; delete process.env.FAL_MAX_SCENE_SECONDS; await pg.close(); }

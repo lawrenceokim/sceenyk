@@ -5,6 +5,7 @@ import nextEnv from "@next/env";
 
 nextEnv.loadEnvConfig(process.cwd(), false, { info() {}, error() {} });
 const names = [
+  "FAL_KEY",
   "RUNWAYML_API_SECRET",
   "GEMINI_API_KEY",
   "CLERK_SECRET_KEY",
@@ -30,7 +31,7 @@ function visit(dir) {
       files++;
       const body = fs.readFileSync(file, "utf8");
       if (secrets.some((secret) => body.includes(secret))) leaks++;
-      if (markers.test(body) || /RUNWAYML_API_SECRET|api\.dev\.runwayml\.com|begin_visual_submission|record_visual_task/.test(body)) serverMarkers++;
+      if (markers.test(body) || /FAL_KEY|queue\.fal\.run|RUNWAYML_API_SECRET|api\.dev\.runwayml\.com|begin_visual_submission|record_visual_task/.test(body)) serverMarkers++;
     }
   }
 }
