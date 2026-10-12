@@ -4,6 +4,7 @@ import { createDatabaseClient } from "@/lib/db/server";
 import { generationEventSchema } from "@/lib/generation/dispatch-contract";
 import { prepareVisuals, submitVisualScene, pollVisualScene, pauseVisualScene } from "@/lib/video-ai/server";
 import { getVisualConfiguration } from "@/lib/video-ai/config";
+import { prepareVisualSource } from "@/lib/media-preparation/client";
 import { inngest } from "./client";
 
 export const visualsRequested = "sceenyk/generation.visuals.requested";
@@ -35,6 +36,8 @@ export const visualWorkflow = inngest.createFunction({
   if (!["claimed", "resumed"].includes(claim)) return { claim };
   const scenes = await step.run("prepare-owned-visual-scenes", () => prepareVisuals(jobId, runId));
   for (const scene of scenes) {
+    const prepared = await step.run(`prepare-source-${scene.scene_order}`, () => prepareVisualSource(scene.id, jobId, runId));
+    if (!prepared.ready) continue;
     const submitted = await step.run(`submit-scene-${scene.scene_order}`, () => submitVisualScene(scene.id, jobId, runId));
     if (!submitted.poll) continue;
     let done = false;

@@ -63,6 +63,7 @@ export type AssetRow = {
 export type Database = {
   public: {
     Tables: {
+      prepared_segments: { Row: import("@/lib/media-preparation/contract").PreparedSegment; Insert: never; Update: never; Relationships: [] };
       scene_executions: { Row: import("@/lib/video-ai/contract").SceneExecution; Insert: never; Update: never; Relationships: [] };
       scene_assets: { Row: import("@/lib/video-ai/contract").SceneAsset; Insert: never; Update: never; Relationships: [] };
       generation_plans: {
@@ -211,6 +212,9 @@ export type Database = {
     };
     Views: Record<string, never>;
     Functions: {
+      reserve_source_segment: { Args: { p_scene_id: string; p_run_id: string; p_normalization_key: string; p_normalization: Record<string, unknown>; p_overlays: Record<string, unknown>; p_lease_id: string }; Returns: { state: string; segment_id?: string } };
+      complete_source_segment: { Args: { p_scene_id: string; p_run_id: string; p_segment_id: string; p_lease_id: string; p_metadata: Record<string, unknown> }; Returns: boolean };
+      fail_source_segment: { Args: { p_scene_id: string; p_run_id: string; p_segment_id: string; p_lease_id: string; p_error: string; p_permanent: boolean }; Returns: boolean };
       claim_visual_generation: { Args: { p_job_id: string; p_run_id: string }; Returns: string };
       prepare_visual_scenes: { Args: { p_job_id: string; p_run_id: string; p_scenes: ReturnType<typeof import("@/lib/video-ai/mapping").mapVisualScenes> }; Returns: boolean };
       begin_visual_submission: { Args: { p_scene_id: string; p_run_id: string }; Returns: boolean };

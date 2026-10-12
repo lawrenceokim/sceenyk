@@ -8,7 +8,7 @@ Use a spec-driven workflow. `/context` is the source of truth for product behavi
 
 Current context and implementation baseline:
 
-- fal is the active visual provider behind `lib/video-ai/` and a separate trusted Inngest function; Runway remains isolated and inactive. Real paid text/image/transformation acceptance passes within hosted-service/official-engine scope. Preserve immutable Gemini plans and existing accounting. Intermediate readiness never completes/consumes a generation. Check the tracker for migration 009–011 status, actual observed provider costs and unsupported scene/recovery limits before relying on this integration.
+- fal is the active visual provider behind `lib/video-ai/` and a separate trusted Inngest function; Runway remains isolated and inactive. `lib/media-preparation/` adds canonical millisecond source timing, private reusable derivatives and an authenticated external FFmpeg worker before new video transform/reuse. Real paid text/image/transformation and prepared-segment acceptance pass within hosted-service/official-engine scope. Preserve immutable Gemini plans and existing accounting. Intermediate readiness never completes/consumes a generation. Check the tracker for migrations 009–012, hosting status, observed provider estimates and unsupported scene/recovery limits before relying on this integration.
 
 - [overview.md](overview.md) defines intended product behavior, the MVP, and success criteria.
 - [UI-context.md](ui-context.md) defines UI construction rules; its current on-disk filename is `ui-context.md`.
@@ -62,7 +62,7 @@ These concerns should usually be separate units:
 
 Build the production pipeline in independently verifiable stages where practical:
 
-**Upload → analysis → production plan → scene generation/transformation → voice generation → video assembly → rendering → final asset storage.**
+**Upload → analysis → production plan → owned source preparation → scene generation/transformation → voice generation → video assembly → rendering → final asset storage.**
 
 For each stage, define its input, output, persistent status/failure state, and ownership boundary: which job/user it belongs to and which service performs the work. Test the stage's success and failure contract before connecting later stages. Provider SDKs should remain inside their service boundary.
 

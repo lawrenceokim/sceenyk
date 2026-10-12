@@ -28,8 +28,8 @@ async function load(jobId: string, runId: string) {
     if (!asset.verified_etag || !asset.storage_key.startsWith(prefix) || !/^[a-f0-9-]{36}$/.test(asset.storage_key.slice(prefix.length))) throw new VisualError("MEDIA_UNAVAILABLE");
   }
   const savedPlan = plan.data.plan;
-  // Actual Files API observations, not Gemini's creative summary, bound paid
-  // whole-video work. Missing measured duration makes transformations pending.
+  // Files API observations validate the immutable plan; the preparation worker
+  // independently probes actual source bytes before extracting video inputs.
   const media = inputs.map(a => ({ id: a.id, mimeType: a.mime_type, sizeBytes: a.size_bytes, durationSeconds: analysis.data?.usage?.media?.find(m => m.assetId === a.id)?.durationSeconds ?? null }));
   return { job: j, inputs, media, plan: validateProductionPlan(savedPlan, j.input_snapshot, media) };
 }
@@ -71,7 +71,20 @@ export async function submitVisualScene(sceneId: string, jobId: string, runId: s
     await status(scene.id, runId, "pending", null, "UNCERTAIN_SUBMISSION"); return { poll: false };
   }
   let inputUri: string | undefined;
-  if (scene.input_asset_id) {
+  if (scene.preparation_required) {
+    const result = scene.prepared_asset_id ? await createDatabaseClient().from("prepared_segments").select("*").eq("id", scene.prepared_asset_id).eq("owner_user_id", scene.owner_user_id).eq("project_id", scene.project_id).eq("source_asset_id", scene.input_asset_id!).eq("status", "completed").maybeSingle() : null;
+    if (result?.error) throw new Error("PREPARATION_DATABASE_UNAVAILABLE");
+    const prepared = result?.data;
+    if (!prepared?.verified_etag || !prepared.size_bytes || prepared.start_ms !== scene.source_start_ms || prepared.end_ms !== scene.source_end_ms) {
+      await status(scene.id, runId, "pending", null, "PREPARATION_REQUIRED"); return { poll: false };
+    }
+    const stored = await inspectR2Object(prepared.storage_key);
+    if (!stored || stored.etag !== prepared.verified_etag || stored.sizeBytes !== prepared.size_bytes || stored.mimeType !== "video/mp4") {
+      await status(scene.id, runId, "failed", null, "MEDIA_UNAVAILABLE"); return { poll: false };
+    }
+    inputUri = (await signR2Read(prepared.storage_key, prepared.verified_etag, "video/mp4")).url;
+  }
+  if (scene.input_asset_id && !scene.preparation_required) {
     const asset = inputs.find(a => a.id === scene.input_asset_id);
     if (!asset?.verified_etag) throw new VisualError("MEDIA_UNAVAILABLE");
     const stored = await inspectR2Object(asset.storage_key);

@@ -14,6 +14,7 @@ const dir = fs.mkdtempSync(path.join(os.tmpdir(), "sceenyk-fal-media-"));
 const chrome = spawn("C:/Program Files/Google/Chrome/Application/chrome.exe", ["--headless=new", "--disable-gpu", "--no-first-run", "--no-default-browser-check", "--remote-debugging-port=9342", "--user-data-dir=" + path.join(dir, "profile"), "about:blank"], { windowsHide: true, stdio: "ignore" });
 let ws;
 const evidence = [];
+const preparation=process.argv.includes('--preparation');
 try {
   let tabs; for (let n = 0; n < 60; n++) { try { tabs = await (await fetch("http://127.0.0.1:9342/json")).json(); break; } catch { await delay(100); } }
   ws = new WebSocket(tabs.find(t => t.type === "page").webSocketDebuggerUrl);
@@ -22,7 +23,7 @@ try {
   ws.onmessage = e => { const m = JSON.parse(e.data); if (!m.id) return; const p = pending.get(m.id); pending.delete(m.id); if (m.error) p.reject(new Error(m.error.message)); else p.resolve(m.result); };
   const call = (method, params = {}) => new Promise((resolve, reject) => { const id = ++sequence; pending.set(id, { resolve, reject }); ws.send(JSON.stringify({ id, method, params })); });
   await call("Page.enable"); await call("Runtime.enable");
-  for (const fixture of ["sceenyk-fal-acceptance.json", "sceenyk-fal-image-acceptance.json"]) {
+  for (const fixture of ["sceenyk-fal-acceptance.json", "sceenyk-fal-image-acceptance.json", ...(preparation?['sceenyk-preparation-acceptance.json']:[])]) {
     const state = JSON.parse(fs.readFileSync(path.join(os.tmpdir(), fixture), "utf8"));
     const scenes = await db.from("scene_executions").select("*").eq("job_id", state.jobId).order("scene_order"); assert.ok(!scenes.error);
     for (const scene of scenes.data.filter(s => s.provider_task_id)) {
@@ -34,12 +35,12 @@ try {
       assert.ok(!result.exceptionDetails, "R2 output decodes independently of fal");
       const metadata = result.result.value; assert.ok(metadata.width > 0 && metadata.height > 0 && metadata.duration > 0);
       const frame = await call("Page.captureScreenshot", { format: "png" });
-      fs.writeFileSync(path.join(dir, scene.operation + ".png"), Buffer.from(frame.data, "base64"));
-      evidence.push({ operation: scene.operation, ...metadata, bytes: asset.data.size_bytes, privateR2Decode: true });
+      fs.writeFileSync(path.join(dir, (fixture.startsWith('sceenyk-preparation')?'prepared-':'')+scene.operation + ".png"), Buffer.from(frame.data, "base64"));
+      evidence.push({ operation: scene.operation, preparedInput:fixture.startsWith('sceenyk-preparation'), ...metadata, bytes: asset.data.size_bytes, privateR2Decode: true });
     }
   }
-  assert.equal(evidence.length, 3);
-  fs.writeFileSync(path.join(os.tmpdir(), "sceenyk-fal-media.json"), JSON.stringify({ passed: 3, evidence, artifacts: dir }, null, 2));
-  console.log(JSON.stringify({ passed: 3, evidence, artifacts: dir }));
+  assert.equal(evidence.length, preparation?4:3);
+  fs.writeFileSync(path.join(os.tmpdir(), preparation?'sceenyk-preparation-fal-media.json':"sceenyk-fal-media.json"), JSON.stringify({ passed: evidence.length, evidence, artifacts: dir }, null, 2));
+  console.log(JSON.stringify({ passed: evidence.length, evidence, artifacts: dir }));
   await call("Browser.close");
 } finally { ws?.close(); chrome.kill(); }

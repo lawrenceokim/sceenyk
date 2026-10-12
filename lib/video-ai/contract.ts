@@ -13,6 +13,9 @@ export type SceneExecution = {
   provider_cost_usd: number | null; cost_measured_at: string | null;
   estimated_cost_usd: number | null; pricing_snapshot: Record<string, unknown>;
   provider_usage: Record<string, unknown>;
+  preparation_required: boolean; prepared_asset_id: string | null;
+  source_start_ms: number | null; source_end_ms: number | null; requested_duration_ms: number | null;
+  source_overlays: Record<string, unknown>;
   error_code: string | null; output_asset_id: string | null;
   created_at: string; updated_at: string; completed_at: string | null;
 };

@@ -13,7 +13,8 @@ const dir=fs.mkdtempSync(path.join(os.tmpdir(),"sceenyk-analysis-ui-"));
 const fixture=JSON.parse(fs.readFileSync(path.join(os.tmpdir(),"sceenyk-hosted-identity-fixture.json"),"utf8"));
 const hosted=process.argv.includes("--hosted");
 const visuals=process.argv.includes("--visuals");
-const hostedResult=hosted?JSON.parse(fs.readFileSync(path.join(os.tmpdir(),visuals?"sceenyk-fal-acceptance.json":"sceenyk-hosted-analysis.json"),"utf8")):null;
+const preparation=process.argv.includes("--preparation");
+const hostedResult=hosted?JSON.parse(fs.readFileSync(path.join(os.tmpdir(),preparation?"sceenyk-preparation-acceptance.json":visuals?"sceenyk-fal-acceptance.json":"sceenyk-hosted-analysis.json"),"utf8")):null;
 if (hosted && visuals) fixture.clerkUserId=hostedResult.clerkUserId;
 const failure=process.argv.includes("--failure");
 const readyLabel=failure?"Generation failed":visuals?"Visuals ready":"Production plan ready";
@@ -45,6 +46,12 @@ try{
   if (visuals && !hosted) await call("Page.addScriptToEvaluateOnNewDocument",{source:"window.__analysisJob={...window.__analysisJob,stage:'generating',visualsReadyAt:'2028-01-01T00:00:00Z',visualsPendingAt:null}"});
   await navigate("/projects/"+project);await wait("document.body.innerText.includes("+JSON.stringify(readyLabel)+")");
   check(hosted?"real hosted job readiness appears for owner":"ready state uses persisted-job DTO presentation",true);
+  const preparedPath=preparation?'/api/media/prepared?'+new URLSearchParams({projectId:project,sceneId:hostedResult.segmentSceneId}):null;
+  if(preparation){
+    const owned=await evaluate(`(async()=>{const r=await fetch(${JSON.stringify(preparedPath)});const a=await r.json();return {status:r.status,id:a.id,durationMs:a.durationMs,expires:a.url?new URL(a.url).searchParams.get('X-Amz-Expires'):null,cache:r.headers.get('Cache-Control')};})()`);
+    check('real Clerk owner can resolve prepared segment through authenticated route',owned.status===200&&owned.id===hostedResult.segmentId&&owned.durationMs===5000&&owned.expires==='900'&&owned.cache.includes('no-store'));
+    check('browser cannot add source keys or timestamps to prepared read',await evaluate(`(async()=>{const r=await fetch(${JSON.stringify(preparedPath+'&storageKey=arbitrary&startMs=0')});return r.status===404;})()`));
+  }
   check("no fabricated completed video or raw plan JSON",await evaluate("!document.body.innerText.includes('schemaVersion')&&!document.body.innerText.includes('Generation completed')"));
   const refresh=async()=>{await evaluate("Array.from(document.querySelectorAll('button')).find(b=>b.textContent.trim()==='Check generation status').click()");await wait("!document.body.innerText.includes('Checking status…')");};
   if(!hosted && visuals){
@@ -73,8 +80,9 @@ try{
     await navigate("/create");await wait("location.pathname==='/create'&&!!document.querySelector('textarea')");
     const denied=await evaluate(`(async()=>{const r=await fetch(location.pathname,{method:'POST',headers:{'Next-Action':${JSON.stringify(action)},Accept:'text/x-component','Content-Type':'text/plain;charset=UTF-8'},body:JSON.stringify([${JSON.stringify(project)}])});return await r.text();})()`);
     check("second account cannot read owned generation through action",!denied.includes(hostedResult.jobId)&&!denied.includes('productionPlanReadyAt'));
+    if(preparation)check('real Clerk User B cannot resolve User A prepared segment',await evaluate(`(async()=>{const r=await fetch(${JSON.stringify(preparedPath)});return r.status===404&&!(await r.text()).includes(${JSON.stringify(hostedResult.segmentId)});})()`));
   }
   check("no uncaught browser exceptions",errors.length===0);
-  fs.writeFileSync(path.join(os.tmpdir(),visuals?(hosted?"sceenyk-visual-hosted-ui.json":"sceenyk-visual-ui.json"):(hosted?"sceenyk-analysis-hosted-ui.json":"sceenyk-analysis-ui.json")),JSON.stringify({passed:checks.length,checks,artifacts:dir,scope:hosted?"real hosted job and Clerk A/B; no mocked responses":"job presentation fixtures; real Clerk; no hosted persistence claim"},null,2));
+  fs.writeFileSync(path.join(os.tmpdir(),preparation?'sceenyk-preparation-hosted-ui.json':visuals?(hosted?"sceenyk-visual-hosted-ui.json":"sceenyk-visual-ui.json"):(hosted?"sceenyk-analysis-hosted-ui.json":"sceenyk-analysis-ui.json")),JSON.stringify({passed:checks.length,checks,artifacts:dir,scope:hosted?"real hosted job and Clerk A/B; no mocked responses":"job presentation fixtures; real Clerk; no hosted persistence claim"},null,2));
   console.log(JSON.stringify({passed:checks.length,artifacts:dir}));await call("Browser.close");
 }finally{ws?.close();chrome.kill();}
