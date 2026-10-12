@@ -16,25 +16,36 @@ async function main() {
   const body = JSON.stringify({ generationJobId: randomUUID(), sceneExecutionId: randomUUID() });
   let calls = 0, failure: Error | undefined;
   let hold: Promise<void> | undefined;
+  // Explicit HTTP-test fixture. Durable SQL/restart checks live in check-worker-replay.mjs.
+  const accepted = new Set<string>();
+  let registrationFailure = false;
+  let registrations = 0;
   const { server, drain } = createPreparationServer(secret, async input => {
     calls++;
     assert.deepEqual(input, JSON.parse(body));
     if (failure) throw failure;
     await hold;
     return { ready: true };
+  }, async nonce => {
+    registrations++;
+    if (registrationFailure) throw new Error("fixture-private-database-diagnostic");
+    if (accepted.has(nonce)) return "replay";
+    accepted.add(nonce);
+    return "accepted";
   });
   server.listen(0, "127.0.0.1");
   await once(server, "listening");
   const address = server.address();
   assert.ok(address && typeof address !== "string");
   const origin = `http://127.0.0.1:${address.port}`;
-  const send = (options: { body?: string; timestamp?: string; signature?: string; method?: string; path?: string; headers?: Record<string, string>; unsigned?: boolean } = {}) => new Promise<{ status: number; body: string; cors: string | string[] | undefined }>((resolve, reject) => {
+  const send = (options: { body?: string; timestamp?: string; nonce?: string; signature?: string; method?: string; path?: string; headers?: Record<string, string>; unsigned?: boolean } = {}) => new Promise<{ status: number; body: string; cors: string | string[] | undefined }>((resolve, reject) => {
     const bytes = options.body ?? body;
     const timestamp = options.timestamp ?? String(Date.now());
+    const nonce = options.nonce ?? randomUUID();
     const method = options.method ?? "POST", path = options.path ?? "/prepare";
     const request = httpRequest(origin + path, { method, headers: {
       "Content-Type": "application/json",
-      ...(options.unsigned ? {} : { "x-worker-timestamp": timestamp, "x-worker-signature": options.signature ?? signWorkerRequest(secret, method, path, timestamp, bytes) }),
+      ...(options.unsigned ? {} : { "x-worker-timestamp": timestamp, "x-worker-nonce": nonce, "x-worker-signature": options.signature ?? signWorkerRequest(secret, method, path, timestamp, nonce, bytes) }),
       ...options.headers,
     } }, response => {
       const chunks: Buffer[] = [];
@@ -57,11 +68,15 @@ async function main() {
     check("future timestamp outside window rejected", (await send({ timestamp: String(Date.now() + workerAuthWindowMs + 1000) })).status === 401);
     check("malformed timestamp rejected", (await send({ timestamp: "not-a-time" })).status === 401);
     const timestamp = String(Date.now());
-    const signature = signWorkerRequest(secret, "POST", "/prepare", timestamp, body);
-    check("HMAC matches independent protocol implementation", signature === createHmac("sha256", secret).update(Buffer.concat([Buffer.from(`POST\n/prepare\n${timestamp}\n`), Buffer.from(body)])).digest("hex"));
-    check("modified exact body bytes rejected", (await send({ body: body + " ", timestamp, signature })).status === 401);
-    check("modified method rejected", !verifyWorkerRequest(secret, "PUT", "/prepare", timestamp, signature, Buffer.from(body)) && (await send({ method: "PUT", timestamp, signature })).status === 401);
-    check("modified path and query rejected", !verifyWorkerRequest(secret, "POST", "/other", timestamp, signature, Buffer.from(body)) && (await send({ path: "/prepare?x=1", timestamp, signature })).status === 401);
+    const nonce = randomUUID();
+    const signature = signWorkerRequest(secret, "POST", "/prepare", timestamp, nonce, body);
+    check("HMAC matches independent protocol implementation including nonce", signature === createHmac("sha256", secret).update(Buffer.concat([Buffer.from(`POST\n/prepare\n${timestamp}\n${nonce}\n`), Buffer.from(body)])).digest("hex"));
+    check("modified exact body bytes rejected", (await send({ body: body + " ", timestamp, nonce, signature })).status === 401);
+    check("modified nonce invalidates signature", (await send({ timestamp, nonce: randomUUID(), signature })).status === 401);
+    for (const value of ["", "bad", randomUUID().toUpperCase(), randomUUID() + "," + randomUUID()]) assert.equal((await send({ nonce: value })).status, 401);
+    check("missing malformed and duplicate nonce values rejected", true);
+    check("modified method rejected", !verifyWorkerRequest(secret, "PUT", "/prepare", timestamp, nonce, signature, Buffer.from(body)) && (await send({ method: "PUT", timestamp, nonce, signature })).status === 401);
+    check("modified path and query rejected", !verifyWorkerRequest(secret, "POST", "/other", timestamp, nonce, signature, Buffer.from(body)) && (await send({ path: "/prepare?x=1", timestamp, nonce, signature })).status === 401);
     check("browser origin rejected even with valid signature", (await send({ headers: { Origin: "https://browser.invalid" } })).status === 401);
     check("browser fetch metadata rejected", (await send({ headers: { "Sec-Fetch-Site": "cross-site" } })).status === 401);
     const preflight = await send({ method: "OPTIONS", unsigned: true, headers: { Origin: "https://browser.invalid", "Access-Control-Request-Method": "POST" } });
@@ -70,16 +85,30 @@ async function main() {
     check("signed ownership/time/key/URL/run/instruction/credential claims rejected", true);
     check("signed malformed JSON rejected", (await send({ body: "{" })).status === 400);
     check("signed oversized request rejected", (await send({ body: " ".repeat(4097) })).status === 413);
-    check("invalid requests never enter processor", calls === 0);
+    check("invalid requests never register nonces or enter processor", calls === 0 && registrations === 0);
     const valid = await send();
     check("valid identifier-only signed request accepted", valid.status === 200 && valid.body === '{"ready":true}' && calls === 1);
     // Node's real fetch transport is also the Inngest client's transport.
-    const nodeResponse = await fetch(origin + "/prepare", { method: "POST", headers: { "Content-Type": "application/json", "x-worker-timestamp": timestamp, "x-worker-signature": signature }, body });
+    const nodeResponse = await fetch(origin + "/prepare", { method: "POST", headers: { "Content-Type": "application/json", "x-worker-timestamp": timestamp, "x-worker-nonce": nonce, "x-worker-signature": signature }, body });
     check("server-to-server fetch accepted", nodeResponse.status === 200);
     await nodeResponse.body?.cancel();
+    const beforeReplay = calls;
+    const replay = await send({ timestamp, nonce, signature });
+    check("exact immediate replay rejected with safe code", replay.status === 409 && replay.body === '{"code":"REPLAY_DETECTED"}' && calls === beforeReplay);
+    await new Promise(resolve => setTimeout(resolve, 50));
+    check("later replay rejected without processing", (await send({ timestamp, nonce, signature })).status === 409 && calls === beforeReplay);
+    const concurrentNonce = randomUUID();
+    const duplicates = await Promise.all([send({ nonce: concurrentNonce, timestamp }), send({ nonce: concurrentNonce, timestamp })]);
+    check("concurrent duplicates have exactly one accepted request", duplicates.map(r => r.status).sort().join() === "200,409" && calls === beforeReplay + 1);
+    registrationFailure = true;
+    const dbFailure = await send();
+    check("replay registry outage fails closed without private diagnostics", dbFailure.status === 503 && dbFailure.body === '{"code":"PREPARATION_UNAVAILABLE"}' && calls === beforeReplay + 1);
+    registrationFailure = false;
     failure = new Error("fixture-private-diagnostic");
-    const error = await send();
+    const failedNonce = randomUUID();
+    const error = await send({ nonce: failedNonce });
     check("unexpected errors do not expose private diagnostics", error.status === 503 && error.body === '{"code":"PREPARATION_UNAVAILABLE"}');
+    check("failed processor does not release accepted nonce", (await send({ nonce: failedNonce })).status === 409);
     failure = new PreparationError("SOURCE_UNAVAILABLE");
     check("persisted ownership/state failure is denied", (await send()).status === 403);
     process.env.WORKER_SHARED_SECRET = secret;

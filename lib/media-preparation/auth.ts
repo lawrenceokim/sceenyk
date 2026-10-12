@@ -3,6 +3,7 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 
 export const workerAuthWindowMs = 5 * 60_000;
 export const workerTimestampHeader = "x-worker-timestamp";
+export const workerNonceHeader = "x-worker-nonce";
 export const workerSignatureHeader = "x-worker-signature";
 
 export function workerSharedSecret() {
@@ -15,14 +16,14 @@ export function workerSharedSecret() {
 
 // UTF-8 metadata separated by newlines, followed by the unmodified body bytes.
 // Timestamp: Unix milliseconds. Signature: lowercase hexadecimal SHA-256 HMAC.
-export function signWorkerRequest(secret: string, method: string, path: string, timestamp: string, body: string | Buffer) {
-  return createHmac("sha256", secret).update(`${method}\n${path}\n${timestamp}\n`).update(body).digest("hex");
+export function signWorkerRequest(secret: string, method: string, path: string, timestamp: string, nonce: string, body: string | Buffer) {
+  return createHmac("sha256", secret).update(`${method}\n${path}\n${timestamp}\n${nonce}\n`).update(body).digest("hex");
 }
 
-export function verifyWorkerRequest(secret: string, method: string, path: string, timestamp: string | undefined, signature: string | undefined, body: Buffer, now = Date.now()) {
-  if (!timestamp || !/^\d{13}$/.test(timestamp) || !signature || !/^[a-f0-9]{64}$/.test(signature)) return false;
+export function verifyWorkerRequest(secret: string, method: string, path: string, timestamp: string | undefined, nonce: string | undefined, signature: string | undefined, body: Buffer, now = Date.now()) {
+  if (!timestamp || !/^\d{13}$/.test(timestamp) || !nonce || !/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/.test(nonce) || !signature || !/^[a-f0-9]{64}$/.test(signature)) return false;
   const time = Number(timestamp);
   if (!Number.isSafeInteger(time) || Math.abs(now - time) > workerAuthWindowMs) return false;
-  const expected = Buffer.from(signWorkerRequest(secret, method, path, timestamp, body), "hex");
+  const expected = Buffer.from(signWorkerRequest(secret, method, path, timestamp, nonce, body), "hex");
   return timingSafeEqual(expected, Buffer.from(signature, "hex"));
 }

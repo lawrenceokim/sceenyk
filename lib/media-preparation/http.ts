@@ -1,6 +1,7 @@
 import "server-only";
 import { createServer, type IncomingMessage } from "node:http";
-import { verifyWorkerRequest, workerSignatureHeader, workerTimestampHeader } from "./auth";
+import { verifyWorkerRequest, workerSignatureHeader, workerTimestampHeader, workerNonceHeader } from "./auth";
+import type { WorkerRequestRegistration } from "./replay";
 import { workerPreparationRequest } from "./context";
 import { PreparationError } from "./contract";
 
@@ -25,7 +26,7 @@ function requestBody(request: IncomingMessage) {
 
 // Production supplies the existing processor; tests exercise this HTTP boundary
 // without invoking paid providers or hosted writes.
-export function createPreparationServer(secret: string, execute: (input: unknown) => Promise<{ ready: boolean }>) {
+export function createPreparationServer(secret: string, execute: (input: unknown) => Promise<{ ready: boolean }>, register: (nonce: string, timestamp: string) => Promise<WorkerRequestRegistration>) {
   let active = 0;
   let draining = false;
   const server = createServer(async (request, response) => {
@@ -45,7 +46,8 @@ export function createPreparationServer(secret: string, execute: (input: unknown
     // signed request is also refused when sent from a browser origin.
     const timestamp = request.headers[workerTimestampHeader];
     const signature = request.headers[workerSignatureHeader];
-    if (request.method !== "POST" || request.url !== "/prepare" || request.headers.origin !== undefined || request.headers["sec-fetch-site"] !== undefined || typeof timestamp !== "string" || typeof signature !== "string") {
+    const nonce = request.headers[workerNonceHeader];
+    if (request.method !== "POST" || request.url !== "/prepare" || request.headers.origin !== undefined || request.headers["sec-fetch-site"] !== undefined || typeof timestamp !== "string" || typeof signature !== "string" || typeof nonce !== "string") {
       reply(401, { code: "UNAUTHORIZED" });
       return;
     }
@@ -60,13 +62,18 @@ export function createPreparationServer(secret: string, execute: (input: unknown
         reply(413, { code: "INVALID_REQUEST" });
         return;
       }
-      if (!verifyWorkerRequest(secret, request.method, request.url, timestamp, signature, body)) {
+      if (!verifyWorkerRequest(secret, request.method, request.url, timestamp, nonce, signature, body)) {
         reply(401, { code: "UNAUTHORIZED" });
         return;
       }
       if (request.headers["content-type"] !== "application/json") { reply(400, { code: "INVALID_REQUEST" }); return; }
       const parsed = workerPreparationRequest.safeParse(JSON.parse(body.toString("utf8")));
       if (!parsed.success) { reply(400, { code: "INVALID_REQUEST" }); return; }
+      // Commit the nonce before any side effect. Outages fail closed. A lost
+      // response requires a newly signed retry, never reuse of this nonce.
+      const registration = await register(nonce, timestamp);
+      if (registration === "replay") { reply(409, { code: "REPLAY_DETECTED" }); return; }
+      if (registration !== "accepted") { reply(401, { code: "UNAUTHORIZED" }); return; }
       reply(200, await execute(parsed.data));
     } catch (error) {
       const unavailable = error instanceof PreparationError && !error.temporary;

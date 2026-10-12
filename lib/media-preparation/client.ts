@@ -1,9 +1,10 @@
 import "server-only";
+import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { loadPreparation } from "./context";
 import { workerConnection, preparationLimits } from "./config";
 import { PreparationError } from "./contract";
-import { signWorkerRequest, workerSignatureHeader, workerTimestampHeader } from "./auth";
+import { signWorkerRequest, workerSignatureHeader, workerTimestampHeader, workerNonceHeader } from "./auth";
 
 export async function prepareVisualSource(sceneId: string, jobId: string, runId: string) {
   const input = { sceneId, jobId, runId };
@@ -13,8 +14,10 @@ export async function prepareVisualSource(sceneId: string, jobId: string, runId:
     const worker = workerConnection();
     const body = JSON.stringify({ generationJobId: jobId, sceneExecutionId: sceneId });
     const timestamp = String(Date.now());
-    const signature = signWorkerRequest(worker.secret, "POST", new URL(worker.url).pathname, timestamp, body);
-    const response = await fetch(worker.url, { method: "POST", redirect: "error", cache: "no-store", signal: AbortSignal.timeout(preparationLimits.requestMs), headers: { [workerTimestampHeader]: timestamp, [workerSignatureHeader]: signature, "Content-Type": "application/json" }, body });
+    // Every durable retry gets new authentication; job/segment identity stays stable.
+    const nonce = randomUUID();
+    const signature = signWorkerRequest(worker.secret, "POST", new URL(worker.url).pathname, timestamp, nonce, body);
+    const response = await fetch(worker.url, { method: "POST", redirect: "error", cache: "no-store", signal: AbortSignal.timeout(preparationLimits.requestMs), headers: { [workerTimestampHeader]: timestamp, [workerNonceHeader]: nonce, [workerSignatureHeader]: signature, "Content-Type": "application/json" }, body });
     if (!response.ok) { await response.body?.cancel(); throw new PreparationError("PREPARATION_UNAVAILABLE", true); }
     return z.strictObject({ ready: z.boolean() }).parse(await response.json());
   } catch {

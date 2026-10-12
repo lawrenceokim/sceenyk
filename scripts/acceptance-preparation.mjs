@@ -93,7 +93,8 @@ try {
   const { signWorkerRequest } = load('lib/media-preparation/auth.ts');
   const call = (input, authorized=true) => {
     const body = JSON.stringify(input), timestamp = String(Date.now());
-    return fetch('http://127.0.0.1:3012/prepare', { method:'POST', headers:{'Content-Type':'application/json', ...(authorized?{'x-worker-timestamp':timestamp,'x-worker-signature':signWorkerRequest(token,'POST','/prepare',timestamp,body)}:{})}, body });
+    const nonce = randomUUID();
+    return fetch('http://127.0.0.1:3012/prepare', { method:'POST', headers:{'Content-Type':'application/json', ...(authorized?{'x-worker-timestamp':timestamp,'x-worker-nonce':nonce,'x-worker-signature':signWorkerRequest(token,'POST','/prepare',timestamp,nonce,body)}:{})}, body });
   };
   check('external worker rejects unauthenticated calls', (await call({}, false)).status === 401);
   check('worker rejects browser-supplied keys, URLs and timestamps', (await call({sceneExecutionId:randomUUID(),generationJobId:state.jobId,runId:state.visualRunId,storageKey:'arbitrary',startMs:0,url:'https://example.com/video'})).status === 400);

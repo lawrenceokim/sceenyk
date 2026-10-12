@@ -63,6 +63,7 @@ outage = false;
 check('database outage stays retryable', true);
 
 let calls = 0, saved = 0;
+const nonces = [];
 const secret = randomBytes(32).toString('hex');
 const fixtureContext = { scene: rows.scene_executions, db: { async rpc() { saved++; return { error: null }; } } };
 const clientLoad = typescriptLoader({
@@ -72,7 +73,10 @@ const clientLoad = typescriptLoader({
   calls++;
   assert.equal(url, 'https://worker.invalid/prepare');
   assert.deepEqual(JSON.parse(init.body), ids);
-  assert.equal(init.headers['x-worker-signature'], createHmac('sha256', secret).update(`POST\n/prepare\n${init.headers['x-worker-timestamp']}\n`).update(init.body).digest('hex'));
+  const nonce = init.headers['x-worker-nonce'];
+  assert.match(nonce, /^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/);
+  nonces.push(nonce);
+  assert.equal(init.headers['x-worker-signature'], createHmac('sha256', secret).update(`POST\n/prepare\n${init.headers['x-worker-timestamp']}\n${nonce}\n`).update(init.body).digest('hex'));
   assert.equal(init.redirect, 'error');
   assert.equal(init.headers.Authorization, undefined);
   if (calls === 1) throw Error('fixture lost response after preparation');
@@ -82,6 +86,7 @@ const { prepareVisualSource } = clientLoad('lib/media-preparation/client.ts');
 await assert.rejects(prepareVisualSource(sceneId, jobId, 'persisted-run'), /PREPARATION_UNAVAILABLE/);
 check('lost response preserves retryable pending state', saved === 1);
 check('retry sends same identifiers with valid HMAC and accepts persisted readiness', (await prepareVisualSource(sceneId, jobId, 'persisted-run')).ready && calls === 2);
+check('durable retry signs a fresh unique nonce after lost response', new Set(nonces).size === 2);
 fixtureContext.scene = { ...rows.scene_executions, provider_task_id: 'persisted-paid-task' };
 check('existing paid identity never sends another preparation request', (await prepareVisualSource(sceneId, jobId, 'persisted-run')).ready && calls === 2);
 console.log(JSON.stringify({ passed: checks.length, checks, scope: 'actual context/client; explicit database/transport fixtures' }, null, 2));

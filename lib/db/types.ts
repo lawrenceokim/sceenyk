@@ -212,6 +212,7 @@ export type Database = {
     };
     Views: Record<string, never>;
     Functions: {
+      register_media_worker_request: { Args: { p_nonce: string; p_timestamp_ms: number }; Returns: string };
       reserve_source_segment: { Args: { p_scene_id: string; p_run_id: string; p_normalization_key: string; p_normalization: Record<string, unknown>; p_overlays: Record<string, unknown>; p_lease_id: string }; Returns: { state: string; segment_id?: string } };
       complete_source_segment: { Args: { p_scene_id: string; p_run_id: string; p_segment_id: string; p_lease_id: string; p_metadata: Record<string, unknown> }; Returns: boolean };
       fail_source_segment: { Args: { p_scene_id: string; p_run_id: string; p_segment_id: string; p_lease_id: string; p_error: string; p_permanent: boolean }; Returns: boolean };

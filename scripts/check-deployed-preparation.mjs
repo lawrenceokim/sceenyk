@@ -9,12 +9,14 @@ nextEnv.loadEnvConfig(process.cwd(),false,{info(){},error(){}});
 const load=typescriptLoader(), db=load('lib/db/server.ts').createDatabaseClient();
 const origin='https://sceenyk.vercel.app',worker=new URL(process.argv.find(a=>a.startsWith('--worker-url='))?.slice(13)??process.env.MEDIA_WORKER_URL).origin;
 assert.equal(new URL(worker).protocol,'https:','DEPLOYED_WORKER_HTTPS_REQUIRED');
-const artifact=path.join(os.tmpdir(),'sceenyk-render-cloud-acceptance.json');
+const runName=process.argv.find(a=>a.startsWith('--run='))?.slice(6);
+assert.ok(runName===undefined||/^[a-z0-9-]{1,60}$/.test(runName),'SAFE_ACCEPTANCE_RUN_NAME_REQUIRED');
+const artifact=path.join(os.tmpdir(),'sceenyk-render-cloud-acceptance'+(runName?'-'+runName:'')+'.json');
 let state;try{state=JSON.parse(fs.readFileSync(artifact,'utf8'));}catch{state={checks:[],findings:[],createdAt:new Date().toISOString()};}
 const save=()=>fs.writeFileSync(artifact,JSON.stringify(state,null,2));
 const check=(name,value)=>{assert.ok(value,name);if(!state.checks.includes(name))state.checks.push(name);save();console.log(JSON.stringify({passed:name}));};
-const sign=(body,timestamp)=>createHmac('sha256',process.env.WORKER_SHARED_SECRET).update(`POST\n/prepare\n${timestamp}\n`).update(body).digest('hex');
-async function request(body,options={}){const timestamp=options.timestamp??String(Date.now());const r=await fetch(worker+'/prepare',{method:'POST',redirect:'error',signal:AbortSignal.timeout(240000),headers:{'Content-Type':'application/json',...(options.unsigned?{}:{'x-worker-timestamp':timestamp,'x-worker-signature':options.signature??sign(body,timestamp)}),...options.headers},body});return {status:r.status,body:await r.json()};}
+const sign=(body,timestamp,nonce)=>createHmac('sha256',process.env.WORKER_SHARED_SECRET).update(`POST\n/prepare\n${timestamp}\n${nonce}\n`).update(body).digest('hex');
+async function request(body,options={}){const timestamp=options.timestamp??String(Date.now()),nonce=options.nonce??randomUUID();const r=await fetch(worker+'/prepare',{method:'POST',redirect:'error',signal:AbortSignal.timeout(240000),headers:{'Content-Type':'application/json',...(options.unsigned?{}:{'x-worker-timestamp':timestamp,'x-worker-nonce':nonce,'x-worker-signature':options.signature??sign(body,timestamp,nonce)}),...options.headers},body});return {status:r.status,body:await r.json()};}
 async function cloud(route){for(let n=0;n<3;n++){try{const r=await fetch('https://api.inngest.com'+route,{headers:{Authorization:'Bearer '+process.env.INNGEST_SIGNING_KEY},signal:AbortSignal.timeout(20000)});assert.equal(r.status,200,'CLOUD_READ_SUCCEEDS');return (await r.json()).data;}catch(error){if(n===2)throw error;console.log(JSON.stringify({cloudReadRetry:n+1}));await new Promise(r=>setTimeout(r,1000));}}}
 async function preflight(){
  let healthy=false;const started=Date.now();
@@ -27,12 +29,20 @@ async function preflight(){
  check('deployed Render rejects unsigned processing',(await request(body,{unsigned:true})).status===401);
  check('deployed Render rejects invalid signature',(await request(body,{signature:'0'.repeat(64)})).status===401);
  check('deployed Render rejects expired signed request',(await request(body,{timestamp:String(Date.now()-360000)})).status===401);
- const timestamp=String(Date.now()),signature=sign(body,timestamp);
- check('deployed Render rejects modified exact body',(await request(body+' ',{timestamp,signature})).status===401);
+ const timestamp=String(Date.now()),nonce=randomUUID(),signature=sign(body,timestamp,nonce);
+ check('deployed Render rejects modified exact body',(await request(body+' ',{timestamp,nonce,signature})).status===401);
+ check('deployed Render rejects modified nonce',(await request(body,{timestamp,nonce:randomUUID(),signature})).status===401);
  check('deployed Render rejects browser-origin signed request',(await request(body,{headers:{Origin:origin}})).status===401);
- const accepted=await request(body,{timestamp,signature});state.existingSignedRequest={jobId:old.jobId,sceneId:old.segmentSceneId,status:accepted.status,body:accepted.body};check('valid HMAC reaches owned persisted preparation on Render',accepted.status===200&&accepted.body.ready===true);
- const replay=await request(body,{timestamp,signature});state.freshReplay={status:replay.status,ready:replay.body.ready===true,verifiedAt:new Date().toISOString()};
- if(replay.status!==401&&!state.findings.includes('FRESH_SIGNED_REPLAY_ACCEPTED'))state.findings.push('FRESH_SIGNED_REPLAY_ACCEPTED');save();console.log(JSON.stringify({freshReplay:state.freshReplay,findings:state.findings}));
+ const accepted=await request(body,{timestamp,nonce,signature});state.existingSignedRequest={jobId:old.jobId,sceneId:old.segmentSceneId,status:accepted.status,body:accepted.body};check('valid HMAC reaches owned persisted preparation on Render',accepted.status===200&&accepted.body.ready===true);
+ const replay=await request(body,{timestamp,nonce,signature});state.freshReplay={status:replay.status,code:replay.body.code,verifiedAt:new Date().toISOString()};save();
+ check('deployed Render rejects immediate exact replay',replay.status===409&&replay.body.code==='REPLAY_DETECTED');
+ await new Promise(r=>setTimeout(r,1000));
+ const later=await request(body,{timestamp,nonce,signature});check('deployed Render rejects later exact replay',later.status===409&&later.body.code==='REPLAY_DETECTED');
+ const concurrent={timestamp:String(Date.now()),nonce:randomUUID()};concurrent.signature=sign(body,concurrent.timestamp,concurrent.nonce);
+ const duplicates=await Promise.all([request(body,concurrent),request(body,concurrent)]);
+ check('deployed concurrent exact requests have only one acceptance',duplicates.filter(r=>r.status===200&&r.body.ready===true).length===1&&duplicates.filter(r=>r.status===409&&r.body.code==='REPLAY_DETECTED').length===1);
+ check('newly signed retry reuses persisted preparation',(await request(body)).status===200);
+ state.replayProtectionVerifiedAt=new Date().toISOString();save();
  state.workerOrigin=worker;state.preflightAt=new Date().toISOString();save();
 }
 
@@ -44,7 +54,15 @@ async function launch(){
  if(state.jobId){console.log(JSON.stringify({existingJob:state.jobId}));return;}
  const old=JSON.parse(fs.readFileSync(path.join(os.tmpdir(),'sceenyk-preparation-acceptance.json'),'utf8'));
  const other=JSON.parse(fs.readFileSync(path.join(os.tmpdir(),'sceenyk-hosted-identity-fixture-2.json'),'utf8'));
- state.ownerClerkId=old.clerkUserId;state.secondClerkId=other.clerkUserId;state.projectId??=randomUUID();state.requestId??=randomUUID();state.uploadRequestId??=randomUUID();state.observations??=[];save();
+ if(!state.ownerClerkId&&process.argv.includes('--fresh-owner')){
+  assert.ok(runName,'SEPARATE_ARTIFACT_REQUIRED_FOR_FRESH_OWNER');
+  const {createClerkClient}=await import('@clerk/backend');
+  const clerk=createClerkClient({secretKey:process.env.CLERK_SECRET_KEY,publishableKey:process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,telemetry:{disabled:true}});
+  assert.equal((await clerk.instance.get()).environmentType,'development');
+  const user=await clerk.users.createUser({username:'sceenykcloud'+randomUUID().replaceAll('-','').slice(0,16),emailAddress:[`sceenyk-cloud-${randomUUID()}+clerk_test@example.com`],password:randomUUID()+'Aa1!',firstName:'Cloud',lastName:'Acceptance'});
+  state.ownerClerkId=user.id;save();
+ }
+ state.ownerClerkId??=old.clerkUserId;state.secondClerkId=other.clerkUserId;state.projectId??=randomUUID();state.requestId??=randomUUID();state.uploadRequestId??=randomUUID();state.observations??=[];save();
  const {deployedBrowser}=await import('./lib/deployed-browser.mjs');
  const prompt='Exactly TWO shots totaling 10 seconds, both using the supplied 12-second video. Shot 1: source transformed, durationSeconds 5, startTime 2, endTime 7, supplied video assetId. Apply a polished 2D cartoon style while preserving movement, camera and framing. Source contains important HUD/UI text; retain source overlay provenance for later composition. Shot 2: source original, durationSeconds 5, startTime 2, endTime 7, SAME supplied video assetId, reuse this exact segment unchanged. No generated shots, no narration, no other assets. Keep descriptions and transformation instructions below 800 characters.';
  const settings={duration:'10',aspectRatio:'16:9',visualStyle:'Original',tone:'Storytelling'};
@@ -73,6 +91,9 @@ async function monitor(){
  for(let n=0;n<450;n++){
   const j=await one('generation_jobs',state.jobId),phase=j.status+'/'+j.current_stage+(j.visuals_ready_at?'/visuals_ready':j.visuals_pending_at?'/pending':'');
   if(!state.observations.some(o=>o.phase===phase)){state.observations.push({phase,at:new Date().toISOString()});save();console.log(JSON.stringify({phase,jobId:j.id}));}
+  const observed=await db.from('scene_executions').select('id,status,provider_task_id,submission_attempts,error_code').eq('job_id',state.jobId).eq('provider','fal');assert.ok(!observed.error,'SCENE_OBSERVATION_SUCCEEDS');
+  state.providerObservations??=[];
+  for(const scene of observed.data){const signature=JSON.stringify(scene);if(!state.providerObservations.some(o=>o.signature===signature)){state.providerObservations.push({at:new Date().toISOString(),signature,...scene});save();console.log(JSON.stringify({providerObservation:scene}));}}
   if(j.visuals_ready_at){state.visualsReadyAt=j.visuals_ready_at;state.analysisRunId=j.worker_run_id;state.visualRunId=j.visual_run_id;save();check('real Cloud reaches visual readiness after browser closure',Date.parse(j.visuals_ready_at)>Date.parse(state.browserClosedAt));return;}
   if(j.status==='failed'||j.visuals_pending_at){state.incompleteJob={status:j.status,stage:j.current_stage,errorCode:j.error_code,analysisRunId:j.worker_run_id,visualRunId:j.visual_run_id};save();console.log(JSON.stringify({incomplete:state.incompleteJob}));throw new Error('CLOUD_ACCEPTANCE_NOT_READY');}
   await delay(2000);
@@ -92,6 +113,15 @@ async function proof(){
  if(ready)check('real fal completes exactly one paid transformation with private output',transformed.provider==='fal'&&transformed.status==='completed'&&transformed.submission_attempts===1&&!!transformed.provider_task_id&&!!transformed.output_asset_id&&reuse.status==='completed'&&!reuse.provider_task_id);
  else{check('actual fal submission rejection is safely persisted without an invented task or output',transformed.status==='failed'&&transformed.error_code==='PROVIDER_REJECTED'&&transformed.submission_attempts===1&&!transformed.provider_task_id&&!transformed.output_asset_id&&reuse.status==='completed');if(!state.findings.includes('FAL_SUBMISSION_REJECTED'))state.findings.push('FAL_SUBMISSION_REJECTED');save();}
  check('Cloud readiness keeps the original hold and never final-completes',j.status==='processing'&&j.current_stage==='generating'&&!j.completed_at&&reservation.state==='reserved');
+ if(ready){
+  const account=await one('generation_accounts',j.owner_user_id,'owner_user_id');
+  const receipts=await db.from('generation_result_receipts').select('job_id').eq('job_id',j.id);assert.ok(!receipts.error);
+  const assets=await db.from('scene_assets').select('id,scene_execution_id,job_id,owner_user_id,project_id').eq('job_id',j.id);assert.ok(!assets.error);
+  check('visual readiness has one private intermediate and no final-result receipt',assets.data.length===1&&assets.data[0].id===transformed.output_asset_id&&assets.data[0].scene_execution_id===transformed.id&&assets.data[0].owner_user_id===j.owner_user_id&&assets.data[0].project_id===j.project_id&&receipts.data.length===0);
+  check('fresh acceptance account holds one free reservation without consumption',account.free_total===2&&account.free_reserved===1&&account.free_consumed===0&&account.credit_reserved===0&&reservation.kind==='free'&&reservation.amount===1&&!reservation.settled_at);
+  const observed=(state.providerObservations??[]).filter(s=>s.provider_task_id);
+  check('live observations retain one persisted fal task and one submission attempt',observed.length>=2&&observed.every(s=>s.provider_task_id===transformed.provider_task_id&&s.submission_attempts===1)&&observed.some(s=>['submitted','processing'].includes(s.status))&&observed.some(s=>s.status==='completed'));
+ }
  const expected=p.plan.scenePlan;check('actual immutable Gemini plan selected the owned 2-7 second range',expected.length===2&&expected.every(s=>s.assetId===state.assetId&&s.startTime===2&&s.endTime===7&&s.durationSeconds===5));
  for(const [kind,runId,eventName]of[['analysis',j.worker_run_id,'sceenyk/generation.requested'],['visual',j.visual_run_id,'sceenyk/generation.visuals.requested']]){
   let run;for(let n=0;n<30;n++){run=await cloud('/v2/runs/'+runId+'?includeOutput=true');if(run.status==='COMPLETED')break;await new Promise(r=>setTimeout(r,1000));}const output=typeof run.output==='string'?JSON.parse(run.output):run.output;
@@ -99,7 +129,12 @@ async function proof(){
   const eventId=run.trigger.eventIds[0],event=await cloud('/v1/events/'+eventId);
   check('actual '+kind+' Cloud event carries only the stable job identity',event.name===eventName&&event.data.generationJobId===j.id&&Object.keys(event.data).length===1);
   const trace=await cloud('/v2/runs/'+runId+'/trace?includeOutput=true'),spans=[];const visit=s=>{if(!s)return;spans.push({name:s.name,status:s.status,startedAt:s.startedAt,endedAt:s.endedAt});for(const c of s.children??[])visit(c);};visit(trace.rootSpan);
+  const privileged=['WORKER_SHARED_SECRET','SUPABASE_SECRET_KEY','SUPABASE_SERVICE_ROLE_KEY','R2_ACCESS_KEY_ID','R2_SECRET_ACCESS_KEY','CLERK_SECRET_KEY','GEMINI_API_KEY','FAL_KEY','INNGEST_EVENT_KEY','INNGEST_SIGNING_KEY'].map(n=>process.env[n]).filter(Boolean),savedCloud=JSON.stringify({trace,output});
+  check('checked '+kind+' Cloud trace and step output expose no configured secrets or signed capabilities',!privileged.some(value=>savedCloud.includes(value))&&!/X-Amz-Signature|X-Amz-Credential|r2\.cloudflarestorage/.test(savedCloud));
   if(kind==='visual')check('real durable Cloud steps prepare source before fal submission',spans.some(s=>s.name==='prepare-source-1'&&s.status==='COMPLETED')&&spans.some(s=>s.name==='submit-scene-1'&&s.status==='COMPLETED'));
+  // Cloud can expose overlapping trace entries for one named durable step.
+  // Persisted task/attempt observations, not trace-entry count, establish reuse.
+  if(kind==='visual'&&ready)check('Inngest resumes the same persisted provider task across durable polling',spans.filter(s=>/^scene-1-poll-\d+$/.test(s.name)&&s.status==='COMPLETED').length>=2&&(state.providerObservations??[]).filter(s=>s.provider_task_id).every(s=>s.provider_task_id===transformed.provider_task_id&&s.submission_attempts===1));
   state[kind+'Proof']={runId,eventId,output,spans};save();
  }
  state.segmentId=segment.id;state.segmentSceneId=transformed.id;state.retrySceneId=ready?transformed.id:reuse.id;state.providerRequestId=transformed.provider_task_id;
