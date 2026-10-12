@@ -35,6 +35,19 @@ async function preflight(){
   state.legacyTransitions=p.plan.scenePlan.map(s=>s.transition);state.preflightAt=new Date().toISOString();save();
   console.log(JSON.stringify({migration015Available:state.migrationApplied,deployedFunctions:state.deployedFunctionCount,cloudFunctions:state.cloudFunctionCount,legacyTransitions:state.legacyTransitions}));
 }
+async function sync(){
+  assert.ok(state.migrationApplied&&state.deployedFunctionCount===8,'DEPLOYED_COMPOSITION_REQUIRED');
+  const t=String(Math.floor(Date.now()/1000)),s=createHmac('sha256',process.env.INNGEST_SIGNING_KEY.replace(/^signkey-\w+-/,'')).update(t).digest('hex');
+  const response=await fetch(origin+'/api/inngest',{method:'PUT',headers:{'x-inngest-signature':`t=${t}&s=${s}`},signal:AbortSignal.timeout(60000)});
+  assert.equal(response.status,200,'EXISTING_APP_SDK_SYNC');await response.body?.cancel();
+  const apps=await cloud('/v2/apps');state.cloudFunctionCount=apps.find(a=>a.id==='sceenyk')?.functionCount;
+  check('existing Cloud app registers all eight deployed functions',state.cloudFunctionCount===8);state.syncedAt=new Date().toISOString();save();
+}
+async function monitor(){
+  const j=await one('generation_jobs',accepted.jobId),p=await db.from('composition_plans').select('status,plan,created_at').eq('job_id',j.id).maybeSingle();
+  assert.ok(!p.error,'COMPOSITION_READ');
+  console.log(JSON.stringify({jobId:j.id,status:j.status,stage:j.current_stage,compositionRunId:j.composition_run_id,started:!!j.composition_started_at,ready:!!j.composition_ready_at,pending:!!j.composition_pending_at,compositionStatus:p.data?.status??null,issues:p.data?.plan?.issues??null,held:(await one('generation_reservations',j.id,'job_id')).state==='reserved'}));
+}
 async function readProbe(asset,label,kind){
   const object=await storage.inspectR2Object(asset.storage_key);
   assert.ok(object?.etag===asset.verified_etag&&object.sizeBytes===asset.size_bytes&&object.mimeType===asset.mime_type,'REAL_R2_IDENTITY');
@@ -76,25 +89,38 @@ async function verify(){
   const p=load('lib/composition/contract.ts').compositionPlanSchema.parse(result.data.plan),j=await one('generation_jobs',accepted.jobId);
   check('hosted composition persists same-generation versioned timeline',p.generation_job_id===accepted.jobId&&p.schema_version===1&&p.total_duration_ms===10000&&p.scenes[1].start_ms===p.scenes[0].end_ms);
   check('real narration fits exact absolute timing',p.scenes[0].narration.actual_duration_ms===1280&&p.scenes[0].narration.start_ms===p.scenes[0].narration.start_offset_ms&&p.scenes[0].narration.end_ms===p.scenes[0].narration.start_ms+1280);
+  check('hosted visual input windows use measured prepared duration',p.scenes.every(s=>s.visual.asset_kind==='prepared_segment'&&s.visual.actual_duration_ms===state.prepared.durationMs&&s.visual.input_start_ms===0&&s.visual.input_end_ms===5000));
   check('real silent scene is valid without narration',p.scenes[1].narration===null&&p.scenes[1].timing_status==='valid');
   check('hosted readiness is honest and reservation remains held',p.status==='ready'&&!!j.composition_ready_at&&!j.completed_at&&(await one('generation_reservations',j.id,'job_id')).state==='reserved');
   const run=await cloud('/v2/runs/'+j.composition_run_id+'?includeOutput=true');check('real Inngest Cloud reaches composition readiness',run.status==='COMPLETED');
   const trace=JSON.stringify(await cloud('/v2/runs/'+j.composition_run_id+'/trace?includeOutput=true'));
   check('composition plan and Cloud trace contain no secrets private keys or capabilities',!secrets().some(s=>trace.includes(s)||JSON.stringify(p).includes(s))&&!/X-Amz-Signature|X-Amz-Credential|r2\.cloudflarestorage|storage_key/.test(trace+JSON.stringify(p)));
-  state.compositionDigest=digest(result.data);state.compositionRunId=j.composition_run_id;save();
+  state.compositionDigest=digest(result.data);state.compositionRunId=j.composition_run_id;
+  state.hostedTimeline={status:p.status,totalDurationMs:p.total_duration_ms,scenes:p.scenes.map(s=>({order:s.scene_order,startMs:s.start_ms,endMs:s.end_ms,visual:s.visual,narration:s.narration,transition:s.transition}))};save();
   const {deployedBrowser}=await import('./lib/deployed-browser.mjs');
   await deployedBrowser(origin,{A:accepted.ownerClerkId,B:accepted.secondClerkId},async({signIn,navigate,wait,evaluate,call,errors})=>{
     const route='/projects/'+accepted.projectId,api='/api/composition?'+new URLSearchParams({projectId:accepted.projectId,jobId:accepted.jobId});
     await signIn('A');await navigate(route);await wait("document.body.innerText.includes('Timeline ready')");
     const read=()=>evaluate(`fetch(${JSON.stringify(api)},{cache:'no-store'}).then(async r=>({status:r.status,data:await r.json()}))`);
     const a=await read();check('owner reads persisted safe composition',a.status===200&&digest(a.data.plan)===digest(p));
+    await evaluate("Array.from(document.querySelectorAll('button')).find(b=>b.textContent.trim()==='Check generation status'&&!b.disabled).click()");await wait("!document.body.innerText.includes('Checking status…')");
+    check('explicit status refresh preserves hosted timeline',await evaluate("document.body.innerText.includes('Timeline ready')")&&digest((await read()).data.plan)===digest(p));
     await call('Page.reload',{ignoreCache:true});await wait("document.body.innerText.includes('Timeline ready')");check('refresh reopens identical hosted composition',digest((await read()).data.plan)===digest(p));
     await navigate('/dashboard');await navigate(route);await wait("document.body.innerText.includes('Timeline ready')");check('project reopen restores identical composition',digest((await read()).data.plan)===digest(p));
+    const html=await evaluate('document.documentElement.outerHTML');check('authenticated composition HTML exposes no configured secrets',!secrets().some(s=>html.includes(s)));
+    state.privateClientScripts=await evaluate("Array.from(new Set(performance.getEntriesByType('resource').map(r=>r.name).filter(n=>n.startsWith(location.origin+'/_next/static/')&&n.endsWith('.js')).map(n=>new URL(n).pathname)))");save();
     await signIn('B');const b=await read();check('real User B cannot read User A composition',b.status===404&&!b.data.plan);
     const write=await evaluate(`fetch(${JSON.stringify(api)},{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({plan:{status:'ready'}})}).then(r=>r.status)`);check('browser cannot create arbitrary trusted composition',write===405);
     check('composition browser has no exceptions',errors.length===0);
   });
   await unchanged();save();
+}
+async function scan(){
+  const scripts=new Set(state.privateClientScripts??[]);let leaks=0,markers=0;
+  for(const route of ['/','/create']){const r=await fetch(origin+route,{signal:AbortSignal.timeout(20000)});assert.equal(r.status,200);const html=await r.text();if(secrets().some(s=>html.includes(s)))leaks++;for(const m of html.matchAll(/\/_next\/static\/[^\s"'\\<>]+\.js/g))scripts.add(m[0]);}
+  for(const script of scripts){const r=await fetch(origin+script,{signal:AbortSignal.timeout(20000)});assert.equal(r.status,200);const body=await r.text();if(secrets().some(s=>body.includes(s)))leaks++;if(/composition_asset_ref|claim_composition_generation|finish_composition_generation|ELEVENLABS_API_KEY|api\.elevenlabs\.io|WORKER_SHARED_SECRET|MEDIA_WORKER_URL|SUPABASE_SECRET_KEY|R2_SECRET_ACCESS_KEY|INNGEST_SIGNING_KEY|GEMINI_API_KEY|FAL_KEY|queue\.fal\.run|r2\.cloudflarestorage|X-Amz-Signature/.test(body))markers++;}
+  check('deployed composition public and authenticated bundles contain no secrets',scripts.size>0&&leaks===0&&markers===0);
+  state.secretScan={htmlPages:2,clientFiles:scripts.size,configuredSecrets:secrets().length,leaks,markers};save();console.log(JSON.stringify(state.secretScan));
 }
 async function replay(){
   assert.ok(state.mediaAt,'MEASURE_REAL_PRIVATE_MEDIA_FIRST');
@@ -158,6 +184,44 @@ async function duplicate(){
   if(!state.duplicateEventId){const sent=await client.send({id:accepted.jobId+':composition-acceptance-duplicate-'+randomUUID(),name:'sceenyk/generation.composition.requested',data:{generationJobId:accepted.jobId}});state.duplicateEventId=sent.ids[0];save();}
   console.log(JSON.stringify({duplicateEventId:state.duplicateEventId,providerRequests:0,nextMode:'duplicate-proof'}));
 }
+async function sqlFixture(){
+  assert.ok(state.mediaAt&&state.compositionDigest,'VERIFY_EXISTING_HOSTED_MEDIA_AND_COMPOSITION_FIRST');
+  const snapshots={app_users:[],projects:[],project_assets:[],generation_accounts:[],generation_jobs:[],generation_reservations:[],generation_plans:[],scene_executions:[],prepared_segments:[],narration_segments:[],narration_assets:[],scene_assets:[],composition_asset_checks:[],composition_plans:[]};
+  for(const jobId of [accepted.jobId,previous.jobId]){
+    const j=await one('generation_jobs',jobId);
+    snapshots.generation_jobs.push(j);
+    snapshots.app_users.push(await one('app_users',j.owner_user_id));
+    snapshots.projects.push(await one('projects',j.project_id));
+    snapshots.generation_accounts.push(await one('generation_accounts',j.owner_user_id,'owner_user_id'));
+    for(const table of ['generation_reservations','generation_plans'])snapshots[table].push(await one(table,jobId,'job_id'));
+    for(const table of ['scene_executions','narration_segments','narration_assets','scene_assets'])snapshots[table].push(...await rows(table,jobId));
+    const composition=await db.from('composition_plans').select('*').eq('job_id',jobId);assert.ok(!composition.error);snapshots.composition_plans.push(...composition.data);
+    for(const id of j.input_snapshot.assetIds)snapshots.project_assets.push(await one('project_assets',id));
+    const checks=await db.from('composition_asset_checks').select('*').eq('owner_user_id',j.owner_user_id).eq('project_id',j.project_id);assert.ok(!checks.error);snapshots.composition_asset_checks.push(...checks.data);
+  }
+  for(const id of new Set(snapshots.scene_executions.map(s=>s.prepared_asset_id).filter(Boolean)))snapshots.prepared_segments.push(await one('prepared_segments',id));
+  const {compositionFixtureDatabase}=await import('./lib/composition-fixture.mjs');
+  const {pg}=await compositionFixtureDatabase();
+  try{
+    // Local replica import only. The reviewed SQL file never changes this role
+    // or writes public application tables when executed in hosted SQL Editor.
+    await pg.exec('set session_replication_role=replica');
+    for(const [table,records] of Object.entries(snapshots))for(const record of records){
+      const columns=Object.keys(record);assert.ok(columns.every(k=>/^[a-z_]+$/.test(k)));
+      await pg.query(`insert into ${table}(${columns.join(',')}) values(${columns.map((_,i)=>'$'+(i+1)).join(',')}) on conflict do nothing`,Object.values(record));
+    }
+    await pg.exec('set session_replication_role=origin');
+    const fingerprint=async()=>digest(await Promise.all(Object.keys(snapshots).map(async table=>(await pg.query(`select * from ${table} order by 1`)).rows)));
+    const before=await fingerprint();
+    const results=await pg.exec(fs.readFileSync('supabase/acceptance/composition-timing.sql','utf8'));
+    const scenarios=results.flatMap(r=>r.rows).filter(r=>r.scenario);
+    check('rollback-only SQL acceptance file passes four real-metadata fixtures locally',scenarios.length===4&&scenarios.every(r=>r.passed===true));
+    check('rollback-only SQL fixture leaves public application data unchanged',before===await fingerprint());
+    state.sqlFixtureValidation={scenarios,scope:'isolated validation of the exact rollback-only hosted SQL acceptance file'};save();
+    console.log(JSON.stringify(state.sqlFixtureValidation));
+  }finally{await pg.close();}
+  await unchanged();save();
+}
 async function duplicateProof(){
   assert.ok(state.duplicateEventId);const runs=await cloud('/v2/events/'+state.duplicateEventId+'/runs?includeOutput=true'),run=runs.find(r=>r.status==='COMPLETED');assert.ok(run,'DUPLICATE_CLOUD_RUN_NOT_COMPLETE');
   const detail=await cloud('/v2/runs/'+run.id+'?includeOutput=true'),output=typeof detail.output==='string'?JSON.parse(detail.output):detail.output;
@@ -166,6 +230,28 @@ async function duplicateProof(){
   check('duplicate Cloud delivery reuses exact immutable row',digest(await one('composition_plans',accepted.jobId,'job_id'))===state.compositionDigest);
   await unchanged();save();
 }
-const modes={preflight,media,replay,verify,duplicate,'duplicate-proof':duplicateProof};
+async function worker(){
+  assert.ok(state.compositionDigest,'VERIFY_HOSTED_COMPOSITION_FIRST');
+  const scenes=await rows('scene_executions'),checks=await db.from('composition_asset_checks').select('*').eq('owner_user_id',(await one('generation_jobs',accepted.jobId)).owner_user_id).eq('project_id',accepted.projectId).order('asset_id');assert.ok(!checks.error);
+  check('hosted worker cached trusted private visual and narration durations',checks.data.some(c=>c.asset_kind==='prepared_segment'&&c.duration_ms===5000&&!c.issue)&&checks.data.some(c=>c.asset_kind==='narration_asset'&&c.duration_ms===1280&&!c.issue));
+  const request=async(options={})=>{
+    const body=JSON.stringify({generationJobId:accepted.jobId,sceneExecutionId:options.sceneId??scenes[0].id,...options.extra}),timestamp=options.timestamp??String(Date.now()),nonce=options.nonce??randomUUID();
+    const signature=createHmac('sha256',process.env.WORKER_SHARED_SECRET).update(`POST\n/inspect\n${timestamp}\n${nonce}\n`).update(body).digest('hex');
+    const r=await fetch('https://sceenyk-media-worker.onrender.com/inspect',{method:'POST',headers:{'Content-Type':'application/json',...(options.unsigned?{}:{'x-worker-timestamp':timestamp,'x-worker-nonce':nonce,'x-worker-signature':signature}),...options.headers},body,signal:AbortSignal.timeout(60000),redirect:'error'});
+    return {status:r.status,data:await r.json()};
+  };
+  const auth={nonce:randomUUID(),timestamp:String(Date.now())},retry=await request(auth);
+  check('real signed worker retry reuses completed composition',retry.status===200&&retry.data.ready===true);
+  const replay=await request(auth);check('real composition inspection exact replay denied',replay.status===409&&replay.data.code==='REPLAY_DETECTED');
+  check('real composition inspection denies unsigned access',(await request({unsigned:true})).status===401);
+  check('real composition inspection denies browser-origin signed access',(await request({headers:{Origin:origin}})).status===401);
+  check('real worker rejects arbitrary browser timing and readiness',(await request({extra:{durationMs:1,ready:true}})).status===400);
+  const foreign=(await rows('scene_executions',previous.jobId))[0];
+  check('real worker rejects another generation scene reference',(await request({sceneId:foreign.id})).status===403);
+  const after=await db.from('composition_asset_checks').select('*').eq('owner_user_id',(await one('generation_jobs',accepted.jobId)).owner_user_id).eq('project_id',accepted.projectId).order('asset_id');assert.ok(!after.error);
+  check('real signed retries preserve exact cached checks and composition row',digest(after.data)===digest(checks.data)&&digest(await one('composition_plans',accepted.jobId,'job_id'))===state.compositionDigest);
+  await unchanged();save();
+}
+const modes={preflight,sync,monitor,media,replay,verify,duplicate,'duplicate-proof':duplicateProof,worker,secrets:scan,'sql-fixture':sqlFixture};
 try{assert.ok(modes[process.argv[2]],'MODE_REQUIRED');await modes[process.argv[2]]();}
 catch(error){console.error(JSON.stringify({code:error?.code??'COMPOSITION_ACCEPTANCE_FAILED',reason:error instanceof assert.AssertionError?error.message:'Safe acceptance operation failed.'}));process.exitCode=1;}
