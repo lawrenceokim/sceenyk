@@ -1,32 +1,29 @@
-// Isolated Node worker. The Next.js/Inngest handler only calls its HTTP boundary.
-import { createServer } from "node:http";
-import { createHash, timingSafeEqual } from "node:crypto";
+// Isolated Node worker. Next.js/Inngest calls only its signed HTTP boundary.
 import { loadEnvConfig } from "@next/env";
 import { executePreparation } from "../lib/media-preparation/processor";
-import { preparationRequest } from "../lib/media-preparation/context";
-import { PreparationError } from "../lib/media-preparation/contract";
+import { resolveWorkerPreparation } from "../lib/media-preparation/context";
+import { workerSharedSecret } from "../lib/media-preparation/auth";
+import { createPreparationServer } from "../lib/media-preparation/http";
+import { getDatabaseConfig } from "../lib/db/config";
+import { getStorageConfig } from "../lib/storage/config";
+import { runMediaCommand } from "../lib/media-preparation/ffmpeg";
 
-loadEnvConfig(process.cwd(), false, { info() {}, error() {} });
-const token = process.env.MEDIA_PREPARATION_WORKER_TOKEN?.trim();
-if (!token || token.length < 32) throw new Error("WORKER_TOKEN_REQUIRED");
-const fingerprint = (value: string) => createHash("sha256").update(value).digest();
-const expected = fingerprint(`Bearer ${token}`);
-let active = 0;
-const server = createServer(async (request, response) => {
-  const reply = (status: number, body: object) => { response.writeHead(status, { "Content-Type": "application/json", "Cache-Control": "no-store" }); response.end(JSON.stringify(body)); };
-  if (request.method !== "POST" || request.url !== "/prepare" || !timingSafeEqual(fingerprint(request.headers.authorization ?? ""), expected)) { reply(401, { code: "UNAUTHORIZED" }); return; }
-  if (active >= 2) { reply(503, { code: "PREPARATION_BUSY" }); return; }
-  active++;
-  try {
-    const chunks: Buffer[] = []; let length = 0;
-    for await (const chunk of request) { length += chunk.length; if (length > 4096) { reply(413, { code: "INVALID_REQUEST" }); return; } chunks.push(chunk); }
-    const parsed = preparationRequest.safeParse(JSON.parse(Buffer.concat(chunks).toString("utf8")));
-    if (!parsed.success) { reply(400, { code: "INVALID_REQUEST" }); return; }
-    reply(200, await executePreparation(parsed.data));
-  } catch (error) {
-    const code = error instanceof PreparationError ? error.code : "PREPARATION_UNAVAILABLE";
-    reply(error instanceof SyntaxError ? 400 : 503, { code });
-  } finally { active--; }
-});
-server.requestTimeout = 250_000; server.headersTimeout = 10_000;
-server.listen(Number(process.env.MEDIA_PREPARATION_WORKER_PORT ?? 3012), process.env.MEDIA_PREPARATION_WORKER_HOST ?? "127.0.0.1", () => console.log(JSON.stringify({ stage: "media_preparation_worker_ready" })));
+async function main() {
+  loadEnvConfig(process.cwd(), false, { info() {}, error() {} });
+  const secret = workerSharedSecret();
+  getDatabaseConfig();
+  getStorageConfig();
+  if (process.env.NODE_ENV === "production" && (!process.env.FFMPEG_PATH || !process.env.FFPROBE_PATH)) throw new Error("PROCESSOR_PATHS_REQUIRED");
+  await Promise.all([runMediaCommand("ffmpeg", ["-version"]), runMediaCommand("ffprobe", ["-version"])]);
+  const port = Number(process.env.PORT ?? process.env.MEDIA_PREPARATION_WORKER_PORT ?? 3012);
+  if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error("WORKER_PORT_INVALID");
+  const host = process.env.MEDIA_PREPARATION_WORKER_HOST ?? (process.env.NODE_ENV === "production" ? "0.0.0.0" : "127.0.0.1");
+  const { server, drain } = createPreparationServer(secret, async input => executePreparation(await resolveWorkerPreparation(input)));
+  for (const signal of ["SIGTERM", "SIGINT"] as const) process.once(signal, () => {
+    drain();
+    // Render's 300-second shutdown allowance lets in-flight work clean up.
+    setTimeout(() => process.exit(1), 290_000).unref();
+  });
+  server.listen(port, host, () => console.log(JSON.stringify({ stage: "media_preparation_worker_ready" })));
+}
+main().catch(() => { console.error("MEDIA_WORKER_STARTUP_FAILED"); process.exitCode = 1; });

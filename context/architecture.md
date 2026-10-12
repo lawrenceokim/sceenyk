@@ -2,7 +2,7 @@
 
 ## Owned source-segment preparation — implemented, 2026-10-12
 
-`lib/media-preparation/` sits between immutable Gemini planning and video reuse/transformation. Inngest durably calls `client.ts` before each scene submission. The separate Node HTTP worker in `scripts/media-preparation-worker.ts` imports the FFmpeg processor; Next.js never imports its process-execution code. Requests contain only claimed job/scene/run IDs, protected by a shared server token. The worker independently reloads the live reservation, owned project/job/scene, immutable plan and admitted verified source. There is no browser preparation endpoint, arbitrary source URL/key/time input, Render deployment or new customer accounting operation.
+`lib/media-preparation/` sits between immutable Gemini planning and video reuse/transformation. Inngest durably calls `client.ts` before each scene submission. The separate Node HTTP worker in `scripts/media-preparation-worker.ts` imports the existing FFmpeg processor; Next.js never imports its process-execution code. Requests now contain only `generationJobId` and `sceneExecutionId`, protected by server-only `WORKER_SHARED_SECRET` HMAC-SHA256 over method/path/timestamp/exact body bytes. A five-minute freshness window, timing-safe comparison, strict contract and browser-origin rejection protect `/prepare`. The worker loads its run claim from Supabase and independently reloads the live reservation, owned project/job/scene, immutable plan and admitted verified source. There is no browser preparation endpoint, arbitrary source URL/key/time input or new customer accounting operation. Docker/Render packaging is implemented for manual deployment; hosted deployment remains unverified.
 
 **Timing and extraction:** immutable schema-v1 plan/legacy scene seconds remain compatibility fields. Migration 012 converts them to canonical integer `source_start_ms`, `source_end_ms` and `requested_duration_ms` once when creating new video scenes. Processing, cache identity, persistence and owned prepared DTOs use milliseconds. Strict checks reject nonnumeric/nonfinite, negative, empty, reversed or inconsistent ranges (1 ms rounding allowance). FFprobe independently measures the downloaded source; its duration bounds the selected end. FFmpeg seeks accurately while transcoding subsets, limits output duration and verifies it within 43 ms (one 24fps frame). Source and output timing are separately recorded. The provider can still add a frame or change dimensions; this unit normalizes its input, not final composition/output timing.
 
@@ -14,7 +14,7 @@
 
 **fal integration:** paid submission independently rechecks a completed, owned prepared segment with the correct range and verified private R2 object. fal receives its short-lived signed capability instead of the full video source. A database gate also refuses new paid slots before preparation. Text/image generation remains on its existing path. Completed scenes and persisted provider request IDs never purchase another task. The immutable production plan, retail quote, reservation and final-result settlement remain unchanged.
 
-**Running/hosting:** install dependencies, set a matching server-only `MEDIA_PREPARATION_WORKER_TOKEN` (at least 32 characters) and `MEDIA_PREPARATION_WORKER_URL` on the web orchestrator, and give the worker its existing Supabase/R2 server credentials plus the same token. Run `npm run worker:media` in a separate Node22 process with writable temporary disk. Local development defaults to loopback port3012 and the development-only static binaries. Production must supply `FFMPEG_PATH`/`FFPROBE_PATH` to compatible installed binaries, explicitly set the worker bind host/port, and serve the authenticated boundary through HTTPS; no remote HTTP is accepted. Vercel/Inngest only waits for bounded HTTP preparation within the existing 300-second handler allowance. This unit verifies a real local external worker against hosted Supabase/R2/Gemini/fal; persistent worker hosting and changed Vercel/Inngest Cloud deployment/resync are unverified. No Docker/Render provisioning, credentials or `.env.local` changes were performed. Scratch-volume/crash cleanup, production resource sizing and operational reconciliation remain deployment concerns.
+**Running/hosting (2026-10-12):** [media-worker-render.md](media-worker-render.md) specifies manual deployment and exact environment names. `workers/media-preparation/Dockerfile` installs Node22 LTS, system FFmpeg/FFprobe and lockfile production dependencies; it starts the same worker as non-root through `tini`. Render supplies `PORT`; production binds `0.0.0.0`, with public liveness-only `GET /health`. The Docker context excludes secret/local artifacts. Optional `render.yaml` disables auto-deploys and sets one paid Standard instance, `/health` and a 300-second shutdown allowance. SIGTERM/SIGINT drains active work. Vercel uses `MEDIA_WORKER_URL` (HTTPS origin) and `WORKER_SHARED_SECRET`; Render uses the identical secret plus existing Supabase/R2 server credentials, with binary paths supplied by the image. The old preparation URL/token names are replaced with no bearer fallback. No credentials or `.env.local` change is performed. Existing durable step names, database leases/cache identity, processor and paid idempotency remain unchanged. Prior real hosted-service/local-worker acceptance is historical; changed HMAC/Docker hosting and Vercel/Inngest Cloud deployment/resync still require manual hosted acceptance. No deployment is performed. Capacity, hard-crash recovery and exhausted/ambiguous preparation reconciliation remain operational concerns.
 
 ## Visual scene execution — active fal provider, 2026-10-12
 
@@ -82,7 +82,7 @@ The public UI foundation includes landing/themes and verified Clerk/application 
 | Video assembly — Planned preferred | Remotion | Programmatic compositions combining scenes, captions, audio, overlays, and animations. Not installed/configured. |
 | Video processing — source preparation implemented | FFmpeg/FFprobe | Owned source extraction, conservative fit/pad/rotation and visual-only normalization through the separate Node worker. Static development binaries are installed/tested; production uses configured binaries. Final processing/rendering remains planned. |
 | Background workflow — Deployed Gemini acceptance verified | Inngest SDK 4.23.0; official test engine 1.0.0 | Actual Vercel/Cloud events and authoritative claims reach private R2/Gemini and persist validated plans. Browser independence, bounded retry, duplicates without provider replay, ready-state persistence and terminal restoration pass. Four workflow retries and minute reconciliation remain. |
-| Heavy processing — Planned preferred | Render + Docker | Worker environment for FFmpeg, Remotion, and long/CPU-heavy media work outside lightweight web hosting. No Dockerfile/worker deployment configuration exists. |
+| Heavy processing — preparation packaging implemented; hosting unverified | Render + Docker | Existing FFmpeg worker image, HMAC boundary, health/drain and optional manual Blueprint. Remotion/final rendering remains planned. |
 | Payments — Planned | PayPal | Hackathon credit purchases first; subscriptions, marketplace purchases, and eventual creator payouts are later capabilities. No checkout/webhook/service implementation exists. |
 | Deployment — Web hosting confirmed; heavy workers planned | Vercel for Next.js; Render preferred for future media workers | `https://sceenyk.vercel.app` is deployed in Vercel Production, confirmed by the user and live endpoint checks. Inngest uses its stable `/api/inngest` URL. No Render/worker deployment exists. |
 
@@ -269,7 +269,7 @@ Application → Sceenyk generation service → provider interface → provider a
 
 For example, a future `generateVideo()` contract delegates to `lib/video-ai/providers/runway.ts`; pages and shared UI do not depend on that provider's payloads. Apply the same principle to language/multimodal models, voice, storage, and payments. Validate adapter outputs into shared Sceenyk contracts, keep keys server-side, and record external job references.
 
-Inngest is the implemented workflow coordinator; Render/Docker remains the preferred future heavy processing environment. Signed Inngest execution, claims, retries and recovery are defined above. Rendering-service authentication, limits, completion callbacks and deployment remain future decisions. Do not run heavy FFmpeg/Remotion work in lightweight web requests.
+Inngest is the implemented workflow coordinator. Render/Docker packaging and HMAC-authenticated HTTP preparation are implemented for manual hosting above; deployed acceptance remains separate. Existing durable steps call the same private-source processor and resume from persisted cache/lease state. Final rendering-service contracts/callbacks remain future decisions. Do not run heavy FFmpeg/Remotion work in lightweight web requests.
 
 ## Payments and Credits
 
@@ -306,7 +306,7 @@ flowchart TD
   Browser -->|direct signed media upload| Storage[(Object storage: R2 preferred)]
   Services --> Workflow[Background workflow: Inngest preferred]
   Workflow --> Analysis[Analysis and plan: Gemini preferred]
-  Analysis --> Preparation[Owned source preparation: authenticated FFmpeg worker]
+  Analysis --> Preparation[Owned source preparation: HMAC-authenticated Render FFmpeg worker]
   Preparation -->|private derivatives| Storage
   Preparation --> Video[Video provider: fal active]
   Video --> Voice[Voice if needed: ElevenLabs preferred]
@@ -359,6 +359,7 @@ PostgreSQL records workflow truth; object storage holds the actual media. Worker
 
 ### Implemented
 
+- Existing FFmpeg preparation worker packaged for manual Render/Docker hosting, with HMAC authentication, identifier-only requests, authoritative owned-context loading, safe health, Render port binding and graceful drain. Native/regression verification is recorded in the tracker; Docker's unavailable engine and actual hosted acceptance remain explicit limits.
 - Next.js/React/strict TypeScript web foundation, npm tooling, ESLint, Tailwind 4, shadcn/Base UI Button/Dialog, and Lucide.
 - Public landing page, responsive navigation/footer, preview brand mark, reusable category/step/media/pricing compositions, and original illustrative vector scenes.
 - Global semantic light/dark tokens and Inter/Geist Mono; before-paint system/saved theme initialization, toggle persistence, and system/storage synchronization.
@@ -381,7 +382,7 @@ UI, real Clerk development flows and real Supabase identity verification are rec
 - Broader MVP creation paths, future video models and voice-stage contracts. Understanding/planning uses accepted `gemini-3.8-flash` with schema v1. The active fal models/visual contract and scoped paid acceptance are specified above; Runway is inactive.
 - Final adoption/configuration of preferred providers, account availability, exact SDK needs, storage limits/formats/CORS, retention/deletion, and access/delivery rules.
 - The owned-draft/asset schema and media access rule have live persistence/ownership evidence; deployed project acceptance is complete and hosted catalog auditing remains separate. Other domains and independent-of-activity Clerk webhooks remain unspecified/deferred.
-- Future workflow-to-Render authentication, deployment capacity, provider retry/output contracts and live progress transport. The current state machine and dispatch recovery contract are implemented above.
+- Render deployment capacity, later rendering/provider output contracts and live progress transport. Preparation authentication/packaging is implemented above; manual hosted acceptance remains outstanding. The current state machine and dispatch recovery contract are implemented above.
 - Subscription pricing, credit-pack pricing, credits by generation type/duration, provider-cost-to-credit formula, future user cancellation/refund rules and creator economics. Free eligibility and failure restoration are approved in accounting.md.
 - Final production logo assets and future workspace layouts. The public theme preference contract is now implemented above.
 

@@ -83,16 +83,20 @@ try {
   const sourceBefore = await row('project_assets', state.asset.id), reservationBefore = await row('generation_reservations', state.jobId, 'job_id');
   assert.equal(reservationBefore.state, 'reserved');
   const token = randomBytes(32).toString('hex');
-  process.env.MEDIA_PREPARATION_WORKER_URL = 'http://127.0.0.1:3012'; process.env.MEDIA_PREPARATION_WORKER_TOKEN = token;
+  process.env.MEDIA_WORKER_URL = 'http://127.0.0.1:3012'; process.env.WORKER_SHARED_SECRET = token;
   const tempBefore = fs.readdirSync(os.tmpdir()).filter(f => f.startsWith('sceenyk-segment-'));
   worker = spawn(process.execPath, ['--conditions=react-server','--import=tsx','scripts/media-preparation-worker.ts'], { cwd: process.cwd(), env: { ...process.env, MEDIA_PREPARATION_WORKER_PORT: '3012' }, windowsHide: true, stdio: ['ignore','pipe','pipe'] });
   let ready = false; worker.stdout.on('data', data => { if (data.toString().includes('media_preparation_worker_ready')) ready = true; });
   worker.stderr.on('data', () => {}); // Never emit secret-bearing raw worker diagnostics.
   for (let n=0;n<100&&!ready;n++) { assert.equal(worker.exitCode, null, 'worker starts'); await delay(100); }
   assert.ok(ready, 'worker ready');
-  const call = (body, authorized=true) => fetch('http://127.0.0.1:3012/prepare', { method:'POST', headers:{'Content-Type':'application/json', ...(authorized?{Authorization:`Bearer ${token}`}:{})}, body:JSON.stringify(body) });
+  const { signWorkerRequest } = load('lib/media-preparation/auth.ts');
+  const call = (input, authorized=true) => {
+    const body = JSON.stringify(input), timestamp = String(Date.now());
+    return fetch('http://127.0.0.1:3012/prepare', { method:'POST', headers:{'Content-Type':'application/json', ...(authorized?{'x-worker-timestamp':timestamp,'x-worker-signature':signWorkerRequest(token,'POST','/prepare',timestamp,body)}:{})}, body });
+  };
   check('external worker rejects unauthenticated calls', (await call({}, false)).status === 401);
-  check('worker rejects browser-supplied keys, URLs and timestamps', (await call({sceneId:randomUUID(),jobId:state.jobId,runId:state.visualRunId,storageKey:'arbitrary',startMs:0,url:'https://example.com/video'})).status === 400);
+  check('worker rejects browser-supplied keys, URLs and timestamps', (await call({sceneExecutionId:randomUUID(),generationJobId:state.jobId,runId:state.visualRunId,storageKey:'arbitrary',startMs:0,url:'https://example.com/video'})).status === 400);
   let scenes = (await db.from('scene_executions').select('*').eq('job_id',state.jobId).order('scene_order')).data;
   const service = load('lib/video-ai/server.ts'), current = await row('generation_jobs',state.jobId);
   if (!current.visuals_ready_at) {
@@ -126,8 +130,8 @@ try {
   check('User B cannot retrieve User A prepared media',true);
   const otherAcceptance=JSON.parse(fs.readFileSync(path.join(os.tmpdir(),'sceenyk-fal-failure-acceptance.json'),'utf8'));
   const otherJob=await row('generation_jobs',otherAcceptance.jobId);assert.notEqual(otherJob.owner_user_id,owner.id);
-  const cross=await call({sceneId:scenes[0].id,jobId:otherJob.id,runId:otherJob.visual_run_id??'foreign-run'});await cross.body?.cancel();
-  check('trusted worker rejects scene and job from different owners',cross.status===503);
+  const cross=await call({sceneExecutionId:scenes[0].id,generationJobId:otherJob.id});await cross.body?.cancel();
+  check('trusted worker rejects scene and job from different owners',cross.status===403);
   check('preparation leaves original source and accounting unchanged', digest(await row('project_assets',state.asset.id))===digest(sourceBefore)&&digest(await row('generation_reservations',state.jobId,'job_id'))===digest(reservationBefore));
   console.log(JSON.stringify({stage:'real_fal_transform',estimatedUsd:scenes[0].estimated_cost_usd}));
   const workflow=load('lib/workflows/visuals.ts').visualWorkflow;

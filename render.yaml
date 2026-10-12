@@ -1,0 +1,27 @@
+# Optional manual Blueprint import; no account access/deployment is automated.
+services:
+  - type: web
+    name: sceenyk-media-preparation
+    runtime: docker
+    plan: standard
+    numInstances: 1
+    autoDeployTrigger: "off"
+    dockerfilePath: ./workers/media-preparation/Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    maxShutdownDelaySeconds: 300
+    envVars:
+      - key: WORKER_SHARED_SECRET
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SECRET_KEY
+        sync: false
+      - key: R2_ACCOUNT_ID
+        sync: false
+      - key: R2_ACCESS_KEY_ID
+        sync: false
+      - key: R2_SECRET_ACCESS_KEY
+        sync: false
+      - key: R2_BUCKET_NAME
+        sync: false

@@ -4,6 +4,17 @@ import { createDatabaseClient } from "@/lib/db/server";
 import { PreparationError } from "./contract";
 
 export const preparationRequest = z.strictObject({ sceneId: z.uuid(), jobId: z.uuid(), runId: z.string().min(1).max(200) });
+export const workerPreparationRequest = z.strictObject({ generationJobId: z.uuid(), sceneExecutionId: z.uuid() });
+
+// Caller selects identifiers only. loadPreparation subsequently rechecks every
+// owned relationship and live reservation against this persisted claim.
+export async function resolveWorkerPreparation(input: unknown) {
+  const { generationJobId, sceneExecutionId } = workerPreparationRequest.parse(input);
+  const job = await createDatabaseClient().from("generation_jobs").select("visual_run_id").eq("id", generationJobId).maybeSingle();
+  if (job.error) throw new PreparationError("PREPARATION_DATABASE_UNAVAILABLE", true);
+  if (!job.data?.visual_run_id) throw new PreparationError("SOURCE_UNAVAILABLE");
+  return { jobId: generationJobId, sceneId: sceneExecutionId, runId: job.data.visual_run_id };
+}
 export async function loadPreparation(input: unknown) {
   const { sceneId, jobId, runId } = preparationRequest.parse(input), db = createDatabaseClient();
   const job = await db.from("generation_jobs").select("*").eq("id", jobId).eq("visual_run_id", runId).maybeSingle();

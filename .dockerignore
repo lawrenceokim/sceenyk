@@ -1,0 +1,12 @@
+# Allowlist the build context: secrets and local artifacts never reach Docker.
+**
+!package.json
+!package-lock.json
+!tsconfig.json
+!lib/
+!lib/**
+!scripts/
+!scripts/media-preparation-worker.ts
+!workers/
+!workers/media-preparation/
+!workers/media-preparation/Dockerfile
