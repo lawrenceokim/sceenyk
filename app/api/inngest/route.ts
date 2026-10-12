@@ -1,6 +1,7 @@
 import { serve } from "inngest/next";
 import { inngest } from "@/lib/workflows/client";
 import { visualWorkflow } from "@/lib/workflows/visuals";
+import { narrationWorkflow } from "@/lib/workflows/narration";
 import {
   generationRecovery,
   generationWorkflow,
@@ -10,5 +11,5 @@ import {
 export const maxDuration = 300;
 export const { GET, POST, PUT } = serve({
   client: inngest,
-  functions: [generationWorkflow, generationRecovery, visualWorkflow],
+  functions: [generationWorkflow, generationRecovery, visualWorkflow, narrationWorkflow],
 });

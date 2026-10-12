@@ -10,6 +10,14 @@ import { getStorageConfig } from "./config";
 
 const uploadLifetimeSeconds = 5 * 60;
 const readLifetimeSeconds = 15 * 60;
+export async function putR2NarrationOutput(key: string, bytes: Uint8Array) {
+  const { bucket, sdk } = client();
+  try {
+    await sdk.send(new PutObjectCommand({ Bucket: bucket, Key: key, Body: bytes, ContentLength: bytes.byteLength, ContentType: "audio/mpeg", IfNoneMatch: "*" }), { abortSignal: AbortSignal.timeout(60_000) });
+  } catch (error) {
+    if (!error || typeof error !== "object" || !("$metadata" in error) || !error.$metadata || typeof error.$metadata !== "object" || !("httpStatusCode" in error.$metadata) || error.$metadata.httpStatusCode !== 412) throw new Error("NARRATION_STORAGE_UNAVAILABLE");
+  }
+}
 // Trusted intermediate output only. Conditional PUT also covers lost DB replies.
 export async function putR2SceneOutput(key: string, bytes: Uint8Array) {
   const { bucket, sdk } = client();

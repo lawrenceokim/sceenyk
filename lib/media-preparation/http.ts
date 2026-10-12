@@ -26,7 +26,7 @@ function requestBody(request: IncomingMessage) {
 
 // Production supplies the existing processor; tests exercise this HTTP boundary
 // without invoking paid providers or hosted writes.
-export function createPreparationServer(secret: string, execute: (input: unknown) => Promise<{ ready: boolean }>, register: (nonce: string, timestamp: string) => Promise<WorkerRequestRegistration>) {
+export function createPreparationServer(secret: string, execute: (input: unknown) => Promise<{ ready: boolean }>, register: (nonce: string, timestamp: string) => Promise<WorkerRequestRegistration>, narrate?: (input: unknown) => Promise<{ ready: boolean }>) {
   let active = 0;
   let draining = false;
   const server = createServer(async (request, response) => {
@@ -47,7 +47,7 @@ export function createPreparationServer(secret: string, execute: (input: unknown
     const timestamp = request.headers[workerTimestampHeader];
     const signature = request.headers[workerSignatureHeader];
     const nonce = request.headers[workerNonceHeader];
-    if (request.method !== "POST" || request.url !== "/prepare" || request.headers.origin !== undefined || request.headers["sec-fetch-site"] !== undefined || typeof timestamp !== "string" || typeof signature !== "string" || typeof nonce !== "string") {
+    if (request.method !== "POST" || !(request.url === "/prepare" || request.url === "/narrate" && narrate) || request.headers.origin !== undefined || request.headers["sec-fetch-site"] !== undefined || typeof timestamp !== "string" || typeof signature !== "string" || typeof nonce !== "string") {
       reply(401, { code: "UNAUTHORIZED" });
       return;
     }
@@ -74,7 +74,7 @@ export function createPreparationServer(secret: string, execute: (input: unknown
       const registration = await register(nonce, timestamp);
       if (registration === "replay") { reply(409, { code: "REPLAY_DETECTED" }); return; }
       if (registration !== "accepted") { reply(401, { code: "UNAUTHORIZED" }); return; }
-      reply(200, await execute(parsed.data));
+      reply(200, await (request.url === "/narrate" && narrate ? narrate : execute)(parsed.data));
     } catch (error) {
       const unavailable = error instanceof PreparationError && !error.temporary;
       reply(error instanceof SyntaxError ? 400 : unavailable ? 403 : 503, { code: error instanceof SyntaxError ? "INVALID_REQUEST" : unavailable ? "SOURCE_UNAVAILABLE" : "PREPARATION_UNAVAILABLE" });

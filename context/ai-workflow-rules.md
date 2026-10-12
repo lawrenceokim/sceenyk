@@ -8,6 +8,8 @@ Use a spec-driven workflow. `/context` is the source of truth for product behavi
 
 Current context and implementation baseline:
 
+- Narration source implementation now extends visuals readiness through `lib/voice-ai/`, migration 014 and the existing signed Render worker. Live acceptance is blocked by unapplied hosted 014 and changed deployments. The local server key is configured; Render key configuration/TTS access remain unverified. Preserve exact Gemini narration, scene-level audio, canonical milliseconds, duplicate-spend guards and held accounting. This authorization ends at audio readiness; composition/rendering and payments remain later work.
+
 - fal is the active visual provider behind `lib/video-ai/` and a separate trusted Inngest function; Runway remains isolated and inactive. `lib/media-preparation/` adds canonical millisecond source timing, private reusable derivatives and an authenticated external FFmpeg worker before new video transform/reuse. Real paid text/image/transformation and prepared-segment acceptance pass within hosted-service/official-engine scope. Preserve immutable Gemini plans and existing accounting. Intermediate readiness never completes/consumes a generation. Check the tracker for migrations 009–012, hosting status, observed provider estimates and unsupported scene/recovery limits before relying on this integration.
 
 - [overview.md](overview.md) defines intended product behavior, the MVP, and success criteria.

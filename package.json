@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "test:narration": "node scripts/check-narration.mjs && node scripts/check-elevenlabs.mjs && node scripts/check-narration-storage.mjs && node --conditions=react-server --import=tsx scripts/check-narration-media.ts",
     "worker:media": "node --conditions=react-server --import=tsx scripts/media-preparation-worker.ts",
     "test:worker-auth": "node --conditions=react-server --import=tsx scripts/check-worker-auth.ts && node scripts/check-worker-contract.mjs && node scripts/check-worker-replay.mjs && node scripts/check-worker-runtime.mjs",
     "test:preparation": "node --conditions=react-server --import=tsx scripts/check-preparation.ts && node scripts/check-preparation-failures.mjs",

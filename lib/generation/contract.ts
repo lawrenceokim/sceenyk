@@ -35,7 +35,7 @@ export const generationStageLabels: Record<GenerationStage, string> = {
   analyzing: "Analyzing your media",
   planning: "Planning your content",
   generating: "Generating visuals",
-  voice: "Creating voice",
+  voice: "Generating voice-over",
   rendering: "Rendering",
 };
 export const generationFailures = {

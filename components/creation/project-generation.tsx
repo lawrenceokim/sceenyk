@@ -156,7 +156,7 @@ export function ProjectGeneration({
         {state.job && (
           <>
             <p className="text-body-sm font-semibold">
-              {state.job.visualsReadyAt ? "Visuals ready" : state.job.visualsPendingAt ? "Visual scenes need attention" : planReady ? "Production plan ready" : `Generation ${generationStatusLabels[state.job.status].toLowerCase()}`}
+              {state.job.status === "failed" ? state.job.stage === "voice" ? "Narration failed" : "Generation failed" : state.job.audioReadyAt ? "Narration ready" : state.job.narrationPendingAt ? "Narration needs attention" : state.job.stage === "voice" ? "Generating voice-over" : state.job.visualsReadyAt ? "Visuals ready" : state.job.visualsPendingAt ? "Visual scenes need attention" : planReady ? "Production plan ready" : `Generation ${generationStatusLabels[state.job.status].toLowerCase()}`}
             </p>
             {state.job.status === "queued" && (
               <p className="text-body-sm text-muted-foreground">
@@ -169,7 +169,9 @@ export function ProjectGeneration({
             {planReady && (
               <p className="text-body-sm text-muted-foreground">Your plan is saved. Supported visual scenes are next.</p>
             )}
-            {state.job.visualsReadyAt && <p className="text-body-sm text-muted-foreground">Visual scenes are saved. Voice, editing and final rendering are later stages; your reservation remains held.</p>}
+            {state.job.status === "processing" && state.job.audioReadyAt && <p className="text-body-sm text-muted-foreground">Required narration is saved. Editing and final rendering are later stages; your reservation remains held.</p>}
+            {state.job.status === "processing" && state.job.narrationPendingAt && <p className="text-body-sm text-muted-foreground">Narration needs background recovery or configuration. Your saved plan and visual scenes are preserved; your reservation remains held.</p>}
+            {state.job.status === "processing" && state.job.visualsReadyAt && !state.job.audioReadyAt && !state.job.narrationPendingAt && <p className="text-body-sm text-muted-foreground">Visual scenes are saved. {state.job.stage === "voice" ? "Generating required narration." : "Preparing narration."} Your reservation remains held.</p>}
             {state.job.visualsPendingAt && <p className="text-body-sm text-muted-foreground">Some scenes need an unsupported operation or background recovery. Your saved plan and any completed scenes are preserved.</p>}
             {state.job.status === "processing" && state.job.stage && !planReady && !state.job.visualsReadyAt && !state.job.visualsPendingAt && (
               <p className="text-body-sm text-muted-foreground">

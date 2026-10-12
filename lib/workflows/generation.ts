@@ -10,6 +10,7 @@ import {
 } from "@/lib/generation/dispatch-contract";
 import { inngest } from "./client";
 import { visualsRequested } from "./visuals";
+import { narrationRequested } from "./narration";
 
 export const generationWorkflow = inngest.createFunction(
   {
@@ -103,6 +104,14 @@ export const generationRecovery = inngest.createFunction(
     });
     for (const candidate of visualCandidates) {
       await step.sendEvent(`dispatch-visuals-${candidate.job_id}`, { id: `${candidate.job_id}:visuals`, name: visualsRequested, data: { generationJobId: candidate.job_id } });
+    }
+    const narrationCandidates = await step.run("load-narration-dispatch-candidates", async () => {
+      const result = await createDatabaseClient().rpc("narration_dispatch_candidates");
+      if (result.error) throw new Error("NARRATION_DATABASE_UNAVAILABLE");
+      return result.data;
+    });
+    for (const candidate of narrationCandidates) {
+      await step.sendEvent(`dispatch-narration-${candidate.job_id}`, { id: `${candidate.job_id}:narration`, name: narrationRequested, data: { generationJobId: candidate.job_id } });
     }
     return { inspected: candidates.length };
   },

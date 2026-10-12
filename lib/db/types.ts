@@ -63,6 +63,8 @@ export type AssetRow = {
 export type Database = {
   public: {
     Tables: {
+      narration_segments: { Row: import("@/lib/voice-ai/contract").NarrationSegment; Insert: never; Update: never; Relationships: [] };
+      narration_assets: { Row: import("@/lib/voice-ai/contract").NarrationAsset; Insert: never; Update: never; Relationships: [] };
       prepared_segments: { Row: import("@/lib/media-preparation/contract").PreparedSegment; Insert: never; Update: never; Relationships: [] };
       scene_executions: { Row: import("@/lib/video-ai/contract").SceneExecution; Insert: never; Update: never; Relationships: [] };
       scene_assets: { Row: import("@/lib/video-ai/contract").SceneAsset; Insert: never; Update: never; Relationships: [] };
@@ -212,6 +214,13 @@ export type Database = {
     };
     Views: Record<string, never>;
     Functions: {
+      claim_narration_generation: { Args: { p_job_id: string; p_run_id: string; p_configuration: import("@/lib/voice-ai/contract").VoiceConfiguration }; Returns: string };
+      begin_narration_submission: { Args: { p_segment_id: string; p_run_id: string }; Returns: boolean };
+      record_narration_response: { Args: { p_segment_id: string; p_run_id: string; p_request_id: string | null; p_usage: Record<string, unknown> }; Returns: boolean };
+      record_narration_error: { Args: { p_segment_id: string; p_run_id: string; p_error: string; p_permanent: boolean; p_rejected: boolean }; Returns: boolean };
+      complete_narration_segment: { Args: { p_segment_id: string; p_run_id: string; p_metadata: Record<string, unknown> }; Returns: boolean };
+      finish_narration_generation: { Args: { p_job_id: string; p_run_id: string }; Returns: string };
+      narration_dispatch_candidates: { Args: Record<string, never>; Returns: { job_id: string }[] };
       register_media_worker_request: { Args: { p_nonce: string; p_timestamp_ms: number }; Returns: string };
       reserve_source_segment: { Args: { p_scene_id: string; p_run_id: string; p_normalization_key: string; p_normalization: Record<string, unknown>; p_overlays: Record<string, unknown>; p_lease_id: string }; Returns: { state: string; segment_id?: string } };
       complete_source_segment: { Args: { p_scene_id: string; p_run_id: string; p_segment_id: string; p_lease_id: string; p_metadata: Record<string, unknown> }; Returns: boolean };
@@ -306,6 +315,11 @@ export type Database = {
 };
 
 export type GenerationRow = {
+  narration_execution_version: 0 | 1;
+  narration_run_id: string | null;
+  narration_started_at: string | null;
+  narration_pending_at: string | null;
+  audio_ready_at: string | null;
   visual_execution_version: 0 | 1;
   visual_run_id: string | null;
   visuals_started_at: string | null;

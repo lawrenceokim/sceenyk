@@ -8,6 +8,7 @@ import { registerWorkerRequest } from "../lib/media-preparation/replay";
 import { getDatabaseConfig } from "../lib/db/config";
 import { getStorageConfig } from "../lib/storage/config";
 import { runMediaCommand } from "../lib/media-preparation/ffmpeg";
+import { executeNarration } from "../lib/voice-ai/server";
 
 async function main() {
   loadEnvConfig(process.cwd(), false, { info() {}, error() {} });
@@ -19,7 +20,7 @@ async function main() {
   const port = Number(process.env.PORT ?? process.env.MEDIA_PREPARATION_WORKER_PORT ?? 3012);
   if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error("WORKER_PORT_INVALID");
   const host = process.env.MEDIA_PREPARATION_WORKER_HOST ?? (process.env.NODE_ENV === "production" ? "0.0.0.0" : "127.0.0.1");
-  const { server, drain } = createPreparationServer(secret, async input => executePreparation(await resolveWorkerPreparation(input)), registerWorkerRequest);
+  const { server, drain } = createPreparationServer(secret, async input => executePreparation(await resolveWorkerPreparation(input)), registerWorkerRequest, executeNarration);
   for (const signal of ["SIGTERM", "SIGINT"] as const) process.once(signal, () => {
     drain();
     // Render's 300-second shutdown allowance lets in-flight work clean up.
