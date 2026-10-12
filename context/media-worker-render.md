@@ -1,5 +1,11 @@
 # Render media-preparation worker
 
+## Composition inspection extension — 015, hosted rollout pending
+
+The existing worker gains `POST /inspect`, with the exact same `{generationJobId, sceneExecutionId}` contract, HMAC bound to `/inspect`, durable nonce protection, browser-origin denial, two-active limit and graceful drain. It resolves the persisted composition claim/held reservation/owned scene, checks private R2 ETag, length, MIME and signature, reuses trusted prepared/audio durations, and measures only videos with unknown duration using bounded private downloads and the installed isolated FFprobe binary. Scratch files are confined to a fresh worker-owned temporary directory and removed. The response contains only `{ready:boolean}` meaning inspection finished, never timeline/render readiness; SQL validates and persists composition independently. It imports no provider adapters and never rewrites media.
+
+No new credentials or service are needed. First apply [015](../supabase/migrations/20261012001500_composition_plans.sql), then make this revision available and redeploy the existing Render worker and Vercel application. Verify the existing Inngest app registers **eight functions** (five main functions plus visual/narration/composition failure handlers), rather than merely trusting the endpoint's introspection; sync the same app if needed. The minute cron will pick up the existing audio-ready accepted job without admission or new speech. Use `node scripts/check-deployed-composition.mjs preflight`, then `verify`, `duplicate`, and `duplicate-proof` sequentially. Modes `media` and `replay` independently read/measure existing real assets and replay them in isolated PostgreSQL; these are explicitly not hosted composition persistence evidence. The artifact is `%TEMP%/sceenyk-composition-acceptance.json`. Existing production credentials and Render Free settings remain unchanged; no final FFmpeg/Remotion rendering occurs.
+
 This packages `scripts/media-preparation-worker.ts`, existing source preparation and the new isolated narration processor. It runs neither Next.js, Gemini, fal nor final rendering. No automatic deployment, account access, database migration or secret-file change is performed.
 
 ## Narration extension — short deployed acceptance verified (2026-10-12)

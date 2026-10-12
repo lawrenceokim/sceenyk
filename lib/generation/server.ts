@@ -2,6 +2,7 @@ import "server-only";
 import { ensureAppUser } from "@/lib/auth/ensure-app-user";
 import { createDatabaseClient } from "@/lib/db/server";
 import type { GenerationRow } from "@/lib/db/types";
+import { compositionPlanSchema } from "@/lib/composition/contract";
 import { getPricingConfiguration } from "@/lib/pricing/config";
 import { projectIdSchema } from "@/lib/projects/validation";
 import { attemptGenerationDispatch } from "./dispatch";
@@ -25,7 +26,7 @@ import type {
 } from "./types";
 
 const columns =
-  "id,request_id,project_id,input_snapshot,status,current_stage,error_code,error_message,started_at,completed_at,failed_at,created_at,updated_at,dispatch_status,production_plan_ready_at,visuals_ready_at,visuals_pending_at,audio_ready_at,narration_pending_at";
+  "id,owner_user_id,request_id,project_id,input_snapshot,status,current_stage,error_code,error_message,started_at,completed_at,failed_at,created_at,updated_at,dispatch_status,production_plan_ready_at,visuals_ready_at,visuals_pending_at,audio_ready_at,narration_pending_at,composition_started_at,composition_ready_at,composition_pending_at";
 export class GenerationAccessError extends Error {
   constructor() {
     super("Generation status couldn’t be loaded. Please try again.");
@@ -56,10 +57,11 @@ function logError(operation: string, error: { code?: string } | null) {
       : "UNAVAILABLE";
   console.error("Generation database operation failed.", { operation, code });
 }
-function toJob(
+async function toJob(
   row: Omit<
     GenerationRow,
-    | "owner_user_id"
+    | "composition_run_id"
+    | "composition_configuration"
     | "accounting_version"
     | "dispatch_attempts"
     | "last_dispatch_at"
@@ -74,8 +76,18 @@ function toJob(
     | "narration_run_id"
     | "narration_started_at"
   >,
-): GenerationJob {
+): Promise<GenerationJob> {
+  let compositionIssues: GenerationJob["compositionIssues"] = [];
+  if (row.composition_pending_at) {
+    const result = await createDatabaseClient().from("composition_plans").select("plan").eq("job_id", row.id).eq("project_id", row.project_id).eq("owner_user_id", row.owner_user_id).maybeSingle();
+    if (result.error || !result.data) throw new GenerationAccessError();
+    compositionIssues = compositionPlanSchema.parse(result.data.plan).issues;
+  }
   return {
+    compositionStartedAt: row.composition_started_at ?? null,
+    compositionReadyAt: row.composition_ready_at ?? null,
+    compositionPendingAt: row.composition_pending_at ?? null,
+    compositionIssues,
     audioReadyAt: row.audio_ready_at ?? null,
     narrationPendingAt: row.narration_pending_at ?? null,
     id: row.id,
@@ -157,7 +169,7 @@ export async function createGenerationJob(
     logError("admission-read", refreshed.error);
     return unavailable; // Same request UUID recovers the committed reservation/job.
   }
-  return { ok: true, value: toJob(refreshed.data) };
+  return { ok: true, value: await toJob(refreshed.data) };
 }
 
 export async function getOwnedGenerationJob(
@@ -275,7 +287,7 @@ async function transition(
     logError("transition", error);
     return unavailable;
   }
-  return data ? { ok: true, value: toJob(data) } : conflict;
+  return data ? { ok: true, value: await toJob(data) } : conflict;
 }
 export async function startGenerationJob(input: unknown) {
   return transition(

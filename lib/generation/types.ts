@@ -10,6 +10,10 @@ import type {
 export type GenerationInputs = z.output<typeof generationInputsSchema>;
 export type GenerationSnapshot = GenerationInputs & { version: 1 };
 export type GenerationJob = {
+  compositionStartedAt?: string | null;
+  compositionReadyAt?: string | null;
+  compositionPendingAt?: string | null;
+  compositionIssues?: import("@/lib/composition/contract").CompositionIssue[];
   audioReadyAt?: string | null;
   narrationPendingAt?: string | null;
   visualsReadyAt?: string | null;

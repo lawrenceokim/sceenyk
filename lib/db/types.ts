@@ -63,6 +63,8 @@ export type AssetRow = {
 export type Database = {
   public: {
     Tables: {
+      composition_plans: { Row: import("@/lib/composition/contract").CompositionRow; Insert: never; Update: never; Relationships: [] };
+      composition_asset_checks: { Row: import("@/lib/composition/contract").CompositionAssetCheck; Insert: never; Update: never; Relationships: [] };
       narration_segments: { Row: import("@/lib/voice-ai/contract").NarrationSegment; Insert: never; Update: never; Relationships: [] };
       narration_assets: { Row: import("@/lib/voice-ai/contract").NarrationAsset; Insert: never; Update: never; Relationships: [] };
       prepared_segments: { Row: import("@/lib/media-preparation/contract").PreparedSegment; Insert: never; Update: never; Relationships: [] };
@@ -214,6 +216,11 @@ export type Database = {
     };
     Views: Record<string, never>;
     Functions: {
+      composition_asset_ref: { Args: { p_scene_id: string; p_track: string }; Returns: Record<string, unknown> | null };
+      claim_composition_generation: { Args: { p_job_id: string; p_run_id: string; p_configuration: typeof import("@/lib/composition/contract").compositionConfiguration }; Returns: string };
+      record_composition_asset_check: { Args: { p_job_id: string; p_run_id: string; p_scene_id: string; p_track: string; p_duration_ms: number | null; p_issue: string | null }; Returns: boolean };
+      finish_composition_generation: { Args: { p_job_id: string; p_run_id: string }; Returns: string };
+      composition_dispatch_candidates: { Args: Record<string, never>; Returns: { job_id: string }[] };
       claim_narration_generation: { Args: { p_job_id: string; p_run_id: string; p_configuration: import("@/lib/voice-ai/contract").VoiceConfiguration }; Returns: string };
       begin_narration_submission: { Args: { p_segment_id: string; p_run_id: string }; Returns: boolean };
       record_narration_response: { Args: { p_segment_id: string; p_run_id: string; p_request_id: string | null; p_usage: Record<string, unknown> }; Returns: boolean };
@@ -315,6 +322,11 @@ export type Database = {
 };
 
 export type GenerationRow = {
+  composition_run_id: string | null;
+  composition_started_at: string | null;
+  composition_pending_at: string | null;
+  composition_ready_at: string | null;
+  composition_configuration: typeof import("@/lib/composition/contract").compositionConfiguration | null;
   narration_execution_version: 0 | 1;
   narration_run_id: string | null;
   narration_started_at: string | null;

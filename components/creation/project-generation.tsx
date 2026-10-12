@@ -10,6 +10,7 @@ import {
 } from "@/lib/generation/contract";
 import type { GenerationInputs, GenerationJob } from "@/lib/generation/types";
 import { useProjectGeneration } from "./use-project-generation";
+import { compositionIssueMessage } from "@/lib/composition/contract";
 
 export function ProjectGeneration({
   projectId,
@@ -156,7 +157,7 @@ export function ProjectGeneration({
         {state.job && (
           <>
             <p className="text-body-sm font-semibold">
-              {state.job.status === "failed" ? state.job.stage === "voice" ? "Narration failed" : "Generation failed" : state.job.audioReadyAt ? "Narration ready" : state.job.narrationPendingAt ? "Narration needs attention" : state.job.stage === "voice" ? "Generating voice-over" : state.job.visualsReadyAt ? "Visuals ready" : state.job.visualsPendingAt ? "Visual scenes need attention" : planReady ? "Production plan ready" : `Generation ${generationStatusLabels[state.job.status].toLowerCase()}`}
+              {state.job.status === "failed" ? state.job.stage === "voice" ? "Narration failed" : "Generation failed" : state.job.compositionReadyAt ? "Timeline ready" : state.job.compositionPendingAt ? "Timing adjustment required" : state.job.compositionStartedAt ? "Checking scene timing" : state.job.audioReadyAt ? "Preparing timeline" : state.job.narrationPendingAt ? "Narration needs attention" : state.job.stage === "voice" ? "Generating voice-over" : state.job.visualsReadyAt ? "Visuals ready" : state.job.visualsPendingAt ? "Visual scenes need attention" : planReady ? "Production plan ready" : `Generation ${generationStatusLabels[state.job.status].toLowerCase()}`}
             </p>
             {state.job.status === "queued" && (
               <p className="text-body-sm text-muted-foreground">
@@ -169,7 +170,12 @@ export function ProjectGeneration({
             {planReady && (
               <p className="text-body-sm text-muted-foreground">Your plan is saved. Supported visual scenes are next.</p>
             )}
-            {state.job.status === "processing" && state.job.audioReadyAt && <p className="text-body-sm text-muted-foreground">Required narration is saved. Editing and final rendering are later stages; your reservation remains held.</p>}
+            {state.job.status === "processing" && state.job.compositionReadyAt && <p className="text-body-sm text-muted-foreground">Your timeline is saved. Final rendering is a later stage; your reservation remains held.</p>}
+            {state.job.status === "processing" && state.job.compositionPendingAt && <>
+              {[...new Set(state.job.compositionIssues?.map(compositionIssueMessage))].slice(0, 4).map(message => <p key={message} className="text-body-sm text-muted-foreground">{message}</p>)}
+              <p className="text-body-sm text-muted-foreground">Your produced scenes are saved and your reservation remains held. Timing must be resolved before rendering.</p>
+            </>}
+            {state.job.status === "processing" && state.job.audioReadyAt && !state.job.compositionReadyAt && !state.job.compositionPendingAt && <p className="text-body-sm text-muted-foreground">Checking your saved media and scene timing. Your reservation remains held.</p>}
             {state.job.status === "processing" && state.job.narrationPendingAt && <p className="text-body-sm text-muted-foreground">Narration needs background recovery or configuration. Your saved plan and visual scenes are preserved; your reservation remains held.</p>}
             {state.job.status === "processing" && state.job.visualsReadyAt && !state.job.audioReadyAt && !state.job.narrationPendingAt && <p className="text-body-sm text-muted-foreground">Visual scenes are saved. {state.job.stage === "voice" ? "Generating required narration." : "Preparing narration."} Your reservation remains held.</p>}
             {state.job.visualsPendingAt && <p className="text-body-sm text-muted-foreground">Some scenes need an unsupported operation or background recovery. Your saved plan and any completed scenes are preserved.</p>}

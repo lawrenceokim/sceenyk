@@ -101,6 +101,8 @@ The Gemini understanding/planning unit introduces `lib/ai/` with a server-only s
 
 ## Background Jobs and Video Processing
 
+- `lib/composition/` defines the schema-v1 integer-ms contract, owner-only read service and signed worker inspection client. Migration 015's service-only SQL planner derives every reference/time/readiness field from immutable persisted records; never add browser timeline submission as a trusted input. Reuse verified prepared/narration durations, cache immutable ETag-bound checks, and probe unknown video duration only in the external worker. Persist timing conflicts without changing produced assets, settling/releasing the hold, or invoking another provider. Default narration offset and technical tolerance are centralized/frozen; version 1 uses 0ms for both. Historical plans/checks are immutable. A renderer must require a validated ready contract; this unit starts no rendering.
+
 - Run long AI/video work outside request-response flows. Inngest owns durable orchestration; its signed endpoint and service-only database claims are the worker boundary. An in-process promise or request timer is not a durable worker. Heavy rendering remains a separate future service.
 - Persist job ownership, states, stage progress, provider references, results, and failures. Users must be able to leave/reload and recover status; the browser must not remain blocked waiting for completion.
 - Define clear inputs/outputs for each stage and make state transitions safe under concurrent workers/retries. Retry recoverable stages without restarting successful work; use bounded retry rules and prevent duplicate paid execution.

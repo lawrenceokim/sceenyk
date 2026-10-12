@@ -11,6 +11,7 @@ import {
 import { inngest } from "./client";
 import { visualsRequested } from "./visuals";
 import { narrationRequested } from "./narration";
+import { compositionRequested } from "./composition";
 
 export const generationWorkflow = inngest.createFunction(
   {
@@ -112,6 +113,14 @@ export const generationRecovery = inngest.createFunction(
     });
     for (const candidate of narrationCandidates) {
       await step.sendEvent(`dispatch-narration-${candidate.job_id}`, { id: `${candidate.job_id}:narration`, name: narrationRequested, data: { generationJobId: candidate.job_id } });
+    }
+    const compositionCandidates = await step.run("load-composition-dispatch-candidates", async () => {
+      const result = await createDatabaseClient().rpc("composition_dispatch_candidates");
+      if (result.error) throw new Error("COMPOSITION_DATABASE_UNAVAILABLE");
+      return result.data;
+    });
+    for (const candidate of compositionCandidates) {
+      await step.sendEvent(`dispatch-composition-${candidate.job_id}`, { id: `${candidate.job_id}:composition`, name: compositionRequested, data: { generationJobId: candidate.job_id } });
     }
     return { inspected: candidates.length };
   },

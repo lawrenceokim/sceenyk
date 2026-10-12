@@ -56,7 +56,7 @@ async function rpc(name, args = {}) {
       )
     ).rows;
     const data =
-      ["generation_dispatch_candidates", "visual_dispatch_candidates", "narration_dispatch_candidates"].includes(name)
+      ["generation_dispatch_candidates", "visual_dispatch_candidates", "narration_dispatch_candidates", "composition_dispatch_candidates"].includes(name)
         ? rows.map(({ value }) => ({ job_id: value }))
         : rows[0].value;
     if (ackLost && name === "acknowledge_generation_dispatch") {

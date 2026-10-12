@@ -15,6 +15,7 @@ async function main() {
   const secret = randomBytes(32).toString("hex");
   const body = JSON.stringify({ generationJobId: randomUUID(), sceneExecutionId: randomUUID() });
   let calls = 0, failure: Error | undefined;
+  let inspections = 0;
   let hold: Promise<void> | undefined;
   // Explicit HTTP-test fixture. Durable SQL/restart checks live in check-worker-replay.mjs.
   const accepted = new Set<string>();
@@ -32,6 +33,10 @@ async function main() {
     if (accepted.has(nonce)) return "replay";
     accepted.add(nonce);
     return "accepted";
+  }, undefined, async input => {
+    inspections++;
+    assert.deepEqual(input, JSON.parse(body));
+    return { ready: true };
   });
   server.listen(0, "127.0.0.1");
   await once(server, "listening");
@@ -111,6 +116,13 @@ async function main() {
     check("failed processor does not release accepted nonce", (await send({ nonce: failedNonce })).status === 409);
     failure = new PreparationError("SOURCE_UNAVAILABLE");
     check("persisted ownership/state failure is denied", (await send()).status === 403);
+    check("composition inspection rejects unsigned requests", (await send({ path: "/inspect", unsigned: true })).status === 401);
+    check("composition inspection rejects browser-origin signed requests", (await send({ path: "/inspect", headers: { Origin: "https://browser.invalid" } })).status === 401);
+    check("composition inspection rejects arbitrary timeline fields", (await send({ path: "/inspect", body: JSON.stringify({ ...JSON.parse(body), durationMs: 5000, ready: true }) })).status === 400);
+    check("prepare signature cannot authorize inspection", (await send({ path: "/inspect", timestamp, nonce, signature })).status === 401);
+    const inspectNonce = randomUUID(), inspection = await send({ path: "/inspect", nonce: inspectNonce });
+    check("composition inspection accepts only signed persisted identifiers", inspection.status === 200 && inspection.body === '{"ready":true}' && inspections === 1);
+    check("composition exact replay cannot inspect twice", (await send({ path: "/inspect", nonce: inspectNonce })).status === 409 && inspections === 1);
     process.env.WORKER_SHARED_SECRET = secret;
     delete process.env.NEXT_PUBLIC_WORKER_SHARED_SECRET;
     process.env.MEDIA_WORKER_URL = "https://worker.invalid";

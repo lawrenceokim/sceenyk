@@ -34,7 +34,7 @@ function visit(dir) {
       files++;
       const body = fs.readFileSync(file, "utf8");
       if (secrets.some((secret) => body.includes(secret))) leaks++;
-      if (markers.test(body) || /ELEVENLABS_API_KEY|api\.elevenlabs\.io|begin_narration_submission|complete_narration_segment|WORKER_SHARED_SECRET|MEDIA_WORKER_URL|MEDIA_PREPARATION_WORKER_TOKEN|reserve_source_segment|complete_source_segment|FAL_KEY|queue\.fal\.run|RUNWAYML_API_SECRET|api\.dev\.runwayml\.com|begin_visual_submission|record_visual_task/.test(body)) serverMarkers++;
+      if (markers.test(body) || /composition_asset_ref|claim_composition_generation|record_composition_asset_check|finish_composition_generation|ELEVENLABS_API_KEY|api\.elevenlabs\.io|begin_narration_submission|complete_narration_segment|WORKER_SHARED_SECRET|MEDIA_WORKER_URL|MEDIA_PREPARATION_WORKER_TOKEN|reserve_source_segment|complete_source_segment|FAL_KEY|queue\.fal\.run|RUNWAYML_API_SECRET|api\.dev\.runwayml\.com|begin_visual_submission|record_visual_task/.test(body)) serverMarkers++;
     }
   }
 }
