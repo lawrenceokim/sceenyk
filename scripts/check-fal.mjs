@@ -3,13 +3,18 @@ import assert from "node:assert/strict";
 import { typescriptLoader } from "./lib/load-typescript.mjs";
 const before = process.env.FAL_KEY;
 process.env.FAL_KEY = "fal-fixture-only";
-const requests = [], checks = [];
+const requests = [], checks = [], diagnostics = [];
 let mode = "success";
 const check = (name, value) => { assert.ok(value, name); checks.push(name); };
 const id = "fal_request-fixture_01";
-const load = typescriptLoader({}, { fetch: async (input, init) => {
+const load = typescriptLoader({}, { console: { ...console, warn: (...args) => diagnostics.push(args) }, fetch: async (input, init) => {
   const url = new URL(String(input)); requests.push({ url, init });
   if (mode === "network") throw new TypeError("fetch failed", { cause: { code: "ECONNRESET" } });
+  if (mode === "validation") return Response.json({ detail: [{ loc: ['body', 'num_frames'], type: 'less_than_equal', msg: 'private fixture detail fal-fixture-only', input: 'https://private.example/?secret=credential', ctx: { key: 'fal-fixture-only' } }, { loc: ['body', 'fal-fixture-only'], type: 'https://private.example/' }] }, { status: 422 });
+  if (mode === "html") return new Response('<html>private fixture detail fal-fixture-only</html>', { status: 403 });
+  if (mode === "oversize") return Response.json({ detail: 'private fixture detail'.repeat(2000) }, { status: 422 });
+  if (mode === "stalled") return new Response(new ReadableStream({ cancel() { requests.at(-1).cancelled = true; } }), { status: 401 });
+  if (mode === "payment") return Response.json({ detail: 'Insufficient balance. private fixture detail fal-fixture-only' }, { status: 403 });
   if (["rate", "reject", "server"].includes(mode)) return Response.json({ detail: "private fixture detail" }, { status: mode === "rate" ? 429 : mode === "server" ? 503 : 422 });
   if (mode === "lost-body") return new Response(new ReadableStream({ start(controller) { controller.error(new TypeError("fetch failed", { cause: { code: "ECONNRESET" } })); } }), { headers: { "Content-Type": "application/json" } });
   if (url.pathname.endsWith("/status")) return Response.json({ status: mode === "running" ? "IN_PROGRESS" : mode === "invalid-status" ? "UNKNOWN" : "COMPLETED", request_id: id });
@@ -21,7 +26,7 @@ const load = typescriptLoader({}, { fetch: async (input, init) => {
 } });
 try {
   const { falEndpoints } = load("lib/video-ai/config.ts"), provider = load("lib/video-ai/providers/fal.ts");
-  const scene = { provider: "fal", model: falEndpoints.text, operation: "text_to_video", prompt: "Synthetic cyan cube", duration_seconds: 6, resolution: "720p", pricing_snapshot: { aspectRatio: "16:9", numFrames: 97 }, provider_task_id: id };
+  const scene = { id: '00000000-0000-4000-8000-000000000001', job_id: '00000000-0000-4000-8000-000000000002', provider: "fal", model: falEndpoints.text, operation: "text_to_video", prompt: "Synthetic cyan cube", duration_seconds: 6, resolution: "720p", pricing_snapshot: { aspectRatio: "16:9", numFrames: 97 }, provider_task_id: id };
   check("text submits asynchronously with persisted-compatible ID", (await provider.generateScene(scene)).taskId === id && requests.length === 1);
   const first = requests[0], body = JSON.parse(first.init.body);
   check("central text endpoint and actual model schema", first.url.pathname.endsWith(falEndpoints.text) && body.duration === 6 && body.resolution === "720p" && body.generate_audio === false && body.fps === 25);
@@ -31,6 +36,7 @@ try {
   check("image operation passes short-lived input", JSON.parse(requests.at(-1).init.body).image_url === "https://owned.example/temporary");
   await provider.transformScene({ ...scene, model: falEndpoints.video, operation: "video_to_video" }, "https://owned.example/video");
   const transform = JSON.parse(requests.at(-1).init.body);
+  check("exact reviewed transform queue endpoint and POST", requests.at(-1).url.href === 'https://queue.fal.run/fal-ai/ltx-2.3-quality/reference-video-to-video' && requests.at(-1).init.method === 'POST');
   check("transform preserves intent with reviewed schema", transform.num_frames === 97 && transform.frames_per_second === 24 && transform.generate_audio === false && transform.prompt.includes("Preserve source movement"));
   mode = "running"; check("queued work never requests result early", (await provider.getTaskStatus(scene)).status === "RUNNING" && requests.at(-1).url.pathname.endsWith("/status"));
   mode = "success"; const result = await provider.getTaskStatus(scene);
@@ -43,6 +49,17 @@ try {
     await assert.rejects(provider.generateScene(scene), e => e.code === code && !e.message.includes("private"));
     check("one HTTP request for " + failure, requests.length === count + 1);
   }
+  for (const [failure, status, reason, format] of [['validation', 422, 'validation', 'json'], ['html', 403, 'access_denied', 'non_json'], ['oversize', 422, 'validation', 'too_large'], ['stalled', 401, 'authentication', 'unavailable'], ['payment', 403, 'payment_or_balance', 'json']]) {
+    mode = failure; const count = requests.length;
+    await assert.rejects(provider.generateScene(scene), e => e.code === 'PROVIDER_REJECTED');
+    const [event, detail] = diagnostics.at(-1);
+    check('safe server diagnostic for ' + failure, event === 'fal_http_rejected' && detail.httpStatus === status && detail.reason === reason && detail.bodyFormat === format && detail.operation === 'submit' && detail.jobId === scene.job_id && detail.sceneId === scene.id);
+    check('diagnostics never replay ' + failure, requests.length === count + 1);
+    if (failure === 'validation') check('validation includes only allowlisted fields and types', JSON.stringify(detail.validation) === JSON.stringify([{ field: 'body.num_frames', type: 'less_than_equal' }, { field: 'body.unknown', type: 'unknown' }]));
+    if (failure === 'stalled') check('stalled rejected response body is cancelled', requests.at(-1).cancelled);
+  }
+  check('no raw errors, keys, prompts or private URLs in diagnostics', !/private|fixture-only|Synthetic cyan cube|credential/.test(JSON.stringify(diagnostics)));
+  check('diagnostics do not attach provider detail to public errors', (await (async () => { try { await provider.generateScene(scene); } catch (e) { return JSON.stringify(e); } })()) === JSON.stringify({ code: 'PROVIDER_REJECTED', temporary: false, name: 'VisualError' }));
   mode = "success"; await assert.rejects(provider.generateScene({ ...scene, provider: "runway" }), e => e.code === "PROVIDER_INACTIVE"); check("legacy provider cannot enter active boundary", true);
   console.log(JSON.stringify({ passed: checks.length, checks, transport: "official fal SDK with fixture HTTP" }, null, 2));
 } finally { if (before === undefined) delete process.env.FAL_KEY; else process.env.FAL_KEY = before; }
