@@ -8,7 +8,7 @@ export function Footer() {
       <div className="sceenyk-container">
         <div className="flex flex-col justify-between gap-8 sm:flex-row sm:items-center">
           <div>
-            <Brand />
+            <Brand variant="full" />
             <p className="mt-2 text-body-sm text-muted-foreground">
               Create the scene you imagine.
             </p>

@@ -5,6 +5,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { DashboardUserButton } from "@/components/auth/account-controls";
 import { DashboardMobileNavigation } from "./dashboard-sidebar";
 import { CreditBalance } from "@/components/payments/credit-balance";
+import { Brand } from "@/components/brand";
 
 export function DashboardHeader({
   title = "Dashboard",
@@ -18,6 +19,7 @@ export function DashboardHeader({
       <div className="sceenyk-container flex min-h-20 flex-wrap items-center justify-between gap-2 py-3 sm:gap-4">
         <div className="flex min-w-0 items-center gap-2 sm:gap-3">
           <DashboardMobileNavigation />
+          <span className="lg:hidden"><Brand variant="compact" /></span>
           <div className="min-w-0">
             <p className="truncate text-body-sm font-semibold sm:text-body">{title}</p>
             <p className="mt-1 hidden text-caption text-muted-foreground sm:block">

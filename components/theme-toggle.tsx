@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { themeStorageKey } from "@/lib/theme";
+import { syncBrandFavicon, themeStorageKey } from "@/lib/theme";
 
 export function ThemeController() {
   useEffect(() => {
@@ -15,10 +15,9 @@ export function ThemeController() {
       } catch {
         // Storage may be blocked; the system preference still works.
       }
-      document.documentElement.classList.toggle(
-        "dark",
-        saved === "dark" || (saved !== "light" && system.matches),
-      );
+      const dark = saved === "dark" || (saved !== "light" && system.matches);
+      document.documentElement.classList.toggle("dark", dark);
+      syncBrandFavicon(dark);
     }
     function syncStorage(event: StorageEvent) {
       if (event.key === themeStorageKey || event.key === null)
@@ -39,6 +38,7 @@ export function ThemeToggle() {
   function toggleTheme() {
     const dark = !document.documentElement.classList.contains("dark");
     document.documentElement.classList.toggle("dark", dark);
+    syncBrandFavicon(dark);
     try {
       localStorage.setItem(themeStorageKey, dark ? "dark" : "light");
     } catch {

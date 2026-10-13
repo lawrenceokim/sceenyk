@@ -5,6 +5,7 @@ import { ThemeController } from "@/components/theme-toggle";
 import { themeInitScript } from "@/lib/theme";
 import { Suspense } from "react";
 import { AuthProvider } from "@/components/auth/auth-provider";
+import { brandFaviconId, lightBrandIcon } from "@/lib/brand-assets";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -17,10 +18,24 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://sceenyk.vercel.app"),
   title: "Sceenyk — Create the scene you imagine",
   description:
     "Turn ideas, videos, and product images into finished content. One connected creative flow for scenes, stories, and everything you imagine.",
-  icons: { icon: "/brand-mark.svg" },
+  applicationName: "Sceenyk",
+  icons: { apple: { url: lightBrandIcon, type: "image/png" } },
+  openGraph: {
+    type: "website",
+    siteName: "Sceenyk",
+    title: "Sceenyk — Create the scene you imagine",
+    description: "Turn ideas and media into video content in one creative flow.",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Sceenyk — Create the scene you imagine",
+    description: "Turn ideas and media into video content in one creative flow.",
+    images: ["/opengraph-image"],
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
@@ -31,6 +46,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${inter.variable} ${geistMono.variable} h-full antialiased`}
     >
       <head>
+        <link id={brandFaviconId} rel="icon" type="image/png" href={lightBrandIcon} />
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
       <body className="min-h-full flex flex-col">

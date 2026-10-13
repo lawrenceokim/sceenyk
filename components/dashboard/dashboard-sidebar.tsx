@@ -84,7 +84,7 @@ export function DashboardSidebar() {
       className="fixed inset-y-0 left-0 z-40 hidden w-60 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground lg:flex"
     >
       <div className="px-5 pb-6 pt-5">
-        <Brand />
+        <Brand variant="full" />
         <p className="mt-1 text-caption text-muted-foreground">
           Your creative workspace
         </p>
@@ -126,7 +126,7 @@ export function DashboardMobileNavigation() {
         className="gap-0 overflow-y-auto bg-sidebar text-sidebar-foreground data-[side=left]:w-[min(20rem,calc(100%-1rem))]"
       >
         <div className="px-5 pb-6 pt-5 pr-16">
-          <Brand onNavigate={() => setOpen(false)} />
+          <Brand variant="full" onNavigate={() => setOpen(false)} />
         </div>
         <SheetTitle className="sr-only">Workspace navigation</SheetTitle>
         <SheetDescription className="sr-only">

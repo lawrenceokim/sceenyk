@@ -9,6 +9,8 @@ Both PNG files in `/designs` were inspected in full, including enlarged palette 
 - [Sceenyk Light Design System.png](../designs/Sceenyk%20Light%20Design%20System.png), 1311 × 1200 pixels.
 - [Sceenyk Dark Design System.png](../designs/Sceenyk%20Dark%20Design%20System.png), 1312 × 1199 pixels.
 
+The later approved production branding adds four unchanged transparent PNG assets: [`sceenyk logo lightmode.png`](../designs/sceenyk%20logo%20lightmode.png), [`sceenyk logo darkmode.png`](../designs/sceenyk%20logo%20darkmode.png), [`sceenyk small-logo lightmode.png`](../designs/sceenyk%20small-logo%20lightmode.png), and [`sceenyk small-logo darkmode.png`](../designs/sceenyk%20small-logo%20darkmode.png). The full art is 2172×724; the small art is 341×351 light and 339×370 dark. These files supersede the boards' preview wordmark/star mark for application branding. No separate metadata logo was supplied.
+
 Each board contains the same 21 numbered groups: brand/logo, colors, typography, iconography, buttons, inputs/forms, badges/tags, toggles/checkboxes, slider, desktop navbar, mobile navbar, sidebar, cards, media card, pricing card, alerts/notifications, modals, progress steps, video player, pagination, and empty state. Their positions and content largely match. The boards are component catalogs, not screenshots establishing production page dimensions.
 
 Evidence labels used throughout:
@@ -26,7 +28,7 @@ Evidence labels used throughout:
 
 The interface should feel like a creative video studio: bold headings, compact labels, generous whitespace, clear rectangular controls with rounded corners, and restrained neon accents. Purple communicates creation, selection, and primary actions. Blue/cyan communicates media, discovery, and information. Color should emphasize useful hierarchy rather than decorate every surface.
 
-**Approximate:** the large wordmark uses a heavier rounded sans than body text. The boards show black text on white, white text on purple, and white text on near-black. Preserve the star/circle relationship and clear space around the mark. **Needs confirmation:** production vector logo, exact wordmark font, minimum logo size, and exclusion-zone measurements. Do not recreate the full logo with an arbitrary UI font and call it final artwork.
+**Historical board interpretation:** the board's preview wordmark used a heavier rounded sans and a star/circle mark. The later official PNGs above are now the exact brand artwork: dark lettering/mark on light backgrounds and white lettering/mark on dark backgrounds, with a compact S-shaped mark for narrow layouts. Preserve the supplied proportions and transparent clear space. **Needs confirmation:** vector source, minimum logo size, and formal exclusion-zone measurements. Do not recreate the full logo with an arbitrary UI font.
 
 ## Light and dark themes
 
@@ -315,7 +317,7 @@ Other shared classes/utilities: `.sceenyk-feature-card`, `.sceenyk-interactive`,
 
 Implemented: shared tokens/type/spacing/radii/effects, Inter, Button/Dialog/Sheet, landing/public/dashboard shells, themes, EmptyState and creation controls. Draft persistence adds explicit title/save states, a shared private reopen workspace and metadata-only project cards in source. Hosted migration acceptance is pending in the tracker. No palette change or generated thumbnail/result was introduced.
 
-**Inferred public-page composition (2026-10-09):** sticky 80px navigation, links collapsing below 1024px into an accessible disclosure, a split scene-board hero, six static category cards, three explanatory steps, connected-production value section, three concept-media cards, free/paid pricing preview, and final CTA. Section spacing scales from 48px to 96px; desktop hero uses the existing 56px type token and mobile uses 40px. Local artwork is original vector illustration with purple/blue/cyan and existing dark neutral variables. It is labeled concept artwork and has no fake playback or generation state. The exported star/circle favicon uses fixed equivalents of the primary/white tokens because an external SVG cannot inherit page CSS variables. The wordmark and mark are preview branding, not final approved production artwork. Added `neutral-950` is only a Tailwind alias of the existing neutral variable; no palette values changed.
+**Inferred public-page composition (2026-10-09):** sticky 80px navigation, links collapsing below 1024px into an accessible disclosure, a split scene-board hero, six static category cards, three explanatory steps, connected-production value section, three concept-media cards, free/paid pricing preview, and final CTA. Section spacing scales from 48px to 96px; desktop hero uses the existing 56px type token and mobile uses 40px. Local artwork is original vector illustration with purple/blue/cyan and existing dark neutral variables. It is labeled concept artwork and has no fake playback or generation state. The old star/circle favicon and text wordmark were preview branding and are superseded by the official PNGs above. Added `neutral-950` is only a Tailwind alias of the existing neutral variable; no palette values changed.
 
 **Inferred creation composition (2026-10-09):** the boards guide component styling, not a complete workspace wireframe. `/create` uses a 1.5:1 inputs/preview grid at 1024px and above; cards have 20–24px padding and 24–32px gaps. Single-choice category tiles use semantic purple selection/focus, with native radios for keyboard behavior. Prompt/settings reuse field tokens; the local dropzone reuses upload tokens. Output remains empty and source media has a separate labeled card. Browser-native video/audio controls apply only to selected local media, never concept art or generated output. All colors/effects reuse existing tokens; no new palette or production option contract was introduced. Both themes were checked at 1440/1024/768/390/320px, including long filenames at 320px.
 
@@ -325,7 +327,7 @@ Implemented: shared tokens/type/spacing/radii/effects, Inter, Button/Dialog/Shee
 
 Still to implement or confirm:
 
-- Production vector logo and any licensed General Sans font assets; Inter is the authorized board alternative currently used.
+- Production vector source and any licensed General Sans font assets; the supplied PNGs are the current official logo, and Inter remains the authorized board alternative for UI text.
 - Ambiguous blue/neutral/dark-gradient source labels; a vector design source could settle exact values.
 - Owned draft screens/data source is implemented; hosted migration acceptance is pending. Generation results and remaining controls remain future units.
 - Final tab pattern, sidebar dimensions, mobile navigation, touch sizing, overlay behavior, and page breakpoints through real content/viewport review.
