@@ -1,5 +1,15 @@
 # Architecture Context
 
+## PayPal Sandbox one-time purchases — authorized boundary (2026-10-13)
+
+`lib/payments/paypal/` owns Sandbox OAuth and Orders v2 REST calls; `lib/payments/` owns authoritative temporary demo packs and purchase/accounting orchestration. Checkout uses PayPal's hosted approval redirect, so no browser SDK or public client ID is required. All credentials remain server-only. `PAYPAL_ENVIRONMENT` must explicitly equal `sandbox`; the REST origin is fixed to Sandbox and Live configuration is rejected. Return URLs come from a validated server configuration, never browser input.
+
+Persist a pending purchase before the external create request, with immutable pack/price/currency/credits snapshots and stable create/capture request IDs, allowing lost-response recovery. Authenticated browser mutations accept only a pack ID or existing order ID. Ownership is checked before any capture. Verified order identity, purchase reference, amount/currency and completed final capture precede one transactional database fulfilment. Migration 017 extends the existing immutable credit ledger with purchase references; it does not replace accounting or alter free allowance/reservations.
+
+Official PayPal postback signature verification authenticates webhooks before processing. Approved-order and completed-capture events reload authoritative PayPal order state and use the same idempotent completion path. Failed processing returns non-2xx for PayPal retry. Owned on-demand reconciliation recovers interrupted browser completion. Unique order/capture/purchase-ledger references and account/purchase locks arbitrate duplicates and concurrent requests. Cancellation is a checkout state, never evidence of payment failure or grounds to erase a verified capture. Refunds/subscriptions/Live remain outside this unit.
+
+The final-render unit remains **In Progress**. Render Free 512 MB RAM is insufficient for hosted Remotion/FFmpeg final rendering; hosted acceptance is intentionally deferred until the Render plan is upgraded. This payment unit performs no hosted final render.
+
 ## Final renderer unit — authorized implementation in progress (2026-10-12)
 
 The current renderer brief authorizes the next boundary beyond completed composition: ready immutable composition → one persistent render job → authenticated external Remotion/FFmpeg execution → canonical private R2 MP4 → independently probed persisted-object receipt → Inngest finalization → existing exactly-once accounting settlement. It supersedes historical final-rendering exclusions below. No captions, music, effects, thumbnails or payments are included.
@@ -139,7 +149,7 @@ The public UI foundation includes landing/themes and verified Clerk/application 
 | Video processing — source preparation implemented | FFmpeg/FFprobe | Owned source extraction, conservative fit/pad/rotation and visual-only normalization through the separate Node worker. Static development binaries are installed/tested; production uses configured binaries. Final processing/rendering remains planned. |
 | Background workflow — Deployed Gemini acceptance verified | Inngest SDK 4.23.0; official test engine 1.0.0 | Actual Vercel/Cloud events and authoritative claims reach private R2/Gemini and persist validated plans. Browser independence, bounded retry, duplicates without provider replay, ready-state persistence and terminal restoration pass. Four workflow retries and minute reconciliation remain. |
 | Heavy processing — preparation deployment/security Complete within short acceptance | Render + Docker | Existing FFmpeg worker, persistent atomic HMAC nonce protection, health/drain and actual Render Free/private preparation/fal output pass. Final rendering remains planned. |
-| Payments — Planned | PayPal | Hackathon credit purchases first; subscriptions, marketplace purchases, and eventual creator payouts are later capabilities. No checkout/webhook/service implementation exists. |
+| Payments — implemented, real acceptance pending | PayPal Sandbox Orders v2 REST | One-time demo credit purchases, verified capture, immutable ledger, authenticated webhooks and owned reconciliation. Live, subscriptions, marketplace and payouts excluded. |
 | Deployment — Vercel/Inngest Cloud/Render preparation/security verified | Vercel for Next.js; Render for media preparation | `https://sceenyk.vercel.app` uses the stable `/api/inngest` Cloud endpoint and dedicated `https://sceenyk-media-worker.onrender.com`. Real private input/preparation/fal/output and deployed nonce/replay/concurrency acceptance pass. |
 
 Installed versions above were checked with `npm ls --depth=0`; its extraneous platform/WASM packages are not product integrations. `.gitignore` mentioning `.vercel` and the starter page linking Vercel are not evidence of deployment.
@@ -341,7 +351,9 @@ The server determines entitlement and trusted credit cost. The central pricing s
 
 Atomic admission locks the user's account and commits job + reservation together before durable dispatch. Stable project/request UUID and immutable snapshot return the same job without another hold. Constraints prevent negative balances or free reserved+consumed exceeding two. Dispatch and claims require reservation. Terminal failures atomically release exactly once; recoverable send outages retain holds for cron recovery. Completion requires a claim-bound verified private R2 video receipt in `generation_result_receipts`, job completion and reservation consumption in one transaction. The server-only adapter verifies canonical storage key, size/MIME/signature/ETag; future renderers must validate usable output and publish immutably first. No current worker produces output or consumes a success. Browser roles have no accounting access; service_role can read tables and execute restricted RPCs but cannot directly write balances/history. Historical jobs are marked unaccounted and never retrocharged.
 
-### PayPal verification — Planned
+### PayPal verification — implemented, real Sandbox acceptance pending
+
+See [payments.md](payments.md) and the current boundary above for actual configuration, migration 017, temporary packs and verification status. Existing generation accounting is extended with purchase entries; no production pricing or Live switch is introduced.
 
 The browser initiates checkout through the server-defined payment contract. PayPal success must be verified on the server against the intended payment/user, amount/currency, and final status; browser success alone grants nothing. Verify webhook authenticity before processing.
 
@@ -428,7 +440,7 @@ UI, real Clerk development flows and real Supabase identity verification are rec
 
 ### Planned
 
-- Later PayPal verification and ledger-backed credit purchases remain unstarted and depend on approved commercial rules. Deployed owned-project acceptance is complete.
+- PayPal Sandbox one-time purchases are implemented; real buyer/capture/webhook acceptance remains pending. Production pricing, Live, subscriptions and payouts remain separate. Deployed owned-project acceptance is complete.
 - Separately scope provider stages, heavy rendering and stable generated-result delivery. Deployed Inngest delivery/claim, duplicates, recovery and browser persistence are verified; accounting admission/restoration is integrated, without production output.
 - Vercel/Inngest Cloud, Gemini, private R2, fal, Render Free preparation, one short ElevenLabs narration and a ready composition have scoped real evidence above. Assembly/rendering, final results, subscriptions and marketplace remain later units.
 

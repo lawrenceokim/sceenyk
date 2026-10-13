@@ -95,7 +95,7 @@ export default async function DashboardPage({
       </div>
       <p className="pb-2 text-caption leading-relaxed text-muted-foreground">
         Your creative briefs and generation requests are saved privately.
-        Video production, templates and paid access are coming later.
+        Buy test credits through PayPal Sandbox. Templates are coming later.
       </p>
     </>
   );

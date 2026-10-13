@@ -3,6 +3,14 @@ import { ensureAppUser } from "@/lib/auth/ensure-app-user";
 import { createDatabaseClient } from "@/lib/db/server";
 import type { FreeAllowance } from "./types";
 
+export async function getPaidCreditBalance() {
+  const user = await ensureAppUser();
+  const { data, error } = await createDatabaseClient().from("generation_accounts")
+    .select("credit_available").eq("owner_user_id", user.id).single();
+  if (error || !data) throw new Error("CREDIT_BALANCE_UNAVAILABLE");
+  return data.credit_available;
+}
+
 export async function getFreeAllowance(): Promise<FreeAllowance> {
   const user = await ensureAppUser();
   const { data, error } = await createDatabaseClient()

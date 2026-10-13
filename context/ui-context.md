@@ -1,5 +1,9 @@
 # UI Context
 
+## Sandbox credits extension (2026-10-13)
+
+Protected `/dashboard/credits` uses the existing dashboard shell and shared card/button/status tokens, with responsive one/three-column demo packs, explicit test-only amounts, hosted PayPal approval, processing/success/cancellation/error messages, actual paid available/reserved balances and recent owned purchases. The sidebar, dashboard allowance card and insufficient-generation quote link to Buy credits. Clerk account changes unmount private client state. Page load/activation and Check purchases recover owned pending payments; refreshed balances come from the server. No subscription UI, production price or theme token is introduced. Real payment acceptance is tracked separately.
+
 Quick reference for building Sceenyk UI. Use [design-system.md](design-system.md) for detailed component/evidence guidance and [overview.md](overview.md) for product scope. The light and dark PNGs in [`/designs`](../designs/) are the visual references; [`app/globals.css`](../app/globals.css) owns the implemented tokens. Values below describe current CSS, not new palette proposals.
 
 ## Theme

@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "test:payments": "node scripts/check-payments.mjs",
     "build:renderer": "node scripts/build-renderer.mjs",
     "test:renderer": "node scripts/check-final-render.mjs && node --conditions=react-server --import=tsx scripts/check-renderer-media.ts",
     "test:composition": "node scripts/check-composition.mjs",

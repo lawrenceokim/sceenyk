@@ -31,7 +31,7 @@ const destinations = [
   { label: "Projects", icon: FolderOpen, href: "/dashboard#projects" },
   { label: "Templates", icon: Layers3, href: "/dashboard#templates" },
   { label: "Marketplace", icon: Store },
-  { label: "Credits", icon: Coins, href: "/dashboard#credits" },
+  { label: "Credits", icon: Coins, href: "/dashboard/credits" },
   { label: "Settings", icon: Settings2 },
 ] as const;
 

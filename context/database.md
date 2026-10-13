@@ -1,5 +1,9 @@
 # Development application identity
 
+## PayPal Sandbox extension — migration 017 (application/real acceptance pending)
+
+Adds private `credit_purchases`, immutable purchase snapshots, unique PayPal order/capture/request IDs and guarded service-only preparation/attachment/state/fulfilment RPCs. Extends the existing immutable `credit_ledger` with purchase/order/capture references and a purchase movement variant while retaining generation foreign keys/checks/history. Account + ledger + purchase completion commit atomically. Browser access and direct service-role writes remain denied. Free usage/reservations and migrations 001–016 are preserved. See [payments.md](payments.md) for configuration, lifecycle and acceptance prerequisites.
+
 ## Final rendering extension — migration016 (implemented, hosted application pending)
 
 [016](../supabase/migrations/20261012001600_final_rendering.sql) adds one `render_jobs` row per immutable composition/generation, with owned composite foreign keys, version/digest, centralized lifecycle, attempts and fenced expiring lease. Immutable `final_video_assets` stores canonical private key, ETag, SHA256, MIME/bytes, measured duration/encoding/shape and safe timing/Node RSS metrics. Browser roles have no privileges or RLS policies; service can SELECT and execute guarded RPCs, but cannot directly mutate either table. `ensure_render_job` requires a ready issue-free owned composition and original held reservation. Claim/heartbeat/release/complete/fail RPCs enforce current lease; a verified asset prevents subsequent restoration. The old MIME-only completion function is revoked behind a new verified-asset guard. `finalize_render_generation` reuses the original worker identity and existing atomic receipt/accounting path. All001–016 apply locally; hosted016 is still pending. No previously applied migration is edited.

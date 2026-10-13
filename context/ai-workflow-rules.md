@@ -1,5 +1,7 @@
 # AI Workflow Rules
 
+**Current authorization (2026-10-13): PayPal Sandbox one-time purchases.** Implement and verify only the flow in [payments.md](payments.md). Final rendering remains In Progress because Render Free 512 MB RAM is insufficient; hosted acceptance is intentionally deferred until a separately authorized Render plan upgrade. Do not attempt another hosted final render in the payment unit. Historical renderer/provider exclusions and next-unit recommendations below describe prior authorizations.
+
 These rules guide incremental Sceenyk development from the hackathon MVP toward a production application. Apply them within the current task's authorized scope.
 
 ## Approach

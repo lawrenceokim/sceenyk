@@ -63,6 +63,7 @@ export type AssetRow = {
 export type Database = {
   public: {
     Tables: {
+      credit_purchases: { Row: import("@/lib/payments/types").PurchaseRow; Insert: never; Update: never; Relationships: [] };
       render_jobs: { Row: import("@/lib/final-render/contract").RenderJob; Insert: never; Update: never; Relationships: [] };
       final_video_assets: { Row: import("@/lib/final-render/contract").FinalVideoAsset; Insert: never; Update: never; Relationships: [] };
       composition_plans: { Row: import("@/lib/composition/contract").CompositionRow; Insert: never; Update: never; Relationships: [] };
@@ -145,10 +146,13 @@ export type Database = {
         Row: {
           id: string;
           owner_user_id: string;
-          job_id: string;
+          job_id: string | null;
+          purchase_id: string | null;
+          paypal_order_id: string | null;
+          paypal_capture_id: string | null;
           amount: number;
-          type: "reservation" | "consumption" | "release";
-          direction: "hold" | "debit" | "restore";
+          type: "reservation" | "consumption" | "release" | "purchase";
+          direction: "hold" | "debit" | "restore" | "credit";
           available_delta: number;
           reserved_delta: number;
           reason: string;
@@ -218,6 +222,10 @@ export type Database = {
     };
     Views: Record<string, never>;
     Functions: {
+      prepare_credit_purchase: { Args: { p_owner_user_id: string; p_pack_id: string; p_pack_name: string; p_amount_minor: number; p_currency: string; p_credits: number }; Returns: import("@/lib/payments/types").PurchaseRow };
+      attach_paypal_order: { Args: { p_purchase_id: string; p_owner_user_id: string; p_order_id: string }; Returns: boolean };
+      set_credit_purchase_state: { Args: { p_owner_user_id: string; p_order_id: string; p_status: string }; Returns: boolean };
+      fulfil_paypal_purchase: { Args: { p_owner_user_id: string; p_order_id: string; p_capture_id: string; p_amount_minor: number; p_currency: string }; Returns: boolean };
       ensure_render_job: { Args: { p_job_id: string }; Returns: string | null };
       claim_render_job: { Args: { p_render_id: string; p_lease_id: string }; Returns: string };
       advance_render_job: { Args: { p_render_id: string; p_lease_id: string; p_status: string }; Returns: boolean };

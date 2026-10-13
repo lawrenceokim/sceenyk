@@ -93,7 +93,7 @@ function AllowanceRead({ signedIn = false, refreshKey = "" }: AllowanceProps) {
         2 lifetime free video generations, up to 10 seconds each. Failed
         generations restore the reserved allowance.
       </p>
-      <p>Paid access for additional or longer generations is coming later.</p>
+      <p>Sandbox credit purchases are available. Paid generations require configured credit rates.</p>
       {signedIn && error && (
         <>
           <p role="alert" className="text-destructive">{error}</p>

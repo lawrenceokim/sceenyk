@@ -60,7 +60,7 @@ Authentication is required for generation, project management, credit purchases,
 
 Every user receives **2 lifetime free video generations, each limited to 10 seconds**. Free generations are separate entitlements, not paid credits. Eligibility requires authentication, duration at most 10 seconds, and remaining allowance. Reservation precedes execution; a verified stored result consumes it and a Sceenyk failure without a usable result restores it once. Additional/longer generations require paid credits once trusted pricing and paid access exist. Subscription pricing, credit-pack pricing, credits by type/duration, and the provider-cost-to-credit formula remain unresolved. See [accounting.md](accounting.md) and [pricing.md](pricing.md).
 
-Future hackathon purchases use PayPal Sandbox only; Live is prohibited during development and requires an intentional later configuration switch. Purchases are not implemented in the commercial-cost unit. The broader monetization direction includes subscriptions, credit purchases, marketplace purchases, and creator payouts; the full economy is a later phase.
+Hackathon purchases use PayPal Sandbox only; Live is prohibited during development. The one-time purchase implementation and explicitly temporary demo packs are described in [payments.md](payments.md); real Sandbox acceptance is tracked separately. Production pricing remains unresolved. Subscriptions, marketplace purchases and creator payouts remain later phases.
 
 ### Creator Templates and Marketplace
 

@@ -8,7 +8,7 @@ export function DashboardStatCard({
 }: {
   icon: ReactNode;
   label: string;
-  value: string;
+  value: ReactNode;
   description: string;
 }) {
   return (

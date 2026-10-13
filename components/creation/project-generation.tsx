@@ -1,5 +1,6 @@
 "use client";
 import { useId } from "react";
+import Link from "next/link";
 import { Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AccountAction } from "@/components/account-action";
@@ -137,7 +138,7 @@ export function ProjectGeneration({
           <div className="flex flex-wrap gap-2">
             <Button type="button" variant="outline" disabled={disabled} onClick={() => void state.reviewCost()}>Update quote</Button>
             {state.quote.status !== "ready" && (
-              <Button type="button" variant="outline" disabled>Buy credits — coming soon</Button>
+              <Button nativeButton={false} variant="outline" render={<Link href="/dashboard/credits" />}>Buy credits</Button>
             )}
           </div>
         </div>
