@@ -12,6 +12,7 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "workers/final-render/bundle/**",
+    "workers/final-render/runtime/**",
     "next-env.d.ts",
   ]),
 ]);

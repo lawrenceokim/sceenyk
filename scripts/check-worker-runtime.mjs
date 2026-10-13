@@ -22,7 +22,8 @@ const env = {
   R2_ACCOUNT_ID: 'a'.repeat(32), R2_ACCESS_KEY_ID: 'fixture', R2_SECRET_ACCESS_KEY: 'fixture', R2_BUCKET_NAME: 'worker-fixture',
   FFMPEG_PATH: require('ffmpeg-static'), FFPROBE_PATH: require('ffprobe-static').path,
 };
-const child = spawn(process.execPath, ['--conditions=react-server', '--import=tsx', 'scripts/media-preparation-worker.ts'], { env, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });
+const compiled=process.argv.includes('--compiled');
+const child = spawn(process.execPath, compiled?['--conditions=react-server','workers/final-render/runtime/media-worker.cjs']:['--conditions=react-server', '--import=tsx', 'scripts/media-preparation-worker.ts'], { env, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });
 let ready = false;
 child.stdout.on('data', value => { if (String(value).includes('media_preparation_worker_ready')) ready = true; });
 child.stderr.on('data', () => {});
@@ -34,7 +35,7 @@ try {
   assert.deepEqual(await health.json(), { ok: true });
   const rejected = await fetch(`http://127.0.0.1:${port}/prepare`, { method: 'POST' });
   assert.equal(rejected.status, 401); await rejected.body?.cancel();
-  console.log(JSON.stringify({ passed: 3, checks: ['production entry point validates installed FFmpeg/FFprobe', 'Render PORT takes precedence and health is safe', 'production entry point rejects unsigned processing'], scope: 'native production-mode worker; fake credentials; no hosted requests; not Docker' }, null, 2));
+  console.log(JSON.stringify({ passed: 3, compiled, checks: ['production entry point validates installed FFmpeg/FFprobe', 'Render PORT takes precedence and health is safe', 'production entry point rejects unsigned processing'], scope: 'native production-mode worker; fake credentials; no hosted requests; not Docker' }, null, 2));
 } finally {
   child.kill();
   if (child.exitCode === null) await once(child, 'exit');

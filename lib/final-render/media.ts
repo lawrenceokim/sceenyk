@@ -31,18 +31,18 @@ export async function fileSha256(file: string) {
 export async function muxNarration(directory:string,files:Map<string,string>,plan:CompositionPlan){
   // The persisted absolute millisecond placements are used verbatim at 48kHz.
   // This avoids clipping speech at video-frame quantization boundaries.
-  const args=["-hide_banner","-loglevel","error","-nostdin","-y","-protocol_whitelist","file,pipe","-i",path.join(directory,"visual.mp4")];
+  const args=["-hide_banner","-loglevel","error","-nostdin","-y","-filter_threads","1","-filter_complex_threads","1","-threads","1","-protocol_whitelist","file,pipe","-i",path.join(directory,"visual.mp4")];
   const spoken=plan.scenes.flatMap(s=>s.narration?[s.narration]:[]),filters:string[]=[];
   const total=(plan.total_duration_ms/1000).toFixed(3);
   if(spoken.length){
     for(const [index,n]of spoken.entries()){
       const file=files.get(n.asset_id);if(!file)throw new RenderError("SOURCE_UNAVAILABLE");
-      args.push("-protocol_whitelist","file,pipe","-i",file);
+      args.push("-threads","1","-protocol_whitelist","file,pipe","-i",file);
       filters.push(`[${index+1}:a:0]aresample=${renderConfiguration.audioSampleRate},asetpts=PTS-STARTPTS,adelay=${n.start_ms*renderConfiguration.audioSampleRate/1000}S:all=1[a${index}]`);
     }
     filters.push(`${spoken.map((_,i)=>`[a${i}]`).join('')}amix=inputs=${spoken.length}:normalize=0:dropout_transition=0,apad,atrim=duration=${total}[audio]`);
   }else filters.push(`anullsrc=r=${renderConfiguration.audioSampleRate}:cl=stereo,atrim=duration=${total}[audio]`);
-  args.push("-filter_complex",filters.join(';'),"-map","0:v:0","-map","[audio]","-c:v","copy","-c:a",renderConfiguration.audioCodec,"-b:a",renderConfiguration.audioBitrate,"-ar",String(renderConfiguration.audioSampleRate),"-ac","2","-t",total,"-fs",String(renderConfiguration.maximumOutputBytes+1),"-movflags","+faststart",path.join(directory,"output.mp4"));
+  args.push("-filter_complex",filters.join(';'),"-map","0:v:0","-map","[audio]","-c:v","copy","-c:a",renderConfiguration.audioCodec,"-threads","1","-b:a",renderConfiguration.audioBitrate,"-ar",String(renderConfiguration.audioSampleRate),"-ac","2","-t",total,"-fs",String(renderConfiguration.maximumOutputBytes+1),"-movflags","+faststart",path.join(directory,"output.mp4"));
   try{await runMediaCommand("ffmpeg",args);}catch(error){throw new RenderError(error instanceof PreparationError&&error.code==="PROCESSOR_TIMEOUT"?"RENDER_TIMEOUT":"RENDER_FAILED");}
 }
 export async function validateFinalFile(file: string,plan: CompositionPlan) {
@@ -79,7 +79,7 @@ export async function serveLocalMedia(files: Map<string,string>) {
 }
 export function runRenderer(directory: string,signal:AbortSignal) {
   return new Promise<void>((resolve,reject)=>{
-    execFile(process.execPath,["--import=tsx","workers/final-render/render-child.ts",directory],{
+    execFile(process.execPath,["--max-old-space-size=128","workers/final-render/runtime/render-child.cjs",directory],{
       windowsHide:true,signal,timeout:renderConfiguration.processTimeoutMs,killSignal:"SIGTERM",maxBuffer:65536,
       env:{PATH:process.env.PATH,SystemRoot:process.env.SystemRoot,TEMP:process.env.TEMP,TMP:process.env.TMP,HOME:process.env.HOME,NODE_ENV:"production",REMOTION_BROWSER_EXECUTABLE:process.env.REMOTION_BROWSER_EXECUTABLE},
     },(error,_stdout,stderr)=>{if(!error){resolve();return;}reject(new RenderError(stderr.trim()==="RESOURCE_LIMIT"?"RESOURCE_LIMIT":error.killed?"RENDER_TIMEOUT":"RENDER_FAILED"));});

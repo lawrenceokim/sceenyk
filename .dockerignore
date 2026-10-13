@@ -14,3 +14,4 @@
 !workers/final-render/
 !workers/final-render/**
 workers/final-render/bundle/
+workers/final-render/runtime/

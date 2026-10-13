@@ -29,4 +29,4 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
     CMD node -e "fetch('http://127.0.0.1:'+(process.env.PORT||3012)+'/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"
 # Forward shutdown to Node only so its drain can finish active FFmpeg children.
 ENTRYPOINT ["/usr/bin/tini", "--"]
-CMD ["node", "--conditions=react-server", "--import=tsx", "scripts/media-preparation-worker.ts"]
+CMD ["node", "--conditions=react-server", "workers/final-render/runtime/media-worker.cjs"]

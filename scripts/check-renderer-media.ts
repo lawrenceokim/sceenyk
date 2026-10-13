@@ -38,6 +38,13 @@ try{
   check('silent scene stays silent despite native input video audio',await rms('7')<5);
   await assert.rejects(()=>validateFinalFile(file,{...plan,total_duration_ms:9000}),/DURATION_MISMATCH/);check('native receipt refuses wrong total duration',true);
   const invalid=path.join(directory,'invalid.mp4');await fs.writeFile(invalid,'invalid');await assert.rejects(()=>validateFinalFile(invalid,plan),/INVALID_OUTPUT/);check('native receipt refuses malformed bytes',true);
+  // Direct trusted metadata must still drive a non-default browser viewport.
+  const portrait=compositionPlanSchema.parse({...plan,aspect_ratio:'9:16',total_duration_ms:1000,scenes:[{...plan.scenes[0],end_ms:1000,duration_ms:1000,visual:{...plan.scenes[0].visual,input_end_ms:1000},narration:null}]});
+  const portraitDirectory=path.join(directory,'portrait');await fs.mkdir(portraitDirectory);
+  await fs.writeFile(path.join(portraitDirectory,'input.json'),JSON.stringify({plan:portrait,sources:server.sources}));
+  await runRenderer(portraitDirectory,AbortSignal.timeout(120000));await muxNarration(portraitDirectory,files,portrait);
+  const portraitOutput=await validateFinalFile(path.join(portraitDirectory,'output.mp4'),portrait);
+  check('trusted metadata drives portrait output with all-silent AAC',portraitOutput.width===360&&portraitOutput.height===640&&portraitOutput.durationMs===1000&&portraitOutput.audioCodec==='aac');
   console.log(JSON.stringify({checks:count,renderDurationMs:Date.now()-start,outputBytes:output.sizeBytes,dimensions:[output.width,output.height],fps:24,scope:'local native synthetic acceptance; hosted Render Free unverified'}));
 }catch(error){
   const probe=await runMediaCommand('ffprobe',['-v','error','-show_streams','-show_format','-of','json',path.join(directory,'output.mp4')]).then(value=>JSON.parse(value)).catch(()=>null);

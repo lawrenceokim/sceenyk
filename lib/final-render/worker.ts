@@ -9,6 +9,7 @@ import { compositionPlanSchema } from "@/lib/composition/contract";
 import { inspectR2Object, putR2FinalOutput } from "@/lib/storage/r2";
 import { renderRequestSchema, renderConfiguration, outputMetadataSchema, RenderError } from "./contract";
 import { downloadPrivateMedia, fileSha256, muxNarration, runRenderer, serveLocalMedia, validateFinalFile } from "./media";
+import { renderResources } from "./resources";
 
 const assetSchema=z.object({kind:z.enum(["scene_asset","prepared_segment","project_asset","narration_asset"]),id:z.uuid(),storage_key:z.string().min(1),verified_etag:z.string().min(1),size_bytes:z.number().int().positive().max(renderConfiguration.maximumInputBytes),mime_type:z.string()});
 const unavailable=()=>new RenderError("RENDER_UNAVAILABLE",true);
@@ -20,7 +21,10 @@ export async function executeRender(renderJobId: string,leaseId: string) {
   const abort=new AbortController();
   const advance=async(next:string)=>{const r=await db.rpc("advance_render_job",{...ref,p_status:next});if(r.error||!r.data)throw unavailable();stage=next;};
   const heartbeat=setInterval(()=>{void advance(stage).catch(()=>abort.abort());},20_000);
+  const sample=async()=>console.info(JSON.stringify({stage:"final_render_resources",renderStage:stage,...await renderResources()}));
+  const resourceTimer=setInterval(()=>{void sample();},10_000);
   try {
+    await sample();
     const r=await db.from("render_jobs").select("*").eq("id",renderJobId).eq("lease_id",leaseId).single();
     if(r.error||!r.data)throw unavailable();const job=r.data;attempt=job.worker_attempts;
     const c=await db.from("composition_plans").select("*").eq("job_id",job.composition_plan_id).eq("owner_user_id",job.owner_user_id).eq("project_id",job.project_id).single();
@@ -71,7 +75,7 @@ export async function executeRender(renderJobId: string,leaseId: string) {
       const failed=await db.rpc("fail_render_job",{...ref,p_error:error.code});if(failed.error)throw unavailable();
     }else{const released=await db.rpc("release_render_lease",ref);if(released.error)throw unavailable();}
   } finally {
-    clearInterval(heartbeat);abort.abort();await local?.close();
+    clearInterval(resourceTimer);clearInterval(heartbeat);abort.abort();await local?.close();
     if(directory){const safe=path.resolve(directory);if(path.dirname(safe)!==path.resolve(tmpdir())||!path.basename(safe).startsWith("sceenyk-final-render-"))throw new Error("UNSAFE_RENDER_CLEANUP");await fs.rm(safe,{recursive:true,force:true});}
   }
 }

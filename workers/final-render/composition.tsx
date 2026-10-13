@@ -3,9 +3,9 @@ import { AbsoluteFill, Audio, Composition, Img, OffthreadVideo, Sequence, regist
 import type { CompositionPlan } from "../../lib/composition/contract";
 import { renderConfiguration, renderShape } from "../../lib/final-render/contract";
 
-export type FinalRenderProps = { plan: CompositionPlan; sources: Record<string, string> };
+export type FinalRenderProps = { plan: CompositionPlan; sources: Record<string, string>; renderAudio?: boolean };
 export const frameAt = (ms: number) => Math.round(ms * renderConfiguration.fps / 1000);
-export function FinalVideo({ plan, sources }: FinalRenderProps) {
+export function FinalVideo({ plan, sources, renderAudio = true }: FinalRenderProps) {
   // Only the trusted worker supplies props. Shared boundary rounding preserves
   // scene adjacency; source audio is always muted, including fal native audio.
   return <AbsoluteFill style={{ backgroundColor: "black" }}>
@@ -19,7 +19,7 @@ export function FinalVideo({ plan, sources }: FinalRenderProps) {
           {visual.media_type === "image" ? <Img src={sources[visual.asset_id]} style={fit} /> :
             <OffthreadVideo src={sources[visual.asset_id]} trimBefore={frameAt(visual.input_start_ms)} durationInFrames={duration} muted style={fit} />}
         </Sequence>
-        {scene.narration && <Sequence from={frameAt(scene.narration.start_ms)} durationInFrames={frameAt(scene.narration.end_ms) - frameAt(scene.narration.start_ms)}>
+        {renderAudio && scene.narration && <Sequence from={frameAt(scene.narration.start_ms)} durationInFrames={frameAt(scene.narration.end_ms) - frameAt(scene.narration.start_ms)}>
           <Audio src={sources[scene.narration.asset_id]} volume={1} />
         </Sequence>}
       </React.Fragment>;

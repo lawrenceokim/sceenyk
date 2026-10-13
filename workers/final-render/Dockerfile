@@ -7,10 +7,11 @@ RUN npm ci --omit=dev --no-audit --no-fund && npm cache clean --force
 COPY tsconfig.json ./
 COPY lib ./lib
 COPY scripts/build-renderer.mjs ./scripts/build-renderer.mjs
+COPY scripts/media-preparation-worker.ts ./scripts/media-preparation-worker.ts
 COPY workers/final-render ./workers/final-render
 RUN node scripts/build-renderer.mjs && node -e "import('@remotion/renderer').then(m=>m.ensureBrowser({logLevel:'error'}))"
 ENV NODE_ENV=production FFMPEG_PATH=/usr/bin/ffmpeg FFPROBE_PATH=/usr/bin/ffprobe
 USER node
 EXPOSE 10000
 ENTRYPOINT ["/usr/bin/tini", "--"]
-CMD ["node", "--conditions=react-server", "--import=tsx", "workers/final-render/server.ts"]
+CMD ["node", "--conditions=react-server", "workers/final-render/runtime/render-server.cjs"]

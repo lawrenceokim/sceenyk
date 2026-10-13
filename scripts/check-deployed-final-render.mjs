@@ -20,7 +20,7 @@ const digest=value=>createHash('sha256').update(JSON.stringify(value)).digest('h
 const secrets=()=>['WORKER_SHARED_SECRET','ELEVENLABS_API_KEY','FAL_KEY','GEMINI_API_KEY','CLERK_SECRET_KEY','SUPABASE_SECRET_KEY','SUPABASE_SERVICE_ROLE_KEY','R2_SECRET_ACCESS_KEY','R2_ACCESS_KEY_ID','INNGEST_EVENT_KEY','INNGEST_SIGNING_KEY'].map(n=>process.env[n]).filter(Boolean);
 const one=async(table,id,column='id')=>{const r=await db.from(table).select('*').eq(column,id).single().abortSignal(AbortSignal.timeout(20000));assert.ok(!r.error&&r.data,'ROW_'+table);return r.data;};
 async function rows(table,column='job_id'){
-  const r=await db.from(table).select('*').eq(column,state.jobId).order('id').abortSignal(AbortSignal.timeout(20000));assert.ok(!r.error,'ROWS_'+table);return r.data;
+  const r=await db.from(table).select('*').eq(column,state.jobId).order(table==='generation_result_receipts'?'job_id':'id').abortSignal(AbortSignal.timeout(20000));assert.ok(!r.error,'ROWS_'+table);return r.data;
 }
 async function invariant(){
   return {composition:digest(await one('composition_plans',state.jobId,'job_id')),plan:digest(await one('generation_plans',state.jobId,'job_id')),scenes:digest(await rows('scene_executions')),narration:digest(await rows('narration_segments')),audio:digest(await rows('narration_assets')),visuals:digest(await rows('scene_assets'))};
@@ -50,11 +50,56 @@ async function sync(){
   state.cloudFunctionCount=(await cloud('/v2/apps')).find(a=>a.id==='sceenyk')?.functionCount;
   check('existing Cloud app registers all nine functions',state.cloudFunctionCount===9);
 }
+async function launch(){
+  assert.ok(state.migrationApplied&&state.deployedFunctionCount===9&&state.cloudFunctionCount===9,'DEPLOYED_RENDERER_REQUIRED');
+  const p=await one('composition_plans',state.jobId,'job_id');
+  assert.ok(p.status==='ready'&&p.plan.total_duration_ms===10000,'EXISTING_READY_TEN_SECOND_PLAN_ONLY');
+  await unchanged();
+  if(!state.initialEventId){
+    const {Inngest}=await import('inngest'),client=new Inngest({id:'sceenyk',isDev:false,eventKey:process.env.INNGEST_EVENT_KEY});
+    const sent=await client.send({id:state.jobId+':final-acceptance-'+randomUUID(),name:'sceenyk/generation.render.requested',data:{generationJobId:state.jobId}});
+    state.initialEventId=sent.ids[0];state.launchedAt=new Date().toISOString();save();
+  }
+  console.log(JSON.stringify({renderEventId:state.initialEventId,existingGenerationId:state.jobId,newGenerationAdmissions:0,providerRequests:0}));
+}
+async function cloudProof(){
+  assert.ok(state.initialEventId,'TRACEABLE_INITIAL_EVENT_REQUIRED');
+  const runs=await cloud('/v2/events/'+state.initialEventId+'/runs?includeOutput=true');
+  for(const run of runs){
+    const detail=await cloud('/v2/runs/'+run.id+'?includeOutput=true');
+    const output=typeof detail.output==='string'?(detail.output?JSON.parse(detail.output):null):detail.output;
+    const trace=JSON.stringify(await cloud('/v2/runs/'+run.id+'/trace?includeOutput=true'));
+    check('initial renderer Cloud trace exposes no secrets keys or capabilities',!secrets().some(s=>trace.includes(s))&&!/storage_key|X-Amz-Signature|X-Amz-Credential|r2\.cloudflarestorage/.test(trace));
+    console.log(JSON.stringify({initialRunId:run.id,status:run.status,handoff:output?.handoff??null,createdRender:trace.includes('create-or-reuse-render-job'),polledRender:trace.includes('dispatch-inspect-render-'),finalizedVerifiedOutput:trace.includes('finalize-verified-output')}));
+    state.initialRunId=run.id;state.initialRunStatus=run.status;save();
+    if(run.status==='COMPLETED'&&output?.handoff==='render_failed')check('failed Cloud render never finalizes unverified output',!trace.includes('finalize-verified-output'));
+    else if(run.status==='COMPLETED')check('actual Inngest renderer reaches verified finalization',output?.handoff==='generation_completed'&&trace.includes('finalize-verified-output'));
+  }
+}
 async function monitor(){
   const job=await one('generation_jobs',state.jobId),hold=await one('generation_reservations',state.jobId,'job_id');
   const render=await db.from('render_jobs').select('*').eq('generation_job_id',state.jobId).maybeSingle();assert.ok(!render.error,'RENDER_SCHEMA_REQUIRED');
-  console.log(JSON.stringify({generationStatus:job.status,stage:job.current_stage,renderStatus:render.data?.status??null,workerAttempts:render.data?.worker_attempts??0,safeError:render.data?.error_code??null,startedAt:render.data?.started_at,completedAt:render.data?.completed_at,reservation:hold.state}));
+  const elapsedMs=render.data?.started_at?Date.now()-Date.parse(render.data.started_at):null,workerLeaseLive=!!render.data?.lease_expires_at&&Date.parse(render.data.lease_expires_at)>Date.now();
+  const progressAgeMs=render.data?.updated_at?Date.now()-Date.parse(render.data.updated_at):null;
+  console.log(JSON.stringify({generationStatus:job.status,stage:job.current_stage,renderStatus:render.data?.status??null,workerAttempts:render.data?.worker_attempts??0,safeError:render.data?.error_code??null,startedAt:render.data?.started_at,completedAt:render.data?.completed_at,elapsedMs,workerLeaseLive,progressAgeMs,reservation:hold.state}));
+  const assets=await rows('final_video_assets','generation_job_id'),receipts=await rows('generation_result_receipts');
+  state.observations??=[];state.observations.push({at:new Date().toISOString(),generationStatus:job.status,renderStatus:render.data?.status??null,attempts:render.data?.worker_attempts??0,elapsedMs,workerLeaseLive,reservation:hold.state,finalAssets:assets.length,receipts:receipts.length});save();
+  if(render.data&&['dispatched','rendering','uploading','verifying'].includes(render.data.status)&&assets.length===0)check('observed active hosted render holds reservation before verified output',job.status==='processing'&&hold.state==='reserved'&&receipts.length===0);
   if(render.data?.status==='failed'){state.hostedFailure={code:render.data.error_code,at:new Date().toISOString()};save();}
+}
+async function outputHead(){
+  const job=await one('generation_jobs',state.jobId),key=`users/${job.owner_user_id}/generations/${job.id}/result.mp4`;
+  const stored=await storage.inspectR2Object(key);
+  console.log(JSON.stringify({canonicalOutputExists:!!stored,sizeBytes:stored?.sizeBytes??null,mimeType:stored?.mimeType??null,generationStatus:job.status}));
+}
+async function failureProof(){
+  const job=await one('generation_jobs',state.jobId),render=await one('render_jobs',state.jobId,'generation_job_id'),hold=await one('generation_reservations',state.jobId,'job_id'),account=await one('generation_accounts',job.owner_user_id,'owner_user_id');
+  check('hosted failed render has no completed generation asset or receipt',job.status==='failed'&&render.status==='failed'&&!job.completed_at&&(await rows('final_video_assets','generation_job_id')).length===0&&(await rows('generation_result_receipts')).length===0);
+  check('hosted failure releases the original reservation',hold.state==='released'&&hold.kind===state.originalHold.kind&&hold.amount===state.originalHold.amount&&hold.created_at===state.originalHold.createdAt);
+  check('hosted failure restores account without consuming entitlement',account.free_consumed===state.originalAccount.freeConsumed&&account.free_reserved===state.originalAccount.freeReserved-(hold.kind==='free'?hold.amount:0)&&account.credit_reserved===state.originalAccount.creditReserved-(hold.kind==='credits'?hold.amount:0)&&account.credit_available===state.originalAccount.creditAvailable+(hold.kind==='credits'?hold.amount:0));
+  if(state.failedAccountingDigest)check('repeated failure observation preserves released accounting',state.failedAccountingDigest===digest({hold,account}));
+  state.failedAccountingDigest=digest({hold,account});state.hostedFailure={code:render.error_code,at:render.failed_at,platformReason:'User confirmed Render exceeded 512 MB RAM',attempts:render.worker_attempts};save();
+  await unchanged();await outputHead();
 }
 async function verify(){
   assert.ok(state.baseline,'PREFLIGHT_BASELINE_REQUIRED');
@@ -98,12 +143,16 @@ async function verify(){
     const played=await evaluate("(async()=>{const v=document.querySelector('video[aria-label=\"Final generated video\"]');v.muted=true;await v.play();return !v.paused;})()");check('actual browser video playback succeeds',played);
     await call('Page.reload',{ignoreCache:true});await wait("document.body.innerText.includes('Video ready')");check('refresh retains same final video',(await read()).data.video.id===asset.id);
     await navigate('/dashboard');await navigate(route);await wait("document.body.innerText.includes('Video ready')");check('project reopen retains same final video',(await read()).data.video.id===asset.id);
-    check('download capability uses fixed safe attachment name',owned.data.video.downloadUrl.includes('response-content-disposition'));
+    const download=await fetch(owned.data.video.downloadUrl,{headers:{Range:'bytes=0-1023'},signal:AbortSignal.timeout(30000)});
+    check('real private download returns MP4 with fixed attachment name',[200,206].includes(download.status)&&download.headers.get('content-type')==='video/mp4'&&download.headers.get('content-disposition')==='attachment; filename="sceenyk-video.mp4"');await download.body?.cancel();
+    await evaluate("Array.from(document.querySelectorAll('button')).find(b=>b.textContent.trim()==='Refresh video').click()");
+    await wait("document.querySelector('video[aria-label=\"Final generated video\"]')?.readyState>=1");
+    check('explicit video refresh renews owned playback for same output',(await read()).data.video.id===asset.id);
+    const injected=await evaluate(`fetch(${JSON.stringify(api+'&assetId='+asset.id)}).then(r=>r.status)`);check('owner browser cannot supply arbitrary output asset ID',injected===404);
     const html=await evaluate('document.documentElement.outerHTML');check('authenticated final HTML exposes no configured secrets',!secrets().some(s=>html.includes(s)));
     state.privateClientScripts=await evaluate("Array.from(new Set(performance.getEntriesByType('resource').map(r=>r.name).filter(n=>n.startsWith(location.origin+'/_next/static/')&&n.endsWith('.js')).map(n=>new URL(n).pathname)))");
     await signIn('B');const foreign=await read();check('real User B cannot access User A final',foreign.status===404&&!foreign.data.video);
     const write=await evaluate(`fetch(${JSON.stringify(api)},{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({completed:true,assetId:${JSON.stringify(asset.id)}})}).then(r=>r.status)`);check('browser cannot forge output receipt or completion',write===405);
-    const injected=await evaluate(`fetch(${JSON.stringify(api+'&assetId='+asset.id)}).then(r=>r.status)`);check('browser cannot supply arbitrary output asset ID',injected===404);
     check('final video browser reports no exceptions',errors.length===0);
   });
   await unchanged();state.renderDigest=digest(render);state.assetDigest=digest(asset);state.holdDigest=digest(hold);state.receiptDigest=digest(receipt);state.accountDigest=digest(account);state.renderId=render.id;state.verifiedAt=new Date().toISOString();save();
@@ -142,6 +191,6 @@ async function scan(){
   for(const file of scripts){const r=await fetch(origin+file,{signal:AbortSignal.timeout(30000)});assert.equal(r.status,200);const body=await r.text();if(secrets().some(s=>body.includes(s)))leaks++;if(/ensure_render_job|complete_render_job|finalize_render_generation|@remotion\/renderer|WORKER_SHARED_SECRET|SUPABASE_SECRET_KEY|R2_SECRET_ACCESS_KEY|INNGEST_SIGNING_KEY|ELEVENLABS_API_KEY|GEMINI_API_KEY|FAL_KEY|X-Amz-Signature|r2\.cloudflarestorage/.test(body))markers++;}
   check('deployed public and authenticated client secret scan passes',scripts.size>0&&leaks===0&&markers===0);state.secretScan={files:scripts.size,configuredSecrets:secrets().length,leaks,markers};save();
 }
-const modes={preflight,sync,monitor,verify,duplicate,'duplicate-proof':duplicateProof,worker,secrets:scan};
+const modes={preflight,sync,launch,monitor,'output-head':outputHead,'failure-proof':failureProof,'cloud-proof':cloudProof,verify,duplicate,'duplicate-proof':duplicateProof,worker,secrets:scan};
 try{assert.ok(modes[process.argv[2]],'MODE_REQUIRED');await modes[process.argv[2]]();}
 catch(error){console.error(JSON.stringify({code:'FINAL_ACCEPTANCE_FAILED',reason:error instanceof assert.AssertionError?error.message:'Safe acceptance operation failed.'}));process.exitCode=1;}
