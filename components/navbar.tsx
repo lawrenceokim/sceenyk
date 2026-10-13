@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 const navigation = [
   { label: "Features", href: "/#features" },
   { label: "How it works", href: "/#how-it-works" },
+  { label: "Marketplace", href: "/marketplace" },
   { label: "Pricing", href: "/#pricing" },
 ];
 

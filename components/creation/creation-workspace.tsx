@@ -16,6 +16,8 @@ import { PromptComposer } from "./prompt-composer";
 import { ProjectSaveControls, type SaveState } from "./project-save-controls";
 import { useProjectMedia } from "./use-project-media";
 import type { ProjectAsset } from "@/lib/media/types";
+import type { ProjectOrigin } from "@/lib/marketplace/contract";
+import Link from "next/link";
 import {
   creationCategories,
   getMediaKind,
@@ -31,6 +33,7 @@ type WorkspaceProps = {
   initialMediaError?: string;
   initialGeneration?: GenerationJob | null;
   initialGenerationError?: string;
+  initialOrigin?: ProjectOrigin | null;
 };
 
 function AccountWorkspace(props: WorkspaceProps) {
@@ -59,6 +62,7 @@ function AccountWorkspace(props: WorkspaceProps) {
       initialMediaError={props.initialMediaError}
       initialGeneration={props.initialGeneration}
       initialGenerationError={props.initialGenerationError}
+      initialOrigin={props.initialOrigin}
       signedIn={!!isSignedIn}
       authReady={isLoaded}
     />
@@ -80,6 +84,7 @@ function WorkspaceEditor({
   initialMediaError = "",
   initialGeneration = null,
   initialGenerationError = "",
+  initialOrigin = null,
   signedIn,
   authReady,
 }: {
@@ -88,6 +93,7 @@ function WorkspaceEditor({
   initialMediaError?: string;
   initialGeneration?: GenerationJob | null;
   initialGenerationError?: string;
+  initialOrigin?: ProjectOrigin | null;
   signedIn: boolean;
   authReady: boolean;
 }) {
@@ -245,6 +251,7 @@ function WorkspaceEditor({
   return (
     <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] lg:gap-8">
       <div className="min-w-0 space-y-6">
+        {initialOrigin && <section className="sceenyk-card space-y-2 p-5 text-body-sm" aria-label="Adopted template"><p className="font-semibold">Adopted from {initialOrigin.title}</p><p className="text-muted-foreground">This is your independent project. Customize the instructions and add your own media.</p><Link className="nav-link text-link" href={`/marketplace/${initialOrigin.listingId}`}>View template</Link></section>}
         <ProjectSaveControls
           title={title}
           onTitleChange={setTitle}

@@ -39,4 +39,10 @@ Development and hackathon payment testing uses **PayPal Sandbox only**. The impl
 - Model multipliers, provider-cost markup and conversion policy.
 - Creator marketplace prices, fees, revenue shares and payouts.
 
+## Marketplace price display and unresolved economics (approved product model, 2026-10-13)
+
+The creator's listing adoption price and Sceenyk's estimated generation credits are separate amounts and separate decisions. A free listing costs nothing to adopt, but using its template for AI generation still follows the ordinary two-lifetime-free/then-paid-credit quote contract. A paid listing may later add a creator adoption charge **plus** generation credits. Discovery/detail must label both costs; an estimate is not a server-issued generation quote and cannot authorize a job. Creator-set prices, currencies, payment entitlement and fee/revenue share require the later paid-purchase unit.
+
+No production Marketplace price, platform-fee percentage, settlement duration, payout threshold or conversion between money and AI credits is approved. Any future platform fee belongs in central server configuration. Production generation tariffs and credit-pack prices remain independently unresolved. The first Marketplace unit covers free/template adoption and does not change the existing pricing service or credit accounting.
+
 Remaining commercial work: measure full-pipeline costs and approve production pack prices and retail generation credit rules. Sandbox one-time purchases are already Complete within their recorded acceptance; monthly subscriptions are not a prerequisite or next commercial unit. Membership and auto-recharge remain optional future decisions. No new implementation begins here.

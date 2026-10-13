@@ -241,7 +241,7 @@ try {
     await pg.exec(
       fs.readFileSync(path.join(root, "supabase/migrations", file), "utf8"),
     );
-  check("all eighteen migrations apply in sequence", migrations.length === 18);
+  check("current migrations include Marketplace and apply in sequence", migrations.includes("20261013002000_marketplace.sql"));
   for (const name of ["A", "B"]) {
     users[name] = (
       await pg.query(

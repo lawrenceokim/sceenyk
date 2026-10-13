@@ -224,6 +224,14 @@ export type Database = {
     };
     Views: Record<string, never>;
     Functions: {
+      marketplace_browse: { Args: { p_query: string; p_category: string | null; p_page: number }; Returns: unknown };
+      marketplace_detail: { Args: { p_listing_id: string }; Returns: unknown };
+      marketplace_owned: { Args: { p_owner_user_id: string; p_page: number }; Returns: unknown };
+      marketplace_owned_listing: { Args: { p_owner_user_id: string; p_listing_id: string | null; p_project_id: string | null }; Returns: unknown };
+      marketplace_origin: { Args: { p_owner_user_id: string; p_project_id: string }; Returns: unknown };
+      marketplace_create: { Args: { p_owner_user_id: string; p_listing_id: string; p_project_id: string; p_title: string; p_description: string; p_category: string; p_tags: string[]; p_instructions: string; p_publish: boolean; p_rights_confirmed: boolean }; Returns: unknown };
+      marketplace_update: { Args: { p_owner_user_id: string; p_listing_id: string; p_title: string; p_description: string; p_category: string; p_tags: string[]; p_status: string; p_rights_confirmed: boolean }; Returns: unknown };
+      marketplace_adopt: { Args: { p_owner_user_id: string; p_listing_id: string; p_request_id: string }; Returns: unknown };
       caption_source: { Args: { p_job_id: string }; Returns: import("@/lib/captions/contract").CaptionSource | null };
       persist_caption_track: { Args: { p_job_id: string; p_track: import("@/lib/captions/contract").CaptionTrack }; Returns: string | null };
       set_caption_preference: { Args: { p_owner_user_id: string; p_job_id: string; p_project_id: string; p_enabled: boolean }; Returns: boolean };

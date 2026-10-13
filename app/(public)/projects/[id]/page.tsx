@@ -14,6 +14,8 @@ import {
   getLatestProjectGeneration,
 } from "@/lib/generation/server";
 import type { GenerationJob } from "@/lib/generation/types";
+import { getOwnedProjectOrigin, MarketplaceAccessError } from "@/lib/marketplace/server";
+import type { ProjectOrigin } from "@/lib/marketplace/contract";
 
 export const metadata: Metadata = {
   title: "Project draft — Sceenyk",
@@ -37,6 +39,12 @@ async function OwnedWorkspace({ params }: { params: Promise<{ id: string }> }) {
   // Missing and foreign projects are expected results. Keep the streamed
   // boundary/provider intact rather than interrupting it with a render error.
   if (!project) return <ProjectUnavailable />;
+  let origin: ProjectOrigin | null = null;
+  try { origin = await getOwnedProjectOrigin(project.id); }
+  catch (error) {
+    // Existing projects remain usable if the new migration is not deployed yet.
+    if (!(error instanceof MarketplaceAccessError || error instanceof AppUserSyncError)) throw error;
+  }
   let assets: ProjectAsset[] = [];
   let mediaError = "";
   try {
@@ -69,6 +77,7 @@ async function OwnedWorkspace({ params }: { params: Promise<{ id: string }> }) {
       initialMediaError={mediaError}
       initialGeneration={generation}
       initialGenerationError={generationError}
+      initialOrigin={origin}
     />
   );
 }

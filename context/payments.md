@@ -1,5 +1,13 @@
 # PayPal Sandbox credit purchases
 
+## Future Marketplace payments and creator payouts (approved product model, 2026-10-13)
+
+Marketplace adoption price is separate from the Sceenyk AI-generation credit quote. Free adoption has no marketplace purchase, but later generation may use the normal free allowance or paid credits. For paid listings, the future sequence is verified buyer payment → durable marketplace purchase → creator earning and platform-fee records → buyer adoption entitlement → adopter-owned project. Buyer return UI alone cannot grant an entitlement; retries, duplicate provider events and concurrent adoption must not duplicate purchases, earnings or access. No paid adoption capture is authorized in the first Marketplace unit, and existing PayPal Sandbox credit-pack checkout does not implement Marketplace payments.
+
+Creator earnings are money, never AI credits or a withdrawable credit balance. Future accounting distinguishes pending, available and lifetime earnings. Settlement should hold funds before availability to allow refunds, chargebacks, fraud review and disputes. The exact holding period, platform fee/revenue split, refund policy, currency/tax handling and payout threshold remain unresolved; any platform fee must be centrally configurable rather than hardcoded as an invented production percentage.
+
+Creator payouts are future scope. PayPal payout capability is a possible provider, with a creator payout destination, minimum withdrawal threshold, manual or scheduled payout and payout history to define later. Do not transfer money automatically after each sale. No PayPal Payouts integration, settlement automation, Live payment capture or Marketplace payment service exists under this document's completed Sandbox credit-pack status.
+
 ## Credit and top-up UX extension (2026-10-13)
 
 **Complete within local production-build/real Sandbox acceptance:** fresh editor-created order `4NX32619KD034915F` grants100 credits once (100→200) after manual buyer approval, observed completed with creating Chrome closed/local server stopped before any completion action. Actual duplicate completion, one ledger effect, unchanged free/held counters, exact success/new balance, refresh/reopen, same-project quote continuation, cross-tab invalidation, actual expiry, ownership and responsive themes pass. The changed UI is not deployed by this agent. See the tracker for50 named real-service checks and270 isolated regressions. `public` and `expiry` harness modes check approved public copy and actual five-minute expiration; they create no payment or generation.

@@ -80,13 +80,17 @@ This approved contract supersedes earlier documentation and illustrative design 
 
 ### Creator Templates and Marketplace
 
-The longer-term creator experience lets creators create and publish reusable styles/templates. Other users can discover and purchase those styles and apply purchased styles when generating content.
+**Marketplace product model approved 2026-10-13.** A creator explicitly publishes a reusable listing derived from an owned, successful project/result. Other users discover it, adopt it into a **new project they own**, supply their own ideas and permitted media, customize the copied creative configuration, and generate their own result. The listing and original project remain separate; publishing is never automatic. A listing may preserve project/scene structure, prompt strategy, visual style, settings, aspect ratio, timing/composition, narration and caption configuration where reusable and safe. Private uploads, R2 assets, signed URLs, provider secrets, private project metadata and content without redistribution rights are excluded.
 
-The first MVP may demonstrate template/style selection within its supported creation path. A fully developed marketplace, paid creator publishing economy, and payout system are not required for the initial release.
+Publishing should let the creator provide a title, description, category, preview/cover, tags, visibility/status and free or paid adoption price. The creator must confirm rights to publish and monetize reusable content. A simple future listing lifecycle is draft → published → unpublished or archived; moderation may add states only through a later decision. Discovery should provide browse, categories, search/filtering, creator identity, preview, adoption price, estimated generation credits and, when appropriate, adoption indicators. Moderation, reporting, takedowns and intellectual-property complaints need a future contract.
+
+**Adoption price and AI generation cost are separate.** A free listing has no creator adoption charge; subsequent AI work still follows ordinary free-allowance/credit eligibility and server-issued generation quotes. A paid listing may eventually require a verified marketplace purchase and adoption entitlement before the adopter-owned project is created. For example, a $2.00 creator price and an estimated 35 Sceenyk credits are two distinct costs; neither example is approved production pricing. Adoption never transfers the creator's original project or private media.
+
+The authorized first Marketplace unit provides UI, explicit publishing/listing persistence, browse/search/detail, free/template adoption, adopter-owned project creation and server-enforced ownership/privacy. Its implementation publishes reusable briefs from owned saved projects with separately reviewed public instructions; it does not require or claim a completed rendered result. See [architecture.md](architecture.md#marketplace-implementation-contract--authorized-2026-10-13) and [progress-tracker.md](progress-tracker.md) for actual implementation/acceptance limits. Paid marketplace purchase capture, creator earnings settlement, payouts and moderation are separately authorized later work.
 
 ### Persistent Product Data
 
-Supabase PostgreSQL stores users, projects, generations, generation jobs, credit balances, credit transactions and payments. Templates, marketplace information and related metadata remain separately scoped future capabilities. No subscription data model is required for the current credit/top-up contract.
+Supabase PostgreSQL stores users, projects, generations, generation jobs, credit balances, credit transactions, payments, Marketplace listings and free-adoption provenance. Paid Marketplace purchases and creator earnings remain future capabilities. No subscription data model is required for the current credit/top-up contract.
 
 Large video, image, and audio files are stored outside PostgreSQL. Database records retain the references and metadata needed to associate that media with the relevant project or generation. The media storage service is not specified by this overview.
 
@@ -122,7 +126,7 @@ The first supported category, AI provider, and media storage service remain impl
 - Advanced collaborative video editing.
 - A full professional timeline editor.
 - Native mobile applications.
-- A fully developed creator marketplace economy, including complete creator publishing, marketplace purchasing, and payout operations.
+- The paid creator marketplace economy, including marketplace purchasing, creator earnings, settlement and payout operations.
 - Monthly generation subscriptions, monthly credit allocations and recurring plans.
 - Membership benefits and auto-recharge unless separately approved in a future product decision.
 - Large-scale enterprise features.
