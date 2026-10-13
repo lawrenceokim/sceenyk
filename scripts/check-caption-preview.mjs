@@ -16,6 +16,7 @@ const cue={id:'s1-c1',generation_job_id:job,scene_id:sceneId,scene_order:1,narra
   start_ms:0,end_ms:1280,text:'A measured caption',cue_order:1};
 const track={cues:[cue]};
 const timing=typescriptLoader()('lib/captions/preview-timing.ts');
+const {captionStyle}=typescriptLoader()('lib/captions/contract.ts');
 assert.equal(timing.compositionTimeForScene(first,1000),0);
 assert.equal(timing.compositionTimeForScene(first,2280),1280);
 assert.equal(timing.activeCaptionCue(track,first,1000)?.id,cue.id);
@@ -26,6 +27,8 @@ assert.equal(timing.activeCaptionCue(track,second,0),null);
 assert.equal(timing.compositionTimeForScene(second,1000),6000);
 const portrait={...plan,aspect_ratio:'9:16'};
 assert.equal(timing.activeCaptionCue({...track,aspect_ratio:portrait.aspect_ratio},first,1000)?.id,cue.id);
+assert.deepEqual({...captionStyle.safe_area_percent['9:16']},{horizontal:10,bottom:18});
+assert.deepEqual({...captionStyle.safe_area_percent['16:9']},{horizontal:8,bottom:8});
 
 let identity=owner, signed=0, resolved={kind:'prepared_segment',id:assetId,storage_key:`users/${owner}/projects/${project}/scene.mp4`,
   verified_etag:'etag',mime_type:'video/mp4',size_bytes:1000,duration_ms:6000,is_static:false};
@@ -47,4 +50,4 @@ identity=other;assert.equal(await read(input),null);assert.equal(signed,1);
 identity=owner;assert.equal(await read({...input,sceneId:other}),null);assert.equal(signed,1);
 resolved={...resolved,id:other};assert.equal(await read(input),null);assert.equal(signed,1);
 resolved={...resolved,id:assetId,storage_key:`users/${other}/projects/${project}/scene.mp4`};assert.equal(await read(input),null);assert.equal(signed,1);
-console.log(JSON.stringify({passed:16,signedCapabilities:signed,ownershipDenied:true}));
+console.log(JSON.stringify({passed:18,signedCapabilities:signed,ownershipDenied:true,portraitSafeAreaFixture:true}));
