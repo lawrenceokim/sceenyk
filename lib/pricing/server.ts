@@ -44,6 +44,8 @@ export async function quoteGeneration(
     eligibleFreeGeneration: q.eligible_free,
     requiredCredits: q.required_credits,
     availableCredits: q.available_credits,
+    expectedRemainingCredits: q.required_credits !== null && q.available_credits >= q.required_credits
+      ? q.available_credits - q.required_credits : null,
     freeGenerationsRemaining: q.free_remaining,
     pricingVersion: q.pricing_version,
     pricingMode: q.pricing_mode,

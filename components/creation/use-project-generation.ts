@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useEffectEvent, useRef, useState } from "react";
 import {
   createGenerationAction,
   latestGenerationAction,
@@ -7,6 +7,7 @@ import {
 import type { GenerationInputs, GenerationJob } from "@/lib/generation/types";
 import { quoteGenerationAction } from "@/app/actions/pricing";
 import type { GenerationQuote } from "@/lib/pricing/types";
+import { creditRefreshKey, notifyCreditsChanged } from "@/lib/accounting/client-events";
 
 export function useProjectGeneration(
   projectId: string | null,
@@ -28,7 +29,10 @@ export function useProjectGeneration(
   } | null>(null);
   const inputKey = JSON.stringify({ projectId, inputs });
   const quote = quoted?.key === inputKey ? quoted.value : null;
+  const [expiredQuoteId, setExpiredQuoteId] = useState<string | null>(null);
+  const quoteExpired = !!quote && expiredQuoteId === quote.id;
   const inFlight = useRef(false);
+  const pendingQuoteRefresh = useRef(false);
   const epoch = useRef(0);
   const attempt = useRef<{
     projectId: string;
@@ -37,6 +41,38 @@ export function useProjectGeneration(
     quoteId: string;
   } | null>(null);
   const [retrying, setRetrying] = useState(false);
+
+  useEffect(() => {
+    if (!quote) return;
+    const timer = window.setTimeout(() => setExpiredQuoteId(quote.id), Math.max(0, Date.parse(quote.expiresAt) - Date.now()));
+    return () => window.clearTimeout(timer);
+  }, [quote]);
+
+  const refreshQuote = useEffectEvent(() => {
+    if (document.visibilityState === "hidden" || attempt.current) return;
+    if (quoting && inFlight.current) { pendingQuoteRefresh.current = true; return; }
+    if (quote && !inFlight.current) void reviewCost();
+  });
+  useEffect(() => {
+    if (!quoting && pendingQuoteRefresh.current) {
+      pendingQuoteRefresh.current = false;
+      refreshQuote();
+    }
+  }, [quoting]);
+  useEffect(() => {
+    const refresh = () => refreshQuote();
+    const storage = (event: StorageEvent) => { if (event.key === creditRefreshKey) refresh(); };
+    window.addEventListener("sceenyk:credits", refresh);
+    window.addEventListener("storage", storage);
+    window.addEventListener("focus", refresh);
+    document.addEventListener("visibilitychange", refresh);
+    return () => {
+      window.removeEventListener("sceenyk:credits", refresh);
+      window.removeEventListener("storage", storage);
+      window.removeEventListener("focus", refresh);
+      document.removeEventListener("visibilitychange", refresh);
+    };
+  }, []);
 
   function remember(next: GenerationJob | null) {
     if (next && next.requestId === attempt.current?.requestId) {
@@ -114,6 +150,7 @@ export function useProjectGeneration(
     try {
       const result = await latestGenerationAction(projectId);
       window.dispatchEvent(new Event("sceenyk:allowance"));
+      notifyCreditsChanged();
       if (revision !== epoch.current) return;
       if (result.ok) {
         remember(result.value);
@@ -138,7 +175,7 @@ export function useProjectGeneration(
       job?.status === "processing"
     )
       return;
-    if (!attempt.current && (!quote || quote.status !== "ready" || !quoted)) return;
+    if (!attempt.current && (!quote || quoteExpired || quote.status !== "ready" || !quoted)) return;
     inFlight.current = true;
     const revision = ++epoch.current;
     setCreating(true);
@@ -155,6 +192,7 @@ export function useProjectGeneration(
     try {
       const result = await createGenerationAction({ quoteId: submitted.quoteId });
       window.dispatchEvent(new Event("sceenyk:allowance"));
+      notifyCreditsChanged();
       if (result.ok && attempt.current?.requestId === submitted.requestId)
         attempt.current = null;
       if (revision !== epoch.current) return;
@@ -225,6 +263,7 @@ export function useProjectGeneration(
     refreshing,
     quoting,
     quote,
+    quoteExpired,
     reviewCost,
     retrying,
     generate,

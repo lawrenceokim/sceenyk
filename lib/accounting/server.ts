@@ -2,6 +2,12 @@ import "server-only";
 import { ensureAppUser } from "@/lib/auth/ensure-app-user";
 import { createDatabaseClient } from "@/lib/db/server";
 import type { FreeAllowance } from "./types";
+import { lowCreditThreshold } from "./config";
+
+export async function getCreditSummary() {
+  const available = await getPaidCreditBalance();
+  return { available, lowBalance: available <= lowCreditThreshold() };
+}
 
 export async function getPaidCreditBalance() {
   const user = await ensureAppUser();

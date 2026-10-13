@@ -1,5 +1,9 @@
 # Architecture Context
 
+## Pay-as-you-go credit UX (2026-10-13)
+
+The existing authenticated accounting/payment read boundary now exposes a minimal paid summary, server-only configurable low-credit warning and last20 owner-filtered paid ledger movements. No schema or balance mutation API is added. Quote DTOs include expected remaining paid balance computed from the issued server cost/balance; confirmation still submits only the opaque quote ID and revalidates atomically. An authenticated checkout-options action supplies centralized Sandbox packs to the editor's existing shadcn Dialog. Checkout opens a separate PayPal tab, retaining the mounted creative brief/local media; focus/visibility and cross-tab invalidation re-read server state and refresh any visible quote without automatically confirming. Local storage contains only an invalidation nonce, never balances, quotes, identities or payment data. Rendering remains deferred; production prices remain unresolved. See the tracker for current verification limits.
+
 ## Approved commercial architecture — pay-as-you-go credits (2026-10-13)
 
 The current product contract is [pay-as-you-go credits](overview.md#approved-commercial-model--pay-as-you-go-2026-10-13): **"Buy credits. Create what you need. Top up when you need more."** Two lifetime free generations remain separate entitlements. Thereafter, users buy credit packs, consume credits through the existing quoted generation lifecycle and manually top up when their balance is low or zero. Longer/paid requests still follow the existing server entitlement rules.

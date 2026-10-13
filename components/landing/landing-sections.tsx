@@ -1,4 +1,6 @@
 import type { ReactNode } from "react";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
 import {
   ArrowRight,
   ArrowUpRight,
@@ -416,8 +418,7 @@ export function PricingPreview() {
           Room for your first spark.
         </h2>
         <p className="mt-4 text-body-lg text-muted-foreground">
-          Try your first ideas free. Keep creating with paid plans or credits
-          afterward.
+          Buy credits. Create what you need. Top up when you need more.
         </p>
       </div>
       <div className="mx-auto mt-12 grid max-w-4xl gap-6 md:grid-cols-2">
@@ -426,9 +427,9 @@ export function PricingPreview() {
           label="FREE TO START"
           description="A little space to explore what your imagination can do."
           features={[
-            "2 free short generations for new users",
-            "About 10 seconds per generation",
-            "Explore the creation experience at launch",
+            "2 lifetime free video generations",
+            "Up to 10 seconds per free generation",
+            "Free allowance stays separate from paid credits",
           ]}
         >
           <AccountAction intent="sign-up" variant="outline" className="w-full">
@@ -437,22 +438,22 @@ export function PricingPreview() {
         </PricingCard>
         <PricingCard
           title="Keep creating"
-          label="PLANS & CREDITS"
-          description="More room for your stories, campaigns, and creative experiments."
+          label="PAY AS YOU GO"
+          description="One-time credit packs for your stories, campaigns, and creative experiments."
           features={[
-            "Paid plans or credits after your free generations",
-            "Choose capacity for your next ideas",
-            "Pricing and plan details coming soon",
+            "Buy credits and manually top up when you need more",
+            "Review generation cost before confirming",
+            "Purchased credits do not expire",
           ]}
           featured
         >
-          <p className="flex min-h-11 items-center justify-center gap-2 rounded-lg border border-border bg-card text-body-sm font-medium text-muted-foreground">
-            Plans coming soon <Sparkles className="size-4" aria-hidden="true" />
-          </p>
+          <Button nativeButton={false} render={<Link href="/dashboard/credits" />} className="w-full">
+            Buy credits <ArrowRight className="size-4" aria-hidden="true" />
+          </Button>
         </PricingCard>
       </div>
       <p className="mt-6 text-center text-caption text-muted-foreground">
-        Pricing preview only. Purchases are not available.
+        PayPal Sandbox test payments only. Demo packs are temporary; production prices and generation rates are awaiting approval.
       </p>
     </section>
   );

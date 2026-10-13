@@ -9,6 +9,7 @@ import {
   purchaseAmount, readPayPalOrder, verifiedCapture, verifyOrder,
 } from "./paypal/client";
 import type { CreditWallet, PurchaseRow, PurchaseStatus } from "./types";
+import { lowCreditThreshold } from "@/lib/accounting/config";
 
 const packInput = z.object({ packId: z.string().max(80) }).strict();
 const orderInput = z.object({ orderId: paypalOrderId }).strict();
@@ -111,13 +112,16 @@ export async function completeCreditOrder(input: unknown, cancel = false) {
 export async function getCreditWallet(): Promise<CreditWallet> {
   const user = await ensureAppUser();
   const db = createDatabaseClient();
-  const [account, purchases] = await Promise.all([
+  const [account, purchases, activity] = await Promise.all([
     db.from("generation_accounts").select("credit_available,credit_reserved").eq("owner_user_id", user.id).single(),
     db.from("credit_purchases").select("*").eq("owner_user_id", user.id).order("created_at", { ascending: false }).limit(20),
+    db.from("credit_ledger").select("type,amount,available_delta,created_at").eq("owner_user_id", user.id).order("created_at", { ascending: false }).limit(20),
   ]);
-  if (account.error || !account.data || purchases.error || !purchases.data) throw new Error("CREDIT_WALLET_UNAVAILABLE");
+  if (account.error || !account.data || purchases.error || !purchases.data || activity.error || !activity.data) throw new Error("CREDIT_WALLET_UNAVAILABLE");
   return {
     available: account.data.credit_available, reserved: account.data.credit_reserved,
+    lowBalance: account.data.credit_available <= lowCreditThreshold(),
+    activity: activity.data.map(entry => ({ type: entry.type, amount: entry.amount, availableDelta: entry.available_delta, createdAt: entry.created_at })),
     purchases: purchases.data.map(purchase => ({ pack_id: purchase.pack_id, pack_name: purchase.pack_name, credits: purchase.credits,
       status: purchase.status, created_at: purchase.created_at, orderId: purchase.paypal_order_id,
       amount: purchaseAmount(purchase), currency: purchase.currency })),
@@ -134,6 +138,7 @@ export async function reconcileOwnedCreditOrders() {
   // Bounded parallelism; independent purchases share the atomic account lock.
   const results = await Promise.allSettled((data ?? []).map(purchase => reconcilePurchase(purchase)));
   return { recovered: results.filter(result => result.status === "fulfilled" && result.value === "completed").length,
+    recoveredOrders: (data ?? []).filter((_, index) => results[index].status === "fulfilled" && results[index].value === "completed").map(purchase => purchase.paypal_order_id!),
     pending: results.some(result => result.status === "rejected") };
 }
 

@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { DashboardUserButton } from "@/components/auth/account-controls";
 import { DashboardMobileNavigation } from "./dashboard-sidebar";
+import { CreditBalance } from "@/components/payments/credit-balance";
 
 export function DashboardHeader({
   title = "Dashboard",
@@ -14,7 +15,7 @@ export function DashboardHeader({
 }) {
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur-xl">
-      <div className="sceenyk-container flex min-h-20 items-center justify-between gap-2 py-3 sm:gap-4">
+      <div className="sceenyk-container flex min-h-20 flex-wrap items-center justify-between gap-2 py-3 sm:gap-4">
         <div className="flex min-w-0 items-center gap-2 sm:gap-3">
           <DashboardMobileNavigation />
           <div className="min-w-0">
@@ -24,6 +25,7 @@ export function DashboardHeader({
             </p>
           </div>
         </div>
+        <div className="order-3 w-full sm:order-none sm:ml-auto sm:w-auto"><CreditBalance compact /></div>
         <div className="flex shrink-0 items-center gap-1 sm:gap-3">
           <ThemeToggle />
           <div className="lg:hidden">

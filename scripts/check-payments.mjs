@@ -42,9 +42,10 @@ const db = {
   },
 };
 const call = async (name, args) => { const result = await db.rpc(name, args); assert.equal(result.error, null, name); return result.data; };
-const names = ['PAYPAL_ENVIRONMENT', 'PAYPAL_CLIENT_ID', 'PAYPAL_CLIENT_SECRET', 'PAYPAL_WEBHOOK_ID', 'PAYPAL_RETURN_ORIGIN'];
+const names = ['PAYPAL_ENVIRONMENT', 'PAYPAL_CLIENT_ID', 'PAYPAL_CLIENT_SECRET', 'PAYPAL_WEBHOOK_ID', 'PAYPAL_RETURN_ORIGIN', 'SCEENYK_LOW_CREDIT_THRESHOLD'];
 const saved = Object.fromEntries(names.map(name => [name, process.env[name]]));
 Object.assign(process.env, { PAYPAL_ENVIRONMENT: 'sandbox', PAYPAL_CLIENT_ID: 'fixture-client', PAYPAL_CLIENT_SECRET: 'fixture-secret', PAYPAL_WEBHOOK_ID: 'fixture-webhook', PAYPAL_RETURN_ORIGIN: 'http://localhost:3000' });
+delete process.env.SCEENYK_LOW_CREDIT_THRESHOLD;
 let owner, httpCalls = 0, captures = 0, creates = 0, lostCreate = false, lostCapture = false, invalidSignature = false, verificationBody;
 const orders = new Map(), requestOrders = new Map();
 const fetchFixture = async (url, init) => {
@@ -101,6 +102,7 @@ try {
   const freeJob = await reserve(snapshot);
   const originalReservation = await one('select * from generation_reservations where job_id=$1', [freeJob]);
   check('new user paid balance zero', (await wallet()).available === 0);
+  check('zero paid balance has central low-credit notice and empty activity', (await wallet()).lowBalance && (await wallet()).activity.length === 0);
   for (const claim of [{ packId: 'sandbox-small-v1', amount: '0.01' }, { packId: 'sandbox-small-v1', credits: 99999 }, { packId: 'sandbox-small-v1', owner: b }, { packId: 'unknown' }]) await rejects('browser commercial/owner tampering rejected', () => service.createCreditOrder(claim));
   check('invalid input causes no PayPal HTTP', httpCalls === 0);
   owner = null; await rejects('signed out create denied', () => service.createCreditOrder({ packId: 'sandbox-small-v1' })); owner = a;
@@ -115,6 +117,15 @@ try {
   const completed = await Promise.all([service.completeCreditOrder({ orderId: created.orderId }), service.completeCreditOrder({ orderId: created.orderId })]);
   check('concurrent completion grants exactly one effect', completed.every(r => r.status === 'completed') && (await wallet()).available === 100 && captures === 1);
   check('refresh and duplicate completion preserve balance', (await service.completeCreditOrder({ orderId: created.orderId })).status === 'completed' && (await wallet()).available === 100);
+  const initialWallet = await wallet();
+  check('wallet exposes safe human activity without internal or provider fields', initialWallet.activity.length === 1 && initialWallet.activity[0].type === 'purchase' && initialWallet.activity[0].availableDelta === 100 && Object.keys(initialWallet.activity[0]).sort().join(',') === 'amount,availableDelta,createdAt,type');
+  check('funded account above central threshold clears warning', !initialWallet.lowBalance);
+  process.env.SCEENYK_LOW_CREDIT_THRESHOLD = '100';
+  check('low-credit threshold is centrally configurable and inclusive', (await wallet()).lowBalance);
+  delete process.env.SCEENYK_LOW_CREDIT_THRESHOLD;
+  owner = b;
+  check('User B wallet excludes User A balance purchases and ledger activity', (await wallet()).available === 0 && (await wallet()).purchases.length === 0 && (await wallet()).activity.length === 0);
+  owner = a;
   const p = await one('select * from credit_purchases where paypal_order_id=$1', [created.orderId]);
   const ledger = await one('select * from credit_ledger where purchase_id=$1', [p.id]);
   check('immutable purchase ledger records exact owner/credits/references', ledger.type === 'purchase' && ledger.amount === 100 && ledger.owner_user_id === a && ledger.paypal_order_id === created.orderId && ledger.paypal_capture_id === p.paypal_capture_id && ledger.reference_key === `paypal:sandbox:${created.orderId}:${p.paypal_capture_id}` && ledger.job_id === null);
@@ -186,7 +197,9 @@ try {
   const unsafe = structuredClone(actualOrder); unsafe.links[0].href = 'https://www.paypal.com/checkoutnow?token=' + unsafe.id;
   assert.throws(() => client.approvalUrl(unsafe)); count++;
   const approved = await service.createCreditOrder({ packId: 'sandbox-small-v1' }); orders.get(approved.orderId).status = 'APPROVED';
-  check('owned on-demand reconciliation recovers approved payment', (await service.reconcileOwnedCreditOrders()).recovered === 1 && (await wallet()).available === 1050);
+  const recovered = await service.reconcileOwnedCreditOrders();
+  check('owned on-demand reconciliation recovers approved payment', recovered.recovered === 1 && (await wallet()).available === 1050);
+  check('recovery identifies the verified owned purchase for exact success copy', recovered.recoveredOrders.length === 1 && recovered.recoveredOrders[0] === approved.orderId);
   // Unique capture reuse rolls back ledger, purchase status and account together.
   const conflict = await prepare(a, 'conflict'); await call('attach_paypal_order', { p_purchase_id: conflict.id, p_owner_user_id: a, p_order_id: 'ORDER888888888888' }); conflict.paypal_order_id = 'ORDER888888888888';
   const collision = await db.rpc('fulfil_paypal_purchase', { p_owner_user_id: a, p_order_id: conflict.paypal_order_id, p_capture_id: p.paypal_capture_id, p_amount_minor: 100, p_currency: 'USD' });
@@ -202,6 +215,7 @@ try {
   await call('fail_generation_claim', { p_job_id: paidJob, p_run_id: 'fixture-run' });
   await call('fail_generation_claim', { p_job_id: paidJob, p_run_id: 'fixture-run' });
   check('existing paid failure restoration still works exactly once after purchase migration', (await wallet()).available === 1400 && (await wallet()).reserved === 0 && Number(await scalar("select count(*) as value from credit_ledger where job_id=$1 and type='release'", [paidJob])) === 1);
+  check('activity includes authoritative reservation and restoration movements', (await wallet()).activity.some(entry => entry.type === 'reservation' && entry.availableDelta === -10) && (await wallet()).activity.some(entry => entry.type === 'release' && entry.availableDelta === 10));
   const totals = await one('select sum(available_delta) as available,sum(reserved_delta) as reserved from credit_ledger where owner_user_id=$1', [a]);
   check('all purchase and generation ledger movements reconcile to balance', Number(totals.available) === 1400 && Number(totals.reserved) === 0);
   const cancelledPaid = await service.createCreditOrder({ packId: 'sandbox-small-v1' });

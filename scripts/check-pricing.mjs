@@ -97,6 +97,7 @@ try {
   const confirm = (q, extra={}) => generation.createGenerationAction({ quoteId: q.id, ...extra });
   let result = await quote(); assert.ok(result.ok); const free = result.value;
   check("new user receives authoritative free 10-second quote", free.eligibleFreeGeneration && free.requiredCredits===0 && free.freeGenerationsRemaining===2 && free.status==="ready");
+  check("free quote keeps expected paid balance unchanged", free.expectedRemainingCredits === free.availableCredits);
   check("quote alone never reserves or dispatches", (await account(a)).free_reserved===0 && dispatches===0);
   check("quote DTO omits owner, raw snapshot, provider data and rules", !["owner_user_id","input_snapshot","rules","providerCost"].some(k=>k in free));
   for (const extra of [{requiredCredits:0},{creditCost:0},{free:true},{eligibleFreeGeneration:true},{pricingVersion:"fake"},{pricingTier:"cheap"},{owner_user_id:b.owner}]) {
@@ -116,12 +117,14 @@ try {
   env.SCEENYK_TEST_PRICING_JSON=JSON.stringify(config);
   const paid = (await quote()).value;
   check("configured paid quote returns authoritative test units", paid.requiredCredits===7 && paid.pricingMode==="test" && !paid.eligibleFreeGeneration && paid.status==="insufficient_credits");
+  check("insufficient quote exposes no negative expected balance", paid.expectedRemainingCredits === null);
   const beforeDispatch=dispatches;
   check("insufficient balance blocks job and dispatch", (await confirm(paid)).code==="INSUFFICIENT_CREDITS" && dispatches===beforeDispatch && (await account(a)).credit_reserved===0);
   // Administrator-only isolated starting balance, not a purchase/grant API.
   await pg.query("update generation_accounts set credit_available=100 where owner_user_id=$1",[a.owner]);
   const affordable=(await quote()).value;
   check("funded paid quote reports exact available balance", affordable.availableCredits===100 && affordable.status==="ready");
+  check("expected paid balance is derived by server from quoted units", affordable.expectedRemainingCredits === 93);
   const paidJob=await confirm(affordable);assert.ok(paidJob.ok);
   check("reservation uses quoted server cost", (await reservation(paidJob.value.id)).amount===7 && (await account(a)).credit_available===93 && (await account(a)).credit_reserved===7);
   const duplicates=await Promise.all([confirm(affordable),confirm(affordable)]);

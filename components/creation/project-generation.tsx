@@ -1,6 +1,5 @@
 "use client";
 import { useId } from "react";
-import Link from "next/link";
 import { Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AccountAction } from "@/components/account-action";
@@ -13,6 +12,8 @@ import type { GenerationInputs, GenerationJob } from "@/lib/generation/types";
 import { useProjectGeneration } from "./use-project-generation";
 import { compositionIssueMessage } from "@/lib/composition/contract";
 import { FinalVideoResult } from "./final-video-result";
+import { CreditTopUp } from "@/components/payments/credit-top-up";
+import { CreditBalance } from "@/components/payments/credit-balance";
 
 export function ProjectGeneration({
   projectId,
@@ -73,7 +74,7 @@ export function ProjectGeneration({
           <Button
             type="button"
             size="lg"
-            disabled={disabled || (!!state.quote && state.quote.status !== "ready")}
+            disabled={disabled || (!state.retrying && (state.quoteExpired || (!!state.quote && state.quote.status !== "ready")))}
             aria-busy={state.creating || state.quoting}
             aria-describedby={helpId}
             className="w-full sm:w-auto"
@@ -113,6 +114,7 @@ export function ProjectGeneration({
         stays held for later production and is restored after a total failure
         without usable scenes.
       </p>
+      {signedIn && <div className="flex flex-wrap items-center justify-between gap-3"><CreditBalance compact /><CreditTopUp /></div>}
       {state.quote && (
         <div className="space-y-3 rounded-lg border border-border bg-muted p-4" role="status" aria-live="polite">
           <p className="text-body-sm font-semibold">
@@ -122,6 +124,13 @@ export function ProjectGeneration({
                 ? "Paid generation pricing is not available yet"
                 : `This generation requires ${state.quote.requiredCredits} credits`}
           </p>
+          <dl className="grid gap-2 text-body-sm sm:grid-cols-3">
+            <div><dt className="text-muted-foreground">Estimated cost</dt><dd className="font-semibold">{state.quote.requiredCredits === null ? "Unavailable" : `${state.quote.requiredCredits.toLocaleString()} credits`}</dd></div>
+            <div><dt className="text-muted-foreground">Available paid balance</dt><dd className="font-semibold">{state.quote.availableCredits.toLocaleString()} credits</dd></div>
+            <div><dt className="text-muted-foreground">After reservation</dt><dd className="font-semibold">{state.quote.expectedRemainingCredits === null ? "—" : `${state.quote.expectedRemainingCredits.toLocaleString()} credits`}</dd></div>
+          </dl>
+          {state.quote.eligibleFreeGeneration && <p className="text-caption text-muted-foreground">Uses one lifetime free generation. Your paid credits stay unchanged.</p>}
+          {state.quoteExpired && <p className="text-body-sm text-warning-foreground">This quote has expired. Update the quote before confirming.</p>}
           <p className="text-caption text-muted-foreground">
             {state.quote.breakdown.durationSeconds} seconds · {state.quote.breakdown.operation === "transformation" ? "Video transformation" : "New generation"}.
             {state.quote.pricingMode === "test" && " Development/test credit configuration — not final pricing."}
@@ -137,9 +146,6 @@ export function ProjectGeneration({
           )}
           <div className="flex flex-wrap gap-2">
             <Button type="button" variant="outline" disabled={disabled} onClick={() => void state.reviewCost()}>Update quote</Button>
-            {state.quote.status !== "ready" && (
-              <Button nativeButton={false} variant="outline" render={<Link href="/dashboard/credits" />}>Buy credits</Button>
-            )}
           </div>
         </div>
       )}

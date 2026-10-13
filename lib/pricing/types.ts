@@ -3,6 +3,7 @@ export type GenerationQuote = {
   eligibleFreeGeneration: boolean;
   requiredCredits: number | null;
   availableCredits: number;
+  expectedRemainingCredits: number | null;
   freeGenerationsRemaining: number;
   pricingVersion: string;
   pricingMode: "unconfigured" | "test";

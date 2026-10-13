@@ -33,6 +33,13 @@ export type PurchaseSummary = Pick<PurchaseRow,
 export type CreditWallet = {
   available: number;
   reserved: number;
+  lowBalance: boolean;
+  activity: {
+    type: "reservation" | "consumption" | "release" | "purchase";
+    amount: number;
+    availableDelta: number;
+    createdAt: string;
+  }[];
   purchases: PurchaseSummary[];
 };
 
