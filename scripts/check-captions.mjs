@@ -43,7 +43,7 @@ try {
   const f=await ready({offsetMs:400});const original=JSON.stringify(await one('select * from generation_jobs where id=$1',[f.job]));
   const originalSource=JSON.stringify(await source(f));
   const result=await execute(f),row=await stored(f),track=captionTrackSchema.parse(row.track);
-  check('all eighteen migrations and official workflow persist captions',result.result.trackId===row.id&&track.status==='ready');
+  check('all nineteen migrations and official workflow persist captions',result.result.trackId===row.id&&track.status==='ready');
   check('short real-length narration makes a natural phrase',track.cues.length===1&&track.cues[0].text==='A bright beginning.');
   check('silent scene receives no cue',track.cues.every(c=>c.scene_order===1));
   check('measured 1280ms narration at 400ms offset is preserved',track.cues[0].start_ms===400&&track.cues[0].end_ms===1680);

@@ -63,7 +63,8 @@ export const captionTrackSchema = z.strictObject({
 export type CaptionTrack = z.infer<typeof captionTrackSchema>;
 export type CaptionRow = { id: string; job_id: string; owner_user_id: string;
   project_id: string; input_digest: string; track: CaptionTrack; created_at: string };
-export type CaptionPreferenceRow = { job_id: string; owner_user_id: string; project_id: string; enabled: boolean };
+export type CaptionPreferenceRow = { job_id: string; owner_user_id: string; project_id: string;
+  enabled: boolean; style: import("./style").CaptionStyleSelection };
 export const normalizeCaptionText = (value: string) => value.replace(/\s+/gu, " ").trim();
 export function wrapCaption(value: string): string[] {
   const lines: string[] = []; let line = "";

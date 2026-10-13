@@ -5,6 +5,7 @@ import { generationReferenceSchema } from "@/lib/generation/validation";
 import { captionSourceSchema, captionTrackSchema, validateCaptionSource } from "./contract";
 import { buildCaptionTrack } from "./build";
 import { z } from "zod";
+import { captionStyleSelectionSchema, defaultCaptionStyleSelection } from "./style";
 
 export async function buildOrReuseCaptions(jobId: string) {
   z.uuid().parse(jobId);
@@ -44,15 +45,16 @@ export async function getOwnedCaptions(input: unknown) {
   const db = createDatabaseClient();
   const result = await db.from("caption_tracks").select("id,track").eq("job_id", ref.jobId)
     .eq("project_id", ref.projectId).eq("owner_user_id", ref.ownerId).maybeSingle();
-  const preference = await db.from("caption_preferences").select("enabled").eq("job_id", ref.jobId)
+  const preference = await db.from("caption_preferences").select("enabled,style").eq("job_id", ref.jobId)
     .eq("project_id", ref.projectId).eq("owner_user_id", ref.ownerId).maybeSingle();
   if (result.error || preference.error) throw new Error("CAPTIONS_UNAVAILABLE");
-  if (!result.data) return { id: null, track: null, enabled: preference.data?.enabled ?? true };
+  const style = preference.data ? captionStyleSelectionSchema.parse(preference.data.style) : defaultCaptionStyleSelection;
+  if (!result.data) return { id: null, track: null, enabled: preference.data?.enabled ?? true, style };
   const track = captionTrackSchema.parse(result.data.track);
   const source = await db.rpc("caption_source", { p_job_id: ref.jobId });
   if (source.error || !source.data) throw new Error("CAPTIONS_UNAVAILABLE");
   validateCaptionSource(track, captionSourceSchema.parse(source.data));
-  return { id: result.data.id, track, enabled: preference.data?.enabled ?? true };
+  return { id: result.data.id, track, enabled: preference.data?.enabled ?? true, style };
 }
 
 export async function setOwnedCaptionPreference(input: unknown) {
@@ -64,5 +66,17 @@ export async function setOwnedCaptionPreference(input: unknown) {
     p_owner_user_id: ref.ownerId, p_project_id: ref.projectId, p_job_id: ref.jobId, p_enabled: parsed.data.enabled,
   });
   if (result.error) throw new Error("CAPTIONS_UNAVAILABLE");
+  return result.data;
+}
+
+export async function setOwnedCaptionStyle(input: unknown) {
+  const parsed = generationReferenceSchema.extend({ style: captionStyleSelectionSchema }).strict().safeParse(input);
+  if (!parsed.success) return false;
+  const ref = await ownedReference({ projectId: parsed.data.projectId, jobId: parsed.data.jobId });
+  if (!ref) return false;
+  const result = await createDatabaseClient().rpc("set_caption_style", {
+    p_owner_user_id: ref.ownerId, p_project_id: ref.projectId, p_job_id: ref.jobId, p_style: parsed.data.style,
+  });
+  if (result.error) throw new Error("CAPTION_STYLE_UNAVAILABLE");
   return result.data;
 }

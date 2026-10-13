@@ -1,14 +1,15 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { setCaptionPreferenceAction } from "@/app/actions/captions";
+import { setCaptionPreferenceAction, setCaptionStyleAction } from "@/app/actions/captions";
 import { captionTrackSchema, type CaptionTrack } from "@/lib/captions/contract";
+import { captionStyleSelectionSchema, type CaptionStyleSelection } from "@/lib/captions/style";
 import { SceneCaptionPreview } from "./scene-caption-preview";
 
 export function CaptionTrackPreview({ projectId, jobId }: { projectId: string; jobId: string }) {
-  const [data, setData] = useState<{ track: CaptionTrack | null; enabled: boolean } | null>(null);
+  const [data, setData] = useState<{ track: CaptionTrack | null; enabled: boolean; style: CaptionStyleSelection } | null>(null);
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false), [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(false), [saving, setSaving] = useState(false), [savingStyle, setSavingStyle] = useState(false);
   const alive = useRef(true), sequence = useRef(0), savingRef = useRef(false);
   const endpoint = `/api/captions?${new URLSearchParams({ projectId, jobId })}`;
   const load = useCallback(async () => {
@@ -21,7 +22,8 @@ export function CaptionTrackPreview({ projectId, jobId }: { projectId: string; j
       const value = await response.json();
       if (typeof value.enabled !== "boolean") throw new Error();
       const track = value.track === null ? null : captionTrackSchema.parse(value.track);
-      if (alive.current && request === sequence.current) { setData({ track, enabled: value.enabled }); setError(""); }
+      const style = captionStyleSelectionSchema.parse(value.style);
+      if (alive.current && request === sequence.current) { setData({ track, enabled: value.enabled, style }); setError(""); }
     } catch { if (alive.current && request === sequence.current) setError("Captions are unavailable. Check captions to refresh."); }
     finally { if (alive.current && request === sequence.current) setLoading(false); }
   }, [endpoint]);
@@ -48,15 +50,31 @@ export function CaptionTrackPreview({ projectId, jobId }: { projectId: string; j
     } catch { if (alive.current) setError("Your caption choice could not be saved."); }
     finally { savingRef.current = false; if (alive.current) setSaving(false); }
   }
+  async function changeStyle(style: CaptionStyleSelection) {
+    if (!data || savingRef.current) return;
+    const previous = data.style;
+    savingRef.current = true; sequence.current++; setSavingStyle(true); setLoading(false);
+    setData(current => current ? { ...current, style } : current);
+    try {
+      const result = await setCaptionStyleAction({ projectId, jobId, style });
+      if (!result.ok) throw new Error();
+      if (alive.current) setError("");
+    } catch {
+      if (alive.current) {
+        setData(current => current ? { ...current, style: previous } : current);
+        setError("Your caption style could not be saved.");
+      }
+    } finally { savingRef.current = false; if (alive.current) setSavingStyle(false); }
+  }
   const track = data?.track;
   return <div className="space-y-3 border-t border-border pt-4" aria-label="Captions">
     <div className="flex flex-wrap items-center justify-between gap-3">
       <label className="flex min-h-11 items-center gap-3 text-body-sm font-medium">
         <input type="checkbox" className="size-5 accent-primary" checked={data?.enabled ?? true}
-          disabled={!data || saving || loading} onChange={event => void change(event.target.checked)} />
+          disabled={!data || saving || savingStyle || loading} onChange={event => void change(event.target.checked)} />
         Captions: {data?.enabled === false ? "Off" : "On"}
       </label>
-      <Button type="button" variant="outline" disabled={loading || saving} onClick={() => void load()}>
+      <Button type="button" variant="outline" disabled={loading || saving || savingStyle} onClick={() => void load()}>
         {loading ? "Checking captions…" : "Check captions"}
       </Button>
     </div>
@@ -66,7 +84,8 @@ export function CaptionTrackPreview({ projectId, jobId }: { projectId: string; j
     </p>
     {track?.status === "ready" && track.cues.length > 0 && <>
       <p className="text-caption text-muted-foreground">Timing follows the measured narration window and is estimated, not word-perfect. Your choice applies to this generation’s future video.</p>
-      <SceneCaptionPreview projectId={projectId} jobId={jobId} track={track} enabled={data?.enabled ?? true} />
+      {data && <SceneCaptionPreview projectId={projectId} jobId={jobId} track={track} enabled={data.enabled}
+        style={data.style} savingStyle={savingStyle} onStyleChange={next => void changeStyle(next)} />}
       <details className="text-body-sm">
         <summary className="cursor-pointer py-2 font-medium">Preview {track.cues.length} caption {track.cues.length === 1 ? "cue" : "cues"}</summary>
         <ol className="max-h-64 space-y-3 overflow-y-auto py-2">

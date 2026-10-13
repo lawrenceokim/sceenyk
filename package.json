@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "test:captions": "node scripts/check-captions.mjs",
+    "test:caption-style": "node scripts/check-caption-style.mjs",
     "test:caption-preview": "node scripts/check-caption-preview.mjs",
     "test:payments": "node scripts/check-payments.mjs",
     "build:renderer": "node scripts/build-renderer.mjs",

@@ -227,6 +227,7 @@ export type Database = {
       caption_source: { Args: { p_job_id: string }; Returns: import("@/lib/captions/contract").CaptionSource | null };
       persist_caption_track: { Args: { p_job_id: string; p_track: import("@/lib/captions/contract").CaptionTrack }; Returns: string | null };
       set_caption_preference: { Args: { p_owner_user_id: string; p_job_id: string; p_project_id: string; p_enabled: boolean }; Returns: boolean };
+      set_caption_style: { Args: { p_owner_user_id: string; p_job_id: string; p_project_id: string; p_style: import("@/lib/captions/style").CaptionStyleSelection }; Returns: boolean };
       caption_dispatch_candidates: { Args: Record<string, never>; Returns: { job_id: string }[] };
       prepare_credit_purchase: { Args: { p_owner_user_id: string; p_pack_id: string; p_pack_name: string; p_amount_minor: number; p_currency: string; p_credits: number }; Returns: import("@/lib/payments/types").PurchaseRow };
       attach_paypal_order: { Args: { p_purchase_id: string; p_owner_user_id: string; p_order_id: string }; Returns: boolean };

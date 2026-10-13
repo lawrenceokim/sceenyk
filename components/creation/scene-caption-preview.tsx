@@ -2,16 +2,18 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { captionStyle, type CaptionTrack } from "@/lib/captions/contract";
+import type { CaptionTrack } from "@/lib/captions/contract";
 import { activeCaptionCue } from "@/lib/captions/preview-timing";
+import { previewCaptionPaint, resolveCaptionStyle, selectionForCaptionPreset, type CaptionStyleSelection } from "@/lib/captions/style";
 import { compositionPlanSchema, type CompositionPlan } from "@/lib/composition/contract";
 
 type Scene = CompositionPlan["scenes"][number];
 type Media = { sceneId: string; mediaType: "image" | "video"; url: string; expiresAt: string };
 const timeLabel = (ms: number) => `${(ms / 1000).toFixed(1)}s`;
 
-export function SceneCaptionPreview({ projectId, jobId, track, enabled }: {
+export function SceneCaptionPreview({ projectId, jobId, track, enabled, style, savingStyle, onStyleChange }: {
   projectId: string; jobId: string; track: CaptionTrack; enabled: boolean;
+  style: CaptionStyleSelection; savingStyle: boolean; onStyleChange: (style: CaptionStyleSelection) => void;
 }) {
   const [plan, setPlan] = useState<CompositionPlan | null>(null);
   const [sceneId, setSceneId] = useState("");
@@ -19,10 +21,6 @@ export function SceneCaptionPreview({ projectId, jobId, track, enabled }: {
   const [error, setError] = useState("");
   const [mediaError, setMediaError] = useState("");
   const [loadingMedia, setLoadingMedia] = useState(false);
-  const [position, setPosition] = useState<"bottom" | "top">("bottom");
-  const [size, setSize] = useState<"normal" | "large">("normal");
-  const [alignment, setAlignment] = useState<"center" | "left">("center");
-  const [contrast, setContrast] = useState<"default" | "high" | "shadow">("default");
   const [frameHeight, setFrameHeight] = useState(0);
   const [activeCueId, setActiveCueId] = useState<string | null>(null);
   const [displayMs, setDisplayMs] = useState(0);
@@ -136,9 +134,9 @@ export function SceneCaptionPreview({ projectId, jobId, track, enabled }: {
 
   if (error) return <p role="status" className="text-body-sm text-muted-foreground">{error}</p>;
   if (!scene?.visual) return <p role="status" className="text-body-sm text-muted-foreground">Loading scene preview…</p>;
-  const safe = captionStyle.safe_area_percent[track.aspect_ratio];
+  const resolvedStyle = resolveCaptionStyle(style, track.aspect_ratio);
+  const safe = resolvedStyle.safe_area_percent;
   const cue = track.cues.find(item => item.id === activeCueId);
-  const fontSize = Math.max(12, Math.min(32, frameHeight * captionStyle.font_size_height_percent / 100 * (size === "large" ? 1.2 : 1)));
   return <section className="space-y-3 rounded-lg border border-border p-3" aria-label="Scene caption overlay preview">
     <div className="flex flex-wrap items-center justify-between gap-2">
       <h3 className="text-body-sm font-semibold">Scene preview</h3>
@@ -160,12 +158,8 @@ export function SceneCaptionPreview({ projectId, jobId, track, enabled }: {
         onTimeUpdate={() => sync(scene, Math.round((video.current?.currentTime ?? 0) * 1000))}
         onError={() => setMediaError("Video access expired or playback failed. Refresh preview to try again.")} />}
       {media?.sceneId === sceneId && scene.visual.media_type === "image" && <div role="img" aria-label={`Visual for scene ${scene.scene_order}`} className="absolute inset-0 bg-contain bg-center bg-no-repeat" style={{ backgroundImage: `url(${JSON.stringify(media.url)})` }} />}
-      {enabled && cue && <div data-caption-cue={cue.id} className="pointer-events-none absolute z-10" style={{ left: `${safe.horizontal}%`, right: `${safe.horizontal}%`, [position]: `${position === "bottom" ? safe.bottom : safe.horizontal}%`, textAlign: alignment }}>
-        <span className="inline-block max-w-full break-words rounded-sm px-2 py-1 text-white" style={{
-          fontFamily: captionStyle.font_family, fontSize, lineHeight: 1.25, fontWeight: contrast === "high" ? 700 : 600,
-          backgroundColor: contrast === "shadow" ? "transparent" : contrast === "high" ? "rgba(8,11,15,.95)" : `rgba(8,11,15,${captionStyle.background_opacity})`,
-          textShadow: contrast === "shadow" ? "0 2px 4px #080b0f, 0 0 6px #080b0f" : "0 1px 2px #080b0f",
-        }}>{cue.text}</span>
+      {enabled && cue && <div data-caption-cue={cue.id} className="pointer-events-none absolute z-10" style={{ left: `${safe.horizontal}%`, right: `${safe.horizontal}%`, [resolvedStyle.position]: `${safe.vertical}%`, textAlign: resolvedStyle.alignment }}>
+        <span className="inline-block max-w-full break-words" style={previewCaptionPaint(resolvedStyle, frameHeight)}>{cue.text}</span>
       </div>}
       {!media && <span className="absolute inset-0 grid place-items-center text-body-sm text-white">{loadingMedia ? "Loading private scene…" : "Scene unavailable"}</span>}
     </div>
@@ -177,12 +171,13 @@ export function SceneCaptionPreview({ projectId, jobId, track, enabled }: {
       <span className="text-caption tabular-nums text-muted-foreground">{timeLabel(displayMs)} / {timeLabel(scene.duration_ms)}</span>
       <Button type="button" variant="ghost" disabled={loadingMedia} onClick={() => void loadMedia(sceneId)}>Refresh preview</Button>
     </div>
-    <div className="grid grid-cols-2 gap-2 text-caption sm:grid-cols-4">
-      <label>Position <select className="mt-1 min-h-11 w-full rounded-md border border-input bg-background px-2 text-foreground" value={position} onChange={event => setPosition(event.target.value as typeof position)}><option value="bottom">Bottom</option><option value="top">Top</option></select></label>
-      <label>Text size <select className="mt-1 min-h-11 w-full rounded-md border border-input bg-background px-2 text-foreground" value={size} onChange={event => setSize(event.target.value as typeof size)}><option value="normal">Default</option><option value="large">Large</option></select></label>
-      <label>Alignment <select className="mt-1 min-h-11 w-full rounded-md border border-input bg-background px-2 text-foreground" value={alignment} onChange={event => setAlignment(event.target.value as typeof alignment)}><option value="center">Center</option><option value="left">Left</option></select></label>
-      <label>Contrast <select className="mt-1 min-h-11 w-full rounded-md border border-input bg-background px-2 text-foreground" value={contrast} onChange={event => setContrast(event.target.value as typeof contrast)}><option value="default">Default</option><option value="high">High</option><option value="shadow">Shadow</option></select></label>
+    <div className="grid grid-cols-2 gap-2 text-caption sm:grid-cols-5">
+      <label>Preset <select className="mt-1 min-h-11 w-full rounded-md border border-input bg-background px-2 text-foreground" value={style.preset} disabled={savingStyle} onChange={event => onStyleChange(selectionForCaptionPreset(event.target.value as CaptionStyleSelection["preset"]))}><option value="default">Default</option><option value="clean">Clean</option><option value="bold">Bold</option></select></label>
+      <label>Position <select className="mt-1 min-h-11 w-full rounded-md border border-input bg-background px-2 text-foreground" value={style.position} disabled={savingStyle} onChange={event => onStyleChange({ ...style, position: event.target.value as CaptionStyleSelection["position"] })}><option value="bottom">Bottom</option><option value="top">Top</option></select></label>
+      <label>Text size <select className="mt-1 min-h-11 w-full rounded-md border border-input bg-background px-2 text-foreground" value={style.size} disabled={savingStyle} onChange={event => onStyleChange({ ...style, size: event.target.value as CaptionStyleSelection["size"] })}><option value="normal">Default</option><option value="large">Large</option></select></label>
+      <label>Alignment <select className="mt-1 min-h-11 w-full rounded-md border border-input bg-background px-2 text-foreground" value={style.alignment} disabled={savingStyle} onChange={event => onStyleChange({ ...style, alignment: event.target.value as CaptionStyleSelection["alignment"] })}><option value="center">Center</option><option value="left">Left</option></select></label>
+      <label>Contrast <select className="mt-1 min-h-11 w-full rounded-md border border-input bg-background px-2 text-foreground" value={style.contrast} disabled={savingStyle} onChange={event => onStyleChange({ ...style, contrast: event.target.value as CaptionStyleSelection["contrast"] })}><option value="default">Default</option><option value="high">High</option><option value="shadow">Shadow</option></select></label>
     </div>
-    <p className="text-caption text-muted-foreground">Style controls affect this preview only. Caption timing is estimated from the saved narration window.</p>
+    <p role="status" className="text-caption text-muted-foreground">{savingStyle ? "Saving caption style…" : "Caption style is saved for this generation."} Timing is estimated from the saved narration window.</p>
   </section>;
 }
