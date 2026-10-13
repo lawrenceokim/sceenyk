@@ -1,5 +1,11 @@
 # Architecture Context
 
+## Browser caption overlay preview — local production/hosted-data acceptance, 2026-10-13
+
+The owner-only ready track and ready composition are read once when the caption panel opens. Scene selection requests only that scene's private visual capability from `/api/media/scene-preview`; the server derives the account from Clerk and compares the job/project/scene to the immutable plan, service-resolved asset reference and verified ETag before returning a short-lived signed R2 URL. It never accepts a browser-supplied asset ID or key. The browser does not write captions, create assets, charge credits, contact providers, or request final rendering. Saved On/Off remains a separate boolean preference; preview style choices stay local to this browser session.
+
+`lib/captions/preview-timing.ts` is the single conversion boundary: `composition_ms = scene.start_ms + (media_ms - visual.input_start_ms)`, clamped to the scene window. Cue display uses `start_ms <= composition_ms < end_ms` and matching scene ID. Video metadata, playback, pause and seek events synchronize the overlay; playback animation checks time while only changing React state at cue boundaries or coarse progress intervals. Still-image scenes use a local clock over the same composition window. Caption font scales with measured preview height, and safe-area margins come from the existing 16:9/9:16/1:1 `captionStyle` contract. The preview is not burned into an MP4; it does not change the deferred final renderer.
+
 ## Persistent captions — hosted data/local production acceptance, 2026-10-13
 
 `lib/captions/` adds schema-v1 structured caption tracks after a ready immutable composition. Applied migration 018 adds private immutable `caption_tracks` (one per job, input digest, owned project/job foreign key, canonical track JSON) and mutable `caption_preferences` (one per job, enabled). Each cue contains only stable id, generation_job_id, scene_id/order, narration_id, integer start_ms/end_ms, text and cue_order; status/version/alignment are at track level. No storage capabilities or provider identifiers enter this contract. Applied 001–017 are unchanged. Hosted persistence and local production browser acceptance pass; changed Vercel/Inngest Cloud deployment is separate.

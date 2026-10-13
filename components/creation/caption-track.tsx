@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { setCaptionPreferenceAction } from "@/app/actions/captions";
 import { captionTrackSchema, type CaptionTrack } from "@/lib/captions/contract";
+import { SceneCaptionPreview } from "./scene-caption-preview";
 
 export function CaptionTrackPreview({ projectId, jobId }: { projectId: string; jobId: string }) {
   const [data, setData] = useState<{ track: CaptionTrack | null; enabled: boolean } | null>(null);
@@ -65,6 +66,7 @@ export function CaptionTrackPreview({ projectId, jobId }: { projectId: string; j
     </p>
     {track?.status === "ready" && track.cues.length > 0 && <>
       <p className="text-caption text-muted-foreground">Timing follows the measured narration window and is estimated, not word-perfect. Your choice applies to this generation’s future video.</p>
+      <SceneCaptionPreview projectId={projectId} jobId={jobId} track={track} enabled={data?.enabled ?? true} />
       <details className="text-body-sm">
         <summary className="cursor-pointer py-2 font-medium">Preview {track.cues.length} caption {track.cues.length === 1 ? "cue" : "cues"}</summary>
         <ol className="max-h-64 space-y-3 overflow-y-auto py-2">
