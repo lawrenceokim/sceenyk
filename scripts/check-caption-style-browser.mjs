@@ -38,7 +38,7 @@ await deployedBrowser(origin,{A:owner.data.clerk_user_id},async browser=>{
   await browser.wait(`!!${overlay}`);await browser.discover();
   const original=await browser.evaluate(get);
   check('owner reads versioned default or existing saved style',original.style?.schema_version===1);
-  check('default preset is available',await browser.evaluate("!!Array.from(document.querySelectorAll('[aria-label=\"Scene caption overlay preview\"] select')).find(x=>Array.from(x.options).some(o=>o.value==='default'))"));
+  check('default preset is available',await browser.evaluate("!!Array.from(document.querySelectorAll('[aria-label=\"Scene caption overlay preview\"] label')).find(e=>e.textContent.trim().startsWith('Preset'))?.querySelector('select')?.querySelector('option[value=default]')"));
   check('Clean preset selector updates immediately',await browser.evaluate(select('Preset','clean')));
   await browser.wait(saved("x.style?.preset==='clean'"));
   check('Clean persists and uses shadow-only background',await browser.evaluate(`(()=>{const e=${overlay};return !!e&&/0\\)$/.test(getComputedStyle(e.querySelector('span')).backgroundColor);})()`));
