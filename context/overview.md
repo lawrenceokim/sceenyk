@@ -16,7 +16,7 @@ The initial hackathon/MVP should demonstrate a complete experience for a focused
 - Allow visitors to explore the public product before requiring authentication for account-dependent actions.
 - Prove a usable free-to-paid flow with clear generation limits and credit requirements.
 - Provide a consistent, responsive experience using the shared Sceenyk light and dark design system.
-- Establish a foundation for additional content categories, subscriptions, and reusable creator styles without expanding the first MVP beyond a demonstrable core flow.
+- Support repeat credit top-ups and establish a foundation for additional content categories and reusable creator styles without expanding the first MVP beyond a demonstrable core flow.
 
 ## Core User Flow
 
@@ -30,7 +30,7 @@ The initial hackathon/MVP should demonstrate a complete experience for a focused
 8. The user sees the job's progress and processing state.
 9. When processing completes, the finished video becomes available in the project for preview and download.
 10. The generation's usage is recorded against the user's free allowance or credits, and the updated allowance or balance is visible.
-11. When the free allowance or available credits cannot cover a request, Sceenyk directs the user to upgrade or buy credits. The hackathon's paid credit flow uses PayPal.
+11. When free usage is exhausted or available credits cannot cover a request, the user buys a Sceenyk credit pack and returns to cost review. Users top up again when their balance is low or zero; no monthly generation plan is required. The hackathon's paid credit flow uses PayPal Sandbox.
 
 ## Features
 
@@ -54,13 +54,29 @@ Signed-in users can create and access their projects, see associated generations
 
 Clerk handles authentication through centered modal/overlay experiences wherever sign-in or sign-up is needed. Public exploration remains available without an account.
 
-Authentication is required for generation, project management, credit purchases, subscriptions, and account-dependent creator features. Dedicated `/signin` and `/signup` pages are excluded from the product flow.
+Authentication is required for generation, project management, credit purchases and account-dependent creator features. Dedicated `/signin` and `/signup` pages are excluded from the product flow.
 
 ### Free Generations, Credits, and Payments
 
-Every user receives **2 lifetime free video generations, each limited to 10 seconds**. Free generations are separate entitlements, not paid credits. Eligibility requires authentication, duration at most 10 seconds, and remaining allowance. Reservation precedes execution; a verified stored result consumes it and a Sceenyk failure without a usable result restores it once. Additional/longer generations require paid credits once trusted pricing and paid access exist. Subscription pricing, credit-pack pricing, credits by type/duration, and the provider-cost-to-credit formula remain unresolved. See [accounting.md](accounting.md) and [pricing.md](pricing.md).
+Every user receives **2 lifetime free video generations, each limited to 10 seconds**. Free generations are separate entitlements, not paid credits. Eligibility requires authentication, duration at most 10 seconds, and remaining allowance. Reservation precedes execution; a verified stored result consumes it and a Sceenyk failure without a usable result restores it once. Additional/longer generations require paid credits under the server's configured pricing. Production credit-pack prices, credits by type/duration, and the provider-cost-to-credit formula remain unresolved. See [accounting.md](accounting.md) and [pricing.md](pricing.md).
 
-Hackathon purchases use PayPal Sandbox only; Live is prohibited during development. The one-time purchase implementation and explicitly temporary demo packs are described in [payments.md](payments.md); real Sandbox acceptance is tracked separately. Production pricing remains unresolved. Subscriptions, marketplace purchases and creator payouts remain later phases.
+Hackathon purchases use PayPal Sandbox only; Live is prohibited during development. The one-time purchase unit is **Complete within Merchant Sandbox acceptance**, including a real verified purchase and exactly-once crediting. Temporary demo packs and acceptance limits are described in [payments.md](payments.md). Production pricing remains unresolved. Marketplace purchases and creator payouts are outside current scope.
+
+### Approved Commercial Model — Pay As You Go (2026-10-13)
+
+**"Buy credits. Create what you need. Top up when you need more."**
+
+Sceenyk's primary business model is pay-as-you-go credit purchases. New users retain the two lifetime free generations. After that allowance is exhausted, users purchase credit packs, spend credits on AI usage and top up again whenever their balance becomes low or reaches zero. Longer or otherwise paid requests continue to require a server-issued credit quote under the existing entitlement rules.
+
+Credits are usage units, not monthly allowances. Buying a pack does not buy access for an entire month, start a recurring plan or replenish a balance on a calendar schedule. **Purchased credits do not expire unless a future explicit product decision changes this policy.** A credit balance does not bypass supported-workload, pricing or generation eligibility checks.
+
+Generation cost must be shown before explicit confirmation. Pricing, free eligibility, available balance and reservation amounts remain server-authoritative. Existing reserve/consume/restore rules remain unchanged; this product decision adds no per-provider charge or new billing trigger. Larger packs may eventually offer better value per credit, but no production discount schedule, pack price or conversion rate is approved here. Existing Sandbox values remain test configuration only.
+
+**Monthly subscriptions are not current scope or the next required commercial feature.** A possible future membership could offer discounted credit pricing, priority generation, premium models, larger uploads or higher-quality exports. Those examples are not approved entitlements or a committed roadmap; membership requires a separate product decision and authorization.
+
+**Auto-recharge is a separate optional future feature, not a monthly subscription:** a user chooses a balance threshold and predefined credit pack, and crossing the threshold could trigger a purchase using a payment method the user has explicitly authorized for that purpose. Payment-method authorization, consent, limits, failure handling and implementation need a future specification. Current top-ups remain user-initiated one-time purchases; this task adds no automatic charge.
+
+This approved contract supersedes earlier documentation and illustrative design references that implied monthly generation plans, monthly credit allocations or recurring PayPal billing were required next. It changes product documentation only.
 
 ### Creator Templates and Marketplace
 
@@ -70,7 +86,7 @@ The first MVP may demonstrate template/style selection within its supported crea
 
 ### Persistent Product Data
 
-Supabase PostgreSQL stores users, projects, generations, generation jobs, credit balances, credit transactions, subscriptions, payments, templates, marketplace information, and related metadata as those capabilities are introduced.
+Supabase PostgreSQL stores users, projects, generations, generation jobs, credit balances, credit transactions and payments. Templates, marketplace information and related metadata remain separately scoped future capabilities. No subscription data model is required for the current credit/top-up contract.
 
 Large video, image, and audio files are stored outside PostgreSQL. Database records retain the references and metadata needed to associate that media with the relevant project or generation. The media storage service is not specified by this overview.
 
@@ -94,7 +110,7 @@ Creation forms, project access, generation progress, and result preview/download
 - Supabase persistence for the user, project, generation/job, free-usage, credit, and payment data needed by the MVP.
 - Media references and metadata in PostgreSQL, with large media files stored separately.
 - Two free short generations per new user, credit eligibility checks, and usage accounting.
-- PayPal-based credit purchases and a clear upgrade/buy-credit entry point when generation capacity is insufficient.
+- One-time PayPal credit-pack purchases and a clear Buy credits / top-up entry point when generation capacity is insufficient.
 - A responsive interface aligned with the existing light and dark design system and customized shadcn tokens.
 
 The first supported category, AI provider, and media storage service remain implementation decisions. Supporting fewer paths is acceptable when the selected flow works completely.
@@ -107,7 +123,8 @@ The first supported category, AI provider, and media storage service remain impl
 - A full professional timeline editor.
 - Native mobile applications.
 - A fully developed creator marketplace economy, including complete creator publishing, marketplace purchasing, and payout operations.
-- A complete subscription-management system beyond the MVP's working paid credit path and upgrade entry point.
+- Monthly generation subscriptions, monthly credit allocations and recurring plans.
+- Membership benefits and auto-recharge unless separately approved in a future product decision.
 - Large-scale enterprise features.
 
 ## Success Criteria

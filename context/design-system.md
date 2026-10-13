@@ -242,6 +242,8 @@ Use `bg-popover text-popover-foreground border-border shadow-popover`, 16–24 p
 
 ## Pricing cards
 
+**Product contract approved 2026-10-13:** the Free/Creator/Pro cards and Subscriptions sidebar label in this document are historical reference-image observations, not current billing or navigation requirements. Sceenyk uses pay-as-you-go credit packs and manual top-ups; monthly subscriptions/allocations are outside current scope. Preserve these visual observations and their confidence labels, but use the approved contract in [overview.md](overview.md#approved-commercial-model--pay-as-you-go-2026-10-13) for product decisions. No application artwork, styling or UI is changed in this documentation task.
+
 **Exact observation:** three cards (Free, Creator, Pro), plan/features above a bold price, action at the bottom. Creator has a purple outline and floating “MOST POPULAR” pill. Paid actions are purple; Free has an outline treatment.
 
 Light mode uses white surfaces and faint lavender on the featured tier. Dark uses dark surfaces with a restrained purple wash/glow on the featured tier. Use a common card height, aligned price/actions, 16–24 px padding, and a stronger semantic purple border for the featured plan. Avoid glow clipping around the floating badge. **Inferred:** three columns on wide screens and one column on mobile. Pricing copy in the image is illustrative and is **not** product billing configuration.

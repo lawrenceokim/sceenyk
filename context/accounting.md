@@ -1,6 +1,8 @@
 # Generation accounting contract
 
-**PayPal Sandbox extension (2026-10-13):** [payments.md](payments.md) specifies temporary server-owned packs, verified capture and migration 017. The existing append-only ledger now supports `purchase` entries carrying purchase/order/capture IDs and unique provider references. One transactional fulfilment increases only `credit_available`; free counters, reserved credits and generation reservations stay unchanged. Original generation ledger constraints/history remain. Real Sandbox acceptance is pending, so purchase integration remains In Progress. This supersedes historical statements below that no purchase/grant service exists.
+**Commercial model approved 2026-10-13:** credits support user-initiated pay-as-you-go pack purchases and repeat top-ups, not monthly allowances or a month of access. Purchased credits do not expire unless a future explicit product decision changes this. The two lifetime free generations remain separate and never reset on purchase. Generation cost is shown before confirmation and is server-authoritative; existing reservation, verified-result consumption and failure restoration remain unchanged. Quote expiry is not credit expiry. Monthly subscriptions are outside current scope. Possible membership benefits and optional threshold-based auto-recharge require separate future approval. See [overview.md](overview.md#approved-commercial-model--pay-as-you-go-2026-10-13).
+
+**PayPal Sandbox extension (2026-10-13):** [payments.md](payments.md) specifies temporary server-owned packs, verified capture and applied migration017. The existing append-only ledger supports `purchase` entries with purchase/order/capture IDs and unique provider references. Actual USD1.00 Sandbox buyer approval/capture increases only `credit_available`0→100 once, with exactly one ledger row, browser-independent recovery and duplicate/replay/persistence checks. Free counters remain2/0/0 and paid reserved0; existing reservations/history stay unchanged. Hosted direct-write probes are denied. Merchant acceptance is Complete within documented limits; funded pending/denied states are fixture-tested. This supersedes historical statements below that no purchase/grant service exists.
 
 **Gemini planning extension (2026-10-11):** analysis is part of the already-admitted job, with no second debit. A valid persisted production plan pauses at processing/planning and retains its original reservation for future production; it is not a usable final video and cannot consume allowance/credits. Terminal analysis failures, invalid output, unsupported media and unfinished stale claims restore through the existing exactly-once trigger. Ready plans are excluded from stale AI expiry. No user cancellation/refund policy is invented. Migration 008 and hosted acceptance status are tracked separately.
 
@@ -14,7 +16,7 @@ Clerk → application user → owned project and strict immutable inputs/uploade
 
 `generation_accounts` separates free total/reserved/consumed from available/reserved credits. An app-user INSERT trigger initializes two free generations and zero paid credits once; migration backfills existing users. Login, profile sync and deployment never reset it. Available free = total − reserved − consumed. Credit amounts are exact integer accounting units bounded to JavaScript's safe integer range, not a tariff or money conversion.
 
-`generation_reservations` has one owner-bound row per job: free or credits, reserved → consumed or released once. Free reserves one entitlement; credits hold the exact trusted server cost. Append-only `credit_ledger` records every paid movement: reservation available→reserved, consumption reserved→spent, release reserved→available. Entries include user/job, positive amount, signed available/reserved deltas, type/direction, reason, unique reference and timestamp. Browser and service roles cannot directly write balances, reservations or ledger. Restricted database functions update everything atomically. No credit grant, purchase, adjustment, checkout or pricing API exists.
+`generation_reservations` has one owner-bound row per job: free or credits, reserved → consumed or released once. Free reserves one entitlement; credits hold the exact trusted server cost. Append-only `credit_ledger` records paid generation movements and verified purchases: reservation available→reserved, consumption reserved→spent, release reserved→available and purchase→available. Generation entries retain user/job linkage; purchase entries retain user/purchase/PayPal order/capture linkage. Each records the amount, signed deltas, type, reason, unique idempotency reference and timestamp. Browser and service roles cannot directly write balances, reservations or ledger; restricted database functions update everything atomically. There is no monthly allocation, reset, credit-expiry process or arbitrary balance-adjustment API.
 
 The trusted server cost resolver currently returns unavailable. Longer requests/exhausted free allowance return paid-access-unavailable without a job or dispatch. A future approved server tariff can supply a positive exact cost. Browser cost/kind/owner/balance/status/restoration claims are rejected.
 
@@ -34,9 +36,8 @@ The isolated suites pass 115 accounting, 96 generation and 55 dispatch checks, i
 
 ## Unresolved commercial decisions
 
-- Subscription pricing.
-- Credit-pack pricing.
+- Production credit-pack pricing and any larger-pack value schedule.
 - Credits required by generation type/duration.
 - Provider-cost-to-credit formula.
 
-Payments, subscriptions, providers and rendering require separate authorization.
+Monthly subscriptions and recurring plans are outside current scope. Membership and auto-recharge are unapproved optional future features, not accounting prerequisites. Sandbox one-time purchase acceptance is Complete; production economics, future payment capabilities and the deferred hosted renderer require separate authorization. This product-contract update changes no accounting code or historical ledger.

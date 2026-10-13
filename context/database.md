@@ -1,8 +1,10 @@
 # Development application identity
 
-## PayPal Sandbox extension — migration 017 (application/real acceptance pending)
+## PayPal Sandbox extension — migration 017 applied, scoped Merchant acceptance verified
 
 Adds private `credit_purchases`, immutable purchase snapshots, unique PayPal order/capture/request IDs and guarded service-only preparation/attachment/state/fulfilment RPCs. Extends the existing immutable `credit_ledger` with purchase/order/capture references and a purchase movement variant while retaining generation foreign keys/checks/history. Account + ledger + purchase completion commit atomically. Browser access and direct service-role writes remain denied. Free usage/reservations and migrations 001–016 are preserved. See [payments.md](payments.md) for configuration, lifecycle and acceptance prerequisites.
+
+Real hosted acceptance confirms applied purchase/ledger schema, actual USD1.00 Sandbox capture with one ledger row and paid balance0→100 once, repeated completion/replay, ownership and persisted read behavior. No-op write probes return42501 for service-role account/purchase/ledger mutation; public browser reads/writes are denied. Original ledger values and free/held accounting stay unchanged. No new migration was needed in the acceptance continuation.
 
 ## Final rendering extension — migration016 (implemented, hosted application pending)
 

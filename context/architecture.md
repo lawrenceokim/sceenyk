@@ -1,6 +1,20 @@
 # Architecture Context
 
-## PayPal Sandbox one-time purchases — authorized boundary (2026-10-13)
+## Approved commercial architecture — pay-as-you-go credits (2026-10-13)
+
+The current product contract is [pay-as-you-go credits](overview.md#approved-commercial-model--pay-as-you-go-2026-10-13): **"Buy credits. Create what you need. Top up when you need more."** Two lifetime free generations remain separate entitlements. Thereafter, users buy credit packs, consume credits through the existing quoted generation lifecycle and manually top up when their balance is low or zero. Longer/paid requests still follow the existing server entitlement rules.
+
+Purchased credits are usage units and **do not expire unless a future explicit product decision changes this**. A pack grants its recorded credits, not a month of access or a monthly allowance. No billing period, monthly reset, subscription entitlement or recurring payment is required. Cost review and explicit confirmation remain mandatory; server pricing and atomic reservation/settlement remain authoritative. Five-minute quote expiry and temporary signed media URL expiry are separate from purchased-credit lifetime.
+
+The completed Merchant Sandbox one-time purchase boundary already supports manual top-ups. Production pack prices, generation tariffs, conversion/markup and any better-value schedule for larger packs remain future commercial decisions. This documentation decision introduces no code, schema, payment or deployment change and does not enable Live.
+
+Monthly subscriptions are outside current scope and are not the recommended next commercial unit. A possible membership offering discounted credits, priority, premium models, larger uploads or higher-quality exports is unapproved and requires its own product decision. Optional future auto-recharge is separate: explicitly authorized payment method + user-selected threshold/pack → one-time pack purchase when the balance falls below that threshold. Stored payment authorization, consent, limits, idempotency and failure/recovery policy require a future specification; current checkout does not implement them.
+
+This section supersedes historical monthly-plan/subscription assumptions below. PayPal Sandbox purchases remain **Complete within Merchant Sandbox acceptance**. Final rendering remains **In Progress / deferred** because Render Free 512 MB RAM is insufficient for hosted Remotion/FFmpeg rendering; hosted acceptance waits for a separately authorized upgrade.
+
+## PayPal Sandbox one-time purchases — Merchant acceptance verified (2026-10-13)
+
+Applied017 and deployed standard Merchant Sandbox checkout pass actual USD1.00 Personal buyer approval/capture → one immutable purchase ledger →100 paid credits once. The creating browser was closed before approval; authoritative completed state was observed before any A completion action. Real duplicate completion, owner isolation, commercial tampering, failed-unapproved capture/cancellation, refresh/reopen and hosted write denial pass. PayPal accepted authentic completed-capture resend and the user confirmed HTTP200 delivery; accounting stays100/one. Registered ORDER.APPROVED and CAPTURE.PENDING/COMPLETED/DENIED suffice; ORDER.COMPLETED is optional and never a fulfilment prerequisite. Funded pending/denied states remain explicit service/SQL fixtures. See [payments.md](payments.md) and the tracker for exact evidence/limits. No production pricing or Live integration is established.
 
 `lib/payments/paypal/` owns Sandbox OAuth and Orders v2 REST calls; `lib/payments/` owns authoritative temporary demo packs and purchase/accounting orchestration. Checkout uses PayPal's hosted approval redirect, so no browser SDK or public client ID is required. All credentials remain server-only. `PAYPAL_ENVIRONMENT` must explicitly equal `sandbox`; the REST origin is fixed to Sandbox and Live configuration is rejected. Return URLs come from a validated server configuration, never browser input.
 
@@ -149,7 +163,7 @@ The public UI foundation includes landing/themes and verified Clerk/application 
 | Video processing — source preparation implemented | FFmpeg/FFprobe | Owned source extraction, conservative fit/pad/rotation and visual-only normalization through the separate Node worker. Static development binaries are installed/tested; production uses configured binaries. Final processing/rendering remains planned. |
 | Background workflow — Deployed Gemini acceptance verified | Inngest SDK 4.23.0; official test engine 1.0.0 | Actual Vercel/Cloud events and authoritative claims reach private R2/Gemini and persist validated plans. Browser independence, bounded retry, duplicates without provider replay, ready-state persistence and terminal restoration pass. Four workflow retries and minute reconciliation remain. |
 | Heavy processing — preparation deployment/security Complete within short acceptance | Render + Docker | Existing FFmpeg worker, persistent atomic HMAC nonce protection, health/drain and actual Render Free/private preparation/fal output pass. Final rendering remains planned. |
-| Payments — implemented, real acceptance pending | PayPal Sandbox Orders v2 REST | One-time demo credit purchases, verified capture, immutable ledger, authenticated webhooks and owned reconciliation. Live, subscriptions, marketplace and payouts excluded. |
+| Payments — Complete within Merchant Sandbox acceptance | PayPal Sandbox Orders v2 REST | Real demo purchase/capture grants100 once with ledger, browser-independent recovery, duplicate/replay and security/persistence evidence. Funded pending/denied states fixture-tested. Live, subscriptions, marketplace and payouts excluded. |
 | Deployment — Vercel/Inngest Cloud/Render preparation/security verified | Vercel for Next.js; Render for media preparation | `https://sceenyk.vercel.app` uses the stable `/api/inngest` Cloud endpoint and dedicated `https://sceenyk-media-worker.onrender.com`. Real private input/preparation/fal/output and deployed nonce/replay/concurrency acceptance pass. |
 
 Installed versions above were checked with `npm ls --depth=0`; its extraneous platform/WASM packages are not product integrations. `.gitignore` mentioning `.vercel` and the starter page linking Vercel are not evidence of deployment.
@@ -192,7 +206,7 @@ These are future locations/contracts, not created folders. Add only what the req
 | `lib/ai/` | Language/multimodal analysis and planning contracts; SDK/provider-specific implementation below this boundary. |
 | `lib/video-ai/` | Video-generation/transformation interface and provider implementations, e.g. future `providers/runway.ts`. |
 | `lib/voice/` | Voice-generation interface and adapters. |
-| `lib/payments/` | PayPal checkout, verification, webhook handling, payment finalization, and later subscription/payment capabilities. |
+| `lib/payments/` | One-time credit-pack checkout, verification, webhook handling and ledger-backed payment finalization. Membership, auto-recharge and recurring billing are not current capabilities. |
 | `lib/accounting/` | Server-only owned allowance read, owned allowance and verified-storage settlement adapter; `lib/pricing/` owns cost resolution/quotes; transactional reservation/ledger operations live in migration 006 RPCs/triggers. |
 | `lib/pricing/` | Validated server-only retail configuration, owned quote service and safe quote DTO. Account-locked quote confirmation delegates to the unchanged accounting admission/settlement. See pricing.md. |
 | `lib/generation/` | Request-to-production orchestration, stage contracts, persistent job state, and coordination of provider/worker services. |
@@ -241,7 +255,7 @@ PostgreSQL records application relationships and workflow truth:
 - Application user/profile records mapped to Clerk identity; projects and ownership.
 - Generations, generation jobs/states, prompts/configuration, stage results, failure context, and provider job references.
 - Asset metadata and project/user associations, not large media binaries.
-- Credit balances/reservations and ledger/transactions, payments, and eventual subscriptions.
+- Credit balances/reservations, immutable ledger/transactions and one-time purchase/payment records; no monthly subscription model is required.
 - Later creator templates, listings/purchases, and creator earnings metadata.
 
 These are conceptual data categories, not existing tables/columns or a complete schema. Introduce migrations only for the current unit after defining relationships, constraints, indexes, and access policies. Never rewrite a migration that may have been applied; record application/verification status. Privileged database access must still enforce ownership. The current generation unit reinspected the hosted Data API prerequisite tables/columns before authoring migration 004; future domains remain unspecified.
@@ -287,7 +301,7 @@ Protected server operations derive the user from verified Clerk sessions. `ensur
 ### Ownership and authorization
 
 - Each private project has an owner. Generations/jobs belong to a project and/or user with consistent ownership; input/output assets are associated with their user/project.
-- Balances, ledger entries, subscriptions, and payments belong to the relevant user. Later marketplace listings belong to their creator; public listing metadata does not make private project/media data public.
+- Balances, ledger entries, credit purchases and payments belong to the relevant user. Later marketplace listings belong to their creator; public listing metadata does not make private project/media data public.
 - Server/data access checks enforce authentication, resource ownership, permissions, and entitlements where required. Changing a URL/request ID must never reveal another user's private data.
 - Access is server-mediated: browser grants are revoked and RLS has no browser policies. The privileged SDK bypasses RLS, so every project operation derives its owner through Clerk/application identity; read/update queries filter owner plus project ID. Hosted project/media persistence and two-user ownership pass, including deployed owned-project acceptance. Supabase Auth remains unused.
 - Signed media URLs and job-status/result endpoints need ownership enforcement as well as project mutations. Worker/provider callbacks use verified service identities and job association, not browser-supplied ownership claims.
@@ -343,21 +357,21 @@ Inngest is the implemented workflow coordinator. Render/Docker packaging and HMA
 
 Every application user receives **two lifetime free video generations, each limited to ten seconds**. This is a separate entitlement, not paid credits. Authenticated identity, duration and available allowance are the only eligibility conditions. Migration 006 backfills existing users and initializes new app-user inserts once; profile upserts do not reset counters. Current 10/15/30-second options make 10 seconds the eligible choice. Paid pricing/access is unavailable; longer/exhausted requests fail safely without a job. See [accounting.md](accounting.md).
 
-The server determines entitlement and trusted credit cost. The central pricing service defaults to unavailable paid rates; explicit development/test rules may provide quotes. No browser cost override exists. Subscription pricing, credit-pack pricing, credits by generation type/duration and provider-cost conversion remain unresolved. PNG prices are illustrative. There is no purchase or subscription implementation.
+The server determines entitlement and trusted credit cost. The central pricing service defaults to unavailable paid rates; explicit development/test rules may provide quotes. No browser cost override exists. Production credit-pack prices, generation tariffs and provider-cost conversion remain unresolved. PNG prices are illustrative. One-time Sandbox purchases are implemented and accepted; monthly subscriptions are outside current scope.
 
 ### Ledger, reservations and settlement — Accounting foundation
 
-`generation_accounts` holds separate free total/reserved/consumed counters and available/reserved paid credits. `generation_reservations` binds one free/credits outcome to each owned job. `credit_ledger` is immutable, recording each paid reservation/consumption/release with owner/job, amount, direction, signed balance deltas, reason, unique job/type reference and timestamp. No grant/purchase/adjustment API is added. Exact integer accounting units are bounded to JavaScript's safe integer range; this defines representation, not commercial pricing.
+`generation_accounts` holds separate free total/reserved/consumed counters and available/reserved paid credits. `generation_reservations` binds one free/credits outcome to each owned job. `credit_ledger` is immutable, recording paid reservation/consumption/release movements and verified purchases. Generation rows retain owner/job references; purchase rows carry owner/purchase/PayPal order/capture references, with signed deltas, reason and unique idempotency reference. There is no monthly allocation, balance reset or credit-expiry mechanism in this boundary. Exact integer accounting units are bounded to JavaScript's safe integer range; this defines representation, not commercial pricing.
 
 Atomic admission locks the user's account and commits job + reservation together before durable dispatch. Stable project/request UUID and immutable snapshot return the same job without another hold. Constraints prevent negative balances or free reserved+consumed exceeding two. Dispatch and claims require reservation. Terminal failures atomically release exactly once; recoverable send outages retain holds for cron recovery. Completion requires a claim-bound verified private R2 video receipt in `generation_result_receipts`, job completion and reservation consumption in one transaction. The server-only adapter verifies canonical storage key, size/MIME/signature/ETag; future renderers must validate usable output and publish immutably first. No current worker produces output or consumes a success. Browser roles have no accounting access; service_role can read tables and execute restricted RPCs but cannot directly write balances/history. Historical jobs are marked unaccounted and never retrocharged.
 
-### PayPal verification — implemented, real Sandbox acceptance pending
+### PayPal verification — real Merchant Sandbox acceptance verified
 
 See [payments.md](payments.md) and the current boundary above for actual configuration, migration 017, temporary packs and verification status. Existing generation accounting is extended with purchase entries; no production pricing or Live switch is introduced.
 
 The browser initiates checkout through the server-defined payment contract. PayPal success must be verified on the server against the intended payment/user, amount/currency, and final status; browser success alone grants nothing. Verify webhook authenticity before processing.
 
-Payment finalization must be **idempotent**: receiving the same successful payment/event repeatedly must not grant credits twice. Enforce persistent payment/event identity and atomic finalization across return callbacks, duplicate webhooks, retries, and concurrent handlers. Record the payment and associated ledger/entitlement outcome before reporting capacity granted. Keep provider verification in `lib/payments/` and accounting in its shared credit service; subscriptions use their approved lifecycle rules when introduced.
+Payment finalization must be **idempotent**: receiving the same successful payment/event repeatedly must not grant credits twice. Enforce persistent payment/event identity and atomic finalization across return callbacks, duplicate webhooks, retries, and concurrent handlers. Record the payment and associated ledger outcome before reporting credits granted. Keep provider verification in `lib/payments/` and generation usage in the existing accounting boundary. No subscription lifecycle or monthly entitlement is required for a top-up.
 
 ## Data Flow
 
@@ -392,7 +406,7 @@ flowchart TD
 - **Application data:** browser → Next.js verified Clerk identity → validated/authorized service → PostgreSQL. Read results are scoped to the user and contain only needed client data.
 - **Large uploads:** browser requests authorization → server issues a scoped signed upload → browser uploads directly to object storage → server verifies completion/metadata and records the asset association. Providers/workers retrieve authorized inputs from storage; PostgreSQL records their references.
 - **Generation:** Next.js persists/reserves an accepted job → durable workflow invokes required provider stages → worker assembles/renders → output is stored → generation/accounting records are finalized → authorized polling/subscription/read returns state and result. Progress transport is Undecided; completion is not inferred from elapsed time.
-- **Payments:** browser → PayPal checkout → server verification/webhook → idempotent finalization → payment/credit/subscription records in PostgreSQL. A signed-in checkout initiator and a verified provider event have different authentication contracts.
+- **Payments:** authenticated pack selection → server-owned price/credits → one-time PayPal checkout → server verification/authentic webhook → idempotent purchase finalization → immutable ledger + paid balance in PostgreSQL. Users manually repeat this flow when they need a top-up. A signed-in checkout initiator and a verified provider event have different authentication contracts.
 
 PostgreSQL records workflow truth; object storage holds the actual media. Worker scratch files, browser state, and provider callbacks alone are not durable application results. Logical arrows do not imply one synchronous request or automatic atomicity across external systems.
 
@@ -400,7 +414,7 @@ PostgreSQL records workflow truth; object storage holds the actual media. Worker
 
 1. Clerk is the authentication source of truth; do not build a second authentication system. Sign-in/sign-up uses centered modals/overlays, not dedicated auth pages.
 2. Every protected server operation verifies the authenticated Clerk user; service callbacks verify their own trusted origin/association.
-3. Browser-supplied user IDs, ownership claims, credit amounts, prices, and subscription status are never authoritative.
+3. Browser-supplied user IDs, ownership claims, credit amounts, prices and entitlement claims are never authoritative.
 4. Large video, audio, and image binaries are not stored directly in PostgreSQL.
 5. Long AI/video generation does not run inside a normal long-lived request-response handler.
 6. Every generation has persistent state surviving refresh/navigation; progress reflects actual processing.
@@ -421,18 +435,19 @@ PostgreSQL records workflow truth; object storage holds the actual media. Worker
 21. Migrations that may have been applied are not rewritten; create new migrations instead.
 22. No silent switch to a significantly more expensive AI provider/model occurs without defined product rules.
 23. A generation is not completed until its final output is safely stored, retrievable, and durably associated with the result.
-24. Browser-reported payment success alone never grants credits or subscription access.
+24. Browser-reported payment success alone never grants credits; credit-pack purchases establish no monthly access or recurring plan.
 
 ## Architecture Status
 
 ### Implemented
 
+- One-time PayPal Sandbox credit-pack purchases and repeat manual top-ups, with server-owned demo packs, authenticated order/capture, verified webhooks, immutable purchase ledger and exactly-once paid balance increases; Complete within recorded Merchant Sandbox acceptance. Credit balances have no monthly reset or expiration mechanism; the approved contract requires non-expiring purchased credits unless explicitly changed later. Production prices remain unresolved.
 - Existing FFmpeg preparation worker packaged for manual Render/Docker hosting, with HMAC authentication, identifier-only requests, authoritative owned-context loading, safe health, Render port binding and graceful drain. Native/regression verification is recorded in the tracker; Docker's unavailable engine and actual hosted acceptance remain explicit limits.
 - Next.js/React/strict TypeScript web foundation, npm tooling, ESLint, Tailwind 4, shadcn/Base UI Button/Dialog, and Lucide.
 - Public landing page, responsive navigation/footer, preview brand mark, reusable category/step/media/pricing compositions, and original illustrative vector scenes.
 - Global semantic light/dark tokens and Inter/Geist Mono; before-paint system/saved theme initialization, toggle persistence, and system/storage synchronization.
 - Public `/create` and private `/projects/[id]` reuse category/prompt/media/settings/output/brief UI, with editable title, explicit Save draft and owned project-media source. Real R2 uploads, hosted asset finalization, private retrieval, persistence and A/B ownership checks pass in development. No generated content exists.
-- `/dashboard` keeps its fixed sidebar, mobile Sheet, account/header/theme controls and unique skip target. Owned metadata cards, exact project count, pagination and two-user isolation pass deployed acceptance. Cards show latest owned job status, with Draft only when no job exists and Status unavailable on read failure. Real free allowance is displayed; paid access is unavailable and templates remain previews.
+- `/dashboard` keeps its fixed sidebar, mobile Sheet, account/header/theme controls and unique skip target. Owned metadata cards, exact project count, pagination and two-user isolation pass deployed acceptance. Cards show latest owned job status, with Draft only when no job exists and Status unavailable on read failure. Real free allowance and paid balances are displayed; Sandbox one-time credit purchases are accepted, production generation tariffs remain unresolved, and templates remain previews.
 - Server-only Gemini understanding/planning through the existing trusted Inngest workflow, strict schema-v1/context validation, immutable owned plan/usage persistence and honest readiness. Actual text/image/video, hosted execution and deployed Cloud/private-media/Gemini acceptance pass. Real deployed owner refresh/reopen, second-account denial, duplicate delivery and terminal restoration pass. No final video, consumption or additional debit occurs.
 - Product, UI/design, workflow, standards, and progress documents.
 
@@ -440,9 +455,9 @@ UI, real Clerk development flows and real Supabase identity verification are rec
 
 ### Planned
 
-- PayPal Sandbox one-time purchases are implemented; real buyer/capture/webhook acceptance remains pending. Production pricing, Live, subscriptions and payouts remain separate. Deployed owned-project acceptance is complete.
+- Production credit-pack pricing, generation tariffs, conversion/markup and possible larger-pack value schedules need explicit approval. Merchant Sandbox purchases and deployed owned-project acceptance are already complete within their recorded scope; no subscription unit is required next.
 - Separately scope provider stages, heavy rendering and stable generated-result delivery. Deployed Inngest delivery/claim, duplicates, recovery and browser persistence are verified; accounting admission/restoration is integrated, without production output.
-- Vercel/Inngest Cloud, Gemini, private R2, fal, Render Free preparation, one short ElevenLabs narration and a ready composition have scoped real evidence above. Assembly/rendering, final results, subscriptions and marketplace remain later units.
+- Vercel/Inngest Cloud, Gemini, private R2, fal, Render Free preparation, one short ElevenLabs narration and a ready composition have scoped real evidence above. Hosted final-render acceptance remains In Progress/deferred for insufficient RAM. Marketplace is separately scoped; membership and auto-recharge are unapproved optional ideas, not committed next units.
 
 ### Undecided
 
@@ -450,7 +465,7 @@ UI, real Clerk development flows and real Supabase identity verification are rec
 - Final adoption/configuration of preferred providers, account availability, exact SDK needs, storage limits/formats/CORS, retention/deletion, and access/delivery rules.
 - The owned-draft/asset schema and media access rule have live persistence/ownership evidence; deployed project acceptance is complete and hosted catalog auditing remains separate. Other domains and independent-of-activity Clerk webhooks remain unspecified/deferred.
 - Broader Render capacity, later rendering/output contracts and live progress transport. Short preparation/narration/composition workloads have scoped hosted evidence above; broader capacity and hard-crash recovery remain unmeasured. The current state machine and dispatch recovery contract are implemented above.
-- Subscription pricing, credit-pack pricing, credits by generation type/duration, provider-cost-to-credit formula, future user cancellation/refund rules and creator economics. Free eligibility and failure restoration are approved in accounting.md.
+- Production credit-pack pricing, generation tariffs, provider-cost-to-credit formula, larger-pack value schedules, future user cancellation/refund rules and creator economics. Pay-as-you-go top-ups and non-expiring purchased credits are approved; free eligibility and failure restoration remain approved in accounting.md. Membership and auto-recharge need separate future decisions rather than subscription pricing work in current scope.
 - Final production logo assets and future workspace layouts. The public theme preference contract is now implemented above.
 
 **Documentation synchronization (2026-10-12):** migrations001–015 are user-applied and preserved. Private R2, generation persistence, preparation/fal, one short narration and composition have scoped deployed evidence. User-confirmed hosted conflict/longer-trim SQL fixtures and passing final deployed rechecks close the composition completion gate; local SQL/official-engine checks and real-media measurements also pass. A full hosted catalog/private-log audit remains separate. Final rendering/output and payments remain excluded.

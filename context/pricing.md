@@ -2,13 +2,15 @@
 
 Approved 2026-10-11. Credits are internal Sceenyk usage units, separate from money, PayPal balances and provider billing units. No fixed dollar conversion exists. Every application user retains two lifetime free generations of at most ten seconds, under the unchanged [accounting contract](accounting.md).
 
+**Commercial decision approved 2026-10-13:** the primary model is [pay-as-you-go credits](overview.md#approved-commercial-model--pay-as-you-go-2026-10-13). Users buy one-time packs and top up when they need more. Purchased credits do not expire unless a future explicit product decision changes this; they are not monthly allowances or a month of access. Monthly subscriptions and recurring plans are outside current scope. Larger packs may eventually offer better value, but no production discount schedule or tariff is approved. This supersedes earlier monthly-price/allocation assumptions without changing the implemented quote/admission contract.
+
 ## Server boundary and flow
 
 `lib/pricing/config.ts` owns validated server-only retail configuration and `quoteGenerationCost(snapshot)`. `lib/pricing/server.ts` exposes the authenticated reusable quote service through the thin `quoteGenerationAction`. It reuses generation/project schemas and current workspace choices. Database quote issuance verifies project ownership and all uploaded asset associations. No browser owner, cost, tier, pricing version or free-eligibility field is accepted.
 
 Review cost → validated normalized immutable request → owned server-issued quote → displayed free/credit decision → explicit confirmation → account-locked quote validation → existing transactional job/reservation → durable dispatch → existing consumption/restoration. A quote alone never reserves or dispatches work. Confirmation accepts only the opaque quote UUID; the server derives the owner and current configuration version. The database rechecks project ownership, expiry, free eligibility, uploaded media and available credits. Insufficient credits creates no job/hold. A free/paid eligibility change requires a new quote and confirmation; it never silently converts free consent into a paid reservation.
 
-Quotes expire after five minutes. Editing category/prompt/settings/assets hides the old quote and requires review again. Lost confirmation responses retain the original quote UUID/request identity for retry and status recovery. A duplicate committed confirmation returns the original job even after expiry, pricing changes or settlement; it never reserves again. A different quote cannot replace an already admitted request's provenance.
+Quotes expire after five minutes; purchased credits do not. Editing category/prompt/settings/assets hides the old quote and requires review again. Lost confirmation responses retain the original quote UUID/request identity for retry and status recovery. A duplicate committed confirmation returns the original job even after expiry, pricing changes or settlement; it never reserves again. A different quote cannot replace an already admitted request's provenance.
 
 ## Configuration and workload
 
@@ -26,15 +28,15 @@ New generation insertion requires quote provenance at transaction commit. Direct
 
 ## UI and payments
 
-Creation adds only cost review, explicit confirmation, safe unavailable/expired feedback, and insufficient-credit copy showing required/available credits. Buy credits remains disabled and marked coming soon. Shared tokens support both themes; no dollar prices, checkout or successful-purchase simulation exists.
+Creation shows cost review, explicit confirmation, safe unavailable/expired feedback and insufficient-credit copy with required/available credits. The existing Buy credits path opens the protected Sandbox one-time purchase screen. Its demo packs do not establish production economics. Cost must remain visible before confirmation; server pricing/eligibility/balance and immutable quote provenance remain authoritative. Shared tokens support both themes.
 
-Development and hackathon payment testing must use **PayPal Sandbox only**. PayPal Live credentials/transactions must not be used during development. A future payment service must expose an intentional environment/credential switch from Sandbox to Live; this unit implements no payment integration.
+Development and hackathon payment testing uses **PayPal Sandbox only**. The implemented payment boundary rejects Live and has completed real Merchant Sandbox acceptance; see [payments.md](payments.md). Any future Live rollout requires a separately authorized configuration/security unit. This commercial-model documentation update changes no payment or pricing code.
 
 ## Unresolved commercial values
 
-- Credit-pack prices; subscription prices and monthly credit allocations.
+- Production credit-pack prices and any larger-pack value/discount schedule.
 - Exact production credits per generation/type/duration/model/resolution/feature.
 - Model multipliers, provider-cost markup and conversion policy.
 - Creator marketplace prices, fees, revenue shares and payouts.
 
-Next recommended unit: measure the first selected provider's actual costs, then approve/configure production retail credit rules. PayPal Sandbox purchases require separate authorization and approved pack economics.
+Remaining commercial work: measure full-pipeline costs and approve production pack prices and retail generation credit rules. Sandbox one-time purchases are already Complete within their recorded acceptance; monthly subscriptions are not a prerequisite or next commercial unit. Membership and auto-recharge remain optional future decisions. No new implementation begins here.

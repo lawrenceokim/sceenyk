@@ -214,6 +214,25 @@ try {
   orders.set(earlyOrderId, { id: earlyOrderId, intent: 'CAPTURE', status: 'APPROVED', purchase_units: [{ reference_id: early.id, custom_id: early.id, invoice_id: early.id, amount: { value: '1.00', currency_code: 'USD' } }] });
   await service.handleVerifiedPayPalEvent({ id: 'WH-early', event_type: 'CHECKOUT.ORDER.APPROVED', resource: { id: earlyOrderId } });
   check('authentic early webhook attaches lost-create identity then fulfils', (await wallet()).available === 1600 && (await one('select paypal_order_id from credit_purchases where id=$1', [early.id])).paypal_order_id === earlyOrderId);
+  // Explicit provider fixtures: exercise verified PENDING/DENIED semantics,
+  // which a successful real buyer payment does not naturally generate.
+  const pendingCapture = await service.createCreditOrder({ packId: 'sandbox-large-v1' });
+  const pendingOrder = orders.get(pendingCapture.orderId); pendingOrder.status = 'COMPLETED';
+  pendingOrder.purchase_units[0].payments = { captures: [{ id: 'CAPTURE2222222222', status: 'PENDING', final_capture: true, amount: pendingOrder.purchase_units[0].amount }] };
+  const pendingEvent = { id: 'WH-pending-fixture', event_type: 'PAYMENT.CAPTURE.PENDING', resource: { id: 'CAPTURE2222222222', supplementary_data: { related_ids: { order_id: pendingCapture.orderId } } } };
+  const pendingResponse = await route.POST(new Request('http://localhost/api/payments/paypal/webhook', { method: 'POST', headers, body: JSON.stringify(pendingEvent) }));
+  const pendingPurchase = await one('select * from credit_purchases where paypal_order_id=$1', [pendingCapture.orderId]);
+  check('verified pending capture requests recovery without premature credits', pendingResponse.status === 503 && (await wallet()).available === 1600 && Number(await scalar('select count(*) as value from credit_ledger where purchase_id=$1', [pendingPurchase.id])) === 0);
+  pendingOrder.purchase_units[0].payments.captures[0].status = 'DECLINED';
+  const deniedEvent = { ...pendingEvent, id: 'WH-denied-fixture', event_type: 'PAYMENT.CAPTURE.DENIED' };
+  const deniedResponse = await route.POST(new Request('http://localhost/api/payments/paypal/webhook', { method: 'POST', headers, body: JSON.stringify(deniedEvent) }));
+  check('verified denied notification persists failed purchase with zero credits', deniedResponse.status === 200 && (await wallet()).available === 1600 && (await one('select status from credit_purchases where id=$1', [pendingPurchase.id])).status === 'failed');
+  const completedOnly = await service.createCreditOrder({ packId: 'sandbox-large-v1' });
+  const completedOrder = orders.get(completedOnly.orderId); completedOrder.status = 'COMPLETED';
+  completedOrder.purchase_units[0].payments = { captures: [{ id: 'CAPTURE3333333333', status: 'COMPLETED', final_capture: true, amount: completedOrder.purchase_units[0].amount }] };
+  const completedEvent = { id: 'WH-completed-only-fixture', event_type: 'PAYMENT.CAPTURE.COMPLETED', resource: { id: 'CAPTURE3333333333', supplementary_data: { related_ids: { order_id: completedOnly.orderId } } } };
+  const completeDelivery = () => route.POST(new Request('http://localhost/api/payments/paypal/webhook', { method: 'POST', headers, body: JSON.stringify(completedEvent) }));
+  check('completed capture alone fulfils once without any ORDER.COMPLETED notification', (await completeDelivery()).status === 200 && (await completeDelivery()).status === 200 && (await wallet()).available === 2250);
   process.env.PAYPAL_ENVIRONMENT = 'live'; check('Live rejected explicitly', !config.isPayPalConfigured()); await rejects('Live cannot call PayPal', () => service.createCreditOrder({ packId: 'sandbox-small-v1' }));
   process.env.PAYPAL_ENVIRONMENT = 'sandbox'; process.env.PAYPAL_RETURN_ORIGIN = 'http://attacker.invalid'; check('insecure nonlocal return URL rejected', !config.isPayPalConfigured());
   process.env.PAYPAL_RETURN_ORIGIN = 'http://localhost:3000';

@@ -113,7 +113,7 @@ The Gemini understanding/planning unit introduces `lib/ai/` with a server-only s
 
 ## Payments and Credits
 
-**PayPal purchases are Not Started.** The accounting contract grants two lifetime free generations of at most ten seconds with atomic reservation and exactly-once failure restoration. The commercial quote boundary is implemented in `lib/pricing/`; see [pricing.md](pricing.md). Never scatter tariffs or accept browser cost/tier/free/version claims. Show a server-issued quote before explicit confirmation and reserve its validated server cost before dispatch. Production retail prices remain unresolved; optional rates are visibly development/test-only.
+**PayPal Sandbox one-time purchases are Complete within Merchant Sandbox acceptance;** see [payments.md](payments.md). The approved primary model is pay-as-you-go credits and manual top-ups, not monthly plans; purchased credits do not expire unless a future explicit product decision changes this. The accounting contract retains two lifetime free generations of at most ten seconds with atomic reservation and exactly-once failure restoration. The commercial quote boundary is implemented in `lib/pricing/`; see [pricing.md](pricing.md). Never scatter tariffs or accept browser cost/tier/free/version claims. Show a server-issued quote before explicit confirmation and reserve its validated server cost before dispatch. Production retail prices remain unresolved; optional rates are visibly development/test-only.
 
 Development and testing must use **PayPal Sandbox only**. Do not use Live credentials or real-money transactions. Keep eventual environment/credential selection behind the payment service; production switching is a later explicitly scoped task.
 
@@ -122,7 +122,7 @@ Development and testing must use **PayPal Sandbox only**. Do not use Live creden
 - Payment finalization must be idempotent: repeating a payment/webhook request must not credit the user twice. Enforce this persistently, including concurrent callbacks/events; an in-memory flag is insufficient.
 - Prevent double-spending/free-allowance reuse when concurrent generations start. Use an atomic reservation/debit strategy consistent with the approved settlement policy, with safe reconciliation after failures.
 - Failed generations follow the documented refund/credit-restoration rule. Never invent pricing, credit costs, subscription limits, creator shares, marketplace fees, or refund behavior; PNG pricing is illustrative.
-- Keep the working MVP credit-purchase path separate from later subscription management, marketplace purchases, and creator payouts unless the task explicitly includes them.
+- Keep one-time credit purchases separate from marketplace purchases and creator payouts. Monthly subscriptions are outside current scope; membership and auto-recharge are unapproved future options requiring separate product decisions and authorization, not the next required commercial feature.
 
 ## Error Handling and Logging
 
