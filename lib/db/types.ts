@@ -63,6 +63,8 @@ export type AssetRow = {
 export type Database = {
   public: {
     Tables: {
+      caption_tracks: { Row: import("@/lib/captions/contract").CaptionRow; Insert: never; Update: never; Relationships: [] };
+      caption_preferences: { Row: import("@/lib/captions/contract").CaptionPreferenceRow; Insert: never; Update: never; Relationships: [] };
       credit_purchases: { Row: import("@/lib/payments/types").PurchaseRow; Insert: never; Update: never; Relationships: [] };
       render_jobs: { Row: import("@/lib/final-render/contract").RenderJob; Insert: never; Update: never; Relationships: [] };
       final_video_assets: { Row: import("@/lib/final-render/contract").FinalVideoAsset; Insert: never; Update: never; Relationships: [] };
@@ -222,6 +224,10 @@ export type Database = {
     };
     Views: Record<string, never>;
     Functions: {
+      caption_source: { Args: { p_job_id: string }; Returns: import("@/lib/captions/contract").CaptionSource | null };
+      persist_caption_track: { Args: { p_job_id: string; p_track: import("@/lib/captions/contract").CaptionTrack }; Returns: string | null };
+      set_caption_preference: { Args: { p_owner_user_id: string; p_job_id: string; p_project_id: string; p_enabled: boolean }; Returns: boolean };
+      caption_dispatch_candidates: { Args: Record<string, never>; Returns: { job_id: string }[] };
       prepare_credit_purchase: { Args: { p_owner_user_id: string; p_pack_id: string; p_pack_name: string; p_amount_minor: number; p_currency: string; p_credits: number }; Returns: import("@/lib/payments/types").PurchaseRow };
       attach_paypal_order: { Args: { p_purchase_id: string; p_owner_user_id: string; p_order_id: string }; Returns: boolean };
       set_credit_purchase_state: { Args: { p_owner_user_id: string; p_order_id: string; p_status: string }; Returns: boolean };

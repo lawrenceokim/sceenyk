@@ -14,6 +14,7 @@ import { compositionIssueMessage } from "@/lib/composition/contract";
 import { FinalVideoResult } from "./final-video-result";
 import { CreditTopUp } from "@/components/payments/credit-top-up";
 import { CreditBalance } from "@/components/payments/credit-balance";
+import { CaptionTrackPreview } from "./caption-track";
 
 export function ProjectGeneration({
   projectId,
@@ -165,7 +166,7 @@ export function ProjectGeneration({
         {state.job && (
           <>
             <p className="text-body-sm font-semibold">
-              {state.job.status === "completed" ? "Video ready" : state.job.status === "failed" ? state.job.stage === "rendering" ? "Render failed" : state.job.stage === "voice" ? "Narration failed" : "Generation failed" : state.job.renderStatus === "verifying" || state.job.renderStatus === "uploading" || state.job.renderStatus === "completed" ? "Finalizing video" : state.job.renderStatus === "rendering" ? "Rendering video" : state.job.compositionReadyAt ? "Preparing final video" : state.job.compositionPendingAt ? "Timing adjustment required" : state.job.compositionStartedAt ? "Checking scene timing" : state.job.audioReadyAt ? "Preparing timeline" : state.job.narrationPendingAt ? "Narration needs attention" : state.job.stage === "voice" ? "Generating voice-over" : state.job.visualsReadyAt ? "Visuals ready" : state.job.visualsPendingAt ? "Visual scenes need attention" : planReady ? "Production plan ready" : `Generation ${generationStatusLabels[state.job.status].toLowerCase()}`}
+              {state.job.status === "completed" ? "Video ready" : state.job.status === "failed" ? state.job.stage === "rendering" ? "Render failed" : state.job.stage === "voice" ? "Narration failed" : "Generation failed" : state.job.renderStatus === "verifying" || state.job.renderStatus === "uploading" || state.job.renderStatus === "completed" ? "Finalizing video" : state.job.renderStatus === "rendering" ? "Rendering video" : state.job.compositionReadyAt ? "Timeline ready" : state.job.compositionPendingAt ? "Timing adjustment required" : state.job.compositionStartedAt ? "Checking scene timing" : state.job.audioReadyAt ? "Preparing timeline" : state.job.narrationPendingAt ? "Narration needs attention" : state.job.stage === "voice" ? "Generating voice-over" : state.job.visualsReadyAt ? "Visuals ready" : state.job.visualsPendingAt ? "Visual scenes need attention" : planReady ? "Production plan ready" : `Generation ${generationStatusLabels[state.job.status].toLowerCase()}`}
             </p>
             {state.job.status === "queued" && (
               <p className="text-body-sm text-muted-foreground">
@@ -178,7 +179,7 @@ export function ProjectGeneration({
             {planReady && (
               <p className="text-body-sm text-muted-foreground">Your plan is saved. Supported visual scenes are next.</p>
             )}
-            {state.job.status === "processing" && state.job.compositionReadyAt && <p className="text-body-sm text-muted-foreground">Your final video is being prepared. You can leave and return; your reservation remains held until the saved video is verified.</p>}
+            {state.job.status === "processing" && state.job.compositionReadyAt && <p className="text-body-sm text-muted-foreground">Your timeline is saved. Final rendering is deferred while worker capacity is resolved; your reservation remains held.</p>}
             {state.job.status === "processing" && state.job.compositionPendingAt && <>
               {[...new Set(state.job.compositionIssues?.map(compositionIssueMessage))].slice(0, 4).map(message => <p key={message} className="text-body-sm text-muted-foreground">{message}</p>)}
               <p className="text-body-sm text-muted-foreground">Your produced scenes are saved and your reservation remains held. Timing must be resolved before rendering.</p>
@@ -207,6 +208,7 @@ export function ProjectGeneration({
           <p className="text-body-sm text-destructive">{state.statusError}</p>
         )}
       </div>
+      {projectId && signedIn && state.job?.compositionReadyAt && <CaptionTrackPreview key={state.job.id} projectId={projectId} jobId={state.job.id} />}
       {projectId && signedIn && (
         <Button
           variant="outline"

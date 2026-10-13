@@ -16,6 +16,10 @@ Protected `/dashboard/credits` uses the existing dashboard shell and shared card
 
 Quick reference for building Sceenyk UI. Use [design-system.md](design-system.md) for detailed component/evidence guidance and [overview.md](overview.md) for product scope. The light and dark PNGs in [`/designs`](../designs/) are the visual references; [`app/globals.css`](../app/globals.css) owns the implemented tokens. Values below describe current CSS, not new palette proposals.
 
+## Caption controls (2026-10-13)
+
+The existing generation card adds Captions On/Off, Preparing captions / Captions ready / Caption timing issue, an expandable text/timing preview and SRT/VTT download links after composition readiness. The choice persists per generation. Caption timing is explicitly estimated; silent tracks show no spoken narration. Controls use existing semantic colors, native accessible checkbox/details, 44px targets, keyboard focus and responsive wrapping. Refresh/reopen and activation read server state; missing schema/service errors never claim readiness. No caption editor, creative-style controls or final rendering is introduced. Final rendering stays deferred for worker capacity. Real browser verification and deployment limits are in the tracker.
+
 ## Theme
 
 Sceenyk supports light and dark styling with a modern, bold, minimal, creative, premium AI/video-production feel. Purple leads; blue/cyan supports it. Use purple/blue gradients selectively, strong typography, subtle borders, soft shadows, and controlled glow around meaningful actions.
