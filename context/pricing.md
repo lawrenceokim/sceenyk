@@ -1,5 +1,10 @@
 # Commercial cost contract
 
+## Creator settlement timing (2026-10-14)
+
+SCEENYK_MARKETPLACE_TEST_SETTLEMENT_SECONDS is server-only Sandbox/demo timing, default 300 seconds and validated from 60 through 86400. The policy version and eligibility time freeze once per original sale; existing pending sales receive an explicit first assignment. Future configuration changes do not rewrite assigned history. Production holding duration, production Marketplace fee, refund eligibility, dispute policy and payout rules remain unapproved. Existing Sandbox fee configuration and original gross/fee/net snapshots are preserved. Partial refunds use the cumulative proportional-cent rule documented in accounting.md; this is money accounting, never an AI-credit price or credit refund.
+
+
 ## Paid Marketplace Sandbox configuration — authorized 2026-10-14
 
 Paid adoption is USD only, using explicit Sandbox/demo bounds of $1.00–$25.00 centralized in lib/marketplace/payments/contract.ts and independently enforced by the server configuration boundary. These are test safeguards, not production listing economics. Browser amount/currency/creator-share claims are rejected. The creator chooses free or paid plus integer cents; the server freezes each purchase's reviewed price and reusable snapshot before order creation. Listing price changes apply to new purchases; existing checkout summaries and entitlements retain their original amounts/configuration.

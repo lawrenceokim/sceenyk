@@ -242,6 +242,11 @@ export type Database = {
       marketplace_begin_order: { Args: { p_buyer_user_id: string; p_purchase_id: string }; Returns: unknown };
       marketplace_redeem_purchase: { Args: { p_buyer_user_id: string; p_purchase_id: string }; Returns: unknown };
       marketplace_creator_earnings: { Args: { p_creator_user_id: string; p_page: number }; Returns: unknown };
+      marketplace_ensure_settlement: { Args: { p_purchase_id: string; p_policy_version: string; p_hold_seconds: number }; Returns: unknown };
+      marketplace_begin_financial_check: { Args: { p_purchase_id: string; p_policy_version: string; p_hold_seconds: number }; Returns: unknown };
+      marketplace_financial_candidates: { Args: Record<string, never>; Returns: unknown };
+      marketplace_apply_financial_observation: { Args: { p_purchase_id: string; p_order_id: string; p_capture_id: string; p_amount_minor: number; p_currency: string; p_capture_status: string; p_refunded_minor: number; p_can_settle: boolean; p_reason: string; p_reference_key: string }; Returns: unknown };
+      marketplace_purchase_financial_status: { Args: { p_buyer_user_id: string; p_purchase_id: string }; Returns: unknown };
       marketplace_update: { Args: { p_owner_user_id: string; p_listing_id: string; p_title: string; p_description: string; p_category: string; p_tags: string[]; p_status: string; p_rights_confirmed: boolean }; Returns: unknown };
       marketplace_adopt: { Args: { p_owner_user_id: string; p_listing_id: string; p_request_id: string }; Returns: unknown };
       caption_source: { Args: { p_job_id: string }; Returns: import("@/lib/captions/contract").CaptionSource | null };

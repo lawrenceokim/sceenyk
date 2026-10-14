@@ -1,5 +1,7 @@
 # Sceenyk
 
+**Current authorization (2026-10-14):** creator-earnings Sandbox settlement and proportional cumulative refund/reversal accounting, with immutable history and preserved adopted projects. This supersedes the earlier settlement/reversal exclusions below for this unit. Production settlement duration and fees remain unapproved; payouts, withdrawals, refunds UI, Live and final-render changes remain excluded.
+
 **Current Marketplace authorization (2026-10-14):** implement USD PayPal Sandbox paid adoption, durable purchase entitlement and a separate immutable pending creator-earnings ledger alongside existing free adoption. This supersedes paid-purchase/earnings exclusions in the earlier first-unit notes below. Production economics, settlement automation, withdrawals, payouts, refunds UI, moderation and ratings remain excluded. Final rendering stays deferred. Actual acceptance status is in the progress tracker.
 
 ## Overview

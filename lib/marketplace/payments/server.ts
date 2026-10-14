@@ -7,6 +7,7 @@ import { approvalUrl, capturePayPalOrder, createMarketplacePayPalOrder, paypalOr
 import { marketplaceDemoFeeBps, sandboxMarketplacePricing, validateMarketplacePrice } from "./config";
 import { earningsSchema, marketplacePurchaseSummarySchema, purchaseInput, type MarketplacePurchaseSummary } from "./contract";
 import type { MarketplacePurchaseRow } from "./types";
+import { freezeMarketplaceSettlement, handleVerifiedMarketplaceAdjustment, marketplaceAdjustmentEvents } from "../earnings/server";
 
 function checked<T>(r: { data: T | null; error: unknown }): T {
   if (r.error || r.data === null || r.data === false) throw new Error("MARKETPLACE_PAYMENT_UNAVAILABLE");
@@ -17,7 +18,8 @@ async function ownedPurchase(buyer: string, id: string) {
 }
 async function summary(p: MarketplacePurchaseRow): Promise<MarketplacePurchaseSummary> {
   const adoption = checked(await createDatabaseClient().rpc("marketplace_paid_project", { p_buyer_user_id: p.buyer_user_id, p_purchase_id: p.id }));
-  return marketplacePurchaseSummarySchema.parse({ id: p.id, listingId: p.listing_id, title: p.listing_title, amountMinor: p.amount_minor, currency: p.currency, status: p.status, createdAt: p.created_at, projectId: z.object({ projectId: z.uuid().nullable() }).parse(adoption).projectId });
+  const financial = checked(await createDatabaseClient().rpc("marketplace_purchase_financial_status", { p_buyer_user_id: p.buyer_user_id, p_purchase_id: p.id }));
+  return marketplacePurchaseSummarySchema.parse({ ...z.object({ financialStatus: z.string(), refundedMinor: z.number() }).parse(financial), id: p.id, listingId: p.listing_id, title: p.listing_title, amountMinor: p.amount_minor, currency: p.currency, status: p.status, createdAt: p.created_at, projectId: z.object({ projectId: z.uuid().nullable() }).parse(adoption).projectId });
 }
 async function attach(p: MarketplacePurchaseRow, id: string) {
   checked(await createDatabaseClient().rpc("marketplace_attach_order", { p_purchase_id: p.id, p_buyer_user_id: p.buyer_user_id, p_order_id: id }));
@@ -50,6 +52,7 @@ async function reconcile(p: MarketplacePurchaseRow) {
   if (order.status !== "COMPLETED") return;
   const capture = verifiedCapture(p, order);
   checked(await createDatabaseClient().rpc("marketplace_fulfil_purchase", { p_purchase_id: p.id, p_order_id: order.id, p_capture_id: capture.id, p_amount_minor: p.amount_minor, p_currency: p.currency }));
+  await freezeMarketplaceSettlement(p.id);
   await redeem(p);
 }
 
@@ -104,6 +107,8 @@ export async function getCreatorEarnings(page = 1) {
 }
 
 export async function handleVerifiedMarketplacePayPalEvent(input: unknown) {
+  const kind = z.object({ event_type: z.string() }).parse(input).event_type;
+  if ((marketplaceAdjustmentEvents as readonly string[]).includes(kind)) { await handleVerifiedMarketplaceAdjustment(input); return; }
   const event = z.object({ event_type: z.string(), resource: z.object({ id: z.string().optional(), supplementary_data: z.object({ related_ids: z.object({ order_id: paypalOrderId.optional() }) }).optional() }).passthrough() }).parse(input);
   if (!["CHECKOUT.ORDER.APPROVED", "CHECKOUT.ORDER.COMPLETED", "PAYMENT.CAPTURE.COMPLETED", "PAYMENT.CAPTURE.PENDING", "PAYMENT.CAPTURE.DENIED"].includes(event.event_type)) return;
   const orderId = paypalOrderId.parse(event.event_type.startsWith("CHECKOUT.ORDER.") ? event.resource.id : event.resource.supplementary_data?.related_ids.order_id);

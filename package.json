@@ -27,7 +27,8 @@
     "test:analysis": "node scripts/check-analysis.mjs && node scripts/check-gemini.mjs",
     "test:client-secrets": "node scripts/check-client-secrets.mjs",
     "test:marketplace-payments": "node scripts/check-marketplace-payments.mjs",
-    "test:creator-earnings": "node scripts/check-creator-earnings.mjs"
+    "test:creator-earnings": "node scripts/check-creator-earnings.mjs",
+    "test:marketplace-settlement": "node scripts/check-marketplace-settlement.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1148.0",

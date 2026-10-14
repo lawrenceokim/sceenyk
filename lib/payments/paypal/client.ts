@@ -14,7 +14,7 @@ export const paypalOrder = z.object({
   status: z.string(),
   purchase_units: z.array(z.object({
     reference_id: z.string(), custom_id: z.string(), invoice_id: z.string(), amount: money,
-    payments: z.object({ captures: z.array(z.object({
+    payments: z.object({ refunds: z.array(z.object({ id: paypalOrderId, status: z.string(), amount: money })).max(10000).optional(), captures: z.array(z.object({
       id: paypalOrderId, status: z.string(), amount: money, final_capture: z.boolean(),
     })).optional() }).optional(),
   })).length(1),
@@ -76,6 +76,32 @@ async function createOrder(purchase: PayPalPurchase, description: string, return
 
 export async function readPayPalOrder(id: string) {
   return paypalOrder.parse(await request(`/v2/checkout/orders/${paypalOrderId.parse(id)}`, "GET"));
+}
+
+const providerLinks = z.array(z.object({ rel: z.string(), href: z.string() })).max(100);
+export const paypalCaptureSchema = z.object({
+  id: paypalOrderId, status: z.string(), amount: money, final_capture: z.boolean(),
+  supplementary_data: z.object({ related_ids: z.object({ order_id: paypalOrderId }) }).optional(),
+  links: providerLinks.optional(),
+});
+export const paypalRefundSchema = z.object({
+  id: paypalOrderId, status: z.string(), amount: money, links: providerLinks,
+  seller_payable_breakdown: z.object({ total_refunded_amount: money.optional() }).optional(),
+});
+export async function readPayPalCapture(id: string) {
+  return paypalCaptureSchema.parse(await request(`/v2/payments/captures/${paypalOrderId.parse(id)}`, "GET"));
+}
+export async function readPayPalRefund(id: string) {
+  return paypalRefundSchema.parse(await request(`/v2/payments/refunds/${paypalOrderId.parse(id)}`, "GET"));
+}
+// Extract an identifier only. Never fetch provider-supplied URLs.
+export function paypalParentId(links: z.infer<typeof providerLinks>, kind: "captures" | "orders") {
+  const link = links.find(link => link.rel === "up");
+  if (!link) throw new Error("PAYPAL_PARENT_UNAVAILABLE");
+  const url = new URL(link.href);
+  const prefix = kind === "captures" ? "/v2/payments/captures/" : "/v2/checkout/orders/";
+  if (url.protocol !== "https:" || !["api-m.sandbox.paypal.com", "api.sandbox.paypal.com"].includes(url.hostname) || url.port || url.username || url.password || url.search || url.hash || !url.pathname.startsWith(prefix)) throw new Error("PAYPAL_PARENT_MISMATCH");
+  return paypalOrderId.parse(url.pathname.slice(prefix.length));
 }
 
 export async function capturePayPalOrder(purchase: PayPalPurchase) {

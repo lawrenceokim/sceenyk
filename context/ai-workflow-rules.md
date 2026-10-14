@@ -1,5 +1,7 @@
 # AI Workflow Rules
 
+**Current authorization (2026-10-14):** creator-earnings Sandbox settlement and proportional cumulative refund/reversal accounting, with immutable history and preserved adopted projects. This supersedes the earlier settlement/reversal exclusions below for this unit. Production settlement duration and fees remain unapproved; payouts, withdrawals, refunds UI, Live and final-render changes remain excluded.
+
 **Current authorization (2026-10-14):** paid Marketplace adoption with PayPal Sandbox, durable entitlements and separate immutable pending creator earnings. Preserve free adoption, credit-pack purchases and AI accounting. No Live, settlement automation, withdrawals/payouts, refunds UI, moderation, ratings or final-render changes. Historical authorization notes below are superseded for this unit only.
 
 **Current authorization (2026-10-13): complete pay-as-you-go credit and top-up UX.** Extend existing Sandbox purchase/accounting/quote boundaries with persistent paid balance, separate free allowance, before/after cost review, manual top-up recovery, low-credit notice and small owned ledger history. Preserve [payments.md](payments.md), server authority and exactly-once settlement. Final rendering remains In Progress/deferred because Render Free 512 MB RAM is insufficient; no rendering or hosting upgrade belongs to this unit. Historical authorizations below describe prior units.

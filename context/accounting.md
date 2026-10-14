@@ -1,5 +1,16 @@
 # Generation accounting contract
 
+## Marketplace settlement and cumulative proportional reversals (2026-10-14)
+
+Creator money is USD integer cents and remains separate from AI credits. The original immutable pending sale freezes gross G, platform fee F and creator net G-F. One immutable availability event records the unrefunded amounts that became available after the frozen test eligibility time and trusted provider verification. Full invalidation appends one reversed lifecycle marker; partial refunds leave the remaining earning pending or available. Financial adjustments remain independent immutable records with purchase/capture binding, reason, reference, source lifecycle, cumulative refunded gross and gross/fee/net deltas. Original purchase, sale, availability event, entitlement and buyer-owned project are preserved.
+
+Approved partial-refund rule: for verified cumulative refunded gross R in [0,G], cumulative reversed fee is round-half-up(F*R/G); cumulative reversed creator net is R minus that fee. Each entry is the increase over previously recorded cumulative gross/fee/net. Fee and creator components each stay within half a cent of their exact proportional share, while every refunded cent is accounted for. Repeated/lower observations add no financial effect. At R=G the fee reversal is exactly F and creator reversal exactly G-F. No rounding is applied independently to each partial refund. No component can exceed its original or become negative. A full reversed marker is history only; it is not subtracted again.
+
+Pending balance = sum(original net minus cumulative reversed net) for unsettled, nonterminal sales. Available balance uses the same remaining-net calculation for settled sales. Lifetime gross retains original gross sales; lifetime net is original net less reversals. Reversed gross, fees and creator net are reported separately. Availability history records the original amount moved at that time, even if a later refund reduces the current balance. Historical manually appended reversed markers without adjustment rows project as full reversals for compatibility; trusted operational paths always write the adjustment and terminal marker atomically.
+
+There are no payouts, withdrawals or other debits of available creator money. Therefore a reversal bounded to its own unrefunded original earning cannot exceed that earning's remaining available contribution; no hidden clamp or invented deficit is used. A future outbound-money unit must define explicit paid-out liability/deficit accounting before enabling payouts. Provider processing fees are not silently deducted from creator net. Refund eligibility, chargeback policy and future access revocation remain unapproved product policy.
+
+
 ## Separate Marketplace money ledger — authorized 2026-10-14
 
 Paid Marketplace adoption records USD gross sale, platform fee and creator net as exact integer cents in dedicated purchases and creator_earnings_ledger. The centrally configured Sandbox demo fee defaults to 0 basis points; fee cents are floor(gross cents × demo basis points / 10000), net = gross − fee. These are demo arithmetic and snapshots, not approved production economics or a provider-fee reimbursement model. PayPal processing fees are not silently deducted from creator net.

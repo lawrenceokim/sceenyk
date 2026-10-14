@@ -1,5 +1,10 @@
 # UI Context
 
+## Creator settlement and adjustment history (2026-10-14)
+
+Creator earnings uses the existing responsive cards and light/dark tokens for pending, available, lifetime gross, net after reversals, creator net reversed and platform fees reversed. Each listing sale retains original amounts, remaining net, eligibility where pending and an expandable chronological sale/availability/refund/reversal history. Buyer purchases show refunded status/cents and explain that the adopted project remains available. Available is explicitly future-payout eligibility, not a completed payout; no Withdraw control exists. Reads retain Clerk account guards and refresh/reopen behavior. No new theme or refund mutation UI is introduced.
+
+
 **Paid Marketplace extension (2026-10-14):** the listing editor adds Free/Paid and a centralized demo USD price range. Cards/detail and the payment summary separate adoption money from estimated AI credits. My Marketplace Listings shows small adoption/sale/net totals and links to buyer purchases and creator earnings. New account-guarded responsive purchase recovery and pending/available/lifetime sale history use the existing tokens, Button and Dialog. Paid public instructions are locked until adoption; no payout controls are added. The earlier free-only UI scope below describes the foundation.
 
 ## Approved commercial messaging (2026-10-13)
