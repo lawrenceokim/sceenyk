@@ -1,0 +1,72 @@
+"use client";
+import { useEffect, useEffectEvent, useRef, useState } from "react";
+import Link from "next/link";
+import { useAuth } from "@clerk/nextjs";
+import { useAuthAvailable } from "@/components/auth/auth-availability";
+import { AccountAction } from "@/components/account-action";
+import { Button } from "@/components/ui/button";
+import { creatorEarningsAction, marketplacePurchasesAction, recoverMarketplacePurchaseAction, createMarketplaceOrderAction } from "@/app/actions/marketplace-payments";
+import { usd, type CreatorEarnings, type MarketplacePurchaseSummary } from "@/lib/marketplace/payments/contract";
+import { MarketplacePagination } from "./pagination";
+
+type Props = { clerkUserId: string; page: number; earnings?: CreatorEarnings; purchases?: { items: MarketplacePurchaseSummary[]; total: number } };
+export function FinancialPanel(props: Props) {
+  return useAuthAvailable() ? <AccountPanel {...props} /> : <p>Sign in is temporarily unavailable.</p>;
+}
+function AccountPanel(props: Props) {
+  const { isLoaded, userId } = useAuth();
+  if (!isLoaded) return <p role="status">Loading your Marketplace account…</p>;
+  if (userId !== props.clerkUserId) return <AccountAction intent="sign-in">Sign in to view your Marketplace account</AccountAction>;
+  return <Panel key={`${userId}:${props.page}`} {...props} />;
+}
+function Panel(props: Props) {
+  const [earnings, setEarnings] = useState(props.earnings);
+  const [purchases, setPurchases] = useState(props.purchases);
+  const [busy, setBusy] = useState(false); const inFlight = useRef(false); const alive = useRef(true);
+  const [message, setMessage] = useState(""); const [error, setError] = useState("");
+  async function refresh(recover = false) {
+    if (inFlight.current) return; inFlight.current = true; if (alive.current) { setBusy(true); setError(""); }
+    try {
+      if (props.earnings) {
+        const r = await creatorEarningsAction(props.page);
+        if (!alive.current) return; if (!r.ok) { setError(r.message); return; }
+        if (r.data.clerkUserId === props.clerkUserId) setEarnings(r.data.earnings);
+      } else {
+        if (recover) {
+          // Bound recovery; this includes completed entitlements with no project.
+          for (const p of (purchases?.items ?? []).filter(p => !p.projectId && p.status !== "failed").slice(0, 5)) {
+            const r = await recoverMarketplacePurchaseAction({ purchaseId: p.id });
+            if (!alive.current) return;
+            if (!r.ok) setError(r.message);
+          }
+        }
+        const r = await marketplacePurchasesAction(props.page);
+        if (!alive.current) return; if (!r.ok) { setError(r.message); return; }
+        if (r.data.clerkUserId === props.clerkUserId) setPurchases(r.data);
+      }
+    } catch { if (alive.current) setError("Marketplace couldn’t be refreshed. Check your connection and try again."); }
+    finally { inFlight.current = false; if (alive.current) setBusy(false); }
+  }
+  const activateRecovery = useEffectEvent(() => { void refresh(true); });
+  useEffect(() => {
+    alive.current = true;
+    const initial = window.setTimeout(activateRecovery, 0);
+    const activate = () => { if (document.visibilityState === "visible") activateRecovery(); };
+    window.addEventListener("focus", activate); document.addEventListener("visibilitychange", activate);
+    return () => { alive.current = false; window.clearTimeout(initial); window.removeEventListener("focus", activate); document.removeEventListener("visibilitychange", activate); };
+  }, []);
+  async function continueCheckout(p: MarketplacePurchaseSummary) {
+    if (inFlight.current) return; inFlight.current = true; setBusy(true); setError("");
+    try {
+      const r = await createMarketplaceOrderAction({ purchaseId: p.id });
+      if (!alive.current) return;
+      if (!r.ok) { setError(r.message); return; }
+      if (r.data.approvalUrl) window.location.assign(r.data.approvalUrl);
+      else setMessage(r.data.purchase.projectId ? "Payment verified. Open your adopted project below." : "Payment is awaiting approval or verification.");
+    } catch { if (alive.current) setError("Checkout couldn’t be opened. Check the saved purchase before trying again."); }
+    finally { inFlight.current = false; if (alive.current) setBusy(false); }
+    await refresh(true);
+  }
+  const total = earnings?.total ?? purchases?.total ?? 0;
+  return <div className="space-y-6"><div className="flex flex-wrap items-center gap-4"><Button variant="outline" disabled={busy} onClick={() => void refresh(true)}>{busy ? "Checking…" : earnings ? "Refresh earnings" : "Check purchases"}</Button><p role="status" className={`text-body-sm ${error ? "text-destructive" : "text-muted-foreground"}`}>{error || message}</p></div>{earnings ? <><div className="grid gap-4 sm:grid-cols-3">{[["Pending earnings", earnings.pending], ["Available earnings", earnings.available], ["Lifetime earnings", earnings.lifetime]].map(([label, value]) => <section key={label} className="sceenyk-card space-y-2 p-5"><h2 className="text-body-sm text-muted-foreground">{label}</h2><p className="text-2xl font-semibold">{usd(Number(value))}</p></section>)}</div><p className="text-body-sm text-muted-foreground">Sandbox creator money is separate from AI credits. Sales stay pending; settlement periods are unresolved and withdrawals are unavailable. Lifetime earnings show net sales less any future reversals.</p><div className="space-y-4">{earnings.sales.map((sale, i) => <article key={i} className="sceenyk-card space-y-3 p-5"><h2 className="break-words font-semibold">{sale.title}</h2><p className="text-caption text-muted-foreground">{new Date(sale.createdAt).toLocaleDateString()} · {sale.state}</p><dl className="grid gap-3 text-body-sm sm:grid-cols-3">{[["Gross sale", sale.gross], ["Platform fee", sale.fee], ["Creator net", sale.net]].map(([label, value]) => <div key={label}><dt className="text-muted-foreground">{label}</dt><dd>{usd(Number(value))}</dd></div>)}</dl></article>)}</div></> : <><p className="text-body-sm text-muted-foreground">PayPal Sandbox template purchases include no AI credits or generation usage. Check saved purchases to recover payment and your project without paying again.</p>{purchases?.items.map(p => <article key={p.id} className="sceenyk-card space-y-3 p-5"><h2 className="break-words font-semibold">{p.title}</h2><p>{usd(p.amountMinor)} USD · {p.status}</p><p className="text-caption text-muted-foreground">{new Date(p.createdAt).toLocaleDateString()}</p>{p.projectId ? <Button nativeButton={false} render={<Link href={`/projects/${p.projectId}`} />}>Open adopted project</Button> : p.status !== "failed" ? <Button variant="outline" disabled={busy} onClick={() => void continueCheckout(p)}>{p.status === "completed" ? "Recover adopted project" : "Continue saved Sandbox checkout"}</Button> : <p className="text-body-sm text-muted-foreground">Payment failed. Reconciliation is required before another charge.</p>}</article>)}</>}{!total && <p className="sceenyk-card p-6 text-muted-foreground">{earnings ? "No Marketplace sales yet." : "No paid Marketplace purchases yet."}</p>}<MarketplacePagination total={total} page={props.page} pageSize={12} href={page => `/dashboard/marketplace/${earnings ? "earnings" : "purchases"}?page=${page}`} /></div>;
+}

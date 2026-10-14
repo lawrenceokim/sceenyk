@@ -8,12 +8,15 @@ import { AccountAction } from "@/components/account-action";
 import { useAuthAvailable } from "@/components/auth/auth-availability";
 import { Button } from "@/components/ui/button";
 import { adoptMarketplaceAction } from "@/app/actions/marketplace";
+import { PaidAdoption } from "./paid-adoption";
 
-function SignedInAdoption({ listingId }: { listingId: string }) {
+type Props = { listingId: string; paid?: boolean; estimate?: { credits: number; test: boolean } | null };
+
+function SignedInAdoption({ listingId, paid, estimate }: Props) {
   const { isLoaded, isSignedIn, userId } = useAuth();
   if (!isLoaded) return <Button disabled className="w-full">Loading account…</Button>;
   if (!isSignedIn) return <AccountAction intent="sign-in" className="w-full">Sign in to adopt</AccountAction>;
-  return <Adoption key={userId} listingId={listingId} identity={userId!} />;
+  return paid ? <PaidAdoption key={userId} listingId={listingId} estimate={estimate ?? null} /> : <Adoption key={userId} listingId={listingId} identity={userId!} />;
 }
 function Adoption({ listingId, identity }: { listingId: string; identity: string }) {
   const router = useRouter();
@@ -45,6 +48,6 @@ function Adoption({ listingId, identity }: { listingId: string; identity: string
     {state === "creating" ? "Creating your project…" : state === "adopted" ? "Open your adopted project" : "Adopt template"}
   </Button><p role="status" className={error ? "text-body-sm text-destructive" : "text-body-sm text-success-foreground"}>{error || (state === "adopted" ? "Template adopted. Opening your project…" : "")}</p></div>;
 }
-export function AdoptButton({ listingId }: { listingId: string }) {
-  return useAuthAvailable() ? <SignedInAdoption listingId={listingId} /> : <AccountAction intent="sign-in" className="w-full">Sign in to adopt</AccountAction>;
+export function AdoptButton(props: Props) {
+  return useAuthAvailable() ? <SignedInAdoption {...props} /> : <AccountAction intent="sign-in" className="w-full">Sign in to adopt</AccountAction>;
 }

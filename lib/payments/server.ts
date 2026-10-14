@@ -158,7 +158,7 @@ export async function handleVerifiedPayPalEvent(input: unknown) {
     const purchaseId = z.uuid().parse(order.purchase_units[0].custom_id);
     const lookup = await db.from("credit_purchases").select("*").eq("id", purchaseId).maybeSingle();
     if (lookup.error) throw new Error("WEBHOOK_PURCHASE_UNAVAILABLE");
-    if (!lookup.data) return; // Authenticated event for another use of this app.
+    if (!lookup.data) return false; // Authenticated event for another use of this app.
     verifyOrder(lookup.data, order);
     purchase = await attach(lookup.data, orderId);
   }
@@ -166,4 +166,5 @@ export async function handleVerifiedPayPalEvent(input: unknown) {
   // PayPal retries an authentic completed event until DB fulfilment succeeds.
   if (["PAYMENT.CAPTURE.COMPLETED", "CHECKOUT.ORDER.COMPLETED"].includes(event.event_type) && status !== "completed") throw new Error("WEBHOOK_CAPTURE_PENDING");
   if (event.event_type === "CHECKOUT.ORDER.APPROVED" && ["pending", "approved"].includes(status)) throw new Error("WEBHOOK_CAPTURE_PENDING");
+  return true;
 }

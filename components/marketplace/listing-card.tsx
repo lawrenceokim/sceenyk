@@ -3,6 +3,7 @@ import { ArrowUpRight, Layers3, Store } from "lucide-react";
 import { creationCategories } from "@/components/creation/creation-options";
 import { Button } from "@/components/ui/button";
 import type { Listing, TemplateSnapshot } from "@/lib/marketplace/contract";
+import { usd } from "@/lib/marketplace/payments/contract";
 
 export function TemplateCover({ template, large = false }: { template: TemplateSnapshot; large?: boolean }) {
   const category = creationCategories.find(item => item.id === template.category)!;
@@ -26,12 +27,12 @@ export function ListingCard({ listing }: { listing: Listing }) {
       <TemplateCover template={listing.template} />
     </Link>
     <div className="flex flex-1 flex-col gap-3 p-5">
-      <div className="flex flex-wrap items-center justify-between gap-2 text-caption"><span className="text-muted-foreground">{category.title}</span><span className="rounded-full bg-success-surface px-2.5 py-1 font-medium text-success-foreground">Free adoption</span></div>
+      <div className="flex flex-wrap items-center justify-between gap-2 text-caption"><span className="text-muted-foreground">{category.title}</span><span className="rounded-full bg-accent px-2.5 py-1 font-medium text-accent-foreground">{listing.adoptionType === "free" ? "Free adoption" : "Paid · Sandbox"}</span></div>
       <h2 className="break-words text-lg font-semibold tracking-tight"><Link className="hover:text-link focus-visible:outline-2 focus-visible:outline-ring" href={`/marketplace/${listing.id}`}>{listing.title}</Link></h2>
       <p className="line-clamp-2 break-words text-body-sm text-muted-foreground">{listing.description}</p>
       <p className="text-caption text-muted-foreground">By {listing.creatorName}</p>
       {!!listing.tags.length && <div className="flex flex-wrap gap-1.5">{listing.tags.map(tag => <span key={tag} className="rounded-full bg-muted px-2 py-1 text-caption text-muted-foreground">{tag}</span>)}</div>}
-      <div className="mt-auto border-t border-border pt-3"><GenerationEstimate listing={listing} /></div>
+      <div className="mt-auto space-y-2 border-t border-border pt-3"><p className="text-body-sm font-medium">Creator adoption price: {listing.adoptionType === "free" ? "Free" : usd(listing.priceMinor)}</p><GenerationEstimate listing={listing} /></div>
       <Button variant="outline" className="w-full" nativeButton={false} render={<Link href={`/marketplace/${listing.id}`} />}>Explore template<ArrowUpRight className="size-4" aria-hidden="true" /></Button>
     </div>
   </article>;

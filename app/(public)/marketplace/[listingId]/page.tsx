@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { unstable_rethrow } from "next/navigation";
 import { getMarketplaceListing } from "@/lib/marketplace/server";
+import { usd } from "@/lib/marketplace/payments/contract";
 import { AdoptButton } from "@/components/marketplace/adopt-button";
 import { GenerationEstimate, MarketplaceFailure, MarketplaceLoading, TemplateCover, TemplateInformation } from "@/components/marketplace/listing-card";
 import { creationCategories } from "@/components/creation/creation-options";
@@ -21,8 +22,8 @@ async function Detail({ params }: { params: Promise<{ listingId: string }> }) {
       <div className="flex items-center gap-3"><span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-accent font-semibold text-accent-foreground" aria-hidden="true">{listing.creatorName.slice(0, 1).toUpperCase()}</span><p className="break-words text-body-sm">By {listing.creatorName}</p></div>
       <p className="whitespace-pre-wrap break-words text-body-sm leading-relaxed text-muted-foreground">{listing.description}</p>
       {!!listing.tags.length && <div className="flex flex-wrap gap-2">{listing.tags.map(tag => <span key={tag} className="rounded-full bg-muted px-3 py-1 text-caption text-muted-foreground">{tag}</span>)}</div>}
-      <div className="space-y-2 border-y border-border py-5"><p className="text-xl font-semibold">Creator adoption price: Free</p><GenerationEstimate listing={listing} /><p className="text-body-sm leading-relaxed text-muted-foreground">Free adoption does not mean free AI generation. Normal Sceenyk credits may still be required. Your project will show an authoritative quote before you generate.</p></div>
-      <AdoptButton listingId={listing.id} />
+      <div className="space-y-2 border-y border-border py-5"><p className="text-xl font-semibold">Creator adoption price: {listing.adoptionType === "free" ? "Free" : usd(listing.priceMinor)}</p><GenerationEstimate listing={listing} /><p className="text-body-sm leading-relaxed text-muted-foreground">Adoption includes no future AI generation usage. Normal Sceenyk credits may still be required. Your project will show an authoritative quote before you generate.</p></div>
+      <AdoptButton listingId={listing.id} paid={listing.adoptionType === "paid"} estimate={listing.estimate} />
       <p className="text-caption text-muted-foreground">Adoption creates your own project. The creator keeps their original project, and their private media stays private.</p>
     </div>
     <div className="min-w-0 lg:col-start-1"><TemplateInformation template={listing.template} /></div>

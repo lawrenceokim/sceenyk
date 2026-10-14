@@ -1,5 +1,14 @@
 # Generation accounting contract
 
+## Separate Marketplace money ledger — authorized 2026-10-14
+
+Paid Marketplace adoption records USD gross sale, platform fee and creator net as exact integer cents in dedicated purchases and creator_earnings_ledger. The centrally configured Sandbox demo fee defaults to 0 basis points; fee cents are floor(gross cents × demo basis points / 10000), net = gross − fee. These are demo arithmetic and snapshots, not approved production economics or a provider-fee reimbursement model. PayPal processing fees are not silently deducted from creator net.
+
+One verified completed final capture creates exactly one immutable pending sale entry and one durable adoption entitlement atomically with purchase completion. A separate retryable redemption creates/reuses one buyer-owned project. Failed project creation cannot reverse the payment record or charge again. Buyer/listing, purchase, provider order/capture and entitlement/project uniqueness guard duplicate effects. No Marketplace operation writes generation_accounts, credit_ledger, generation_reservations or lifetime free counters. Creator earnings are money; Sceenyk AI credits remain nonwithdrawable usage units.
+
+Earnings remain pending indefinitely in this unit. The ledger permits future available/reversed append-only events; no settlement/reversal mutation API or automatic holding period is implemented. The original pending sale remains permanent. Effective state prefers reversed, then available, then pending; pending/available totals sum net cents in that state and lifetime totals net successful sales less reversals. Future reversal fixtures test this projection without implementing refunds or chargeback automation. Production fee, settlement/holding period, refund/dispute rules and withdrawals/payouts remain unresolved.
+
+
 ## Marketplace boundary (approved product model, 2026-10-13)
 
 Marketplace adoption is distinct from generation. Free adoption creates an adopter-owned project without a Marketplace charge; subsequent AI work uses the existing two lifetime free generations or server-quoted credits. Paid adoption, when separately authorized, requires verified purchase and durable entitlement before project creation. Neither path transfers the creator's original project or private media. Adoption does not rewrite the creator's generation history, free allowance, credits, or immutable ledger.

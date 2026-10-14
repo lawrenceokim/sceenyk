@@ -1,5 +1,14 @@
 # Commercial cost contract
 
+## Paid Marketplace Sandbox configuration — authorized 2026-10-14
+
+Paid adoption is USD only, using explicit Sandbox/demo bounds of $1.00–$25.00 centralized in lib/marketplace/payments/contract.ts and independently enforced by the server configuration boundary. These are test safeguards, not production listing economics. Browser amount/currency/creator-share claims are rejected. The creator chooses free or paid plus integer cents; the server freezes each purchase's reviewed price and reusable snapshot before order creation. Listing price changes apply to new purchases; existing checkout summaries and entitlements retain their original amounts/configuration.
+
+Server-only SCEENYK_MARKETPLACE_DEMO_FEE_BPS defaults to 0 (0%) and accepts integer basis points for explicit demo testing only. Purchase and earnings records separately preserve gross, platform fee and creator net in cents; fee uses integer floor division and net is the exact remainder. No permanent production fee or revenue share is approved. Successful sale earnings stay pending with no automatic settlement duration. Production price bounds, fee, holding period and refund/dispute/payout policies remain unresolved.
+
+Cards/detail/payment review label creator adoption price separately from estimated Sceenyk generation credits. A purchase unlocks the reusable template and one adopted project; it includes no future generation usage and grants no AI credits. Generation estimates remain informational, may be unavailable, and never authorize a job. Actual generation still requires the existing server-issued quote and ordinary free/paid entitlement. Final rendering remains deferred.
+
+
 Approved 2026-10-11. Credits are internal Sceenyk usage units, separate from money, PayPal balances and provider billing units. No fixed dollar conversion exists. Every application user retains two lifetime free generations of at most ten seconds, under the unchanged [accounting contract](accounting.md).
 
 **Commercial decision approved 2026-10-13:** the primary model is [pay-as-you-go credits](overview.md#approved-commercial-model--pay-as-you-go-2026-10-13). Users buy one-time packs and top up when they need more. Purchased credits do not expire unless a future explicit product decision changes this; they are not monthly allowances or a month of access. Monthly subscriptions and recurring plans are outside current scope. Larger packs may eventually offer better value, but no production discount schedule or tariff is approved. This supersedes earlier monthly-price/allocation assumptions without changing the implemented quote/admission contract.

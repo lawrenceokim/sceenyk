@@ -14,6 +14,8 @@ const metadataFields = {
   category: saveProjectSchema.shape.category,
   tags: z.array(z.string().trim().toLowerCase().regex(/^[a-z0-9][a-z0-9 -]{0,29}$/, "Use short tags with letters, numbers, spaces or hyphens.")).max(8).transform(tags => [...new Set(tags)]),
   rightsConfirmed: z.boolean(),
+  adoptionType: z.enum(["free", "paid"]).default("free"),
+  priceMinor: z.number().int().min(0).max(100000).default(0),
 };
 export const createListingSchema = z.strictObject({
   ...metadataFields,
@@ -34,10 +36,10 @@ export const listingSchema = z.strictObject({
   id: z.uuid(), title: publicText(120), description: publicText(2000),
   category: saveProjectSchema.shape.category, tags: z.array(z.string()).max(8),
   creatorName: z.string().max(80), template: templateSnapshotSchema,
-  adoptionType: z.literal("free"), status: z.enum(listingStatuses),
+  adoptionType: z.enum(["free", "paid"]), priceMinor: z.number().int().nonnegative(), currency: z.literal("USD"), status: z.enum(listingStatuses),
   createdAt: z.string(), publishedAt: z.string().nullable(),
 });
-export const ownedListingSchema = listingSchema.extend({ sourceProjectId: z.uuid(), rightsConfirmed: z.boolean() });
+export const ownedListingSchema = listingSchema.extend({ sourceProjectId: z.uuid(), rightsConfirmed: z.boolean(), adoptionCount: z.number().int().nonnegative(), paidSalesCount: z.number().int().nonnegative(), creatorEarningsMinor: z.number().int().nonnegative() });
 export const originSchema = z.strictObject({ listingId: z.uuid(), title: z.string().max(120) });
 export type TemplateSnapshot = z.infer<typeof templateSnapshotSchema>;
 export type Listing = z.infer<typeof listingSchema> & { estimate: { credits: number; test: boolean } | null };

@@ -4,6 +4,7 @@ import { connection } from "next/server";
 import { ensureAppUser } from "@/lib/auth/ensure-app-user";
 import { createDatabaseClient } from "@/lib/db/server";
 import { quoteGenerationCost } from "@/lib/pricing/config";
+import { validateMarketplacePrice } from "./payments/config";
 import {
   adoptListingSchema, browseSchema, createListingSchema, listingSchema,
   originSchema, ownedListingSchema, updateListingSchema,
@@ -78,6 +79,7 @@ function mutationResult(data: unknown, error: { code?: string } | null): Marketp
   if (value.code === "ADOPTED" && value.projectId) return { ok: true, projectId: value.projectId };
   if (value.code === "NOT_FOUND") return { ok: false, code: "NOT_FOUND", message: "This project or listing is unavailable." };
   if (value.code === "CONFLICT") return { ok: false, code: "CONFLICT", message: "This adoption request belongs to a different listing. Reopen this page to try again." };
+  if (value.code === "PAYMENT_REQUIRED") return { ok: false, code: "CONFLICT", message: "This template requires a verified Marketplace purchase before adoption." };
   return { ok: false, code: "INVALID_INPUT", message: "Check the listing details, status and rights confirmation." };
 }
 export async function createMarketplaceListing(input: unknown): Promise<MarketplaceResult> {
@@ -85,10 +87,12 @@ export async function createMarketplaceListing(input: unknown): Promise<Marketpl
   const parsed = createListingSchema.safeParse(input);
   if (!parsed.success) return { ok: false, code: "INVALID_INPUT", message: parsed.error.issues[0].message };
   const v = parsed.data;
-  const { data, error } = await createDatabaseClient().rpc("marketplace_create", {
+  try { validateMarketplacePrice(v.adoptionType, v.priceMinor); } catch { return { ok: false, code: "INVALID_INPUT", message: "Choose Free or a Sandbox price from $1.00 to $25.00." }; }
+  const { data, error } = await createDatabaseClient().rpc("marketplace_create_priced", {
     p_owner_user_id: user.id, p_listing_id: v.id, p_project_id: v.sourceProjectId, p_title: v.title,
     p_description: v.description, p_category: v.category, p_tags: v.tags, p_instructions: v.instructions,
     p_publish: v.publish, p_rights_confirmed: v.rightsConfirmed,
+    p_adoption_type: v.adoptionType, p_price_minor: v.priceMinor,
   });
   return mutationResult(data, error);
 }
@@ -97,9 +101,11 @@ export async function updateMarketplaceListing(input: unknown): Promise<Marketpl
   const parsed = updateListingSchema.safeParse(input);
   if (!parsed.success) return { ok: false, code: "INVALID_INPUT", message: parsed.error.issues[0].message };
   const v = parsed.data;
-  const { data, error } = await createDatabaseClient().rpc("marketplace_update", {
+  try { validateMarketplacePrice(v.adoptionType, v.priceMinor); } catch { return { ok: false, code: "INVALID_INPUT", message: "Choose Free or a Sandbox price from $1.00 to $25.00." }; }
+  const { data, error } = await createDatabaseClient().rpc("marketplace_update_priced", {
     p_owner_user_id: user.id, p_listing_id: v.id, p_title: v.title, p_description: v.description,
     p_category: v.category, p_tags: v.tags, p_status: v.status, p_rights_confirmed: v.rightsConfirmed,
+    p_adoption_type: v.adoptionType, p_price_minor: v.priceMinor,
   });
   return mutationResult(data, error);
 }

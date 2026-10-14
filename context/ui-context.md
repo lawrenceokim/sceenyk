@@ -1,5 +1,7 @@
 # UI Context
 
+**Paid Marketplace extension (2026-10-14):** the listing editor adds Free/Paid and a centralized demo USD price range. Cards/detail and the payment summary separate adoption money from estimated AI credits. My Marketplace Listings shows small adoption/sale/net totals and links to buyer purchases and creator earnings. New account-guarded responsive purchase recovery and pending/available/lifetime sale history use the existing tokens, Button and Dialog. Paid public instructions are locked until adoption; no payout controls are added. The earlier free-only UI scope below describes the foundation.
+
 ## Approved commercial messaging (2026-10-13)
 
 Use **"Buy credits. Create what you need. Top up when you need more."** Current product intent is pay-as-you-go: two lifetime free generations remain, then users buy one-time credit packs and manually top up as needed. Credits are usage units, not monthly allowances or a month of access; purchased credits do not expire unless explicitly changed by a future product decision. Keep pre-confirmation generation cost and server-authoritative pricing. Larger-pack value differences remain an unapproved production pricing decision; existing Sandbox packs stay clearly labeled as test values.

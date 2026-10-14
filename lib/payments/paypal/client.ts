@@ -2,6 +2,9 @@ import "server-only";
 import { z } from "zod";
 import { getPayPalConfig } from "./config";
 import type { PurchaseRow } from "../types";
+import type { MarketplacePurchaseRow } from "@/lib/marketplace/payments/types";
+
+type PayPalPurchase = Pick<PurchaseRow, "id" | "amount_minor" | "currency" | "paypal_order_id" | "capture_request_id"> & { listing_id?: string };
 
 export const paypalOrderId = z.string().regex(/^[A-Z0-9]{10,32}$/);
 const money = z.object({ value: z.string(), currency_code: z.string() });
@@ -44,20 +47,28 @@ async function request(path: string, method: "GET" | "POST", body?: string, requ
   return response.json() as Promise<unknown>;
 }
 
-export function purchaseAmount(purchase: PurchaseRow) {
+export function purchaseAmount(purchase: Pick<PayPalPurchase, "amount_minor">) {
   return (purchase.amount_minor / 100).toFixed(2);
 }
 
 export async function createPayPalOrder(purchase: PurchaseRow): Promise<PayPalOrder> {
+  return createOrder(purchase, purchase.pack_name, "/dashboard/credits");
+}
+
+export async function createMarketplacePayPalOrder(purchase: MarketplacePurchaseRow): Promise<PayPalOrder> {
+  return createOrder(purchase, `Marketplace template — ${purchase.listing_title}`, "/dashboard/marketplace/purchases");
+}
+
+async function createOrder(purchase: PayPalPurchase, description: string, returnPath: string): Promise<PayPalOrder> {
   const { origin } = getPayPalConfig();
   const body = {
     intent: "CAPTURE",
-    purchase_units: [{ reference_id: purchase.id, custom_id: purchase.id, invoice_id: purchase.id,
-      description: `Sceenyk Sandbox — ${purchase.pack_name}`,
+    purchase_units: [{ reference_id: purchase.listing_id ?? purchase.id, custom_id: purchase.id, invoice_id: purchase.listing_id ? `marketplace:${purchase.id}` : purchase.id,
+      description: `Sceenyk Sandbox — ${description}`.slice(0, 127),
       amount: { currency_code: purchase.currency, value: purchaseAmount(purchase) } }],
     payment_source: { paypal: { experience_context: {
       brand_name: "Sceenyk Sandbox", shipping_preference: "NO_SHIPPING", user_action: "PAY_NOW",
-      return_url: `${origin}/dashboard/credits?checkout=return`, cancel_url: `${origin}/dashboard/credits?checkout=cancel`,
+      return_url: `${origin}${returnPath}?checkout=return`, cancel_url: `${origin}${returnPath}?checkout=cancel`,
     } } },
   };
   return paypalOrder.parse(await request("/v2/checkout/orders", "POST", JSON.stringify(body), purchase.id));
@@ -67,21 +78,21 @@ export async function readPayPalOrder(id: string) {
   return paypalOrder.parse(await request(`/v2/checkout/orders/${paypalOrderId.parse(id)}`, "GET"));
 }
 
-export async function capturePayPalOrder(purchase: PurchaseRow) {
+export async function capturePayPalOrder(purchase: PayPalPurchase) {
   const id = paypalOrderId.parse(purchase.paypal_order_id);
   return paypalOrder.parse(await request(`/v2/checkout/orders/${id}/capture`, "POST", "{}", purchase.capture_request_id));
 }
 
-export function verifyOrder(purchase: PurchaseRow, order: PayPalOrder) {
+export function verifyOrder(purchase: PayPalPurchase, order: PayPalOrder) {
   const unit = order.purchase_units[0];
   if ((purchase.paypal_order_id && order.id !== purchase.paypal_order_id) ||
-    unit.reference_id !== purchase.id || unit.custom_id !== purchase.id || unit.invoice_id !== purchase.id ||
+    unit.reference_id !== (purchase.listing_id ?? purchase.id) || unit.custom_id !== purchase.id || unit.invoice_id !== (purchase.listing_id ? `marketplace:${purchase.id}` : purchase.id) ||
     unit.amount.value !== purchaseAmount(purchase) || unit.amount.currency_code !== purchase.currency) {
     throw new Error("PAYPAL_ORDER_MISMATCH");
   }
 }
 
-export function verifiedCapture(purchase: PurchaseRow, order: PayPalOrder) {
+export function verifiedCapture(purchase: PayPalPurchase, order: PayPalOrder) {
   verifyOrder(purchase, order);
   const captures = order.purchase_units[0].payments?.captures;
   if (order.status !== "COMPLETED" || captures?.length !== 1) throw new Error("PAYPAL_CAPTURE_NOT_COMPLETED");

@@ -25,7 +25,9 @@
     "test:accounting": "node scripts/check-accounting.mjs",
     "test:pricing": "node scripts/check-pricing.mjs",
     "test:analysis": "node scripts/check-analysis.mjs && node scripts/check-gemini.mjs",
-    "test:client-secrets": "node scripts/check-client-secrets.mjs"
+    "test:client-secrets": "node scripts/check-client-secrets.mjs",
+    "test:marketplace-payments": "node scripts/check-marketplace-payments.mjs",
+    "test:creator-earnings": "node scripts/check-creator-earnings.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1148.0",

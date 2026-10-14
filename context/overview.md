@@ -1,5 +1,7 @@
 # Sceenyk
 
+**Current Marketplace authorization (2026-10-14):** implement USD PayPal Sandbox paid adoption, durable purchase entitlement and a separate immutable pending creator-earnings ledger alongside existing free adoption. This supersedes paid-purchase/earnings exclusions in the earlier first-unit notes below. Production economics, settlement automation, withdrawals, payouts, refunds UI, moderation and ratings remain excluded. Final rendering stays deferred. Actual acceptance status is in the progress tracker.
+
 ## Overview
 
 Sceenyk is an AI-powered content creation platform that turns ideas, prompts, uploaded videos, images, products, and other media into finished video content. It brings content planning, generation, transformation, and assembly into one automated production flow, reducing the need to move between separate AI tools and video editors.

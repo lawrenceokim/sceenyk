@@ -65,6 +65,7 @@ export type Database = {
     Tables: {
       caption_tracks: { Row: import("@/lib/captions/contract").CaptionRow; Insert: never; Update: never; Relationships: [] };
       caption_preferences: { Row: import("@/lib/captions/contract").CaptionPreferenceRow; Insert: never; Update: never; Relationships: [] };
+      marketplace_purchases: { Row: import("@/lib/marketplace/payments/types").MarketplacePurchaseRow; Insert: never; Update: never; Relationships: [] };
       credit_purchases: { Row: import("@/lib/payments/types").PurchaseRow; Insert: never; Update: never; Relationships: [] };
       render_jobs: { Row: import("@/lib/final-render/contract").RenderJob; Insert: never; Update: never; Relationships: [] };
       final_video_assets: { Row: import("@/lib/final-render/contract").FinalVideoAsset; Insert: never; Update: never; Relationships: [] };
@@ -230,6 +231,17 @@ export type Database = {
       marketplace_owned_listing: { Args: { p_owner_user_id: string; p_listing_id: string | null; p_project_id: string | null }; Returns: unknown };
       marketplace_origin: { Args: { p_owner_user_id: string; p_project_id: string }; Returns: unknown };
       marketplace_create: { Args: { p_owner_user_id: string; p_listing_id: string; p_project_id: string; p_title: string; p_description: string; p_category: string; p_tags: string[]; p_instructions: string; p_publish: boolean; p_rights_confirmed: boolean }; Returns: unknown };
+      marketplace_create_priced: { Args: { p_owner_user_id: string; p_listing_id: string; p_project_id: string; p_title: string; p_description: string; p_category: string; p_tags: string[]; p_instructions: string; p_publish: boolean; p_rights_confirmed: boolean; p_adoption_type: string; p_price_minor: number }; Returns: unknown };
+      marketplace_update_priced: { Args: { p_owner_user_id: string; p_listing_id: string; p_title: string; p_description: string; p_category: string; p_tags: string[]; p_status: string; p_rights_confirmed: boolean; p_adoption_type: string; p_price_minor: number }; Returns: unknown };
+
+      marketplace_prepare_purchase: { Args: { p_buyer_user_id: string; p_listing_id: string; p_fee_bps: number; p_pricing_version: string }; Returns: unknown };
+      marketplace_attach_order: { Args: { p_purchase_id: string; p_buyer_user_id: string; p_order_id: string }; Returns: boolean };
+      marketplace_purchase_state: { Args: { p_purchase_id: string; p_status: string }; Returns: boolean };
+      marketplace_fulfil_purchase: { Args: { p_purchase_id: string; p_order_id: string; p_capture_id: string; p_amount_minor: number; p_currency: string }; Returns: boolean };
+      marketplace_paid_project: { Args: { p_buyer_user_id: string; p_purchase_id: string }; Returns: unknown };
+      marketplace_begin_order: { Args: { p_buyer_user_id: string; p_purchase_id: string }; Returns: unknown };
+      marketplace_redeem_purchase: { Args: { p_buyer_user_id: string; p_purchase_id: string }; Returns: unknown };
+      marketplace_creator_earnings: { Args: { p_creator_user_id: string; p_page: number }; Returns: unknown };
       marketplace_update: { Args: { p_owner_user_id: string; p_listing_id: string; p_title: string; p_description: string; p_category: string; p_tags: string[]; p_status: string; p_rights_confirmed: boolean }; Returns: unknown };
       marketplace_adopt: { Args: { p_owner_user_id: string; p_listing_id: string; p_request_id: string }; Returns: unknown };
       caption_source: { Args: { p_job_id: string }; Returns: import("@/lib/captions/contract").CaptionSource | null };
