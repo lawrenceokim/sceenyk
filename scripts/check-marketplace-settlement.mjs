@@ -112,6 +112,13 @@ try {
   check('history includes sale settlement and adjustment',stats.sales.some(s=>s.history.some(e=>e.kind==='available')&&s.history.some(e=>e.kind==='refund')));
   check('safe creator DTO excludes provider buyer and snapshot',![b,'paypal','template_snapshot',pending.paypal_capture_id].some(secret=>JSON.stringify(stats).includes(secret)));
   check('owned listing net reflects partial reversals',(await scalar('select marketplace_owned_json(l)->>\'creatorEarningsMinor\' value from marketplace_listings l where id=$1',[partialBefore.listing_id]))==='100');
+  const halfCent=await sale({gross:200,fee:5000});
+  await observe(halfCent,1);
+  check('exact half-cent fee tie rounds up with balanced creator remainder',(await balance(halfCent)).reversed_fee===1&&(await balance(halfCent)).reversed_net===0);
+  await observe(halfCent,2);
+  check('next partial does not round the fee a second time',(await balance(halfCent)).reversed_fee===1&&(await balance(halfCent)).reversed_net===1);
+  await observe(halfCent,200);
+  check('half-cent sequence still reaches exact original endpoints',(await balance(halfCent)).reversed_fee===100&&(await balance(halfCent)).reversed_net===100);
   const candidates=await call('marketplace_financial_candidates',{});
   check('candidate batch bounded and excludes terminal refunds',candidates.length<=5&&!candidates.includes(pending.id)&&!candidates.includes(available.id));
   await call('marketplace_begin_financial_check',{p_purchase_id:blocked.id,...policy});

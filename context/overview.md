@@ -1,8 +1,16 @@
 # Sceenyk
 
-**Current authorization (2026-10-14):** creator-earnings Sandbox settlement and proportional cumulative refund/reversal accounting, with immutable history and preserved adopted projects. This supersedes the earlier settlement/reversal exclusions below for this unit. Production settlement duration and fees remain unapproved; payouts, withdrawals, refunds UI, Live and final-render changes remain excluded.
+## Approved production Marketplace earnings and withdrawals (2026-10-14)
 
-**Current Marketplace authorization (2026-10-14):** implement USD PayPal Sandbox paid adoption, durable purchase entitlement and a separate immutable pending creator-earnings ledger alongside existing free adoption. This supersedes paid-purchase/earnings exclusions in the earlier first-unit notes below. Production economics, settlement automation, withdrawals, payouts, refunds UI, moderation and ratings remain excluded. Final rendering stays deferred. Actual acceptance status is in the progress tracker.
+**Documentation/product contract only.** Paid adoptions allocate **10% to Sceenyk and 90% to the creator**, using trusted server-side USD-cent calculations. Verified valid creator earnings become available unless blocked by an existing refund/reversal; they never become AI generation credits, and AI credits are not withdrawable money.
+
+Minimum withdrawal is **$5 USD**. A future request must validate sufficient unreserved available funds and a requested amount between $5 and that balance, reserve it immediately once, and move it from Available Earnings to Pending Payout. The **seven-day hold begins at the withdrawal-request timestamp**, not the sale. Reserved money cannot be withdrawn again. After seven days and clear refund/dispute/reversal checks, the future trusted PayPal payout flow may send it; only provider verification can establish Paid. Proportional cumulative-cent refunds, exact full reversal and immutable financial history remain mandatory, including adjustments to reserved money. See the canonical [accounting policy](accounting.md#approved-production-marketplace-earnings-and-withdrawal-policy-2026-10-14).
+
+The deployed Sandbox fee/test sale hold and prior acceptance history remain unchanged. Production fee/availability rollout, withdrawal reservations/UI and actual PayPal Payouts are unimplemented; **creator withdrawals and PayPal Sandbox payouts under this contract** are the next separately authorized Marketplace implementation unit. No application code, schema, payout schedule, provider configuration, Live or renderer change belongs to this task. Final rendering remains deferred separately. This contract supersedes earlier unresolved Marketplace fee/share/threshold/hold placeholders below; historical unit descriptions do not authorize new implementation.
+
+**Historical implementation authorization (2026-10-14):** creator-earnings Sandbox settlement and proportional cumulative refund/reversal accounting, with immutable history and preserved adopted projects. Its production-fee/holding placeholders are superseded by the approved contract above; actual Sandbox behavior and acceptance are recorded in the tracker.
+
+**Historical Marketplace implementation authorization (2026-10-14):** implement USD PayPal Sandbox paid adoption, durable purchase entitlement and a separate immutable pending creator-earnings ledger alongside existing free adoption. This supersedes paid-purchase/earnings exclusions in the earlier first-unit notes below. Production economics, settlement automation, withdrawals, payouts, refunds UI, moderation and ratings remain excluded. Final rendering stays deferred. Actual acceptance status is in the progress tracker.
 
 ## Overview
 
@@ -64,7 +72,7 @@ Authentication is required for generation, project management, credit purchases 
 
 Every user receives **2 lifetime free video generations, each limited to 10 seconds**. Free generations are separate entitlements, not paid credits. Eligibility requires authentication, duration at most 10 seconds, and remaining allowance. Reservation precedes execution; a verified stored result consumes it and a Sceenyk failure without a usable result restores it once. Additional/longer generations require paid credits under the server's configured pricing. Production credit-pack prices, credits by type/duration, and the provider-cost-to-credit formula remain unresolved. See [accounting.md](accounting.md) and [pricing.md](pricing.md).
 
-Hackathon purchases use PayPal Sandbox only; Live is prohibited during development. The one-time purchase unit is **Complete within Merchant Sandbox acceptance**, including a real verified purchase and exactly-once crediting. Temporary demo packs and acceptance limits are described in [payments.md](payments.md). Production pricing remains unresolved. Marketplace purchases and creator payouts are outside current scope.
+Hackathon purchases use PayPal Sandbox only; Live is prohibited during development. The one-time purchase unit is **Complete within Merchant Sandbox acceptance**, including a real verified purchase and exactly-once crediting. Temporary demo packs and acceptance limits are described in [payments.md](payments.md). Production pricing remains unresolved. Paid Marketplace Sandbox purchases and settlement have their own completed scoped acceptance. Creator withdrawals/PayPal Payouts remain unimplemented under the approved future contract above.
 
 ### Approved Commercial Model — Pay As You Go (2026-10-13)
 
@@ -94,7 +102,7 @@ The authorized first Marketplace unit provides UI, explicit publishing/listing p
 
 ### Persistent Product Data
 
-Supabase PostgreSQL stores users, projects, generations, generation jobs, credit balances, credit transactions, payments, Marketplace listings and free-adoption provenance. Paid Marketplace purchases and creator earnings remain future capabilities. No subscription data model is required for the current credit/top-up contract.
+Supabase PostgreSQL stores users, projects, generations, generation jobs, credit balances, credit transactions, payments, Marketplace listings and free-adoption provenance. Dedicated paid Marketplace purchase, entitlement, earning and adjustment records exist in the scoped Sandbox implementation. Withdrawal reservation and payout persistence remain future capabilities. No subscription data model is required for the current credit/top-up contract.
 
 Large video, image, and audio files are stored outside PostgreSQL. Database records retain the references and metadata needed to associate that media with the relevant project or generation. The media storage service is not specified by this overview.
 
@@ -130,7 +138,7 @@ The first supported category, AI provider, and media storage service remain impl
 - Advanced collaborative video editing.
 - A full professional timeline editor.
 - Native mobile applications.
-- The paid creator marketplace economy, including marketplace purchasing, creator earnings, settlement and payout operations.
+- New creator withdrawal/PayPal payout implementation in this documentation task. Existing Sandbox Marketplace purchasing/earnings/settlement are accepted separately; the approved production policy above is not yet deployed.
 - Monthly generation subscriptions, monthly credit allocations and recurring plans.
 - Membership benefits and auto-recharge unless separately approved in a future product decision.
 - Large-scale enterprise features.

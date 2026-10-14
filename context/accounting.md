@@ -1,6 +1,66 @@
 # Generation accounting contract
 
+## Approved production Marketplace earnings and withdrawal policy (2026-10-14)
+
+**Approved product contract; payout implementation is future work.** This section supersedes older Marketplace fee/share/threshold placeholders and any production model that starts a seven-day hold at sale time. Current Sandbox implementation and historical acceptance below remain evidence of what exists; this documentation update changes no code, balances, migrations or provider configuration.
+
+### Sale proceeds and availability
+
+For each paid Marketplace adoption, **Sceenyk keeps 10% and the creator earns 90%**, calculated by the trusted server from the authoritative USD gross price. Use integer cents and the existing sale-fee convention: fee = floor(gross cents × 1000 / 10000), creator net = gross − fee. The creator receives the exact cent remainder; no new sale-rounding convention or additional provider-fee deduction is approved. A $10.00 sale records $1.00 platform fee and $9.00 creator net. Freeze original gross, fee, net and policy/version; browser-calculated amounts or shares are never authority.
+
+Under the approved production rule, a successful verified sale credits its valid creator net to **Available Earnings**, unless an existing refund/reversal state blocks that amount. There is no automatic seven-day sale hold. Availability remains subject to authoritative payment verification and proportional adjustments. Existing Sandbox pending-sale/test-eligibility events are distinct from withdrawal reservations and must not be relabeled or rewritten as pending payouts.
+
+Creator earnings are USD money from paid adoptions. AI credits are nonwithdrawable generation usage units. Sale proceeds, reversals, reservations and payouts never automatically mint, consume or refund AI credits or lifetime free generations.
+
+### Withdrawal reservation and seven-day hold
+
+The minimum withdrawal is **$5.00 USD (500 cents)**. A future Withdraw action must be unavailable below $5 of unreserved available earnings; the trusted server must independently validate authentication/ownership, available balance ≥ $5, and an exact USD request amount **$5 ≤ requested amount ≤ available earnings**.
+
+An accepted request must atomically reserve that amount once, remove it from Available Earnings, add it to **Pending Payout**, and record the trusted withdrawal-request timestamp. The **seven-day hold starts at that request timestamp**, not at the sale timestamp. No PayPal payout may be sent during the hold. Retries, concurrent requests, refresh/reopen and worker restarts must preserve one durable reservation; the same money cannot fund another withdrawal.
+
+Example: Available $20, request $15 → Available $5 and Pending Payout $15. The reservation changes spendable availability, not lifetime earned money or the sale's platform fee. Pending Payout includes reserved money awaiting eligibility or provider completion; eligibility alone never returns it to available funds.
+
+After seven days, revalidate the reserved amount and blocking refund/dispute/reversal conditions. Only a clear request becomes eligible for the future trusted server-side PayPal payout flow. Elapsed time is not payment completion. The browser cannot mark a payout eligible, processing or paid by asserting a status, timestamp or provider success.
+
+### Minimal future payout lifecycle
+
+| State | Meaning |
+| --- | --- |
+| `requested` | Withdrawal accepted with its amount reserved and request timestamp recorded. |
+| `pending` | Reserved money is in the seven-day hold or awaiting resolution of blocking conditions. |
+| `eligible` | Seven days have elapsed and required blocking-condition checks pass; money stays reserved. |
+| `processing` | Trusted server-side provider processing is underway; money stays reserved. |
+| `paid` | Trusted PayPal verification confirms the payout and its immutable accounting effect. |
+| `failed` | A verified failure is recorded; reservation/recovery handling must follow the separately specified failure policy. |
+
+`cancelled` or `reversed` may be added if needed by the next unit; detailed transitions are not invented here. Unknown provider outcomes must not be treated as paid or as proof that the money is safe to reserve/send again. No lifecycle state, payout table or provider integration is implemented by this document.
+
+### Refunds, reversals and reserved money
+
+Preserve cumulative proportional accounting against each sale's **original frozen** gross G, platform fee F and creator net G−F. For verified cumulative refunded gross R, bounded to [0,G], cumulative fee reversal = round-half-up(F×R/G); cumulative creator reversal = R minus that rounded fee. Append only the increase over already reversed gross/fee/net. Multiple partial refunds, duplicate events and out-of-order observations cannot over-reverse or subtract twice. At R=G, fee reversal is exactly F and creator reversal exactly G−F. Historical Sandbox sales keep their original fee snapshots; the new 10% policy never retroactively reprices them.
+
+If a reversal affects money reserved for a pending payout, append a traceable adjustment linked to the affected sale/reservation, reconcile Available Earnings and Pending Payout, and prevent an unsafe payout. Keep original sale, reservation, settlement and payout history immutable/auditable; never hide an adjustment by deleting records or showing reserved money as available. Lifetime earnings and reversed totals must remain explainable independently of reservation movements. Already-adopted projects remain preserved under the existing reversal contract; access revocation is separate policy work.
+
+**Needs confirmation in the payout implementation unit:** allocation across multiple pending requests; whether an affected request is reduced, blocked or cancelled; definite-failure/cancellation release rules; recipient setup and payout charges; dispute blocking/resolution criteria; and any liability/deficit after money has already been paid. These details do not reopen the approved 10%/90%, $5 minimum, immediate reservation or seven-day request-based hold. No automatic release, silent clamp, hidden balance change or extra deduction is approved by this document.
+
+### Hard accounting invariants
+
+1. The production Marketplace platform fee is 10%.
+2. The creator share is 90%, using authoritative server-side cent accounting.
+3. Creator earnings never become AI credits automatically; AI credits are not withdrawable money.
+4. The minimum withdrawal is $5 USD, enforced against both balance and request amount.
+5. The seven-day hold starts at the accepted withdrawal-request timestamp, not the sale.
+6. Reserved withdrawal money is removed from available funds immediately and cannot be withdrawn twice.
+7. Refund/reversal accounting remains proportional and cumulative, with exact original-cent full reversal and no duplicate effect.
+8. Financial history remains immutable and auditable, including reservation adjustments.
+9. The browser cannot mark payouts paid or supply authoritative financial state.
+10. Actual payout occurs only through a separately implemented, trusted server-side PayPal payout flow.
+
+**Implementation boundary:** the deployed Sandbox flow still uses its demo fee (default 0%) and frozen test sale hold (default 300 seconds). The approved production availability/fee rules require a future versioned implementation transition that preserves that history. Withdrawal reservations, Pending Payout balances, minimum-withdrawal enforcement, payout scheduling/accounts/UI and PayPal Payouts are unimplemented. The next Marketplace unit is creator withdrawals and trusted PayPal Sandbox payouts under this contract; do not start it from this documentation task. Currency is USD only. Final rendering remains deferred separately.
+
 ## Marketplace settlement and cumulative proportional reversals (2026-10-14)
+
+**Implemented Sandbox model:** the test sale-hold description below is not the approved production withdrawal hold. Use the production contract above for future withdrawals.
 
 Creator money is USD integer cents and remains separate from AI credits. The original immutable pending sale freezes gross G, platform fee F and creator net G-F. One immutable availability event records the unrefunded amounts that became available after the frozen test eligibility time and trusted provider verification. Full invalidation appends one reversed lifecycle marker; partial refunds leave the remaining earning pending or available. Financial adjustments remain independent immutable records with purchase/capture binding, reason, reference, source lifecycle, cumulative refunded gross and gross/fee/net deltas. Original purchase, sale, availability event, entitlement and buyer-owned project are preserved.
 
@@ -13,18 +73,18 @@ There are no payouts, withdrawals or other debits of available creator money. Th
 
 ## Separate Marketplace money ledger — authorized 2026-10-14
 
-Paid Marketplace adoption records USD gross sale, platform fee and creator net as exact integer cents in dedicated purchases and creator_earnings_ledger. The centrally configured Sandbox demo fee defaults to 0 basis points; fee cents are floor(gross cents × demo basis points / 10000), net = gross − fee. These are demo arithmetic and snapshots, not approved production economics or a provider-fee reimbursement model. PayPal processing fees are not silently deducted from creator net.
+Paid Marketplace adoption records USD gross sale, platform fee and creator net as exact integer cents in dedicated purchases and creator_earnings_ledger. The centrally configured Sandbox demo fee defaults to 0 basis points; fee cents are floor(gross cents × demo basis points / 10000), net = gross − fee. These are preserved demo snapshots, separate from the approved production 10%/90% policy above and from provider-fee reimbursement. PayPal processing fees are not silently deducted from creator net.
 
 One verified completed final capture creates exactly one immutable pending sale entry and one durable adoption entitlement atomically with purchase completion. A separate retryable redemption creates/reuses one buyer-owned project. Failed project creation cannot reverse the payment record or charge again. Buyer/listing, purchase, provider order/capture and entitlement/project uniqueness guard duplicate effects. No Marketplace operation writes generation_accounts, credit_ledger, generation_reservations or lifetime free counters. Creator earnings are money; Sceenyk AI credits remain nonwithdrawable usage units.
 
-Earnings remain pending indefinitely in this unit. The ledger permits future available/reversed append-only events; no settlement/reversal mutation API or automatic holding period is implemented. The original pending sale remains permanent. Effective state prefers reversed, then available, then pending; pending/available totals sum net cents in that state and lifetime totals net successful sales less reversals. Future reversal fixtures test this projection without implementing refunds or chargeback automation. Production fee, settlement/holding period, refund/dispute rules and withdrawals/payouts remain unresolved.
+The original021-only unit recorded pending earnings without settlement operations. Subsequent023 implements the Sandbox availability and cumulative-refund model above, retaining the original pending sale permanently. Effective state prefers reversed, then available, then pending; balances project original net less cumulative reversals without double subtraction. This Sandbox lifecycle is not a withdrawal reservation or the approved production request-based hold. The production 10%/90% share, $5 minimum and seven-day withdrawal-request hold are now approved above. Withdrawal implementation and detailed dispute/release/liability rules remain future work.
 
 
 ## Marketplace boundary (approved product model, 2026-10-13)
 
 Marketplace adoption is distinct from generation. Free adoption creates an adopter-owned project without a Marketplace charge; subsequent AI work uses the existing two lifetime free generations or server-quoted credits. Paid adoption, when separately authorized, requires verified purchase and durable entitlement before project creation. Neither path transfers the creator's original project or private media. Adoption does not rewrite the creator's generation history, free allowance, credits, or immutable ledger.
 
-Future creator earnings represent money from paid Marketplace sales, separate from nonwithdrawable Sceenyk AI credits. A future monetary ledger must distinguish marketplace purchase, pending creator earning, available earning, platform fee, refund/chargeback/dispute adjustments and payout, with idempotent provider verification and ownership. Pending → holding/settlement → available → payout is conceptual; exact fee and duration are unresolved. Do not credit a creator's AI-credit balance with sale proceeds or infer a payout from an adoption. No Marketplace ledger/schema, purchase capture or payout is implemented by the existing generation accounting or PayPal Sandbox credit purchase system.
+Creator earnings represent money from paid Marketplace sales, separate from nonwithdrawable Sceenyk AI credits. The existing dedicated Marketplace ledger distinguishes original sale, test availability, platform fee and proportional refund/reversal adjustments. Future withdrawal reservations and payouts extend that separate money boundary with idempotent provider verification and ownership. The approved production flow is valid verified sale → available 90% net → withdrawal request of at least $5 → reserved Pending Payout → seven-day hold from request → eligible → future trusted PayPal payout. Existing Sandbox pending-sale events retain their original test eligibility; they are not pending payouts. Do not credit a creator's AI-credit balance with sale proceeds or infer a payout from an adoption. Marketplace purchases/earnings/adjustments are implemented separately from generation accounting and PayPal credit-pack purchases; withdrawal reservations and actual payouts remain unimplemented.
 
 **Commercial model approved 2026-10-13:** credits support user-initiated pay-as-you-go pack purchases and repeat top-ups, not monthly allowances or a month of access. Purchased credits do not expire unless a future explicit product decision changes this. The two lifetime free generations remain separate and never reset on purchase. Generation cost is shown before confirmation and is server-authoritative; existing reservation, verified-result consumption and failure restoration remain unchanged. Quote expiry is not credit expiry. Monthly subscriptions are outside current scope. Possible membership benefits and optional threshold-based auto-recharge require separate future approval. See [overview.md](overview.md#approved-commercial-model--pay-as-you-go-2026-10-13).
 

@@ -1,5 +1,13 @@
 # UI Context
 
+## Approved future creator withdrawal UI contract (2026-10-14)
+
+**Documentation only; no withdrawal UI is implemented by this task.** Future creator account screens distinguish Available Earnings, Pending Payout, Lifetime Earnings and Reversed/Adjusted Earnings where useful, separately from nonwithdrawable AI generation credits. Verified valid sales contribute the approved 90% creator share to available money unless blocked by refund/reversal; the server calculates the 10% fee.
+
+A future Withdraw action is unavailable below $5 USD of unreserved available earnings. Requests must be at least $5 and no more than that balance, with server enforcement independent of button state. Explain that acceptance reserves the amount immediately and removes it from available money, starts a seven-day hold from the withdrawal request, and permits no PayPal send during that hold. Available $20 / request $15 must display Available $5 and Pending Payout $15. Reserved funds stay excluded through refresh/reopen and cannot fund another request. After the hold, clear refund/dispute/reversal checks precede eligibility; only trusted provider verification can show Paid. Reflect immutable refund adjustments without presenting pending payout as spendable funds.
+
+Keep the existing light/dark tokens, responsive layout and account guards. The current Sandbox pending-earning card reflects test sale eligibility, **not Pending Payout**; the deployed screens below and absence of a Withdraw control remain unchanged. The future lifecycle and remaining failure/dispute allocation questions are defined in [accounting.md](accounting.md#minimal-future-payout-lifecycle).
+
 ## Creator settlement and adjustment history (2026-10-14)
 
 Creator earnings uses the existing responsive cards and light/dark tokens for pending, available, lifetime gross, net after reversals, creator net reversed and platform fees reversed. Each listing sale retains original amounts, remaining net, eligibility where pending and an expandable chronological sale/availability/refund/reversal history. Buyer purchases show refunded status/cents and explain that the adopted project remains available. Available is explicitly future-payout eligibility, not a completed payout; no Withdraw control exists. Reads retain Clerk account guards and refresh/reopen behavior. No new theme or refund mutation UI is introduced.
