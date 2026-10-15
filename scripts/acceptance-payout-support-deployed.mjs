@@ -11,9 +11,10 @@ import {createClerkClient} from '@clerk/backend';
 import {typescriptLoader} from './lib/load-typescript.mjs';
 nextEnv.loadEnvConfig(process.cwd(),false,{info(){},error(){}});
 const db=typescriptLoader()('lib/db/server.ts').createDatabaseClient();
-const origin='https://sceenyk.vercel.app',hostedOnly=process.argv.includes('--hosted-only');
+const local=process.argv.includes('--local');
+const origin=local?'http://localhost:3101':'https://sceenyk.vercel.app',hostedOnly=process.argv.includes('--hosted-only');
 const evidence={checkedAt:new Date().toISOString(),origin,hostedOnly,checks:[],payoutCreationRequested:false};
-const artifact=path.join(os.tmpdir(),'sceenyk-payout-support-'+(hostedOnly?'hosted':'deployed')+'-acceptance.json');
+const artifact=path.join(os.tmpdir(),'sceenyk-payout-support-'+(hostedOnly?'hosted':local?'local-http':'deployed')+'-acceptance.json');
 const check=(name,value)=>{assert.ok(value,name);evidence.checks.push(name);fs.writeFileSync(artifact,JSON.stringify(evidence,null,2));console.log(JSON.stringify({passed:name}));};
 const canonical=v=>Array.isArray(v)?v.map(canonical):v&&typeof v==='object'?Object.fromEntries(Object.keys(v).sort().map(k=>[k,canonical(v[k])])):v;
 const hash=v=>createHash('sha256').update(JSON.stringify(canonical(v))).digest('hex');
@@ -55,16 +56,34 @@ try{
     for(const user of [admin,ordinary]){const session=await clerk.sessions.createSession({userId:user.clerk_user_id});sessions.push(session.id);}
     const request=async(index,route,{method='GET',body,headers={}}={})=>{
       const token=index===null?null:(await clerk.sessions.getToken(sessions[index],undefined,60)).jwt;
-      const r=await fetch(origin+route,{method,redirect:'manual',headers:{...(token?{Authorization:'Bearer '+token}:{}),...(body?{'Content-Type':'application/json'}:{}),...headers},...(body?{body:JSON.stringify(body)}:{}),signal:AbortSignal.timeout(45000)});
-      return {status:r.status,body:await r.text(),cache:r.headers.get('cache-control')};
+      let url=origin+route;
+      for(let redirects=0;redirects<3;redirects++){
+        const r=await fetch(url,{method,redirect:'manual',headers:{...(token?{Authorization:'Bearer '+token}:{}),...(body?{'Content-Type':'application/json'}:{}),...headers},...(body?{body:JSON.stringify(body)}:{}),signal:AbortSignal.timeout(45000)});
+        if(headers.RSC==='1'&&r.status===307&&r.headers.get('location')){
+          // Next16 normalizes the RSC cache-key hash. Follow only same-origin,
+          // same-path redirects and verify that these also remain private.
+          const target=new URL(r.headers.get('location'),url);
+          assert.ok(target.origin===origin&&target.pathname===new URL(url).pathname&&target.searchParams.has('_rsc'),'RSC_CACHE_KEY_REDIRECT_ONLY');
+          assert.ok(r.headers.get('cache-control')?.includes('private')&&r.headers.get('cache-control').includes('no-store'),'PRIVATE_RSC_REDIRECT');
+          await r.body?.cancel();url=target.href;continue;
+        }
+        return {status:r.status,body:await r.text(),cache:r.headers.get('cache-control')};
+      }
+      throw Error('RSC_REDIRECT_LIMIT');
     };
-    const hasPrivate=v=>v.includes(safe.id)||v.includes(safe.creator_user_id)||v.includes(safe.destination_snapshot)||v.includes('Accounting and reversal history')||v.includes('Check PayPal Status');
+    const hasPrivate=v=>v.includes(safe.creator_user_id)||v.includes(safe.destination_snapshot)||v.includes('Accounting and reversal history')||v.includes('Check PayPal Status');
     for(const route of ['/admin/payouts','/admin/payouts/'+safe.id]){
       const ordinaryPage=await request(1,route+'?role=admin&creatorId='+admin.id);
-      check('real ordinary page denial without private data '+(route.endsWith(safe.id)?'detail':'queue'),[200,403,404].includes(ordinaryPage.status)&&!hasPrivate(ordinaryPage.body)&&/NEXT_HTTP_ERROR_FALLBACK;404|This page could not be found|404/.test(ordinaryPage.body));
+      // The caller-supplied detail UUID can appear in Next's routing payload;
+      // it does not prove a data leak. Creator/provider/accounting data cannot.
+      check('real ordinary page denial without private data '+(route.endsWith(safe.id)?'detail':'queue'),[200,403,404].includes(ordinaryPage.status)&&!hasPrivate(ordinaryPage.body)&&(!route.endsWith(safe.id)?!ordinaryPage.body.includes(safe.id):true)&&/NEXT_HTTP_ERROR_FALLBACK;404|This page could not be found|404/.test(ordinaryPage.body));
       const anon=await request(null,route);check('anonymous page denied without private data',[200,302,307,401,403,404].includes(anon.status)&&!hasPrivate(anon.body));
       const page=await request(0,route);check('real admin server-rendered private '+(route.endsWith(safe.id)?'detail':'queue'),page.status===200&&page.body.includes(route.endsWith(safe.id)?'Accounting and reversal history':'Payout support')&&page.body.includes(safe.id)&&!page.body.includes(safe.destination_snapshot));
       check('private page is not shared-cacheable',page.cache?.includes('private')&&page.cache.includes('no-store'));
+      const rsc=await request(0,route,{headers:{RSC:'1'}});
+      check('authorized RSC response is private/no-store',rsc.status===200&&rsc.cache?.includes('private')&&rsc.cache.includes('no-store'));
+      const deniedRsc=await request(1,route,{headers:{RSC:'1'}});
+      check('normal user RSC request has no private content',!hasPrivate(deniedRsc.body)&&deniedRsc.cache?.includes('private')&&deniedRsc.cache.includes('no-store'));
     }
     const forbidden=await request(1,'/api/admin/payouts/reconcile',{method:'POST',body:{withdrawalId:safe.id,role:'admin'}});
     check('real normal user direct POST denied',forbidden.status===403&&!hasPrivate(forbidden.body));
