@@ -21,15 +21,26 @@ const profiles=await Promise.all(identities.map(async u=>{const r=await db.rpc('
 const clerk=createClerkClient({secretKey:process.env.CLERK_SECRET_KEY,telemetry:{disabled:true}});
 assert.equal((await clerk.instance.get()).environmentType,'development');
 const sessions=[],results=[];
+const variants=[
+  {name:'HTML'}, {name:'RSC',rsc:true}, {name:'RSC-query',rsc:true,query:true},
+  {name:'HTML-cookie',cookie:true}, {name:'RSC-cookie',rsc:true,cookie:true},
+];
+// next start routes the canonical URL; the platform additionally exposes these
+// generated paths. Their local coverage is checked in the compiled manifest.
+if(origin.includes('vercel.app'))variants.push(
+  {name:'RSC-resource',rsc:true,suffix:'.rsc'},
+  {name:'RSC-prefetch-resource',rsc:true,suffix:'.prefetch.rsc',shell:true},
+  {name:'RSC-segment-resource',rsc:true,suffix:'.segments/_full.segment.rsc',shell:true},
+);
 try {
   for(let index=0;index<3;index++){
     const session=index<2?await clerk.sessions.createSession({userId:identities[index].clerk_user_id}):null;
     if(session)sessions.push(session.id);
-    for(const variant of ['HTML','RSC','RSC-query']){
+    for(const variant of variants){
       const token=session?(await clerk.sessions.getToken(session.id,undefined,60)).jwt:null;
-      const headers={...(token?{Authorization:'Bearer '+token}:{}),...(variant!=='HTML'?{RSC:'1'}:{})};
-      let url=new URL('/dashboard/marketplace/profile',origin);
-      if(variant==='RSC-query')url.searchParams.set('_rsc','cacheacceptance');
+      const headers={...(token?{Authorization:'Bearer '+token}:{}),...(variant.rsc?{RSC:'1'}:{}),...(token&&variant.cookie?{Cookie:'__session='+token}:{})};
+      let url=new URL('/dashboard/marketplace/profile'+(variant.suffix??''),origin);
+      if(variant.query)url.searchParams.set('_rsc','cacheacceptance');
       let response;
       for(let n=0;n<4;n++){
         response=await fetch(url,{headers,redirect:'manual',signal:AbortSignal.timeout(60000)});
@@ -41,9 +52,9 @@ try {
       }
       const body=await response.text(),cache=response.headers.get('cache-control'),cdn=response.headers.get('cdn-cache-control');
       const isolated=index<2?!body.includes(identities[1-index].clerk_user_id):identities.every(u=>!body.includes(u.clerk_user_id));
-      const ownData=index<2?response.status===200&&body.includes(profiles[index].bio)&&body.includes(identities[index].clerk_user_id):[302,307,308,401,403].includes(response.status);
+      const ownData=index<2?response.status===200&&(variant.shell||body.includes(profiles[index].bio)&&body.includes(identities[index].clerk_user_id)):[302,307,308,401,403].includes(response.status);
       const uncached=cache?.includes('private')&&cache.includes('no-store')&&cdn==='no-store';
-      const result={user:index<2?'user-'+(index+1):'anonymous',variant,status:response.status,cache,cdn,isolated,ownData,uncached:!!uncached,passed:isolated&&ownData&&!!uncached};
+      const result={user:index<2?'user-'+(index+1):'anonymous',variant:variant.name,status:response.status,cache,cdn,isolated,ownData,uncached:!!uncached,passed:isolated&&ownData&&!!uncached};
       results.push(result);console.log(JSON.stringify(result));
     }
   }

@@ -14,14 +14,18 @@ import {deployedBrowser} from './lib/deployed-browser.mjs';
 nextEnv.loadEnvConfig(process.cwd(),false,{info(){},error(){}});
 const origin=process.argv[2]??'http://localhost:3017';
 const finalChecksOnly=process.argv.includes('--final-checks');
+const resumeBrowserTail=process.argv.includes('--resume-browser-tail');
+assert.ok(!(finalChecksOnly&&resumeBrowserTail),'ONE_RESUME_STAGE');
 assert.ok(['http://localhost:3017','https://sceenyk.vercel.app'].includes(origin),'EXPLICIT_ACCEPTANCE_ORIGIN');
 const db=typescriptLoader()('lib/db/server.ts').createDatabaseClient();
 const table=await db.from('marketplace_creator_profiles').select('creator_slug').limit(0);assert.ok(!table.error,'APPLY_MIGRATION_027_FIRST');
 assert.ok(!(await db.rpc('creator_profile_listing_identities',{p_ids:[]})).error,'FINAL_MIGRATION_027_PROJECTIONS_REQUIRED');
 const evidenceFile=path.join(os.tmpdir(),origin.includes('localhost')?'sceenyk-creator-profile-acceptance.json':'sceenyk-creator-profile-deployed-acceptance.json');
 let state;try{state=JSON.parse(fs.readFileSync(evidenceFile,'utf8'));}catch{state={projectId:randomUUID(),listingId:randomUUID(),draftProjectId:randomUUID(),draftId:randomUUID(),requestId:randomUUID()};}
-if(finalChecksOnly)assert.ok(state.completedAt,'FULL_BROWSER_ACCEPTANCE_REQUIRED_FIRST');
-else{state.checks=[];state.screenshots=[];}state.cacheFailures=[];state.origin=origin;
+if(finalChecksOnly)assert.ok(state.completedAt||state.browserCompletedAt,'FULL_BROWSER_ACCEPTANCE_REQUIRED_FIRST');
+else if(resumeBrowserTail)assert.ok(state.checks.includes('paid adoption preserves B ownership and excludes private creator media')&&state.protectedBefore,'CORE_BROWSER_ACCEPTANCE_REQUIRED_FIRST');
+else{state.checks=[];state.screenshots=[];state.browserExceptions=[];delete state.completedAt;delete state.browserCompletedAt;}state.cacheFailures=[];state.origin=origin;
+if(!finalChecksOnly&&!resumeBrowserTail)state.startedAt=new Date().toISOString();
 const save=()=>fs.writeFileSync(evidenceFile,JSON.stringify(state,null,2));
 const check=(name,value)=>{assert.ok(value,name);if(!state.checks.includes(name))state.checks.push(name);save();console.log(JSON.stringify({passed:name}));};
 // Complete independent privacy/avatar/accounting checks even when deployed
@@ -46,14 +50,16 @@ async function protectedSnapshot(){
   data.push(['source',await one('projects','id',source.id)]);
   return createHash('sha256').update(JSON.stringify(canonical(Object.fromEntries(data)))).digest('hex');
 }
-const before=await protectedSnapshot();
+const before=finalChecksOnly||resumeBrowserTail?state.protectedBefore:await protectedSnapshot();assert.equal(typeof before,'string','FULL_ACCEPTANCE_SNAPSHOT_REQUIRED');
+if(!finalChecksOnly&&!resumeBrowserTail){state.protectedBefore=before;save();}
 const clerk=createClerkClient({secretKey:process.env.CLERK_SECRET_KEY,publishableKey:process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,telemetry:{disabled:true}});
 const sessions=new Set();
 const avatarFile=path.join(os.tmpdir(),'sceenyk-creator-avatar-fixture.png');
 await sharp({create:{width:900,height:700,channels:3,background:'#7351d9'}}).png().withMetadata().toFile(avatarFile);
 try {
  if(!finalChecksOnly)await deployedBrowser(origin,{A:a.clerk_user_id,B:b.clerk_user_id},async browser=>{
-  const {evaluate,call,wait,invoke,signIn}=browser;
+  const {evaluate,call,invoke,signIn}=browser;
+  const wait=async expression=>{try{await browser.wait(expression);}catch(error){state.conditionFailure=await evaluate(`({user:window.Clerk?.user?.id===${JSON.stringify(a.clerk_user_id)}?'A':window.Clerk?.user?.id===${JSON.stringify(b.clerk_user_id)}?'B':'anonymous',unavailable:document.body.innerText.includes('unavailable'),hasTitleField:!!document.querySelector('input[name=title]'),hasProfileField:!!document.querySelector('input[name=displayName]')})`);state.browserExceptions=browser.exceptions;save();console.error(JSON.stringify({conditionFailure:state.conditionFailure,exceptions:browser.exceptions}));throw error;}};
   const discover=async()=>{
     const urls=await evaluate("[...Array.from(document.scripts,s=>s.src),...performance.getEntriesByType('resource').map(r=>r.name)].filter(u=>u.startsWith(location.origin+'/_next/')&&new URL(u).pathname.endsWith('.js'))");
     for(const url of urls)bundleUrls.add(url);
@@ -67,10 +73,15 @@ try {
   const ownerProfile=async()=>{await navigate('/dashboard/marketplace/profile');await wait('!!document.querySelector("input[name=displayName]")');await discover();};
   const publicPrivacy=async slug=>{
     await navigate('/marketplace/creators/'+slug);await wait('!!document.querySelector("#creator-items")');
+    await wait(`!!document.querySelector('img[width="96"][src^="/api/marketplace/creators/"]')?.naturalWidth`);
+    check('public storefront avatar renders in the browser',true);
     const html=await evaluate('(async()=>await (await fetch(location.href,{cache:"no-store"})).text())()');
     check('public HTML excludes creator private fields',![a.id,a.clerk_user_id,a.email,source.id,state.projectId,state.draftProjectId,state.archiveProjectId,'creatorEarningsMinor','payout_destination','failureCode',...privateAssets.data.flatMap(x=>[x.id,x.storage_key])].some(v=>v&&html.includes(v))&&!/X-Amz-|r2\.cloudflarestorage\.com|avatar_key/.test(html));
     check('public HTML contains no configured secrets',!secrets.some(s=>html.includes(s)||html.includes(encodeURIComponent(s))));
   };
+  const project={id:state.projectId,mode:state.projectSaved?'update':'create',title:'Creator storefront acceptance',category:'cinematic',prompt:'PRIVATE_STOREFRONT_SOURCE',settings:{aspectRatio:'16:9',duration:'10',visualStyle:'Original',tone:'Storytelling'}};
+  const listing={id:state.listingId,sourceProjectId:state.projectId,title:'Public Storefront Recipe',description:'A public reusable brief for your own story.',category:'cinematic',tags:['storefront'],instructions:'Introduce your own subject, then reveal a new perspective.',publish:true,rightsConfirmed:true,adoptionType:'free',priceMinor:0};
+  if(!resumeBrowserTail){
   await login('A');await ownerProfile();
   await fill('displayName','Storefront Acceptance Creator');await fill('bio','Public creative recipes for your own ideas.');
   await click('Save public profile');await wait('document.body.innerText.includes("Public profile saved.")');
@@ -93,7 +104,7 @@ try {
     if((width===1440&&!dark)||(width===390&&dark)){const shot=await call('Page.captureScreenshot',{format:'png',fromSurface:true});const file=path.join(os.tmpdir(),'sceenyk-creator-editor-'+width+'-'+dark+'.png');fs.writeFileSync(file,Buffer.from(shot.data,'base64'));state.screenshots.push(file);save();}
   }
   await call('Emulation.clearDeviceMetricsOverride');
-  const avatarResponse=await fetch(origin+'/api/marketplace/creators/'+state.aSlug+'/avatar');check('public derivative loads without credentials',avatarResponse.status===200&&avatarResponse.headers.get('content-type')==='image/webp'&&!avatarResponse.headers.get('location'));
+  const avatarResponse=await fetch(origin+'/api/marketplace/creators/'+state.aSlug+'/avatar');check('public derivative loads without credentials',avatarResponse.status===200&&avatarResponse.headers.get('content-type')==='image/webp'&&avatarResponse.headers.get('cache-control')==='no-store'&&avatarResponse.headers.get('x-content-type-options')==='nosniff'&&!avatarResponse.headers.get('location'));
   const avatarMeta=await sharp(Buffer.from(await avatarResponse.arrayBuffer())).metadata();check('real stored avatar resized without metadata',avatarMeta.width===512&&avatarMeta.height===512&&!avatarMeta.exif);
   const originalProfile=await db.from('marketplace_creator_profiles').select('avatar_key').eq('owner_user_id',a.id).single();assert.ok(originalProfile.data&&!originalProfile.error);
   await navigate('/projects/'+source.id);await wait('!!document.querySelector("input[name=title]")');await discover();
@@ -112,15 +123,13 @@ try {
   check('creator earnings and withdrawal history remain owner-only readable',earnings.ok&&earnings.data.clerkUserId===a.clerk_user_id&&withdrawals.ok&&withdrawals.data.clerkUserId===a.clerk_user_id);
   const unsignedObject=new URL(ownedMedia.value.url);unsignedObject.search='';const raw=await fetch(unsignedObject,{signal:AbortSignal.timeout(15000)});await raw.body?.cancel();check('private R2 rejects unsigned access',[400,401,403].includes(raw.status));
   await navigate('/create');await wait('!!document.querySelector("input[name=title]")');await discover();
-  const project={id:state.projectId,mode:state.projectSaved?'update':'create',title:'Creator storefront acceptance',category:'cinematic',prompt:'PRIVATE_STOREFRONT_SOURCE',settings:{aspectRatio:'16:9',duration:'10',visualStyle:'Original',tone:'Storytelling'}};
   const saved=await invoke('saveProjectAction',project);check('owned isolated source saved',saved.ok);state.projectSaved=true;save();
   const draftProject=await invoke('saveProjectAction',{...project,id:state.draftProjectId,mode:state.draftProjectSaved?'update':'create',title:'Private draft source'});check('owned draft source saved',draftProject.ok);state.draftProjectSaved=true;save();
   await navigate('/dashboard/marketplace/new?project='+state.projectId);await wait('!!document.querySelector("input[name=title]")');await discover();
-  const listing={id:state.listingId,sourceProjectId:state.projectId,title:'Public Storefront Recipe',description:'A public reusable brief for your own story.',category:'cinematic',tags:['storefront'],instructions:'Introduce your own subject, then reveal a new perspective.',publish:true,rightsConfirmed:true,adoptionType:'free',priceMinor:0};
   let published=await invoke('createMarketplaceAction',listing);check('A publishes owned template',published.ok);state.listingId=published.listingId;save();
   if(published.existing){published=await invoke('updateMarketplaceAction',{id:state.listingId,title:listing.title,description:listing.description,category:listing.category,tags:listing.tags,rightsConfirmed:true,status:'published',adoptionType:'free',priceMinor:0});check('existing acceptance template republished',published.ok);}
   const draft=await invoke('createMarketplaceAction',{...listing,id:state.draftId,sourceProjectId:state.draftProjectId,title:'PRIVATE_STOREFRONT_DRAFT',publish:false});check('A retains separate private draft',draft.ok);
-  await navigate('/marketplace');await wait(`!!document.querySelector('a[href="/marketplace/creators/${state.aSlug}"]')`);check('Marketplace card links to storefront',await evaluate(`!!document.querySelector('a[href="/marketplace/creators/${state.aSlug}"]')`));
+  await navigate('/marketplace');await wait(`!!document.querySelector('a[href="/marketplace/${state.listingId}"]')?.closest('article')?.querySelector('a[href="/marketplace/creators/${state.aSlug}"]')`);check('Marketplace card links to storefront',await evaluate(`!!document.querySelector('a[href="/marketplace/${state.listingId}"]')?.closest('article')?.querySelector('a[href="/marketplace/creators/${state.aSlug}"]')`));
   await navigate('/marketplace/'+state.listingId);await wait(`!!document.querySelector('a[href="/marketplace/creators/${state.aSlug}"]')`);check('detail links to storefront',await evaluate(`!!document.querySelector('a[href="/marketplace/creators/${state.aSlug}"]')`));
   await login('B');await publicPrivacy(state.aSlug);check('B sees published listing but no draft',await evaluate('document.body.innerText.includes("Public Storefront Recipe")&&!document.body.innerText.includes("PRIVATE_STOREFRONT_DRAFT")'));
   for(const width of [1440,768,390,320])for(const dark of [false,true]){
@@ -154,6 +163,8 @@ try {
   check('completed paid adoption recovery is idempotent without charging again',recovered.ok&&replayed.ok&&recovered.data.projectId===completed.projectId&&replayed.data.projectId===completed.projectId);
   const paidProject=await one('projects','id',completed.projectId),paidAssets=await db.from('project_assets').select('id').eq('project_id',completed.projectId);
   check('paid adoption preserves B ownership and excludes private creator media',paidProject.owner_user_id===b.id&&!paidAssets.error&&paidAssets.data.length===0);
+  state.coreBrowserCompletedAt=new Date().toISOString();save();
+  }
   await login('A');await navigate('/dashboard/marketplace/'+state.listingId);await wait('!!document.querySelector("input[name=title]")');await discover();
   const unpublished=await invoke('updateMarketplaceAction',{id:state.listingId,title:listing.title,description:listing.description,category:listing.category,tags:listing.tags,rightsConfirmed:true,status:'unpublished',adoptionType:'free',priceMinor:0});check('unpublish remains supported',unpublished.ok);
   state.archiveProjectId??=randomUUID();state.archiveId??=randomUUID();save();
@@ -168,15 +179,37 @@ try {
   const empty=await db.rpc('creator_storefront',{p_slug:state.aSlug,p_page:1});check('published counts match datastore',!empty.error&&empty.data.total===empty.data.items.length&&empty.data.items.every(l=>l.status==='published'));
   await navigate('/marketplace/creators/unknown-creator-acceptance');await wait('document.body.innerText.includes("Creator not found")');check('unknown creator has safe not-found state',await evaluate('document.body.innerText.includes("Creator not found")'));
   const unsigned=await evaluate('(async()=>{const r=await fetch("/api/marketplace/creator-avatar",{method:"POST",headers:{"Content-Type":"image/png"},body:new Uint8Array([1,2,3])});return r.status;})()');check('anonymous avatar mutation denied',unsigned!==200);
-  check('browser has no unexpected exceptions',browser.errors.length===0);
+  state.browserExceptions=browser.exceptions;save();if(browser.errors.length)console.error(JSON.stringify({browserExceptions:browser.exceptions}));
+  if(!browser.errors.length)check('browser has no unexpected exceptions',true);
  });
- if(!finalChecksOnly){
-  for(const url of bundleUrls){const response=await fetch(url,{signal:AbortSignal.timeout(30000)});assert.equal(response.status,200,'DEPLOYED_CLIENT_BUNDLE_FETCH');const body=await response.text();assert.ok(!secrets.some(s=>body.includes(s)||body.includes(encodeURIComponent(s)))&&!secretNames.some(s=>body.includes(s))&&!serverMarkers.test(body),'DEPLOYED_CLIENT_SECRET_OR_SERVER_MARKER');}
-  state.clientBundlesScanned=bundleUrls.size;state.configuredSecretsChecked=secrets.length;save();check('served client bundles contain no secrets or server-only markers',bundleUrls.size>0);
- }
+ if(!finalChecksOnly){state.browserCompletedAt=new Date().toISOString();state.clientBundleUrls=[...bundleUrls];save();}
  const profile=(await db.rpc('creator_profile_owned',{p_owner:a.id})).data;assert.ok(profile);
  const session=await clerk.sessions.createSession({userId:a.clerk_user_id});sessions.add(session.id);
  let token=(await clerk.sessions.getToken(session.id,undefined,60)).jwt;
+ if(!finalChecksOnly||state.clientBundleUrls?.length){
+  // A resumed browser tail may not have loaded the earlier private financial
+  // and generation chunks. Include their real server-rendered script URLs.
+  const urls=new Set(state.clientBundleUrls);
+  const routes=['/dashboard/marketplace/profile','/dashboard/credits','/dashboard/marketplace/earnings','/dashboard/marketplace/purchases','/projects/'+source.id];
+  const published=await db.from('marketplace_listings').select('id').eq('status','published').limit(1);assert.ok(!published.error);
+  if(published.data.length)routes.push('/marketplace/'+published.data[0].id);
+  for(const route of routes){
+   token=(await clerk.sessions.getToken(session.id,undefined,60)).jwt;
+   const response=await fetch(origin+route,{headers:{Authorization:'Bearer '+token},redirect:'manual',signal:AbortSignal.timeout(60000)});assert.equal(response.status,200,'CLIENT_SURFACE_SSR');const html=await response.text();
+   for(const match of html.matchAll(/\b(?:src|href)="([^"]+\.js(?:\?[^"]*)?)"/g)){const url=new URL(match[1].replaceAll('&amp;','&'),origin);if(url.origin===origin&&url.pathname.startsWith('/_next/'))urls.add(url.href);}
+  }
+  state.clientBundleUrls=[...urls];state.clientSSRSurfacesScanned=routes.length;save();
+  for(const url of state.clientBundleUrls){
+   assert.ok(url.startsWith(origin+'/_next/'),'SAME_ORIGIN_CLIENT_BUNDLE');const response=await fetch(url,{signal:AbortSignal.timeout(30000)});assert.equal(response.status,200,'DEPLOYED_CLIENT_BUNDLE_FETCH');const body=await response.text();
+   // Clerk's shared browser SDK includes this environment-variable name in a
+   // generic error message. The actual configured value is still forbidden.
+   const configuredSecret=secrets.some(s=>body.includes(s)||body.includes(encodeURIComponent(s))),environmentNames=secretNames.filter(s=>s!=='CLERK_SECRET_KEY'&&body.includes(s)),serverMarker=body.match(serverMarkers)?.[0]??body.match(/marketplace_create|marketplace_update|marketplace_adopt|marketplace_owned_listing|marketplace_origin|marketplace_browse|marketplace_detail|marketplace_ensure_settlement|marketplace_begin_financial_check|marketplace_financial_candidates|SCEENYK_TEST_PRICING_JSON|WORKFLOW_NOT_CONFIGURED|GENERATION_UNAVAILABLE_OR_INVALID|MEDIA_WORKER_URL/)?.[0]??null;
+   if(configuredSecret||environmentNames.length||serverMarker)console.error(JSON.stringify({clientScanFailure:{configuredSecret,environmentNames,serverMarker}}));
+   assert.ok(!configuredSecret&&!environmentNames.length&&!serverMarker,'DEPLOYED_CLIENT_SECRET_OR_SERVER_MARKER');
+  }
+  state.clientBundlesScanned=state.clientBundleUrls.length;state.configuredSecretsChecked=secrets.length;save();check('served client bundles contain no secrets or server-only markers',state.clientBundlesScanned>0);
+ }
+ token=(await clerk.sessions.getToken(session.id,undefined,60)).jwt;
  for(const rsc of [false,true]){
   const headers={Authorization:'Bearer '+token,...(rsc?{RSC:'1'}:{})};
   let response=await fetch(origin+'/dashboard/marketplace/profile',{headers,redirect:'manual',signal:AbortSignal.timeout(60000)});
@@ -187,8 +220,11 @@ try {
   }
   await response.body?.cancel();cacheCheck('private profile '+(rsc?'RSC':'HTML')+' has browser and CDN no-store',response.status===200&&response.headers.get('cache-control')?.includes('private')&&response.headers.get('cache-control')?.includes('no-store')&&response.headers.get('cdn-cache-control')==='no-store');
  }
- const avatarBefore=await fetch(origin+profile.avatarUrl,{signal:AbortSignal.timeout(15000)});const oldHash=createHash('sha256').update(Buffer.from(await avatarBefore.arrayBuffer())).digest('hex');
- const replacement=await sharp({create:{width:700,height:900,channels:3,background:'#19a67b'}}).png().withMetadata().toBuffer();
+ const avatarBefore=await fetch(origin+profile.avatarUrl,{signal:AbortSignal.timeout(15000)});const oldBytes=Buffer.from(await avatarBefore.arrayBuffer()),oldHash=createHash('sha256').update(oldBytes).digest('hex');
+ // Alternate the fixture so --final-checks can resume a failed cache check
+ // after the previous run already saved its replacement image.
+ const replacementColour=(await sharp(oldBytes).stats()).channels[1].mean>128?'#7351d9':'#19a67b';
+ const replacement=await sharp({create:{width:700,height:900,channels:3,background:replacementColour}}).png().withMetadata().toBuffer();
  token=(await clerk.sessions.getToken(session.id,undefined,60)).jwt;
  const upload=await fetch(origin+'/api/marketplace/creator-avatar',{method:'POST',headers:{Authorization:'Bearer '+token,Origin:origin,'Content-Type':'image/png'},body:replacement,signal:AbortSignal.timeout(60000)});
  const update=await upload.json();check('existing public avatar can be replaced',upload.status===200&&update.ok&&update.profile.slug===state.aSlug);
@@ -200,7 +236,9 @@ try {
  const empty=await db.rpc('creator_storefront',{p_slug:state.aSlug,p_page:1});
  if(empty.data.total===0){const response=await fetch(origin+'/marketplace/creators/'+state.aSlug,{signal:AbortSignal.timeout(60000)});const html=await response.text();check('real empty storefront contains no private drafts',response.status===200&&html.includes('This creator has no published Marketplace items yet.')&&!html.includes('PRIVATE_STOREFRONT_DRAFT'));}
  const legacy=await fetch('https://sceenyk.vercel.app/marketplace',{signal:AbortSignal.timeout(60000)});const legacyHtml=await legacy.text();check('existing deployed Marketplace remains available after migration',legacy.status===200&&!legacyHtml.includes('Marketplace is temporarily unavailable'));
- check('financial generation caption and role state unchanged',await protectedSnapshot()===before);
+ state.protectedAfter=await protectedSnapshot();check('financial generation caption and role state unchanged',state.protectedAfter===before);
+ state.checkedAt=new Date().toISOString();save();
+ assert.equal(state.browserExceptions.length,0,'BROWSER_EXCEPTION_ACCEPTANCE_FAILED');
  assert.equal(state.cacheFailures.length,0,'PRIVATE_PROFILE_CACHE_ACCEPTANCE_FAILED');
  state.completedAt=new Date().toISOString();save();console.log(JSON.stringify({passed:state.checks.length,evidenceFile,screenshots:state.screenshots.length,deployed:origin.includes('vercel')}));
 } finally {

@@ -13,9 +13,9 @@ const withClerk = clerkMiddleware(async (auth, request) => {
       unauthenticatedUrl: new URL("/?auth=sign-in", request.url).toString(),
     });
   }
-  if (path === "/dashboard/marketplace/profile" || path.startsWith("/dashboard/marketplace/profile/")) {
-    // Set these at runtime too: the deployed PPR RSC response can override
-    // next.config's Cache-Control with the static shell's shared lifetime.
+  if (isCreatorProfileResponsePath(path)) {
+    // Deployment routing may present the generated RSC/segment pathname.
+    // Keep its response policy identical to the authenticated HTML route.
     const response = NextResponse.next();
     response.headers.set("Cache-Control", "private, no-cache, no-store, max-age=0, must-revalidate");
     response.headers.set("CDN-Cache-Control", "no-store");
@@ -23,6 +23,13 @@ const withClerk = clerkMiddleware(async (auth, request) => {
     return response;
   }
 });
+
+function isCreatorProfileResponsePath(path: string) {
+  const base = "/dashboard/marketplace/profile";
+  return path === base || path.startsWith(`${base}/`) ||
+    path.startsWith(`${base}.segments/`) ||
+    [".html", ".rsc", ".prefetch.rsc"].some((suffix) => path === base + suffix);
+}
 
 function isPrivatePath(path: string) {
   return (
