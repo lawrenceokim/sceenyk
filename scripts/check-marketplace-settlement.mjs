@@ -20,7 +20,9 @@ try {
     const project=await scalar("insert into projects(owner_user_id,title,category,aspect_ratio,duration,visual_style,tone) values($1,'Private original','gaming','1:1','10','Original','Energetic') returning id as value",[a]);
     const listing=randomUUID();
     await call('marketplace_create_priced',{p_owner_user_id:a,p_listing_id:listing,p_project_id:project,p_title:'Settlement fixture',p_description:'Reviewed configuration.',p_category:'gaming',p_tags:[],p_instructions:'Use your own story.',p_publish:true,p_rights_confirmed:true,p_adoption_type:'paid',p_price_minor:gross});
-    let p=await call('marketplace_prepare_purchase',{p_buyer_user_id:b,p_listing_id:listing,p_fee_bps:fee,p_pricing_version:'sandbox-fixture'});
+    // Privileged fixture creates a historical pre-024 intent; public creation
+    // now enforces 10%. Reversal/settlement still run through current RPCs.
+    let p=await scalar('select marketplace_prepare_purchase_pre_withdrawals($1,$2,$3,$4) value',[b,listing,fee,'sandbox-fixture']);
     const n=String(++sequence).padStart(12,'0'),order='ORDER'+n,capture='CAPTURE'+n;
     await call('marketplace_attach_order',{p_purchase_id:p.id,p_buyer_user_id:b,p_order_id:order});
     if(old)await pg.exec("create function old_sale_fixture() returns trigger language plpgsql as $$ begin new.created_at=now()-interval '10 minutes'; return new; end $$; create trigger old_sale_fixture before insert on creator_earnings_ledger for each row when(new.state='pending') execute function old_sale_fixture();");

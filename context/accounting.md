@@ -2,7 +2,7 @@
 
 ## Approved production Marketplace earnings and withdrawal policy (2026-10-14)
 
-**Approved product contract; payout implementation is future work.** This section supersedes older Marketplace fee/share/threshold placeholders and any production model that starts a seven-day hold at sale time. Current Sandbox implementation and historical acceptance below remain evidence of what exists; this documentation update changes no code, balances, migrations or provider configuration.
+**Approved product contract; implemented locally in migration024/services/UI, hosted/provider acceptance pending.** This section supersedes older Marketplace fee/share/threshold placeholders and any model that starts a seven-day hold at sale time. Approved2026-10-15 refund rules below complete the reservation/deficit contract. See architecture.md/progress-tracker.md for actual implementation and manual setup; historical Sandbox evidence remains preserved.
 
 ### Sale proceeds and availability
 
@@ -41,7 +41,9 @@ Preserve cumulative proportional accounting against each sale's **original froze
 
 If a reversal affects money reserved for a pending payout, append a traceable adjustment linked to the affected sale/reservation, reconcile Available Earnings and Pending Payout, and prevent an unsafe payout. Keep original sale, reservation, settlement and payout history immutable/auditable; never hide an adjustment by deleting records or showing reserved money as available. Lifetime earnings and reversed totals must remain explainable independently of reservation movements. Already-adopted projects remain preserved under the existing reversal contract; access revocation is separate policy work.
 
-**Needs confirmation in the payout implementation unit:** allocation across multiple pending requests; whether an affected request is reduced, blocked or cancelled; definite-failure/cancellation release rules; recipient setup and payout charges; dispute blocking/resolution criteria; and any liability/deficit after money has already been paid. These details do not reopen the approved 10%/90%, $5 minimum, immediate reservation or seven-day request-based hold. No automatic release, silent clamp, hidden balance change or extra deduction is approved by this document.
+**Approved withdrawal/refund rules (2026-10-15):** explicit earning-lot allocations bind withdrawals to their original sales. A reversal adjusts reservations backed by that sale, oldest request first when a lot was split. Never spread it across unrelated withdrawals. Before irreversible provider submission, reduce the reservation by the exact reversed creator net. At least 500 cents remaining keeps it pending with its original request timestamp and seven-day hold; recheck eligibility before dispatch. Below 500 cents, fail/cancel it and release only its remaining valid reservation once; at zero, close it with no release. Append immutable adjustment/release history, retaining original request and allocation amounts.
+
+After successful payout, the reversed creator share creates immutable creator debt. Future valid Marketplace earnings offset debt before becoming available; outstanding negative creator earnings block new withdrawals. Sceenyk bears its own proportional fee reversal. No AI credit change, automatic PayPal debit, or unrelated processor/dispute fee is permitted. Ambiguous/processing submissions retain the frozen instruction and reconcile first; create debt if successful, or release only valid remaining money once on definitive failure. Unknown outcomes never authorize another payout. Recipient is a private PayPal email snapshotted at request time. These approved rules supersede the prior unresolved allocation/release/liability questions.
 
 ### Hard accounting invariants
 
@@ -56,7 +58,7 @@ If a reversal affects money reserved for a pending payout, append a traceable ad
 9. The browser cannot mark payouts paid or supply authoritative financial state.
 10. Actual payout occurs only through a separately implemented, trusted server-side PayPal payout flow.
 
-**Implementation boundary:** the deployed Sandbox flow still uses its demo fee (default 0%) and frozen test sale hold (default 300 seconds). The approved production availability/fee rules require a future versioned implementation transition that preserves that history. Withdrawal reservations, Pending Payout balances, minimum-withdrawal enforcement, payout scheduling/accounts/UI and PayPal Payouts are unimplemented. The next Marketplace unit is creator withdrawals and trusted PayPal Sandbox payouts under this contract; do not start it from this documentation task. Currency is USD only. Final rendering remains deferred separately.
+**Implementation boundary (2026-10-15):** local migration024 implements the versioned transition, preserving historical intents and ledger rows while new intents enforce10% and immediate verified-net availability. Private earning lots and explicit allocations reserve valid money; immutable money events explain availability, request/pending, reservations, reversal/release, eligibility/processing, paid, deficit and offset effects. Each lot must reconcile original−reversed = available+offset+valid allocated amount before reservation/eligibility. A below-minimum failed request returns only valid remaining money once. Processing keeps its frozen submission amount; intervening reversal debt is recorded only on successful completion, never prematurely on an unknown response. Paid completion finalizes the reservation without a second available debit. All amounts are USD cents and never alter AI credits. Hosted migration, real Sandbox payouts and deployed acceptance remain pending manual setup; the deployed023 behavior is unchanged until rollout. Final rendering remains deferred.
 
 ## Marketplace settlement and cumulative proportional reversals (2026-10-14)
 
@@ -68,7 +70,7 @@ Approved partial-refund rule: for verified cumulative refunded gross R in [0,G],
 
 Pending balance = sum(original net minus cumulative reversed net) for unsettled, nonterminal sales. Available balance uses the same remaining-net calculation for settled sales. Lifetime gross retains original gross sales; lifetime net is original net less reversals. Reversed gross, fees and creator net are reported separately. Availability history records the original amount moved at that time, even if a later refund reduces the current balance. Historical manually appended reversed markers without adjustment rows project as full reversals for compatibility; trusted operational paths always write the adjustment and terminal marker atomically.
 
-There are no payouts, withdrawals or other debits of available creator money. Therefore a reversal bounded to its own unrefunded original earning cannot exceed that earning's remaining available contribution; no hidden clamp or invented deficit is used. A future outbound-money unit must define explicit paid-out liability/deficit accounting before enabling payouts. Provider processing fees are not silently deducted from creator net. Refund eligibility, chargeback policy and future access revocation remain unapproved product policy.
+The historical settlement-only implementation had no outbound money. The approved 2026-10-15 extension above defines explicit lot-backed reservation and paid-out deficit accounting; implementation/acceptance is tracked separately. Provider fees are not deducted from creator net. Refund eligibility and adoption-access revocation remain separate policy.
 
 
 ## Separate Marketplace money ledger — authorized 2026-10-14

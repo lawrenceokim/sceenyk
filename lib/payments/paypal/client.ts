@@ -22,7 +22,7 @@ export const paypalOrder = z.object({
 });
 export type PayPalOrder = z.infer<typeof paypalOrder>;
 
-async function accessToken() {
+export async function paypalAccessToken() {
   const config = getPayPalConfig();
   const response = await fetch(`${config.baseUrl}/v1/oauth2/token`, {
     method: "POST", cache: "no-store", redirect: "error", signal: AbortSignal.timeout(15_000),
@@ -36,7 +36,7 @@ async function accessToken() {
 // Paths are constructed only here, never taken from browser or webhook URLs.
 async function request(path: string, method: "GET" | "POST", body?: string, requestId?: string) {
   const config = getPayPalConfig();
-  const token = await accessToken();
+  const token = await paypalAccessToken();
   const response = await fetch(`${config.baseUrl}${path}`, {
     method, cache: "no-store", redirect: "error", signal: AbortSignal.timeout(20_000),
     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", Prefer: "return=representation", ...(requestId ? { "PayPal-Request-ID": requestId } : {}) },

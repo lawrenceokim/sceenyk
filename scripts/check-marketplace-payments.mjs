@@ -142,23 +142,23 @@ try {
   order.status='APPROVED';
   await pg.exec("create function fail_paid_project() returns trigger language plpgsql as $$ begin raise exception 'fixture project outage'; end $$; create trigger fail_paid_project before insert on projects for each row execute function fail_paid_project();");
   check('temporary project failure requests webhook recovery',(await deliver()).status===503);
-  check('verified payment commits before failed project',(await one('select status from marketplace_purchases where id=$1',[p.id])).status==='completed'&&await scalar('select count(*)::int as value from marketplace_entitlements')===1&&await scalar('select count(*)::int as value from creator_earnings_ledger')===1);
+  check('verified payment commits before failed project',(await one('select status from marketplace_purchases where id=$1',[p.id])).status==='completed'&&await scalar('select count(*)::int as value from marketplace_entitlements')===1&&await scalar('select count(*)::int as value from creator_earnings_ledger')===2);
   check('failed project insertion rolls back project and provenance',await scalar('select count(*)::int as value from marketplace_adoptions')===0&&await scalar('select count(*)::int as value from projects where owner_user_id=$1',[b])===0);
   await pg.exec('drop trigger fail_paid_project on projects; drop function fail_paid_project();');
   check('authentic webhook retries recover without browser',(await deliver()).status===200);
   const adopted=await service.recoverMarketplacePurchase({purchaseId:p.id});
   check('exactly one intended buyer project',!!adopted.projectId&&await scalar('select count(*)::int as value from projects where owner_user_id=$1',[b])===1);
   await Promise.all([deliver(),deliver(),service.recoverMarketplacePurchase({purchaseId:p.id}),service.recoverMarketplacePurchase({purchaseId:p.id})]);
-  check('duplicate capture webhook redemption effects stay one',captures===1&&creates===1&&await scalar('select count(*)::int as value from marketplace_adoptions')===1&&await scalar('select count(*)::int as value from creator_earnings_ledger')===1&&await scalar('select count(*)::int as value from marketplace_entitlements')===1);
+  check('duplicate capture webhook redemption effects stay one',captures===1&&creates===1&&await scalar('select count(*)::int as value from marketplace_adoptions')===1&&await scalar('select count(*)::int as value from creator_earnings_ledger')===2&&await scalar('select count(*)::int as value from marketplace_entitlements')===1);
   const copy=await one('select * from projects where id=$1',[adopted.projectId]);
   check('paid adoption copies reviewed settings only',copy.owner_user_id===b&&copy.prompt===input.instructions&&copy.visual_style==='Anime'&&copy.tone==='Dramatic'&&copy.aspect_ratio==='16:9');
   check('private media never copied',await scalar('select count(*)::int as value from project_assets where project_id=$1',[adopted.projectId])===0);
   check('creator original unchanged',JSON.stringify(await one('select * from projects where id=$1',[project]))===original);
   check('all AI credit and free counters unchanged',JSON.stringify((await pg.query('select * from generation_accounts order by owner_user_id')).rows)===accounts&&await scalar('select count(*)::int as value from credit_ledger')===0&&await scalar('select count(*)::int as value from credit_purchases')===0);
   const ownB=await service.getCreatorEarnings();check('buyer cannot read creator earnings',ownB.earnings.pending===0&&ownB.earnings.sales.length===0);
-  owner=a;const earnings=await service.getCreatorEarnings();check('pending separate USD gross fee net',earnings.earnings.pending===200&&earnings.earnings.available===0&&earnings.earnings.lifetime===200&&earnings.earnings.sales[0].gross===200&&earnings.earnings.sales[0].fee===0);
+  owner=a;const earnings=await service.getCreatorEarnings();check('new sale uses approved available USD gross fee net',earnings.earnings.pending===0&&earnings.earnings.available===180&&earnings.earnings.lifetime===180&&earnings.earnings.sales[0].gross===200&&earnings.earnings.sales[0].fee===20);
   check('creator DTO excludes buyer and provider identity',!JSON.stringify(earnings).includes(b)&&!JSON.stringify(earnings).includes(order.id)&&!JSON.stringify(earnings).includes(row.paypal_capture_id||'NOTAPPLICABLE'));
-  const owned=await listings.getOwnedMarketplaceListing(input.id);check('owned listing small sale stats',owned.adoptionCount===1&&owned.paidSalesCount===1&&owned.creatorEarningsMinor===200);
+  const owned=await listings.getOwnedMarketplaceListing(input.id);check('owned listing small sale stats',owned.adoptionCount===1&&owned.paidSalesCount===1&&owned.creatorEarningsMinor===180);
   const meta={id:input.id,title:input.title,description:input.description,category:input.category,tags:input.tags,rightsConfirmed:true,status:'published',adoptionType:'paid',priceMinor:300};
   owner=b;check('buyer cannot alter creator price',!(await listings.updateMarketplaceListing(meta)).ok);
   owner=a;check('creator edits paid price',(await listings.updateMarketplaceListing(meta)).ok);
@@ -182,7 +182,7 @@ try {
   await denied('browser cannot read earnings RPC','select marketplace_creator_earnings($1,1)',[a]);
   owner=a;await listings.updateMarketplaceListing({...meta,adoptionType:'free',priceMinor:0});owner=b;
   const free=await listings.adoptMarketplaceListing({listingId:input.id,requestId:randomUUID()});
-  check('free adoption still bypasses PayPal',free.ok&&free.projectId!==adopted.projectId&&creates===2&&captures===2&&await scalar('select count(*)::int as value from creator_earnings_ledger')===2);
+  check('free adoption still bypasses PayPal',free.ok&&free.projectId!==adopted.projectId&&creates===2&&captures===2&&await scalar('select count(*)::int as value from creator_earnings_ledger')===4);
 
   owner=a;await listings.updateMarketplaceListing(meta);
   const d=await scalar("insert into app_users(clerk_user_id) values('pending_buyer') returning id as value");owner=d;
@@ -191,10 +191,10 @@ try {
   pendingOrder.status='CREATED';pendingOrder.purchase_units[0].payments={captures:[{id:'CAPTURE8888888888',status:'PENDING',final_capture:true,amount:pendingOrder.purchase_units[0].amount}]};
   const captureEvent={id:'WH-PENDING-PAID',event_type:'PAYMENT.CAPTURE.PENDING',resource:{id:'CAPTURE8888888888',supplementary_data:{related_ids:{order_id:pendingOrder.id}}}};
   const pendingDelivery=()=>route.POST(new Request('http://localhost/api/payments/paypal/webhook',{method:'POST',headers,body:JSON.stringify(captureEvent)}));
-  check('verified pending capture grants nothing',(await pendingDelivery()).status===200&&(await service.recoverMarketplacePurchase({purchaseId:pending.id})).status==='pending'&&await scalar('select count(*)::int as value from creator_earnings_ledger')===2);
+  check('verified pending capture grants nothing',(await pendingDelivery()).status===200&&(await service.recoverMarketplacePurchase({purchaseId:pending.id})).status==='pending'&&await scalar('select count(*)::int as value from creator_earnings_ledger')===4);
   captureEvent.event_type='PAYMENT.CAPTURE.COMPLETED';check('premature completed notification asks for redelivery',(await pendingDelivery()).status===503);
   captureEvent.event_type='PAYMENT.CAPTURE.DENIED';pendingOrder.purchase_units[0].payments.captures[0].status='DENIED';
-  check('verified denied capture records failure without earnings',(await pendingDelivery()).status===200&&(await one('select status from marketplace_purchases where id=$1',[pending.id])).status==='failed'&&await scalar('select count(*)::int as value from creator_earnings_ledger')===2);
+  check('verified denied capture records failure without earnings',(await pendingDelivery()).status===200&&(await one('select status from marketplace_purchases where id=$1',[pending.id])).status==='failed'&&await scalar('select count(*)::int as value from creator_earnings_ledger')===4);
   const beforeFailed=creates;await rejects('failed purchase cannot create replacement charge',()=>service.createMarketplaceOrder({purchaseId:pending.id}));check('failed checkout has no new provider order',creates===beforeFailed);
   console.log(JSON.stringify({passed:count,sandboxHttpFixture:true,realSql:true}));
 } finally {

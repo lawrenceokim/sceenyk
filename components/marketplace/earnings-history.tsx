@@ -7,7 +7,7 @@ export function EarningsHistory({ earnings }: { earnings: CreatorEarnings }) {
       {[["Pending earnings", earnings.pending], ["Available earnings", earnings.available], ["Lifetime gross sales", earnings.lifetimeGross], ["Lifetime net after reversals", earnings.lifetime], ["Creator net reversed", earnings.reversedNet], ["Platform fees reversed", earnings.reversedFee]].map(([label, value]) =>
         <section key={label} className="sceenyk-card space-y-2 p-5"><h2 className="text-body-sm text-muted-foreground">{label}</h2><p className="text-2xl font-semibold">{usd(Number(value))}</p></section>)}
     </div>
-    <p className="text-body-sm text-muted-foreground">Sandbox creator money is separate from AI credits. Eligible sales move to available automatically after a test holding period and payment verification. Available does not mean paid out. Withdrawals are unavailable; the production holding period remains undecided. Refunded gross sales: {usd(earnings.reversedGross)}.</p>
+    <p className="text-body-sm text-muted-foreground">Creator money is separate from AI credits. New verified sales use a 10% Marketplace fee and 90% creator share, with valid earnings available immediately. Historical Sandbox sales retain their original terms. Withdrawals reserve earnings and are held for 7 days before payout. Refunded gross sales: {usd(earnings.reversedGross)}.</p>
     <div className="space-y-4">{earnings.sales.map((sale, i) => <article key={i} className="sceenyk-card space-y-3 p-5">
       <h2 className="break-words font-semibold">{sale.title}</h2>
       <p className="text-caption text-muted-foreground">{new Date(sale.createdAt).toLocaleDateString()} · {sale.state}{sale.reversedGross > 0 && sale.state !== "reversed" ? " · partially refunded" : ""}</p>

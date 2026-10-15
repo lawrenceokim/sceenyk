@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "test:withdrawals": "node scripts/check-creator-withdrawals.mjs && node scripts/check-paypal-payouts.mjs",
     "test:marketplace": "node scripts/check-marketplace.mjs",
     "test:captions": "node scripts/check-captions.mjs",
     "test:caption-style": "node scripts/check-caption-style.mjs",

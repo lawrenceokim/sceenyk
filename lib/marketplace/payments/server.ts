@@ -4,7 +4,7 @@ import { ensureAppUser } from "@/lib/auth/ensure-app-user";
 import { createDatabaseClient } from "@/lib/db/server";
 import { getPayPalConfig } from "@/lib/payments/paypal/config";
 import { approvalUrl, capturePayPalOrder, createMarketplacePayPalOrder, paypalOrderId, readPayPalOrder, verifiedCapture, verifyOrder } from "@/lib/payments/paypal/client";
-import { marketplaceDemoFeeBps, sandboxMarketplacePricing, validateMarketplacePrice } from "./config";
+import { marketplaceFeeBps, validateMarketplacePrice } from "./config";
 import { earningsSchema, marketplacePurchaseSummarySchema, purchaseInput, type MarketplacePurchaseSummary } from "./contract";
 import type { MarketplacePurchaseRow } from "./types";
 import { freezeMarketplaceSettlement, handleVerifiedMarketplaceAdjustment, marketplaceAdjustmentEvents } from "../earnings/server";
@@ -51,7 +51,8 @@ async function reconcile(p: MarketplacePurchaseRow) {
   if (captures?.length === 1 && ["DECLINED", "DENIED", "FAILED"].includes(captures[0].status)) { await state(p, "failed"); return; }
   if (order.status !== "COMPLETED") return;
   const capture = verifiedCapture(p, order);
-  checked(await createDatabaseClient().rpc("marketplace_fulfil_purchase", { p_purchase_id: p.id, p_order_id: order.id, p_capture_id: capture.id, p_amount_minor: p.amount_minor, p_currency: p.currency }));
+  const noBlockingRefund = !(order.purchase_units[0].payments?.refunds ?? []).some(refund => !["CANCELLED", "FAILED"].includes(refund.status));
+  checked(await createDatabaseClient().rpc("marketplace_fulfil_purchase", { p_purchase_id: p.id, p_order_id: order.id, p_capture_id: capture.id, p_amount_minor: p.amount_minor, p_currency: p.currency, p_can_available: noBlockingRefund }));
   await freezeMarketplaceSettlement(p.id);
   await redeem(p);
 }
@@ -59,7 +60,7 @@ async function reconcile(p: MarketplacePurchaseRow) {
 export async function prepareMarketplaceCheckout(input: unknown) {
   const user = await ensureAppUser(); getPayPalConfig();
   const { listingId } = z.strictObject({ listingId: z.uuid() }).parse(input);
-  const raw = checked(await createDatabaseClient().rpc("marketplace_prepare_purchase", { p_buyer_user_id: user.id, p_listing_id: listingId, p_fee_bps: marketplaceDemoFeeBps(), p_pricing_version: sandboxMarketplacePricing.version }));
+  const raw = checked(await createDatabaseClient().rpc("marketplace_prepare_purchase", { p_buyer_user_id: user.id, p_listing_id: listingId, p_fee_bps: marketplaceFeeBps(), p_pricing_version: "marketplace-withdrawal-v1" }));
   const { id } = z.object({ id: z.uuid() }).parse(raw);
   const p = await ownedPurchase(user.id, id);
   validateMarketplacePrice("paid", p.amount_minor);

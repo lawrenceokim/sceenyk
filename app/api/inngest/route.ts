@@ -6,6 +6,7 @@ import { compositionWorkflow } from "@/lib/workflows/composition";
 import { finalRenderWorkflow } from "@/lib/workflows/final-render";
 import { captionsWorkflow, captionsRecovery } from "@/lib/workflows/captions";
 import { marketplaceEarningsReconciliation } from "@/lib/workflows/marketplace-earnings";
+import { creatorPayoutReconciliation } from "@/lib/workflows/creator-payouts";
 import {
   generationRecovery,
   generationWorkflow,
@@ -15,5 +16,5 @@ import {
 export const maxDuration = 300;
 export const { GET, POST, PUT } = serve({
   client: inngest,
-  functions: [generationWorkflow, generationRecovery, visualWorkflow, narrationWorkflow, compositionWorkflow, finalRenderWorkflow, captionsWorkflow, captionsRecovery, marketplaceEarningsReconciliation],
+  functions: [generationWorkflow, generationRecovery, visualWorkflow, narrationWorkflow, compositionWorkflow, finalRenderWorkflow, captionsWorkflow, captionsRecovery, marketplaceEarningsReconciliation, creatorPayoutReconciliation],
 });

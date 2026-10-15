@@ -1,6 +1,7 @@
 import { handleVerifiedPayPalEvent } from "@/lib/payments/server";
 import { verifyPayPalWebhook } from "@/lib/payments/paypal/client";
 import { handleVerifiedMarketplacePayPalEvent } from "@/lib/marketplace/payments/server";
+import { handleVerifiedPayoutEvent } from "@/lib/marketplace/withdrawals/server";
 
 // Node.js is the default; explicit runtime config is disabled with Cache Components.
 export const maxDuration = 120;
@@ -39,7 +40,7 @@ export async function POST(request: Request) {
         { status: 400, headers },
       );
     const event: unknown = JSON.parse(raw);
-    if (!await handleVerifiedPayPalEvent(event)) await handleVerifiedMarketplacePayPalEvent(event);
+    if (!await handleVerifiedPayoutEvent(event) && !await handleVerifiedPayPalEvent(event)) await handleVerifiedMarketplacePayPalEvent(event);
     return Response.json({ received: true }, { headers });
   } catch {
     // Never acknowledge a verified event before fulfilment commits. PayPal

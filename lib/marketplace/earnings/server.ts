@@ -27,7 +27,16 @@ export async function reconcileMarketplaceFinancials(purchaseId: string, notific
     readPayPalOrder(paypalOrderId.parse(p.paypal_order_id)),
     readPayPalCapture(paypalOrderId.parse(p.paypal_capture_id)),
   ]);
-  const observation = financialObservation(p, order, capture, notification?.refund, notification?.reversed);
+  const pendingIds = z.array(paypalOrderId).parse(checked(await db.rpc("creator_payout_refund_candidates", { p_purchase: p.id })));
+  const refunds = await Promise.all(pendingIds.filter(id => id !== notification?.refund?.id).map(readPayPalRefund));
+  if (notification?.refund) refunds.push(notification.refund);
+  const observation = financialObservation(p, order, capture, undefined, notification?.reversed);
+  for (const refund of refunds) {
+    const checkedRefund = financialObservation(p, order, capture, refund, notification?.reversed);
+    observation.refunded = Math.max(observation.refunded, checkedRefund.refunded);
+    observation.canSettle &&= checkedRefund.canSettle;
+    checked(await db.rpc("creator_payout_refund_observe", { p_purchase: p.id, p_refund: refund.id, p_pending: !["COMPLETED", "CANCELLED", "FAILED"].includes(refund.status) }));
+  }
   return checked(await db.rpc("marketplace_apply_financial_observation", {
     p_purchase_id: p.id, p_order_id: order.id, p_capture_id: capture.id, p_amount_minor: p.amount_minor, p_currency: p.currency,
     p_capture_status: observation.status, p_refunded_minor: observation.refunded, p_can_settle: observation.canSettle, p_reason: observation.reason,

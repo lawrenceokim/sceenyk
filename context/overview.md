@@ -1,5 +1,9 @@
 # Sceenyk
 
+## Current Marketplace withdrawal implementation (2026-10-15)
+
+The creator withdrawal unit is authorized and implemented locally under the approved10%/90%, USD minimum$5, immediate reservation and request-based seven-day hold. Explicit earning-lot refunds reduce pending requests without restarting their hold, fail/release valid amounts below minimum, and create paid-out creator deficits offset by future earnings. Private frozen PayPal email, owned withdrawal history, trusted Inngest eligibility and Sandbox-only provider reconciliation are implemented. Migration024 and real hosted/Sandbox payout acceptance remain pending manual setup; no payout was sent and no Live or renderer change occurred. See architecture/accounting/payments/progress-tracker for the current source/evidence. This supersedes the older unimplemented/future status below without rewriting historical financial evidence.
+
 ## Approved production Marketplace earnings and withdrawals (2026-10-14)
 
 **Documentation/product contract only.** Paid adoptions allocate **10% to Sceenyk and 90% to the creator**, using trusted server-side USD-cent calculations. Verified valid creator earnings become available unless blocked by an existing refund/reversal; they never become AI generation credits, and AI credits are not withdrawable money.

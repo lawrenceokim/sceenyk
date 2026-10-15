@@ -17,7 +17,9 @@ try {
     return id;
   }
   const id=await listing(205);
-  const prepare=(buyer=b,fee=0)=>call('marketplace_prepare_purchase',{p_buyer_user_id:buyer,p_listing_id:id,p_fee_bps:fee,p_pricing_version:'sandbox-fixture'});
+  // Explicit historical-intent fixture. Current public creation is covered by
+  // check-creator-withdrawals; historical amounts must retain their fee policy.
+  const prepare=(buyer=b,fee=0)=>scalar('select marketplace_prepare_purchase_pre_withdrawals($1,$2,$3,$4) value',[buyer,id,fee,'sandbox-fixture']);
   const p=await prepare(b,250);
   check('demo percentage snapshots exact integer cents',p.amount_minor===205&&p.platform_fee_minor===5&&p.creator_net_minor===200&&p.fee_bps===250);
   check('preparation never earns',await scalar('select count(*)::int as value from creator_earnings_ledger')===0);

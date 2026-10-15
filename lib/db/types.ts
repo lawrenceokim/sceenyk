@@ -63,6 +63,8 @@ export type AssetRow = {
 export type Database = {
   public: {
     Tables: {
+      creator_withdrawals: { Row: import("@/lib/marketplace/withdrawals/contract").WithdrawalRow; Insert: never; Update: never; Relationships: [] };
+      creator_withdrawal_allocations: { Row: { id: string; withdrawal_id: string; purchase_id: string; amount_minor: number; remaining_minor: number }; Insert: never; Update: never; Relationships: [] };
       caption_tracks: { Row: import("@/lib/captions/contract").CaptionRow; Insert: never; Update: never; Relationships: [] };
       caption_preferences: { Row: import("@/lib/captions/contract").CaptionPreferenceRow; Insert: never; Update: never; Relationships: [] };
       marketplace_purchases: { Row: import("@/lib/marketplace/payments/types").MarketplacePurchaseRow; Insert: never; Update: never; Relationships: [] };
@@ -225,6 +227,16 @@ export type Database = {
     };
     Views: Record<string, never>;
     Functions: {
+      creator_payout_refund_observe: { Args: { p_purchase: string; p_refund: string; p_pending: boolean }; Returns: boolean };
+      creator_payout_refund_candidates: { Args: { p_purchase: string }; Returns: unknown };
+      creator_payout_account: { Args: { p_creator: string; p_page: number }; Returns: unknown };
+      creator_payout_destination: { Args: { p_creator: string; p_email: string }; Returns: boolean };
+      creator_payout_request: { Args: { p_creator: string; p_request: string; p_amount: number }; Returns: string };
+      creator_payout_candidates: { Args: Record<string, never>; Returns: unknown };
+      creator_payout_eligible: { Args: { p_id: string }; Returns: boolean };
+      creator_payout_claim: { Args: { p_id: string }; Returns: unknown };
+      creator_payout_defer: { Args: { p_id: string }; Returns: boolean };
+      creator_payout_observe: { Args: { p_id: string; p_batch: string | null; p_item: string | null; p_status: string; p_failure_code?: string }; Returns: boolean };
       marketplace_browse: { Args: { p_query: string; p_category: string | null; p_page: number }; Returns: unknown };
       marketplace_detail: { Args: { p_listing_id: string }; Returns: unknown };
       marketplace_owned: { Args: { p_owner_user_id: string; p_page: number }; Returns: unknown };
@@ -237,7 +249,7 @@ export type Database = {
       marketplace_prepare_purchase: { Args: { p_buyer_user_id: string; p_listing_id: string; p_fee_bps: number; p_pricing_version: string }; Returns: unknown };
       marketplace_attach_order: { Args: { p_purchase_id: string; p_buyer_user_id: string; p_order_id: string }; Returns: boolean };
       marketplace_purchase_state: { Args: { p_purchase_id: string; p_status: string }; Returns: boolean };
-      marketplace_fulfil_purchase: { Args: { p_purchase_id: string; p_order_id: string; p_capture_id: string; p_amount_minor: number; p_currency: string }; Returns: boolean };
+      marketplace_fulfil_purchase: { Args: { p_purchase_id: string; p_order_id: string; p_capture_id: string; p_amount_minor: number; p_currency: string; p_can_available?: boolean }; Returns: boolean };
       marketplace_paid_project: { Args: { p_buyer_user_id: string; p_purchase_id: string }; Returns: unknown };
       marketplace_begin_order: { Args: { p_buyer_user_id: string; p_purchase_id: string }; Returns: unknown };
       marketplace_redeem_purchase: { Args: { p_buyer_user_id: string; p_purchase_id: string }; Returns: unknown };

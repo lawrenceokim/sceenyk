@@ -9,8 +9,11 @@ import { creatorEarningsAction, marketplacePurchasesAction, recoverMarketplacePu
 import { usd, type CreatorEarnings, type MarketplacePurchaseSummary } from "@/lib/marketplace/payments/contract";
 import { MarketplacePagination } from "./pagination";
 import { EarningsHistory } from "./earnings-history";
+import { WithdrawalPanel } from "./withdrawal-panel";
+import { withdrawalAccountAction } from "@/app/actions/creator-withdrawals";
+import type { WithdrawalAccount } from "@/lib/marketplace/withdrawals/contract";
 
-type Props = { clerkUserId: string; page: number; earnings?: CreatorEarnings; purchases?: { items: MarketplacePurchaseSummary[]; total: number } };
+type Props = { clerkUserId: string; page: number; earnings?: CreatorEarnings; withdrawals?: WithdrawalAccount; purchases?: { items: MarketplacePurchaseSummary[]; total: number } };
 export function FinancialPanel(props: Props) {
   return useAuthAvailable() ? <AccountPanel {...props} /> : <p>Sign in is temporarily unavailable.</p>;
 }
@@ -23,6 +26,7 @@ function AccountPanel(props: Props) {
 function Panel(props: Props) {
   const [earnings, setEarnings] = useState(props.earnings);
   const [purchases, setPurchases] = useState(props.purchases);
+  const [withdrawals, setWithdrawals] = useState(props.withdrawals);
   const [busy, setBusy] = useState(false); const inFlight = useRef(false); const alive = useRef(true);
   const [message, setMessage] = useState(""); const [error, setError] = useState("");
   async function refresh(recover = false) {
@@ -32,6 +36,10 @@ function Panel(props: Props) {
         const r = await creatorEarningsAction(props.page);
         if (!alive.current) return; if (!r.ok) { setError(r.message); return; }
         if (r.data.clerkUserId === props.clerkUserId) setEarnings(r.data.earnings);
+        const w = await withdrawalAccountAction(props.page);
+        if (!alive.current) return;
+        if (w.ok && w.data.clerkUserId === props.clerkUserId) setWithdrawals(w.data.account);
+        else if (!w.ok) setError(w.message);
       } else {
         if (recover) {
           // Bound recovery; this includes completed entitlements with no project.
@@ -69,5 +77,5 @@ function Panel(props: Props) {
     await refresh(true);
   }
   const total = earnings?.total ?? purchases?.total ?? 0;
-  return <div className="space-y-6"><div className="flex flex-wrap items-center gap-4"><Button variant="outline" disabled={busy} onClick={() => void refresh(true)}>{busy ? "Checking…" : earnings ? "Refresh earnings" : "Check purchases"}</Button><p role="status" className={`text-body-sm ${error ? "text-destructive" : "text-muted-foreground"}`}>{error || message}</p></div>{earnings ? <EarningsHistory earnings={earnings} /> : <><p className="text-body-sm text-muted-foreground">PayPal Sandbox template purchases include no AI credits or generation usage. Check saved purchases to recover payment and your project without paying again.</p>{purchases?.items.map(p => <article key={p.id} className="sceenyk-card space-y-3 p-5"><h2 className="break-words font-semibold">{p.title}</h2><p>{usd(p.amountMinor)} USD · {p.financialStatus.replaceAll("_", " ")}</p><p className="text-caption text-muted-foreground">{new Date(p.createdAt).toLocaleDateString()}</p>{p.refundedMinor > 0 && <p className="text-body-sm text-muted-foreground">Refunded: {usd(p.refundedMinor)}. Your adopted project remains available.</p>}{p.projectId ? <Button nativeButton={false} render={<Link href={`/projects/${p.projectId}`} />}>Open adopted project</Button> : p.status !== "failed" ? <Button variant="outline" disabled={busy} onClick={() => void continueCheckout(p)}>{p.status === "completed" ? "Recover adopted project" : "Continue saved Sandbox checkout"}</Button> : <p className="text-body-sm text-muted-foreground">Payment failed. Reconciliation is required before another charge.</p>}</article>)}</>}{!total && <p className="sceenyk-card p-6 text-muted-foreground">{earnings ? "No Marketplace sales yet." : "No paid Marketplace purchases yet."}</p>}<MarketplacePagination total={total} page={props.page} pageSize={12} href={page => `/dashboard/marketplace/${earnings ? "earnings" : "purchases"}?page=${page}`} /></div>;
+  return <div className="space-y-6"><div className="flex flex-wrap items-center gap-4"><Button variant="outline" disabled={busy} onClick={() => void refresh(true)}>{busy ? "Checking…" : earnings ? "Refresh earnings" : "Check purchases"}</Button><p role="status" className={`text-body-sm ${error ? "text-destructive" : "text-muted-foreground"}`}>{error || message}</p></div>{earnings ? <>{withdrawals && <WithdrawalPanel account={withdrawals} page={props.page} clerkUserId={props.clerkUserId} onChanged={() => refresh()} />}<EarningsHistory earnings={{ ...earnings, available: withdrawals?.available ?? earnings.available }} /></> : <><p className="text-body-sm text-muted-foreground">PayPal Sandbox template purchases include no AI credits or generation usage. Check saved purchases to recover payment and your project without paying again.</p>{purchases?.items.map(p => <article key={p.id} className="sceenyk-card space-y-3 p-5"><h2 className="break-words font-semibold">{p.title}</h2><p>{usd(p.amountMinor)} USD · {p.financialStatus.replaceAll("_", " ")}</p><p className="text-caption text-muted-foreground">{new Date(p.createdAt).toLocaleDateString()}</p>{p.refundedMinor > 0 && <p className="text-body-sm text-muted-foreground">Refunded: {usd(p.refundedMinor)}. Your adopted project remains available.</p>}{p.projectId ? <Button nativeButton={false} render={<Link href={`/projects/${p.projectId}`} />}>Open adopted project</Button> : p.status !== "failed" ? <Button variant="outline" disabled={busy} onClick={() => void continueCheckout(p)}>{p.status === "completed" ? "Recover adopted project" : "Continue saved Sandbox checkout"}</Button> : <p className="text-body-sm text-muted-foreground">Payment failed. Reconciliation is required before another charge.</p>}</article>)}</>}{!total && <p className="sceenyk-card p-6 text-muted-foreground">{earnings ? "No Marketplace sales yet." : "No paid Marketplace purchases yet."}</p>}<MarketplacePagination total={total} page={props.page} pageSize={12} href={page => `/dashboard/marketplace/${earnings ? "earnings" : "purchases"}?page=${page}`} /></div>;
 }
