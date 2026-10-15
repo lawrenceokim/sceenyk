@@ -34,6 +34,7 @@ function visit(dir) {
     else if (/\.(js|map)$/.test(file)) {
       files++;
       const body = fs.readFileSync(file, "utf8");
+      if (/marketplace_creator_profiles|creator_profile_avatar_save|creator_profile_listing_identities|creator_storefront|putR2CreatorAvatar|makePublicAvatar|avatar_key/.test(body)) serverMarkers++;
       if (secrets.some((secret) => body.includes(secret))) leaks++;
       if (/payout_support_events|payout_support_check|payout_support_actor|payout_support_queue|payout_support_detail|inspectExistingPayout|commitPayoutCheck|failureCode|REFUND_BELOW_MINIMUM|internal_user_roles|requireAdminOrSupport|SupportAuthorizationError|creator_payout_claim|creator_payout_observe|creator_payout_request|creator_money_lots|creator_withdrawal_allocations|SCEENYK_PAYPAL_PAYOUTS_ENABLED|paypalAccessToken|sender_batch_header/.test(body)) serverMarkers++;
       if (/marketplace_create|marketplace_update|marketplace_adopt|marketplace_owned_listing|marketplace_origin|marketplace_browse|marketplace_detail|marketplace_fulfil_purchase|marketplace_redeem_purchase|marketplace_creator_earnings|marketplace_prepare_purchase|marketplace_begin_order|marketplace_ensure_settlement|marketplace_begin_financial_check|marketplace_financial_candidates|marketplace_apply_financial_observation|marketplace_purchase_financial_status/.test(body)) serverMarkers++;

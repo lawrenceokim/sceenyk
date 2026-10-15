@@ -11,6 +11,13 @@ import { getStorageConfig } from "./config";
 
 const uploadLifetimeSeconds = 5 * 60;
 const readLifetimeSeconds = 15 * 60;
+// Explicitly public derivative only; bucket remains private. Keys never leave the server.
+export async function putR2CreatorAvatar(key: string, bytes: Uint8Array) {
+  const { bucket, sdk } = client();
+  const result = await sdk.send(new PutObjectCommand({ Bucket: bucket, Key: key, Body: bytes, ContentLength: bytes.byteLength, ContentType: "image/webp", IfNoneMatch: "*" }), { abortSignal: AbortSignal.timeout(15000) });
+  if (!result.ETag) throw new Error("AVATAR_STORAGE_UNAVAILABLE");
+  return result.ETag;
+}
 // Final worker only: bounded file is streamed, with canonical immutable identity.
 export async function putR2FinalOutput(key: string, file: string, sizeBytes: number) {
   const { bucket, sdk } = client();

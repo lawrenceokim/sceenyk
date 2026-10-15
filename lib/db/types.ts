@@ -248,6 +248,12 @@ export type Database = {
     };
     Views: Record<string, never>;
     Functions: {
+      creator_profile_listing_identities: { Args: { p_ids: string[] }; Returns: unknown };
+      creator_profile_save: { Args: { p_owner: string; p_name: string; p_bio: string; p_slug: string | null }; Returns: unknown };
+      creator_profile_owned: { Args: { p_owner: string }; Returns: unknown };
+      creator_storefront: { Args: { p_slug: string; p_page: number }; Returns: unknown };
+      creator_profile_avatar_save: { Args: { p_owner: string; p_key: string | null; p_etag: string | null; p_size: number | null }; Returns: unknown };
+      creator_profile_avatar: { Args: { p_slug: string }; Returns: unknown };
       payout_support_queue: { Args: { p_actor: string; p_query: string; p_status: string; p_page: number }; Returns: unknown };
       payout_support_detail: { Args: { p_actor: string; p_id: string; p_history_page: number; p_audit_page: number; p_allocation_page: number }; Returns: unknown };
       payout_support_check_begin: { Args: { p_id: string; p_attempt: string; p_source: "support" | "worker" | "webhook"; p_actor?: string | null; p_submission?: boolean }; Returns: unknown };

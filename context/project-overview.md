@@ -2,13 +2,13 @@
 
 The canonical product definition is [overview.md](overview.md), which is also the overview read by `AGENTS.md`. This entry point exists for references using `context/project-overview.md`; keep product details in the canonical document rather than maintaining a second specification.
 
-## Approved next feature — public Marketplace creator storefront (2026-10-15)
+## Current unit — public Marketplace creator storefront (2026-10-15)
 
 The canonical [storefront product contract](overview.md#approved-public-marketplace-creator-storefront-2026-10-15) approves **`/marketplace/creators/[creatorSlug]`** as the public Marketplace creator page. Creator name/avatar links lead there; its published listing cards lead to existing Marketplace detail and adoption. Private account settings, projects, earnings, payout information and support data remain separate and excluded from all public responses.
 
 Public display name, stable unique URL-safe `creator_slug`, optional public avatar/bio and currently published listings form the focused first version. Slugs are allocated once with database uniqueness and neutral conflict suffixes; mutable names and internal IDs never determine the ongoing URL. See [architecture](architecture.md#approved-public-marketplace-creator-storefront-contract-2026-10-15) and [UI](ui-context.md#approved-public-marketplace-creator-storefront-ui-2026-10-15) for the canonical data/ownership rules, empty state and deferred extensions.
 
-**Documentation approved; implementation Not Started. Exact next implementation unit: creator storefront + minimum public-profile management.** Owner-only management covers only the public fields and initial slug setup needed for the storefront. Social features, creator search, featured listings and `/creators/[slug]` are future possibilities; no application, financial, moderation or final-render change is implemented by this task. Prior units' next-step recommendations below do not supersede this storefront decision.
+**Creator storefront + minimum public-profile management: Complete within local production / real hosted two-user acceptance; not deployed.** Source includes the public route, card/detail links, private `/dashboard/marketplace/profile` management and secure avatar derivatives. User-applied027,55 real acceptance checks, native slug concurrency, privacy and static evidence are recorded in the tracker and [architecture](architecture.md#creator-storefront-implementation-2026-10-15-acceptance-in-progress). Slugs stay fixed after setup. The next recommended unit deploys this exact revision and reruns deployed acceptance. Social features, creator search, featured listings and `/creators/[slug]` remain deferred; financial, moderation and final-render changes are excluded.
 
 The approved commercial contract is [pay-as-you-go credits](overview.md#approved-commercial-model--pay-as-you-go-2026-10-13): **"Buy credits. Create what you need. Top up when you need more."** Monthly subscriptions are outside current scope; membership and auto-recharge are unapproved future options.
 

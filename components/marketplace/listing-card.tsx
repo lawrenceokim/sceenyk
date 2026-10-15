@@ -4,6 +4,12 @@ import { creationCategories } from "@/components/creation/creation-options";
 import { Button } from "@/components/ui/button";
 import type { Listing, TemplateSnapshot } from "@/lib/marketplace/contract";
 import { usd } from "@/lib/marketplace/payments/contract";
+import { CreatorAvatar } from "./creator-avatar";
+
+export function ListingCreator({ listing }: { listing: Listing }) {
+  const identity = <><CreatorAvatar name={listing.creatorName} url={listing.creatorAvatar} /><span className="min-w-0 break-words">By {listing.creatorName}</span></>;
+  return listing.creatorSlug ? <Link href={`/marketplace/creators/${listing.creatorSlug}`} className="nav-link flex min-h-11 items-center gap-3 text-body-sm text-muted-foreground" aria-label={`View ${listing.creatorName}’s storefront`}>{identity}</Link> : <p className="flex items-center gap-3 text-body-sm text-muted-foreground">{identity}</p>;
+}
 
 export function TemplateCover({ template, large = false }: { template: TemplateSnapshot; large?: boolean }) {
   const category = creationCategories.find(item => item.id === template.category)!;
@@ -30,7 +36,7 @@ export function ListingCard({ listing }: { listing: Listing }) {
       <div className="flex flex-wrap items-center justify-between gap-2 text-caption"><span className="text-muted-foreground">{category.title}</span><span className="rounded-full bg-accent px-2.5 py-1 font-medium text-accent-foreground">{listing.adoptionType === "free" ? "Free adoption" : "Paid · Sandbox"}</span></div>
       <h2 className="break-words text-lg font-semibold tracking-tight"><Link className="hover:text-link focus-visible:outline-2 focus-visible:outline-ring" href={`/marketplace/${listing.id}`}>{listing.title}</Link></h2>
       <p className="line-clamp-2 break-words text-body-sm text-muted-foreground">{listing.description}</p>
-      <p className="text-caption text-muted-foreground">By {listing.creatorName}</p>
+      <ListingCreator listing={listing} />
       {!!listing.tags.length && <div className="flex flex-wrap gap-1.5">{listing.tags.map(tag => <span key={tag} className="rounded-full bg-muted px-2 py-1 text-caption text-muted-foreground">{tag}</span>)}</div>}
       <div className="mt-auto space-y-2 border-t border-border pt-3"><p className="text-body-sm font-medium">Creator adoption price: {listing.adoptionType === "free" ? "Free" : usd(listing.priceMinor)}</p><GenerationEstimate listing={listing} /></div>
       <Button variant="outline" className="w-full" nativeButton={false} render={<Link href={`/marketplace/${listing.id}`} />}>Explore template<ArrowUpRight className="size-4" aria-hidden="true" /></Button>

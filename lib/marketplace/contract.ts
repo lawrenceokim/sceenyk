@@ -35,7 +35,8 @@ export const browseSchema = z.strictObject({
 export const listingSchema = z.strictObject({
   id: z.uuid(), title: publicText(120), description: publicText(2000),
   category: saveProjectSchema.shape.category, tags: z.array(z.string()).max(8),
-  creatorName: z.string().max(80), template: templateSnapshotSchema,
+  creatorName: z.string().max(80), creatorSlug: z.string().regex(/^[a-z0-9]+(-[a-z0-9]+)*$/).max(64).nullable().default(null),
+  creatorAvatar: z.string().regex(/^\/api\/marketplace\/creators\/[a-z0-9]+(?:-[a-z0-9]+)*\/avatar$/).nullable().default(null), template: templateSnapshotSchema,
   adoptionType: z.enum(["free", "paid"]), priceMinor: z.number().int().nonnegative(), currency: z.literal("USD"), status: z.enum(listingStatuses),
   createdAt: z.string(), publishedAt: z.string().nullable(),
 });

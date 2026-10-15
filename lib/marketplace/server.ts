@@ -27,15 +27,22 @@ function checked<T>(data: T | null, error: { code?: string } | null): T {
   }
   return data;
 }
-function withEstimate<T extends z.infer<typeof listingSchema>>(listing: T) { return { ...listing, estimate: estimate(listing.template) }; }
+export function withEstimate<T extends z.infer<typeof listingSchema>>(listing: T) { return { ...listing, estimate: estimate(listing.template) }; }
 const pageFields = { total: z.number().int().nonnegative(), page: z.number().int().positive(), pageSize: z.literal(12) };
+async function withCreatorIdentities<T extends z.infer<typeof listingSchema>>(listings: T[]) {
+  if (!listings.length) return listings;
+  const result = await createDatabaseClient().rpc("creator_profile_listing_identities", { p_ids: listings.map(l => l.id) });
+  const identities = z.array(z.strictObject({ id: listingSchema.shape.id, creatorName: listingSchema.shape.creatorName, creatorSlug: listingSchema.shape.creatorSlug, creatorAvatar: listingSchema.shape.creatorAvatar })).parse(checked(result.data, result.error));
+  const byListing = new Map(identities.map(identity => [identity.id, identity]));
+  return listings.map(listing => ({ ...listing, ...byListing.get(listing.id) }));
+}
 
 export async function browseMarketplace(input: unknown = {}): Promise<ListingPage> {
   await connection();
   const parsed = browseSchema.parse(input);
   const { data, error } = await createDatabaseClient().rpc("marketplace_browse", { p_query: parsed.query, p_category: parsed.category, p_page: parsed.page });
   const page = z.object({ ...pageFields, items: z.array(listingSchema) }).parse(checked(data, error));
-  return { ...page, items: page.items.map(withEstimate) };
+  return { ...page, items: (await withCreatorIdentities(page.items)).map(withEstimate) };
 }
 export async function getMarketplaceListing(input: unknown): Promise<Listing | null> {
   await connection();
@@ -43,14 +50,14 @@ export async function getMarketplaceListing(input: unknown): Promise<Listing | n
   if (!id.success) return null;
   const { data, error } = await createDatabaseClient().rpc("marketplace_detail", { p_listing_id: id.data });
   if (error) checked(data, error);
-  return data ? withEstimate(listingSchema.parse(data)) : null;
+  return data ? withEstimate((await withCreatorIdentities([listingSchema.parse(data)]))[0]) : null;
 }
 export async function listOwnedMarketplaceListings(input: unknown = 1): Promise<ListingPage<OwnedListing>> {
   const user = await ensureAppUser();
   const pageNumber = browseSchema.shape.page.parse(input);
   const { data, error } = await createDatabaseClient().rpc("marketplace_owned", { p_owner_user_id: user.id, p_page: pageNumber });
   const page = z.object({ ...pageFields, items: z.array(ownedListingSchema) }).parse(checked(data, error));
-  return { ...page, items: page.items.map(withEstimate) };
+  return { ...page, items: (await withCreatorIdentities(page.items)).map(withEstimate) };
 }
 export async function getOwnedMarketplaceListing(input: unknown, byProject = false): Promise<OwnedListing | null> {
   const user = await ensureAppUser();
@@ -60,7 +67,7 @@ export async function getOwnedMarketplaceListing(input: unknown, byProject = fal
     p_owner_user_id: user.id, p_listing_id: byProject ? null : id.data, p_project_id: byProject ? id.data : null,
   });
   if (error) checked(data, error);
-  return data ? withEstimate(ownedListingSchema.parse(data)) : null;
+  return data ? withEstimate((await withCreatorIdentities([ownedListingSchema.parse(data)]))[0]) : null;
 }
 export async function getOwnedProjectOrigin(input: unknown) {
   const user = await ensureAppUser();
