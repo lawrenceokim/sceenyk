@@ -24,6 +24,23 @@ const email=contract.payoutEmail.parse(offline?'recipient@example.test':process.
 // Stable private fixture storage survives process/browser closure. Never erase
 // or recreate this directory to retry an uncertain provider instruction.
 const dataDir=offline?fs.mkdtempSync(path.join(os.tmpdir(),'sceenyk-payout-harness-check-')):path.join(os.tmpdir(),'sceenyk-creator-payout-acceptance-v1');
+const auditFile=dataDir+'.provider-evidence.json';
+let audit;try{audit=JSON.parse(fs.readFileSync(auditFile,'utf8'));}catch{audit={postAttempts:0,statusLookups:0,responses:[]};}
+const saveAudit=()=>fs.writeFileSync(auditFile,JSON.stringify(audit,null,2));
+// Capture safe provider codes/counts, never credentials, recipient or raw bodies.
+const auditedFetch=async(input,init)=>{
+  const url=new URL(String(input));assert.equal(url.origin,'https://api-m.sandbox.paypal.com','SANDBOX_HTTP_ONLY');
+  const submitting=init?.method==='POST'&&url.pathname==='/v1/payments/payouts';
+  if(submitting){assert.equal(audit.postAttempts,0,'NEVER_RESUBMIT_PAYOUT_INSTRUCTION');audit.postAttempts++;saveAudit();}
+  if(init?.method==='GET'&&url.pathname.startsWith('/v1/payments/payouts/')){audit.statusLookups++;saveAudit();}
+  const response=await fetch(input,init);
+  if(submitting){
+    let value;try{value=await response.clone().json();}catch{value={};}
+    const safeCode=v=>typeof v==='string'&&/^[A-Z0-9_]{1,100}$/.test(v)?v:null;
+    audit.responses.push({httpStatus:response.status,name:safeCode(value.name),issues:(value.details??[]).map(d=>safeCode(d.issue)).filter(Boolean),debugId:typeof value.debug_id==='string'&&/^[a-zA-Z0-9_-]{1,100}$/.test(value.debug_id)?value.debug_id:null});saveAudit();
+  }
+  return response;
+};
 const pg=new PGlite(dataDir);
 const one=async(sql,args=[]) => (await pg.query(sql,args)).rows[0];
 const scalar=async(sql,args=[]) => (await one(sql,args))?.value;
@@ -67,8 +84,8 @@ try{
     const p=await one('select * from marketplace_purchases where id=$1',[purchase]);
     // Explicit synthetic earning eligibility only; payout provider is real.
     await call('marketplace_apply_financial_observation',{p_purchase_id:p.id,p_order_id:p.paypal_order_id,p_capture_id:p.paypal_capture_id,p_amount_minor:p.amount_minor,p_currency:'USD',p_capture_status:'COMPLETED',p_refunded_minor:0,p_can_settle:true,p_reason:'refund',p_reference_key:'isolated-sale-fixture'});
-  }}})('lib/marketplace/withdrawals/server.ts');
+  }}},{fetch:auditedFetch})('lib/marketplace/withdrawals/server.ts');
   if(execute||w.status==='processing')await service.processWithdrawal(id);
   w=await one('select * from creator_withdrawals where id=$1',[id]);
-  console.log(JSON.stringify({evidence:offline?'offline isolated sale/time fixture; no provider call':'real Sandbox payout provider; isolated synthetic sale and expired-time fixture',fixtureDirectory:dataDir,withdrawalId:id,status:w.status,providerStatus:w.provider_status,failureCode:w.failure_code,paid:w.status==='paid',amountMinor:500,hostedWrites:false}));
+  console.log(JSON.stringify({evidence:offline?'offline isolated sale/time fixture; no provider call':'real Sandbox payout provider; isolated synthetic sale and expired-time fixture',fixtureDirectory:dataDir,withdrawalId:id,status:w.status,providerStatus:w.provider_status,failureCode:w.failure_code,paid:w.status==='paid',amountMinor:500,hostedWrites:false,providerAudit:audit}));
 }finally{await pg.close();}

@@ -117,8 +117,12 @@ try {
   check('zeroed withdrawal closes without returning reversed funds',(await row(zw)).status==='failed'&&(await account(zero)).available===0&&await scalar("select count(*)::int value from creator_money_events where withdrawal_id=$1 and kind='released'",[zw])===0);
   const edge=await creator();await destination(edge);await sale(edge);
   await pg.exec('begin'); // Freeze PostgreSQL now() at the exact fixture boundary.
-  const ew=await agedRequest(edge,1800,'167 hours 59 minutes 59 seconds');
+  const ew=await agedRequest(edge,500,'167 hours 59 minutes 59 seconds');
   check('one second before seven-day boundary is ineligible',await eligible(ew)===false&&await claim(ew)===null);
+  const exact=await agedRequest(edge,500,'168 hours');
+  check('frozen clock exactly at seven days permits eligibility and claim',await scalar('select hold_until=now() value from creator_withdrawals where id=$1',[exact])===true&&await eligible(exact)===true&&(await claim(exact)).submitted_minor===500);
+  const after=await agedRequest(edge,500,'168 hours 1 second');
+  check('frozen clock one second after seven days permits eligibility',await scalar("select hold_until=now()-interval '1 second' value from creator_withdrawals where id=$1",[after])===true&&await eligible(after)===true);
   await pg.exec('commit');
 
   // Server identity is explicit auth fixture; actual DB is used by actions/services.

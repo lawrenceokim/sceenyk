@@ -2,7 +2,7 @@
 
 ## Approved production Marketplace earnings and withdrawal policy (2026-10-14)
 
-**Approved product contract; implemented locally in migration024/services/UI, hosted/provider acceptance pending.** This section supersedes older Marketplace fee/share/threshold placeholders and any model that starts a seven-day hold at sale time. Approved2026-10-15 refund rules below complete the reservation/deficit contract. See architecture.md/progress-tracker.md for actual implementation and manual setup; historical Sandbox evidence remains preserved.
+**Approved product contract; migration024/services/UI deployed with scoped Sandbox acceptance.** This section supersedes older Marketplace fee/share/threshold placeholders and any model that starts a seven-day hold at sale time. Approved2026-10-15 refund rules below complete the reservation/deficit contract. Hosted reservation/refund/two-user checks and a real $5 payout pass; expired-time, paid reversal/future earnings and failure/ambiguity cases use explicitly isolated fixtures. See architecture.md/progress-tracker.md for evidence limits; historical Sandbox evidence remains preserved.
 
 ### Sale proceeds and availability
 
@@ -14,15 +14,15 @@ Creator earnings are USD money from paid adoptions. AI credits are nonwithdrawab
 
 ### Withdrawal reservation and seven-day hold
 
-The minimum withdrawal is **$5.00 USD (500 cents)**. A future Withdraw action must be unavailable below $5 of unreserved available earnings; the trusted server must independently validate authentication/ownership, available balance ≥ $5, and an exact USD request amount **$5 ≤ requested amount ≤ available earnings**.
+The minimum withdrawal is **$5.00 USD (500 cents)**. Withdraw is unavailable below $5 of unreserved available earnings; the trusted server independently validates authentication/ownership, available balance ≥ $5, and an exact USD request amount **$5 ≤ requested amount ≤ available earnings**.
 
 An accepted request must atomically reserve that amount once, remove it from Available Earnings, add it to **Pending Payout**, and record the trusted withdrawal-request timestamp. The **seven-day hold starts at that request timestamp**, not at the sale timestamp. No PayPal payout may be sent during the hold. Retries, concurrent requests, refresh/reopen and worker restarts must preserve one durable reservation; the same money cannot fund another withdrawal.
 
 Example: Available $20, request $15 → Available $5 and Pending Payout $15. The reservation changes spendable availability, not lifetime earned money or the sale's platform fee. Pending Payout includes reserved money awaiting eligibility or provider completion; eligibility alone never returns it to available funds.
 
-After seven days, revalidate the reserved amount and blocking refund/dispute/reversal conditions. Only a clear request becomes eligible for the future trusted server-side PayPal payout flow. Elapsed time is not payment completion. The browser cannot mark a payout eligible, processing or paid by asserting a status, timestamp or provider success.
+After seven days, revalidate the reserved amount and blocking refund/dispute/reversal conditions. Only a clear request becomes eligible for the trusted server-side PayPal Sandbox payout flow. Elapsed time is not payment completion. The browser cannot mark a payout eligible, processing or paid by asserting a status, timestamp or provider success.
 
-### Minimal future payout lifecycle
+### Payout lifecycle
 
 | State | Meaning |
 | --- | --- |
@@ -33,7 +33,7 @@ After seven days, revalidate the reserved amount and blocking refund/dispute/rev
 | `paid` | Trusted PayPal verification confirms the payout and its immutable accounting effect. |
 | `failed` | A verified failure is recorded; reservation/recovery handling must follow the separately specified failure policy. |
 
-`cancelled` or `reversed` may be added if needed by the next unit; detailed transitions are not invented here. Unknown provider outcomes must not be treated as paid or as proof that the money is safe to reserve/send again. No lifecycle state, payout table or provider integration is implemented by this document.
+`requested` is an immutable event within the reservation transaction; stored withdrawal states begin at `pending`. Below-minimum or zero reversals close as `failed`, retaining their reason/history. Unknown provider outcomes never establish Paid or authorize another reservation/send. Migration024 and the trusted service implement these transitions; only verified matched item SUCCESS finalizes Paid.
 
 ### Refunds, reversals and reserved money
 
@@ -58,7 +58,7 @@ After successful payout, the reversed creator share creates immutable creator de
 9. The browser cannot mark payouts paid or supply authoritative financial state.
 10. Actual payout occurs only through a separately implemented, trusted server-side PayPal payout flow.
 
-**Implementation boundary (2026-10-15):** local migration024 implements the versioned transition, preserving historical intents and ledger rows while new intents enforce10% and immediate verified-net availability. Private earning lots and explicit allocations reserve valid money; immutable money events explain availability, request/pending, reservations, reversal/release, eligibility/processing, paid, deficit and offset effects. Each lot must reconcile original−reversed = available+offset+valid allocated amount before reservation/eligibility. A below-minimum failed request returns only valid remaining money once. Processing keeps its frozen submission amount; intervening reversal debt is recorded only on successful completion, never prematurely on an unknown response. Paid completion finalizes the reservation without a second available debit. All amounts are USD cents and never alter AI credits. Hosted migration, real Sandbox payouts and deployed acceptance remain pending manual setup; the deployed023 behavior is unchanged until rollout. Final rendering remains deferred.
+**Implementation boundary (2026-10-15):** deployed migration024 implements the versioned transition, preserving historical intents and ledger rows while new intents enforce10% and immediate verified-net availability. Private earning lots and explicit allocations reserve valid money; immutable money events explain availability, request/pending, reservations, reversal/release, eligibility/processing, paid, deficit and offset effects. Each lot must reconcile original−reversed = available+offset+valid allocated amount before reservation/eligibility. A below-minimum failed request returns only valid remaining money once. Processing keeps its frozen submission amount; intervening reversal debt is recorded only on successful completion, never prematurely on an unknown response. Paid completion finalizes the reservation without a second available debit. All amounts are USD cents and never alter AI credits. Real hosted $10 capture/10% fee/$9 net, concurrent $7 reservation, $1/$2 refunds and one $4.30 release pass. A real $5 Sandbox payout and trusted provider-completion handler pass using isolated sale/time fixtures; no hosted seven-day hold was changed. Synthetic paid reversal creates500-cent debt; future270/450-cent earnings offset it before220 cents becomes available, with no new provider instruction. Full evidence/limits are in the tracker. Final rendering remains deferred.
 
 ## Marketplace settlement and cumulative proportional reversals (2026-10-14)
 
@@ -86,7 +86,7 @@ The original021-only unit recorded pending earnings without settlement operation
 
 Marketplace adoption is distinct from generation. Free adoption creates an adopter-owned project without a Marketplace charge; subsequent AI work uses the existing two lifetime free generations or server-quoted credits. Paid adoption, when separately authorized, requires verified purchase and durable entitlement before project creation. Neither path transfers the creator's original project or private media. Adoption does not rewrite the creator's generation history, free allowance, credits, or immutable ledger.
 
-Creator earnings represent money from paid Marketplace sales, separate from nonwithdrawable Sceenyk AI credits. The existing dedicated Marketplace ledger distinguishes original sale, test availability, platform fee and proportional refund/reversal adjustments. Future withdrawal reservations and payouts extend that separate money boundary with idempotent provider verification and ownership. The approved production flow is valid verified sale → available 90% net → withdrawal request of at least $5 → reserved Pending Payout → seven-day hold from request → eligible → future trusted PayPal payout. Existing Sandbox pending-sale events retain their original test eligibility; they are not pending payouts. Do not credit a creator's AI-credit balance with sale proceeds or infer a payout from an adoption. Marketplace purchases/earnings/adjustments are implemented separately from generation accounting and PayPal credit-pack purchases; withdrawal reservations and actual payouts remain unimplemented.
+Creator earnings represent money from paid Marketplace sales, separate from nonwithdrawable Sceenyk AI credits. Dedicated original-sale, availability and proportional-adjustment history extends through migration024's explicit withdrawal allocations and immutable payout/deficit/offset events. The implemented flow is valid verified sale → available90% net → withdrawal request of at least$5 → reserved Pending Payout →168-hour hold from request → eligible after trusted recheck → trusted Sandbox payout → Paid only after matched provider success. Historical pending-sale events retain their original policy and are not pending payouts. Adoption, sale/refund/withdrawal and PayPal credit-pack accounting stay separate; see the acceptance evidence/limits above.
 
 **Commercial model approved 2026-10-13:** credits support user-initiated pay-as-you-go pack purchases and repeat top-ups, not monthly allowances or a month of access. Purchased credits do not expire unless a future explicit product decision changes this. The two lifetime free generations remain separate and never reset on purchase. Generation cost is shown before confirmation and is server-authoritative; existing reservation, verified-result consumption and failure restoration remain unchanged. Quote expiry is not credit expiry. Monthly subscriptions are outside current scope. Possible membership benefits and optional threshold-based auto-recharge require separate future approval. See [overview.md](overview.md#approved-commercial-model--pay-as-you-go-2026-10-13).
 

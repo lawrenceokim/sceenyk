@@ -1,6 +1,6 @@
 # UI Context
 
-## Creator withdrawals (2026-10-15; local implementation, hosted acceptance pending)
+## Creator withdrawals (2026-10-15; deployed two-user acceptance verified)
 
 The owned earnings page now renders Available Earnings, Pending Payout, Paid, lifetime/reversed sale totals, private PayPal email configuration and USD withdrawal amount. Disable Withdraw below $5, without saved destination or while creator debt remains; the server repeats all checks. Explain exactly: "Withdrawals are held for 7 days before payout." State immediate reservation, refund reductions/cancellation and Sandbox-only payouts. Existing requests freeze their email and original hold. History uses Pending/Eligible/Processing/Paid/Failed with amount, original request/date, hold date and paid date where verified. Failure copy explains only valid funds return; deficit copy explains future-earning offsets. Internal provider IDs are excluded. Preserve identity guards, both themes, keyboard/labels/targets, responsiveness and server refresh. This supersedes the historical no-withdrawal-UI statements below; real deployment acceptance remains in the tracker.
 
