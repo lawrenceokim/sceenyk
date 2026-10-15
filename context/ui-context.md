@@ -1,5 +1,9 @@
 # UI Context
 
+## Creator withdrawal privacy acceptance patch (2026-10-15)
+
+The local creator DTO now replaces raw `failureCode` with a whitelisted `failureMessage`, preserving the same refund-below-minimum and generic failure copy. The panel renders that safe message directly. Server initial reads and action responses share the server-only projection; raw provider/support codes do not enter client props. No layout/theme/payout control changes occur. Deployment and real creator response/client-bundle verification are pending; the earlier documented privacy gap remains historical and must not be called fixed on Vercel until the new patch is deployed.
+
 ## Approved internal payout support surface (2026-10-15)
 
 **Documentation only; no support interface exists yet.** Proposed route `/admin/payouts` follows no established admin convention because the repository has no existing admin surface. Enable it only after the server-enforced admin/support authorization prerequisite in [architecture.md](architecture.md#approved-payout-support-and-reconciliation-contract-2026-10-15) is implemented. Normal creators cannot access its pages, underlying reads/actions or audit records; hiding navigation is not access control.

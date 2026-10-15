@@ -81,7 +81,7 @@ export function WithdrawalPanel({ account, page, clerkUserId, onChanged }: { acc
       <p className="text-body-sm text-muted-foreground">Hold until {new Date(w.holdUntil).toLocaleString()}</p>
       {w.paidAt && <p className="text-body-sm">Paid {new Date(w.paidAt).toLocaleString()}</p>}
       {w.reviewRequired && <p className="text-body-sm text-warning">PayPal reported a return after payout. Contact support to reconcile it; the original paid record is preserved.</p>}
-      {w.status === "failed" && <p className="text-body-sm text-muted-foreground">{w.failureCode === "REFUND_BELOW_MINIMUM" ? "Refund adjustments reduced this withdrawal below $5. Remaining valid funds were returned to available earnings." : "Payout failed. Remaining valid reserved funds were returned to available earnings."}</p>}
+      {w.failureMessage && <p className="text-body-sm text-muted-foreground">{w.failureMessage}</p>}
     </article>)}
     <MarketplacePagination total={account.total} page={page} pageSize={12} itemLabel="withdrawal" href={value => `/dashboard/marketplace/earnings?page=${value}`} />
   </section>;

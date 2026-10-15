@@ -1,5 +1,9 @@
 # Payments and PayPal Sandbox payouts
 
+## Authorization/privacy gate before internal payout support (2026-10-15)
+
+Payout-support implementation remains gated on deployed authorization acceptance. A local protected status-only endpoint permits real role acceptance without exposing financial data or a payout control. Creator withdrawal initial/action DTOs now replace internal `failureCode` with safe whitelisted `failureMessage`; the existing private SQL projection/accounting is unchanged. Deployment acceptance of this patch remains pending. No PayPal call, status transition, payout resend or new support reconciliation path is added by the gate correction.
+
 ## Approved support status checks (2026-10-15; not implemented)
 
 Authorized internal support may inspect an existing withdrawal and use **Check PayPal Status / Reconcile** to query its persisted payout reference. It must call the shared trusted check-only reconciliation domain described in [architecture.md](architecture.md#approved-payout-support-and-reconciliation-contract-2026-10-15), independently enforce server-side support authority, verify the frozen instruction and append an audit attempt/outcome. Existing Inngest automatic reconciliation remains primary. No support action may create/resend a payout, call the submission branch of `processWithdrawal`, claim a send, edit references, or replace an uncertain instruction. Ordinary creators receive no provider references, internal failure codes, support audit or reconciliation controls.

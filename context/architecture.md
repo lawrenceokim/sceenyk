@@ -1,5 +1,11 @@
 # Architecture Context
 
+## Deployed authorization acceptance gate (2026-10-15)
+
+The user deployed the authorization prerequisite, then required deployed acceptance before payout-support implementation. Initial deployed inspection finds no reachable caller of `requireAdminOrSupport()`;404 on a missing route is not evidence of role authorization. Local `GET /api/internal/authorization` now invokes the real guard and returns only `{ authorized: true }`, safe403 `ACCESS_DENIED` or503 `UNAVAILABLE`, with private/no-store responses and preserved Clerk/Next unauthenticated control flow. It has no mutation method, identity/role response or financial access. Deployment of this boundary and live revocation acceptance are pending; support pages/actions remain unimplemented.
+
+Creator privacy is corrected locally at the server DTO boundary: `creatorWithdrawalAccount()` validates the existing private RPC result, removes raw `failureCode` and any unmodeled diagnostics/references, and emits only a whitelisted human-readable `failureMessage`. Both initial rendering and `withdrawalAccountAction` use this projection. The existing service-only SQL RPC/migration024, financial state and safe UI copy are unchanged; no new migration is required. The historical exposure below is superseded locally, but deployed cleanup is not claimed before acceptance.
+
 ## Internal authorization prerequisite (2026-10-15)
 
 The current bounded implementation adds server-only `requireAdminOrSupport()` before any payout-support surface. Clerk remains identity authority through `ensureAppUser`; the helper independently queries `internal_user_roles` by the resolved application user ID on every call. Missing role means ordinary `user`; only exact `support`/`admin` values permit access. Invalid/mismatched records and lookup failures fail closed, and role decisions are never cached. The returned internal actor contains only application ID, Clerk ID and verified role. Future internal pages, data reads and actions must each call the helper before privileged work; page/layout checks alone are insufficient.

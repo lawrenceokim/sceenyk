@@ -3,10 +3,14 @@ import { z } from "zod";
 export const payoutEmail = z.email().max(254).transform(value => value.trim());
 export const withdrawalInput = z.strictObject({ requestId: z.uuid(), amountMinor: z.number().int().min(500).max(2147483647) });
 export const withdrawalStates = ["pending", "eligible", "processing", "paid", "failed"] as const;
+export const withdrawalFailureMessages = [
+  "Refund adjustments reduced this withdrawal below $5. Remaining valid funds were returned to available earnings.",
+  "Payout failed. Remaining valid reserved funds were returned to available earnings.",
+] as const;
 export const withdrawalAccountSchema = z.object({
   currency: z.literal("USD"), email: z.string().nullable(), available: z.number().int().nonnegative(),
   deficit: z.number().int().nonnegative(), pending: z.number().int().nonnegative(), paid: z.number().int().nonnegative(), total: z.number().int().nonnegative(),
-  history: z.array(z.object({ id: z.uuid(), requested: z.number().int(), amount: z.number().int(), status: z.enum(withdrawalStates), requestedAt: z.string(), holdUntil: z.string(), paidAt: z.string().nullable(), failureCode: z.string().nullable(), reviewRequired: z.boolean() })),
+  history: z.array(z.object({ id: z.uuid(), requested: z.number().int(), amount: z.number().int(), status: z.enum(withdrawalStates), requestedAt: z.string(), holdUntil: z.string(), paidAt: z.string().nullable(), failureMessage: z.enum(withdrawalFailureMessages).nullable(), reviewRequired: z.boolean() })),
 });
 export type WithdrawalAccount = z.infer<typeof withdrawalAccountSchema>;
 export const withdrawalRowSchema = z.object({

@@ -4,7 +4,8 @@ import { ensureAppUser } from "@/lib/auth/ensure-app-user";
 import { createDatabaseClient } from "@/lib/db/server";
 import { getPayPalConfig } from "@/lib/payments/paypal/config";
 import { reconcileMarketplaceFinancials } from "../earnings/server";
-import { payoutEmail, withdrawalAccountSchema, withdrawalInput, withdrawalRowSchema, payoutWebhookEvents, type WithdrawalRow } from "./contract";
+import { payoutEmail, withdrawalInput, withdrawalRowSchema, payoutWebhookEvents, type WithdrawalRow } from "./contract";
+import { creatorWithdrawalAccount } from "./creator-account";
 import { assertPayoutWebhooksReady, PayoutRejected, readPayoutBatch, submitPayout, verifyPayout, type PayoutBatch } from "./paypal";
 
 function checked<T>(r: { data: T | null; error: unknown }): T {
@@ -15,7 +16,7 @@ export async function getWithdrawalAccount(page = 1) {
   const user = await ensureAppUser();
   z.number().int().min(1).max(100000).parse(page);
   const data = checked(await createDatabaseClient().rpc("creator_payout_account", { p_creator: user.id, p_page: page }));
-  return { clerkUserId: user.clerk_user_id, account: withdrawalAccountSchema.parse(data) };
+  return { clerkUserId: user.clerk_user_id, account: creatorWithdrawalAccount(data) };
 }
 export async function savePayoutDestination(input: unknown) {
   const user = await ensureAppUser();

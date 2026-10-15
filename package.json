@@ -4,6 +4,8 @@
   "private": true,
   "scripts": {
     "test:authorization": "node scripts/check-internal-authorization.mjs",
+    "test:authorization-boundary": "node scripts/check-authorization-boundary.mjs",
+    "acceptance:authorization:deployed": "node scripts/acceptance-internal-authorization-deployed.mjs",
     "acceptance:authorization": "node scripts/acceptance-internal-authorization.mjs",
     "acceptance:authorization:http": "node scripts/acceptance-internal-authorization-http.mjs",
     "test:withdrawals": "node scripts/check-creator-withdrawals.mjs && node scripts/check-paypal-payouts.mjs",

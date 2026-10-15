@@ -10,7 +10,7 @@ import {setTimeout as delay} from 'node:timers/promises';
 import {build} from 'esbuild';
 const dir=fs.mkdtempSync(path.join(os.tmpdir(),'sceenyk-withdrawal-ui-'));
 const js=await build({stdin:{contents:`import React,{useState} from 'react';import{createRoot}from'react-dom/client';import{WithdrawalPanel}from'./components/marketplace/withdrawal-panel';
-const now='2026-10-15T12:00:00Z';const initial={currency:'USD',email:'creator@example.test',available:2000,deficit:0,pending:0,paid:0,total:5,history:['pending','eligible','processing','paid','failed'].map((status,i)=>({id:'fixture-'+i,requested:500,amount:500,status,requestedAt:now,holdUntil:'2026-10-22T12:00:00Z',paidAt:status==='paid'?now:null,failureCode:status==='failed'?'REFUND_BELOW_MINIMUM':null}))};
+const now='2026-10-15T12:00:00Z';const initial={currency:'USD',email:'creator@example.test',available:2000,deficit:0,pending:0,paid:0,total:5,history:['pending','eligible','processing','paid','failed'].map((status,i)=>({id:'fixture-'+i,requested:500,amount:500,status,requestedAt:now,holdUntil:'2026-10-22T12:00:00Z',paidAt:status==='paid'?now:null,failureMessage:status==='failed'?'Refund adjustments reduced this withdrawal below $5. Remaining valid funds were returned to available earnings.':null}))};
 window.requests=[];window.saves=[];window.fixtureWithdraw=async input=>{window.requests.push(input);return{ok:true}};window.fixtureSave=async input=>{window.saves.push(input);return{ok:true}};
 function App(){const[account,setAccount]=useState(initial);window.setFixtureAccount=(patch)=>setAccount(a=>({...a,...patch}));return <main className='mx-auto max-w-5xl space-y-5 p-4'><h1 className='text-3xl font-bold'>Creator earnings</h1><WithdrawalPanel account={account} page={1} clerkUserId='fixture_creator' onChanged={async()=>{const r=window.requests.at(-1);if(r)setAccount(a=>({...a,available:2000-r.amountMinor,pending:r.amountMinor}));}}/></main>};createRoot(document.getElementById('root')).render(<App/>);`,resolveDir:process.cwd(),loader:'tsx'},bundle:true,write:false,platform:'browser',format:'iife',jsx:'automatic',define:{'process.env.NODE_ENV':'"production"'},plugins:[{name:'explicit-ui-fixtures',setup(b){
   b.onResolve({filter:/^(next\/navigation|next\/link|@\/app\/actions\/creator-withdrawals)$/},args=>({path:args.path,namespace:'fixture'}));
@@ -50,6 +50,8 @@ try{
   await evaluate("document.getElementById('payout-email').focus()");await call('Input.dispatchKeyEvent',{type:'keyDown',key:'Tab',code:'Tab',windowsVirtualKeyCode:9});await call('Input.dispatchKeyEvent',{type:'keyUp',key:'Tab',code:'Tab',windowsVirtualKeyCode:9});
   check('keyboard reaches save action',await evaluate("document.activeElement.innerText==='Save payout email'"));
   check('no internal provider IDs rendered',await evaluate("!document.body.innerText.includes('paypal_batch_id')&&!document.body.innerText.includes('sender_batch_id')"));
+  check('safe refund failure explanation preserved',await evaluate("document.body.innerText.includes('Refund adjustments reduced this withdrawal below $5. Remaining valid funds were returned to available earnings.')"));
+  check('creator interface contains no internal failure diagnostics',! /failureCode|REFUND_BELOW_MINIMUM/.test(js.outputFiles[0].text));
   check('no browser exceptions',errors.length===0);
   console.log(JSON.stringify({checks,passed:true,evidence:'real Chrome/component/CSS with explicit account/action fixtures',screenshots:dir}));
   await call('Browser.close');
