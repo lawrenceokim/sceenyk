@@ -38,7 +38,8 @@
     "test:creator-earnings": "node scripts/check-creator-earnings.mjs",
     "test:marketplace-settlement": "node scripts/check-marketplace-settlement.mjs",
     "acceptance:payout-support:sandbox": "node scripts/acceptance-payout-support-sandbox.mjs",
-    "acceptance:payout-support:deployed": "node scripts/acceptance-payout-support-deployed.mjs"
+    "acceptance:payout-support:deployed": "node scripts/acceptance-payout-support-deployed.mjs",
+    "test:payout-support:concurrency": "node scripts/check-payout-support.mjs --native-postgres"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1148.0",

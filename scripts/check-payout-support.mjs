@@ -8,11 +8,30 @@ import {InngestTestEngine} from '@inngest/test';
 import {compositionFixtureDatabase} from './lib/composition-fixture.mjs';
 import {typescriptLoader} from './lib/load-typescript.mjs';
 
-const {pg,db,call,one,scalar}=await compositionFixtureDatabase();
+const native=process.argv.includes('--native-postgres');
+const {pg,db,call,one,scalar}=native?await(await import('./lib/payout-native-fixture.mjs')).payoutNativeFixture():await compositionFixtureDatabase();
 let checks=0,sequence=0,gets=0,posts=0;
 const logs=[];
 const check=(name,value)=>{assert.ok(value,name);checks++;};
 const rejects=async(name,work)=>{await assert.rejects(work,undefined,name);checks++;};
+async function contenders(id,work){
+  if(!native)return work();
+  // Delay only the disposable test's audit INSERT, inside the real atomic
+  // financial transaction, so competing backends demonstrably wait on locks.
+  assert.match(id,/^[a-f0-9-]{36}$/);
+  await pg.exec(`create function native_contention_fixture() returns trigger language plpgsql as $$ begin if new.withdrawal_id='${id}'::uuid and new.action='check_finished' then perform pg_sleep(0.5);end if;return new;end $$;create trigger native_contention_fixture before insert on payout_support_events for each row execute function native_contention_fixture();`);
+  const running=work();
+  try{
+    let waiting=false;
+    for(let n=0;n<40;n++){
+      const count=await scalar("select count(*)::int value from pg_stat_activity where wait_event_type='Lock' and query like '%payout_support_check_finish%' and pid<>pg_backend_pid()");
+      if(count>0){waiting=true;break;}
+      await new Promise(resolve=>setTimeout(resolve,25));
+    }
+    check('independent financial transactions demonstrably wait on PostgreSQL locks',waiting);
+    return await running;
+  }finally{await running.catch(()=>{});await pg.exec('drop trigger native_contention_fixture on payout_support_events;drop function native_contention_fixture();');}
+}
 const user=async(name='Fixture creator')=>one('insert into app_users(clerk_user_id,first_name) values($1,$2) returning *',[randomUUID(),name]);
 const assign=(actor,role)=>pg.query('insert into internal_user_roles(user_id,role) values($1,$2) on conflict(user_id) do update set role=excluded.role',[actor.id,role]);
 const row=id=>one('select * from creator_withdrawals where id=$1',[id]);
@@ -147,7 +166,7 @@ try{
   check('network failure returns clear safe result with no financial effect',unavailable.status===200&&(await unavailable.text()).includes('Provider unavailable')&&await financial(sample.id)===mismatchBefore);providerHook=undefined;
   setState(sample,'SUCCESS');
   providerHook=async id=>{const w=[...batches.values()].find(batch=>batch.batch_header.payout_batch_id===id);check('audit attempt exists before provider read',await scalar("select count(*)::int value from payout_support_events where withdrawal_id=$1 and action='check_started'",[w.batch_header.sender_batch_header.sender_batch_id])>0);};
-  const duplicates=await Promise.all([staff.reconcileSupportPayout({withdrawalId:sample.id}),actorModules(secondAdmin).service.reconcileSupportPayout({withdrawalId:sample.id}),actorModules(support).service.reconcileSupportPayout({withdrawalId:sample.id})]);providerHook=undefined;
+  const duplicates=await contenders(sample.id,()=>Promise.all([staff.reconcileSupportPayout({withdrawalId:sample.id}),actorModules(secondAdmin).service.reconcileSupportPayout({withdrawalId:sample.id}),actorModules(support).service.reconcileSupportPayout({withdrawalId:sample.id})]));providerHook=undefined;
   check('duplicate clicks/multiple operators finalize Paid once',duplicates.every(r=>r.outcome==='paid')&&await scalar("select count(*)::int value from creator_money_events where withdrawal_id=$1 and kind='paid'",[sample.id])===1);
   check('finalization never debits available twice',(await balance(sample.creator.id)).available===0&&(await balance(sample.creator.id)).paid===900);
   const paidBefore=await financial(sample.id);await staff.reconcileSupportPayout({withdrawalId:sample.id});check('repeat Paid check has no financial effect',await financial(sample.id)===paidBefore);
@@ -178,9 +197,12 @@ try{
   const worker=adminModules.load('lib/marketplace/withdrawals/server.ts');
   const hook=typescriptLoader({'@/lib/marketplace/withdrawals/server':worker,'@/lib/payments/paypal/client':{verifyPayPalWebhook:async()=>true},'@/lib/payments/server':{handleVerifiedPayPalEvent:async()=>false},'@/lib/marketplace/payments/server':{handleVerifiedMarketplacePayPalEvent:async()=>{}}},{Request,Response})('app/api/payments/paypal/webhook/route.ts');
   const scheduled=typescriptLoader({'./client':{inngest:new Inngest({id:'payout-support-fixture',isDev:true})},'@/lib/db/server':{createDatabaseClient:()=>({rpc:async()=>({data:[concurrent.id],error:null})})},'@/lib/marketplace/withdrawals/server':worker})('lib/workflows/creator-payouts.ts').creatorPayoutReconciliation;
-  const deliveries=await Promise.all([staff.reconcileSupportPayout({withdrawalId:concurrent.id}),new InngestTestEngine({function:scheduled,events:[{name:'inngest/scheduled.timer',data:{}}]}).execute(),hook.POST(new Request('https://fixture.invalid/api/payments/paypal/webhook',{method:'POST',body:JSON.stringify({event_type:'PAYMENT.PAYOUTS-ITEM.SUCCEEDED',resource:{payout_batch_id:concurrent.batch.batch_header.payout_batch_id}})}))]);
+  const deliveries=await contenders(concurrent.id,()=>Promise.all([staff.reconcileSupportPayout({withdrawalId:concurrent.id}),new InngestTestEngine({function:scheduled,events:[{name:'inngest/scheduled.timer',data:{}}]}).execute(),hook.POST(new Request('https://fixture.invalid/api/payments/paypal/webhook',{method:'POST',body:JSON.stringify({event_type:'PAYMENT.PAYOUTS-ITEM.SUCCEEDED',resource:{payout_batch_id:concurrent.batch.batch_header.payout_batch_id}})}))]));
   check('support + actual Inngest + authenticated webhook have one financial effect',deliveries[2].status===200&&(await row(concurrent.id)).status==='paid'&&await scalar("select count(*)::int value from creator_money_events where withdrawal_id=$1 and kind='paid'",[concurrent.id])===1);
   const concurrencyBefore=await financial(concurrent.id);await worker.processWithdrawal(concurrent.id);await staff.reconcileSupportPayout({withdrawalId:concurrent.id});check('worker/manual later replays are harmless',await financial(concurrent.id)===concurrencyBefore);
+  const failedConcurrent=await processing();setState(failedConcurrent,'FAILED');
+  await contenders(failedConcurrent.id,()=>Promise.all([staff.reconcileSupportPayout({withdrawalId:failedConcurrent.id}),worker.processWithdrawal(failedConcurrent.id),hook.POST(new Request('https://fixture.invalid/api/payments/paypal/webhook',{method:'POST',body:JSON.stringify({event_type:'PAYMENT.PAYOUTS-ITEM.FAILED',resource:{payout_batch_id:failedConcurrent.batch.batch_header.payout_batch_id}})}))]));
+  check('manual/worker/webhook failure race releases exactly one valid amount',(await row(failedConcurrent.id)).status==='failed'&&(await balance(failedConcurrent.creator.id)).available===900&&await scalar("select count(*)::int value from creator_money_events where withdrawal_id=$1 and kind='released'",[failedConcurrent.id])===1);
   const manyAudits=await staff.getPayoutSupportDetail({id:sample.id,auditPage:2});
   check('audit history pagination bounded',manyAudits.audit.items.length<=25&&manyAudits.audit.total>25);
   check('all source checks produce distinct immutable audit attempts',await scalar("select count(*)::int value from payout_support_events where withdrawal_id=$1 and source='support' and action='check_finished'",[sample.id])>=10);
@@ -202,5 +224,6 @@ try{
   check('AI balances/allowances/credits untouched',await scalar('select count(*)::int value from generation_accounts where free_total<>2 or free_reserved<>0 or free_consumed<>0 or credit_available<>0 or credit_reserved<>0')===0);
   check('financial lot equations still reconcile',await scalar('select bool_and(creator_money_consistent(id)) value from app_users')===true);
   check('denial logs are safe and contain no identity/provider diagnostics',logs.length>0&&logs.every(line=>!line.includes('PRIVATE_')&&!line.includes(admin.id)&&!line.includes(sample.id)));
-  console.log(JSON.stringify({passed:checks,providerGets:gets,payoutPosts:posts,sql:'actual migrations + financial/audit RPCs',concurrency:'actual manual/Inngest/webhook paths; PGlite single-connection serialization; hosted contention separate',authentication:'explicit Clerk request fixture; actual role storage/guard'}));
+  if(native)check('native backend opens independent concurrent clients',pg.stats().maximumIndependentClients>=3);
+  console.log(JSON.stringify({passed:checks,providerGets:gets,payoutPosts:posts,sql:'actual migrations + financial/audit RPCs',concurrency:native?'native PostgreSQL independent connections; actual manual/Inngest/webhook paths':'actual manual/Inngest/webhook paths; PGlite single-connection serialization; hosted contention separate',...(native?pg.stats():{}),authentication:'explicit Clerk request fixture; actual role storage/guard'}));
 }finally{await pg.close();}

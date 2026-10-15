@@ -2,11 +2,13 @@
 
 ## Authorization/privacy gate before internal payout support (2026-10-15)
 
-The deployed authorization/privacy gate passes, including trusted role revocation403 and restoration200. Creator initial/action DTOs use safe failureMessage. Local support implementation now uses private role-checked queue/detail and a single check-only POST; migration026 must be applied before deploying matching application code. No new environment variables, PayPal setup or Inngest function are required.
+The deployed authorization/privacy gate passes, including trusted role revocation403 and restoration200. Creator initial/action DTOs use safe failureMessage. Deployed support implementation uses private role-checked queue/detail and a single check-only POST; migration026 was applied before matching application code. No new environment variables, PayPal setup or Inngest function are required.
 
-## Internal support status checks (2026-10-15; local implementation, rollout pending)
+## Internal support status checks (2026-10-15; deployed scoped acceptance verified)
 
 Authorized support inspects existing withdrawals and checks only their persisted Sandbox batch. Shared reconciliation.ts verifies frozen sender/item identity, USD amount, destination and stored references. The adapter GET is shared with Inngest and verified webhooks; original automatic submission remains a separate worker branch that support never imports/calls. Missing references produce “Provider reference missing. Manual provider investigation required.” Unknown/mismatched/error results preserve money and append safe audit outcomes. Existing creator_payout_observe provides all permitted financial transitions under its original guards; check outcome persistence is in the same transaction. Queue/detail reads and check starts are also audited. No manual overrides, new payout or resend is exposed.
+
+Fresh acceptance passes34 deployed support checks and14 hosted026 grants, plus22 deployed existing-flow/privacy checks and18 role-source checks. The retained original $5 SUCCESS payout is reread using five real Sandbox GETs with zero new payout POSTs; once-only financial transitions use disposable sale/time/role fixtures. Native PostgreSQL independent-backend tests pass122 with observed lock waits for finalization/restoration races and no resend. Naturally aged hosted Paid webhook completion and real failed/returned records remain unobserved. No provider registration, new Inngest function, Live or financial override is introduced.
 
 ### Support provider outcomes
 

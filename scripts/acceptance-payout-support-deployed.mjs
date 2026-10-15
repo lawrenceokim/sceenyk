@@ -5,6 +5,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import {randomUUID,createHash} from 'node:crypto';
+import {setTimeout as delay} from 'node:timers/promises';
 import nextEnv from '@next/env';
 import {createClient} from '@supabase/supabase-js';
 import {createClerkClient} from '@clerk/backend';
@@ -33,6 +34,11 @@ const existing=await db.from('creator_withdrawals').select('*').limit(100);asser
 const safe=existing.data.find(w=>w.status==='failed'&&w.paypal_batch_id===null&&w.submitted_minor===null);
 assert.ok(safe,'SAFE_EXISTING_UNSUBMITTED_TERMINAL_RECORD_REQUIRED');
 const before=await snapshot(),sessions=[];
+const sessionJournal=path.join(os.tmpdir(),'sceenyk-payout-support-'+(local?'local':'deployed')+'-sessions.json');
+const journal=()=>fs.writeFileSync(sessionJournal,JSON.stringify({origin,checkedAt:evidence.checkedAt,sessions},null,2));
+async function retryReadOrRevoke(work){
+  for(let n=0;n<3;n++){try{return await work();}catch(error){if(n===2)throw error;await delay(500*(n+1));}}
+}
 try{
   const audit=await db.from('payout_support_events').select('id').limit(0);
   check('hosted026 audit table present with service SELECT',!audit.error);
@@ -53,9 +59,19 @@ try{
   }
   if(!hostedOnly){
     const clerk=createClerkClient({secretKey:process.env.CLERK_SECRET_KEY,telemetry:{disabled:true}});assert.equal((await clerk.instance.get()).environmentType,'development');
-    for(const user of [admin,ordinary]){const session=await clerk.sessions.createSession({userId:user.clerk_user_id});sessions.push(session.id);}
+    for(const user of [admin,ordinary]){const session=await clerk.sessions.createSession({userId:user.clerk_user_id});sessions.push(session.id);journal();}
+    const tokens=new Map();
     const request=async(index,route,{method='GET',body,headers={}}={})=>{
-      const token=index===null?null:(await clerk.sessions.getToken(sessions[index],undefined,60)).jwt;
+      // Reuse only a short-lived authentication token for this explicit session;
+      // application and SQL role authority are still reread on every request.
+      let token=null;
+      if(index!==null){
+        let cached=tokens.get(index);
+        if(!cached||cached.until<Date.now()){
+          cached={jwt:(await retryReadOrRevoke(()=>clerk.sessions.getToken(sessions[index],undefined,60))).jwt,until:Date.now()+45000};tokens.set(index,cached);
+        }
+        token=cached.jwt;
+      }
       let url=origin+route;
       for(let redirects=0;redirects<3;redirects++){
         const r=await fetch(url,{method,redirect:'manual',headers:{...(token?{Authorization:'Bearer '+token}:{}),...(body?{'Content-Type':'application/json'}:{}),...headers},...(body?{body:JSON.stringify(body)}:{}),signal:AbortSignal.timeout(45000)});
@@ -113,5 +129,8 @@ try{
   fs.writeFileSync(artifact,JSON.stringify(evidence,null,2));console.log(JSON.stringify({passed:evidence.checks.length,hostedOnly,financeUnchanged:true,payoutPosts:0,artifact}));
 }finally{
   const clerk=createClerkClient({secretKey:process.env.CLERK_SECRET_KEY,telemetry:{disabled:true}});
-  for(const id of sessions)await clerk.sessions.revokeSession(id);
+  const pending=[];
+  for(const id of sessions){try{await retryReadOrRevoke(()=>clerk.sessions.revokeSession(id));}catch{pending.push(id);}}
+  sessions.splice(0,sessions.length,...pending);journal();
+  assert.equal(pending.length,0,'TEMPORARY_CLERK_SESSION_CLEANUP_PENDING');
 }
