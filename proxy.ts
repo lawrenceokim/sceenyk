@@ -13,6 +13,15 @@ const withClerk = clerkMiddleware(async (auth, request) => {
       unauthenticatedUrl: new URL("/?auth=sign-in", request.url).toString(),
     });
   }
+  if (path === "/dashboard/marketplace/profile" || path.startsWith("/dashboard/marketplace/profile/")) {
+    // Set these at runtime too: the deployed PPR RSC response can override
+    // next.config's Cache-Control with the static shell's shared lifetime.
+    const response = NextResponse.next();
+    response.headers.set("Cache-Control", "private, no-cache, no-store, max-age=0, must-revalidate");
+    response.headers.set("CDN-Cache-Control", "no-store");
+    response.headers.set("Vercel-CDN-Cache-Control", "no-store");
+    return response;
+  }
 });
 
 function isPrivatePath(path: string) {

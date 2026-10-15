@@ -1,6 +1,8 @@
 # Progress Tracker
 
-## Completed unit — creator storefront + minimum public-profile management (2026-10-15) — Complete within local production / real hosted acceptance
+## Creator storefront + minimum public-profile management (2026-10-15) — deployed acceptance in progress
+
+**Production acceptance blocker:** the implementation is now deployed and migration027 is applied. Real deployed A/B browser checks pass profile persistence/stable slug, public listing links/filtering, avatar delivery, private-project/media isolation and free adoption/replay. A direct authenticated production RSC response nevertheless returns `Cache-Control: s-maxage=31536000` while containing that session's profile and Clerk identity. HTML retains private/no-store and CDN no-store remains present; A/B responses remain correctly isolated and anonymous requests redirect without private data. No cross-user disclosure was observed. Completion is withheld. A targeted runtime Proxy response-header correction is prepared for the profile route; local validation and a subsequent deployed replay are required. Independent acceptance checks continue. No other feature is authorized.
 
 Implementation now authorized: public `/marketplace/creators/[creatorSlug]`, owner-only `/dashboard/marketplace/profile`, stable slugs, reviewed public identity/bio/avatar, published-only listing grid, public counts and existing card/detail creator links. New migration027 extends existing identities with one private-write public-profile record; it does not modify applied migrations, account authentication, financial rules, private project assets or adoption/accounting behavior. See [implementation architecture](architecture.md#creator-storefront-implementation-2026-10-15-acceptance-in-progress).
 
