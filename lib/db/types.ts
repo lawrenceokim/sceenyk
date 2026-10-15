@@ -63,6 +63,16 @@ export type AssetRow = {
 export type Database = {
   public: {
     Tables: {
+      payout_support_events: {
+        Row: {
+          id: string; attempt_id: string; withdrawal_id: string | null; actor_user_id: string | null;
+          actor_role: "user" | "support" | "admin" | null; source: "support" | "worker" | "webhook";
+          action: "queue_view" | "detail_view" | "check_started" | "check_finished"; submission: boolean;
+          prior_status: string | null; observed_status: string | null; resulting_status: string | null;
+          outcome: string; reason: string; created_at: string;
+        };
+        Insert: never; Update: never; Relationships: [];
+      };
       internal_user_roles: {
         Row: {
           user_id: string;
@@ -238,6 +248,10 @@ export type Database = {
     };
     Views: Record<string, never>;
     Functions: {
+      payout_support_queue: { Args: { p_actor: string; p_query: string; p_status: string; p_page: number }; Returns: unknown };
+      payout_support_detail: { Args: { p_actor: string; p_id: string; p_history_page: number; p_audit_page: number; p_allocation_page: number }; Returns: unknown };
+      payout_support_check_begin: { Args: { p_id: string; p_attempt: string; p_source: "support" | "worker" | "webhook"; p_actor?: string | null; p_submission?: boolean }; Returns: unknown };
+      payout_support_check_finish: { Args: { p_attempt: string; p_actor: string | null; p_batch: string | null; p_item: string | null; p_status: string | null; p_outcome: string; p_reason: string; p_apply: boolean }; Returns: unknown };
       creator_payout_refund_observe: { Args: { p_purchase: string; p_refund: string; p_pending: boolean }; Returns: boolean };
       creator_payout_refund_candidates: { Args: { p_purchase: string }; Returns: unknown };
       creator_payout_account: { Args: { p_creator: string; p_page: number }; Returns: unknown };

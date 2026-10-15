@@ -12,6 +12,8 @@
 
 These rules guide incremental Sceenyk development from the hackathon MVP toward a production application. Apply them within the current task's authorized scope.
 
+**Current authorization (2026-10-15, support unit):** after deployed authorization/privacy and live trusted revocation/restoration pass, implement only internal payout queue/detail and existing-reference status reconciliation with append-only audit. This gate passed before implementation. Support must never create/resend a payout, claim a send, edit financial/reference fields or override provider/accounting truth. Migration026 precedes matching app deployment; keep the unit In Progress until its required acceptance is verified. Do not start another feature.
+
 ## Approach
 
 Use a spec-driven workflow. `/context` is the source of truth for product behavior, design, architecture, coding standards, scope, and implementation progress. Read the relevant documents before implementing a feature; do not invent behavior already defined by the specifications.

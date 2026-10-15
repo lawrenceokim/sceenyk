@@ -3,6 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "test:payout-support": "node scripts/check-payout-support.mjs",
+    "test:payout-support-ui": "node scripts/check-payout-support-ui.mjs",
     "test:authorization": "node scripts/check-internal-authorization.mjs",
     "test:authorization-boundary": "node scripts/check-authorization-boundary.mjs",
     "acceptance:authorization:deployed": "node scripts/acceptance-internal-authorization-deployed.mjs",
@@ -34,7 +36,9 @@
     "test:client-secrets": "node scripts/check-client-secrets.mjs",
     "test:marketplace-payments": "node scripts/check-marketplace-payments.mjs",
     "test:creator-earnings": "node scripts/check-creator-earnings.mjs",
-    "test:marketplace-settlement": "node scripts/check-marketplace-settlement.mjs"
+    "test:marketplace-settlement": "node scripts/check-marketplace-settlement.mjs",
+    "acceptance:payout-support:sandbox": "node scripts/acceptance-payout-support-sandbox.mjs",
+    "acceptance:payout-support:deployed": "node scripts/acceptance-payout-support-deployed.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1148.0",

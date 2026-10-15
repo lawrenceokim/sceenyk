@@ -117,6 +117,6 @@ try {
   check('existing trigger replaces manually supplied stale timestamp', new Date(updated.updated_at).getUTCFullYear() > 2000);
   const source = fs.readFileSync('lib/auth/require-admin-or-support.ts', 'utf8');
   check('helper remains server-only and uncached', source.includes('import "server-only"') && !/\b(?:cache|unstable_cache)\s*\(|["']use cache/.test(source));
-  check('no public role or payout-support routes added', !fs.existsSync('app/admin') && !fs.existsSync('app/api/admin') && !fs.existsSync('app/actions/payout-support.ts'));
+  check('no public role-management or self-promotion routes', !fs.existsSync('app/admin/users') && !fs.existsSync('app/api/admin/roles') && !fs.existsSync('app/api/internal/roles') && !fs.existsSync('app/actions/internal-roles.ts'));
   console.log(JSON.stringify({passed: checks, scope: 'isolated SQL + real helper/profile modules; Clerk/request fixtures'}));
 } finally { await pg.close(); }

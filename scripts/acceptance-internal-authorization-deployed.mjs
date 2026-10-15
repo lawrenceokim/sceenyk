@@ -31,6 +31,16 @@ assert.equal(failed.error,null);
 const ordinary = users.data.find(user=>user.email?.includes('+clerk_test@')&&!roles.data.some(row=>row.user_id===user.id)&&failed.data.some(row=>row.creator_user_id===user.id));
 assert.ok(ordinary,'RESERVED_MISSING_ROLE_CREATOR_WITH_HISTORY_REQUIRED');
 const result = {checkedAt:new Date().toISOString(),origin,checks:[],adminUserId:admin.id,ordinaryUserId:ordinary.id,revocation:'pending trusted operator test'};
+if(process.argv.includes('--use-verified-revocation')){
+  // Test evidence only; this flag is never read by application authorization.
+  // Recover after the operator's original wait expired, with fresh real HTTP
+  // denial/restoration proof for the same actor and deployed origin.
+  const proof=JSON.parse(fs.readFileSync(path.join(os.tmpdir(),'sceenyk-deployed-role-revocation.json'),'utf8'));
+  assert.ok(proof.origin===origin&&proof.adminUserId===admin.id&&proof.storedRole==='user'&&proof.status===403&&proof.safeDenial&&proof.privateNoStore&&proof.restoredStatus===200&&proof.restoredSafeResponse&&proof.restoredPrivateNoStore,'LIVE_REVOCATION_AND_RESTORATION_PROOF_REQUIRED');
+  const age=Date.now()-Date.parse(proof.restoredAt);
+  assert.ok(Number.isFinite(age)&&age>=0&&age<24*60*60*1000,'FRESH_RESTORATION_PROOF_REQUIRED');
+  result.revocation='verified deployed denial/restoration through trusted operator SQL; recovery used fresh real sessions after original wait expired';
+}
 const save = ()=>fs.writeFileSync(artifact,JSON.stringify(result,null,2));
 const record = (name,passed,extra={})=>{result.checks.push({name,passed,...extra});save();console.log(JSON.stringify({check:name,passed,...extra}));};
 const canonical = value=>Array.isArray(value)?value.map(canonical):value&&typeof value==='object'?Object.fromEntries(Object.keys(value).sort().map(key=>[key,canonical(value[key])])):value;

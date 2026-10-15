@@ -7,6 +7,8 @@ import { reconcileMarketplaceFinancials } from "../earnings/server";
 import { payoutEmail, withdrawalInput, withdrawalRowSchema, payoutWebhookEvents, type WithdrawalRow } from "./contract";
 import { creatorWithdrawalAccount } from "./creator-account";
 import { assertPayoutWebhooksReady, PayoutRejected, readPayoutBatch, submitPayout, verifyPayout, type PayoutBatch } from "./paypal";
+import { inspectExistingPayout, payoutObservation } from "./reconciliation";
+import { beginPayoutCheck, commitPayoutCheck } from "./observations";
 
 function checked<T>(r: { data: T | null; error: unknown }): T {
   if (r.error || r.data === null) throw new Error("CREATOR_WITHDRAWAL_UNAVAILABLE");
@@ -31,12 +33,10 @@ export async function requestWithdrawal(input: unknown) {
 async function loadWithdrawal(id: string) {
   return withdrawalRowSchema.parse(checked(await createDatabaseClient().from("creator_withdrawals").select("*").eq("id", z.uuid().parse(id)).maybeSingle()));
 }
-async function observe(w: WithdrawalRow, batch: PayoutBatch, submitted = false) {
-  const item = verifyPayout(w, batch);
-  // Batch SUCCESS does not establish item success. Terminal batch DENIED is
-  // authoritative only after matching our one-item instruction by provider GET.
-  const status = item?.transaction_status ?? (!submitted && batch.batch_header.batch_status === "DENIED" ? "DENIED" : `BATCH_${batch.batch_header.batch_status}`);
-  checked(await createDatabaseClient().rpc("creator_payout_observe", { p_id: w.id, p_batch: batch.batch_header.payout_batch_id, p_item: item?.payout_item_id ?? null, p_status: status }));
+async function observe(w: WithdrawalRow, batch: PayoutBatch, submitted = false, source: "worker" | "webhook" = "worker") {
+  const observation = payoutObservation(w, batch, submitted);
+  const check = await beginPayoutCheck(w.id, source, null, submitted);
+  await commitPayoutCheck(check, observation);
 }
 export function payoutsEnabled() {
   getPayPalConfig();
@@ -49,8 +49,10 @@ export async function processWithdrawal(id: string) {
   if (["paid", "failed"].includes(w.status)) return "terminal";
   checked(await db.rpc("creator_payout_defer", { p_id: w.id }));
   if (w.status === "processing") {
+    const check = await beginPayoutCheck(w.id, "worker");
+    const result = await inspectExistingPayout(check.withdrawal);
+    await commitPayoutCheck(check, result);
     if (!w.paypal_batch_id) return "awaiting_verified_provider_reference";
-    await observe(w, await readPayoutBatch(w.paypal_batch_id));
     return "reconciled";
   }
   // Database claim independently enforces the immutable seven-day boundary.
@@ -89,6 +91,6 @@ export async function handleVerifiedPayoutEvent(input: unknown) {
   if (!result.data) return true; // Another merchant payout is not ours.
   const w = withdrawalRowSchema.parse(result.data);
   const item = verifyPayout(w, batch);
-  if (w.status === "processing" || (w.status === "paid" && item && ["REFUNDED", "RETURNED"].includes(item.transaction_status))) await observe(w, batch);
+  if (w.status === "processing" || (w.status === "paid" && item && ["REFUNDED", "RETURNED"].includes(item.transaction_status))) await observe(w, batch, false, "webhook");
   return true;
 }

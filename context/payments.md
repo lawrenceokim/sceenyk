@@ -2,15 +2,15 @@
 
 ## Authorization/privacy gate before internal payout support (2026-10-15)
 
-Payout-support implementation remains gated on deployed authorization acceptance. A local protected status-only endpoint permits real role acceptance without exposing financial data or a payout control. Creator withdrawal initial/action DTOs now replace internal `failureCode` with safe whitelisted `failureMessage`; the existing private SQL projection/accounting is unchanged. Deployment acceptance of this patch remains pending. No PayPal call, status transition, payout resend or new support reconciliation path is added by the gate correction.
+The deployed authorization/privacy gate passes, including trusted role revocation403 and restoration200. Creator initial/action DTOs use safe failureMessage. Local support implementation now uses private role-checked queue/detail and a single check-only POST; migration026 must be applied before deploying matching application code. No new environment variables, PayPal setup or Inngest function are required.
 
-## Approved support status checks (2026-10-15; not implemented)
+## Internal support status checks (2026-10-15; local implementation, rollout pending)
 
-Authorized internal support may inspect an existing withdrawal and use **Check PayPal Status / Reconcile** to query its persisted payout reference. It must call the shared trusted check-only reconciliation domain described in [architecture.md](architecture.md#approved-payout-support-and-reconciliation-contract-2026-10-15), independently enforce server-side support authority, verify the frozen instruction and append an audit attempt/outcome. Existing Inngest automatic reconciliation remains primary. No support action may create/resend a payout, call the submission branch of `processWithdrawal`, claim a send, edit references, or replace an uncertain instruction. Ordinary creators receive no provider references, internal failure codes, support audit or reconciliation controls.
+Authorized support inspects existing withdrawals and checks only their persisted Sandbox batch. Shared reconciliation.ts verifies frozen sender/item identity, USD amount, destination and stored references. The adapter GET is shared with Inngest and verified webhooks; original automatic submission remains a separate worker branch that support never imports/calls. Missing references produce “Provider reference missing. Manual provider investigation required.” Unknown/mismatched/error results preserve money and append safe audit outcomes. Existing creator_payout_observe provides all permitted financial transitions under its original guards; check outcome persistence is in the same transaction. Queue/detail reads and check starts are also audited. No manual overrides, new payout or resend is exposed.
 
 ### Support provider outcomes
 
-These are rules for future support tooling, preserving the existing provider/accounting boundaries. Status is trusted only after a Sandbox provider GET matches the stored instruction; webhook/redirect text and an operator's assertion are not sufficient.
+These implemented rules preserve the existing provider/accounting boundaries. Status is trusted only after a Sandbox provider GET matches the stored instruction; webhook/redirect text and an operator's assertion are not sufficient.
 
 | Verified provider evidence | Support reconciliation result |
 | --- | --- |
@@ -25,7 +25,7 @@ These are rules for future support tooling, preserving the existing provider/acc
 
 Missing-reference cases await existing verified webhook discovery or merchant investigation; the first support version has no manual reference-attachment control. An unresolved pre-Paid `REFUNDED` observation must not be treated as successful payment or automatic restoration without an approved existing mapping. Pending/eligible rows remain inspectable without invoking submission or changing their seven-day hold. Repeated/manual/automatic observations share the same terminal guards and accounting rules. Every support attempt, including no-op, failure and missing-reference results, gets an append-only audit outcome; audit attempts may repeat while money effects do not.
 
-PayPal remains Sandbox-only. This approval authorizes documentation only: no provider request, webhook/configuration change, support route or new payout is performed by this task. Existing completion/delivery evidence and limitations below remain unchanged.
+PayPal remains Sandbox-only. This unit performs existing-reference GET acceptance only; no new payout, refund, webhook/configuration change or finance override is authorized. Existing completion/delivery evidence below remains preserved.
 
 ## Approved payout refund and processing boundary (2026-10-15)
 

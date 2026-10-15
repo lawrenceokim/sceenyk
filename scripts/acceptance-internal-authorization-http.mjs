@@ -94,7 +94,7 @@ export const POST=probe;
   check('forged bearer session denied', [302,307,401,404].includes(forged.status) && !forged.body.includes('"authorized":true'));
   for (const route of ['/admin/payouts', '/api/admin/payouts']) {
     const r = await fetch(origin + route, {redirect:'manual',signal:AbortSignal.timeout(60000)}); await r.body?.cancel();
-    check('payout-support route remains absent ' + route, r.status === 404);
+    check('signed-out caller cannot inspect payout-support route ' + route, [302,307,401,403,404].includes(r.status));
   }
 } finally {
   let cleanupFailed = false;
