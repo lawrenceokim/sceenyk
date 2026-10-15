@@ -1,5 +1,28 @@
 # Payments and PayPal Sandbox payouts
 
+## Approved support status checks (2026-10-15; not implemented)
+
+Authorized internal support may inspect an existing withdrawal and use **Check PayPal Status / Reconcile** to query its persisted payout reference. It must call the shared trusted check-only reconciliation domain described in [architecture.md](architecture.md#approved-payout-support-and-reconciliation-contract-2026-10-15), independently enforce server-side support authority, verify the frozen instruction and append an audit attempt/outcome. Existing Inngest automatic reconciliation remains primary. No support action may create/resend a payout, call the submission branch of `processWithdrawal`, claim a send, edit references, or replace an uncertain instruction. Ordinary creators receive no provider references, internal failure codes, support audit or reconciliation controls.
+
+### Support provider outcomes
+
+These are rules for future support tooling, preserving the existing provider/accounting boundaries. Status is trusted only after a Sandbox provider GET matches the stored instruction; webhook/redirect text and an operator's assertion are not sufficient.
+
+| Verified provider evidence | Support reconciliation result |
+| --- | --- |
+| Item `SUCCESS`, local processing | Finalize the existing withdrawal Paid through the existing exactly-once accounting transition; do not debit Available again. |
+| Item `SUCCESS`, already Paid | Financial no-op; record the support check without another payout/accounting effect. |
+| Item `FAILED`, `DENIED`, `BLOCKED`, `CANCELED` or `RETURNED` before Paid | Apply existing definitive-failure rules to the processing withdrawal; restore only valid remaining reserved funds exactly once, retaining reversed amounts and original history. |
+| Verified matching batch `DENIED` | Use the existing trusted batch-denial mapping; a mere missing item or failed lookup does not establish denial. |
+| `PENDING`, `ONHOLD`, `UNCLAIMED`, `PROCESSING` or nonterminal batch status | Keep unresolved/processing with funds held; do not resend. Batch `SUCCESS` alone cannot mark Paid. |
+| `RETURNED` or `REFUNDED` after Paid | Preserve Paid and append existing provider-return/review evidence once. No automatic credit, release, new deficit policy or resend; financial resolution remains outside version one. |
+| Already Failed with the same failure evidence | Financial no-op; never restore twice. Conflicting terminal evidence, such as SUCCESS after a local failure/release, requires review without overriding the terminal record. |
+| Unknown/unmapped status, GET error/timeout, missing persisted reference, or instruction mismatch | Preserve financial state, retain safe audit evidence and show an unresolved/review result. Do not infer Paid/Failed, release funds, edit IDs or send another payout. |
+
+Missing-reference cases await existing verified webhook discovery or merchant investigation; the first support version has no manual reference-attachment control. An unresolved pre-Paid `REFUNDED` observation must not be treated as successful payment or automatic restoration without an approved existing mapping. Pending/eligible rows remain inspectable without invoking submission or changing their seven-day hold. Repeated/manual/automatic observations share the same terminal guards and accounting rules. Every support attempt, including no-op, failure and missing-reference results, gets an append-only audit outcome; audit attempts may repeat while money effects do not.
+
+PayPal remains Sandbox-only. This approval authorizes documentation only: no provider request, webhook/configuration change, support route or new payout is performed by this task. Existing completion/delivery evidence and limitations below remain unchanged.
+
 ## Approved payout refund and processing boundary (2026-10-15)
 
 Withdrawals use explicit sale/earning-lot allocations and a frozen private PayPal email. Refunds follow the affected lot, FIFO across split reservations. Before irreversible submission, reduce the payout without restarting its original seven-day hold; below $5, fail/cancel and release only remaining valid funds once, with no release at zero. Preserve immutable original amounts and adjustment history. Recheck eligibility immediately before dispatch.

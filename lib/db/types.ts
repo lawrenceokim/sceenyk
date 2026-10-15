@@ -63,6 +63,17 @@ export type AssetRow = {
 export type Database = {
   public: {
     Tables: {
+      internal_user_roles: {
+        Row: {
+          user_id: string;
+          role: "user" | "support" | "admin";
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
       creator_withdrawals: { Row: import("@/lib/marketplace/withdrawals/contract").WithdrawalRow; Insert: never; Update: never; Relationships: [] };
       creator_withdrawal_allocations: { Row: { id: string; withdrawal_id: string; purchase_id: string; amount_minor: number; remaining_minor: number }; Insert: never; Update: never; Relationships: [] };
       caption_tracks: { Row: import("@/lib/captions/contract").CaptionRow; Insert: never; Update: never; Relationships: [] };

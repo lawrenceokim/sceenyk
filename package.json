@@ -3,6 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "test:authorization": "node scripts/check-internal-authorization.mjs",
+    "acceptance:authorization": "node scripts/acceptance-internal-authorization.mjs",
+    "acceptance:authorization:http": "node scripts/acceptance-internal-authorization-http.mjs",
     "test:withdrawals": "node scripts/check-creator-withdrawals.mjs && node scripts/check-paypal-payouts.mjs",
     "test:marketplace": "node scripts/check-marketplace.mjs",
     "test:captions": "node scripts/check-captions.mjs",
