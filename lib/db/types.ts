@@ -248,6 +248,8 @@ export type Database = {
     };
     Views: Record<string, never>;
     Functions: {
+      creation_preferences_read: { Args: { p_owner: string }; Returns: import("@/lib/settings/contract").CreationPreferences | null };
+      creation_preferences_save: { Args: { p_owner: string; p_aspect_ratio: string; p_category: string }; Returns: import("@/lib/settings/contract").CreationPreferences };
       creator_profile_listing_identities: { Args: { p_ids: string[] }; Returns: unknown };
       creator_profile_save: { Args: { p_owner: string; p_name: string; p_bio: string; p_slug: string | null }; Returns: unknown };
       creator_profile_owned: { Args: { p_owner: string }; Returns: unknown };

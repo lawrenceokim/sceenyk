@@ -66,12 +66,12 @@ try {
     for(const url of urls)bundleUrls.add(url);
     await browser.discover();
   };
-  const navigate=async route=>{const target=new URL(route,origin);if(target.pathname!=='/dashboard/marketplace/profile')markDiagnosticPhase('other surface');await call('Page.navigate',{url:target.href});await wait(`document.readyState!=='loading'&&location.pathname===${JSON.stringify(target.pathname)}&&location.search===${JSON.stringify(target.search)}`);};
+  const navigate=async route=>{const target=new URL(route,origin);if(target.pathname!=='/dashboard/settings/creator-profile')markDiagnosticPhase('other surface');await call('Page.navigate',{url:target.href});await wait(`document.readyState!=='loading'&&location.pathname===${JSON.stringify(target.pathname)}&&location.search===${JSON.stringify(target.search)}`);};
   const login=async who=>{markDiagnosticPhase('sign in '+who);await signIn(who);activeUser=who;sessions.add(await evaluate('window.Clerk.session.id'));};
   const fill=async(name,value)=>{assert.ok(await evaluate(`(()=>{const e=document.querySelector('[name="${name}"]');if(!e)return false;Object.getOwnPropertyDescriptor(e.tagName==='TEXTAREA'?HTMLTextAreaElement.prototype:HTMLInputElement.prototype,'value').set.call(e,${JSON.stringify(value)});e.dispatchEvent(new Event('input',{bubbles:true}));return true;})()`),'FIELD_'+name);};
   const click=async text=>{assert.ok(await evaluate(`(()=>{const b=[...document.querySelectorAll('button')].find(b=>b.textContent.trim()===${JSON.stringify(text)});if(!b||b.disabled)return false;b.click();return true;})()`),'BUTTON_'+text);};
-  const toggleTheme=()=>evaluate(`document.querySelector('button[aria-label="Toggle light and dark theme"]').click()`);
-  const ownerProfile=async()=>{markDiagnosticPhase('profile '+activeUser+' visit '+(++profileVisits));await navigate('/dashboard/marketplace/profile');await wait('!!document.querySelector("input[name=displayName]")');await discover();};
+  const toggleTheme=()=>evaluate(`localStorage.setItem('sceenyk-theme',document.documentElement.classList.contains('dark')?'light':'dark');window.dispatchEvent(new Event('sceenyk-theme-change'))`);
+  const ownerProfile=async()=>{markDiagnosticPhase('profile '+activeUser+' visit '+(++profileVisits));await navigate('/dashboard/settings/creator-profile');await wait('!!document.querySelector("input[name=displayName]")');await discover();};
   const publicPrivacy=async slug=>{
     await navigate('/marketplace/creators/'+slug);await wait('!!document.querySelector("#creator-items")');
     await wait(`!!document.querySelector('img[width="96"][src^="/api/marketplace/creators/"]')?.naturalWidth`);
@@ -114,12 +114,12 @@ try {
   check('owned generation recovery unchanged',generation.ok&&generation.value?.id===latest.data[0]?.id&&generation.value?.status===latest.data[0]?.status);
   const captionQuery=new URLSearchParams({projectId:source.id,jobId:'aa88b9ac-9542-4138-93b6-e5861a96e1df'}).toString();
   check('owned caption track and style unchanged',await evaluate(`(async()=>{const r=await fetch('/api/captions?'+${JSON.stringify(captionQuery)});const body=await r.json();return r.status===200&&body.track?.status==='ready'&&body.style?.schema_version===1;})()`));
-  await navigate('/dashboard/credits');await wait('document.body.innerText.includes("Buy credits")');await discover();
+  await navigate('/dashboard/settings/credits');await wait('document.body.innerText.includes("Buy credits")');await discover();
   const wallet=await invoke('creditWalletAction'),checkout=await invoke('creditCheckoutAction'),account=await one('generation_accounts','owner_user_id',a.id);
   check('AI credit wallet retains authoritative balances',wallet.ok&&wallet.data.available===account.credit_available&&wallet.data.reserved===account.credit_reserved);
   check('PayPal Sandbox credit options unchanged',checkout.ok&&checkout.data.configured&&checkout.data.packs.length===3);
   check('verified credit purchase history remains available',wallet.ok&&wallet.data.purchases.some(p=>p.status==='completed'));
-  await navigate('/dashboard/marketplace/earnings');await wait('document.body.innerText.includes("Lifetime gross sales")');await discover();
+  await navigate('/dashboard/settings/earnings');await wait('document.body.innerText.includes("Lifetime gross sales")');await discover();
   const earnings=await invoke('creatorEarningsAction',1),withdrawals=await invoke('withdrawalAccountAction',1);
   check('creator earnings and withdrawal history remain owner-only readable',earnings.ok&&earnings.data.clerkUserId===a.clerk_user_id&&withdrawals.ok&&withdrawals.data.clerkUserId===a.clerk_user_id);
   const unsignedObject=new URL(ownedMedia.value.url);unsignedObject.search='';const raw=await fetch(unsignedObject,{signal:AbortSignal.timeout(15000)});await raw.body?.cancel();check('private R2 rejects unsigned access',[400,401,403].includes(raw.status));
@@ -191,7 +191,7 @@ try {
   // A resumed browser tail may not have loaded the earlier private financial
   // and generation chunks. Include their real server-rendered script URLs.
   const urls=new Set(state.clientBundleUrls);
-  const routes=['/dashboard/marketplace/profile','/dashboard/credits','/dashboard/marketplace/earnings','/dashboard/marketplace/purchases','/projects/'+source.id];
+  const routes=['/dashboard/settings/creator-profile','/dashboard/settings/credits','/dashboard/settings/earnings','/dashboard/marketplace/purchases','/projects/'+source.id];
   const published=await db.from('marketplace_listings').select('id').eq('status','published').limit(1);assert.ok(!published.error);
   if(published.data.length)routes.push('/marketplace/'+published.data[0].id);
   for(const route of routes){
@@ -213,9 +213,9 @@ try {
  token=(await clerk.sessions.getToken(session.id,undefined,60)).jwt;
  for(const rsc of [false,true]){
   const headers={Authorization:'Bearer '+token,...(rsc?{RSC:'1'}:{})};
-  let response=await fetch(origin+'/dashboard/marketplace/profile',{headers,redirect:'manual',signal:AbortSignal.timeout(60000)});
+  let response=await fetch(origin+'/dashboard/settings/creator-profile',{headers,redirect:'manual',signal:AbortSignal.timeout(60000)});
   if(rsc&&[307,308].includes(response.status)){
-    const target=new URL(response.headers.get('location'),origin);assert.equal(target.origin,origin);assert.equal(target.pathname,'/dashboard/marketplace/profile');
+    const target=new URL(response.headers.get('location'),origin);assert.equal(target.origin,origin);assert.equal(target.pathname,'/dashboard/settings/creator-profile');
     cacheCheck('private RSC normalization redirect is uncached',response.headers.get('cache-control')?.includes('no-store')&&response.headers.get('cdn-cache-control')==='no-store');
     await response.body?.cancel();response=await fetch(target,{headers,redirect:'manual',signal:AbortSignal.timeout(60000)});
   }

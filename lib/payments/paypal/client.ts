@@ -52,7 +52,7 @@ export function purchaseAmount(purchase: Pick<PayPalPurchase, "amount_minor">) {
 }
 
 export async function createPayPalOrder(purchase: PurchaseRow): Promise<PayPalOrder> {
-  return createOrder(purchase, purchase.pack_name, "/dashboard/credits");
+  return createOrder(purchase, purchase.pack_name, "/dashboard/settings/credits");
 }
 
 export async function createMarketplacePayPalOrder(purchase: MarketplacePurchaseRow): Promise<PayPalOrder> {

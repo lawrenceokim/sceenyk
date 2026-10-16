@@ -31,8 +31,8 @@ const destinations = [
   { label: "Projects", icon: FolderOpen, href: "/dashboard#projects" },
   { label: "Templates", icon: Layers3, href: "/dashboard#templates" },
   { label: "Marketplace", icon: Store, href: "/marketplace" },
-  { label: "Credits", icon: Coins, href: "/dashboard/credits" },
-  { label: "Settings", icon: Settings2 },
+  { label: "Credits", icon: Coins, href: "/dashboard/settings/credits" },
+  { label: "Settings", icon: Settings2, href: "/dashboard/settings/account" },
 ] as const;
 
 function DashboardNavigation({ onNavigate }: { onNavigate?: () => void }) {
@@ -43,19 +43,7 @@ function DashboardNavigation({ onNavigate }: { onNavigate?: () => void }) {
         const Icon = item.icon;
         const classes =
           "flex min-h-11 items-center gap-3 rounded-lg px-3 py-2.5 text-body-sm font-medium";
-        if (!("href" in item))
-          return (
-            <span
-              key={item.label}
-              aria-disabled="true"
-              className={cn(classes, "text-muted-foreground")}
-            >
-              <Icon className="size-5 shrink-0" aria-hidden="true" />
-              {item.label}
-              <span className="ml-auto text-caption font-normal">Soon</span>
-            </span>
-          );
-        const active = item.href === pathname;
+        const active = item.href === pathname || (item.label === "Settings" && pathname.startsWith("/dashboard/settings/"));
         return (
           <Link
             key={item.label}

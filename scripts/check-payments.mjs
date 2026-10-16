@@ -57,7 +57,7 @@ const fetchFixture = async (url, init) => {
   if (String(url).endsWith('/v2/checkout/orders')) {
     const body = JSON.parse(init.body), key = init.headers['PayPal-Request-ID'];
     assert.equal(body.payment_source.paypal.experience_context.shipping_preference, 'NO_SHIPPING');
-    assert.equal(body.payment_source.paypal.experience_context.return_url, 'http://localhost:3000/dashboard/credits?checkout=return');
+    assert.equal(body.payment_source.paypal.experience_context.return_url, 'http://localhost:3000/dashboard/settings/credits?checkout=return');
     let id = requestOrders.get(key);
     if (!id) { id = `ORDER${String(++creates).padStart(12, '0')}`; requestOrders.set(key, id);
       orders.set(id, { id, intent: 'CAPTURE', status: 'PAYER_ACTION_REQUIRED', purchase_units: body.purchase_units,

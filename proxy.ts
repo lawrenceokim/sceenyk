@@ -13,7 +13,7 @@ const withClerk = clerkMiddleware(async (auth, request) => {
       unauthenticatedUrl: new URL("/?auth=sign-in", request.url).toString(),
     });
   }
-  if (isCreatorProfileResponsePath(path)) {
+  if (isCreatorProfileResponsePath(path) || path === "/dashboard/settings" || path.startsWith("/dashboard/settings/") || path.startsWith("/dashboard/settings.") || path === "/settings" || path.startsWith("/settings.")) {
     // Deployment routing may present the generated RSC/segment pathname.
     // Keep its response policy identical to the authenticated HTML route.
     const response = NextResponse.next();
@@ -33,6 +33,7 @@ function isCreatorProfileResponsePath(path: string) {
 
 function isPrivatePath(path: string) {
   return (
+    path === "/settings" || path.startsWith("/settings.") ||
     path === "/dashboard" ||
     path.startsWith("/dashboard/") ||
     path === "/projects" ||

@@ -1,5 +1,18 @@
 # Clerk development authentication
 
+## Settings account/security integration (2026-10-16)
+
+Account and Privacy use supported Clerk account/session modals plus sign out. Each server read verifies Clerk identity. Before exposing the modal, prepareSettingsAccount disables the current account's Clerk deleteSelfEnabled flag through the supported server SDK, and fails closed if enforcement is unavailable; the client reloads and verifies that flag before opening. This is a protective per-account flag change, not account deletion or a completed retention policy. Existing public UserButton controls remain; account identity never overwrites reviewed creator-profile fields. No custom password/email/session implementation or new role assignment exists.
+
+
+## Approved Settings account integration (2026-10-16)
+
+**Documentation only; Settings implementation Not Started.** Private Settings → Account owns account name/avatar, email/identity and supported Clerk-managed account/security/session/sign-out actions. Settings → Privacy & Security explains visibility and reuses supported Clerk security/session controls, including signing out other sessions only where supported/configured. Verify actual installed/provider capabilities before offering an action; do not invent a second password, session or authentication system. Existing centered modals, provider, server identity/ownership and hydration-safe readiness remain the foundation.
+
+Clerk account name/avatar are distinct from reviewed public Marketplace creator fields edited in Settings → Creator Profile. Account updates must not automatically publish email/private identity or replace the creator profile. All Settings reads/actions require independent verified identity/owner enforcement and private/no-store HTML/RSC; public storefronts retain only their existing approved projection. Internal roles/support permissions and provider/financial internals stay excluded.
+
+Data & Account owns the future protected deletion Danger Zone. Reusing Clerk controls does not authorize a deletion shortcut before project/listing ownership, earnings, pending payouts and retained financial evidence are covered by a separate deletion policy. No deletion/session implementation or provider setting changes occur here. See [Settings contract](overview.md#approved-settings-experience-2026-10-16).
+
 Implementation and development verification completed on 2026-10-09. SDK: `@clerk/nextjs` 7.9.13 and `@clerk/ui` 1.39.1. Clerk's Backend API confirmed a development instance; real modal sign-up/email verification and password sign-in, signed-in navigation/UserButton/account profile, dashboard access/refresh/sign-out/protection, mobile and both themes passed. Supabase identity setup is a separate unit; see [database.md](database.md).
 
 ## Local setup

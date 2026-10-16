@@ -1,5 +1,13 @@
 # Generation accounting contract
 
+## Approved Settings accounting presentation (2026-10-16)
+
+**Documentation only; relocation Not Started.** Settings → Credits & Billing becomes the main private view of authoritative paid AI-credit balance, reserved credits where useful, remaining two-generation lifetime free allowance and existing safe credit activity/purchase history. Remove persistent/general paid-credit balances from normal dashboard/header/navbar/landing chrome. Retain contextual quote cost, required/available credits, insufficient-credit warnings, top-up and payment-completion information. Moving the main view changes no server admission, reservation/consumption/restoration, purchase grant, credit expiry or ledger rule.
+
+Settings → Earnings & Payouts reuses the separate creator money account: Available Earnings, Pending Payout, Lifetime Earnings, useful reversals/adjustments, private destination, withdrawal and history. Preserve 10%/90%, USD cents, minimum $5, immediate atomic reservation, seven days from request, lot/FIFO reversals, valid-fund release, deficits and provider-verified Paid. AI credits are not withdrawable creator money. Mandatory financial/security notices cannot be disabled by future notification preferences.
+
+Future Data & Account deletion/export must consider project/listing ownership, earning records and pending payouts before defining a safe policy. Do not delete immutable financial evidence or bypass reservations through Clerk/account deletion. No deletion, export, financial-policy change or new schema is implemented by this contract. See [Settings scope](overview.md#approved-settings-experience-2026-10-16).
+
 ## Internal payout-support audit extension (2026-10-15; deployed scoped acceptance verified)
 
 New migration026 adds append-only support/check evidence in `payout_support_events`, separate from immutable creator money events. Verified support attempts precede provider reads; their outcome and any allowed existing `creator_payout_observe` transition commit in the same transaction. Failed audit persistence must roll back the financial transition. Concurrent support/worker/webhook observations retain the existing creator/withdrawal locks and unique terminal money-event guards. Additional audit attempts never create additional money effects. Trusted role revocation denies subsequent support reads/commits; in-flight denied checks may append only an authorization-denied outcome.

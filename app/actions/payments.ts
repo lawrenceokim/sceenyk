@@ -24,7 +24,7 @@ export async function completeCreditOrderAction(input: unknown) {
   return paymentAction(async () => {
     const result = await completeCreditOrder(input);
     revalidatePath("/dashboard");
-    revalidatePath("/dashboard/credits");
+    revalidatePath("/dashboard/settings/credits");
     return result;
   });
 }
@@ -50,7 +50,7 @@ export async function reconcileCreditOrdersAction() {
   return paymentAction(async () => {
     const result = await reconcileOwnedCreditOrders();
     revalidatePath("/dashboard");
-    revalidatePath("/dashboard/credits");
+    revalidatePath("/dashboard/settings/credits");
     return result;
   });
 }

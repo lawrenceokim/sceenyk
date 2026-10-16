@@ -36,6 +36,8 @@ Queued rows remain preserved if the workflow service is unavailable. Recovery re
 
 ## Environment and exact local commands
 
+**Current operating constraint (2026-10-16):** Inngest Cloud is temporarily paused to preserve the monthly execution allowance. Prefer the local Dev Server below for development and workflow testing. Do not trigger hosted Inngest acceptance runs without explicit user authorization. Any outstanding feature checks requiring real Cloud execution remain **Pending hosted acceptance** until functions are re-enabled near submission and those runs are authorized. Earlier Cloud results in this document are historical verified evidence, not a statement that Cloud functions are currently active. Keep production configuration unchanged.
+
 All workflow variables are server-only; never use `NEXT_PUBLIC_`:
 
 - Cloud: `INNGEST_EVENT_KEY`, `INNGEST_SIGNING_KEY`.

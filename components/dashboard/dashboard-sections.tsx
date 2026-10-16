@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { CreditBalance } from "@/components/payments/credit-balance";
 import {
   ArrowUpRight,
   Clapperboard,
@@ -72,10 +71,10 @@ export function DashboardOverview({ projectCount }: { projectCount: number }) {
           At a glance
         </h2>
         <p className="text-caption text-muted-foreground">
-          Saved projects, generation requests and paid credits
+          Saved projects and generation requests
         </p>
       </div>
-      <dl className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <dl className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         <DashboardStatCard
           icon={<FolderOpen className="size-5" />}
           label="Projects"
@@ -87,12 +86,6 @@ export function DashboardOverview({ projectCount }: { projectCount: number }) {
           label="Generations"
           value="—"
           description="Latest job status appears on each project"
-        />
-        <DashboardStatCard
-          icon={<Coins className="size-5" />}
-          label="Available credits"
-          value={<CreditBalance />}
-          description="Paid balance · Sandbox purchases available"
         />
         <DashboardStatCard
           icon={<Layers3 className="size-5" />}
@@ -306,7 +299,7 @@ export function FreeAllowanceCard() {
         </div>
       </div>
       <div className="mt-5"><FreeAllowanceSummary /></div>
-      <Button className="mt-4" nativeButton={false} render={<Link href="/dashboard/credits" />}>Buy credits</Button>
+      <Button className="mt-4" nativeButton={false} render={<Link href="/dashboard/settings/credits" />}>Buy credits</Button>
     </section>
   );
 }

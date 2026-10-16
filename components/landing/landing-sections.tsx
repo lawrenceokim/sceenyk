@@ -447,7 +447,7 @@ export function PricingPreview() {
           ]}
           featured
         >
-          <Button nativeButton={false} render={<Link href="/dashboard/credits" />} className="w-full">
+          <Button nativeButton={false} render={<Link href="/dashboard/settings/credits" />} className="w-full">
             Buy credits <ArrowRight className="size-4" aria-hidden="true" />
           </Button>
         </PricingCard>

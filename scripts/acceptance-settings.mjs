@@ -1,0 +1,161 @@
+// Built local app + real reserved Clerk identities/hosted Supabase.
+// Never submits a generation, payment, withdrawal, payout or Inngest event.
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { createHash } from 'node:crypto';
+import nextEnv from '@next/env';
+import { createClerkClient } from '@clerk/backend';
+import { typescriptLoader } from './lib/load-typescript.mjs';
+import { deployedBrowser } from './lib/deployed-browser.mjs';
+
+nextEnv.loadEnvConfig(process.cwd(), false, { info() {}, error() {} });
+const origin = 'http://localhost:3017';
+const financialOnly = process.argv.includes('--financial-only');
+const db = typescriptLoader()('lib/db/server.ts').createDatabaseClient();
+const users = await db.from('app_users').select('id,clerk_user_id,email').order('id').limit(100);
+assert.ok(!users.error);
+const roles = await db.from('internal_user_roles').select('user_id,role'); assert.ok(!roles.error);
+const identities = users.data.filter(u => u.email?.includes('+clerk_test@') && !roles.data.some(r => r.user_id === u.id && r.role !== 'user')).slice(0, 2);
+assert.equal(identities.length, 2, 'RESERVED_IDENTITIES_REQUIRED');
+const [a, b] = identities;
+for (const u of identities) {
+  const result = await db.rpc('creation_preferences_read', { p_owner: u.id });
+  assert.ok(!result.error, 'APPLY_MIGRATION_028_FIRST');
+}
+const clerk = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY, telemetry: { disabled: true } });
+assert.equal((await clerk.instance.get()).environmentType, 'development');
+const sessions = new Set(), checks = [], screenshots = [];
+const evidenceFile = path.join(os.tmpdir(), financialOnly ? 'sceenyk-settings-financial-acceptance.json' : 'sceenyk-settings-acceptance.json');
+const save = () => fs.writeFileSync(evidenceFile, JSON.stringify({ checks, screenshots, hostedInngestTriggered: false }, null, 2));
+const check = (name, value) => { assert.ok(value, name); checks.push(name); save(); console.log(JSON.stringify({ passed: name })); };
+const sections = ['account', 'creator-profile', 'credits', 'earnings', 'creation', 'notifications', 'appearance', 'privacy', 'data'];
+async function protectedHash() {
+  const records = [];
+  for (const table of ['generation_accounts','credit_ledger','credit_purchases','creator_withdrawals','creator_earnings_ledger','generation_jobs','internal_user_roles']) {
+    const result = await db.from(table).select('*'); assert.ok(!result.error, 'PROTECTED_READ');
+    records.push([table, result.data.map(row => JSON.stringify(row)).sort()]);
+  }
+  return createHash('sha256').update(JSON.stringify(records)).digest('hex');
+}
+const before = await protectedHash();
+try {
+  for (let i = 0; !financialOnly && i < 3; i++) {
+    const identity = identities[i];
+    const session = identity ? await clerk.sessions.createSession({ userId: identity.clerk_user_id }) : null;
+    if (session) sessions.add(session.id);
+    for (const section of sections) for (const rsc of [false, true]) {
+      const token = session ? (await clerk.sessions.getToken(session.id, undefined, 60)).jwt : null;
+      const headers = { ...(token ? { Authorization: 'Bearer ' + token } : {}), ...(rsc ? { RSC: '1' } : {}) };
+      let url = new URL('/dashboard/settings/' + section, origin), response;
+      for (let retry = 0; retry < 4; retry++) {
+        response = await fetch(url, { headers, redirect: 'manual', signal: AbortSignal.timeout(60000) });
+        if (![307,308].includes(response.status)) break;
+        const target = new URL(response.headers.get('location'), url);
+        if (target.origin !== origin || target.pathname !== url.pathname) break;
+        assert.ok(response.headers.get('cache-control')?.includes('no-store'), 'PRIVATE_NORMALIZATION_REDIRECT');
+        await response.body?.cancel(); url = target;
+      }
+      const body = await response.text();
+      check((identity ? i === 0 ? 'A' : 'B' : 'anonymous') + ' private ' + section + (rsc ? ' RSC' : ' HTML'),
+        (identity ? response.status === 200 && !body.includes(identities[1-i].clerk_user_id) : [302,307,308,401,403].includes(response.status) && identities.every(u => !body.includes(u.clerk_user_id))) &&
+        response.headers.get('cache-control')?.includes('no-store') && !/s-maxage/.test(response.headers.get('cache-control') ?? ''));
+    }
+  }
+  await deployedBrowser(origin, { A: a.clerk_user_id, B: b.clerk_user_id }, async browser => {
+    const { call, evaluate, wait, navigate, signIn, discover, invoke, errors } = browser;
+    await signIn('A'); sessions.add(await evaluate('window.Clerk.session.id'));
+    if (financialOnly) {
+      const balance = await db.from('generation_accounts').select('*').eq('owner_user_id', a.id).single(); assert.ok(!balance.error);
+      await navigate('/dashboard/settings/credits');
+      await wait('!!document.querySelector("#purchases-heading")&&!document.body.innerText.includes("Loading saved purchases…")&&!document.body.innerText.includes("Loading free allowance…")');
+      check('real paid balance matches server', await evaluate(`Array.from(document.querySelector('section[aria-label="Paid credit balance"]').querySelectorAll('p')).some(p=>p.textContent===${JSON.stringify(balance.data.credit_available.toLocaleString())})`));
+      const free = balance.data.free_total - balance.data.free_reserved - balance.data.free_consumed;
+      check('real remaining free generations match server', await evaluate(`document.body.innerText.includes(${JSON.stringify(free === 0 ? 'No free generations remaining' : `${free} free generation${free === 1 ? '' : 's'} remaining`)})`));
+      check('real purchase and ledger histories load', await evaluate('!document.body.innerText.includes("Saved purchases are unavailable")&&!document.body.innerText.includes("Credit activity is unavailable")'));
+      await discover(); const wallet = await invoke('creditWalletAction');
+      check('real wallet stays owned and authoritative', wallet.ok && wallet.data.available === balance.data.credit_available && wallet.data.reserved === balance.data.credit_reserved);
+      for (const [width,dark] of [[1440,false],[390,true]]) {
+        await call('Emulation.setDeviceMetricsOverride', { width, height: 1000, deviceScaleFactor: 1, mobile: width < 600 });
+        await evaluate(`localStorage.setItem('sceenyk-theme',${JSON.stringify(dark ? 'dark' : 'light')});window.dispatchEvent(new Event('sceenyk-theme-change'))`);
+        check('loaded real credits fit ' + width, await evaluate('document.documentElement.scrollWidth<=innerWidth+1'));
+        const shot = await call('Page.captureScreenshot', { format: 'png', fromSurface: true });
+        const file = path.join(os.tmpdir(), 'sceenyk-settings-loaded-credits-' + width + '.png'); fs.writeFileSync(file, Buffer.from(shot.data,'base64')); screenshots.push(file);
+      }
+      await navigate('/dashboard/settings/earnings'); await wait('!!document.querySelector("#payout-email")'); await discover();
+      const withdrawal = await invoke('withdrawalAccountAction', 1); assert.ok(withdrawal.ok && withdrawal.data.clerkUserId === a.clerk_user_id);
+      check('real payout destination matches private owned state', await evaluate(`document.querySelector('#payout-email').value===${JSON.stringify(withdrawal.data.account.email ?? '')}`));
+      const usd = value => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value / 100);
+      check('real earnings and pending payout match server', await evaluate(`Array.from(document.querySelectorAll('section[aria-label="Creator withdrawals"] .sceenyk-card')).some(c=>c.innerText.includes('Available Earnings')&&c.innerText.includes(${JSON.stringify(usd(withdrawal.data.account.available))}))&&Array.from(document.querySelectorAll('section[aria-label="Creator withdrawals"] .sceenyk-card')).some(c=>c.innerText.includes('Pending Payout')&&c.innerText.includes(${JSON.stringify(usd(withdrawal.data.account.pending))}))`));
+      check('financial browser has no exceptions', errors.length === 0);
+      await browser.close(); return;
+    }
+    await navigate('/dashboard/settings/account'); await wait('document.body.innerText.includes("Manage account")');
+    check('real account name/email load', await evaluate('document.body.innerText.includes(window.Clerk.user.primaryEmailAddress.emailAddress)'));
+    check('Clerk self deletion disabled server-side', !(await clerk.users.getUser(a.clerk_user_id)).deleteSelfEnabled);
+    await evaluate('Array.from(document.querySelectorAll("button")).find(b=>b.innerText==="Manage account").click()');
+    await wait('!!document.querySelector(".cl-modalContent")');
+    check('Clerk account modal opens without delete shortcut', await evaluate('!document.querySelector(".cl-modalContent").innerText.includes("Delete account")'));
+    await navigate('/dashboard/settings/appearance'); await wait('!!document.querySelector("input[name=appearance]")&&!document.querySelector("input[name=appearance]").matches(":disabled")');
+    await evaluate('document.querySelector("input[value=dark]").click()');
+    await wait('localStorage.getItem("sceenyk-theme")==="dark"&&document.documentElement.classList.contains("dark")');
+    await navigate('/dashboard/settings/appearance'); await wait('document.querySelector("input[value=dark]")?.checked===true');
+    check('real theme persists across reload', await evaluate('document.documentElement.classList.contains("dark")'));
+    await call('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-color-scheme', value: 'light' }] });
+    await evaluate('document.querySelector("input[value=system]").click()'); await wait('!document.documentElement.classList.contains("dark")');
+    check('real system theme selection applies', await evaluate('localStorage.getItem("sceenyk-theme")===null'));
+    for (const section of sections) {
+      await navigate('/dashboard/settings/' + section); await wait('!!document.querySelector("#settings-section")');
+      if (section === 'credits') await wait('!!document.querySelector("#purchases-heading")&&!document.body.innerText.includes("Loading saved purchases…")&&!document.body.innerText.includes("Loading free allowance…")');
+      for (const width of [1440,768,390,320]) for (const dark of [false,true]) {
+        await call('Emulation.setDeviceMetricsOverride', { width, height: 1000, deviceScaleFactor: 1, mobile: width < 600 });
+        await evaluate(`localStorage.setItem('sceenyk-theme',${JSON.stringify(dark ? 'dark' : 'light')});window.dispatchEvent(new Event('sceenyk-theme-change'))`);
+        check('real ' + section + ' fits ' + width + ' ' + (dark ? 'dark' : 'light'), await evaluate('document.documentElement.scrollWidth<=innerWidth+1'));
+      }
+      if (['appearance','credits'].includes(section)) {
+        const shot = await call('Page.captureScreenshot', { format: 'png', fromSurface: true });
+        const file = path.join(os.tmpdir(), 'sceenyk-settings-real-' + section + '.png'); fs.writeFileSync(file, Buffer.from(shot.data, 'base64')); screenshots.push(file);
+      }
+    }
+    await evaluate('document.querySelector("#settings-section").value="/dashboard/settings/creation";document.querySelector("#settings-section").dispatchEvent(new Event("change",{bubbles:true}))');
+    await wait('location.pathname==="/dashboard/settings/creation"&&!!document.querySelector("#default-aspect")');
+    check('real mobile section picker navigates', await evaluate('document.querySelector("#settings-section").value==="/dashboard/settings/creation"'));
+    await navigate('/dashboard/settings/creation'); await wait('!!document.querySelector("#default-aspect")'); await discover();
+    const saved = await invoke('saveCreationPreferencesAction', { aspectRatio: '9:16', category: 'social' });
+    check('real preferences save', saved.ok && saved.data.clerkUserId === a.clerk_user_id);
+    await navigate('/dashboard/settings/creation'); await wait('document.querySelector("#default-aspect")?.value==="9:16"');
+    check('real preferences reload', await evaluate('document.querySelector("#default-category").value==="social"'));
+    await navigate('/create'); await wait('!!document.querySelector("textarea")');
+    check('real new project initializes defaults', await evaluate('Array.from(document.querySelectorAll("select")).some(s=>s.value==="9:16")&&document.querySelector("input[value=social]").checked'));
+    const project = await db.from('projects').select('id,aspect_ratio,category').eq('owner_user_id', a.id).order('id').limit(1); assert.ok(!project.error && project.data.length);
+    await navigate('/projects/' + project.data[0].id); await wait('!!document.querySelector("textarea")');
+    check('real existing project retains stored settings', await evaluate(`Array.from(document.querySelectorAll('select')).some(s=>s.value===${JSON.stringify(project.data[0].aspect_ratio)})&&document.querySelector('input[value=${project.data[0].category}]').checked`));
+    await call('Page.navigate', { url: origin + '/dashboard/credits?checkout=cancel&token=invalid-bookmark&PayerID=fixture' });
+    await wait('location.pathname==="/dashboard/settings/credits"');
+    check('legacy checkout bookmark preserves query', await evaluate('location.search.includes("checkout=cancel")&&location.search.includes("token=invalid-bookmark")'));
+    await call('Page.navigate', { url: origin + '/dashboard/marketplace/earnings?page=2' }); await wait('location.pathname==="/dashboard/settings/earnings"&&location.search==="?page=2"'); check('legacy earnings preserves page', true);
+    await call('Page.navigate', { url: origin + '/dashboard/marketplace/profile' }); await wait('location.pathname==="/dashboard/settings/creator-profile"'); check('legacy profile forwards to single editor', true);
+    await call('Page.navigate', { url: origin + '/settings' }); await wait('location.pathname==="/dashboard/settings/account"'); check('settings entry opens Account', true);
+    await signIn('B'); sessions.add(await evaluate('window.Clerk.session.id'));
+    await navigate('/dashboard/settings/creation'); await wait('!!document.querySelector("#default-aspect")'); await discover();
+    const rejected = await invoke('saveCreationPreferencesAction', { aspectRatio: '1:1', category: 'gaming', ownerUserId: a.id });
+    check('real B cannot forge A preference owner', !rejected.ok);
+    const own = await invoke('saveCreationPreferencesAction', { aspectRatio: '1:1', category: 'gaming' });
+    check('real B saves only B preferences', own.ok && own.data.clerkUserId === b.clerk_user_id);
+    const ownerRead = await db.rpc('creation_preferences_read', { p_owner: a.id });
+    check('real A preferences survive B saves', !ownerRead.error && ownerRead.data.aspectRatio === '9:16' && ownerRead.data.category === 'social');
+    check('real navigation has no navbar theme toggle or persistent balance', await evaluate('!document.querySelector("header button[aria-label=\\"Toggle light and dark theme\\"]")&&!document.querySelector("header [aria-label^=\\"Paid credits\\"]")'));
+    await call('Page.navigate', { url: origin + '/admin/payouts' }); await wait('location.pathname==="/admin/payouts"&&document.readyState!=="loading"');
+    check('normal B cannot see payout support', await evaluate('!document.body.innerText.includes("Check PayPal Status")&&!document.body.innerText.includes("Payout support queue")'));
+    check('real browser has no exceptions', errors.length === 0);
+    await browser.close();
+  });
+  check('protected financial/generation/role records unchanged', await protectedHash() === before);
+  save(); console.log(JSON.stringify({ passed: checks.length, evidenceFile, screenshots: screenshots.length, hostedInngestTriggered: false }));
+} finally {
+  for (const id of sessions) {
+    try { if ((await clerk.sessions.getSession(id)).status === 'active') await clerk.sessions.revokeSession(id); }
+    catch (error) { if (error.status !== 404) throw error; }
+  }
+}

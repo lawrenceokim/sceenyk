@@ -7,7 +7,7 @@ async function run(operation: () => ReturnType<typeof saveCreatorProfile>) {
   try {
     const profile = await operation();
     revalidatePath("/marketplace", "layout");
-    revalidatePath("/dashboard/marketplace/profile");
+    revalidatePath("/dashboard/settings/creator-profile");
     return { ok: true as const, profile };
   }
   catch (error) {

@@ -60,7 +60,7 @@ if (mode === 'serve') {
     };
     await signIn('A');
     if (mode === 'public') {
-      check('public pricing explains pay-as-you-go and links to Buy credits', await evaluate("document.querySelector('#pricing')?.innerText.includes('PAY AS YOU GO') && !!document.querySelector('#pricing a[href=\"/dashboard/credits\"]') && !document.querySelector('#pricing')?.innerText.includes('Purchases are not available')"));
+      check('public pricing explains pay-as-you-go and links to Buy credits', await evaluate("document.querySelector('#pricing')?.innerText.includes('PAY AS YOU GO') && !!document.querySelector('#pricing a[href=\"/dashboard/settings/credits\"]') && !document.querySelector('#pricing')?.innerText.includes('Purchases are not available')"));
       for (const width of [1440,390,320]) for (const dark of [false,true]) {
         await call('Emulation.setDeviceMetricsOverride',{width,height:1000,deviceScaleFactor:1,mobile:width<500});
         await evaluate(`document.documentElement.classList.toggle('dark',${dark})`);
@@ -68,7 +68,7 @@ if (mode === 'serve') {
       }
       return;
     }
-    await navigate('/dashboard/credits');
+    await navigate('/dashboard/settings/credits');
     await wait("document.body.innerText.includes('Paid credit activity') && !document.body.innerText.includes('Loading saved purchases…')");
     await discover();
     const initial = await account();
@@ -153,13 +153,13 @@ if (mode === 'serve') {
       const ledger = await db.from('credit_ledger').select('id').eq('purchase_id', p.id);
       check('new completed purchase has exactly one hosted ledger entry', !ledger.error && ledger.data.length === 1);
       check('purchase preserves free counters and generation holds', ['free_total','free_reserved','free_consumed','credit_reserved'].every(key => now[key] === state.beforePurchase[key]));
-      await call('Page.navigate', { url: origin + '/dashboard/credits?checkout=return&token=' + state.orderId });
+      await call('Page.navigate', { url: origin + '/dashboard/settings/credits?checkout=return&token=' + state.orderId });
       await wait("document.body.innerText.includes('credits added. Current paid balance:')");
       check('return UI displays exact purchased credits and authoritative balance', await evaluate(`document.body.innerText.includes(${JSON.stringify(p.credits + ' credits added. Current paid balance: ' + now.credit_available + ' credits.')})`));
       state.newPurchaseVerified = true; save();
     } else {
       // Re-run the changed success presentation against a real verified capture.
-      await call('Page.navigate', { url: origin + '/dashboard/credits?checkout=return&token=' + prior.orderId });
+      await call('Page.navigate', { url: origin + '/dashboard/settings/credits?checkout=return&token=' + prior.orderId });
       await wait("document.body.innerText.includes('credits added. Current paid balance:')");
       check('changed success UX displays actual verified Sandbox pack and current balance', await evaluate(`document.body.innerText.includes(${JSON.stringify(historicalPurchase.credits + ' credits added. Current paid balance: ' + initial.credit_available + ' credits.')})`));
     }
@@ -209,12 +209,12 @@ if (mode === 'serve') {
     await wait("[...document.querySelectorAll('button')].some(b=>b.textContent.trim()==='Update quote'&&!b.disabled)");
     const quoteCount = async () => { const r=await db.from('generation_quotes').select('id',{count:'exact',head:true}).eq('project_id',state.projectId); assert.ok(!r.error); return r.count; };
     const beforeTab = await quoteCount();
-    const target = await call('Target.createTarget',{url:origin+'/dashboard/credits',background:true});
+    const target = await call('Target.createTarget',{url:origin+'/dashboard/settings/credits',background:true});
     let refreshed = false;
     for (let n=0;n<40;n++) { if ((await quoteCount())>beforeTab) { refreshed=true; break; } await delay(500); }
     check('real second credit tab invalidates and refreshes existing editor quote', refreshed);
     await call('Target.closeTarget',{targetId:target.targetId});
-    await signIn('B'); await navigate('/dashboard/credits'); await wait("document.body.innerText.includes('Paid credit activity') && !document.body.innerText.includes('Loading saved purchases…')"); await discover();
+    await signIn('B'); await navigate('/dashboard/settings/credits'); await wait("document.body.innerText.includes('Paid credit activity') && !document.body.innerText.includes('Loading saved purchases…')"); await discover();
     const b = await one('app_users','clerk_user_id',identities.secondClerkId), ba = await one('generation_accounts','owner_user_id',b.id), bw = await invoke('creditWalletAction');
     check('actual User B reads only own balance and history', bw.ok && bw.data.available === ba.credit_available && !bw.data.purchases.some(p=>p.orderId===prior.orderId || p.orderId===state.orderId));
     const bLedger = await db.from('credit_ledger').select('type,amount,available_delta,created_at').eq('owner_user_id',b.id).order('created_at',{ascending:false}).limit(20);

@@ -1,10 +1,8 @@
 import Link from "next/link";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ThemeToggle } from "@/components/theme-toggle";
 import { DashboardUserButton } from "@/components/auth/account-controls";
 import { DashboardMobileNavigation } from "./dashboard-sidebar";
-import { CreditBalance } from "@/components/payments/credit-balance";
 import { Brand } from "@/components/brand";
 
 export function DashboardHeader({
@@ -27,9 +25,8 @@ export function DashboardHeader({
             </p>
           </div>
         </div>
-        <div className="order-3 w-full sm:order-none sm:ml-auto sm:w-auto"><CreditBalance compact /></div>
         <div className="flex shrink-0 items-center gap-1 sm:gap-3">
-          <ThemeToggle />
+
           <div className="lg:hidden">
             <DashboardUserButton />
           </div>

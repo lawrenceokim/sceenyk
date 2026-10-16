@@ -6,7 +6,7 @@ import { getWithdrawalAccount, requestWithdrawal, savePayoutDestination } from "
 async function mutation(work: () => Promise<unknown>) {
   try {
     await work();
-    revalidatePath("/dashboard/marketplace/earnings");
+    revalidatePath("/dashboard/settings/earnings");
     return { ok: true as const };
   } catch (error) {
     unstable_rethrow(error);

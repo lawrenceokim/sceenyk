@@ -1,6 +1,8 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { creationPreferencesAction } from "@/app/actions/settings";
+import { defaultCreationPreferences, type CreationPreferences } from "@/lib/settings/contract";
 import { useAuth } from "@clerk/nextjs";
 import { useAuthAvailable } from "@/components/auth/auth-availability";
 import { AccountAction } from "@/components/account-action";
@@ -54,6 +56,8 @@ function AccountWorkspace(props: WorkspaceProps) {
       </div>
     );
   }
+  if (!props.initialProject && !isLoaded) return <p role="status">Opening your creation workspace…</p>;
+  if (!props.initialProject && isSignedIn && userId) return <NewAccountWorkspace key={userId} userId={userId} />;
   return (
     <WorkspaceEditor
       key={`${userId ?? "visitor"}:${props.initialProject?.id ?? "new"}`}
@@ -67,6 +71,21 @@ function AccountWorkspace(props: WorkspaceProps) {
       authReady={isLoaded}
     />
   );
+}
+
+function NewAccountWorkspace({ userId }: { userId: string }) {
+  const [result, setResult] = useState<{ preferences: CreationPreferences; unavailable: boolean } | null>(null);
+  useEffect(() => {
+    let active = true;
+    void creationPreferencesAction().then(response => {
+      if (!active) return;
+      if (response.ok && response.data.clerkUserId === userId) setResult({ preferences: response.data.preferences, unavailable: false });
+      else setResult({ preferences: defaultCreationPreferences, unavailable: true });
+    }).catch(() => { if (active) setResult({ preferences: defaultCreationPreferences, unavailable: true }); });
+    return () => { active = false; };
+  }, [userId]);
+  if (!result) return <p role="status">Loading your creation defaults…</p>;
+  return <>{result.unavailable && <p role="status" className="mb-4 text-body-sm text-muted-foreground">Your saved creation defaults are unavailable. This new draft uses standard defaults; you can adjust them below.</p>}<WorkspaceEditor signedIn authReady initialPreferences={result.preferences} /></>;
 }
 
 export function CreationWorkspace(props: WorkspaceProps) {
@@ -85,6 +104,7 @@ function WorkspaceEditor({
   initialGeneration = null,
   initialGenerationError = "",
   initialOrigin = null,
+  initialPreferences = defaultCreationPreferences,
   signedIn,
   authReady,
 }: {
@@ -94,11 +114,12 @@ function WorkspaceEditor({
   initialGeneration?: GenerationJob | null;
   initialGenerationError?: string;
   initialOrigin?: ProjectOrigin | null;
+  initialPreferences?: CreationPreferences;
   signedIn: boolean;
   authReady: boolean;
 }) {
   const [selectedCategory, setSelectedCategory] = useState<CategoryId>(
-    initialProject?.category ?? "cinematic",
+    initialProject?.category ?? initialPreferences.category,
   );
   const [prompt, setPrompt] = useState(initialProject?.prompt ?? "");
   const [title, setTitle] = useState(
@@ -119,7 +140,7 @@ function WorkspaceEditor({
   const [mediaError, setMediaError] = useState("");
   const [settings, setSettings] = useState<CreationSettings>(
     initialProject?.settings ?? {
-      aspectRatio: "16:9",
+      aspectRatio: initialPreferences.aspectRatio,
       duration: "10",
       visualStyle: "Original",
       tone: "Storytelling",

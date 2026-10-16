@@ -1,5 +1,11 @@
 # AI Workflow Rules
 
+## Current Inngest operating constraint (2026-10-16)
+
+Inngest Cloud is temporarily paused at the user's request to preserve the monthly execution allowance. Use the local Inngest Dev Server where possible for development and workflow tests; follow [generation-dispatch.md](generation-dispatch.md#environment-and-exact-local-commands). Keep local development mode local; this instruction does not authorize changes to production configuration or application behavior.
+
+Do not trigger hosted Inngest acceptance runs without explicit user authorization. This constraint takes precedence over earlier hosted acceptance recommendations below. Features with outstanding checks that require real hosted Inngest remain **Pending hosted acceptance** until Cloud functions are re-enabled near submission and the user authorizes those runs. Local results establish local verification only. Preserve previously verified hosted evidence as historical evidence; the temporary pause does not invalidate completed acceptance.
+
 **Current authorization (2026-10-15):** creator withdrawal reservations, seven-day eligibility and trusted PayPal Sandbox payouts, including the explicitly approved lot/FIFO refund reductions, below-minimum exactly-once valid release, processing reconciliation and paid-out deficits. Record these rules in accounting/payments before implementation. Preserve historical sale snapshots, Marketplace adoption, credit top-ups and AI accounting; no Live or renderer changes. Stop before provider execution/hosted acceptance when required Sandbox capability or webhook setup is missing. Local implementation/fixtures do not establish real payout acceptance; the tracker remains In Progress until required real checks pass. No later feature is authorized.
 
 **Historical authorization (2026-10-14): documentation/product-contract update only.** Record approved production Marketplace fee/share10%/90%, USD minimum withdrawal$5, immediate reservation into Pending Payout and a seven-day hold from the withdrawal request. The2026-10-15 authorization above supersedes this earlier documentation-only boundary. Actual deployed/controlled-time Sandbox acceptance and its limits are recorded in the tracker. No later feature or Live/renderer change is authorized.

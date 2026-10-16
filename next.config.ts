@@ -5,6 +5,16 @@ const nextConfig: NextConfig = {
     // PPR can resume a cached shell with request-specific content. Cover its
     // generated response paths too: /profile/:path* does not match /profile.rsc.
     return [
+      "/dashboard/settings/:path*",
+      "/dashboard/settings.html",
+      "/dashboard/settings.rsc",
+      "/dashboard/settings.prefetch.rsc",
+      "/dashboard/settings.segments/:path*",
+      "/settings/:path*",
+      "/settings.html",
+      "/settings.rsc",
+      "/settings.prefetch.rsc",
+      "/settings.segments/:path*",
       "/admin/:path*",
       "/api/admin/:path*",
       "/dashboard/marketplace/profile/:path*",

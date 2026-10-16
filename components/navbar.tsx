@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Menu, X } from "lucide-react";
 import { Brand } from "@/components/brand";
-import { ThemeToggle } from "@/components/theme-toggle";
 import { AccountControls } from "@/components/auth/account-controls";
 import { Button } from "@/components/ui/button";
 
@@ -49,7 +48,7 @@ export function Navbar() {
           ))}
         </nav>
         <div className="flex items-center gap-2">
-          <ThemeToggle />
+
           <div className="hidden items-center gap-2 lg:flex">
             <AccountControls />
           </div>

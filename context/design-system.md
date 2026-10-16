@@ -1,5 +1,9 @@
 # Sceenyk design system
 
+## Approved Settings placement (2026-10-16)
+
+The [Settings UI contract](ui-context.md#approved-settings-ui-2026-10-16) supersedes earlier navbar/header theme-control and general dashboard credit-balance placement. Theme selection moves to Settings → Appearance (Light/Dark/System) through the existing controller; persistent personal AI-credit balances move to Settings → Credits & Billing. Contextual generation costs, insufficient-credit warnings and top-up/payment information remain. Settings uses existing light/dark tokens, cards/fields, accessible section navigation and responsive shell patterns. Reference-image observations below retain their confidence labels; they do not require duplicate Credits/theme controls or a notification system. This approval adds no application UI or new theme implementation.
+
 This is one visual system with light and dark surface treatments. Use the PNGs as the primary visual source; use the semantic tokens in `app/globals.css` to implement it. Theme changes must preserve component structure, hierarchy, spacing, and behavior.
 
 ## Sources, evidence, and repository baseline
@@ -295,7 +299,7 @@ Theme switching is CSS-ready:
 <html lang="en" className="...font variables... dark">
 ```
 
-The implemented controller adds/removes `dark` on `document.documentElement`, preserving font/layout classes. `color-scheme` follows the selected theme. A static inline head script uses saved `sceenyk-theme` or system preference before first paint, following the installed Next.js guide. The toggle persists explicit light/dark choices; the controller follows system changes when no choice is saved and synchronizes browser tabs. Blocked storage does not prevent in-page switching. Keep the theme root on the document so portals resolve the same tokens.
+The implemented controller adds/removes `dark` on `document.documentElement`, preserving font/layout classes. `color-scheme` follows the selected theme. A static inline head script uses saved `sceenyk-theme` or system preference before first paint, following the installed Next.js guide. Current toggles persist explicit light/dark choices; the controller follows system changes when no choice is saved and synchronizes browser tabs. The approved Settings → Appearance migration replaces header toggles with Light/Dark/System through this same system; its explicit System selection UI is not implemented yet. Blocked storage must not prevent in-page switching. Keep the theme root on the document so portals resolve the same tokens.
 
 Shared compositions available now:
 
