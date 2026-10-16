@@ -8,7 +8,6 @@ import { CreditPurchases } from "@/components/payments/credit-purchases";
 import { FreeAllowanceSummary } from "@/components/free-allowance";
 
 export const metadata: Metadata = { title: "Buy Credits — Sceenyk Sandbox" };
-export const maxDuration = 120;
 
 async function CreditAccount() {
   const user = await ensureAppUser();

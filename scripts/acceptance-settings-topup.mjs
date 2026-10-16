@@ -121,6 +121,10 @@ try {
         const final=await verifySettlement();
         check('callback success shows exact grant and refreshed balance',await evaluate(`document.body.innerText.includes(${JSON.stringify(final.credits+' credits added. Current paid balance: '+state.available+' credits.')})`));
         for(let i=0;i<2;i++){const result=await invoke('completeCreditOrderAction',{orderId:state.orderId});check('duplicate capture completion '+(i+1)+' grants nothing extra',result.ok&&result.data.status==='completed'&&(await account()).credit_available===state.available);}
+        for(let i=0;i<2;i++){
+          const replay=await paypal.capturePayPalOrder(await purchase());
+          check('actual Sandbox capture idempotency replay '+(i+1)+' retains the same capture',paypal.verifiedCapture(final,replay).id===state.captureId&&(await account()).credit_available===state.available);
+        }
         await verifySettlement();
         await call('Page.reload');await wait('!document.body.innerText.includes("Loading saved purchases…")&&!!document.querySelector("#purchases-heading")');
         await discover();check('refresh preserves authoritative new balance',(await invoke('creditWalletAction')).data?.available===state.available);

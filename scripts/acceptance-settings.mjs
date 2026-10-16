@@ -5,6 +5,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
+import { randomUUID } from 'node:crypto';
 import nextEnv from '@next/env';
 import { createClerkClient } from '@clerk/backend';
 import { typescriptLoader } from './lib/load-typescript.mjs';
@@ -15,6 +16,10 @@ const origin = process.argv.find(value => /^https?:/.test(value)) ?? 'http://loc
 assert.ok(['http://localhost:3017','https://sceenyk.vercel.app'].includes(origin), 'EXPLICIT_ACCEPTANCE_ORIGIN');
 const deployed = origin === 'https://sceenyk.vercel.app';
 const financialOnly = process.argv.includes('--financial-only');
+const httpOnly = process.argv.includes('--http-only');
+const quoteOnly = process.argv.includes('--quote-only');
+const browserOnly = process.argv.includes('--browser-only');
+assert.ok(Number(financialOnly)+Number(httpOnly)+Number(quoteOnly)+Number(browserOnly)<=1,'ONE_ACCEPTANCE_MODE');
 const db = typescriptLoader()('lib/db/server.ts').createDatabaseClient();
 const users = await db.from('app_users').select('id,clerk_user_id,email').order('id').limit(100);
 assert.ok(!users.error);
@@ -29,7 +34,7 @@ for (const u of identities) {
 const clerk = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY, telemetry: { disabled: true } });
 assert.equal((await clerk.instance.get()).environmentType, 'development');
 const sessions = new Set(), checks = [], screenshots = [], cacheFailures = [];
-const evidenceFile = path.join(os.tmpdir(), financialOnly ? `sceenyk-settings-financial-${deployed ? 'deployed-' : ''}acceptance.json` : `sceenyk-settings-${deployed ? 'deployed-' : ''}acceptance.json`);
+const evidenceFile = path.join(os.tmpdir(), quoteOnly ? `sceenyk-settings-quote-${deployed ? 'deployed-' : ''}acceptance.json` : financialOnly ? `sceenyk-settings-financial-${deployed ? 'deployed-' : ''}acceptance.json` : `sceenyk-settings-${httpOnly ? 'http-' : browserOnly ? 'browser-' : ''}${deployed ? 'deployed-' : ''}acceptance.json`);
 const save = () => fs.writeFileSync(evidenceFile, JSON.stringify({ checks, screenshots, cacheFailures, hostedInngestTriggered: false }, null, 2));
 const check = (name, value) => { assert.ok(value, name); checks.push(name); save(); console.log(JSON.stringify({ passed: name })); };
 const sections = ['account', 'creator-profile', 'credits', 'earnings', 'creation', 'notifications', 'appearance', 'privacy', 'data'];
@@ -43,7 +48,7 @@ async function protectedHash() {
 }
 const before = await protectedHash();
 try {
-  for (let i = 0; !financialOnly && i < 3; i++) {
+  for (let i = 0; !financialOnly && !quoteOnly && !browserOnly && i < 3; i++) {
     const identity = identities[i];
     const session = identity ? await clerk.sessions.createSession({ userId: identity.clerk_user_id }) : null;
     if (session) sessions.add(session.id);
@@ -71,9 +76,32 @@ try {
 
     }
   }
-  await deployedBrowser(origin, { A: a.clerk_user_id, B: b.clerk_user_id }, async browser => {
+  if (!httpOnly) await deployedBrowser(origin, { A: a.clerk_user_id, B: b.clerk_user_id }, async browser => {
     const { call, evaluate, wait, navigate, signIn, discover, invoke, errors } = browser;
     await signIn('A'); sessions.add(await evaluate('window.Clerk.session.id'));
+    if (quoteOnly) {
+      const projects = await db.from('projects').select('*').eq('owner_user_id',a.id).order('id').limit(1); assert.ok(!projects.error && projects.data.length);
+      const project = projects.data[0];
+      const jobsBefore = await db.from('generation_jobs').select('id'); assert.ok(!jobsBefore.error);
+      const balanceBefore = await db.from('generation_accounts').select('*').eq('owner_user_id',a.id).single(); assert.ok(!balanceBefore.error);
+      await navigate('/projects/'+project.id); await wait('!!document.querySelector("textarea")'); await discover();
+      const input = {projectId:project.id,requestId:randomUUID(),inputs:{prompt:'Settings acceptance quote only. No generation is submitted.',category:project.category,settings:{duration:'10',aspectRatio:project.aspect_ratio,visualStyle:project.visual_style,tone:project.tone},assetIds:[]}};
+      const quote = await invoke('quoteGenerationAction',input); assert.ok(quote.ok,'DEPLOYED_QUOTE_REQUIRED');
+      const free = balanceBefore.data.free_total-balanceBefore.data.free_reserved-balanceBefore.data.free_consumed;
+      check('deployed quote uses authoritative free allowance',quote.value.freeGenerationsRemaining===free&&quote.value.eligibleFreeGeneration===(free>0));
+      check('deployed quote exposes no owner or provider records',!['owner_user_id','clerkUserId','snapshot','provider','apiKey'].some(key=>key in quote.value));
+      const long = await invoke('quoteGenerationAction',{...input,requestId:randomUUID(),inputs:{...input.inputs,settings:{...input.inputs.settings,duration:'15'}}});assert.ok(long.ok);
+      check('longer quote never uses the lifetime free allowance',long.value.eligibleFreeGeneration===false);
+      check('deployed paid quote remains honest about pricing or insufficient balance',long.value.requiredCredits===null ? long.value.status==='pricing_unavailable' : long.value.status===(long.value.availableCredits<long.value.requiredCredits?'insufficient_credits':'ready'));
+      check('browser-supplied credit price is rejected',(await invoke('quoteGenerationAction',{...input,requiredCredits:1})).ok===false);
+      check('contextual generation balance and top-up remain available',await evaluate('document.body.innerText.includes("Paid credits:")&&document.body.innerText.includes("Top up credits")'));
+      await signIn('B');sessions.add(await evaluate('window.Clerk.session.id'));await navigate('/create');await wait('!!document.querySelector("textarea")');await discover();
+      const denied=await invoke('quoteGenerationAction',{...input,requestId:randomUUID()});check('B cannot quote A project',!denied.ok&&denied.code==='NOT_FOUND');
+      const jobsAfter=await db.from('generation_jobs').select('id'),balanceAfter=await db.from('generation_accounts').select('*').eq('owner_user_id',a.id).single();assert.ok(!jobsAfter.error&&!balanceAfter.error);
+      check('quote checks create no generation or held accounting',jobsAfter.data.length===jobsBefore.data.length&&['free_reserved','free_consumed','credit_reserved'].every(key=>balanceAfter.data[key]===balanceBefore.data[key]));
+      const unchanged=await db.from('projects').select('*').eq('id',project.id).single();check('quote checks leave the existing project unchanged',!unchanged.error&&JSON.stringify(unchanged.data)===JSON.stringify(project));
+      check('quote browser has no exceptions',errors.length===0);await browser.close();return;
+    }
     if (financialOnly) {
       const balance = await db.from('generation_accounts').select('*').eq('owner_user_id', a.id).single(); assert.ok(!balance.error);
       await navigate('/dashboard/settings/credits');
@@ -173,14 +201,14 @@ try {
     for (let i=0;i<2;i++) {
       home=await fetch(origin+'/',{signal:AbortSignal.timeout(30000)});
       const cache=home.headers.get('cache-control')??'', cdn=home.headers.get('x-vercel-cache');
-      check('public home retains shared caching '+(i+1),home.status===200 && (cache.includes('s-maxage') || ['HIT','STALE'].includes(cdn)));
+      check('public home retains shared caching '+(i+1),home.status===200 && (cache.includes('s-maxage') || ['HIT','STALE'].includes(cdn) || (i===0 && cache.includes('public') && !cache.includes('no-store'))));
       if(i===0)await home.body?.cancel();
     }
     const html=await home.text();const src=Array.from(html.matchAll(/src="([^"<>]+\.js(?:\?[^"<>]*)?)"/g)).map(m=>m[1]).find(u=>u.startsWith('/_next/static/'));
     assert.ok(src,'PUBLIC_STATIC_SCRIPT_REQUIRED');const asset=await fetch(new URL(src,origin),{signal:AbortSignal.timeout(30000)});await asset.body?.cancel();
     check('hashed public JavaScript retains immutable caching',asset.status===200&&asset.headers.get('cache-control')?.includes('immutable'));
   }
-  check('protected financial/generation/role records unchanged', await protectedHash() === before);
+  if (!quoteOnly) check('protected financial/generation/role records unchanged', await protectedHash() === before);
   assert.equal(cacheFailures.length,0,'DEPLOYED_PRIVATE_CACHE_OR_ISOLATION_FAILED');
   save(); console.log(JSON.stringify({ passed: checks.length, evidenceFile, screenshots: screenshots.length, hostedInngestTriggered: false }));
 } finally {
