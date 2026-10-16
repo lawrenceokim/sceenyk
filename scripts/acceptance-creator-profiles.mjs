@@ -58,19 +58,20 @@ const avatarFile=path.join(os.tmpdir(),'sceenyk-creator-avatar-fixture.png');
 await sharp({create:{width:900,height:700,channels:3,background:'#7351d9'}}).png().withMetadata().toFile(avatarFile);
 try {
  if(!finalChecksOnly)await deployedBrowser(origin,{A:a.clerk_user_id,B:b.clerk_user_id},async browser=>{
-  const {evaluate,call,invoke,signIn}=browser;
+  const {evaluate,call,invoke,signIn,markDiagnosticPhase}=browser;
+  let profileVisits=0,activeUser='anonymous';
   const wait=async expression=>{try{await browser.wait(expression);}catch(error){state.conditionFailure=await evaluate(`({user:window.Clerk?.user?.id===${JSON.stringify(a.clerk_user_id)}?'A':window.Clerk?.user?.id===${JSON.stringify(b.clerk_user_id)}?'B':'anonymous',unavailable:document.body.innerText.includes('unavailable'),hasTitleField:!!document.querySelector('input[name=title]'),hasProfileField:!!document.querySelector('input[name=displayName]')})`);state.browserExceptions=browser.exceptions;save();console.error(JSON.stringify({conditionFailure:state.conditionFailure,exceptions:browser.exceptions}));throw error;}};
   const discover=async()=>{
     const urls=await evaluate("[...Array.from(document.scripts,s=>s.src),...performance.getEntriesByType('resource').map(r=>r.name)].filter(u=>u.startsWith(location.origin+'/_next/')&&new URL(u).pathname.endsWith('.js'))");
     for(const url of urls)bundleUrls.add(url);
     await browser.discover();
   };
-  const navigate=async route=>{const target=new URL(route,origin);await call('Page.navigate',{url:target.href});await wait(`document.readyState!=='loading'&&location.pathname===${JSON.stringify(target.pathname)}&&location.search===${JSON.stringify(target.search)}`);};
-  const login=async who=>{await signIn(who);sessions.add(await evaluate('window.Clerk.session.id'));};
+  const navigate=async route=>{const target=new URL(route,origin);if(target.pathname!=='/dashboard/marketplace/profile')markDiagnosticPhase('other surface');await call('Page.navigate',{url:target.href});await wait(`document.readyState!=='loading'&&location.pathname===${JSON.stringify(target.pathname)}&&location.search===${JSON.stringify(target.search)}`);};
+  const login=async who=>{markDiagnosticPhase('sign in '+who);await signIn(who);activeUser=who;sessions.add(await evaluate('window.Clerk.session.id'));};
   const fill=async(name,value)=>{assert.ok(await evaluate(`(()=>{const e=document.querySelector('[name="${name}"]');if(!e)return false;Object.getOwnPropertyDescriptor(e.tagName==='TEXTAREA'?HTMLTextAreaElement.prototype:HTMLInputElement.prototype,'value').set.call(e,${JSON.stringify(value)});e.dispatchEvent(new Event('input',{bubbles:true}));return true;})()`),'FIELD_'+name);};
   const click=async text=>{assert.ok(await evaluate(`(()=>{const b=[...document.querySelectorAll('button')].find(b=>b.textContent.trim()===${JSON.stringify(text)});if(!b||b.disabled)return false;b.click();return true;})()`),'BUTTON_'+text);};
   const toggleTheme=()=>evaluate(`document.querySelector('button[aria-label="Toggle light and dark theme"]').click()`);
-  const ownerProfile=async()=>{await navigate('/dashboard/marketplace/profile');await wait('!!document.querySelector("input[name=displayName]")');await discover();};
+  const ownerProfile=async()=>{markDiagnosticPhase('profile '+activeUser+' visit '+(++profileVisits));await navigate('/dashboard/marketplace/profile');await wait('!!document.querySelector("input[name=displayName]")');await discover();};
   const publicPrivacy=async slug=>{
     await navigate('/marketplace/creators/'+slug);await wait('!!document.querySelector("#creator-items")');
     await wait(`!!document.querySelector('img[width="96"][src^="/api/marketplace/creators/"]')?.naturalWidth`);

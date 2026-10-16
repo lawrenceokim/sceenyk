@@ -65,6 +65,10 @@ export function AccountControls({ onNavigate }: { onNavigate?: () => void }) {
 }
 
 export function DashboardUserButton() {
+  // UserButton reads live SDK readiness. A streamed dashboard can hydrate after
+  // that changes; useAuth preserves the server snapshot for its first render.
+  const { isLoaded } = useAuth();
+  if (!isLoaded) return <span className="size-11 shrink-0" aria-hidden="true" />;
   return <UserButton userProfileMode="modal" />;
 }
 
