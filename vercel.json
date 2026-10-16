@@ -1,0 +1,22 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "routes": [
+    {
+      "src": "^/(?:dashboard/settings|settings)(?:/.*|\\..*)?$",
+      "continue": true,
+      "transforms": [
+        {
+          "type": "response.headers",
+          "op": "delete",
+          "target": { "key": "cache-control" }
+        },
+        {
+          "type": "response.headers",
+          "op": "set",
+          "target": { "key": "cache-control" },
+          "args": "private, no-cache, no-store, max-age=0, must-revalidate"
+        }
+      ]
+    }
+  ]
+}

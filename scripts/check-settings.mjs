@@ -108,5 +108,11 @@ try {
     }
     check('public storefront caching preserved', !rules.some(r => new RegExp(r.regex).test('/marketplace/creators/example')));
   }
+  const deployment = JSON.parse(fs.readFileSync('vercel.json','utf8'));
+  const matches = url => deployment.routes.some(rule => new RegExp(rule.src).test(url));
+  const privateBases = ['/settings','/dashboard/settings',...['account','creator-profile','credits','earnings','creation','notifications','appearance','privacy','data'].map(section=>'/dashboard/settings/'+section)];
+  check('edge response policy covers Settings entries and generated resources',privateBases.every(base=>['','/','.html','.rsc','.prefetch.rsc','.segments/_full.segment.rsc'].every(suffix=>matches(base+suffix))));
+  check('edge response policy excludes public routes assets callbacks and nearby names',['/','/create','/dashboard','/marketplace','/marketplace/creators/example','/_next/static/example.js','/api/payments/paypal/webhook','/api/inngest','/settings-other','/dashboard/settings-other'].every(url=>!matches(url)));
+  check('edge response policy preserves request routing and replaces only cache-control',deployment.routes.every(rule=>rule.continue===true&&!rule.dest&&!rule.destination&&rule.transforms.length===2&&rule.transforms.every(t=>t.type==='response.headers'&&t.target.key==='cache-control')&&rule.transforms[0].op==='delete'&&rule.transforms[1].op==='set'&&rule.transforms[1].args==='private, no-cache, no-store, max-age=0, must-revalidate'));
   console.log(JSON.stringify({ passed: checks.length, checks, hostedInngestTriggered: false }));
 } finally { await pg.close(); }

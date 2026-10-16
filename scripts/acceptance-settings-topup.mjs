@@ -12,7 +12,7 @@ import { deployedBrowser } from './lib/deployed-browser.mjs';
 
 nextEnv.loadEnvConfig(process.cwd(), false, { info() {}, error() {} });
 const mode = process.argv[2] ?? 'observe';
-assert.ok(['begin','observe','verify','redeliver'].includes(mode));
+assert.ok(['begin','observe','verify','redeliver','audit'].includes(mode));
 const origin = 'https://sceenyk.vercel.app';
 const load = typescriptLoader(), db = load('lib/db/server.ts').createDatabaseClient();
 const paypal = load('lib/payments/paypal/client.ts'), config = load('lib/payments/paypal/config.ts').getPayPalConfig();
@@ -68,6 +68,11 @@ try {
     const p = await purchase(), order = await paypal.readPayPalOrder(state.orderId);
     paypal.verifyOrder(p, order);
     console.log(JSON.stringify({ purchaseStatus: p.status, sandboxStatus: order.status, approvalUrl: p.status === 'pending' ? state.approvalUrl : undefined }));
+  } else if (mode === 'audit') {
+    assert.ok(state.verifiedAt && state.redeliveryRequestedAt, 'VERIFIED_REDELIVERY_REQUIRED');
+    await verifySettlement();
+    state.postRedeliveryAuditAt = new Date().toISOString(); save();
+    console.log(JSON.stringify({passed:state.checks.length,postRedeliveryBalance:state.available,evidenceFile:file}));
   } else if (mode === 'redeliver') {
     assert.ok(state.verifiedAt && state.captureId, 'VERIFIED_PURCHASE_REQUIRED');
     const events = await provider('/v1/notifications/webhooks-events?transaction_id=' + encodeURIComponent(state.captureId) + '&event_type=PAYMENT.CAPTURE.COMPLETED&page_size=100');
