@@ -11,7 +11,9 @@ import { typescriptLoader } from './lib/load-typescript.mjs';
 import { deployedBrowser } from './lib/deployed-browser.mjs';
 
 nextEnv.loadEnvConfig(process.cwd(), false, { info() {}, error() {} });
-const origin = 'http://localhost:3017';
+const origin = process.argv.find(value => /^https?:/.test(value)) ?? 'http://localhost:3017';
+assert.ok(['http://localhost:3017','https://sceenyk.vercel.app'].includes(origin), 'EXPLICIT_ACCEPTANCE_ORIGIN');
+const deployed = origin === 'https://sceenyk.vercel.app';
 const financialOnly = process.argv.includes('--financial-only');
 const db = typescriptLoader()('lib/db/server.ts').createDatabaseClient();
 const users = await db.from('app_users').select('id,clerk_user_id,email').order('id').limit(100);
@@ -26,9 +28,9 @@ for (const u of identities) {
 }
 const clerk = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY, telemetry: { disabled: true } });
 assert.equal((await clerk.instance.get()).environmentType, 'development');
-const sessions = new Set(), checks = [], screenshots = [];
-const evidenceFile = path.join(os.tmpdir(), financialOnly ? 'sceenyk-settings-financial-acceptance.json' : 'sceenyk-settings-acceptance.json');
-const save = () => fs.writeFileSync(evidenceFile, JSON.stringify({ checks, screenshots, hostedInngestTriggered: false }, null, 2));
+const sessions = new Set(), checks = [], screenshots = [], cacheFailures = [];
+const evidenceFile = path.join(os.tmpdir(), financialOnly ? `sceenyk-settings-financial-${deployed ? 'deployed-' : ''}acceptance.json` : `sceenyk-settings-${deployed ? 'deployed-' : ''}acceptance.json`);
+const save = () => fs.writeFileSync(evidenceFile, JSON.stringify({ checks, screenshots, cacheFailures, hostedInngestTriggered: false }, null, 2));
 const check = (name, value) => { assert.ok(value, name); checks.push(name); save(); console.log(JSON.stringify({ passed: name })); };
 const sections = ['account', 'creator-profile', 'credits', 'earnings', 'creation', 'notifications', 'appearance', 'privacy', 'data'];
 async function protectedHash() {
@@ -45,10 +47,10 @@ try {
     const identity = identities[i];
     const session = identity ? await clerk.sessions.createSession({ userId: identity.clerk_user_id }) : null;
     if (session) sessions.add(session.id);
-    for (const section of sections) for (const rsc of [false, true]) {
+    for (const section of sections) for (const rsc of (deployed ? [false, true, '.rsc', '.prefetch.rsc', '.segments/_full.segment.rsc'] : [false, true])) {
       const token = session ? (await clerk.sessions.getToken(session.id, undefined, 60)).jwt : null;
       const headers = { ...(token ? { Authorization: 'Bearer ' + token } : {}), ...(rsc ? { RSC: '1' } : {}) };
-      let url = new URL('/dashboard/settings/' + section, origin), response;
+      let url = new URL('/dashboard/settings/' + section + (typeof rsc === 'string' ? rsc : ''), origin), response;
       for (let retry = 0; retry < 4; retry++) {
         response = await fetch(url, { headers, redirect: 'manual', signal: AbortSignal.timeout(60000) });
         if (![307,308].includes(response.status)) break;
@@ -58,9 +60,15 @@ try {
         await response.body?.cancel(); url = target;
       }
       const body = await response.text();
-      check((identity ? i === 0 ? 'A' : 'B' : 'anonymous') + ' private ' + section + (rsc ? ' RSC' : ' HTML'),
-        (identity ? response.status === 200 && !body.includes(identities[1-i].clerk_user_id) : [302,307,308,401,403].includes(response.status) && identities.every(u => !body.includes(u.clerk_user_id))) &&
-        response.headers.get('cache-control')?.includes('no-store') && !/s-maxage/.test(response.headers.get('cache-control') ?? ''));
+      if (response.status !== 200 && identity && rsc !== '.prefetch.rsc') console.log(JSON.stringify({diagnostic:{section,variant:rsc,status:response.status,cache:response.headers.get('cache-control'),cdn:response.headers.get('cdn-cache-control')}}));
+      const name=(identity ? i===0?'A':'B':'anonymous')+' private '+section+(typeof rsc==='string'?' '+rsc:rsc?' RSC':' HTML');
+      const statusOk=identity ? response.status===200 || (rsc==='.prefetch.rsc'&&response.status===404) : [302,307,308,401,403].includes(response.status);
+      const isolated=identity ? !body.includes(identities[1-i].clerk_user_id) : identities.every(u=>!body.includes(u.clerk_user_id));
+      const cache=response.headers.get('cache-control')??'', cdn=response.headers.get('cdn-cache-control');
+      const privateCache=cache.includes('private')&&cache.includes('no-store')&&!/s-maxage|public/.test(cache)&&cdn==='no-store';
+      if(statusOk&&isolated&&privateCache)check(name,true);
+      else {const failure={name,status:response.status,statusOk,isolated,cache,cdn};cacheFailures.push(failure);save();console.error(JSON.stringify({failed:failure}));}
+
     }
   }
   await deployedBrowser(origin, { A: a.clerk_user_id, B: b.clerk_user_id }, async browser => {
@@ -85,6 +93,7 @@ try {
       }
       await navigate('/dashboard/settings/earnings'); await wait('!!document.querySelector("#payout-email")'); await discover();
       const withdrawal = await invoke('withdrawalAccountAction', 1); assert.ok(withdrawal.ok && withdrawal.data.clerkUserId === a.clerk_user_id);
+      check('deployed withdrawal minimum and hold messaging remain unchanged',await evaluate('document.body.innerText.includes("Minimum withdrawal: $5 USD")&&document.body.innerText.includes("Withdrawals are held for 7 days before payout.")'));
       check('real payout destination matches private owned state', await evaluate(`document.querySelector('#payout-email').value===${JSON.stringify(withdrawal.data.account.email ?? '')}`));
       const usd = value => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value / 100);
       check('real earnings and pending payout match server', await evaluate(`Array.from(document.querySelectorAll('section[aria-label="Creator withdrawals"] .sceenyk-card')).some(c=>c.innerText.includes('Available Earnings')&&c.innerText.includes(${JSON.stringify(usd(withdrawal.data.account.available))}))&&Array.from(document.querySelectorAll('section[aria-label="Creator withdrawals"] .sceenyk-card')).some(c=>c.innerText.includes('Pending Payout')&&c.innerText.includes(${JSON.stringify(usd(withdrawal.data.account.pending))}))`));
@@ -118,9 +127,17 @@ try {
         const file = path.join(os.tmpdir(), 'sceenyk-settings-real-' + section + '.png'); fs.writeFileSync(file, Buffer.from(shot.data, 'base64')); screenshots.push(file);
       }
     }
+    await wait('!!document.querySelector("#settings-section")&&!document.querySelector("#settings-section").disabled');
     await evaluate('document.querySelector("#settings-section").value="/dashboard/settings/creation";document.querySelector("#settings-section").dispatchEvent(new Event("change",{bubbles:true}))');
     await wait('location.pathname==="/dashboard/settings/creation"&&!!document.querySelector("#default-aspect")');
     check('real mobile section picker navigates', await evaluate('document.querySelector("#settings-section").value==="/dashboard/settings/creation"'));
+    await call('Emulation.setDeviceMetricsOverride',{width:1440,height:1000,deviceScaleFactor:1,mobile:false});
+    await evaluate('Array.from(document.querySelectorAll("nav a")).find(a=>a.getAttribute("href")==="/dashboard/settings/appearance").click()');
+    await wait('location.pathname==="/dashboard/settings/appearance"&&!!document.querySelector("input[name=appearance]")');check('real desktop section links navigate',true);
+    await call('Emulation.setDeviceMetricsOverride',{width:768,height:1000,deviceScaleFactor:1,mobile:false});
+    await wait('!!document.querySelector("#settings-section")&&!document.querySelector("#settings-section").disabled');
+    await evaluate('document.querySelector("#settings-section").value="/dashboard/settings/creation";document.querySelector("#settings-section").dispatchEvent(new Event("change",{bubbles:true}))');
+    await wait('location.pathname==="/dashboard/settings/creation"&&!!document.querySelector("#default-aspect")');check('real tablet section picker navigates',true);
     await navigate('/dashboard/settings/creation'); await wait('!!document.querySelector("#default-aspect")'); await discover();
     const saved = await invoke('saveCreationPreferencesAction', { aspectRatio: '9:16', category: 'social' });
     check('real preferences save', saved.ok && saved.data.clerkUserId === a.clerk_user_id);
@@ -136,7 +153,7 @@ try {
     check('legacy checkout bookmark preserves query', await evaluate('location.search.includes("checkout=cancel")&&location.search.includes("token=invalid-bookmark")'));
     await call('Page.navigate', { url: origin + '/dashboard/marketplace/earnings?page=2' }); await wait('location.pathname==="/dashboard/settings/earnings"&&location.search==="?page=2"'); check('legacy earnings preserves page', true);
     await call('Page.navigate', { url: origin + '/dashboard/marketplace/profile' }); await wait('location.pathname==="/dashboard/settings/creator-profile"'); check('legacy profile forwards to single editor', true);
-    await call('Page.navigate', { url: origin + '/settings' }); await wait('location.pathname==="/dashboard/settings/account"'); check('settings entry opens Account', true);
+    for (const entry of ['/settings','/dashboard/settings']) { await call('Page.navigate', { url: origin + entry }); await wait('location.pathname==="/dashboard/settings/account"'); check(entry + ' entry opens Account', true); }
     await signIn('B'); sessions.add(await evaluate('window.Clerk.session.id'));
     await navigate('/dashboard/settings/creation'); await wait('!!document.querySelector("#default-aspect")'); await discover();
     const rejected = await invoke('saveCreationPreferencesAction', { aspectRatio: '1:1', category: 'gaming', ownerUserId: a.id });
@@ -151,7 +168,20 @@ try {
     check('real browser has no exceptions', errors.length === 0);
     await browser.close();
   });
+  if (deployed) {
+    let home;
+    for (let i=0;i<2;i++) {
+      home=await fetch(origin+'/',{signal:AbortSignal.timeout(30000)});
+      const cache=home.headers.get('cache-control')??'', cdn=home.headers.get('x-vercel-cache');
+      check('public home retains shared caching '+(i+1),home.status===200 && (cache.includes('s-maxage') || ['HIT','STALE'].includes(cdn)));
+      if(i===0)await home.body?.cancel();
+    }
+    const html=await home.text();const src=Array.from(html.matchAll(/src="([^"<>]+\.js(?:\?[^"<>]*)?)"/g)).map(m=>m[1]).find(u=>u.startsWith('/_next/static/'));
+    assert.ok(src,'PUBLIC_STATIC_SCRIPT_REQUIRED');const asset=await fetch(new URL(src,origin),{signal:AbortSignal.timeout(30000)});await asset.body?.cancel();
+    check('hashed public JavaScript retains immutable caching',asset.status===200&&asset.headers.get('cache-control')?.includes('immutable'));
+  }
   check('protected financial/generation/role records unchanged', await protectedHash() === before);
+  assert.equal(cacheFailures.length,0,'DEPLOYED_PRIVATE_CACHE_OR_ISOLATION_FAILED');
   save(); console.log(JSON.stringify({ passed: checks.length, evidenceFile, screenshots: screenshots.length, hostedInngestTriggered: false }));
 } finally {
   for (const id of sessions) {

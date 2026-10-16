@@ -10,6 +10,14 @@ const nextConfig: NextConfig = {
       "/dashboard/settings.rsc",
       "/dashboard/settings.prefetch.rsc",
       "/dashboard/settings.segments/:path*",
+      // The credit page has its own function-duration configuration on Vercel.
+      // Keep an explicit policy for that function and each emitted resource,
+      // as well as the general Settings policy above.
+      "/dashboard/settings/credits/:path*",
+      "/dashboard/settings/credits.html",
+      "/dashboard/settings/credits.rsc",
+      "/dashboard/settings/credits.prefetch.rsc",
+      "/dashboard/settings/credits.segments/:path*",
       "/settings/:path*",
       "/settings.html",
       "/settings.rsc",

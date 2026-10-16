@@ -1,5 +1,10 @@
 # Progress Tracker
 
+## Deployed Settings acceptance — cache correction pending (2026-10-16)
+
+User-deployed revision dd8dca5 serves Settings with applied028. Real A/B Production probes found a remaining Credits & Billing cache-header defect: authenticated HTML, RSC and full segments expose s-maxage=31536000 while CDN-Cache-Control remains no-store. The other inspected Settings routes return private/no-store, and no cross-user disclosure is observed. Keep the unit In Progress. Credits uniquely has a page-level120-second function configuration; correlation is verified, but the platform cause is not proven. The bounded correction retains that timeout, puts the request-time credit account behind an explicit Suspense leaf like the working Account/Profile pages, and adds exact credit HTML/RSC/prefetch/segment header rules using the existing accepted private-route pattern. The mobile Settings picker also uses the existing hydration-readiness approach so a section change cannot be accepted before its router handler is attached; the deployed synthetic navigation check exposed this readiness gap. It changes no price, payment, owner, accounting or theme behavior. Build/regressions and user redeployment followed by fresh Production cache acceptance are required before completion. Unsupported standalone prefetch URLs return private/no-store404; emitted full segments are tested separately. No hosted Inngest workflow is triggered.
+
+
 ## Settings implementation — In Progress (2026-10-16)
 
 The current Settings unit implements the shared authenticated dashboard shell at /dashboard/settings with account, creator-profile, credits, earnings, creation, notifications, appearance, privacy and data sections. /settings and /dashboard/settings open Account. Old profile/credits/earnings routes redirect while retaining all query parameters. Existing creator, credit purchase and financial components/services remain the source of truth; top-up returns, action invalidations and pagination target Settings. General header/summary AI balances and navbar/dashboard/admin theme toggles are removed. Contextual generation balances/cost review/top-ups remain.

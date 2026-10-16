@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { useSyncExternalStore } from "react";
 import { cn } from "@/lib/utils";
 
 export const settingsSections = [
@@ -15,11 +16,16 @@ export const settingsSections = [
   ["privacy", "Privacy & Security"],
   ["data", "Data & Account"],
 ] as const;
+const subscribeReadiness = () => () => {};
+const clientReady = () => true;
+const serverReady = () => false;
 
 export function SettingsNavigation() {
   const pathname = usePathname();
   const router = useRouter();
-  return <><div className="space-y-2 xl:hidden"><label htmlFor="settings-section" className="text-body-sm font-medium">Settings section</label><select id="settings-section" value={pathname} onChange={event => router.push(event.target.value)} className="min-h-11 w-full rounded-lg border border-input bg-field px-3 text-body-sm">{settingsSections.map(([section, label]) => <option key={section} value={`/dashboard/settings/${section}`}>{label}</option>)}</select></div><nav aria-label="Settings sections" className="hidden gap-1 xl:sticky xl:top-28 xl:grid xl:grid-cols-1">
+  // The section picker needs the router handler before it can navigate.
+  const ready = useSyncExternalStore(subscribeReadiness, clientReady, serverReady);
+  return <><div className="space-y-2 xl:hidden"><label htmlFor="settings-section" className="text-body-sm font-medium">Settings section</label><select id="settings-section" disabled={!ready} value={pathname} onChange={event => router.push(event.target.value)} className="min-h-11 w-full rounded-lg border border-input bg-field px-3 text-body-sm">{settingsSections.map(([section, label]) => <option key={section} value={`/dashboard/settings/${section}`}>{label}</option>)}</select></div><nav aria-label="Settings sections" className="hidden gap-1 xl:sticky xl:top-28 xl:grid xl:grid-cols-1">
     {settingsSections.map(([section, label]) => {
       const href = `/dashboard/settings/${section}`;
       const active = pathname === href;
