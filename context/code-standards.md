@@ -1,5 +1,13 @@
 # Code Standards
 
+## Approved redesign implementation boundaries (2026-10-17)
+
+Follow [the approved UI/UX redesign contract](ui-context.md) in separately scoped phases; **implementation is Not Started** and the current task changes documentation only. The first recommended unit is **Phase 1 — shared public/workspace shells and navigation architecture**. Prefer clear public shell, workspace shell, Studio, Marketplace, Settings, shared brand/navigation and creative-control boundaries, reusing existing services/hooks and accessible primitives. No broad backend restructuring or route/domain renaming is needed for Studio's user-facing label.
+
+Preserve current colors/tokens/light/dark, Inter/Geist Mono where practical, official logos, Tailwind/shadcn/Base UI behavior and completed Settings navigation. Use output-first composition with fewer unnecessary cards; desktop Studio is Navigation / Sources / Stage / Properties, tablet progressively collapses panels, mobile is Top Navbar → Stage → Properties with separate hamburger navigation and full-screen Sources overlay. Existing source geometry and board observations do not override this approved responsive contract.
+
+Guest configuration is public but browser drafts are untrusted. The later Studio handoff must preserve lightweight choices through Clerk, restore the same flow and retain owned save/upload, quote review and explicit cost confirmation. Large media needs a separately defined safe storage/upload strategy, not casual `localStorage`. Never replace identity/ownership, private responses, payment/credit/Marketplace/earnings/payout or provider contracts to simplify presentation. Inngest Cloud stays paused; use local dev/fixtures and defer hosted acceptance until explicitly authorized. Read installed Next.js guidance before future application code, and record actual per-phase evidence without claiming planned layouts work.
+
 These rules apply to developers and AI coding agents building Sceenyk. Read [overview.md](overview.md), [ui-context.md](ui-context.md), [design-system.md](design-system.md), [ai-workflow-rules.md](ai-workflow-rules.md), and [progress-tracker.md](progress-tracker.md) before relevant implementation work.
 
 **Verified baseline (updated 2026-10-10):** Next.js/React/strict TypeScript/Tailwind/shadcn/Lucide/themes and Clerk development authentication remain. Hosted Supabase identity/projects/assets and real browser R2 upload/finalization/private retrieval/persistence/two-account media acceptance pass. Broader prior project acceptance and hosted catalog auditing remain separate. Zod is the one request validator; server file-type signature detection and AWS S3/signing SDKs belong to storage. No browser database client/Supabase Auth, worker or persistent test runner exists.
@@ -51,10 +59,10 @@ Read [architecture.md](architecture.md) for planned provider boundaries and impl
 - Tailwind 4 is CSS-first: use the existing `@theme inline`, utilities, and shared classes. No separate Tailwind config exists; do not introduce one or a competing palette/theme system without a documented need.
 - Use semantic pairs such as `bg-card text-card-foreground`, `text-muted-foreground`, `border-border`, and `ring-ring`. Never hardcode theme hex colors in components when a token applies.
 - Reuse the existing spacing, type, radius, shadow, gradient, and motion scales. Inter is the UI/display font; Geist Mono is for code/mono content. Purple leads, with supporting blue/cyan and selective gradients/glow.
-- Support light `:root` and `.dark` on `<html>` equally, preserving root font classes. Use the implemented system/saved preference controller and toggle; preserve before-paint initialization and `sceenyk-theme` persistence.
+- Support light `:root` and `.dark` on `<html>` equally, preserving root font classes. Use the implemented Light/Dark/System preference controller through Settings → Appearance; preserve before-paint initialization and `sceenyk-theme` persistence.
 - Use shadcn as the common-control base, normally adding needed primitives through `npx shadcn add <component>`. Review generated changes; do not reinitialize or overwrite Sceenyk's theme. Button, Dialog, and Sheet currently exist.
 - Prefer shared variants, composition, and `cn` over repeated large class strings or primitive rewrites. Reuse `@/lib/utils` for `cn`; the existing Button imports it directly from the installed `cn` package.
-- Build responsive layouts from the start. Maintain contrast, focus, keyboard behavior, touch targets, and disabled states. Keep animation purposeful and respect reduced motion; effects must not substitute for accessible state cues.
+- Build responsive layouts from the start using approved per-experience adaptations, not a desktop layout merely shrunk. Maintain contrast, focus, keyboard behavior, touch targets, and disabled states. Keep animation purposeful and respect reduced motion; effects must not substitute for accessible state cues.
 
 ## API Routes and Server Logic
 

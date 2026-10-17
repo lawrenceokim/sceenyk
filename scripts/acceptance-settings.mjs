@@ -34,7 +34,7 @@ for (const u of identities) {
 }
 const clerk = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY, telemetry: { disabled: true } });
 assert.equal((await clerk.instance.get()).environmentType, 'development');
-const sessions = new Set(), checks = [], screenshots = [], cacheFailures = [];
+const sessions = new Set(), checks = [], screenshots = [], cacheFailures = [], browserPolicies = [];
 const evidenceFile = path.join(os.tmpdir(), quoteOnly ? `sceenyk-settings-quote-${deployed ? 'deployed-' : ''}acceptance.json` : financialOnly ? `sceenyk-settings-financial-${deployed ? 'deployed-' : ''}acceptance.json` : `sceenyk-settings-${httpOnly ? 'http-' : browserOnly ? 'browser-' : ''}${deployed ? 'deployed-' : ''}acceptance.json`);
 const save = () => fs.writeFileSync(evidenceFile, JSON.stringify({ checks, screenshots, cacheFailures, hostedInngestTriggered: false }, null, 2));
 const check = (name, value) => { assert.ok(value, name); checks.push(name); save(); console.log(JSON.stringify({ passed: name })); };
@@ -81,7 +81,18 @@ async function verifyPrivateResponses(phase = '') {
 try {
   if (!financialOnly && !quoteOnly && !browserOnly) await verifyPrivateResponses();
   if (!httpOnly) await deployedBrowser(origin, { A: a.clerk_user_id, B: b.clerk_user_id }, async browser => {
-    const { call, evaluate, wait, navigate, signIn, discover, invoke, errors } = browser;
+    const { call, evaluate, wait, navigate, signIn, discover, invoke, errors, onProtocolEvent } = browser;
+    if(deployed){
+      const methods=new Map();
+      onProtocolEvent('Network.requestWillBeSent',event=>methods.set(event.requestId,event.request.method));
+      onProtocolEvent('Network.responseReceived',event=>{
+        const url=new URL(event.response.url);
+        if(url.origin!==origin||!url.pathname.startsWith('/dashboard/settings')||methods.get(event.requestId)!=='GET')return;
+        const headers=Object.fromEntries(Object.entries(event.response.headers).map(([k,v])=>[k.toLowerCase(),v]));
+        browserPolicies.push({path:url.pathname,status:event.response.status,cache:headers['cache-control']??'',cdn:headers['cdn-cache-control']});
+      });
+      await call('Network.enable');
+    }
     await signIn('A'); sessions.add(await evaluate('window.Clerk.session.id'));
     if (quoteOnly) {
       const projects = await db.from('projects').select('*').eq('owner_user_id',a.id).order('id').limit(1); assert.ok(!projects.error && projects.data.length);
@@ -217,6 +228,11 @@ try {
     check('real browser has no exceptions', errors.length === 0);
     await browser.close();
   });
+  if(deployed&&!httpOnly&&!quoteOnly){
+    const failed=browserPolicies.filter(row=>!row.cache.includes('private')||!row.cache.includes('no-store')||/s-maxage|public/.test(row.cache)||row.cdn!=='no-store');
+    cacheFailures.push(...failed);save();
+    check('actual authenticated browser Settings responses remain private and no-store',browserPolicies.length>=5&&failed.length===0);
+  }
   // Vercel's Function response can differ from the original prerender after
   // successful preference/payment actions. Enforce the same private policy.
   if(deployed&&!financialOnly&&!quoteOnly&&!browserOnly&&!httpOnly)await verifyPrivateResponses('after revalidation ');

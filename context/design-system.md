@@ -1,10 +1,22 @@
 # Sceenyk design system
 
+## Approved redesign composition, existing identity preserved (2026-10-17)
+
+**Creative studio first. SaaS dashboard second. Redesign implementation: Not Started.** [The approved redesign contract](ui-context.md) controls new page composition/navigation/responsive interactions; PNGs continue to guide Sceenyk identity and component styling. Preserve all existing **Exact / Approximate / Inferred / Needs confirmation** labels below. Historical board navbar/sidebar labels and page geometry are observations, not current information-architecture requirements.
+
+Retain current `:root`/`.dark` tokens, purple/blue/violet/cyan language, semantic foreground/surface pairs, spacing/radius/elevation/type scales, Inter/Geist Mono where practical and the official full/compact light/dark PNG logos through `SceenykLogo`. Keep shared root theme initialization/controller, `sceenyk-theme` persistence, Light/Dark/System, favicon synchronization and storage-failure behavior. No palette, logo, typeface or shadcn-default replacement is approved; token refinement needs a concrete documented implementation reason. Settings → Appearance owns selection, and Credits & Billing owns persistent personal balances; neither returns to global navigation.
+
+Apply output-first hierarchy, generous spacing, fewer unnecessary cards, subtle surface changes, restrained borders/shadows, artwork-led page color and quieter controls. Avoid excessive gradients/glows or generic admin-dashboard styling. Studio retains professional control density; public discovery is spacious. Novelty cannot reduce clarity. Modern creative tools inspire spatial restraint only; use Sceenyk's own typography, icons, components, motion, names and branding.
+
+Desktop Studio uses Navigation | Sources | Stage | Properties with the Stage largest and a compact fixed-height toolbar around 56–64px, never 10%. Tablet progressively collapses panels; mobile is Top Navbar → Stage → Properties with hamburger navigation and a separate full-screen Sources overlay opened from the Stage toolbar. These approved patterns supersede unspecified/old form-first mobile behavior; precise widths/breakpoints remain implementation decisions. Marketplace grids prioritize preview/title/creator/price; Settings retains its existing responsive navigation.
+
+Landing uses layered generated imagery, subtle desktop pointer parallax and a few meaningful stacked scroll stories. Touch/mobile uses a strong static composition; `prefers-reduced-motion` removes nonessential movement. Optimize/lazy-load noncritical media, reserve geometry and prefer performant transforms without excessive JavaScript. Preserve keyboard/visible focus/semantic controls/readable contrast (including over media), accessible overlays/focus return, screen-reader labels and 44px touch targets in both themes. The first unit is **Phase 1 — shared public/workspace shells and navigation architecture**; no animation or application change occurs in this documentation task.
+
 ## Approved Settings placement (2026-10-16)
 
-The [Settings UI contract](ui-context.md#approved-settings-ui-2026-10-16) supersedes earlier navbar/header theme-control and general dashboard credit-balance placement. Theme selection moves to Settings → Appearance (Light/Dark/System) through the existing controller; persistent personal AI-credit balances move to Settings → Credits & Billing. Contextual generation costs, insufficient-credit warnings and top-up/payment information remain. Settings uses existing light/dark tokens, cards/fields, accessible section navigation and responsive shell patterns. Reference-image observations below retain their confidence labels; they do not require duplicate Credits/theme controls or a notification system. This approval adds no application UI or new theme implementation.
+The [Settings UI contract](ui-context.md#approved-settings-ui-2026-10-16) supersedes earlier navbar/header theme-control and general dashboard credit-balance placement. Theme selection moves to Settings → Appearance (Light/Dark/System) through the existing controller; persistent personal AI-credit balances move to Settings → Credits & Billing. Contextual generation costs, insufficient-credit warnings and top-up/payment information remain. Settings uses existing light/dark tokens, cards/fields, accessible section navigation and responsive shell patterns. Reference-image observations below retain their confidence labels; they do not require duplicate Credits/theme controls or a notification system. The Settings placement is implemented; this redesign documentation adds no application UI or new theme implementation.
 
-This is one visual system with light and dark surface treatments. Use the PNGs as the primary visual source; use the semantic tokens in `app/globals.css` to implement it. Theme changes must preserve component structure, hierarchy, spacing, and behavior.
+This is one visual system with light and dark surface treatments. Use the PNGs as the primary visual source; use the semantic tokens in `app/globals.css` to implement it. Switching themes must preserve the same content, component structure, hierarchy, spacing and behavior within the approved layout; the redesign may reorganize composition consistently in both modes.
 
 ## Sources, evidence, and repository baseline
 
@@ -214,6 +226,8 @@ Interactive cards may add `.sceenyk-interactive` for purple border/glow on hover
 
 ## Navigation, sidebar, and tabs
 
+**Historical reference observations:** Exact below describes what the boards show, not approved destinations. Use the 2026-10-17 redesign contract for Studio naming, signed-in/out navbar, workspace groups, hamburger navigation and full-screen mobile Sources. Credits/theme stay in Settings; Subscriptions is outside current scope. Retain tokens and accessible active/focus treatments, not obsolete labels/dimensions.
+
 **Exact desktop navbar:** logo on the left; Home, Create, Templates, Marketplace, Pricing; search with shortcut hint; notification bell; circular avatar, name, and dropdown chevron. The active route uses purple text and an underline. Light surface is white with a fine border; dark surface is near-black with a faint purple tint and border.
 
 **Exact mobile navbar:** logo, search icon, avatar; the desktop text links and expanded search are absent. **Inferred:** expose those destinations through accessible navigation at narrow widths, preserve account/search actions, and use 44 px hit areas. The board does not specify a hamburger, bottom navigation, sticky behavior, or exact collapse breakpoint.
@@ -334,7 +348,7 @@ Still to implement or confirm:
 - Production vector source and any licensed General Sans font assets; the supplied PNGs are the current official logo, and Inter remains the authorized board alternative for UI text.
 - Ambiguous blue/neutral/dark-gradient source labels; a vector design source could settle exact values.
 - Owned draft screens/data source is implemented; hosted migration acceptance is pending. Generation results and remaining controls remain future units.
-- Final tab pattern, sidebar dimensions, mobile navigation, touch sizing, overlay behavior, and page breakpoints through real content/viewport review.
+- Exact tab pattern, panel widths and breakpoints through content/viewport review. Mobile hamburger navigation, Stage + Properties, full-screen Sources/Close/state return and 44px touch targets are approved; implementation/acceptance remains Not Started.
 - Busy/upload/progress/error behavior, payment and media integration, and accessible player controls; PNG examples do not establish those systems.
 - Screen-level keyboard, screen-reader, contrast, zoom, and responsive verification when the real components are built.
 

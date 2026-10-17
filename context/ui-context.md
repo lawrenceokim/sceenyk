@@ -1,5 +1,200 @@
 # UI Context
 
+## Approved creative-studio-first UI/UX direction (2026-10-17)
+
+Approved 2026-10-17. **Documentation contract: Complete. Redesign implementation: Not Started.** This approval defines the direction before implementation; it does not authorize application changes in this task. The first recommended implementation unit is **Phase 1 — shared public/workspace shells and navigation architecture**.
+
+## Principle and precedence
+
+**Creative studio first. SaaS dashboard second.** Sceenyk moves toward a premium creative-production workspace: restrained spatial hierarchy, visual-first composition and output surrounded by contextual tools. Modern creative tools such as Pryzm inspire the workspace feeling only. Retain Sceenyk's own identity, product structure and names; do not copy another product's exact layout, typography, animations, icons, components or branding, including its Studio/Lab/Flow naming structure.
+
+This contract supersedes older target descriptions of dashboard-first navigation, Create as the primary user-facing destination, form-first/mobile form stacking, marketing feature-list navigation and a long educational landing page. Older source snapshots and acceptance results remain historical evidence, not redesign requirements or proof of redesign completion. Existing routes retain their current URLs until a separately scoped migration; **Studio is a user-facing name, not a requirement to rename `/create`, `components/creation/` or backend concepts**.
+
+Preserve the current light/dark system, purple/blue accents, semantic design tokens, typography where practical, official logo assets and Tailwind/shadcn/Base UI foundation. Change hierarchy, information architecture, page structure, navigation, placement, spacing, responsive behavior and interaction flows. No replacement palette or branding is approved.
+
+## Source-inspected baseline
+
+Read-only source inspection on 2026-10-17 found the following. This is not new browser/deployment acceptance.
+
+| Area | Current implementation | Approved change, Not Started |
+| --- | --- | --- |
+| Public shell and landing | `app/(public)/layout.tsx` supplies Navbar/Footer to home, `/create`, private project pages in the same route group and Marketplace. Home composes Hero, CreationCategories, HowItWorks, FeatureSection, Showcase, PricingPreview and FinalCta. The hero uses `SceneArtwork` concept illustration. | Separate public discovery and creative workspace presentation; shorten landing storytelling and use approved generated imagery. |
+| Navbar | `components/navbar.tsx` lists Features, How it works, Marketplace and Pricing; signed-in account controls add Dashboard, Create, Settings and UserButton. | Compact public navbar and Studio entry for either auth state, as specified below. |
+| Dashboard | `DashboardShell` uses a fixed 240px sidebar at `lg`/1024px and a mobile Sheet; home includes overview cards, projects and placeholder sections. Navigation includes Home/Create/Projects/Templates/Marketplace/Credits/Settings. | Workspace navigation, recent-work hierarchy and fewer administrative cards. Existing widths/breakpoints are baseline measurements, not required target dimensions. |
+| Studio/create | Public `/create` and owned `/projects/[id]` reuse `CreationWorkspace`: form column then preview, two columns at `lg`, form first when stacked. Generation/caption/final-result panels contain separate output views. | Navigation / Sources / Stage / Properties with output as the main stage; intentional tablet/mobile behavior. Reuse existing preview/result logic. |
+| Guest/auth | Signed-out visitors can configure category, prompt, local media and settings. The editor holds transient React state. Clerk forces post-auth `/dashboard`; identity-keyed editor/default loading can remount it. `ProjectGeneration` offers Sign in to generate; no cross-auth guest restoration exists. | Preserve lightweight guest draft across Clerk authentication and return to the same Studio flow. |
+| Marketplace | Public browse/search/category/pagination, detail/adoption and creator storefronts exist. ListingCard includes configuration cover, title, description, tags, creator, adoption price and estimated generation credits. | Visual-first discovery with quieter cards and detail-first secondary information. |
+| Settings | Nine private sections, desktop section links and a labeled picker below `xl`, owned data and legacy redirects exist. Light/Dark/System and primary balance/history live here. | Preserve completed information architecture, services, responsive navigation and private response policy. |
+| Visual foundation | `app/globals.css`, root Inter/Geist Mono fonts, `lib/theme.ts`, root ThemeController and `SceenykLogo` implement shared identity. | Retain these foundations; no new color system, font replacement or recreated logos. |
+
+Projects currently live in `/dashboard#projects`; Templates is a placeholder, and no standalone Library or Documentation route exists. Pricing is currently `/#pricing`. Named experiences below are intended information architecture, not claims that new routes/features exist. Choose destinations and legacy compatibility during the relevant implementation unit; do not create dead links or imply placeholder capabilities work.
+
+## Two visual environments
+
+| Environment | Surfaces | Presentation and access |
+| --- | --- | --- |
+| Public / Discovery | Landing, Marketplace, Pricing, Documentation, creator storefronts | Top navigation, immersive/full-width visual layouts, minimal chrome, cinematic presentation and spacious storytelling. Public discovery remains signed-out accessible. Documentation is a future education surface. |
+| Sceenyk Workspace | Studio, Projects, Library, Settings, creator/account management | Persistent compact navigation on larger screens, preview/output-first hierarchy, contextual panels and reduced dashboard-card emphasis. Studio configuration is guest-accessible; private projects, account data and operations remain authenticated/owned. |
+
+These are presentation boundaries, not two auth providers, theme systems or service stacks. Marketplace may be reached from the workspace while retaining public discovery presentation; public storefronts remain distinct from private creator management. Internal support retains its independent server authorization and private boundary.
+
+## Landing and public navbar
+
+The landing page is a minimal premium creative-product story, not a long SaaS feature list or complete manual. Approved order:
+
+1. Navbar.
+2. Hero.
+3. A small number of immersive product-story sections.
+4. Marketplace / creator-economy story.
+5. Pricing.
+6. Final CTA.
+7. Footer.
+
+| Viewer | Left | Right |
+| --- | --- | --- |
+| Signed out | Sceenyk logo, Marketplace, Pricing | Studio, Sign In, Get Started |
+| Signed in | Sceenyk logo, Marketplace, Pricing | Studio, Clerk user/profile button |
+
+Studio opens guest configuration without requiring sign-in. Sign In/Get Started retain centered Clerk modal authentication. Remove Features/How-it-works as competing top-level marketing navigation. Documentation remains reachable through the footer and workspace utility navigation. Preserve hydration-safe account readiness; never flash another viewer's controls or identity. Mobile public navigation adapts these destinations with accessible compact navigation. No persistent personal credit balance or theme toggle returns to global navigation.
+
+### Hero and scroll story
+
+One dominant central AI-generated image/visual anchors several smaller generated images around it. Use layered depth and subtle desktop pointer parallax with different small movement speeds. Motion remains restrained; avoid excessive floating animation. Use a strong static/mobile-adapted composition on touch/mobile, and disable nonessential movement for `prefers-reduced-motion`. The message must remain understandable without motion.
+
+Use a strong short headline, very short support copy and at most two primary CTAs; approved possible labels are **Studio** and **Explore Marketplace**. Final wording and imagery selection belong to Phase 2. Marketing image preparation must be separately scoped and must not call the hosted production pipeline merely to populate the landing page. Supplied/static licensed assets or approved generated assets may support local design work without claiming user results exist.
+
+A limited number of major storytelling moments may layer/stack, reveal the preceding section or appear to move over it in depth. Suggested conceptual sequence: **Idea → Scene**, **Scene → Story / Production**, **Create → Publish → Earn**. Do not animate every section. Return to normal document scrolling for Pricing, final CTA and Footer. Preserve normal navigation and scrolling without scroll trapping; keep a readable reduced-motion/static alternative.
+
+Pricing retains the approved pay-as-you-go message, two separate lifetime free generations and one-time manual top-ups. Do not invent production prices, subscriptions or Live payment availability. Marketing aspirations must not imply that the deferred final renderer or other unavailable features are complete.
+
+### Documentation education
+
+Detailed education belongs primarily in Documentation: what Sceenyk is, Studio, starting a project, prompts, importing samples, visuals, narration, captions, Marketplace, creator earnings, credits, exports and other supported workflows. Distinguish available workflows from planned ones. This task creates no Documentation route or product manual; its location/content migration is scoped later. The landing explains value.
+
+## Studio naming and guest handoff
+
+Use **Studio / Sceenyk Studio** consistently for the primary creation destination and primary navigation/CTAs. Ordinary verbs such as create a project may remain; domain identifiers and routes need no gratuitous renaming.
+
+Guests may enter prompts and supported style/visual settings, tone, duration, aspect ratio and other non-sensitive parameters. They cannot start provider-backed generation, reserve credits or access private project/media/account operations before verified authentication.
+
+The approved Generate handoff is:
+
+1. Preserve the current guest Studio draft before opening authentication.
+2. Request Clerk authentication, reusing its modal model where practical.
+3. On successful authentication, restore the guest draft inside the same Studio flow.
+4. Keep entered choices instead of overwriting them with newly loaded account creation defaults; defaults fill genuinely unset new-draft choices only. Existing saved/adopted projects retain their own values.
+5. Enable the existing owned save/upload and server-issued cost-review/explicit confirmation flow without requiring re-entry. Authentication completion alone must not auto-submit paid work.
+
+Lightweight configuration may be persisted locally with a bounded, validated, versioned draft contract during implementation. Define lifetime/cleanup, cancellation/retry, reload and account-switch behavior before coding. Preserve a draft when the modal is canceled or auth fails; provide honest recovery when storage is unavailable. Browser draft data is untrusted configuration, never identity, ownership, pricing, entitlement or durable job truth. Do not mix one user's private project with another account's draft.
+
+Large uploaded files require a separately defined safe browser-storage/authenticated-upload strategy; **do not place File objects, binary/base64 media or temporary signed capabilities casually in `localStorage`**. Existing in-memory Files/object URLs are temporary and do not establish reload/auth restoration. If a strategy cannot restore files, explain re-selection honestly while preserving lightweight settings. Server-owned project-first upload, private R2 verification and cleanup remain authoritative.
+
+Current Clerk forced `/dashboard` redirects are baseline behavior, not the future Studio handoff. A later bounded auth change must use an application-controlled same-flow destination; no arbitrary browser return URL is trusted. General protected-route denial and other authentication flows remain secure. See [authentication.md](authentication.md#approved-guest-studio-auth-handoff-2026-10-17).
+
+## Desktop Studio
+
+Large-screen architecture: **App Navigation | Project / Sources | Preview Stage | Properties**. The Stage receives the largest portion of available workspace and feels like a creative/video-editor monitor rather than a dashboard card. Panel widths are implementation decisions based on real content fit.
+
+| Area | Responsibility |
+| --- | --- |
+| App Navigation | Compact creative workspace navigation. CREATE: Studio. WORKSPACE: Projects, Library. DISCOVER: Marketplace. UTILITY: Documentation, Settings. Account/user controls may sit at the bottom. Use Sceenyk's own names; do not recreate another product's navigation. |
+| Project / Sources | What the user is working with: title, sample/source import, uploaded media, existing scene list/references and project inputs. Do not call this Effects. Choose Project, Sources or Canvas during implementation according to actual content; this is separate from property editing. A scene list does not authorize a new timeline/editor. |
+| Preview Stage | Imported media, generated scenes, current output, caption preview, playback and completed results where actually available. Unavailable/unready results retain truthful states. Reuse existing owned preview/caption/result mechanisms. |
+| Properties | Frequently adjusted scene/project prompt, visual style, tone, duration, narration/voice, captions and other already-supported controls. Adapt to the current selection when supported; do not invent editable voices, scenes or properties. |
+
+### Stage toolbar and progress
+
+Use a compact **fixed-height toolbar, roughly 56–64px**, selected against the design system; never use literal 10% height. The preview uses the remaining Stage space. Candidate actions: aspect ratio, save/status, Sources access, progress, Share, Export and overflow. Include actions only when backed by an existing supported capability; no new sharing/export service is approved here. Preserve caption exports, owned playback and available final-result controls without claiming final rendering is ready.
+
+Where supported by persisted workflow state, explain **Planning, Visuals, Narration, Captions, Finalizing** in user language. Map labels to actual stage/readiness/failure data, not a new job state machine. Never fabricate percentages, advance by elapsed time, expose provider internals or call an intermediate a completed result. Preserve reservation and success-settlement semantics.
+
+## Tablet Studio
+
+Progressively collapse secondary panels instead of squeezing four columns. Prioritize Stage, essential Properties, accessible Navigation and accessible Sources. Drawers/overlays may replace secondary areas as width requires; preserve selection, draft, playback context and focus when opening/closing or changing orientation. Exact breakpoints and panel widths are **Needs confirmation during implementation**, based on usable content rather than a copied desktop size.
+
+## Mobile Studio
+
+The normal visible mobile flow is explicitly **Top Navbar → Preview Stage → Properties**. The preview appears near the top; mobile does not stack every desktop panel ahead of it.
+
+- **Top navbar:** hamburger, Sceenyk logo and only essential compact actions. Navigation consumes no permanent viewport width.
+- **App navigation:** hamburger opens an accessible app navigation overlay/drawer containing Studio, Projects, Library, Marketplace, Documentation, Settings and account controls as supported. It is distinct from Sources.
+- **Sources:** a Sources/Media control in the Stage toolbar opens the full Sources interface as a **full-screen/full-viewport slide-in overlay** with imports, media, existing scenes and project sources. It is neither a permanent column nor a small bottom sheet. Include an obvious Close control; closing restores the same Studio state and returns focus to the trigger.
+- **Toolbar:** Sources, aspect ratio, progress, Save, Share and Export may appear when supported. Put secondary actions in accessible overflow instead of shrinking all desktop controls into unreadable buttons.
+- **Properties:** display below the Stage in the normal page flow. Use readable labels and touch targets; the Sources overlay must not replace or erase this state.
+
+Approved interaction: **Preview Stage → Sources button → full-screen Sources panel → Close → Preview**. Both navigation and Sources overlays need semantic titles, focus management/trapping, Escape/close behavior, background interaction control, safe viewport/scroll handling and focus return through existing accessible primitives.
+
+## Projects, Library and home
+
+Reduce Dashboard's visual importance. If a home surface remains, prioritize recent projects, resume work, start Studio and meaningful recent activity instead of excessive statistics/account cards. Settings owns account controls, credit balance and appearance.
+
+Projects emphasizes real permitted thumbnails/previews and truthful project status; use a clearly labeled fallback when no preview exists. Do not fabricate generated thumbnails or expose private media publicly. Avoid a dense administrative table unless the task needs it. Library is the intended reusable creative-asset area with visual-first presentation where appropriate; exact feature expansion and persistence are outside this task. Do not present the current Templates placeholder as a functioning Library.
+
+## Marketplace and creator storefronts
+
+Preserve all Marketplace business behavior. Public discovery uses a responsive visual grid. Cards prioritize **(1) video/image preview, (2) title, (3) creator, (4) adoption price/free state**. Description, estimated generation credits, detailed statistics and other secondary details belong mainly on listing detail. Keep adoption price distinct from AI generation cost and retain cost disclosure before spending.
+
+Current covers are explicitly configuration previews. Real discovery video/image previews require an approved public-media/rights projection; never reuse private R2 URLs, original uploads or project assets merely for visual richness. Until supported, retain an honest safe cover. Do not broaden DTOs or expose paid reusable instructions.
+
+Creator names/avatars continue to link to **`/marketplace/creators/[creatorSlug]`**, and listings to existing detail/adoption. Storefronts align visually with discovery while preserving public allowlists, stable slugs, publishing, adoption, earnings and payout behavior. Creator management stays private in Settings → Creator Profile; public storefronts reveal no private projects, email, finances or internal support data.
+
+## Settings and protected functionality
+
+Preserve the completed Settings information architecture and responsive section navigation:
+
+**Account; Creator Profile; Credits & Billing; Earnings & Payouts; Creation Preferences; Notifications; Appearance; Privacy & Security; Data & Account.**
+
+Keep persistent credits in Credits & Billing and Light/Dark/System in Appearance. Do not return balance or theme toggles to global navigation. Contextual generation cost, available/required credits, insufficient-credit warnings and payment information remain wherever the action needs them. Unsupported notifications, defaults, export/deletion and session controls remain truthful and separately scoped.
+
+All existing product functionality and backend contracts must survive relocation. Preserve Clerk identity/modals; Supabase ownership/security and private/no-store responses; private R2 media; Gemini planning; active fal.ai visuals; ElevenLabs narration; captions; composition; PayPal Sandbox; AI credits; Marketplace purchases/adoption; creator earnings/withdrawals; payout reconciliation; admin/support authorization; Settings; and creator storefronts. Reuse existing server/domain logic. This redesign changes no provider, financial policy, accounting trigger, entitlement, database access or accepted security invariant. Existing final-render capacity/acceptance limits remain deferred.
+
+## Visual, responsive, accessibility and performance rules
+
+1. Content/output is the hero.
+2. Use generous spacing.
+3. Reduce unnecessary card containers.
+4. Use subtle surface differences for hierarchy.
+5. Prefer restrained borders and shadows.
+6. Let generated artwork/video provide much of the page color.
+7. Keep control UI quieter than creative output.
+8. Avoid excessive gradients/glows.
+9. Animate only where it adds meaning.
+10. Keep professional Studio density and more spacious public pages.
+11. Avoid generic admin-dashboard aesthetics.
+12. Preserve clarity over visual novelty.
+
+Keep existing theme colors, semantic tokens, spacing/type/radius scales, official light/dark full/compact logos and Inter/Geist Mono where practical. Refine a token only for a documented implementation need; no palette replacement. Preserve reference confidence labels (**Exact / Approximate / Inferred / Needs confirmation**) in [design-system.md](design-system.md). The boards guide identity/component styling; this approved contract defines new page composition/navigation.
+
+Each experience adapts deliberately: public visual compositions simplify motion on mobile; Studio uses four desktop areas, progressive tablet collapse and mobile Stage + Properties/full-screen Sources/hamburger; Marketplace uses responsive grids; Settings retains its responsive navigation. Do not build desktop then merely shrink it.
+
+Preserve/improve keyboard navigation, visible focus, semantic controls, contrast in both themes and over artwork, reduced motion, accessible dialogs/drawers, screen-reader labels and at least 44px mobile touch targets. Retain skip targets, meaningful loading/empty/error/success states and truthful status announcements. Verify zoom, long labels, short viewports, overflow and focus restoration during each affected phase.
+
+Optimize image dimensions/formats and reserve media geometry to avoid layout shift; prioritize the dominant hero visual and lazy-load noncritical media. Prefer performant CSS/transform motion, small scoped client boundaries and fewer mobile effects. Avoid excessive JavaScript-driven animation. Pointer/scroll effects must not block interaction; measure performance with representative content before marking the relevant phase Complete.
+
+## Component and operational boundaries
+
+Implementation may reorganize UI into clear feature boundaries: public site shell, workspace shell, Studio, Marketplace, Settings, shared brand/navigation and shared creative controls. Reuse root auth/theme, shared primitives and existing services/hooks. These are responsibilities, not mandated folders or permission for a broad backend restructuring. Preserve owned project/media/job/quote state through layout transitions; new UI grouping must not change route protection, callback URLs or private/public caching accidentally.
+
+**Inngest Cloud remains intentionally paused to preserve monthly execution allowance.** Redesign work must not trigger hosted workflows unnecessarily. Use local development, local Inngest where needed and explicitly labeled fixtures. Hosted workflow acceptance stays **Pending hosted acceptance / deferred until explicitly authorized**; local results cannot substitute for it. Do not unpause, resync or submit generation/payout events as part of UI review. Previously completed hosted evidence remains valid within its recorded scope.
+
+## Staged implementation and acceptance
+
+All redesign phases are **Not Started**. Complete one bounded unit at a time, update context/tracker with actual evidence and stop after reporting the unit and recommending the next. No phase starts automatically from this documentation approval.
+
+| Phase | Scope | Acceptance focus |
+| --- | --- | --- |
+| 1 | Shared public/workspace shells, navigation architecture, foundational responsive layout | Distinct shells, real destinations/legacy compatibility, Studio labels, auth-safe navigation and shared branding/themes. Preserve Settings, private response protections and existing workflows; no detailed landing/Studio rebuild. |
+| 2 | Landing, public navbar, generated-image hero/parallax, selective scroll story, pricing/footer integration | Approved section order, signed-in/out navbar, static mobile/reduced-motion alternatives, accessible links/CTAs and measured media/motion performance. |
+| 3 | Studio desktop Navigation / Sources / Stage / Properties | Stage dominance, fixed-height toolbar, existing creative controls/output and truthful progress. Scope guest draft/auth restoration explicitly within a bounded Studio unit; verify cancellation, restoration, account defaults and cost confirmation without hosted dispatch. |
+| 4 | Studio tablet/mobile, hamburger navigation, full-screen Sources, Stage + Properties | Intentional collapse, full-viewport Sources/Close/same-state return, distinct navigation drawer, usable toolbar/overflow and keyboard/touch/focus behavior. Keep intermediate desktop work usable on small screens before this detailed phase. |
+| 5 | Marketplace visual redesign and creator storefront alignment | Preview/title/creator/price hierarchy, truthful safe covers, detail cost disclosure, preserved storefront routes/privacy, adoption/recovery and financial behavior. |
+| 6 | Projects / Library / dashboard cleanup | Recent-work/output hierarchy, truthful owned previews/status and no invented Library expansion or administrative statistics. |
+| 7 | Cross-app responsive/accessibility/polish | Full route/state/theme matrix, keyboard/contrast/zoom/reduced-motion, media performance, functional regressions and recorded acceptance limits. |
+
+For implementation, read relevant installed Next.js guidance before code, retain existing security/financial regression evidence and run proportionate required checks from [ai-workflow-rules.md](ai-workflow-rules.md). Use controlled local fixtures for progress/financial presentation without mutating real money or hosted jobs. Any real hosted workflow acceptance requires separate explicit authorization while Cloud is paused.
+
+**Exact next implementation unit: Phase 1 — shared public/workspace shells and navigation architecture.** Define destinations for currently absent surfaces without inventing features, preserve existing URLs/bookmarks/callbacks and Settings behavior, and validate navigation/auth/themes/responsiveness. Landing animation, complete Studio restructuring, guest persistence, Marketplace redesign, backend/provider/accounting changes and the full redesign are outside that first unit.
+
 ## Settings implementation status (2026-10-16)
 
 Implemented at /dashboard/settings/{account,creator-profile,credits,earnings,creation,notifications,appearance,privacy,data}, with /settings entry redirect, an authenticated shared dashboard shell, desktop section navigation and a labeled compact section picker on mobile/tablet. Legacy profile/credits/earnings bookmarks forward to the same source of truth and retain checkout/pagination queries. Existing profile, credit-purchase and creator financial components/services are reused. Navbar/dashboard/admin theme controls and dashboard header/summary paid balances are removed; contextual generation/payment credit information remains.
@@ -9,9 +204,9 @@ Appearance supports immediate Light/Dark/System through the existing browser pre
 
 ## Approved Settings UI (2026-10-16)
 
-**Approved presentation contract; implemented within the status above.** Settings is the private destination for Account, Creator Profile, Credits & Billing, Earnings & Payouts, Creation Preferences, Notifications, Appearance, Privacy & Security, and Data & Account. Use [the canonical section scope](overview.md#approved-settings-experience-2026-10-16) and [planned dashboard routes](architecture.md#approved-settings-architecture-2026-10-16).
+**Approved presentation contract; implemented within the status above.** Settings is the private destination for Account, Creator Profile, Credits & Billing, Earnings & Payouts, Creation Preferences, Notifications, Appearance, Privacy & Security, and Data & Account. Use [the canonical section scope](overview.md#approved-settings-experience-2026-10-16) and [implemented Settings routes](architecture.md#approved-settings-architecture-2026-10-16).
 
-Desktop uses a clear left section navigation and selected panel within the existing dashboard shell. Mobile uses stacked section links, a drawer or accessible tabs that fit the current design system. Show the selected section, meaningful headings, loading/empty/unavailable states, validation and save success/failure. Reuse shared cards, fields, buttons, semantic tokens, spacing and light/dark geometry. Preserve keyboard access, visible focus, 44px touch targets, drawer focus return and responsive content fit; avoid a second dashboard sidebar on narrow screens.
+Desktop uses existing Settings section links and the selected panel within the authenticated shell; mobile/tablet currently uses a labeled compact section picker below `xl`. Preserve this completed responsive navigation rather than replacing it during Studio redesign. Show the selected section, meaningful headings, loading/empty/unavailable states, validation and save success/failure. Reuse shared cards, fields, buttons, semantic tokens, spacing and light/dark geometry. Preserve keyboard access, visible focus, 44px touch targets, drawer focus return and responsive content fit; avoid a second dashboard sidebar on narrow screens.
 
 **Theme relocation:** remove Light/Dark controls from the normal public navbar, dashboard header and other app header chrome; the inspected admin header also has a toggle to migrate. Settings → Appearance presents Light, Dark and System using the existing controller, preference key and root initialization. System follows OS changes; explicit Light/Dark overrides it until System is selected again. Keep app-wide styling, favicon updates, cross-tab persistence and usable behavior when browser storage is restricted. No second theme implementation or theme-dependent initial-render mismatch.
 
@@ -21,9 +216,9 @@ Creator Profile reuses the deployed editor with explicit public-field explanatio
 
 Earnings & Payouts reuses Available Earnings, Pending Payout, Lifetime Earnings and useful reversals/adjustments, private payout destination, withdrawal action and history. Explain minimum $5 USD, immediate reservation and seven days from request; show safe persisted statuses and keep existing disabled/eligibility rules. No internal role, diagnostic, provider-reference or support controls belong here.
 
-Creation Preferences is planned for a small set of new-project defaults with per-project overrides, not a replacement project editor. Notifications is planned for the approved event categories, with required financial/security notices visibly mandatory. Privacy & Security explains visibility and delegates supported sessions/security to Clerk. Data & Account plans data management/later export and a protected Danger Zone; no working deletion control or invented export exists in this unit. Do not display interactive preference toggles that imply unsupported persistence/delivery. Existing account capabilities may be wired in the next unit; new preference/notification/deletion systems require later scope.
+Creation Preferences implements aspect ratio/category defaults for new drafts, with per-project overrides; other defaults remain planned and this is not a replacement project editor. Notifications is planned for the approved event categories, with required financial/security notices visibly mandatory. Privacy & Security explains visibility and delegates supported sessions/security to Clerk. Data & Account plans data management/later export and a protected Danger Zone; no working deletion control or invented export exists in this unit. Do not display interactive preference toggles that imply unsupported persistence/delivery. Existing Account, Creator Profile, Credits & Billing, Earnings & Payouts and Appearance capabilities are wired; additional defaults, notification infrastructure and export/deletion require separate scope.
 
-Earlier UI descriptions below record existing/historical screens. Their navbar theme and persistent dashboard-balance placement is superseded by this approved migration, which remains unimplemented in this documentation task.
+Earlier UI descriptions below retain historical screens/evidence. Completed Settings implementation supersedes old navbar theme and persistent dashboard-balance placement; the new redesign target above supersedes old page composition without changing accepted functionality.
 
 ## Approved public Marketplace creator storefront UI (2026-10-15)
 
@@ -37,9 +232,9 @@ Use existing shared Sceenyk tokens, Inter typography, semantic card/button/link 
 
 Show a genuine loading state, safe unavailable/not-found state for an unknown slug, and a service-error state distinct from zero results. For a public creator with no published listings, show **"This creator has no published Marketplace items yet."** Never show drafts, unpublished/archived listings, private project previews or financial information to fill the grid. Public HTML, metadata and client payloads must exclude the architecture contract's private fields even when the viewer owns the storefront.
 
-The deployed private owner-only editor currently lives at `/dashboard/marketplace/profile`; the approved migration reuses it in Settings → Creator Profile and routes Marketplace management entry points there. It lets the creator review/save public display name, avatar and short bio, choose a valid available slug during setup, and view/copy the stable assigned slug afterward. Explain public fields separately from private account settings. Preserve saving, validation/conflict/failure and persisted success states and server/database ownership. Later slug renaming needs separate link-preservation rules. This documentation task does not relocate the working editor or avatar system.
+The private owner-only editor lives at `/dashboard/settings/creator-profile`; legacy `/dashboard/marketplace/profile` redirects there and Marketplace management entry points use the same Settings source. It lets the creator review/save public display name, avatar and short bio, choose a valid available slug during setup, and view/copy the stable assigned slug afterward. Explain public fields separately from private account settings. Preserve saving, validation/conflict/failure and persisted success states and server/database ownership. Later slug renaming needs separate link-preservation rules. This documentation task does not relocate the working editor or avatar system.
 
-**Exact next implementation unit: creator storefront + minimum public-profile management.** Following, likes, comments, feed, collaborations, ratings/reviews, creator-specific search and a broader `/creators/[slug]` page are deferred. No social controls, moderation, payout UI, financial or final-render changes belong to this storefront contract.
+**Historical storefront recommendation — now Complete within deployed acceptance:** Following, likes, comments, feed, collaborations, ratings/reviews, creator-specific search and a broader `/creators/[slug]` page are deferred. No social controls, moderation, payout UI, financial or final-render changes belong to this storefront contract.
 
 ## Creator withdrawal privacy acceptance patch (2026-10-15)
 
@@ -86,9 +281,9 @@ Monthly plans, recurring billing and monthly credit allocations are outside curr
 
 Public pricing keeps the existing two-card layout and now explains pay-as-you-go, the exact lifetime free limit and non-expiring purchased credits, with a Buy credits link to the protected account screen. It labels Sandbox/demo pricing and removes superseded paid-plan/unavailable-purchase copy. No pack values or production rates are embedded in landing components.
 
-The implemented pay-as-you-go UX currently has a dashboard-header paid-credit link; its approved replacement is Settings → Credits & Billing, with the dashboard summary balance also removed during that future migration. Contextual paid balance/manual top-up in creation remains. Quotes display server-derived estimated cost, available paid credits and expected balance after reservation; free quotes leave paid credits unchanged. Expired quotes disable confirmation and offer Update quote. The existing shadcn top-up Dialog uses server-owned packs and separate-tab PayPal approval, retaining editor settings and local Files. Activation/cross-tab invalidation refresh owned balances/quotes with explicit confirmation still required. Keep safe popup recovery, low-credit copy, verified purchase success and the safe last20 paid-ledger history; no auto-recharge or internal/provider identifiers. Existing acceptance remains in the tracker; Settings relocation is unimplemented.
+The completed Settings migration places primary paid balance/history in Settings → Credits & Billing and removes the dashboard-header link/summary balance. Contextual paid balance/manual top-up in creation remains. Quotes display server-derived estimated cost, available paid credits and expected balance after reservation; free quotes leave paid credits unchanged. Expired quotes disable confirmation and offer Update quote. The existing shadcn top-up Dialog uses server-owned packs and separate-tab PayPal approval, retaining editor settings and local Files. Activation/cross-tab invalidation refresh owned balances/quotes with explicit confirmation still required. Keep safe popup recovery, low-credit copy, verified purchase success and the safe last20 paid-ledger history; no auto-recharge or internal/provider identifiers. Existing acceptance remains in the tracker; preserve completed Settings placement.
 
-Protected `/dashboard/credits` currently uses the dashboard shell and shared card/button/status tokens, with responsive demo packs, test-only amounts, PayPal approval, payment states, actual paid available/reserved balances and recent owned purchases. Its approved destination is Settings → Credits & Billing; existing Buy credits entries should lead into that same flow. Preserve contextual insufficient-generation links, active-Clerk-account state reset and owned pending-payment recovery on load/activation/Check purchases. No subscription UI, production price or theme token is introduced. Existing payment acceptance is retained; Settings relocation remains pending.
+Protected `/dashboard/settings/credits` uses the shared shell/card/button/status tokens, responsive demo packs, test-only amounts, PayPal approval, payment states, actual paid available/reserved balances and recent owned purchases. Legacy `/dashboard/credits` forwards queries there; Buy credits entries use this same flow. Preserve contextual insufficient-generation links, active-Clerk-account state reset and owned pending-payment recovery on load/activation/Check purchases. No subscription UI, production price or theme token is introduced. Existing payment acceptance and completed Settings relocation remain intact.
 
 Quick reference for building Sceenyk UI. Use [design-system.md](design-system.md) for detailed component/evidence guidance and [overview.md](overview.md) for product scope. The light and dark PNGs in [`/designs`](../designs/) are the visual references; [`app/globals.css`](../app/globals.css) owns the implemented tokens. Values below describe current CSS, not new palette proposals.
 
@@ -114,7 +309,7 @@ Sceenyk supports light and dark styling with a modern, bold, minimal, creative, 
 
 Light mode uses clean white/light surfaces. Dark mode uses layered near-black surfaces with brighter text and localized purple glow. Both themes share geometry, spacing, hierarchy, and behavior: they must feel like the same product.
 
-Light is the `:root` fallback. The implemented system follows OS preference until an explicit light/dark choice is saved in `localStorage` under `sceenyk-theme`. The approved Settings → Appearance control exposes Light/Dark/System and replaces navbar/header toggles; selecting System returns to OS following through this same controller. Apply `.dark` on `<html>` before first paint, preserving font classes. Preserve system-change and cross-tab synchronization; storage restrictions must not prevent an in-page choice. Reuse `shadow-card`, `shadow-popover`, and `shadow-glow` instead of independent effects. Control relocation and explicit System selection UI remain pending implementation.
+Light is the `:root` fallback. The implemented system follows OS preference until an explicit light/dark choice is saved in `localStorage` under `sceenyk-theme`. The approved Settings → Appearance control exposes Light/Dark/System and replaces navbar/header toggles; selecting System returns to OS following through this same controller. Apply `.dark` on `<html>` before first paint, preserving font classes. Preserve system-change and cross-tab synchronization; storage restrictions must not prevent an in-page choice. Reuse `shadow-card`, `shadow-popover`, and `shadow-glow` instead of independent effects. Control relocation and explicit System selection are implemented; preserve both.
 
 ## Colors
 
@@ -239,22 +434,22 @@ Visual execution slice: reuse the existing generation panel and tokens for `Gene
 
 Gemini planning slice: show persisted `Analyzing your media`, `Planning your content`, and `Production plan ready` in the existing generation panel. Readiness is `processing/planning` with a saved plan timestamp; no raw JSON, storyboard editor, completed video or simulated progress. A ready plan keeps its original reservation held for later production. Terminal AI failures restore it through existing accounting. Actual deployed Cloud/Gemini readiness, owner refresh/reopen, second-account denial and 1440/390/320px light/dark layouts pass. Earlier preparation-only descriptions below are historical; exact evidence is in the tracker.
 
-Commercial quotes: creation requires Review generation cost, then explicit Confirm free generation/Confirm X credits. A changed form hides its prior quote. Show actual insufficient required/available credits, unavailable pricing and safe stale-quote feedback; the existing Buy credits link opens `/dashboard/credits` for a one-time Sandbox pack purchase. Optional test rates must visibly say development/test, not final pricing. See [pricing.md](pricing.md).
+Commercial quotes: creation requires Review generation cost, then explicit Confirm free generation/Confirm X credits. A changed form hides its prior quote. Show actual insufficient required/available credits, unavailable pricing and safe stale-quote feedback; the main Buy credits destination is `/dashboard/settings/credits`, with legacy `/dashboard/credits` forwarding queries for a one-time Sandbox pack purchase. Optional test rates must visibly say development/test, not final pricing. See [pricing.md](pricing.md).
 
-Accounting foundation: dashboard and creation show actual owned free allowance through an authenticated uncached action, with loading/error/retry states, held reservations and activation/status-refresh recovery. Use singular/plural/none wording and the exact two-lifetime/10-second explanation. The dashboard and credit screen show actual paid balances, with accepted Sandbox purchases; production tariffs remain unavailable until approved/configured. Preserve reservation/consumption/restoration rules and existing design tokens/components/layouts. Historical unavailable-purchase preview copy is superseded by the Sandbox credits extension above.
+Accounting foundation: dashboard and creation show actual owned free allowance through an authenticated uncached action, with loading/error/retry states, held reservations and activation/status-refresh recovery. Use singular/plural/none wording and the exact two-lifetime/10-second explanation. Settings → Credits & Billing shows persistent paid balances, with contextual balances/costs in generation and accepted Sandbox purchases; production tariffs remain unavailable until approved/configured. Preserve reservation/consumption/restoration rules and existing design tokens/components/layouts. Historical unavailable-purchase preview copy is superseded by the Sandbox credits extension above.
 
 The landing page, public `/create`, private `/projects/[id]` and `/dashboard` share the same visual system. Clerk modal/account flows remain verified. Owned project source now adds draft title/save states and metadata cards; hosted project/media persistence is verified, with broader prior project acceptance tracked separately. Database failures display safe refresh UI separately from empty projects. Public navigation/account/loading/missing-configuration behavior remains unchanged, and artwork/output never fabricate generation.
 
 - **Public pages:** top navigation with responsive mobile navigation; keep public exploration available without authentication.
 - **App workspace:** persistent sidebar on desktop and an accessible mobile drawer on smaller screens. Use sidebar tokens and clearly mark the active destination.
 - **Implemented dashboard shell:** existing 240px sidebar at 1024px, mobile Sheet and Clerk account controls remain. The Projects count/list comes from an owner-scoped server query; eight metadata cards per page, ordered newest first. EmptyState stays for zero drafts. Cards show actual title/category/draft/date/format/duration/style with category icons, never invented thumbnails/results. Project cards show latest owned job status, or Status unavailable when status cannot be read. Paid balances and Sandbox credit purchases are real; templates remain previews. Database failure is distinct from empty.
-- **Main content:** centered, responsive regions with intentional maximum widths. `.sceenyk-container` uses `--content-width: 80rem` (1280px) and `--page-gutter: clamp(1rem, 3vw, 2rem)`; use narrower regions for focused forms.
-- **Creation:** choose a content type, then group prompt, optional uploaded media, relevant settings, and generation progress in a focused workspace. Stack controls on mobile.
-- **Creation workspace:** `/create` is public; `/projects/[id]` reuses its existing grid after server-owned load. Title/save controls retain their existing states. Local files preview before explicit Upload to project; the action saves an unsaved project first and updates its address without discarding Files. Real XHR progress, preparing/verifying/error/retry states and saved private-media metadata reuse existing tokens. Reopen restores project assets; active private previews request fresh signed access, and failed/expired previews offer Refresh preview. Pending assets provide Check upload with explicit guidance that it verifies an existing transfer; missing bytes after reload require reselecting the File and choosing Upload to project. Local selection removal remains; permanent deletion is deferred. Category/prompt/settings/output/Generate and theme behavior remain unchanged. Live development media acceptance passes; production deployment remains separate.
+- **Main content:** public reading/form regions use intentional maximum widths; the approved workspace Stage may use the available width rather than inheriting every centered marketing constraint. `.sceenyk-container` uses `--content-width: 80rem` (1280px) and `--page-gutter: clamp(1rem, 3vw, 2rem)`; use narrower regions for focused forms.
+- **Studio target:** group supported inputs into Sources and Properties around the dominant Stage on desktop. Tablet progressively collapses panels. Mobile normal flow is Top Navbar → Stage → Properties; Sources opens separately as a full-screen overlay. The old form-first stack is source baseline only.
+- **Current creation source baseline (approved Studio composition is Not Started):** `/create` is public; `/projects/[id]` reuses its existing grid after server-owned load. Title/save controls retain their existing states. Local files preview before explicit Upload to project; the action saves an unsaved project first and updates its address without discarding Files. Real XHR progress, preparing/verifying/error/retry states and saved private-media metadata reuse existing tokens. Reopen restores project assets; active private previews request fresh signed access, and failed/expired previews offer Refresh preview. Pending assets provide Check upload with explicit guidance that it verifies an existing transfer; missing bytes after reload require reselecting the File and choosing Upload to project. Local selection removal remains; permanent deletion is deferred. Category/prompt/settings/output/Generate and theme behavior remain unchanged. Live development media acceptance passes; production deployment remains separate.
 - **Cards:** reusable responsive grids for creation options, projects, templates, and marketplace content; preserve readable media thumbnails and supporting text.
 - **Modals/authentication:** centered panels over `--overlay`, optionally with restrained backdrop blur. Use accessible primitives with viewport-safe sizing. Clerk sign-in/sign-up must open in centered modals/overlays; do not add dedicated `/signin` or `/signup` pages.
-- **Pricing:** responsive cards with aligned prices/actions and a clear featured/popular tier using a purple outline and badge.
-- **Progress:** reflect real persisted job state: queued, actual processing stage or safe failed state. Durable Cloud dispatch prepares current requests, then fails honestly because video production is not connected; the held allowance is restored. Successful completion requires verified stored-result settlement, with no invented output. Check generation status and activation/pageshow/visibility reads recover state; no simulated percent or timers. Generate requires a saved owned project and all local Files uploaded/removed; its snapshot includes current prompt/settings and all uploaded project media. Stack/wrap on mobile.
+- **Pricing:** responsive one-time credit-pack/free-allowance presentation with clear actions and existing tokens; no recurring tiers or unapproved production prices.
+- **Progress:** reflect real persisted job state: queued, actual processing stage or safe failed state. Production stages expose only actual persisted readiness; Cloud is paused and final rendering deferred. Existing failure restoration and held-intermediate semantics remain authoritative. Successful completion requires verified stored-result settlement, with no invented output. Check generation status and activation/pageshow/visibility reads recover state; no simulated percent or timers. Generate requires a saved owned project and all local Files uploaded/removed; its snapshot includes current prompt/settings and all uploaded project media. Stack/wrap on mobile.
 - **Spacing/mobile:** use the existing 4/8/12/16/24/32/48/64px scale, normally 16–24px card padding and grid gaps. Adapt columns and navigation, use `min-w-0` for shrinking content, and prevent page-level horizontal overflow. Start with Tailwind's existing sm/md/lg/xl breakpoints; test content fit. Aim for 44px mobile hit areas rather than simply shrinking desktop controls.
 
 ## Icons

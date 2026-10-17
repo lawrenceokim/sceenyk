@@ -1,5 +1,15 @@
 # Sceenyk project overview
 
+## Current direction — approved full UI/UX redesign (2026-10-17)
+
+**Creative studio first. SaaS dashboard second.** The canonical [product direction](overview.md#approved-full-uiux-redesign-direction-2026-10-17) and [full redesign contract](ui-context.md) supersede older next-unit/navigation/layout guidance. **Redesign implementation: Not Started.** Documentation only; no application, route, backend, provider, financial or theme changes occur here.
+
+Public / Discovery covers Landing, Marketplace, Pricing, Documentation and creator storefronts with top navigation and immersive visual presentation. Workspace covers Studio, Projects, Library, Settings and creator/account management with output-first contextual tools. Use Studio as the main user-facing creation name while retaining current routes. Guests configure before authentication; the future Clerk Generate handoff must preserve/restore lightweight drafts inside Studio without unauthenticated generation or automatic paid submission.
+
+Desktop Studio is Navigation | Sources | Stage | Properties. Tablet collapses secondary panels progressively. Mobile is Top Navbar → Stage → Properties, with hamburger navigation and a separate full-screen Sources overlay opened from the Stage toolbar, obvious Close and same-state return. Marketplace becomes visual-first. Existing colors, light/dark tokens, typography, logos, accessible primitives and completed Settings information architecture remain.
+
+The [seven-phase plan](ui-context.md#staged-implementation-and-acceptance) begins with **Phase 1 — shared public/workspace shells and navigation architecture**. Later units cover landing, desktop Studio, tablet/mobile Studio, Marketplace/storefronts, Projects/Library/home and final polish. Preserve all accepted functionality/security/accounting and the Inngest Cloud pause; hosted acceptance needs explicit authorization. Do not start implementation automatically.
+
 ## Settings implementation status (2026-10-16)
 
 Implemented at /dashboard/settings/{account,creator-profile,credits,earnings,creation,notifications,appearance,privacy,data}, with /settings entry redirect, an authenticated shared dashboard shell, desktop section navigation and a labeled compact section picker on mobile/tablet. Legacy profile/credits/earnings bookmarks forward to the same source of truth and retain checkout/pagination queries. Existing profile, credit-purchase and creator financial components/services are reused. Navbar/dashboard/admin theme controls and dashboard header/summary paid balances are removed; contextual generation/payment credit information remains.
@@ -9,13 +19,13 @@ Appearance supports immediate Light/Dark/System through the existing browser pre
 
 The canonical product definition is [overview.md](overview.md), which is also the overview read by `AGENTS.md`. This entry point exists for references using `context/project-overview.md`; keep product details in the canonical document rather than maintaining a second specification.
 
-## Current contract — approved Settings experience (2026-10-16)
+## Preserved Settings contract (2026-10-16)
 
 Settings information architecture is approved and its implementation is recorded above. The canonical [Settings contract](overview.md#approved-settings-experience-2026-10-16) defines Account, Creator Profile, Credits & Billing, Earnings & Payouts, Creation Preferences, Notifications, Appearance, Privacy & Security, and Data & Account. All sections are private/authenticated.
 
-Move normal navbar/header theme controls into Settings → Appearance with Light/Dark/System, reusing the existing theme system. Move persistent dashboard/chrome AI-credit balances into Settings → Credits & Billing; retain cost review, insufficient-credit warnings and contextual top-up/payment information. Reuse creator-profile management in Settings with one source of truth, and existing credits/billing, earnings/payouts and Clerk capabilities. Creation defaults, notifications, export/deletion and unsupported privacy/session actions remain planned.
+Move normal navbar/header theme controls into Settings → Appearance with Light/Dark/System, reusing the existing theme system. Move persistent dashboard/chrome AI-credit balances into Settings → Credits & Billing; retain cost review, insufficient-credit warnings and contextual top-up/payment information. Reuse creator-profile management in Settings with one source of truth, and existing credits/billing, earnings/payouts and Clerk capabilities. Aspect ratio/category defaults for new drafts are implemented; other account defaults, notification infrastructure, export/deletion and unsupported privacy/session actions remain separately scoped.
 
-**Exact next implementation unit: Settings UI + migration of existing account-level controls.** Follow [route and service boundaries](architecture.md#approved-settings-architecture-2026-10-16) and [presentation rules](ui-context.md#approved-settings-ui-2026-10-16). This task changes documentation only and does not start implementation. Preserve the Inngest Cloud pause and pending hosted acceptance requirements.
+**Historical Settings implementation recommendation — now Complete within deployed acceptance:** Follow [route and service boundaries](architecture.md#approved-settings-architecture-2026-10-16) and [presentation rules](ui-context.md#approved-settings-ui-2026-10-16). This task changes documentation only and does not start implementation. Preserve the Inngest Cloud pause and pending hosted acceptance requirements.
 
 ## Completed unit — public Marketplace creator storefront (2026-10-15)
 
