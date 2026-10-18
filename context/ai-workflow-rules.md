@@ -1,5 +1,21 @@
 # AI Workflow Rules
 
+## Fast UI Development Mode
+
+Apply this mode to all future tasks involving only UI design, styling, component sizing, layout, spacing, responsiveness, or animations. It takes precedence over older UI validation requirements in this file, including browser acceptance, screenshot comparisons, multi-size/theme testing, and production-build checklists.
+
+1. Implement the requested changes directly.
+2. Do not run automated browser tests, screenshot comparisons, visual acceptance suites, or large regression tests.
+3. Do not run full production builds or lengthy validation commands unless necessary to resolve an implementation error.
+4. Do not perform deployment or production acceptance.
+5. Do not automatically test multiple screen sizes or themes. The user will inspect the results manually.
+6. Preserve existing functionality, business logic, and security.
+7. Stop immediately after implementation and provide a brief summary of files changed and anything the user should inspect.
+
+Only perform a quick check when necessary to catch an obvious implementation error. Manual UI review remains with the user; do not claim unperformed validation as passed.
+
+For backend, authentication, payment, database, security, or financial changes, continue using the existing strict testing and verification rules. Tasks that include any of those changes do not qualify as UI-only, even when they also change presentation.
+
 ## Focused Studio refinement and canonical URL (2026-10-18)
 
 The latest request supersedes the earlier edge-to-edge Sources overlay and side-by-side tablet layout. Studio is canonical at /studio; /create permanently redirects with query parameters, while owned /projects/[id] routes and existing handlers remain unchanged. At desktop viewport widths with at least 930px available Studio width, Sources/Stage/Properties use 254px/flexible/252px columns. Otherwise Stage precedes Properties; Sources opens as a 254px right-side nonmodal panel from 768px viewport width, or as a focus-managed modal inset 8px on every edge below 768px. One mounted Sources tree retains inputs and local media. Only the mobile modal locks background scrolling. Toolbar controls are 32px with a centered compact aspect segment/popover for the existing 9:16,16:9,1:1 choices; no invented Share or generation options. Workspace-only scrollbar hiding preserves scrolling and leaves public landing scrollbars unchanged. Preserve logos, themes, business logic and ownership; no hosted Inngest. Stop after Studio review.
@@ -222,6 +238,8 @@ Use these statuses consistently:
 UI-only work does not complete a feature that requires backend/database behavior. Installed SDKs are not configured integrations; passing lint/build is not evidence of live authentication, database authorization, payment verification, or a functioning generation pipeline. Label mocks, fixtures, and manual/unperformed checks explicitly.
 
 ## Before Moving to the Next Unit
+
+For UI-only tasks, follow Fast UI Development Mode above instead of the automated validation and production-build requirements below. The existing strict verification requirements continue to apply to backend, authentication, payment, database, security, and financial changes.
 
 Verify all applicable checks for the current unit:
 
