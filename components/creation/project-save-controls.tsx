@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useId } from "react";
+import { useId, type ReactNode } from "react";
 import { Check, FolderOpen, LoaderCircle, Save } from "lucide-react";
 import { AccountAction } from "@/components/account-action";
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,7 @@ export function ProjectSaveControls({
   signedIn,
   authReady,
   hasLocalMedia,
+  children,
 }: {
   title: string;
   onTitleChange: (value: string) => void;
@@ -33,18 +34,19 @@ export function ProjectSaveControls({
   signedIn: boolean;
   authReady: boolean;
   hasLocalMedia: boolean;
+  children: (parts: { project: ReactNode; save: ReactNode }) => ReactNode;
 }) {
   const saving = state.status === "saving";
   const id = useId();
-  return (
+  const project = (
     <section
       aria-labelledby={`${id}-heading`}
-      className="sceenyk-card p-5 sm:p-6"
+      className="studio-property"
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2
           id={`${id}-heading`}
-          className="flex items-center gap-2 text-lg font-semibold tracking-tight"
+          className="flex items-center gap-2 text-body-sm font-semibold"
         >
           <FolderOpen className="size-5 text-link" aria-hidden="true" />
           Your project
@@ -55,7 +57,7 @@ export function ProjectSaveControls({
       </div>
       <label
         htmlFor={`${id}-title`}
-        className="mt-5 block text-body-sm font-medium"
+        className="mt-3 block text-body-sm font-medium"
       >
         Project title
       </label>
@@ -78,36 +80,7 @@ export function ProjectSaveControls({
           to keep it when you reopen.
         </p>
       )}
-      <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        {signedIn ? (
-          <Button
-            type="button"
-            variant="outline"
-            disabled={saving || !title.trim()}
-            aria-busy={saving}
-            onClick={onSave}
-            className="w-full sm:w-auto"
-          >
-            {saving ? (
-              <LoaderCircle
-                className="size-4 motion-safe:animate-spin"
-                aria-hidden="true"
-              />
-            ) : (
-              <Save className="size-4" aria-hidden="true" />
-            )}
-            {saving ? "Saving draft…" : "Save draft"}
-          </Button>
-        ) : (
-          <AccountAction
-            intent="sign-in"
-            variant="outline"
-            disabled={!authReady}
-            className="w-full sm:w-auto"
-          >
-            Sign in to save
-          </AccountAction>
-        )}
+      <div className="mt-3">
         {projectId && (
           <Link
             href={`/projects/${projectId}`}
@@ -143,4 +116,36 @@ export function ProjectSaveControls({
       </div>
     </section>
   );
+  const save = (<div className="studio-save">
+        {signedIn ? (
+          <Button
+            type="button"
+            variant="outline"
+            disabled={saving || !title.trim()}
+            aria-busy={saving}
+            onClick={onSave}
+            className="px-3"
+          >
+            {saving ? (
+              <LoaderCircle
+                className="size-4 motion-safe:animate-spin"
+                aria-hidden="true"
+              />
+            ) : (
+              <Save className="size-4" aria-hidden="true" />
+            )}
+            {saving ? "Saving…" : state.status === "saved" && !dirty ? "Saved" : "Save"}
+          </Button>
+        ) : (
+          <AccountAction
+            intent="sign-in"
+            variant="outline"
+            disabled={!authReady}
+            className="px-3"
+          >
+            Sign in
+          </AccountAction>
+        )}
+</div>);
+  return children({ project, save });
 }

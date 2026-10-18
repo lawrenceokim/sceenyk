@@ -6,6 +6,7 @@ import { formatFileSize, type LocalMedia } from "./creation-options";
 import type { UploadState } from "@/lib/media/upload-client";
 import type { ProjectAsset } from "@/lib/media/types";
 import { ProjectMediaList } from "./project-media-list";
+import { LocalMediaThumbnail } from "./local-media-preview";
 import { AccountAction } from "@/components/account-action";
 
 const mediaIcons = { image: ImageIcon, video: FileVideo, audio: AudioLines };
@@ -48,16 +49,15 @@ export function MediaDropzone({
   const [dragging, setDragging] = useState(false);
   return (
     <section
-      className="sceenyk-card p-5 sm:p-6"
+      className="studio-property"
       aria-labelledby={`${id}-heading`}
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2
           id={`${id}-heading`}
-          className="flex items-center gap-3 text-lg font-semibold tracking-tight"
+          className="text-body-sm font-semibold"
         >
-          <span className="font-mono text-caption text-link">03</span>Bring your
-          media
+          Project media
         </h2>
         <span className="text-caption text-muted-foreground">
           Optional · private project media
@@ -66,7 +66,7 @@ export function MediaDropzone({
       <div
         role="region"
         aria-label="Local media dropzone"
-        className="sceenyk-upload mt-5 text-center"
+        className="sceenyk-upload mt-3 text-center"
         data-dragging={dragging}
         onDragEnter={(event) => {
           event.preventDefault();
@@ -165,10 +165,10 @@ export function MediaDropzone({
                   onClick={() => onSelect(media.id)}
                   className="h-auto min-h-11 min-w-0 flex-1 justify-start gap-3 whitespace-normal px-2 py-1.5"
                 >
-                  <Icon
+                  {media.kind === "image" ? <LocalMediaThumbnail media={media} /> : <Icon
                     className="size-5 shrink-0 text-link"
                     aria-hidden="true"
-                  />
+                  />}
                   <span className="min-w-0 text-left">
                     <span className="block break-all text-body-sm font-medium">
                       {media.file.name}

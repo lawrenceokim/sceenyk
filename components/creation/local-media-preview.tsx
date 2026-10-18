@@ -88,3 +88,10 @@ export function LocalMediaPreview({ media }: { media: LocalMedia }) {
     </div>
   );
 }
+
+export function LocalMediaThumbnail({ media }: { media: LocalMedia }) {
+  const url = useObjectUrl(media.file);
+  return media.kind === "image" && url ? <span className="relative size-10 shrink-0 overflow-hidden rounded-md bg-field">
+    <Image src={url} alt="" fill unoptimized sizes="40px" className="object-cover" />
+  </span> : null;
+}

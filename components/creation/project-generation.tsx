@@ -1,5 +1,5 @@
 "use client";
-import { useId } from "react";
+import { useId, type ReactNode } from "react";
 import { Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AccountAction } from "@/components/account-action";
@@ -16,6 +16,24 @@ import { CreditTopUp } from "@/components/payments/credit-top-up";
 import { CreditBalance } from "@/components/payments/credit-balance";
 import { CaptionTrackPreview } from "./caption-track";
 
+function generationLabel(job: GenerationJob | null, planReady: boolean) {
+  if (!job) return "Preview";
+  if (job.status === "completed") return "Video ready";
+  if (job.status === "failed") return job.stage === "rendering" ? "Render failed" : job.stage === "voice" ? "Narration failed" : "Generation failed";
+  if (["verifying", "uploading", "completed"].includes(job.renderStatus ?? "")) return "Finalizing video";
+  if (job.renderStatus === "rendering") return "Rendering video";
+  if (job.compositionReadyAt) return "Timeline ready";
+  if (job.compositionPendingAt) return "Timing adjustment required";
+  if (job.compositionStartedAt) return "Checking scene timing";
+  if (job.audioReadyAt) return "Preparing timeline";
+  if (job.narrationPendingAt) return "Narration needs attention";
+  if (job.stage === "voice") return "Generating voice-over";
+  if (job.visualsReadyAt) return "Visuals ready";
+  if (job.visualsPendingAt) return "Visual scenes need attention";
+  if (planReady) return "Production plan ready";
+  return `Generation ${generationStatusLabels[job.status].toLowerCase()}`;
+}
+
 export function ProjectGeneration({
   projectId,
   initialJob,
@@ -26,6 +44,7 @@ export function ProjectGeneration({
   mediaError,
   signedIn,
   authReady,
+  children,
 }: {
   projectId: string | null;
   initialJob: GenerationJob | null;
@@ -36,6 +55,7 @@ export function ProjectGeneration({
   mediaError: boolean;
   signedIn: boolean;
   authReady: boolean;
+  children: (parts: { controls: ReactNode; output: ReactNode; status: ReactNode; label: string }) => ReactNode;
 }) {
   const helpId = useId();
   const state = useProjectGeneration(projectId, initialJob, initialError, inputs);
@@ -53,14 +73,62 @@ export function ProjectGeneration({
     active ||
     !!state.statusError ||
     state.creating || state.quoting;
-  return (
+  const label = generationLabel(state.job, planReady);
+  const status = (      <div role="status" aria-live="polite" className="space-y-2">
+        {state.job && (
+          <>
+            <p className="text-body-sm font-semibold">
+              {label}
+            </p>
+            {state.job.status === "queued" && (
+              <p className="text-body-sm text-muted-foreground">
+                {state.job.dispatchStatus === "dispatch_failed" ||
+                state.job.dispatchStatus === "pending"
+                  ? "Your request is saved and waiting for delivery. Background recovery will retry; you can leave and return."
+                  : "Your request is queued for background preparation. You can leave and return to this project."}
+              </p>
+            )}
+            {planReady && (
+              <p className="text-body-sm text-muted-foreground">Your plan is saved. Supported visual scenes are next.</p>
+            )}
+            {state.job.status === "processing" && state.job.compositionReadyAt && <p className="text-body-sm text-muted-foreground">Your timeline is saved. Final rendering is deferred while worker capacity is resolved; your reservation remains held.</p>}
+            {state.job.status === "processing" && state.job.compositionPendingAt && <>
+              {[...new Set(state.job.compositionIssues?.map(compositionIssueMessage))].slice(0, 4).map(message => <p key={message} className="text-body-sm text-muted-foreground">{message}</p>)}
+              <p className="text-body-sm text-muted-foreground">Your produced scenes are saved and your reservation remains held. Timing must be resolved before rendering.</p>
+            </>}
+            {state.job.status === "processing" && state.job.audioReadyAt && !state.job.compositionReadyAt && !state.job.compositionPendingAt && <p className="text-body-sm text-muted-foreground">Checking your saved media and scene timing. Your reservation remains held.</p>}
+            {state.job.status === "processing" && state.job.narrationPendingAt && <p className="text-body-sm text-muted-foreground">Narration needs background recovery or configuration. Your saved plan and visual scenes are preserved; your reservation remains held.</p>}
+            {state.job.status === "processing" && state.job.visualsReadyAt && !state.job.audioReadyAt && !state.job.narrationPendingAt && <p className="text-body-sm text-muted-foreground">Visual scenes are saved. {state.job.stage === "voice" ? "Generating required narration." : "Preparing narration."} Your reservation remains held.</p>}
+            {state.job.visualsPendingAt && <p className="text-body-sm text-muted-foreground">Some scenes need an unsupported operation or background recovery. Your saved plan and any completed scenes are preserved.</p>}
+            {state.job.status === "processing" && state.job.stage && !planReady && !state.job.visualsReadyAt && !state.job.visualsPendingAt && (
+              <p className="text-body-sm text-muted-foreground">
+                {generationStageLabels[state.job.stage]}
+              </p>
+            )}
+            {state.job.status === "failed" && (
+              <p className="text-body-sm text-destructive">
+                {state.job.errorMessage}
+              </p>
+            )}
+            <p className="break-all text-caption text-muted-foreground">
+              Request {state.job.id}
+            </p>
+          </>
+        )}
+        {state.statusError && (
+          <p className="text-body-sm text-destructive">{state.statusError}</p>
+        )}
+      </div>
+);
+  const output = <div className="studio-output">{state.job?.status === "completed" && projectId && <FinalVideoResult key={state.job.id} projectId={projectId} jobId={state.job.id} />}{projectId && signedIn && state.job?.compositionReadyAt && <CaptionTrackPreview key={state.job.id} projectId={projectId} jobId={state.job.id} />}</div>;
+  const controls = (
     <section
       aria-label="Project generation"
-      className="sceenyk-card space-y-4 p-5 sm:p-6"
+      className="studio-generation"
     >
-      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+      <div className="space-y-3">
         <div>
-          <p className="text-body-sm font-medium">Ready for the next scene?</p>
+          <p className="text-body-sm font-medium">Generation</p>
           <p id={helpId} className="mt-1 text-caption text-muted-foreground">
             {!projectId
               ? "Save your draft before generating."
@@ -78,7 +146,7 @@ export function ProjectGeneration({
             disabled={disabled || (!state.retrying && (state.quoteExpired || (!!state.quote && state.quote.status !== "ready")))}
             aria-busy={state.creating || state.quoting}
             aria-describedby={helpId}
-            className="w-full sm:w-auto"
+            className="generation-submit"
             onClick={() => void (state.retrying || state.quote ? state.generate() : state.reviewCost())}
           >
             <Sparkles className="size-5" aria-hidden="true" />
@@ -110,7 +178,7 @@ export function ProjectGeneration({
       </div>
       <p className="text-caption leading-relaxed text-muted-foreground">
         Requests are saved for media analysis, production planning and supported
-        visual scenes. Final video assembly is not connected.
+        visual scenes. Final rendering is currently deferred while worker capacity is resolved.
         Confirming reserves the displayed allowance or credits. The reservation
         stays held for later production and is restored after a total failure
         without usable scenes.
@@ -162,53 +230,7 @@ export function ProjectGeneration({
           {state.error}
         </p>
       )}
-      <div role="status" aria-live="polite" className="space-y-2">
-        {state.job && (
-          <>
-            <p className="text-body-sm font-semibold">
-              {state.job.status === "completed" ? "Video ready" : state.job.status === "failed" ? state.job.stage === "rendering" ? "Render failed" : state.job.stage === "voice" ? "Narration failed" : "Generation failed" : state.job.renderStatus === "verifying" || state.job.renderStatus === "uploading" || state.job.renderStatus === "completed" ? "Finalizing video" : state.job.renderStatus === "rendering" ? "Rendering video" : state.job.compositionReadyAt ? "Timeline ready" : state.job.compositionPendingAt ? "Timing adjustment required" : state.job.compositionStartedAt ? "Checking scene timing" : state.job.audioReadyAt ? "Preparing timeline" : state.job.narrationPendingAt ? "Narration needs attention" : state.job.stage === "voice" ? "Generating voice-over" : state.job.visualsReadyAt ? "Visuals ready" : state.job.visualsPendingAt ? "Visual scenes need attention" : planReady ? "Production plan ready" : `Generation ${generationStatusLabels[state.job.status].toLowerCase()}`}
-            </p>
-            {state.job.status === "queued" && (
-              <p className="text-body-sm text-muted-foreground">
-                {state.job.dispatchStatus === "dispatch_failed" ||
-                state.job.dispatchStatus === "pending"
-                  ? "Your request is saved and waiting for delivery. Background recovery will retry; you can leave and return."
-                  : "Your request is queued for background preparation. You can leave and return to this project."}
-              </p>
-            )}
-            {planReady && (
-              <p className="text-body-sm text-muted-foreground">Your plan is saved. Supported visual scenes are next.</p>
-            )}
-            {state.job.status === "processing" && state.job.compositionReadyAt && <p className="text-body-sm text-muted-foreground">Your timeline is saved. Final rendering is deferred while worker capacity is resolved; your reservation remains held.</p>}
-            {state.job.status === "processing" && state.job.compositionPendingAt && <>
-              {[...new Set(state.job.compositionIssues?.map(compositionIssueMessage))].slice(0, 4).map(message => <p key={message} className="text-body-sm text-muted-foreground">{message}</p>)}
-              <p className="text-body-sm text-muted-foreground">Your produced scenes are saved and your reservation remains held. Timing must be resolved before rendering.</p>
-            </>}
-            {state.job.status === "processing" && state.job.audioReadyAt && !state.job.compositionReadyAt && !state.job.compositionPendingAt && <p className="text-body-sm text-muted-foreground">Checking your saved media and scene timing. Your reservation remains held.</p>}
-            {state.job.status === "processing" && state.job.narrationPendingAt && <p className="text-body-sm text-muted-foreground">Narration needs background recovery or configuration. Your saved plan and visual scenes are preserved; your reservation remains held.</p>}
-            {state.job.status === "processing" && state.job.visualsReadyAt && !state.job.audioReadyAt && !state.job.narrationPendingAt && <p className="text-body-sm text-muted-foreground">Visual scenes are saved. {state.job.stage === "voice" ? "Generating required narration." : "Preparing narration."} Your reservation remains held.</p>}
-            {state.job.visualsPendingAt && <p className="text-body-sm text-muted-foreground">Some scenes need an unsupported operation or background recovery. Your saved plan and any completed scenes are preserved.</p>}
-            {state.job.status === "processing" && state.job.stage && !planReady && !state.job.visualsReadyAt && !state.job.visualsPendingAt && (
-              <p className="text-body-sm text-muted-foreground">
-                {generationStageLabels[state.job.stage]}
-              </p>
-            )}
-            {state.job.status === "completed" && projectId && <FinalVideoResult key={state.job.id} projectId={projectId} jobId={state.job.id} />}
-            {state.job.status === "failed" && (
-              <p className="text-body-sm text-destructive">
-                {state.job.errorMessage}
-              </p>
-            )}
-            <p className="break-all text-caption text-muted-foreground">
-              Request {state.job.id}
-            </p>
-          </>
-        )}
-        {state.statusError && (
-          <p className="text-body-sm text-destructive">{state.statusError}</p>
-        )}
-      </div>
-      {projectId && signedIn && state.job?.compositionReadyAt && <CaptionTrackPreview key={state.job.id} projectId={projectId} jobId={state.job.id} />}
+
       {projectId && signedIn && (
         <Button
           variant="outline"
@@ -222,4 +244,5 @@ export function ProjectGeneration({
       )}
     </section>
   );
+  return children({ controls, status, output: state.job?.status === "completed" || state.job?.compositionReadyAt ? output : null, label });
 }

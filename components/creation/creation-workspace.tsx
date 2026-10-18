@@ -1,5 +1,7 @@
 "use client";
 
+import { BeforeAccountAuth } from "@/components/auth/before-account-auth";
+import { clearGuestDraft, readGuestDraft, rememberGuestDraft } from "./guest-draft";
 import { useEffect, useRef, useState } from "react";
 import { creationPreferencesAction } from "@/app/actions/settings";
 import { defaultCreationPreferences, type CreationPreferences } from "@/lib/settings/contract";
@@ -12,6 +14,9 @@ import type { GenerationJob } from "@/lib/generation/types";
 import { ProjectGeneration } from "./project-generation";
 import { CategorySelector } from "./category-selector";
 import { CreationPreview } from "./creation-preview";
+import { StudioLayout } from "./studio-layout";
+import { SettingSelect } from "./generation-settings";
+import { aspectRatios } from "./creation-options";
 import { GenerationSettings } from "./generation-settings";
 import { MediaDropzone } from "./media-dropzone";
 import { PromptComposer } from "./prompt-composer";
@@ -74,6 +79,8 @@ function AccountWorkspace(props: WorkspaceProps) {
 }
 
 function NewAccountWorkspace({ userId }: { userId: string }) {
+  const [guestDraft] = useState(readGuestDraft);
+  useEffect(() => { clearGuestDraft(); }, []);
   const [result, setResult] = useState<{ preferences: CreationPreferences; unavailable: boolean } | null>(null);
   useEffect(() => {
     let active = true;
@@ -85,7 +92,7 @@ function NewAccountWorkspace({ userId }: { userId: string }) {
     return () => { active = false; };
   }, [userId]);
   if (!result) return <p role="status">Loading your creation defaults…</p>;
-  return <>{result.unavailable && <p role="status" className="mb-4 text-body-sm text-muted-foreground">Your saved creation defaults are unavailable. This new draft uses standard defaults; you can adjust them below.</p>}<WorkspaceEditor signedIn authReady initialPreferences={result.preferences} /></>;
+  return <>{result.unavailable && <p role="status" className="mb-4 text-body-sm text-muted-foreground">Your saved creation defaults are unavailable. This new draft uses standard defaults; you can adjust them below.</p>}<WorkspaceEditor signedIn authReady initialPreferences={result.preferences} restoredDraft={guestDraft ?? undefined} /></>;
 }
 
 export function CreationWorkspace(props: WorkspaceProps) {
@@ -107,7 +114,9 @@ function WorkspaceEditor({
   initialPreferences = defaultCreationPreferences,
   signedIn,
   authReady,
+  restoredDraft,
 }: {
+  restoredDraft?: NonNullable<ReturnType<typeof readGuestDraft>>;
   initialProject?: SavedProject;
   initialAssets?: ProjectAsset[];
   initialMediaError?: string;
@@ -119,11 +128,11 @@ function WorkspaceEditor({
   authReady: boolean;
 }) {
   const [selectedCategory, setSelectedCategory] = useState<CategoryId>(
-    initialProject?.category ?? initialPreferences.category,
+    initialProject?.category ?? restoredDraft?.brief.category ?? initialPreferences.category,
   );
-  const [prompt, setPrompt] = useState(initialProject?.prompt ?? "");
+  const [prompt, setPrompt] = useState(initialProject?.prompt ?? restoredDraft?.brief.prompt ?? "");
   const [title, setTitle] = useState(
-    initialProject?.title ?? "Untitled Project",
+    initialProject?.title ?? restoredDraft?.brief.title ?? "Untitled Project",
   );
   const [projectId, setProjectId] = useState(initialProject?.id ?? null);
   const attemptId = useRef(initialProject?.id ?? null);
@@ -135,11 +144,11 @@ function WorkspaceEditor({
   const [savedBrief, setSavedBrief] = useState<ProjectDraft | null>(
     initialProject ?? null,
   );
-  const [selectedFiles, setSelectedFiles] = useState<LocalMedia[]>([]);
+  const [selectedFiles, setSelectedFiles] = useState<LocalMedia[]>(restoredDraft?.files ?? []);
   const [selectedFileId, setSelectedFileId] = useState<string | null>(null);
   const [mediaError, setMediaError] = useState("");
   const [settings, setSettings] = useState<CreationSettings>(
-    initialProject?.settings ?? {
+    initialProject?.settings ?? restoredDraft?.brief.settings ?? {
       aspectRatio: initialPreferences.aspectRatio,
       duration: "10",
       visualStyle: "Original",
@@ -270,10 +279,10 @@ function WorkspaceEditor({
   }
 
   return (
-    <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] lg:gap-8">
-      <div className="min-w-0 space-y-6">
-        {initialOrigin && <section className="sceenyk-card space-y-2 p-5 text-body-sm" aria-label="Adopted template"><p className="font-semibold">Adopted from {initialOrigin.title}</p><p className="text-muted-foreground">This is your independent project. Customize the instructions and add your own media.</p><Link className="nav-link text-link" href={`/marketplace/${initialOrigin.listingId}`}>View template</Link></section>}
-        <ProjectSaveControls
+    <BeforeAccountAuth.Provider value={() => {
+      if (!signedIn && !initialProject) rememberGuestDraft(brief, selectedFiles);
+    }}>
+      <ProjectSaveControls
           title={title}
           onTitleChange={setTitle}
           onSave={saveDraft}
@@ -283,34 +292,9 @@ function WorkspaceEditor({
           signedIn={signedIn}
           authReady={authReady}
           hasLocalMedia={selectedFiles.length > 0}
-        />
-        <CategorySelector
-          selected={selectedCategory}
-          onChange={setSelectedCategory}
-        />
-        <PromptComposer
-          prompt={prompt}
-          category={category}
-          onChange={setPrompt}
-        />
-        <MediaDropzone
-          files={selectedFiles}
-          selectedId={activeMedia?.id ?? activeAsset?.id}
-          error={mediaError}
-          onAdd={addFiles}
-          onSelect={setSelectedFileId}
-          onRemove={removeFile}
-          onUpload={mediaUpload.upload}
-          uploadStates={mediaUpload.uploadStates}
-          busy={mediaUpload.busy}
-          signedIn={signedIn}
-          authReady={authReady}
-          assets={mediaUpload.assets}
-          assetError={mediaUpload.assetError}
-          onRecover={mediaUpload.recover}
-        />
-        <GenerationSettings settings={settings} onChange={setSettings} />
-        <ProjectGeneration
+        >
+        {({ project, save }) => (
+          <ProjectGeneration
           projectId={projectId}
           initialJob={initialGeneration}
           initialError={initialGenerationError}
@@ -327,15 +311,88 @@ function WorkspaceEditor({
           mediaError={!!mediaUpload.assetError}
           signedIn={signedIn}
           authReady={authReady}
+        >
+            {({ controls, output, status, label }) => (
+              <StudioLayout
+                sources={
+                  <>
+                    {restoredDraft?.missingFiles && (
+                      <p role="status" className="text-caption text-warning-foreground">
+                        Your brief was restored. Select your local files again after signing in;
+                        files are not stored in the browser draft.
+                      </p>
+                    )}
+                    {initialOrigin && (
+                      <section className="studio-property space-y-2" aria-label="Adopted template">
+                        <p className="font-semibold">Adopted from {initialOrigin.title}</p>
+                        <p className="text-caption text-muted-foreground">Your independent project. Add your own media.</p>
+                        <Link className="nav-link text-link" href={`/marketplace/${initialOrigin.listingId}`}>View template</Link>
+                      </section>
+                    )}
+                    {project}
+                    <MediaDropzone
+          files={selectedFiles}
+          selectedId={activeMedia?.id ?? activeAsset?.id}
+          error={mediaError}
+          onAdd={addFiles}
+          onSelect={setSelectedFileId}
+          onRemove={removeFile}
+          onUpload={mediaUpload.upload}
+          uploadStates={mediaUpload.uploadStates}
+          busy={mediaUpload.busy}
+          signedIn={signedIn}
+          authReady={authReady}
+          assets={mediaUpload.assets}
+          assetError={mediaUpload.assetError}
+          onRecover={mediaUpload.recover}
         />
-      </div>
-      <CreationPreview
-        category={category}
-        settings={settings}
-        prompt={prompt}
-        media={activeMedia}
-        asset={activeAsset}
-      />
-    </div>
+                  </>
+                }
+                toolbar={
+                  <>
+                    <div className="studio-aspect">
+                      <SettingSelect id="aspect-ratio" label="Aspect ratio" value={settings.aspectRatio}
+                        choices={aspectRatios.map(({ value }) => ({ value, label: value }))}
+                        onChange={aspectRatio => setSettings({ ...settings, aspectRatio })} />
+                    </div>
+                    <span className="studio-toolbar-status" role="status">{label}</span>
+                    {save}
+                  </>
+                }
+                stage={
+                  <>
+                    {output}
+                    {(!output || activeMedia || activeAsset) && (
+                      <CreationPreview category={category} settings={settings} prompt={prompt}
+                        media={activeMedia} asset={activeAsset} />
+                    )}
+                    {status}
+                  </>
+                }
+                properties={
+                  <>
+                    <CategorySelector
+          selected={selectedCategory}
+          onChange={setSelectedCategory}
+        />
+                    <PromptComposer
+          prompt={prompt}
+          category={category}
+          onChange={setPrompt}
+        />
+                    <GenerationSettings settings={settings} onChange={setSettings} />
+                    <section className="studio-property">
+                      <h2>Narration</h2>
+                      <p className="mt-2 text-caption text-muted-foreground">Include any narration direction in your prompt.</p>
+                    </section>
+                    {controls}
+                  </>
+                }
+              />
+            )}
+          </ProjectGeneration>
+        )}
+      </ProjectSaveControls>
+    </BeforeAccountAuth.Provider>
   );
 }

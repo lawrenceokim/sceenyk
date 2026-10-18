@@ -16,19 +16,19 @@ export function PromptComposer({
   const id = useId();
   return (
     <section
-      className="sceenyk-card p-5 sm:p-6"
+      className="studio-property"
       aria-labelledby={`${id}-heading`}
     >
       <h2
         id={`${id}-heading`}
-        className="flex items-center gap-3 text-lg font-semibold tracking-tight"
+        className="text-body-sm font-semibold"
       >
-        <span className="font-mono text-caption text-link">02</span>Describe
+        Describe
         your scene
       </h2>
       <label
         htmlFor={`${id}-prompt`}
-        className="mt-5 block text-body-sm font-medium"
+        className="mt-3 block text-body-sm font-medium"
       >
         Your creative direction
       </label>
@@ -37,11 +37,11 @@ export function PromptComposer({
         name="prompt"
         value={prompt}
         onChange={(event) => onChange(event.target.value)}
-        rows={6}
+        rows={5}
         maxLength={projectPromptLimit}
         placeholder="Describe what you want Sceenyk to create..."
         aria-describedby={`${id}-help ${id}-count`}
-        className="sceenyk-field mt-2 min-h-44 resize-y text-body"
+        className="sceenyk-field mt-2 min-h-32 resize-y text-body"
       />
       <div className="mt-2 flex flex-wrap justify-between gap-2 text-caption text-muted-foreground">
         <p id={`${id}-help`}>
@@ -52,7 +52,7 @@ export function PromptComposer({
           {projectPromptLimit.toLocaleString()} characters
         </span>
       </div>
-      <div className="mt-5 border-t border-border pt-4">
+      <div className="mt-3">
         <p className="mb-2 text-caption font-medium text-muted-foreground">
           NEED A FIRST SPARK?
         </p>

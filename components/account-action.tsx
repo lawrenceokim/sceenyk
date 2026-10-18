@@ -1,6 +1,7 @@
 "use client";
 
-import type { ComponentProps } from "react";
+import { useContext, type ComponentProps } from "react";
+import { BeforeAccountAuth } from "@/components/auth/before-account-auth";
 import Link from "next/link";
 import { SignInButton, SignUpButton, useAuth } from "@clerk/nextjs";
 import { useAuthAvailable } from "@/components/auth/auth-availability";
@@ -50,6 +51,7 @@ export function AccountAction({
   intent = "create",
   ...props
 }: AccountActionProps) {
+  const beforeAuth = useContext(BeforeAccountAuth);
   const available = useAuthAvailable();
   if (intent === "create") {
     return (
@@ -60,7 +62,7 @@ export function AccountAction({
   }
   if (available)
     return (
-      <ClerkAction {...props} intent={intent}>
+      <ClerkAction {...props} data-account-auth intent={intent} onClick={event => { beforeAuth?.(); props.onClick?.(event); }}>
         {children}
       </ClerkAction>
     );

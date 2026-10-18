@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 
 export default function CreatePage() {
   return (
-    <div className="space-y-8">
+    <div className="min-w-0">
       <WorkspaceLegacyLinks />
       <CreationHeader />
       <CreationWorkspace />

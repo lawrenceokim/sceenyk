@@ -1,5 +1,10 @@
 # Code Standards
 
+## Current Studio Phase 3 scope (2026-10-18)
+
+The current user request authorizes Studio desktop/tablet/mobile presentation and the approved missing guest handoff. Reuse existing state owners/hooks, server contracts and semantic theme tokens. Sources uses one mounted native dialog tree for the nonmodal rail and full-screen modal; caption preference controls render through a React portal without moving playback state. Keep routes, private guards/cache and financial/provider work unchanged. See architecture and progress tracker for implementation and actual acceptance; do not start another feature.
+
+
 ## Authorized Phase 2 presentation (2026-10-18)
 
 Current authorization supersedes the older Phase 1 stop boundary for Templates, public product Documentation, remaining internal presentation and small cross-page consistency fixes. Reuse components/workspace, the existing owned-listing service/account fence, configuration covers and server guards. Public docs content belongs in lib/documentation/content.ts; never render internal context/acceptance files as a manual. New Templates invalidation is routing integration only; business services, schema, payment/provider work and the Studio editor remain unchanged. Stop before Phase 3 and record fixture, local-browser and deployed evidence separately.

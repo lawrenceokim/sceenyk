@@ -1,5 +1,12 @@
 # Architecture Context
 
+## Studio Phase 3 — implemented (2026-10-18)
+
+Current authorization includes desktop, tablet and mobile Studio. Reuse the shared navigation; Sources owns presentation of project title/origin and existing image/video/audio import/upload/recovery; the Stage owns source/result playback, durable status and scene caption preview; Properties owns category, prompt, duration/style/tone, existing generation quote/confirmation and caption preferences. Aspect ratio and Save move to a fixed 64px toolbar. WorkspaceEditor remains the brief/save/media-selection owner; useProjectMedia and useProjectGeneration retain their existing server calls, guards and state. Caption controls use React portals into Properties while their existing preview component owns state. No new scene editor, voice selector, share engine or export capability is introduced.
+
+The same mounted Sources dialog uses native modal focus/scroll behavior below 1050px available content width; above that it is a nonmodal rail. At 720px available width Stage/Properties sit beside each other; below that Stage precedes Properties. A bounded, schema-validated 30-minute sessionStorage handoff restores only guest brief values through existing Clerk authentication; files remain memory-only and full reload requires reselection. Saved/account-switched private projects never use the guest draft. No auth route, ownership, cache, schema, provider, payment or generation-hook contract changes. Inngest Cloud stays paused. Local and scoped live acceptance is recorded in [the tracker](progress-tracker.md). Deployment is not performed; the next bounded unit is deployment and read-only acceptance of this revision, with Inngest Cloud still paused. Stop after Phase 3.
+
+
 ## Workspace Phase 2 architecture (2026-10-18)
 
 Phase 2 implements presentation only. /dashboard/templates uses the existing protected layout, using listOwnedMarketplaceListings and the existing live-account presentation fence; it is a gallery of the owner's existing Marketplace template configurations, with existing manage/public-listing actions and pagination. Adopted templates remain ordinary owned Projects; purchase recovery remains on its existing page. No saved-template system, search, categories or media previews are invented. Route-only invalidation for this new view accompanies existing listing changes.

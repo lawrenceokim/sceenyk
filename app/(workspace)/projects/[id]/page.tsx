@@ -88,7 +88,7 @@ export default function ProjectPage({
   params: Promise<{ id: string }>;
 }) {
   return (
-    <div className="space-y-8">
+    <div className="min-w-0">
       <CreationHeader saved />
       <Suspense
         fallback={

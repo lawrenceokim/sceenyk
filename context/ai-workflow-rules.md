@@ -1,5 +1,10 @@
 # AI Workflow Rules
 
+## Current authorization — Studio Phase 3 (2026-10-18)
+
+Complete the four-area Studio and progressive tablet/mobile/full-screen Sources behavior in this same request. This supersedes the historical stop-before-Phase-3/mobile-later text. Preserve existing services/hooks and all ownership, auth, credit, provider and Marketplace contracts; implement only the approved missing bounded guest brief handoff. Verify real layout, saved project/media and isolated workflow/financial cases without hosted Inngest. Stop after Phase 3; deployment/read-only acceptance is the next bounded recommendation.
+
+
 ## Current authorization — Phase 2 (2026-10-18)
 
 Complete Templates and Documentation presentation, remaining internal shell migration and small workspace consistency fixes. Reuse the completed Phase 1 shell/collapse/mobile/profile/Credits/redirect system. Templates uses existing owner-scoped Marketplace configurations and actions; no new template features. Public Documentation is curated from verified product behavior and stays free of internal/private data. Preserve all existing routes/access/ownership/Settings/private caching/financial/provider contracts. Do not trigger hosted Inngest or change the Studio editor. The exact next unit is Phase 3 — full Studio workspace redesign: Navigation | Sources | Preview Stage | Properties. Do not start it automatically.

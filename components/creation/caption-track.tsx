@@ -1,5 +1,6 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { StudioPropertyControls } from "./studio-property-controls";
 import { Button } from "@/components/ui/button";
 import { setCaptionPreferenceAction, setCaptionStyleAction } from "@/app/actions/captions";
 import { captionTrackSchema, type CaptionTrack } from "@/lib/captions/contract";
@@ -68,7 +69,7 @@ export function CaptionTrackPreview({ projectId, jobId }: { projectId: string; j
   }
   const track = data?.track;
   return <div className="space-y-3 border-t border-border pt-4" aria-label="Captions">
-    <div className="flex flex-wrap items-center justify-between gap-3">
+    <StudioPropertyControls><h3 className="text-body-sm font-semibold">Captions</h3><div className="flex flex-wrap items-center justify-between gap-3">
       <label className="flex min-h-11 items-center gap-3 text-body-sm font-medium">
         <input type="checkbox" className="size-5 accent-primary" checked={data?.enabled ?? true}
           disabled={!data || saving || savingStyle || loading} onChange={event => void change(event.target.checked)} />
@@ -78,6 +79,7 @@ export function CaptionTrackPreview({ projectId, jobId }: { projectId: string; j
         {loading ? "Checking captions…" : "Check captions"}
       </Button>
     </div>
+    </StudioPropertyControls>
     <p role="status" aria-live="polite" className="text-body-sm text-muted-foreground">
       {error || (track?.status === "timing_issue" ? "Caption timing issue" : track?.status === "ready" ?
         track.cues.length ? "Captions ready — estimated phrase timing" : "Captions ready — no spoken narration" : "Preparing captions")}

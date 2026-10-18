@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { StudioPropertyControls } from "./studio-property-controls";
 import { Button } from "@/components/ui/button";
 import type { CaptionTrack } from "@/lib/captions/contract";
 import { activeCaptionCue } from "@/lib/captions/preview-timing";
@@ -171,13 +172,14 @@ export function SceneCaptionPreview({ projectId, jobId, track, enabled, style, s
       <span className="text-caption tabular-nums text-muted-foreground">{timeLabel(displayMs)} / {timeLabel(scene.duration_ms)}</span>
       <Button type="button" variant="ghost" disabled={loadingMedia} onClick={() => void loadMedia(sceneId)}>Refresh preview</Button>
     </div>
-    <div className="grid grid-cols-2 gap-2 text-caption sm:grid-cols-5">
+    <StudioPropertyControls><div className="mt-3 grid grid-cols-2 gap-3 text-caption">
       <label>Preset <select className="mt-1 min-h-11 w-full rounded-md border border-input bg-background px-2 text-foreground" value={style.preset} disabled={savingStyle} onChange={event => onStyleChange(selectionForCaptionPreset(event.target.value as CaptionStyleSelection["preset"]))}><option value="default">Default</option><option value="clean">Clean</option><option value="bold">Bold</option></select></label>
       <label>Position <select className="mt-1 min-h-11 w-full rounded-md border border-input bg-background px-2 text-foreground" value={style.position} disabled={savingStyle} onChange={event => onStyleChange({ ...style, position: event.target.value as CaptionStyleSelection["position"] })}><option value="bottom">Bottom</option><option value="top">Top</option></select></label>
       <label>Text size <select className="mt-1 min-h-11 w-full rounded-md border border-input bg-background px-2 text-foreground" value={style.size} disabled={savingStyle} onChange={event => onStyleChange({ ...style, size: event.target.value as CaptionStyleSelection["size"] })}><option value="normal">Default</option><option value="large">Large</option></select></label>
       <label>Alignment <select className="mt-1 min-h-11 w-full rounded-md border border-input bg-background px-2 text-foreground" value={style.alignment} disabled={savingStyle} onChange={event => onStyleChange({ ...style, alignment: event.target.value as CaptionStyleSelection["alignment"] })}><option value="center">Center</option><option value="left">Left</option></select></label>
       <label>Contrast <select className="mt-1 min-h-11 w-full rounded-md border border-input bg-background px-2 text-foreground" value={style.contrast} disabled={savingStyle} onChange={event => onStyleChange({ ...style, contrast: event.target.value as CaptionStyleSelection["contrast"] })}><option value="default">Default</option><option value="high">High</option><option value="shadow">Shadow</option></select></label>
     </div>
+    </StudioPropertyControls>
     <p role="status" className="text-caption text-muted-foreground">{savingStyle ? "Saving caption style…" : "Caption style is saved for this generation."} Timing is estimated from the saved narration window.</p>
   </section>;
 }

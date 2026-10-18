@@ -1,14 +1,13 @@
 import { useId } from "react";
 import { ChevronDown } from "lucide-react";
 import {
-  aspectRatios,
   durations,
   visualStyles,
   tones,
   type CreationSettings,
 } from "./creation-options";
 
-function SettingSelect<T extends string>({
+export function SettingSelect<T extends string>({
   id,
   label,
   value,
@@ -67,22 +66,14 @@ export function GenerationSettings({
 }) {
   const headingId = useId();
   return (
-    <section className="sceenyk-card p-5 sm:p-6" aria-labelledby={headingId}>
+    <section className="studio-property" aria-labelledby={headingId}>
       <h2
         id={headingId}
-        className="flex items-center gap-3 text-lg font-semibold tracking-tight"
+        className="text-body-sm font-semibold"
       >
-        <span className="font-mono text-caption text-link">04</span>Set the
-        direction
+        Style & pacing
       </h2>
-      <div className="mt-5 grid gap-5 sm:grid-cols-2">
-        <SettingSelect
-          id="aspect-ratio"
-          label="Aspect ratio"
-          value={settings.aspectRatio}
-          choices={aspectRatios}
-          onChange={(aspectRatio) => onChange({ ...settings, aspectRatio })}
-        />
+      <div className="mt-3 grid gap-4">
         <SettingSelect
           id="duration"
           label="Duration"
@@ -106,8 +97,7 @@ export function GenerationSettings({
         />
       </div>
       <p className="mt-5 text-caption text-muted-foreground">
-        Save these settings with your draft. Available generation options will
-        be confirmed at launch.
+        Settings are saved with your creative brief.
       </p>
     </section>
   );

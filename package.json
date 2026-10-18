@@ -51,7 +51,9 @@
     "test:workspace-navigation": "node scripts/check-workspace-navigation.mjs",
     "test:templates": "node scripts/check-templates.mjs",
     "test:documentation": "node scripts/check-documentation.mjs",
-    "test:workspace-internal": "node scripts/check-workspace-internal.mjs"
+    "test:workspace-internal": "node scripts/check-workspace-internal.mjs",
+    "test:studio": "node scripts/check-studio-draft.mjs && node scripts/check-studio-ui.mjs",
+    "test:studio-browser": "node scripts/check-studio-browser.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1148.0",

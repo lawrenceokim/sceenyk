@@ -1,5 +1,10 @@
 # Clerk development authentication
 
+## Studio Phase 3 guest handoff (2026-10-18)
+
+Implemented only at the existing Studio point of need. BeforeAccountAuth lets Studio capture its current brief before opening the existing Clerk modal. A versioned, strict-schema 30-minute sessionStorage record contains title, prompt, category and supported settings plus a file count; it contains no Files, binary/base64, signed URLs, project/owner identifiers, prices or credits. Same-document remounts may reuse memory-only Files; full reloads explain reselection. NewAccountWorkspace reads once before account defaults, clears the pending record and keeps restored choices ahead of defaults. Saved projects bypass this path; identity-keyed remounting and server ownership stay intact. Blocking storage falls back to memory for same-document auth. Clerk redirects remain fixed /dashboard, whose existing compatibility redirect returns to /create; no arbitrary return URL or new auth route is added. Sign-in alone never saves/uploads/generates or spends. The approved future text below is historical where this bounded handoff is now implemented.
+
+
 ## Approved guest Studio auth handoff (2026-10-17)
 
 **Approved future contract; redesign implementation Not Started.** Studio is the primary user-facing creation name; current `/create` remains unchanged. Guests can configure supported prompt, category, style, tone, duration, aspect ratio and other non-sensitive parameters. Provider generation, owned persistence/uploads, credits, purchases and private data still require verified Clerk/server ownership. No dedicated sign-in/up pages or second identity system is introduced.
