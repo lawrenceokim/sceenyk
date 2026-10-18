@@ -77,7 +77,7 @@ try{
     await evaluate(`(async()=>{const r=await window.Clerk.client.signIn.create({strategy:'ticket',ticket:${JSON.stringify(otherTicket.token)}});await window.Clerk.setActive({session:r.createdSessionId});})()`);await wait("window.Clerk.user?.id==="+JSON.stringify(second.clerkUserId));await delay(1500);
     await navigate("/projects/"+project);await wait("document.body.innerText.includes('Project unavailable')");
     check("second real Clerk account cannot open owned plan project",await evaluate("!document.body.innerText.includes('Production plan ready')&&!document.body.innerText.includes('Gemini synthetic media acceptance')"));
-    await navigate("/create");await wait("location.pathname==='/create'&&!!document.querySelector('textarea')");
+    await navigate("/studio");await wait("location.pathname==='/studio'&&!!document.querySelector('textarea')");
     const denied=await evaluate(`(async()=>{const r=await fetch(location.pathname,{method:'POST',headers:{'Next-Action':${JSON.stringify(action)},Accept:'text/x-component','Content-Type':'text/plain;charset=UTF-8'},body:JSON.stringify([${JSON.stringify(project)}])});return await r.text();})()`);
     check("second account cannot read owned generation through action",!denied.includes(hostedResult.jobId)&&!denied.includes('productionPlanReadyAt'));
     if(preparation)check('real Clerk User B cannot resolve User A prepared segment',await evaluate(`(async()=>{const r=await fetch(${JSON.stringify(preparedPath)});return r.status===404&&!(await r.text()).includes(${JSON.stringify(hostedResult.segmentId)});})()`));

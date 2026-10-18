@@ -1,6 +1,8 @@
 "use client";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Download } from "lucide-react";
+import { StudioToolbarAction } from "./studio-toolbar-actions";
 type Video={id:string;url:string;downloadUrl:string;durationMs:number;width:number;height:number};
 export function FinalVideoResult({projectId,jobId}:{projectId:string;jobId:string}){
   const [attempt,setAttempt]=useState(0),[state,setState]=useState<{video?:Video;error?:string}>({});
@@ -14,7 +16,7 @@ export function FinalVideoResult({projectId,jobId}:{projectId:string;jobId:strin
   },[projectId,jobId,attempt]);
   return <div className="space-y-3">
     {state.video&&<><video controls playsInline preload="metadata" src={state.video.url} aria-label="Final generated video" className="max-h-96 w-full rounded-lg bg-muted" onError={()=>setState({error:"Video access may have expired. Refresh the video to continue."})}/>
-      <a className="sceenyk-interactive inline-flex min-h-11 items-center rounded-lg px-3 text-body-sm font-semibold text-link" href={state.video.downloadUrl} download="sceenyk-video.mp4">Download video</a></>}
+      <StudioToolbarAction><a className="studio-export sceenyk-interactive inline-flex min-h-11 items-center gap-2 rounded-lg px-3 text-body-sm font-semibold text-link" href={state.video.downloadUrl} download="sceenyk-video.mp4" aria-label="Export video"><Download className="size-4" aria-hidden="true" /><span>Export</span></a></StudioToolbarAction></>}
     {!state.video&&!state.error&&<p className="text-body-sm text-muted-foreground">Loading your video…</p>}
     {state.error&&<p role="alert" className="text-body-sm text-destructive">{state.error}</p>}
     <Button type="button" variant="outline" onClick={()=>{setState({});setAttempt(n=>n+1);}}>Refresh video</Button>

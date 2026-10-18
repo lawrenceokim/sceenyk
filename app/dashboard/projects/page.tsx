@@ -58,7 +58,7 @@ export default async function ProjectsPage({
   return <div className="space-y-8">
     <header className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
       <div className="space-y-3"><p className="eyebrow">YOUR WORKSPACE</p><h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Projects</h1><p className="text-muted-foreground">Pick up a saved draft, or start your next scene in Studio.</p></div>
-      <Button nativeButton={false} render={<Link href="/create" />}>Open Studio</Button>
+      <Button nativeButton={false} render={<Link href="/studio" />}>Open Studio</Button>
     </header>
     <ProjectJobStatusesProvider key={projects.projects.map(({ id }) => id).join(",")} initial={jobStatuses}>
       <ProjectsSection data={projects} jobStatuses={jobStatuses} />

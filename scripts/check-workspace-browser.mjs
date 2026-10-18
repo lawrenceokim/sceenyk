@@ -40,7 +40,7 @@ await deployedBrowser(origin, identities.map(u => u.clerk_user_id), async ({ cal
   const route = async url => { await call('Page.navigate', { url: origin + url }); };
   try {
     await viewport(1440);
-    await navigate('/create');
+    await navigate('/studio');
     await wait('!!document.querySelector("textarea")&&!!window.Clerk?.loaded');
     check('guest Studio stays public', await evaluate('!window.Clerk.user&&!!document.querySelector("[data-workspace-shell]")'));
     await navigate('/marketplace'); await wait('!!document.querySelector("#marketplace-search")');
@@ -52,7 +52,7 @@ await deployedBrowser(origin, identities.map(u => u.clerk_user_id), async ({ cal
     await route('/dashboard/projects'); await wait('location.pathname==="/"');
     check('anonymous Projects denied by server', true);
     await signIn(0);
-    await route('/dashboard'); await wait('location.pathname==="/create"&&!!document.querySelector("textarea")');
+    await route('/dashboard'); await wait('location.pathname==="/studio"&&!!document.querySelector("textarea")');
     check('Dashboard redirects to Studio', true);
     check('Studio is active with no Dashboard navigation', await evaluate('document.querySelector("aside nav a[aria-current=page]").textContent==="Studio"&&!Array.from(document.querySelectorAll("aside nav a")).some(a=>a.textContent==="Dashboard")'));
     await route('/dashboard#projects'); await wait('location.pathname==="/dashboard/projects"&&!!document.querySelector("#projects")');
@@ -63,7 +63,7 @@ await deployedBrowser(origin, identities.map(u => u.clerk_user_id), async ({ cal
     check('legacy Templates bookmark opens the migrated gallery', true);
     await route('/dashboard#credits'); await wait('location.pathname==="/dashboard/settings/credits"');
     check('legacy Credits bookmark opens Settings billing', true);
-    await navigate('/create'); await wait('!!document.querySelector("textarea")');
+    await navigate('/studio'); await wait('!!document.querySelector("textarea")');
     const expanded = await evaluate('document.querySelector("#workspace-content").getBoundingClientRect().width');
     await click('button[aria-label="Collapse sidebar"]');
     check('collapsed rail gains content width and saves preference', await evaluate(`document.querySelector('[data-workspace-shell]').dataset.collapsed==='true'&&document.querySelector('#workspace-content').getBoundingClientRect().width>${expanded}+100&&localStorage.getItem('sceenyk-workspace-collapsed')==='true'`));
@@ -87,7 +87,7 @@ await deployedBrowser(origin, identities.map(u => u.clerk_user_id), async ({ cal
     await click('aside nav a[href="/dashboard/settings/credits"]'); await wait('location.pathname==="/dashboard/settings/credits"&&document.body.innerText.includes("Credits & Billing")');
     check('Credits opens existing Settings billing', true);
 
-    for (const [slug, url] of [['studio','/create'],['projects','/dashboard/projects'],['marketplace','/marketplace'],['settings','/dashboard/settings/appearance'],['templates','/dashboard/templates'],['documentation','/documentation']]) {
+    for (const [slug, url] of [['studio','/studio'],['projects','/dashboard/projects'],['marketplace','/marketplace'],['settings','/dashboard/settings/appearance'],['templates','/dashboard/templates'],['documentation','/documentation']]) {
       await navigate(url); await wait('!!document.querySelector("[data-workspace-shell]")'); await delay(600);
       await wait(slug==='studio'?'!!document.querySelector("textarea")':slug==='projects'?'!!document.querySelector("#projects")':slug==='marketplace'?'!!document.querySelector("#marketplace-search")':slug==='settings'?'!!document.querySelector("input[name=appearance]")':slug==='templates'?'!!document.querySelector("#templates")':'document.querySelectorAll("article h2").length===3');
       for (const width of [1600,1440,1024,768,390,320]) for (const dark of [false,true]) {
@@ -159,7 +159,7 @@ await deployedBrowser(origin, identities.map(u => u.clerk_user_id), async ({ cal
     await navigate('/projects/'+owned.data[0].id); await wait('document.body.innerText.includes("Project unavailable")');
     check('B cannot open A project', true);
     check('protected generation and financial records unchanged', before === await protectedHash());
-    await navigate('/create'); await wait(`!!document.querySelector('button[aria-label="Open account menu"]')`);
+    await navigate('/studio'); await wait(`!!document.querySelector('button[aria-label="Open account menu"]')`);
     await click('button[aria-label="Open account menu"]'); await wait('!!document.querySelector("[role=menu]")');
     await evaluate('Array.from(document.querySelectorAll("[role=menuitem]")).find(e=>e.textContent==="Sign out").click()');
     await wait('location.pathname==="/"&&!window.Clerk?.user');

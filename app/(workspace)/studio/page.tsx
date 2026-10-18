@@ -9,7 +9,7 @@ export const metadata: Metadata = {
     "Choose a content type, describe your idea, and save your creative brief as a private Sceenyk project draft.",
 };
 
-export default function CreatePage() {
+export default function StudioPage() {
   return (
     <div className="min-w-0">
       <WorkspaceLegacyLinks />

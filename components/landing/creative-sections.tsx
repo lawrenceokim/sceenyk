@@ -48,7 +48,7 @@ export function StudioShowcase() {
           </div>
         </div>
       </div>
-      <div className={styles.studioCaption}><p>A glimpse of the creative direction. Illustrative preview, not a live generation.</p><Link className={buttonVariants()} href="/create">Try the Studio <ArrowRight aria-hidden="true" /></Link></div>
+      <div className={styles.studioCaption}><p>A glimpse of the creative direction. Illustrative preview, not a live generation.</p><Link className={buttonVariants()} href="/studio">Try the Studio <ArrowRight aria-hidden="true" /></Link></div>
     </section>
   );
 }
@@ -81,7 +81,7 @@ export function MarketplaceStory() {
 }
 
 const offers = [
-  { title: "Free", subtitle: "2 lifetime free generations", description: "Explore Studio and see what you can create.", icon: Gift, features: ["Up to 10 seconds per free generation", "Start with a prompt or your own media", "Explore templates and Marketplace"], action: "Explore Studio", href: "/create" },
+  { title: "Free", subtitle: "2 lifetime free generations", description: "Explore Studio and see what you can create.", icon: Gift, features: ["Up to 10 seconds per free generation", "Start with a prompt or your own media", "Explore templates and Marketplace"], action: "Explore Studio", href: "/studio" },
   { title: "Credit Top-up", subtitle: "Create at your own pace", description: "Flexible pay-as-you-go usage. No subscription.", icon: Coins, features: ["Review cost before generating", "Purchased credits do not expire", "Manually top up when you need more", "Free allowance stays separate"], action: "Explore credit packs", href: "/dashboard/settings/credits", featured: true },
   { title: "Creator Earnings", subtitle: "Publish to Marketplace", description: "Share a creative starting point. Earn from your work.", icon: Star, features: ["Publish your own reusable projects", "Earn a 90% creator share", "10% platform fee", "Adoption money is separate from AI credits"], action: "Explore Marketplace", href: "/marketplace" },
 ];
@@ -104,6 +104,6 @@ export function CreativeInvitation() {
     <section className={`${styles.container} ${styles.invitation}`} aria-labelledby="invitation-heading" data-reveal>
       <div className={styles.invitationPanel}><Sparkles size={20} aria-hidden="true" /><h2 id="invitation-heading">Your next spark is out there.</h2><p>Discover creative starting points and make something unmistakably yours.</p><Link href="/marketplace" className={buttonVariants({ variant: "outline" })}>Find your inspiration <ArrowRight aria-hidden="true" /></Link></div>
     </section>
-    <section className={`${styles.container} ${styles.finalCta}`} aria-labelledby="final-heading"><h2 id="final-heading">Your next visual story starts here.</h2><p>Open the studio, shape your idea, and take the first step toward your next scene.</p><div className={styles.actions}><Link href="/create" className={buttonVariants()}>Open Studio <ArrowRight aria-hidden="true" /></Link><a href="#pricing" className={buttonVariants({ variant: "outline" })}>See Pricing</a></div></section>
+    <section className={`${styles.container} ${styles.finalCta}`} aria-labelledby="final-heading"><h2 id="final-heading">Your next visual story starts here.</h2><p>Open the studio, shape your idea, and take the first step toward your next scene.</p><div className={styles.actions}><Link href="/studio" className={buttonVariants()}>Open Studio <ArrowRight aria-hidden="true" /></Link><a href="#pricing" className={buttonVariants({ variant: "outline" })}>See Pricing</a></div></section>
   </>;
 }

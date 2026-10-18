@@ -41,7 +41,7 @@ await deployedBrowser(origin,{A:owner.data.clerk_user_id},async browser=>{
     if(name==='dark'&&width===390||name==='light'&&width===1440)await shot(browser,`public-${name}-${width}`);
   }
   await browser.call('Emulation.clearDeviceMetricsOverride');
-  await browser.signIn('A');await browser.navigate('/create');
+  await browser.signIn('A');await browser.navigate('/studio');
   for(const name of ['light','dark'])for(const width of [390,1440]){
     await viewport(browser,width);await theme(browser,name);
     await browser.wait("!!document.querySelector('[aria-label=\"Open workspace navigation\"]')||!!document.querySelector('[aria-label=\"Workspace sidebar\"] a[aria-label=\"Sceenyk home\"]')");

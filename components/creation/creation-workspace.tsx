@@ -16,8 +16,7 @@ import { CategorySelector } from "./category-selector";
 import { CreationPreview } from "./creation-preview";
 import { StudioLayout } from "./studio-layout";
 import { StudioInspectorSection } from "./studio-inspector-section";
-import { SettingSelect } from "./generation-settings";
-import { aspectRatios } from "./creation-options";
+import { StudioAspectControl } from "./studio-aspect-control";
 import { GenerationSettings } from "./generation-settings";
 import { MediaDropzone } from "./media-dropzone";
 import { PromptComposer } from "./prompt-composer";
@@ -351,11 +350,8 @@ function WorkspaceEditor({
                 }
                 toolbar={
                   <>
-                    <div className="studio-aspect">
-                      <SettingSelect id="aspect-ratio" label="Aspect ratio" value={settings.aspectRatio}
-                        choices={aspectRatios.map(({ value }) => ({ value, label: value }))}
-                        onChange={aspectRatio => setSettings({ ...settings, aspectRatio })} />
-                    </div>
+                    <StudioAspectControl value={settings.aspectRatio}
+                      onChange={aspectRatio => setSettings({ ...settings, aspectRatio })} />
                     <span className="studio-toolbar-status" role="status">{label}</span>
                     {save}
                   </>

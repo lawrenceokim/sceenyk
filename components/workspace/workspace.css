@@ -1,3 +1,5 @@
+@import "./workspace-geometry.css";
+
 /* Reference geometry is scoped to the creative workspace; public landing tokens stay intact. */
 [data-workspace-shell], .workspace-drawer {
   --background: #f7f7f8;
@@ -24,20 +26,20 @@
   --input: #353535;
   --sidebar: #252525;
 }
-.workspace-gutter { padding: 8px; }
-.workspace-content { min-height: calc(100dvh - 66px); border: 1px solid var(--border); border-radius: 14px; background: var(--card); }
+.workspace-gutter { padding: var(--workspace-inset); }
+.workspace-content { min-height: calc(100dvh - var(--workspace-mobile-header-height) - var(--workspace-inset) * 2); border: 1px solid var(--border); border-radius: var(--ui-radius-frame); background: var(--card); }
 .workspace-page[data-workspace-page="content"] { padding: 24px; }
-.workspace-content, .workspace-nav-scroll, .studio-panel-body, .studio-stage-body { scrollbar-color: var(--border) transparent; }
+
 .workspace-page[data-workspace-page="content"] > * + * { margin-top: 24px; }
 .workspace-content:has([data-workspace-page="studio"]) { border: 0; background: transparent; border-radius: 0; }
 .workspace-page[data-workspace-page="studio"] { padding: 0; }
 .workspace-brand { height: 100px; padding: 24px 16px; display: flex; align-items: center; flex-shrink: 0; }
 .workspace-brand a { justify-content: flex-start; }
 .workspace-brand img { width: 140px; max-width: 100%; height: auto; object-fit: contain; object-position: left center; }
-.workspace-nav-scroll { padding: 8px; scrollbar-width: thin; }
+.workspace-nav-scroll { padding: 8px;  }
 .workspace-navigation { display: flex; flex-direction: column; gap: 16px; }
 .workspace-nav-label { margin: 0 12px 4px; font-size: 11px; line-height: 16px; font-weight: 500; text-transform: uppercase; letter-spacing: .02em; }
-.workspace-nav-item { min-height: 32px; gap: 8px; padding: 5px 8px; line-height: 22px; }
+.workspace-nav-item { min-height: 32px; gap: 8px; padding: 5px 8px; border-radius: 10px; line-height: 22px; }
 .workspace-navigation ul { display: grid; gap: 4px; }
 .workspace-collapse { flex-shrink: 0; padding: 8px; }
 .workspace-collapse button { height: 32px; padding: 0 8px; }
@@ -48,6 +50,7 @@
 [data-collapsed="true"] .workspace-navigation ul { gap: 8px; }
 [data-collapsed="true"] .workspace-collapse button { justify-content: center; padding: 0; }
 [data-workspace-shell] [aria-label="Open account menu"] { min-height: 48px; gap: 8px; border-radius: 8px; }
+[data-workspace-shell] .workspace-account [aria-label="Open account menu"] { padding-block: 4px; }
 [data-workspace-shell] .sceenyk-card { box-shadow: none; }
 [data-workspace-shell] .sceenyk-interactive:hover { box-shadow: none; border-color: var(--input); }
 .workspace-page[data-workspace-page="content"] h1 { font-size: 36px; line-height: 1.15; letter-spacing: -.04em; }
@@ -104,8 +107,8 @@
 .workspace-project-card > * + * { margin-top: 8px; }
 @media (min-width: 1024px) {
   [data-workspace-shell] { height: 100dvh; min-height: 0; overflow: clip; }
-  .workspace-gutter { padding-left: 0; }
-  .workspace-content { height: calc(100dvh - 16px); min-height: 0; overflow-y: auto; scrollbar-width: thin; overscroll-behavior: contain; }
+  [data-collapsed="true"] .workspace-gutter { padding-left: 0; }
+  .workspace-content { height: calc(100dvh - var(--workspace-inset) * 2); min-height: 0; overflow-y: auto; scrollbar-width: thin; overscroll-behavior: contain; }
   .workspace-page[data-workspace-page="content"] { padding: 48px 24px 24px; }
   .workspace-page[data-workspace-page="content"]:has(.workspace-documentation) { padding-top: 40px; }
   .workspace-settings-grid { grid-template-columns: 208px minmax(0,1fr); }
@@ -119,6 +122,9 @@
 }
 @media (max-width: 1023px) {
   .workspace-nav-item { min-height: 40px; }
+  .workspace-mobile-header { gap: 0; }
+  .workspace-mobile-header [aria-label="Open workspace navigation"] { width: var(--workspace-control-height); height: var(--workspace-control-height); }
+  .workspace-mobile-header [aria-label="Open workspace navigation"] svg { width: 16px; height: 16px; }
   .workspace-mobile-header > a img { width: 112px; height: auto; object-fit: contain; }
   .workspace-drawer .workspace-brand { height: 88px; }
   .workspace-drawer .workspace-navigation { gap: 16px; }
@@ -134,3 +140,8 @@
 @media (max-width: 359px) {
   [data-workspace-shell] .workspace-gallery { grid-template-columns: minmax(0,1fr); }
 }
+
+/* Reusable utility: scrolling is unchanged; only the scrollbar paint is hidden.
+   Scope root page scrolling to active workspaces so the public landing keeps its bar. */
+.scrollbar-hidden, [data-workspace-shell], [data-workspace-shell] *, .workspace-drawer, .workspace-drawer * { scrollbar-width: none; -ms-overflow-style: none; }
+.scrollbar-hidden::-webkit-scrollbar, [data-workspace-shell]::-webkit-scrollbar, [data-workspace-shell] *::-webkit-scrollbar, .workspace-drawer::-webkit-scrollbar, .workspace-drawer *::-webkit-scrollbar { display: none; width: 0; height: 0; }

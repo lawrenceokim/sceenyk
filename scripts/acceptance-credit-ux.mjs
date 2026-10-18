@@ -173,7 +173,7 @@ if (mode === 'serve') {
       fs.writeFileSync(path.join(dir, `credit-ux-${width}-${dark ? 'dark' : 'light'}.png`), Buffer.from(shot.data, 'base64'));
     }
     await call('Emulation.setDeviceMetricsOverride', { width:1440, height:1000, deviceScaleFactor:1, mobile:false });
-    await navigate('/create'); await wait("document.body.innerText.includes('Save draft')"); await discover();
+    await navigate('/studio'); await wait("document.body.innerText.includes('Save draft')"); await discover();
     if (!state.projectId) {
       const result = await invoke('saveProjectAction', { id: randomUUID(), mode:'create', title:'Credit UX acceptance', category:'cinematic', prompt:'Reserved credit UX acceptance draft. No generation is submitted.', settings:{ duration:'10', aspectRatio:'16:9', visualStyle:'Original', tone:'Storytelling' } });
       assert.ok(result.ok); state.projectId = result.project.id; save();

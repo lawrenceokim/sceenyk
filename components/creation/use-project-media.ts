@@ -141,7 +141,7 @@ export function useProjectMedia({
           "Save your project successfully before uploading media.",
         );
       // Native history updates preserve local Files while making refresh reopen the project.
-      if (location.pathname === "/create")
+      if (location.pathname === "/studio")
         window.history.replaceState(null, "", `/projects/${projectId}`);
       let asset = pendingAssets.current.get(media.id);
       if (asset) {

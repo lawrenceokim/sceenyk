@@ -22,7 +22,7 @@ export function SettingSelect<T extends string>({
 }) {
   const instanceId = useId();
   return (
-    <div className="min-w-0">
+    <div className="studio-setting-select min-w-0">
       <label
         htmlFor={`${instanceId}-${id}`}
         className="text-body-sm font-medium"
@@ -73,7 +73,7 @@ export function GenerationSettings({
       >
         Style & pacing
       </h2>
-      <div className="mt-3 grid gap-4">
+      <div className="studio-setting-list mt-3 grid gap-4">
         <SettingSelect
           id="duration"
           label="Duration"

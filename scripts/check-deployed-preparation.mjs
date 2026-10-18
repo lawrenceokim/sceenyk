@@ -67,7 +67,7 @@ async function launch(){
  const prompt='Exactly TWO shots totaling 10 seconds, both using the supplied 12-second video. Shot 1: source transformed, durationSeconds 5, startTime 2, endTime 7, supplied video assetId. Apply a polished 2D cartoon style while preserving movement, camera and framing. Source contains important HUD/UI text; retain source overlay provenance for later composition. Shot 2: source original, durationSeconds 5, startTime 2, endTime 7, SAME supplied video assetId, reuse this exact segment unchanged. No generated shots, no narration, no other assets. Keep descriptions and transformation instructions below 800 characters.';
  const settings={duration:'10',aspectRatio:'16:9',visualStyle:'Original',tone:'Storytelling'};
  await deployedBrowser(origin,{A:state.ownerClerkId,B:state.secondClerkId},async({signIn,navigate,wait,discover,invoke,close,errors})=>{
-  await signIn('A');await navigate('/create');await wait("!!document.querySelector('textarea')");await discover();
+  await signIn('A');await navigate('/studio');await wait("!!document.querySelector('textarea')");await discover();
   if(!state.projectSaved){const saved=await invoke('saveProjectAction',{id:state.projectId,mode:'create',title:'Render Cloud source preparation acceptance',category:'cinematic',prompt,settings});check('actual Vercel saves the owned acceptance project',saved.ok);state.projectSaved=true;save();}
   if(!state.assetId){
    const original=await db.from('project_assets').select('*').eq('id',old.asset.id).single();assert.ok(!original.error&&original.data);
@@ -189,7 +189,7 @@ async function browserVerify(){
   check('owner alone obtains and plays a short-lived private prepared segment',owned.status===200&&owned.mediaLoaded&&Math.abs(owned.mediaDuration-5)<=.043&&owned.cache==='private, no-store'&&owned.id===state.segmentId&&owned.start===2000&&owned.end===7000&&Math.abs(owned.duration-5000)<=43&&owned.expiresIn===900);
   for(const page of ['/dashboard',route]){await navigate(page);await wait(page===route?'document.body.innerText.includes('+JSON.stringify(heading)+')':"document.body.innerText.includes('Your projects')");const html=await evaluate('document.documentElement.outerHTML');check('authenticated '+(page===route?'project':'dashboard')+' HTML contains no configured server secrets',!secrets.some(s=>html.includes(s)));const urls=await evaluate("performance.getEntriesByType('resource').map(r=>r.name).filter(n=>n.startsWith(location.origin+'/_next/static/')&&n.endsWith('.js'))");state.privateClientScripts=[...new Set([...(state.privateClientScripts??[]),...urls.map(u=>new URL(u).pathname)])];save();}
   check('leaving and reopening preserves actual saved visual status',true);
-  await signIn('B');await navigate('/create');await wait("!!document.querySelector('textarea')");await discover();
+  await signIn('B');await navigate('/studio');await wait("!!document.querySelector('textarea')");await discover();
   const denied=await invoke('latestGenerationAction',state.projectId);check('User B cannot read User A generation',denied.ok&&denied.value===null);
   const media=await invoke('listMediaAction',state.projectId);check('User B cannot list User A source',!media.ok&&media.code==='NOT_FOUND');
   const quote=await invoke('quoteGenerationAction',{projectId:state.projectId,requestId:randomUUID(),inputs:{prompt:'Foreign source must be denied',category:'cinematic',settings:{duration:'10',aspectRatio:'16:9',visualStyle:'Original',tone:'Storytelling'},assetIds:[state.assetId]}});check('User B cannot admit processing of User A media',!quote.ok&&quote.code==='NOT_FOUND');
@@ -202,7 +202,7 @@ async function browserVerify(){
 async function secrets(){
  const values=['WORKER_SHARED_SECRET','SUPABASE_SECRET_KEY','SUPABASE_SERVICE_ROLE_KEY','R2_ACCESS_KEY_ID','R2_SECRET_ACCESS_KEY','CLERK_SECRET_KEY','GEMINI_API_KEY','FAL_KEY','INNGEST_EVENT_KEY','INNGEST_SIGNING_KEY','INNGEST_SIGNING_KEY_FALLBACK'].map(n=>process.env[n]).filter(Boolean);
  const scripts=new Set(state.privateClientScripts??[]);let leaks=0,markers=0;
- for(const route of ['/','/create']){const r=await fetch(origin+route,{signal:AbortSignal.timeout(20000)});assert.equal(r.status,200);const body=await r.text();if(values.some(v=>body.includes(v)))leaks++;for(const m of body.matchAll(/\/_next\/static\/[^\s"'\\<>]+\.js/g))scripts.add(m[0]);}
+ for(const route of ['/','/studio']){const r=await fetch(origin+route,{signal:AbortSignal.timeout(20000)});assert.equal(r.status,200);const body=await r.text();if(values.some(v=>body.includes(v)))leaks++;for(const m of body.matchAll(/\/_next\/static\/[^\s"'\\<>]+\.js/g))scripts.add(m[0]);}
  for(const script of scripts){const r=await fetch(origin+script,{signal:AbortSignal.timeout(20000)});assert.equal(r.status,200);const body=await r.text();if(values.some(v=>body.includes(v)))leaks++;if(/WORKER_SHARED_SECRET|MEDIA_WORKER_URL|SUPABASE_SECRET_KEY|SUPABASE_SERVICE_ROLE_KEY|R2_SECRET_ACCESS_KEY|INNGEST_SIGNING_KEY|GEMINI_API_KEY|FAL_KEY|queue\.fal\.run|r2\.cloudflarestorage|X-Amz-Signature/.test(body))markers++;}
  state.secretScan={htmlPages:2,clientFiles:scripts.size,authenticatedClientFiles:state.privateClientScripts?.length??0,configuredSecrets:values.length,leaks,markers};save();check('checked deployed HTML and client bundles contain no server secrets',scripts.size>0&&leaks===0&&markers===0);console.log(JSON.stringify(state.secretScan));
 }
@@ -210,7 +210,7 @@ async function browserPreflight(){
  const old=JSON.parse(fs.readFileSync(path.join(os.tmpdir(),'sceenyk-preparation-acceptance.json'),'utf8'));
  const {deployedBrowser}=await import('./lib/deployed-browser.mjs');
  await deployedBrowser(origin,{A:old.clerkUserId},async({signIn,navigate,wait,discover,errors})=>{
-  await signIn('A');await navigate('/create');await wait("!!document.querySelector('textarea')");await discover();check('actual isolated browser authenticates reserved acceptance identity on Vercel',errors.length===0);
+  await signIn('A');await navigate('/studio');await wait("!!document.querySelector('textarea')");await discover();check('actual isolated browser authenticates reserved acceptance identity on Vercel',errors.length===0);
  });
 }
 async function inspect(){

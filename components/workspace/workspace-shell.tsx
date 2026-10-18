@@ -1,6 +1,6 @@
 "use client";
 
-import { useSyncExternalStore, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useSyncExternalStore, type CSSProperties, type ReactNode } from "react";
 import { WorkspaceSidebar } from "./workspace-sidebar";
 import { WorkspaceMobileNav } from "./workspace-mobile-nav";
 import "./workspace.css";
@@ -29,7 +29,14 @@ function toggleCollapsed() {
 
 export function WorkspaceShell({ children }: { children: ReactNode }) {
   const collapsed = useSyncExternalStore(subscribe, readCollapsed, () => false);
-  return <div className="min-h-dvh flex-1 bg-background" data-workspace-shell data-collapsed={collapsed} style={{ "--workspace-sidebar-width": collapsed ? "64px" : "260px" } as CSSProperties}>
+  useEffect(() => {
+    // Cached routes can remain mounted under Activity with display:none.
+    // Effects deactivate with the route, unlike :has() descendant selectors.
+    const targets = [document.documentElement, document.body];
+    targets.forEach(target => target.classList.add("scrollbar-hidden"));
+    return () => targets.forEach(target => target.classList.remove("scrollbar-hidden"));
+  }, []);
+  return <div className="min-h-dvh flex-1 bg-background" data-workspace-shell data-collapsed={collapsed} style={{ "--workspace-sidebar-width": collapsed ? "var(--workspace-nav-closed)" : "var(--workspace-nav-open)" } as CSSProperties}>
     <a href="#workspace-content" className="skip-link">Skip to content</a>
     <WorkspaceSidebar collapsed={collapsed} onToggle={toggleCollapsed} />
     <div className="min-w-0 lg:pl-[var(--workspace-sidebar-width)]">

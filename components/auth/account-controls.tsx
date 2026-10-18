@@ -39,7 +39,7 @@ function ConfiguredActions({ onNavigate }: { onNavigate?: () => void }) {
     <>
       <Button
         nativeButton={false}
-        render={<Link href="/create" onClick={onNavigate} />}
+        render={<Link href="/studio" onClick={onNavigate} />}
       >
         Studio <ArrowUpRight aria-hidden="true" />
       </Button>

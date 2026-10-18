@@ -26,14 +26,14 @@ await deployedBrowser(origin,identities.map(u=>u.clerk_user_id),async({call,eval
  const set=async(selector,value)=>{await evaluate(`(()=>{const e=document.querySelector(${JSON.stringify(selector)});Object.getOwnPropertyDescriptor(e instanceof HTMLTextAreaElement?HTMLTextAreaElement.prototype:e instanceof HTMLSelectElement?HTMLSelectElement.prototype:HTMLInputElement.prototype,'value').set.call(e,${JSON.stringify(value)});e.dispatchEvent(new Event(e instanceof HTMLSelectElement?'change':'input',{bubbles:true}))})()`)};
  const click=async text=>{await evaluate(`Array.from(document.querySelectorAll('button')).find(e=>e.textContent.trim()===${JSON.stringify(text)}).click()`);await delay(150)};
  try{
-  await viewport(1440);await navigate('/create');await wait('!!document.querySelector(".studio-layout textarea")&&!!window.Clerk?.loaded');
+  await viewport(1440);await navigate('/studio');await wait('!!document.querySelector(".studio-layout textarea")&&!!window.Clerk?.loaded');
   const title='Studio Phase 3 browser acceptance '+Date.now();
   await set('input[name=title]',title);await set('textarea','A violet forest, calm narration, soft camera movement.');await set('select[name=aspect-ratio]','1:1');await set('select[name=tone]','Dramatic');
   await click('Sign in to generate');await wait('!!document.querySelector(".cl-modalBackdrop")');
   check('guest opens existing Clerk modal and saves bounded brief',await evaluate('!!sessionStorage.getItem("sceenyk-studio-auth-draft-v1")'));
   // The helper signs in through real Clerk ticket/session APIs. Navigation away
   // also exercises the redirect/reload handoff instead of relying on memory.
-  await signIn(0);await navigate('/create');await wait(`document.querySelector('input[name=title]')?.value===${JSON.stringify(title)}`);
+  await signIn(0);await navigate('/studio');await wait(`document.querySelector('input[name=title]')?.value===${JSON.stringify(title)}`);
   check('real authentication restores guest choices',await evaluate('document.querySelector("textarea").value.includes("violet forest")&&document.querySelector("select[name=aspect-ratio]").value==="1:1"&&document.querySelector("select[name=tone]").value==="Dramatic"&&!sessionStorage.getItem("sceenyk-studio-auth-draft-v1")'));
   if(existing.data[0]){await navigate('/projects/'+existing.data[0].id);await wait('!!document.querySelector("textarea")');await set('input[name=title]',title);await set('textarea','A violet forest, calm narration, soft camera movement.');await set('select[name=aspect-ratio]','1:1');await set('select[name=tone]','Dramatic');}
   await click('Save');await wait('!!document.querySelector("a[href^=\\"/projects/\\"]")&&document.body.textContent.includes("Draft saved")');
@@ -56,7 +56,7 @@ await deployedBrowser(origin,identities.map(u=>u.clerk_user_id),async({call,eval
   await click('Close Sources');await wait('!document.querySelector("dialog:modal")');check('live Sources returns focus',await evaluate('document.activeElement.textContent.trim()==="Sources"'));
   await discover();const readAsset=await db.from('project_assets').select('id').eq('project_id',projectHref.split('/').pop()).limit(1);assert.ok(!readAsset.error&&readAsset.data.length);
   await signIn(1);await navigate(projectHref);await wait('document.body.innerText.includes("Project unavailable")');check('real B cannot open newly saved A project',true);
-  await navigate('/create');await wait('!!document.querySelector("textarea")');await discover();
+  await navigate('/studio');await wait('!!document.querySelector("textarea")');await discover();
   const denied=await invoke('readMediaAction',{projectId:projectHref.split('/').pop(),assetId:readAsset.data[0].id});check('real B cannot obtain A source capability',denied.ok===false);
   check('generation and financial records unchanged',before===await protectedHash());check('no hosted workflow or provider requests',!requests.some(url=>/inngest\.(com|net)|fal\.(ai|run)|api\.elevenlabs|generativelanguage/.test(url)));check('no browser exceptions',errors.length===0);
   fs.writeFileSync(path.join(dir,'report.json'),JSON.stringify({checks,exceptions,projectHref,scope:'Real reserved test identities; one test project and tiny private source; no generation/payment'},null,2));console.log(JSON.stringify({passed:checks.length,evidence:dir}));

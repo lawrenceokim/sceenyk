@@ -123,6 +123,7 @@ export function ProjectSaveControls({
             variant="outline"
             disabled={saving || !title.trim()}
             aria-busy={saving}
+            aria-label={saving ? "Saving project" : state.status === "saved" && !dirty ? "Project saved" : "Save project"}
             onClick={onSave}
             className="px-3"
           >
@@ -134,7 +135,7 @@ export function ProjectSaveControls({
             ) : (
               <Save className="size-4" aria-hidden="true" />
             )}
-            {saving ? "Saving…" : state.status === "saved" && !dirty ? "Saved" : "Save"}
+            <span className="studio-save-label">{saving ? "Saving…" : state.status === "saved" && !dirty ? "Saved" : "Save"}</span>
           </Button>
         ) : (
           <AccountAction

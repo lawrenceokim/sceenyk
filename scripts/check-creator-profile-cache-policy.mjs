@@ -29,7 +29,7 @@ for(const pathname of [base,base+'/',base+'.html',base+'.rsc',base+'.prefetch.rs
 for(const pathname of ['/admin/payouts','/admin/payouts.rsc','/admin/payouts.prefetch.rsc','/api/admin/payouts/reconcile','/api/marketplace/creator-avatar']){
   check('existing private policy preserved '+pathname,privatePolicy(pathname));
 }
-for(const pathname of ['/','/create','/marketplace','/marketplace/creators/example-creator','/marketplace/creators/example-creator.rsc','/marketplace/example-listing','/_next/static/chunks/example.js','/dashboard/credits','/dashboard/marketplace/earnings',base+'-other',base+'s']){
+for(const pathname of ['/','/studio','/marketplace','/marketplace/creators/example-creator','/marketplace/creators/example-creator.rsc','/marketplace/example-listing','/_next/static/chunks/example.js','/dashboard/credits','/dashboard/marketplace/earnings',base+'-other',base+'s']){
   check('no new private header rule on '+pathname,!matchingPolicy(pathname)['cache-control']);
 }
 check('Cache Components preserved',config.cacheComponents===true);

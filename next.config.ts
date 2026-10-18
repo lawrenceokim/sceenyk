@@ -1,6 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  async redirects() {
+    // Next forwards query parameters; the HTTP redirect also retains fragments.
+    return [{ source: "/create", destination: "/studio", permanent: true }];
+  },
   async headers() {
     // PPR can resume a cached shell with request-specific content. Cover its
     // generated response paths too: /profile/:path* does not match /profile.rsc.

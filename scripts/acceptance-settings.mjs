@@ -110,7 +110,7 @@ try {
       check('deployed paid quote remains honest about pricing or insufficient balance',long.value.requiredCredits===null ? long.value.status==='pricing_unavailable' : long.value.status===(long.value.availableCredits<long.value.requiredCredits?'insufficient_credits':'ready'));
       check('browser-supplied credit price is rejected',(await invoke('quoteGenerationAction',{...input,requiredCredits:1})).ok===false);
       check('contextual generation balance and top-up remain available',await evaluate('document.body.innerText.includes("Paid credits:")&&document.body.innerText.includes("Top up credits")'));
-      await signIn('B');sessions.add(await evaluate('window.Clerk.session.id'));await navigate('/create');await wait('!!document.querySelector("textarea")');await discover();
+      await signIn('B');sessions.add(await evaluate('window.Clerk.session.id'));await navigate('/studio');await wait('!!document.querySelector("textarea")');await discover();
       const denied=await invoke('quoteGenerationAction',{...input,requestId:randomUUID()});check('B cannot quote A project',!denied.ok&&denied.code==='NOT_FOUND');
       const jobsAfter=await db.from('generation_jobs').select('id'),balanceAfter=await db.from('generation_accounts').select('*').eq('owner_user_id',a.id).single();assert.ok(!jobsAfter.error&&!balanceAfter.error);
       check('quote checks create no generation or held accounting',jobsAfter.data.length===jobsBefore.data.length&&['free_reserved','free_consumed','credit_reserved'].every(key=>balanceAfter.data[key]===balanceBefore.data[key]));
@@ -195,7 +195,7 @@ try {
     check('real preferences save', saved.ok && saved.data.clerkUserId === a.clerk_user_id);
     await navigate('/dashboard/settings/creation'); await wait('document.querySelector("#default-aspect")?.value==="9:16"');
     check('real preferences reload', await evaluate('document.querySelector("#default-category").value==="social"'));
-    await navigate('/create'); await wait('!!document.querySelector("textarea")');
+    await navigate('/studio'); await wait('!!document.querySelector("textarea")');
     check('real new project initializes defaults', await evaluate('Array.from(document.querySelectorAll("select")).some(s=>s.value==="9:16")&&document.querySelector("input[value=social]").checked'));
     const project = await db.from('projects').select('id,aspect_ratio,category').eq('owner_user_id', a.id).order('id').limit(1); assert.ok(!project.error && project.data.length);
     await navigate('/projects/' + project.data[0].id); await wait('!!document.querySelector("textarea")');

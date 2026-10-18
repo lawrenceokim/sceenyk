@@ -17,7 +17,7 @@ const withClerk = clerkMiddleware(async (auth, request) => {
     // Redirect before streaming: an HTTP redirect preserves legacy fragments
     // that never reach the server, unlike a streamed page redirect.
     const page = request.nextUrl.searchParams.get("page");
-    const target = new URL(page === null ? "/create" : "/dashboard/projects", request.url);
+    const target = new URL(page === null ? "/studio" : "/dashboard/projects", request.url);
     if (page !== null) target.searchParams.set("page", page);
     return NextResponse.redirect(target);
   }

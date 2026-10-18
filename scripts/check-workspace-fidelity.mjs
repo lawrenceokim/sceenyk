@@ -44,15 +44,15 @@ await deployedBrowser(origin, [identity.clerk_user_id], async ({ call, evaluate,
     return { width:innerWidth,overflow:document.documentElement.scrollWidth>innerWidth+1,sidebar:rect('[aria-label="Workspace sidebar"]'),sources:rect('.studio-sources'),stage:rect('.studio-stage'),properties:rect('.studio-properties'),toolbar:rect('.studio-toolbar'),grid:rect('.workspace-gallery') };
   })()`);
   await size(1366);
-  await navigate('/create'); await wait('!!document.querySelector("textarea")&&!!window.Clerk?.loaded');
+  await navigate('/studio'); await wait('!!document.querySelector("textarea")&&!!window.Clerk?.loaded');
   await theme(true); await shot('studio-guest-1366-dark');
   await signIn(0);
-  const routes = studioOnly ? ['/create'] : ['/create','/dashboard/templates','/marketplace','/documentation','/dashboard/projects','/dashboard/settings/appearance'];
+  const routes = studioOnly ? ['/studio'] : ['/studio','/dashboard/templates','/marketplace','/documentation','/dashboard/projects','/dashboard/settings/appearance'];
   for (const route of routes) {
     console.log(JSON.stringify({reviewing:route}));
     await size(1366); await navigate(route);
     await wait('!!document.querySelector("[data-workspace-shell]")');
-    if (route === '/create') await wait('!!document.querySelector("textarea")');
+    if (route === '/studio') await wait('!!document.querySelector("textarea")');
     if (route === '/marketplace') await wait('!!document.querySelector("#marketplace-search")');
     if (route === '/dashboard/templates') await wait('!!document.querySelector("#templates")');
     await delay(1000);
@@ -62,12 +62,12 @@ await deployedBrowser(origin, [identity.clerk_user_id], async ({ call, evaluate,
         await size(width, width === 550 ? 623 : width < 600 ? 844 : 626);
         const values = await geometry();
         assert.ok(!values.overflow, `Horizontal overflow: ${route} ${width}`);
-        if (!baseline && route === '/create') {
+        if (!baseline && route === '/studio') {
           assert.equal(values.toolbar.height,54,'Compact Studio toolbar');
           if (width >= 1280) {
-            assert.equal(values.sidebar.width,260,'Expanded sidebar');
+            assert.equal(values.sidebar.width,252,'Expanded sidebar');
             assert.equal(values.sources.width,254,'Sources rail');
-            assert.equal(values.properties.width,254,'Properties rail');
+            assert.equal(values.properties.width,252,'Properties rail');
             assert.ok(values.stage.width>values.sources.width,'Dominant Stage');
             assert.equal(values.stage.y,8,'Top viewport gutter');
           }
@@ -93,7 +93,7 @@ await deployedBrowser(origin, [identity.clerk_user_id], async ({ call, evaluate,
       }
     }
   }
-  await size(1366); await navigate('/create'); await wait('!!document.querySelector("textarea")'); await theme(true);
+  await size(1366); await navigate('/studio'); await wait('!!document.querySelector("textarea")'); await theme(true);
   await wait(`!!document.querySelector('button[aria-label="Collapse sidebar"],button[aria-label="Expand sidebar"]')`);
   await evaluate(`document.querySelector('button[aria-label="Collapse sidebar"]')?.click()`); await delay(300);
   checks.push({ route:'collapsed', ...await geometry() }); await shot('studio-collapsed-1366-dark');

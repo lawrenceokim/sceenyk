@@ -187,7 +187,7 @@ async function worker(){
 }
 async function scan(){
   const scripts=new Set(state.privateClientScripts??[]);let leaks=0,markers=0;
-  for(const route of ['/','/create']){const r=await fetch(origin+route,{signal:AbortSignal.timeout(30000)});assert.equal(r.status,200);const html=await r.text();if(secrets().some(s=>html.includes(s)))leaks++;for(const m of html.matchAll(/\/_next\/static\/[^\s"'\\<>]+\.js/g))scripts.add(m[0]);}
+  for(const route of ['/','/studio']){const r=await fetch(origin+route,{signal:AbortSignal.timeout(30000)});assert.equal(r.status,200);const html=await r.text();if(secrets().some(s=>html.includes(s)))leaks++;for(const m of html.matchAll(/\/_next\/static\/[^\s"'\\<>]+\.js/g))scripts.add(m[0]);}
   for(const file of scripts){const r=await fetch(origin+file,{signal:AbortSignal.timeout(30000)});assert.equal(r.status,200);const body=await r.text();if(secrets().some(s=>body.includes(s)))leaks++;if(/ensure_render_job|complete_render_job|finalize_render_generation|@remotion\/renderer|WORKER_SHARED_SECRET|SUPABASE_SECRET_KEY|R2_SECRET_ACCESS_KEY|INNGEST_SIGNING_KEY|ELEVENLABS_API_KEY|GEMINI_API_KEY|FAL_KEY|X-Amz-Signature|r2\.cloudflarestorage/.test(body))markers++;}
   check('deployed public and authenticated client secret scan passes',scripts.size>0&&leaks===0&&markers===0);state.secretScan={files:scripts.size,configuredSecrets:secrets().length,leaks,markers};save();
 }

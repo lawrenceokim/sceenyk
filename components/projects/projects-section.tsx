@@ -41,7 +41,7 @@ export function ProjectsSection({
           primaryAction={
             <Button
               nativeButton={false}
-              render={<Link href="/create" />}
+              render={<Link href="/studio" />}
               className="h-auto min-h-11 whitespace-normal text-center"
             >
               <Plus className="size-4" aria-hidden="true" />

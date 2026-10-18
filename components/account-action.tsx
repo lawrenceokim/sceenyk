@@ -55,7 +55,7 @@ export function AccountAction({
   const available = useAuthAvailable();
   if (intent === "create") {
     return (
-      <Button {...props} nativeButton={false} render={<Link href="/create" />}>
+      <Button {...props} nativeButton={false} render={<Link href="/studio" />}>
         {children}
       </Button>
     );

@@ -58,7 +58,7 @@ async function launch(){
  const settings={duration:'10',aspectRatio:'16:9',visualStyle:'Original',tone:'Storytelling'};
  const {deployedBrowser}=await import('./lib/deployed-browser.mjs');
  await deployedBrowser(origin,{A:state.ownerClerkId,B:state.secondClerkId},async({signIn,navigate,wait,discover,invoke,close,errors})=>{
-  await signIn('A');await navigate('/create');await wait("!!document.querySelector('textarea')");await discover();
+  await signIn('A');await navigate('/studio');await wait("!!document.querySelector('textarea')");await discover();
   if(!state.projectSaved){const r=await invoke('saveProjectAction',{id:state.projectId,mode:'create',title:'Short George narration acceptance',category:'cinematic',prompt,settings});check('Vercel saves the owned narration acceptance project',r.ok);state.projectSaved=true;save();}
   if(!state.assetId){
    const original=await one('project_assets',sourceFixture.asset.id),storage=load('lib/storage/r2.ts');
@@ -168,7 +168,7 @@ async function verify(){
   check('owner browser loads private audio with measured timing and short capability',audio.status===200&&audio.loaded&&audio.id===state.segmentId&&audio.sceneId===state.spokenSceneId&&audio.actual===state.audioProof.durationMs&&Math.abs(audio.duration*1000-audio.actual)<50&&audio.cache==='private, no-store'&&audio.expiresIn===900);
   for(const page of ['/dashboard',route]){await navigate(page);await wait(page===route?"document.body.innerText.includes('Narration ready')":"document.body.innerText.includes('Your projects')");const html=await evaluate('document.documentElement.outerHTML');check('authenticated '+(page===route?'project':'dashboard')+' HTML has no configured secrets',!secrets().some(s=>html.includes(s)));const urls=await evaluate("performance.getEntriesByType('resource').map(r=>r.name).filter(n=>n.startsWith(location.origin+'/_next/static/')&&n.endsWith('.js'))");state.privateClientScripts=[...new Set([...(state.privateClientScripts??[]),...urls.map(u=>new URL(u).pathname)])];save();}
   check('dashboard return and reopen preserve narration readiness',true);
-  await signIn('B');await navigate('/create');await wait("!!document.querySelector('textarea')");await discover();const denied=await invoke('latestGenerationAction',state.projectId);check('real User B cannot read User A generation',denied.ok&&denied.value===null);
+  await signIn('B');await navigate('/studio');await wait("!!document.querySelector('textarea')");await discover();const denied=await invoke('latestGenerationAction',state.projectId);check('real User B cannot read User A generation',denied.ok&&denied.value===null);
   const blocked=await evaluate(`(async()=>{const r=await fetch(${JSON.stringify(readRoute)});return {status:r.status,body:await r.json()};})()`);check('real User B cannot obtain User A narration capability',blocked.status===404&&!blocked.body.url);
   const admission=await invoke('quoteGenerationAction',{projectId:state.projectId,requestId:randomUUID(),inputs:{prompt:'Unauthorized narration',category:'cinematic',settings:{duration:'10',aspectRatio:'16:9',visualStyle:'Original',tone:'Storytelling'},assetIds:[state.assetId]}});check('User B cannot admit narration for User A project',!admission.ok&&admission.code==='NOT_FOUND');
   const direct=await evaluate(`(async()=>{try{const r=await fetch(${JSON.stringify(worker+'/narrate')},{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({generationJobId:${JSON.stringify(state.jobId)},sceneExecutionId:${JSON.stringify(state.spokenSceneId)}})});return {status:r.status};}catch{return {blocked:true};}})()`);check('User B browser cannot directly regenerate narration',direct.blocked===true||direct.status===401);
@@ -178,7 +178,7 @@ async function verify(){
 }
 async function scan(){
  const scripts=new Set(state.privateClientScripts??[]);let leaks=0,markers=0;
- for(const route of ['/','/create']){const r=await fetch(origin+route,{signal:AbortSignal.timeout(20000)});assert.equal(r.status,200);const html=await r.text();if(secrets().some(s=>html.includes(s)))leaks++;for(const m of html.matchAll(/\/_next\/static\/[^\s"'\\<>]+\.js/g))scripts.add(m[0]);}
+ for(const route of ['/','/studio']){const r=await fetch(origin+route,{signal:AbortSignal.timeout(20000)});assert.equal(r.status,200);const html=await r.text();if(secrets().some(s=>html.includes(s)))leaks++;for(const m of html.matchAll(/\/_next\/static\/[^\s"'\\<>]+\.js/g))scripts.add(m[0]);}
  for(const script of scripts){const r=await fetch(origin+script,{signal:AbortSignal.timeout(20000)});assert.equal(r.status,200);const body=await r.text();if(secrets().some(s=>body.includes(s)))leaks++;if(/ELEVENLABS_API_KEY|api\.elevenlabs\.io|WORKER_SHARED_SECRET|MEDIA_WORKER_URL|SUPABASE_SECRET_KEY|R2_SECRET_ACCESS_KEY|INNGEST_SIGNING_KEY|GEMINI_API_KEY|FAL_KEY|queue\.fal\.run|r2\.cloudflarestorage|X-Amz-Signature/.test(body))markers++;}
  check('deployed public and authenticated client bundles expose no configured secrets',scripts.size>0&&leaks===0&&markers===0);state.secretScan={htmlPages:2,clientFiles:scripts.size,configuredSecrets:secrets().length,leaks,markers};save();console.log(JSON.stringify(state.secretScan));
 }

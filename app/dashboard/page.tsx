@@ -6,5 +6,5 @@ export default async function DashboardCompatibility({ searchParams }: {
   const { page } = await searchParams;
   // Old project pagination used /dashboard?page=N#projects.
   if (typeof page === "string") redirect(`/dashboard/projects?page=${encodeURIComponent(page)}`);
-  redirect("/create");
+  redirect("/studio");
 }

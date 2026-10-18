@@ -14,7 +14,7 @@ export function Hero() {
         <div className={styles.heroDescription}>
           <p>Generate cinematic videos and visuals from prompts, clips, and creative direction — all inside one studio.</p>
           <div className={styles.actions}>
-            <Link href="/create" className={buttonVariants()}>Open Studio <ArrowRight aria-hidden="true" /></Link>
+            <Link href="/studio" className={buttonVariants()}>Open Studio <ArrowRight aria-hidden="true" /></Link>
             <Link href="/marketplace" className={buttonVariants({ variant: "outline" })}>Browse Marketplace</Link>
           </div>
         </div>

@@ -163,7 +163,7 @@ function LandingNavbar() {
             </nav>
           </div>
           <div className={styles.navbarActions}>
-            <Link href="/create" className={buttonVariants()}>
+            <Link href="/studio" className={buttonVariants()}>
               Open Studio <ArrowRight aria-hidden="true" />
             </Link>
             <div className={styles.desktopAccount}>
@@ -177,7 +177,7 @@ function LandingNavbar() {
         <SheetTitle>Explore Sceenyk</SheetTitle>
         <SheetDescription>Your next creative starting point.</SheetDescription>
         <nav aria-label="Mobile navigation" className={styles.mobileLinks}>
-          <Link href="/create" onClick={() => setOpen(false)}>
+          <Link href="/studio" onClick={() => setOpen(false)}>
             Studio
           </Link>
           <Link href="/marketplace" onClick={() => setOpen(false)}>
@@ -220,14 +220,14 @@ function LandingFooter() {
           <div>
             <Brand variant="full" />
             <p>Create the scene you imagine.</p>
-            <Link href="/create" className={styles.footerStudio}>
+            <Link href="/studio" className={styles.footerStudio}>
               Find your creative flow{" "}
               <ArrowRight size={15} aria-hidden="true" />
             </Link>
           </div>
           <nav aria-label="Footer product navigation">
             <h2>Product</h2>
-            <Link href="/create">Studio</Link>
+            <Link href="/studio">Studio</Link>
             <Link href="/marketplace">Marketplace</Link>
             <Link href="/#pricing">Pricing</Link>
             <Link href="/documentation">Documentation</Link>
@@ -257,7 +257,7 @@ function LandingFooter() {
   );
 }
 
-// Existing shared public chrome is unchanged on /create, Marketplace and private
+// Existing shared public chrome is unchanged on /studio, Marketplace and private
 // project pages. Only the home route opts into the new landing composition.
 export function PublicNavbar() {
   return usePathname() === "/" ? <LandingNavbar /> : <Navbar />;

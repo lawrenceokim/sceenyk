@@ -17,12 +17,12 @@ const load = typescriptLoader({
 }, { Headers, URL });
 const proxy = load('proxy.ts').default;
 const request = url => ({ url: 'https://example.test'+url, nextUrl: new URL('https://example.test'+url) });
-for (const [input, expected] of [['/dashboard','/create'],['/dashboard?page=2','/dashboard/projects?page=2'],['/dashboard?page=evil%26query','/dashboard/projects?page=evil%26query']]) {
+for (const [input, expected] of [['/dashboard','/studio'],['/dashboard?page=2','/dashboard/projects?page=2'],['/dashboard?page=evil%26query','/dashboard/projects?page=evil%26query']]) {
   const result = await proxy(request(input), {});
   check('authenticated compatibility redirect '+input, result.status === 307 && result.url === 'https://example.test'+expected);
 }
 check('compatibility still authenticates', protections === 3);
-for (const url of ['/create','/marketplace','/marketplace/creators/example','/documentation','/documentation/credits']) {
+for (const url of ['/studio','/marketplace','/marketplace/creators/example','/documentation','/documentation/credits']) {
   const before = protections; await proxy(request(url), {}); check('public exploration '+url, before === protections);
 }
 for (const url of ['/api/inngest','/api/payments/paypal/webhook']) {
@@ -34,7 +34,7 @@ for (const url of ['/dashboard','/dashboard/projects','/dashboard/templates','/d
 }
 authEnabled = false;
 check('missing auth config still denies private route', (await proxy(request('/dashboard/projects'), {})).url === 'https://example.test/?auth=sign-in');
-check('missing auth config retains guest Studio', (await proxy(request('/create'), {})).next);
+check('missing auth config retains guest Studio', (await proxy(request('/studio'), {})).next);
 await load('app/actions/projects.ts').saveProjectAction({});
 check('save invalidates new Projects destination and editor', invalidations.includes('/dashboard/projects') && invalidations.includes('/projects/owned'));
 invalidations.length = 0;

@@ -123,7 +123,7 @@ try {
   const earnings=await invoke('creatorEarningsAction',1),withdrawals=await invoke('withdrawalAccountAction',1);
   check('creator earnings and withdrawal history remain owner-only readable',earnings.ok&&earnings.data.clerkUserId===a.clerk_user_id&&withdrawals.ok&&withdrawals.data.clerkUserId===a.clerk_user_id);
   const unsignedObject=new URL(ownedMedia.value.url);unsignedObject.search='';const raw=await fetch(unsignedObject,{signal:AbortSignal.timeout(15000)});await raw.body?.cancel();check('private R2 rejects unsigned access',[400,401,403].includes(raw.status));
-  await navigate('/create');await wait('!!document.querySelector("input[name=title]")');await discover();
+  await navigate('/studio');await wait('!!document.querySelector("input[name=title]")');await discover();
   const saved=await invoke('saveProjectAction',project);check('owned isolated source saved',saved.ok);state.projectSaved=true;save();
   const draftProject=await invoke('saveProjectAction',{...project,id:state.draftProjectId,mode:state.draftProjectSaved?'update':'create',title:'Private draft source'});check('owned draft source saved',draftProject.ok);state.draftProjectSaved=true;save();
   await navigate('/dashboard/marketplace/new?project='+state.projectId);await wait('!!document.querySelector("input[name=title]")');await discover();
@@ -148,7 +148,7 @@ try {
   const stillOwned=await db.from('marketplace_creator_profiles').select('avatar_key').eq('owner_user_id',a.id).single();check('B avatar owner spoof cannot change A',!stillOwned.error&&stillOwned.data.avatar_key===originalProfile.data.avatar_key&&(!forgedAvatar.ok||forgedAvatar.profile.slug!==state.aSlug));
   await navigate('/projects/'+source.id);await wait('document.body.innerText.includes("Project unavailable")');check('B cannot open A private source',await evaluate('!document.querySelector("input[name=title]")'));
   await navigate('/projects/'+state.projectId);await wait('document.body.innerText.includes("Project unavailable")');check('storefront source project stays private',await evaluate('!document.body.innerText.includes("PRIVATE_STOREFRONT_SOURCE")'));
-  await navigate('/create');await wait('!!document.querySelector("input[name=title]")');await discover();
+  await navigate('/studio');await wait('!!document.querySelector("input[name=title]")');await discover();
   const deniedMedia=await invoke('readMediaAction',{projectId:source.id,assetId:privateAssets.data[0].id});check('B cannot obtain A private media capability',!deniedMedia.ok);
   await navigate('/dashboard/marketplace/new');await wait('document.body.innerText.includes("Publish")');await discover();
   const foreign=await invoke('createMarketplaceAction',{...listing,id:randomUUID(),sourceProjectId:source.id});check('B cannot publish A source',!foreign.ok);
@@ -169,7 +169,7 @@ try {
   await login('A');await navigate('/dashboard/marketplace/'+state.listingId);await wait('!!document.querySelector("input[name=title]")');await discover();
   const unpublished=await invoke('updateMarketplaceAction',{id:state.listingId,title:listing.title,description:listing.description,category:listing.category,tags:listing.tags,rightsConfirmed:true,status:'unpublished',adoptionType:'free',priceMinor:0});check('unpublish remains supported',unpublished.ok);
   state.archiveProjectId??=randomUUID();state.archiveId??=randomUUID();save();
-  await navigate('/create');await wait('!!document.querySelector("input[name=title]")');await discover();
+  await navigate('/studio');await wait('!!document.querySelector("input[name=title]")');await discover();
   const archiveProject=await invoke('saveProjectAction',{...project,id:state.archiveProjectId,mode:state.archiveProjectSaved?'update':'create',title:'Private archived source'});check('owned archive fixture source saved',archiveProject.ok);state.archiveProjectSaved=true;save();
   await navigate('/dashboard/marketplace/new');await wait('document.body.innerText.includes("Publish")');await discover();
   const archiveDraft=await invoke('createMarketplaceAction',{...listing,id:state.archiveId,sourceProjectId:state.archiveProjectId,title:'PRIVATE_STOREFRONT_ARCHIVED',publish:false});assert.ok(archiveDraft.ok,'ARCHIVE_FIXTURE_ONLY');

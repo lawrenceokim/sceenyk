@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 // URL fragments never reach the server. Browsers carry them through the
-// /dashboard -> /create redirect; keep old saved project/template links useful.
+// /dashboard -> /studio redirect; keep old saved project/template links useful.
 export function WorkspaceLegacyLinks() {
   const router = useRouter();
   useEffect(() => {

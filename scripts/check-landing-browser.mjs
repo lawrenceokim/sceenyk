@@ -151,7 +151,7 @@ try {
       check(label + ' widescreen Studio preview', Math.abs(state.stageRatio - 16 / 9) < 0.015);
       check(label + ' optimized loaded images', state.imagesLoaded && state.optimized);
       check(label + ' no significant layout shift', state.cls < 0.1);
-      check(label + ' footer and destinations', state.footer && state.links.includes('/create') && state.links.includes('/marketplace') && state.links.includes('/dashboard/settings/credits'));
+      check(label + ' footer and destinations', state.footer && state.links.includes('/studio') && state.links.includes('/marketplace') && state.links.includes('/dashboard/settings/credits'));
       check(label + ' responsive pricing', width >= 700 || state.pricesStacked);
       check(label + ' responsive menu', state.menuVisible === (width < 1000));
       check(label + ' viewport hero with bottom-aligned foreground copy', await evaluate("(()=>{const h=document.querySelector('[data-landing-hero]'),c=document.querySelector('h1').parentElement.parentElement,r=c.getBoundingClientRect();return Math.abs(h.getBoundingClientRect().height-innerHeight)<2&&r.top>innerHeight*.58&&r.bottom>innerHeight*.85&&r.bottom<innerHeight&&getComputedStyle(c).zIndex>getComputedStyle(document.querySelector('[data-landing-gallery]')).zIndex})()"));
@@ -281,11 +281,11 @@ try {
   await call('Emulation.setScriptExecutionDisabled', { value: true }); await navigate('/');
   check('server-rendered content has no motion-induced hiding', await evaluate("!!document.querySelector('h1')&&!!document.querySelector('#pricing')&&getComputedStyle(document.querySelector('#studio-preview')).opacity==='1'"));
   await call('Emulation.setScriptExecutionDisabled', { value: false });
-  for (const route of ['/create', '/marketplace']) {
+  for (const route of ['/studio', '/marketplace']) {
     await navigate(route);
     check(route + ' retains original public chrome', await evaluate("!document.querySelector('[data-landing-navbar]')&&!document.querySelector('[data-landing-footer]')&&!!document.querySelector('header')&&!!document.querySelector('footer')"));
   }
-  for (const route of ['/', '/create', '/marketplace']) {
+  for (const route of ['/', '/studio', '/marketplace']) {
     currentCase='default-dark'+route;
     await configure(1440,'light',false,1000,1,null); await navigate(route); await delay(850);
     check(route+' defaults dark on light OS without a saved choice', await evaluate("document.documentElement.classList.contains('dark')&&localStorage.getItem('sceenyk-theme')===null"));

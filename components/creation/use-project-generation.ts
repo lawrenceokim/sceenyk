@@ -210,7 +210,7 @@ export function useProjectGeneration(
       attempt.current = null;
       setQuoted(null);
       setRetrying(false);
-      if (location.pathname === "/create")
+      if (location.pathname === "/studio")
         window.history.replaceState(null, "", `/projects/${projectId}`);
     } catch {
       if (revision === epoch.current) {

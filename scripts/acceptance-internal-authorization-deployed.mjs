@@ -117,7 +117,7 @@ try {
     const earnings=await browser.invoke('creatorEarningsAction',1);
     record('owned deployed creator earnings works',earnings.ok&&earnings.data.clerkUserId===ordinary.clerk_user_id);
     const scripts=new Set();
-    for(const route of ['/dashboard/marketplace/earnings','/dashboard/credits','/marketplace','/create']){
+    for(const route of ['/dashboard/marketplace/earnings','/dashboard/credits','/marketplace','/studio']){
       await browser.navigate(route);await browser.wait("document.readyState==='complete'");
       for(const url of await browser.evaluate("Array.from(document.scripts).map(s=>s.src).filter(src=>src.startsWith(location.origin+'/_next/'))"))scripts.add(url);
       record('deployed page loads '+route,await browser.evaluate("!document.body.innerText.includes('Application error')"));

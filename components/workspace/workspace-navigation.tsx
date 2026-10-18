@@ -8,7 +8,7 @@ import { useId, type ReactElement } from "react";
 import { cn } from "@/lib/utils";
 
 const groups = [
-  { label: "Create", items: [{ label: "Studio", icon: Clapperboard, href: "/create" }] },
+  { label: "Studio", items: [{ label: "Studio", icon: Clapperboard, href: "/studio" }] },
   { label: "Workspace", items: [
     { label: "Projects", icon: FolderOpen, href: "/dashboard/projects" },
     { label: "Templates", icon: LayoutTemplate, href: "/dashboard/templates" },
@@ -42,7 +42,7 @@ export function WorkspaceNavigation({ collapsed = false, onNavigate }: {
       <p className={cn("workspace-nav-label text-muted-foreground", collapsed && "sr-only")}>{group.label}</p>
       <ul>{group.items.map(item => {
         const Icon = item.icon;
-        const active = item.label === "Studio" ? pathname === "/create" || pathname.startsWith("/projects/")
+        const active = item.label === "Studio" ? pathname === "/studio" || pathname.startsWith("/projects/")
           : item.label === "Marketplace" ? pathname.startsWith("/marketplace") || pathname.startsWith("/dashboard/marketplace")
           : item.label === "Settings" ? pathname.startsWith("/dashboard/settings/") && pathname !== "/dashboard/settings/credits"
           : item.label === "Documentation" ? pathname === "/documentation" || pathname.startsWith("/documentation/")
