@@ -37,18 +37,18 @@ export function WorkspaceNavigation({ collapsed = false, onNavigate }: {
   collapsed?: boolean; onNavigate?: () => void;
 }) {
   const pathname = usePathname();
-  return <nav aria-label="Workspace navigation" className="space-y-5">
+  return <nav aria-label="Workspace navigation" className="workspace-navigation">
     {groups.map(group => <div key={group.label}>
-      <p className={cn("mb-1.5 px-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground", collapsed && "sr-only")}>{group.label}</p>
-      <ul className="space-y-1">{group.items.map(item => {
+      <p className={cn("workspace-nav-label text-muted-foreground", collapsed && "sr-only")}>{group.label}</p>
+      <ul>{group.items.map(item => {
         const Icon = item.icon;
         const active = item.label === "Studio" ? pathname === "/create" || pathname.startsWith("/projects/")
           : item.label === "Marketplace" ? pathname.startsWith("/marketplace") || pathname.startsWith("/dashboard/marketplace")
           : item.label === "Settings" ? pathname.startsWith("/dashboard/settings/") && pathname !== "/dashboard/settings/credits"
           : item.label === "Documentation" ? pathname === "/documentation" || pathname.startsWith("/documentation/")
           : item.href === pathname;
-        const classes = cn("flex min-h-11 w-full items-center gap-3 rounded-xl px-3 py-2 text-body-sm font-medium outline-none transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sidebar-ring motion-reduce:transition-none hover:bg-sidebar-accent hover:text-sidebar-accent-foreground", collapsed && "justify-center px-0", active && "bg-sidebar-accent text-sidebar-accent-foreground");
-        const content = <><Icon className="size-[18px] shrink-0" aria-hidden="true" /><span className={collapsed ? "sr-only" : "truncate"}>{item.label}</span></>;
+        const classes = cn("workspace-nav-item flex w-full items-center rounded-lg text-body-sm font-medium outline-none transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sidebar-ring motion-reduce:transition-none hover:bg-sidebar-accent hover:text-sidebar-accent-foreground", collapsed && "justify-center", active && "bg-sidebar-accent text-sidebar-accent-foreground");
+        const content = <><Icon className="size-4 shrink-0" aria-hidden="true" /><span className={collapsed ? "sr-only" : "truncate"}>{item.label}</span></>;
         return <li key={item.label}><WorkspaceTooltip label={item.label} enabled={collapsed}>
           <Link href={item.href} aria-label={collapsed ? item.label : undefined} aria-current={active ? "page" : undefined} onClick={onNavigate} className={classes}>{content}</Link>
         </WorkspaceTooltip></li>;

@@ -24,20 +24,20 @@ async function Discovery({ searchParams }: { searchParams: SearchParams }) {
   try { result = await browseMarketplace({ query, category, page }); }
   catch (error) { unstable_rethrow(error); return <MarketplaceFailure />; }
   return <div className="space-y-7">
-    <form action="/marketplace" method="get" role="search" className="sceenyk-card grid items-end gap-4 p-4 sm:grid-cols-[minmax(0,1fr)_minmax(10rem,0.5fr)_auto] sm:p-5">
+    <form action="/marketplace" method="get" role="search" className="workspace-marketplace-search">
       <div><label htmlFor="marketplace-search" className="text-body-sm font-medium">Find a template</label><div className="relative mt-2"><Search className="pointer-events-none absolute left-3 top-3.5 size-4 text-muted-foreground" aria-hidden="true" /><input id="marketplace-search" name="q" type="search" maxLength={80} defaultValue={query} className="sceenyk-field pl-10" placeholder="Search titles, descriptions or tags" /></div></div>
       <div><label htmlFor="marketplace-category" className="text-body-sm font-medium">Category</label><select id="marketplace-category" name="category" defaultValue={category ?? ""} className="sceenyk-field mt-2"><option value="">All categories</option>{creationCategories.map(item => <option key={item.id} value={item.id}>{item.title}</option>)}</select></div>
       <Button type="submit">Search</Button>
     </form>
     {!!(query || category) && <div className="flex flex-wrap items-center justify-between gap-2 text-body-sm"><p className="break-words text-muted-foreground">{result.total} results{query ? ` for “${query}”` : ""}</p><Link href="/marketplace" className="nav-link text-link">Clear filters</Link></div>}
-    {result.items.length ? <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">{result.items.map(listing => <ListingCard key={listing.id} listing={listing} />)}</div> : <div className="sceenyk-card"><EmptyState icon={<Store className="size-7" />} title={query || category ? "No matching templates" : page > 1 ? "No listings on this page" : "The next idea could be yours"} description={query || category ? "Try another search or choose a different category." : "Publish a reusable template from one of your saved projects to help other creators get started."} primaryAction={<Button variant="outline" nativeButton={false} render={<Link href={query || category || page > 1 ? "/marketplace" : "/dashboard/marketplace/new"} />}>{query || category || page > 1 ? "Browse all templates" : "Publish a template"}</Button>} /></div>}
+    {result.items.length ? <div className="workspace-gallery">{result.items.map(listing => <ListingCard key={listing.id} listing={listing} />)}</div> : <div className="sceenyk-card"><EmptyState icon={<Store className="size-7" />} title={query || category ? "No matching templates" : page > 1 ? "No listings on this page" : "The next idea could be yours"} description={query || category ? "Try another search or choose a different category." : "Publish a reusable template from one of your saved projects to help other creators get started."} primaryAction={<Button variant="outline" nativeButton={false} render={<Link href={query || category || page > 1 ? "/marketplace" : "/dashboard/marketplace/new"} />}>{query || category || page > 1 ? "Browse all templates" : "Publish a template"}</Button>} /></div>}
     <MarketplacePagination {...result} href={href} />
   </div>;
 }
 export default function MarketplacePage({ searchParams }: { searchParams: SearchParams }) {
-  return <div className="space-y-8">
-    <header className="flex flex-col justify-between gap-5 md:flex-row md:items-end"><div className="max-w-2xl space-y-3"><p className="eyebrow">MADE TO MAKE YOUR OWN</p><h1 className="text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl">A starting point for your next idea.</h1><p className="text-body text-muted-foreground">Discover reusable creator templates. Adopt one for free, add your own ideas and media, then create something new.</p></div><Button variant="outline" nativeButton={false} render={<Link href="/dashboard/marketplace" />}>My Marketplace Listings</Button></header>
-    <p className="rounded-xl border border-border bg-accent/50 p-4 text-body-sm text-muted-foreground">Free adoption costs zero credits. Normal Sceenyk generation credits may still be required to create your result.</p>
+  return <div className="workspace-marketplace">
+    <header className="flex flex-col justify-between gap-5 md:flex-row md:items-end"><div className="max-w-2xl space-y-3"><h1 className="font-bold tracking-tight">Marketplace</h1><p className="text-body text-muted-foreground">Discover reusable creator templates. Adopt one for free, add your own ideas and media, then create something new.</p></div><Button variant="outline" nativeButton={false} render={<Link href="/dashboard/marketplace" />}>My Marketplace Listings</Button></header>
     <Suspense fallback={<MarketplaceLoading />}><Discovery searchParams={searchParams} /></Suspense>
+    <p className="workspace-marketplace-note">Free adoption costs zero credits. Normal Sceenyk generation credits may still be required to create your result.</p>
   </div>;
 }

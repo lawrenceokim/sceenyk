@@ -21,7 +21,7 @@ export function ProjectsSection({
       aria-labelledby="projects-heading"
       className="scroll-mt-8 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
     >
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border p-5 sm:px-6">
+      <div className="workspace-projects-header">
         <h2
           id="projects-heading"
           className="text-lg font-semibold tracking-tight"
@@ -66,7 +66,7 @@ export function ProjectsSection({
       ) : (
         <>
           <ul
-            className="grid gap-4 p-5 sm:grid-cols-2 sm:p-6"
+            className="workspace-gallery py-3"
             aria-label="Saved projects"
           >
             {data.projects.map((project) => (

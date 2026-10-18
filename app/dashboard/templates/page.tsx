@@ -27,7 +27,7 @@ export default function TemplatesPage({ searchParams }: { searchParams: Promise<
       <WorkspacePageHeader title="Templates" eyebrow="YOUR CREATIVE LIBRARY" description="Reusable starting points from your Marketplace listings. Keep your ideas close, and make room for the next one.">
         <Button variant="outline" nativeButton={false} render={<Link href="/marketplace" />}>Explore Marketplace</Button>
       </WorkspacePageHeader>
-      <nav aria-label="Template library links" className="flex flex-wrap gap-x-6 gap-y-2 border-b border-border pb-5 text-body-sm">
+      <nav aria-label="Template library links" className="workspace-library-links">
         <Link className="nav-link text-link" href="/dashboard/marketplace/new">Publish from a project</Link>
         <Link className="nav-link text-muted-foreground" href="/dashboard/marketplace">Manage listings</Link>
         <Link className="nav-link text-muted-foreground" href="/dashboard/marketplace/purchases">Marketplace purchases</Link>

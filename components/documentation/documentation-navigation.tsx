@@ -13,7 +13,7 @@ export function DocumentationNavigation({ activeSlug }: { activeSlug: string }) 
   const ready = useSyncExternalStore(subscribe, () => true, () => false);
   const groups = [...new Set(documentationTopics.map(topic => topic.group))];
   return (
-    <aside className="min-w-0 xl:sticky xl:top-8" aria-label="Documentation topics">
+    <aside className="workspace-doc-topics min-w-0 xl:sticky xl:top-8" aria-label="Documentation topics">
       <div className="space-y-2 xl:hidden">
         <label htmlFor="documentation-topic" className="text-body-sm font-medium">Documentation topic</label>
         <select id="documentation-topic" value={documentationHref(activeSlug)} disabled={!ready} onChange={event => router.push(event.target.value)} className="sceenyk-field">

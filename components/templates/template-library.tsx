@@ -12,20 +12,18 @@ export function TemplateLibrary({ result }: { result: ListingPage<OwnedListing> 
   return (
     <section id="templates" aria-label="Your template gallery" className="scroll-mt-24 space-y-8 lg:scroll-mt-8">
       {result.items.length ? (
-        <ul className="grid gap-6 sm:grid-cols-2 2xl:grid-cols-3">
+        <ul className="workspace-gallery">
           {result.items.map(listing => (
             <li key={listing.id} className="min-w-0">
-              <article className="flex h-full flex-col overflow-hidden rounded-2xl border border-border">
-                <Link href={`/dashboard/marketplace/${listing.id}`} aria-label={`Open template ${listing.title}`} className="block focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-ring">
+              <article className="workspace-gallery-card h-full">
+                <Link href={`/dashboard/marketplace/${listing.id}`} aria-label={`Open template ${listing.title}`} className="relative block focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-ring">
                   <TemplateCover template={listing.template} />
+                  <span className="workspace-gallery-badge capitalize">{listing.status}</span>
                 </Link>
-                <div className="flex flex-1 flex-col gap-3 p-5">
-                  <div className="flex items-start justify-between gap-3">
-                    <h2 className="min-w-0 flex-1 break-words text-lg font-semibold tracking-tight">{listing.title}</h2>
-                    <span className="shrink-0 rounded-full bg-accent px-2.5 py-1 text-caption capitalize text-accent-foreground">{listing.status}</span>
-                  </div>
-                  <p className="line-clamp-2 break-words text-body-sm leading-relaxed text-muted-foreground">{listing.description}</p>
-                  <div className="mt-auto flex flex-wrap items-center gap-x-4 gap-y-2 pt-2">
+                <div className="workspace-gallery-copy">
+                  <h2 className="line-clamp-1 break-words">{listing.title}</h2>
+                  <p className="line-clamp-2 break-words text-muted-foreground">{listing.description}</p>
+                  <div className="mt-auto flex flex-wrap items-center gap-x-3 gap-y-1 pt-1">
                     <Link href={`/dashboard/marketplace/${listing.id}`} className="nav-link text-link">{listing.status === "archived" ? "View template" : "Manage template"}</Link>
                     {listing.status === "published" && <Link href={`/marketplace/${listing.id}`} className="nav-link text-muted-foreground">Public listing</Link>}
                   </div>

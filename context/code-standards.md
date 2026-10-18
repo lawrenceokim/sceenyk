@@ -1,5 +1,11 @@
 # Code Standards
 
+## Strict workspace visual-fidelity pass (2026-10-18)
+
+The current user request supersedes earlier phase stop points and geometry guidance for a UI-only pass across Studio, navigation, Templates, Marketplace, Documentation, Projects and Settings. The supplied Pryzm screenshots are the primary layout reference; retain Sceenyk names, official logos, Inter, purple/blue accents and the existing theme controller. No backend, auth, payments, credits, Marketplace behavior, provider, database or guest-draft changes are authorized. Do not trigger hosted Inngest or perform deployment acceptance.
+
+Reference-derived target geometry (Approximate): 260px desktop navigation, 64px collapsed rail, 8px viewport gutters and panel gaps, 14px outer radius, 1px neutral borders, 54px Studio headers/toolbar and 254px Sources/Properties rails at 1366-1440px. Compact desktop navigation uses 32px rows; touch navigation retains larger targets. Panels scroll independently on desktop; mobile retains hamburger/logo, Stage then Properties, and the same mounted full-screen Sources dialog. Gallery cards use a dense responsive grid with compact metadata; actual configuration covers remain labeled rather than inventing artwork. Documentation uses topics/article/contents at reference desktop widths. Settings retains its existing sections and controls. Workspace-scoped neutral surfaces supersede earlier purple-tinted neutrals; brand/action/focus colors remain unchanged. Local screenshots, responsive themes, overflow, lint, types and build are the acceptance scope. See progress-tracker.md for actual results.
+
 ## Current Studio Phase 3 scope (2026-10-18)
 
 The current user request authorizes Studio desktop/tablet/mobile presentation and the approved missing guest handoff. Reuse existing state owners/hooks, server contracts and semantic theme tokens. Sources uses one mounted native dialog tree for the nonmodal rail and full-screen modal; caption preference controls render through a React portal without moving playback state. Keep routes, private guards/cache and financial/provider work unchanged. See architecture and progress tracker for implementation and actual acceptance; do not start another feature.

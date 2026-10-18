@@ -16,17 +16,17 @@ export function WorkspaceMobileNav() {
     desktop.addEventListener("change", dismiss);
     return () => desktop.removeEventListener("change", dismiss);
   }, []);
-  return <header className="sticky top-0 z-40 flex h-16 items-center gap-3 border-b border-border bg-background px-3 lg:hidden">
+  return <header className="workspace-mobile-header sticky top-0 z-40 flex h-[50px] items-center gap-2 border-b border-border bg-background px-2 lg:hidden">
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger render={<Button variant="ghost" size="icon" aria-label="Open workspace navigation" />}><Menu className="size-5" aria-hidden="true" /></SheetTrigger>
-      <SheetContent side="left" className="gap-0 bg-sidebar text-sidebar-foreground data-[side=left]:w-[min(19rem,calc(100%-1rem))]">
-        <div className="shrink-0 px-5 pb-5 pt-5 pr-16"><Brand variant="full" onNavigate={() => setOpen(false)} /></div>
+      <SheetContent side="left" className="workspace-drawer gap-0 bg-sidebar text-sidebar-foreground data-[side=left]:w-[min(26rem,76vw)] data-[side=left]:max-w-none">
+        <div className="workspace-brand shrink-0 pr-16"><Brand variant="full" onNavigate={() => setOpen(false)} /></div>
         <SheetTitle className="sr-only">Workspace navigation</SheetTitle>
         <SheetDescription className="sr-only">Open Studio, Projects, Templates, Marketplace, Documentation, Credits or Settings.</SheetDescription>
-        <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-5"><WorkspaceNavigation onNavigate={() => setOpen(false)} /></div>
+        <div className="workspace-nav-scroll min-h-0 flex-1 overflow-y-auto"><WorkspaceNavigation onNavigate={() => setOpen(false)} /></div>
         <WorkspaceUserMenu onNavigate={() => setOpen(false)} />
       </SheetContent>
     </Sheet>
-    <Brand variant="compact" /><span className="text-body-sm font-semibold">Workspace</span>
+    <Brand variant="full" />
   </header>;
 }

@@ -7,7 +7,7 @@ export function WorkspacePageHeader({ title, description, eyebrow, children }: {
   children?: ReactNode;
 }) {
   return (
-    <header className="flex min-w-0 flex-col justify-between gap-5 sm:flex-row sm:items-end">
+    <header className="workspace-page-heading flex min-w-0 flex-col justify-between gap-4 sm:flex-row sm:items-end">
       <div className="max-w-2xl space-y-3">
         <p className="eyebrow">{eyebrow}</p>
         <h1 className="break-words text-3xl font-bold tracking-tight sm:text-4xl">{title}</h1>

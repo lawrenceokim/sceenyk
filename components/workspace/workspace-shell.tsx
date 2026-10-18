@@ -3,6 +3,7 @@
 import { useSyncExternalStore, type CSSProperties, type ReactNode } from "react";
 import { WorkspaceSidebar } from "./workspace-sidebar";
 import { WorkspaceMobileNav } from "./workspace-mobile-nav";
+import "./workspace.css";
 
 const preferenceKey = "sceenyk-workspace-collapsed";
 let temporaryPreference: boolean | null = null;
@@ -28,13 +29,13 @@ function toggleCollapsed() {
 
 export function WorkspaceShell({ children }: { children: ReactNode }) {
   const collapsed = useSyncExternalStore(subscribe, readCollapsed, () => false);
-  return <div className="min-h-dvh flex-1 bg-background" data-workspace-shell data-collapsed={collapsed} style={{ "--workspace-sidebar-width": collapsed ? "5rem" : "15rem" } as CSSProperties}>
+  return <div className="min-h-dvh flex-1 bg-background" data-workspace-shell data-collapsed={collapsed} style={{ "--workspace-sidebar-width": collapsed ? "64px" : "260px" } as CSSProperties}>
     <a href="#workspace-content" className="skip-link">Skip to content</a>
     <WorkspaceSidebar collapsed={collapsed} onToggle={toggleCollapsed} />
     <div className="min-w-0 lg:pl-[var(--workspace-sidebar-width)]">
       <WorkspaceMobileNav />
-      <div className="p-2 sm:p-3 lg:pl-0">
-        <main id="workspace-content" tabIndex={-1} className="min-h-[calc(100dvh-5rem)] min-w-0 rounded-2xl border border-border bg-card text-card-foreground outline-none lg:min-h-[calc(100dvh-1.5rem)]">{children}</main>
+      <div className="workspace-gutter">
+        <main id="workspace-content" tabIndex={-1} className="workspace-content min-w-0 text-card-foreground outline-none">{children}</main>
       </div>
     </div>
   </div>;

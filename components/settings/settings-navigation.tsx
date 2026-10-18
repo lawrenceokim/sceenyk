@@ -25,7 +25,7 @@ export function SettingsNavigation() {
   const router = useRouter();
   // The section picker needs the router handler before it can navigate.
   const ready = useSyncExternalStore(subscribeReadiness, clientReady, serverReady);
-  return <><div className="space-y-2 xl:hidden"><label htmlFor="settings-section" className="text-body-sm font-medium">Settings section</label><select id="settings-section" disabled={!ready} value={pathname} onChange={event => router.push(event.target.value)} className="min-h-11 w-full rounded-lg border border-input bg-field px-3 text-body-sm">{settingsSections.map(([section, label]) => <option key={section} value={`/dashboard/settings/${section}`}>{label}</option>)}</select></div><nav aria-label="Settings sections" className="hidden gap-1 xl:sticky xl:top-8 xl:grid xl:grid-cols-1">
+  return <><div className="space-y-2 lg:hidden"><label htmlFor="settings-section" className="text-body-sm font-medium">Settings section</label><select id="settings-section" disabled={!ready} value={pathname} onChange={event => router.push(event.target.value)} className="min-h-11 w-full rounded-lg border border-input bg-field px-3 text-body-sm">{settingsSections.map(([section, label]) => <option key={section} value={`/dashboard/settings/${section}`}>{label}</option>)}</select></div><nav aria-label="Settings sections" className="hidden gap-1 lg:sticky lg:top-8 lg:grid lg:grid-cols-1">
     {settingsSections.map(([section, label]) => {
       const href = `/dashboard/settings/${section}`;
       const active = pathname === href;

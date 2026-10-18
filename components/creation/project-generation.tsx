@@ -176,13 +176,13 @@ export function ProjectGeneration({
           </AccountAction>
         )}
       </div>
-      <p className="text-caption leading-relaxed text-muted-foreground">
+      <details className="studio-generation-help"><summary>Before you generate</summary><p className="text-caption leading-relaxed text-muted-foreground">
         Requests are saved for media analysis, production planning and supported
         visual scenes. Final rendering is currently deferred while worker capacity is resolved.
         Confirming reserves the displayed allowance or credits. The reservation
         stays held for later production and is restored after a total failure
         without usable scenes.
-      </p>
+      </p></details>
       {signedIn && <div className="flex flex-wrap items-center justify-between gap-3"><CreditBalance compact /><CreditTopUp /></div>}
       {state.quote && (
         <div className="space-y-3 rounded-lg border border-border bg-muted p-4" role="status" aria-live="polite">

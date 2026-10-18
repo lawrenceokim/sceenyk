@@ -40,7 +40,7 @@ export function StudioLayout({ sources, toolbar, stage, properties }: {
     const element = root.current, dialog = sourcesDialog.current;
     if (!element || !dialog) return;
     const observer = new ResizeObserver(([entry]) => {
-      const next = entry.contentRect.width >= 1050;
+      const next = entry.contentRect.width >= 1000;
       if (next === desktop.current) return;
       const wasModal = dialog.matches(":modal");
       if (dialog.open) dialog.close();

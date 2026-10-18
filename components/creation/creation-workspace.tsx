@@ -15,6 +15,7 @@ import { ProjectGeneration } from "./project-generation";
 import { CategorySelector } from "./category-selector";
 import { CreationPreview } from "./creation-preview";
 import { StudioLayout } from "./studio-layout";
+import { StudioInspectorSection } from "./studio-inspector-section";
 import { SettingSelect } from "./generation-settings";
 import { aspectRatios } from "./creation-options";
 import { GenerationSettings } from "./generation-settings";
@@ -371,20 +372,19 @@ function WorkspaceEditor({
                 }
                 properties={
                   <>
-                    <CategorySelector
+                    <StudioInspectorSection title="Creation type"><CategorySelector
           selected={selectedCategory}
           onChange={setSelectedCategory}
-        />
-                    <PromptComposer
+        /></StudioInspectorSection>
+                    <StudioInspectorSection title="Describe your scene"><PromptComposer
           prompt={prompt}
           category={category}
           onChange={setPrompt}
-        />
-                    <GenerationSettings settings={settings} onChange={setSettings} />
-                    <section className="studio-property">
-                      <h2>Narration</h2>
+        /></StudioInspectorSection>
+                    <StudioInspectorSection title="Style & pacing"><GenerationSettings settings={settings} onChange={setSettings} /></StudioInspectorSection>
+                    <StudioInspectorSection title="Narration"><section className="studio-property">
                       <p className="mt-2 text-caption text-muted-foreground">Include any narration direction in your prompt.</p>
-                    </section>
+                    </section></StudioInspectorSection>
                     {controls}
                   </>
                 }

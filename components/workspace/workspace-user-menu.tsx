@@ -14,7 +14,7 @@ const accountLinks = [
 ] as const;
 
 function GuestAccount({ collapsed = false, onNavigate }: { collapsed?: boolean; onNavigate?: () => void }) {
-  return <Link href="/?auth=sign-in" onClick={onNavigate} title={collapsed ? "Sign in" : undefined} className="flex min-h-11 items-center justify-center gap-2 rounded-xl bg-sidebar-accent px-2 text-body-sm font-medium focus-visible:outline-2 focus-visible:outline-ring"><UserRound className="size-4" aria-hidden="true" /><span className={collapsed ? "sr-only" : undefined}>Sign in</span></Link>;
+  return <Link href="/?auth=sign-in" onClick={onNavigate} title={collapsed ? "Sign in" : undefined} className="flex min-h-10 items-center justify-center gap-2 rounded-lg px-2 text-body-sm font-medium hover:bg-sidebar-accent focus-visible:outline-2 focus-visible:outline-ring"><UserRound className="size-4" aria-hidden="true" /><span className={collapsed ? "sr-only" : undefined}>Sign in</span></Link>;
 }
 
 function ConfiguredUserMenu({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?: () => void }) {
@@ -40,5 +40,5 @@ function ConfiguredUserMenu({ collapsed, onNavigate }: { collapsed: boolean; onN
 
 export function WorkspaceUserMenu({ collapsed = false, onNavigate }: { collapsed?: boolean; onNavigate?: () => void }) {
   const available = useAuthAvailable();
-  return <div className="shrink-0 border-t border-sidebar-border p-2">{available ? <ConfiguredUserMenu collapsed={collapsed} onNavigate={onNavigate} /> : <GuestAccount collapsed={collapsed} onNavigate={onNavigate} />}</div>;
+  return <div className="workspace-account shrink-0 p-2">{available ? <ConfiguredUserMenu collapsed={collapsed} onNavigate={onNavigate} /> : <GuestAccount collapsed={collapsed} onNavigate={onNavigate} />}</div>;
 }

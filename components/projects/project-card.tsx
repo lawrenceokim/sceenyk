@@ -20,7 +20,7 @@ export function ProjectCard({
     <Link
       href={`/projects/${project.id}`}
       prefetch={false}
-      className="sceenyk-interactive block min-w-0 rounded-xl border border-border bg-card p-5 text-card-foreground"
+      className="workspace-project-card sceenyk-interactive text-card-foreground"
       aria-label={`Open ${project.title}`}
     >
       <div className="flex items-start justify-between gap-3">

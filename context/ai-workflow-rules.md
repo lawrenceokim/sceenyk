@@ -1,5 +1,11 @@
 # AI Workflow Rules
 
+## Strict workspace visual-fidelity pass (2026-10-18)
+
+The current user request supersedes earlier phase stop points and geometry guidance for a UI-only pass across Studio, navigation, Templates, Marketplace, Documentation, Projects and Settings. The supplied Pryzm screenshots are the primary layout reference; retain Sceenyk names, official logos, Inter, purple/blue accents and the existing theme controller. No backend, auth, payments, credits, Marketplace behavior, provider, database or guest-draft changes are authorized. Do not trigger hosted Inngest or perform deployment acceptance.
+
+Reference-derived target geometry (Approximate): 260px desktop navigation, 64px collapsed rail, 8px viewport gutters and panel gaps, 14px outer radius, 1px neutral borders, 54px Studio headers/toolbar and 254px Sources/Properties rails at 1366-1440px. Compact desktop navigation uses 32px rows; touch navigation retains larger targets. Panels scroll independently on desktop; mobile retains hamburger/logo, Stage then Properties, and the same mounted full-screen Sources dialog. Gallery cards use a dense responsive grid with compact metadata; actual configuration covers remain labeled rather than inventing artwork. Documentation uses topics/article/contents at reference desktop widths. Settings retains its existing sections and controls. Workspace-scoped neutral surfaces supersede earlier purple-tinted neutrals; brand/action/focus colors remain unchanged. Local screenshots, responsive themes, overflow, lint, types and build are the acceptance scope. See progress-tracker.md for actual results.
+
 ## Current authorization — Studio Phase 3 (2026-10-18)
 
 Complete the four-area Studio and progressive tablet/mobile/full-screen Sources behavior in this same request. This supersedes the historical stop-before-Phase-3/mobile-later text. Preserve existing services/hooks and all ownership, auth, credit, provider and Marketplace contracts; implement only the approved missing bounded guest brief handoff. Verify real layout, saved project/media and isolated workflow/financial cases without hosted Inngest. Stop after Phase 3; deployment/read-only acceptance is the next bounded recommendation.

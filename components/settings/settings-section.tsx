@@ -8,5 +8,5 @@ export function SettingsSection({ title, description, children }: { title: strin
 }
 
 export function SettingsCard({ title, children }: { title: string; children: ReactNode }) {
-  return <div className="sceenyk-card min-w-0 space-y-3 p-5 sm:p-6"><h3 className="text-lg font-semibold">{title}</h3><div className="space-y-3 text-body-sm leading-relaxed text-muted-foreground">{children}</div></div>;
+  return <div className="workspace-settings-card space-y-3"><h3>{title}</h3><div className="space-y-3 text-body-sm leading-relaxed text-muted-foreground">{children}</div></div>;
 }
