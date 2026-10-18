@@ -27,7 +27,7 @@ export function Navbar() {
   }, []);
   return (
     <header
-      className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur-xl"
+      className="sticky top-0 z-40 backdrop-blur-xs"
       onKeyDown={(event) => {
         if (event.key === "Escape" && open) {
           setOpen(false);
@@ -48,7 +48,6 @@ export function Navbar() {
           ))}
         </nav>
         <div className="flex items-center gap-2">
-
           <div className="hidden items-center gap-2 lg:flex">
             <AccountControls />
           </div>

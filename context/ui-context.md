@@ -1,5 +1,16 @@
 # UI Context
 
+## Navbar dissolve and opaque hero content (2026-10-18)
+
+The current user-approved visual correction supersedes the older local translucent copy backing. The home navbar uses a theme-tinted, masked backdrop-blur layer fading below the controls. A full-viewport-width gradient attached to the hero copy begins above the badge/headline, reaches fully opaque background before any copy and stays opaque below the CTAs and under the rounded Studio entry. Geometry, artwork/motion, copy, navigation/auth, themes and all other sections remain unchanged. Only landing CSS changes at runtime; acceptance/deployment status is in the latest tracker entry.
+
+
+Current authorized follow-up: only the decorative home gallery is pinned; hero copy is in normal foreground flow, bottom-aligned within the first viewport and scrolling with the story. Mobile/tablet navigation moves to a left Sheet; its real account avatar links to the existing account settings page to avoid overlapping Clerk/Sheet focus traps. Signed-out authentication opens only after the drawer closes. The footer reuses supplied artwork under a contrast treatment. The shared theme now defaults to Dark when no valid preference exists, while preserving saved Light/Dark and explicit System (stored as system); this theme-only cross-app change is expressly requested. Local production/browser/visual acceptance is Complete; deployment remains pending in the latest tracker entry.
+
+## Current landing implementation unit (2026-10-17)
+
+The separately authorized landing-only refinement/motion unit is Complete within local production/browser/visual acceptance; deployment is pending; see [current tracker evidence](progress-tracker.md#scrolling-hero-copy-navigation-and-dark-default-2026-10-17). The supplied `Sceenyk Light Mode Creative Studio Landing Page.png` and `Sceenyk Neon AI Creation Studio.png` guide composition/spacing in both themes, while existing semantic tokens and official logos remain authoritative. Home uses individual supplied images, a preview-led illustrative Studio, visual inspiration cards, three commercial presentation panels and simple final/footer sections. Reference-only creator identities, unapproved pack prices and subscription forms do not establish live capabilities. Other application pages and full workspace redesign remain out of scope. The original approval below is historical for landing implementation status, while its preserved functionality/identity rules remain binding.
+
 ## Approved creative-studio-first UI/UX direction (2026-10-17)
 
 Approved 2026-10-17. **Documentation contract: Complete. Redesign implementation: Not Started.** This approval defines the direction before implementation; it does not authorize application changes in this task. The first recommended implementation unit is **Phase 1 — shared public/workspace shells and navigation architecture**.
@@ -179,7 +190,7 @@ Implementation may reorganize UI into clear feature boundaries: public site shel
 
 ## Staged implementation and acceptance
 
-All redesign phases are **Not Started**. Complete one bounded unit at a time, update context/tracker with actual evidence and stop after reporting the unit and recommending the next. No phase starts automatically from this documentation approval.
+The original approval marked all phases **Not Started**; the separately authorized landing-only unit is now Complete within local acceptance, with deployment pending, as recorded at the top and in the tracker. Other phases retain their existing status. Complete one bounded unit at a time, update context/tracker with actual evidence and stop after reporting the unit and recommending the next. No phase starts automatically from this documentation approval.
 
 | Phase | Scope | Acceptance focus |
 | --- | --- | --- |
@@ -309,7 +320,7 @@ Sceenyk supports light and dark styling with a modern, bold, minimal, creative, 
 
 Light mode uses clean white/light surfaces. Dark mode uses layered near-black surfaces with brighter text and localized purple glow. Both themes share geometry, spacing, hierarchy, and behavior: they must feel like the same product.
 
-Light is the `:root` fallback. The implemented system follows OS preference until an explicit light/dark choice is saved in `localStorage` under `sceenyk-theme`. The approved Settings → Appearance control exposes Light/Dark/System and replaces navbar/header toggles; selecting System returns to OS following through this same controller. Apply `.dark` on `<html>` before first paint, preserving font classes. Preserve system-change and cross-tab synchronization; storage restrictions must not prevent an in-page choice. Reuse `shadow-card`, `shadow-popover`, and `shadow-glow` instead of independent effects. Control relocation and explicit System selection are implemented; preserve both.
+Light remains the CSS `:root` token fallback, while the app HTML and before-paint initialization now default to Dark. Saved light/dark choices under `sceenyk-theme` are respected; an explicit system value follows the OS. Settings → Appearance exposes Light/Dark/System through the same controller; selecting System persists that distinct choice rather than clearing storage. Apply `.dark` on `<html>` before first paint, preserving font classes. Preserve system-change and cross-tab synchronization; storage restrictions must not prevent an in-page choice. Reuse `shadow-card`, `shadow-popover`, and `shadow-glow` instead of independent effects. Control relocation and explicit System selection are implemented; preserve both.
 
 ## Colors
 
@@ -469,3 +480,5 @@ Use **Lucide React** (`lucide-react`): simple modern stroke-based icons, consist
 - Every interactive component needs appropriate hover, focus, active/selected, loading, and disabled treatments. Loading must expose status and prevent duplicate actions; disabled styling alone does not disable behavior.
 - Keep animation subtle and purposeful; use existing 150/200ms timing tokens and respect reduced motion. Focus must remain visible without relying only on glow.
 - Build all new UI responsively and verify mobile, desktop, keyboard interaction, and both themes. Preserve product state when changing themes.
+
+The viewport-hero follow-up adds a fixed translucent/backdrop-blurred home navbar, an 18-tile percentage-positioned gallery behind the foreground copy, a 100dvh sticky hero and an opaque subsequent story layer with 56–100px section gaps. The story scrolls over the hero using CSS, without scroll-driven JavaScript. The existing root scroll padding supplies fixed-header anchor offsets without an additive section margin. Reduced motion uses normal scrolling, and viewports at most 540px high (including high browser zoom) use content-sized reflow rather than clipping controls or disabling zoom. This follow-up passes local production/browser/visual acceptance; deployment remains pending. See the latest tracker entry.

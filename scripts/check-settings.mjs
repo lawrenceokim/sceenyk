@@ -2,6 +2,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { randomUUID } from 'node:crypto';
+import { runInNewContext } from 'node:vm';
 import { compositionFixtureDatabase } from './lib/composition-fixture.mjs';
 import { typescriptLoader } from './lib/load-typescript.mjs';
 
@@ -84,12 +85,27 @@ try {
     document: { documentElement: { classList: { toggle: (name, value) => { rootDark = value; } } }, getElementById: () => favicon },
     window: { dispatchEvent: () => { changeEvents++; } }, Event,
   })('lib/theme.ts');
+  theme.applyThemePreference(); check('unset preference defaults dark even on a light OS', rootDark && stored === null && theme.readThemePreference() === 'dark');
+  stored = 'invalid'; theme.applyThemePreference(); check('invalid preference defaults dark', rootDark);
+  stored = null; blocked = true; theme.applyThemePreference(); check('blocked storage defaults dark', rootDark); blocked = false;
+  for (const saved of [null, 'light', 'dark', 'system', 'invalid']) {
+    for (const osDark of [false, true]) {
+      let initialDark;
+      runInNewContext(theme.themeInitScript, {
+        localStorage: { getItem: () => saved }, matchMedia: () => ({ matches: osDark }),
+        document: { documentElement: { classList: { toggle: (name, value) => { initialDark = value; } } }, getElementById: () => null },
+      });
+      check(`head initialization ${saved ?? 'unset'} on ${osDark ? 'dark' : 'light'} OS`, initialDark === (saved === 'system' ? osDark : saved !== 'light'));
+    }
+  }
   theme.setThemePreference('dark'); check('dark applies and persists', stored === 'dark' && rootDark);
   theme.setThemePreference('light'); check('light applies and persists', stored === 'light' && !rootDark);
-  systemDark = true; theme.setThemePreference('system'); check('system removes override and follows OS', stored === null && rootDark);
+  systemDark = true; theme.setThemePreference('system'); check('explicit system persists separately from the dark default and follows OS', stored === 'system' && rootDark);
   systemDark = false; theme.applyThemePreference(); check('system tracks OS changes', !rootDark);
   theme.setThemePreference('light'); systemDark = true; theme.applyThemePreference(); check('explicit preference survives OS changes', !rootDark);
   stored = 'dark'; theme.applyThemePreference(); check('cross-tab storage change applies', rootDark);
+  stored = null; systemDark = false; theme.applyThemePreference(); check('clearing preference returns to dark default across tabs', rootDark);
+  systemDark = true;
   blocked = true; theme.setThemePreference('light'); theme.applyThemePreference(); check('blocked storage retains in-page explicit preference', !rootDark && theme.readThemePreference() === 'light');
   theme.setThemePreference('system'); check('blocked storage still supports system', rootDark);
   blocked = false; writeBlocked = true; stored = 'dark'; theme.setThemePreference('light'); theme.applyThemePreference();

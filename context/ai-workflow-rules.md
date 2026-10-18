@@ -1,6 +1,11 @@
 # AI Workflow Rules
 
-## Current authorized unit — redesign documentation only (2026-10-17)
+## Current authorized unit — landing-only refinement (2026-10-17)
+
+The user explicitly authorizes landing animation, responsive composition and visual refinement against supplied light/dark screenshots, with build/lint/TypeScript, actual production-browser screenshots and relevant regressions. This supersedes the earlier documentation-only scope for this bounded landing unit. Preserve all other application-page compositions, services, financial/security contracts and existing tokens. The latest user request additionally authorizes a shared Dark default while retaining saved Light/Dark, explicit System, before-paint initialization, favicon synchronization and blocked-storage behavior. Do not trigger hosted Inngest. Record real local production acceptance and deployment status separately; do not claim deployed acceptance from a local build. No broader workspace or feature unit starts automatically.
+
+
+## Historical authorization — redesign documentation only (2026-10-17)
 
 Define [the approved full UI/UX redesign](ui-context.md) before implementation. **Documentation contract: Complete; redesign implementation: Not Started.** This task changes context documentation only: no application/components/routes/backend/schema/theme/provider changes, animation, guest persistence or hosted Inngest events. Preserve existing functionality, financial/security invariants and unrelated worktree changes. Earlier implementation authorizations below are historical; they do not authorize resuming those units or the redesign now.
 

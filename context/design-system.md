@@ -313,7 +313,7 @@ Theme switching is CSS-ready:
 <html lang="en" className="...font variables... dark">
 ```
 
-The implemented controller adds/removes `dark` on `document.documentElement`, preserving font/layout classes. `color-scheme` follows the selected theme. A static inline head script uses saved `sceenyk-theme` or system preference before first paint, following the installed Next.js guide. Current toggles persist explicit light/dark choices; the controller follows system changes when no choice is saved and synchronizes browser tabs. The approved Settings → Appearance migration replaces header toggles with Light/Dark/System through this same system; its explicit System selection UI is not implemented yet. Blocked storage must not prevent in-page switching. Keep the theme root on the document so portals resolve the same tokens.
+The implemented controller adds/removes `dark` on `document.documentElement`, preserving font/layout classes. `color-scheme` follows the selected theme. The HTML and static inline head script default to Dark before first paint. Saved `sceenyk-theme` light/dark choices are retained; explicit system is persisted separately and follows OS changes. Missing/invalid preferences default to Dark, including blocked-storage initialization. Settings → Appearance already implements Light/Dark/System through this controller; no global toggle is added. Cross-tab changes, favicon synchronization and in-page blocked-storage choices remain supported. Blocked storage must not prevent in-page switching. Keep the theme root on the document so portals resolve the same tokens.
 
 Shared compositions available now:
 

@@ -52,10 +52,12 @@ try{
   }
  }
  await evaluate('window.fixture("appearance")');await wait('!!document.querySelector("input[name=appearance]")');
+ check('unset appearance defaults to dark',await evaluate('document.querySelector("input[value=dark]").checked'));
+ await evaluate('document.querySelector("input[value=light]").click()');await wait('document.querySelector("input[value=light]").checked');
  await evaluate('document.querySelector("input[value=dark]").click()');check('dark applies and saves immediately',await evaluate('document.documentElement.classList.contains("dark")&&localStorage.getItem("sceenyk-theme")==="dark"'));
  await call('Page.reload');await wait('!!document.querySelector("input[name=appearance]")');check('dark persists through reload',await evaluate('document.querySelector("input[value=dark]").checked&&document.documentElement.classList.contains("dark")'));
  await evaluate('document.querySelector("input[value=light]").click()');check('light selection applies',await evaluate('!document.documentElement.classList.contains("dark")'));
- await call('Emulation.setEmulatedMedia',{features:[{name:'prefers-color-scheme',value:'dark'}]});await evaluate('document.querySelector("input[value=system]").click()');await wait('document.documentElement.classList.contains("dark")');check('system follows OS',await evaluate('localStorage.getItem("sceenyk-theme")===null'));
+ await call('Emulation.setEmulatedMedia',{features:[{name:'prefers-color-scheme',value:'dark'}]});await evaluate('document.querySelector("input[value=system]").click()');await wait('document.documentElement.classList.contains("dark")');check('system follows OS',await evaluate('localStorage.getItem("sceenyk-theme")==="system"'));
  await call('Emulation.setEmulatedMedia',{features:[{name:'prefers-color-scheme',value:'light'}]});await wait('!document.documentElement.classList.contains("dark")');check('system reacts to OS change',true);
  await evaluate('window.fixture("creation")');await wait('!!document.querySelector("#default-aspect")');check('saved defaults load',await evaluate('document.querySelector("#default-aspect").value==="9:16"'));
  await evaluate('document.querySelector("form").requestSubmit();document.querySelector("form").dispatchEvent(new Event("submit",{bubbles:true,cancelable:true}))');await wait('window.saveCalls.length===1');check('duplicate saves blocked',await evaluate('document.querySelector("fieldset").disabled'));

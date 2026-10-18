@@ -1,5 +1,10 @@
 # Sceenyk
 
+## Current landing-only implementation (2026-10-17)
+
+The user authorizes landing-page motion, responsiveness and visual refinement, plus the explicitly requested shared dark-default theme adjustment. The latest scrolling-copy/navigation/footer follow-up passes local production/browser/visual acceptance, with deployment pending, in [the tracker](progress-tracker.md). Public discovery artwork and the Studio showcase are illustrative; existing tokens and server contracts remain unchanged, and other application pages retain their composition while inheriting the requested dark default. Inngest Cloud stays paused. Earlier documentation-only approval/status below is historical for this bounded landing unit, not permission to start the full redesign.
+
+
 ## Approved full UI/UX redesign direction (2026-10-17)
 
 **Creative studio first. SaaS dashboard second.** The [approved redesign contract](ui-context.md) defines a premium creative-production workspace while preserving Sceenyk's current branding, light/dark themes, purple/blue colors, tokens, typography where practical, official logos and Tailwind/shadcn foundation. This is documentation approval only; **redesign implementation is Not Started**.

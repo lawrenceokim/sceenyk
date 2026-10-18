@@ -5,7 +5,7 @@ import { ThemeController } from "@/components/theme-toggle";
 import { themeInitScript } from "@/lib/theme";
 import { Suspense } from "react";
 import { AuthProvider } from "@/components/auth/auth-provider";
-import { brandFaviconId, lightBrandIcon } from "@/lib/brand-assets";
+import { brandFaviconId, darkBrandIcon, lightBrandIcon } from "@/lib/brand-assets";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -43,10 +43,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${inter.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${inter.variable} ${geistMono.variable} dark h-full antialiased`}
     >
       <head>
-        <link id={brandFaviconId} rel="icon" type="image/png" href={lightBrandIcon} />
+        <link id={brandFaviconId} rel="icon" type="image/png" href={darkBrandIcon} />
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
       <body className="min-h-full flex flex-col">
