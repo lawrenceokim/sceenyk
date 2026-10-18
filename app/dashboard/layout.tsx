@@ -16,7 +16,11 @@ async function ProtectedDashboard({ children }: { children: ReactNode }) {
       </WorkspaceShell>
     );
   }
-  return <WorkspaceShell><WorkspacePageFrame>{children}</WorkspacePageFrame></WorkspaceShell>;
+  return (
+    <WorkspaceShell>
+      <WorkspacePageFrame>{children}</WorkspacePageFrame>
+    </WorkspaceShell>
+  );
 }
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {

@@ -1,4 +1,5 @@
 @import "./workspace-geometry.css";
+@import "./marketplace.css";
 
 /* Reference geometry is scoped to the creative workspace; public landing tokens stay intact. */
 [data-workspace-shell], .workspace-drawer {

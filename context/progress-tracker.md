@@ -1,5 +1,15 @@
 # Progress Tracker
 
+## Visual redesign Phase 2 — Marketplace and Templates (2026-10-18)
+
+**Status: Implemented; pending user manual visual review.** UI-only work follows the nine supplied desktop/mobile screenshots and the Pryzm reference document; this entry supersedes older Marketplace/Templates presentation notes.
+
+- Marketplace: requested heading/subtitle, small All/actual-category filters, no visible search form, retained q-based search and category-aware pagination; shared compact cards omit creator/price/credit/statistics metadata. Desktop targets five columns at 1366px; mobile uses two columns from 380px and one below.
+- Detail: large square preview, compact creator/storefront, separate price/generation estimate and unchanged adoption component; reusable configuration remains in a disclosure. Shared preview color derives from actual template style and existing Sceenyk purple/blue tokens; a theme-aware gradient fades completely into the normal surface. More looks uses existing public browse results, prioritizes category/tag relationships, excludes the current listing and shows up to four real listings, with empty/failure states.
+- My Templates: exact requested copy; owner-scoped records/account fence and pagination retained; 4:3 preview-led cards have supported manage/public actions, title and published/created date overlays. Single-column mobile cards; existing workspace scrolling/scrollbar hiding retained.
+- Asset limitation: listing snapshots contain no public artwork/video field. Labeled configuration previews remain; no fake listings, unrelated artwork or private media access was added.
+- Validation: single `npx tsc --noEmit --incremental false` and `git diff --check` pass. No browser/screenshot suites, regressions, build, hosted acceptance, Inngest or deployment. No migrations, environment variables, server-service, auth, financial or provider changes. Next.js feedback review found no qualifying framework issue. Stop for the user's manual inspection; do not start Phase 3.
+
 ## Focused Studio refinement and canonical URL (2026-10-18)
 
 The latest request supersedes the earlier edge-to-edge Sources overlay and side-by-side tablet layout. Studio is canonical at /studio; /create permanently redirects with query parameters, while owned /projects/[id] routes and existing handlers remain unchanged. At desktop viewport widths with at least 930px available Studio width, Sources/Stage/Properties use 254px/flexible/252px columns. Otherwise Stage precedes Properties; Sources opens as a 254px right-side nonmodal panel from 768px viewport width, or as a focus-managed modal inset 8px on every edge below 768px. One mounted Sources tree retains inputs and local media. Only the mobile modal locks background scrolling. Toolbar controls are 32px with a centered compact aspect segment/popover for the existing 9:16,16:9,1:1 choices; no invented Share or generation options. Workspace-only scrollbar hiding preserves scrolling and leaves public landing scrollbars unchanged. Preserve logos, themes, business logic and ownership; no hosted Inngest. Stop after Studio review.

@@ -2,8 +2,8 @@ import Link from "next/link";
 import { Layers3, Store } from "lucide-react";
 import { creationCategories } from "@/components/creation/creation-options";
 import type { Listing, TemplateSnapshot } from "@/lib/marketplace/contract";
-import { usd } from "@/lib/marketplace/payments/contract";
 import { CreatorAvatar } from "./creator-avatar";
+import { templateAppearance } from "./template-appearance";
 
 export function ListingCreator({ listing }: { listing: Listing }) {
   const identity = <><CreatorAvatar name={listing.creatorName} url={listing.creatorAvatar} /><span className="min-w-0 break-words">By {listing.creatorName}</span></>;
@@ -13,10 +13,10 @@ export function ListingCreator({ listing }: { listing: Listing }) {
 export function TemplateCover({ template, large = false }: { template: TemplateSnapshot; large?: boolean }) {
   const category = creationCategories.find(item => item.id === template.category)!;
   const Icon = category.icon;
-  return <div className="workspace-template-cover" data-large={large} aria-label="Template configuration preview">
+  return <div className="workspace-template-cover" data-large={large} style={templateAppearance(template)} aria-label="Template configuration preview">
     <span><Icon className={large ? "size-14" : "size-7"} aria-hidden="true" /></span>
     <p className="font-medium">{template.settings.visualStyle} · {template.settings.aspectRatio}</p>
-    <p className="text-muted-foreground">Template preview · {template.settings.duration}s</p>
+    <p className="text-muted-foreground">Configuration preview · {template.settings.duration}s</p>
   </div>;
 }
 export function GenerationEstimate({ listing }: { listing: Pick<Listing, "estimate"> }) {
@@ -26,17 +26,15 @@ export function GenerationEstimate({ listing }: { listing: Pick<Listing, "estima
 }
 export function ListingCard({ listing }: { listing: Listing }) {
   const category = creationCategories.find(item => item.id === listing.category)!;
-  return <article className="workspace-gallery-card">
-    <Link href={`/marketplace/${listing.id}`} className="relative block focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-ring" aria-label={`Explore ${listing.title}`}>
+  return <article className="workspace-gallery-card marketplace-listing-card" style={templateAppearance(listing.template)}>
+    <Link href={`/marketplace/${listing.id}`} className="marketplace-card-link" aria-label={`Explore ${listing.title}`}>
       <TemplateCover template={listing.template} />
-      <span className="workspace-gallery-badge">{listing.adoptionType === "free" ? "Free adoption" : `${usd(listing.priceMinor)} · Sandbox`}</span>
+      <div className="workspace-gallery-copy">
+        <h2 className="line-clamp-1 break-words">{listing.title}</h2>
+        <p className="line-clamp-2 break-words text-body-sm text-muted-foreground">{listing.description}</p>
+        <div className="marketplace-tags"><span>{category.title}</span>{listing.tags.map(tag => <span key={tag}>{tag}</span>)}</div>
+      </div>
     </Link>
-    <div className="workspace-gallery-copy">
-      <h2 className="line-clamp-1 break-words"><Link className="hover:text-link focus-visible:outline-2 focus-visible:outline-ring" href={`/marketplace/${listing.id}`}>{listing.title}</Link></h2>
-      <p className="line-clamp-2 break-words text-body-sm text-muted-foreground">{listing.description}</p>
-      <ListingCreator listing={listing} />
-      <div className="flex flex-wrap gap-1"><span className="rounded-full border border-border px-1.5 py-0.5 text-[10px] text-muted-foreground">{category.title}</span>{listing.tags.map(tag => <span key={tag} className="rounded-full border border-border px-1.5 py-0.5 text-[10px] text-muted-foreground">{tag}</span>)}</div>
-    </div>
   </article>;
 }
 export function MarketplaceLoading() {

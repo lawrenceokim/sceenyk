@@ -6,8 +6,6 @@ import { ensureAppUser } from "@/lib/auth/ensure-app-user";
 import { listOwnedMarketplaceListings } from "@/lib/marketplace/server";
 import { OwnedListings } from "@/components/marketplace/owned-listings";
 import { MarketplaceFailure } from "@/components/marketplace/listing-card";
-import { WorkspacePageHeader } from "@/components/workspace/workspace-page-header";
-import { Button } from "@/components/ui/button";
 
 export const metadata: Metadata = { title: "Templates — Sceenyk", robots: { index: false, follow: false } };
 
@@ -23,17 +21,13 @@ async function Templates({ searchParams }: { searchParams: Promise<{ page?: stri
 
 export default function TemplatesPage({ searchParams }: { searchParams: Promise<{ page?: string | string[] }> }) {
   return (
-    <div className="space-y-8">
-      <WorkspacePageHeader title="Templates" eyebrow="YOUR CREATIVE LIBRARY" description="Reusable starting points from your Marketplace listings. Keep your ideas close, and make room for the next one.">
-        <Button variant="outline" nativeButton={false} render={<Link href="/marketplace" />}>Explore Marketplace</Button>
-      </WorkspacePageHeader>
-      <nav aria-label="Template library links" className="workspace-library-links">
-        <Link className="nav-link text-link" href="/dashboard/marketplace/new">Publish from a project</Link>
-        <Link className="nav-link text-muted-foreground" href="/dashboard/marketplace">Manage listings</Link>
-        <Link className="nav-link text-muted-foreground" href="/dashboard/marketplace/purchases">Marketplace purchases</Link>
-      </nav>
+    <div className="workspace-templates">
+      <header className="marketplace-heading"><h1>My Templates</h1><p>Templates you&apos;ve published. Open one to manage or continue your work.</p></header>
       <Suspense fallback={<p role="status" className="py-8 text-muted-foreground">Opening your templates…</p>}><Templates searchParams={searchParams} /></Suspense>
-      <p className="border-t border-border pt-5 text-body-sm leading-relaxed text-muted-foreground">Adopted templates become your own editable <Link href="/dashboard/projects" className="text-link underline underline-offset-4">Projects</Link>. These previews show template configurations; creator uploads and generated media are excluded.</p>
+      <footer className="template-library-footer">
+        <nav aria-label="Template library links"><Link href="/dashboard/marketplace/new">Publish from a project</Link><Link href="/dashboard/marketplace">Manage listings</Link><Link href="/dashboard/marketplace/purchases">Marketplace purchases</Link></nav>
+        <p>Adopted templates live in <Link href="/dashboard/projects">Projects</Link>.</p>
+      </footer>
     </div>
   );
 }
