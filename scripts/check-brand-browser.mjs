@@ -41,15 +41,15 @@ await deployedBrowser(origin,{A:owner.data.clerk_user_id},async browser=>{
     if(name==='dark'&&width===390||name==='light'&&width===1440)await shot(browser,`public-${name}-${width}`);
   }
   await browser.call('Emulation.clearDeviceMetricsOverride');
-  await browser.signIn('A');await browser.navigate('/dashboard');
+  await browser.signIn('A');await browser.navigate('/create');
   for(const name of ['light','dark'])for(const width of [390,1440]){
     await viewport(browser,width);await theme(browser,name);
-    await browser.wait("!!document.querySelector('[aria-label=\"Open workspace navigation\"]')||!!document.querySelector('[aria-label=\"Dashboard sidebar\"] a[aria-label=\"Sceenyk home\"]')");
-    const selector=width<1024?'header a[aria-label="Sceenyk home"]':'[aria-label="Dashboard sidebar"] a[aria-label="Sceenyk home"]';
+    await browser.wait("!!document.querySelector('[aria-label=\"Open workspace navigation\"]')||!!document.querySelector('[aria-label=\"Workspace sidebar\"] a[aria-label=\"Sceenyk home\"]')");
+    const selector=width<1024?'header a[aria-label="Sceenyk home"]':'[aria-label="Workspace sidebar"] a[aria-label="Sceenyk home"]';
     const brand=await browser.evaluate(logo(selector));
-    check(`${name} ${width}px dashboard logo`,brand.visible===1&&brand.loaded&&brand.inside&&brand.source.includes(name==='dark'?'darkmode':'lightmode')&&brand.source.includes(width<1024?'small-logo':'sceenyk logo'));
-    check(`${name} ${width}px dashboard no overflow`,await browser.evaluate('document.documentElement.scrollWidth<=innerWidth+1'));
-    if(name==='dark'&&width===390||name==='light'&&width===1440)await shot(browser,`dashboard-${name}-${width}`);
+    check(`${name} ${width}px workspace logo`,brand.visible===1&&brand.loaded&&brand.inside&&brand.source.includes(name==='dark'?'darkmode':'lightmode')&&brand.source.includes(width<1024?'small-logo':'sceenyk logo'));
+    check(`${name} ${width}px workspace no overflow`,await browser.evaluate('document.documentElement.scrollWidth<=innerWidth+1'));
+    if(name==='dark'&&width===390||name==='light'&&width===1440)await shot(browser,`workspace-${name}-${width}`);
   }
   await viewport(browser,390);
   await browser.evaluate("document.querySelector('[aria-label=\"Open workspace navigation\"]').click()");

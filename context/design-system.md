@@ -1,5 +1,10 @@
 # Sceenyk design system
 
+## Workspace presentation application (2026-10-18)
+
+Phase 1 reuses existing light/dark tokens and official full/compact PNG logos. Reference screenshots inform composition only; the following are implementation decisions rather than exact measurements from the references: 240px expanded sidebar, 80px collapsed rail, 1024px desktop threshold, 64px mobile header, 16px content-surface radius, 16/24/32/40px responsive inner padding. Use bg-background around a restrained border-border/bg-card workspace surface; sidebar active/hover and focus use existing sidebar-accent/sidebar-ring tokens. No new palette, glow, gradient or theme controller. Sidebar links/actions have at least 44px targets. Base UI Menu, Tooltip and existing Sheet retain keyboard/focus behavior. Full desktop/mobile Studio panel geometry remains deferred.
+
+
 ## Approved redesign composition, existing identity preserved (2026-10-17)
 
 **Creative studio first. SaaS dashboard second. Redesign implementation: Not Started.** [The approved redesign contract](ui-context.md) controls new page composition/navigation/responsive interactions; PNGs continue to guide Sceenyk identity and component styling. Preserve all existing **Exact / Approximate / Inferred / Needs confirmation** labels below. Historical board navbar/sidebar labels and page geometry are observations, not current information-architecture requirements.

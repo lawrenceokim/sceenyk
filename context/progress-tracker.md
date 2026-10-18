@@ -1,5 +1,39 @@
 # Progress Tracker
 
+## Workspace foundation — Phase 1 (2026-10-18)
+
+**Complete within local production/browser/visual acceptance. Deployment: Not performed. Phase 2: Not Started.** Dashboard-first Home is removed from the main navigation. Studio (/create), Projects (/dashboard/projects), public Marketplace and all nine private Settings sections now share the workspace presentation. Studio remains guest-accessible; no provider execution, financial system, auth policy or schema is added.
+
+### Architecture and migration
+
+- New components/workspace modules: shell, desktop sidebar, grouped navigation/tooltips, mobile Sheet, bottom user menu, page frame and legacy fragment handling. The outer application surface uses existing semantic tokens and official light/dark full/compact logos, restrained borders and responsive padding.
+- Desktop navigation groups: CREATE → Studio; WORKSPACE → Projects, Templates; DISCOVER → Marketplace; RESOURCES → Documentation; ACCOUNT → Credits, Settings. Templates and Documentation visibly say Soon with accessible planned labels; they have no invented working destinations. The existing Templates placeholder survives at /dashboard/projects#templates for old bookmarks.
+- Desktop sidebar is 240px expanded and 80px collapsed, with keyboard/hover labels, focus states and local sceenyk-workspace-collapsed preference. Blocked/unwritable storage retains in-page interaction. Mobile/tablet below 1024px uses a hamburger/logo header and a scrolling, focus-managed Sheet; no permanent sidebar.
+- Bottom profile menu shows the live Clerk avatar/name/email and links to existing Account, Creator Profile, Credits & Billing, Earnings & Payouts and Settings, plus Clerk sign-out. Detailed controls remain in Settings; Credits opens /dashboard/settings/credits. No persistent credit balance or theme toggle returns to chrome.
+- Moved app/(public)/create, projects and marketplace (including detail/storefront/not-found) into app/(workspace), preserving every public URL. The existing protected app/dashboard layout keeps identity enforcement and uses the same shell. Settings/Marketplace management routes and payment/API callbacks keep their URLs and protection.
+- Moved project card/status presentation from components/dashboard into components/projects and extracted the existing owned ProjectsSection. Removed unused Dashboard shell/header/sidebar/overview/stat-card composition after migration. The existing project list/status services and editor logic are reused.
+- /dashboard now redirects before streaming through the existing authenticated proxy: default → /create; old ?page=N → /dashboard/projects?page=N. Studio maps inherited #projects/#templates to Projects and #credits to Settings billing; the page retains a redirect fallback. All current project links/pagination use the canonical Projects destination. Save/free-adoption/paid-recovery actions change only their project-list cache invalidation target to /dashboard/projects; domain/financial logic is unchanged.
+
+### Acceptance
+
+| Check | Result and scope |
+| --- | --- |
+| Lint, TypeScript, production build, whitespace | Pass. Standalone TypeScript and all 42 production pages build successfully. An old generated development validator initially retained moved route locations; starting the framework development server regenerated it, without editing generated types or weakening checks. |
+| Navigation regression | 18 checks pass against actual proxy/actions with explicit session/domain fixtures: fixed internal redirects, encoded pagination, unchanged auth denial and public guest access, callback bypass, and new project-list invalidation after save/free adoption/paid recovery. |
+| Domain/ownership regressions | Settings 64, Marketplace 76, credit purchases 87, paid Marketplace 74, withdrawals 142, payout adapter 39 and generation 97 pass (579 total). Isolated SQL/services/clock/provider/session fixtures; no new real Sandbox transaction or hosted workflow. |
+| Authorization boundary | 32 checks pass against actual guard/route/creator boundaries with explicit request/database fixtures. |
+| Settings presentation | 160 Chrome/component/CSS checks pass for all nine sections, themes, responsive navigation, creation defaults/account-switch guards and existing controls; identity/actions/data are fixtures. Evidence: %TEMP%/sceenyk-settings-ui-eoflCu. |
+| Local production Chrome | 109 checks pass with actual reserved Clerk users and hosted owned reads: public guest Studio/Marketplace, anonymous private denial, Dashboard/legacy hash/pagination, profile menu/Clerk sign-out, Credits destination, collapse/reload/unwritable storage, keyboard tooltip/menu focus, mobile focus trapping/Escape/focus return/resize, A resume, B list exclusion and B foreign-project denial. |
+| Responsive/themes/visual | Studio, Projects, Marketplace and Settings fit 1440/1024/768/390/320px in Light and Dark with identical structure and no horizontal overflow. Sixteen settled page captures plus a collapsed-rail capture are retained and representative desktop/mobile/theme/rail images were visually reviewed. The full editor composition remains unchanged. |
+| Financial/provider protection | Before/after hashes of generation accounts/jobs, credit ledger/purchases, creator withdrawals and earnings ledger are unchanged. Browser observes no hosted Inngest/provider request. Live browser checks use ordinary Clerk sessions/identity sync and owned reads; no user-content edit, generation, quote confirmation, checkout, withdrawal or payout is initiated. |
+| Client secrets | Final 40 client files checked against 12 configured privileged values: zero leaks and zero server-only markers. |
+
+Production browser evidence: %TEMP%/sceenyk-render-cloud-browser-JiVRcm/report.json and its 17 PNG captures. Earlier browser checks exposed dropped streamed-redirect fragments and missing explicit tooltip semantics; both are fixed and verified. Test harness fixes use actual Tab input, correctly quoted selectors, the existing theme controller and settled content/transitions; no failure assertion is suppressed. The first network-restricted server attempt could not reach Clerk/Supabase; the final server and browser acceptance run with network access. No application/provider configuration is changed.
+
+**Limits:** local Chromium acceptance is not deployment acceptance, physical-device/multi-browser/screen-reader certification or a new real payment/payout test. Guest draft restoration across authentication and full Studio panel/mobile composition remain separate. No migration, dependency, environment-variable, commit, push or deployment change; Inngest Cloud remains paused. The branding browser script is updated to target Studio/Workspace sidebar; its full historical suite is not rerun, with current workspace/Settings browser evidence scoped above.
+
+**Exact recommended Phase 2:** migrate Templates using existing supported functionality (retain an honest placeholder where unavailable), establish Documentation topic navigation/article/optional on-page links from existing supported documentation, then align remaining internal pages and perform the shared visual consistency pass. Preserve URLs, Settings/auth/ownership/financial contracts and public Marketplace access. Do not add a template engine, full Studio editor, guest persistence or hosted Inngest execution. Do not start Phase 2 automatically. Phase 3 remains desktop Studio; Phase 4 mobile Studio.
+
 ## Navbar dissolve and opaque hero transition (2026-10-18)
 
 **Complete within local production/browser/pixel/visual acceptance. Deployment: Not performed.** This narrow visual correction supersedes the previous transparent header and partly transparent text backing. The supplied Pryzm navbar screenshot and current Sceenyk screenshot were inspected directly before implementation. No new feature is started.

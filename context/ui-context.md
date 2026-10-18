@@ -1,5 +1,16 @@
 # UI Context
 
+## Workspace foundation — current Phase 1 (2026-10-18)
+
+The supplied Pryzm screenshots inform sidebar placement, grouping, spacing, collapse and rounded content composition only. Sceenyk retains its own PNG logos, Lucide icon choices and purple/blue semantic tokens. Shared shell: desktop 240px sidebar or 80px icon rail; main content gains the released width. The large rounded bordered card surface uses generous responsive padding, without a global dashboard header/footer. Sidebar groups: CREATE (Studio), WORKSPACE (Projects, Templates), DISCOVER (Marketplace), RESOURCES (Documentation), ACCOUNT (Credits, Settings). Templates and Documentation show Soon with accessible planned labels; they have no working standalone routes yet. The old Templates placeholder is retained on Projects for legacy bookmarks.
+
+The bottom identity trigger shows avatar, name and email, opening a Base UI account menu with Account, Creator Profile, Credits & Billing, Earnings & Payouts, Settings and Clerk sign-out. Details remain in existing Settings. Credit balance and theme controls are not reintroduced into chrome. Credits has its own active state; Settings is active for other Settings sections. Owned project editors activate Studio, Marketplace management/storefront/detail activate Marketplace. Menu keyboard/dismissal behavior comes from Base UI.
+
+Collapse is stored locally under sceenyk-workspace-collapsed, with in-memory fallback if storage is blocked; it is unrelated to identity/security. Collapsed links keep accessible names and real focus/hover tooltips. At widths below 1024px, a hamburger/logo header replaces the rail; an independently scrollable, focus-managed Sheet includes the same entries and bottom user menu. Closing/navigating or widening to desktop dismisses the drawer. Existing theme controller governs identical light/dark spacing and structure.
+
+Studio keeps the existing editor composition in this phase. Projects reuses the owned grid/pagination/statuses without Home summary cards; Marketplace keeps discovery/adoption behavior and Settings retains all nine sections. Public guest Studio/Marketplace remain public. Dashboard becomes compatibility navigation. Current four-phase request supersedes older seven-phase scheduling for this unit: Phase 2 remaining workspace migration, Phase 3 desktop Studio, Phase 4 mobile Studio. No guest restoration, full Studio/Marketplace visual redesign or hosted Inngest execution is included. Acceptance is in progress-tracker.md.
+
+
 ## Navbar dissolve and opaque hero content (2026-10-18)
 
 The current user-approved visual correction supersedes the older local translucent copy backing. The home navbar uses a theme-tinted, masked backdrop-blur layer fading below the controls. A full-viewport-width gradient attached to the hero copy begins above the badge/headline, reaches fully opaque background before any copy and stays opaque below the CTAs and under the rounded Studio entry. Geometry, artwork/motion, copy, navigation/auth, themes and all other sections remain unchanged. Only landing CSS changes at runtime; acceptance/deployment status is in the latest tracker entry.

@@ -30,5 +30,5 @@ async function Detail({ params }: { params: Promise<{ listingId: string }> }) {
   </div>;
 }
 export default function ListingPage({ params }: { params: Promise<{ listingId: string }> }) {
-  return <div className="sceenyk-container space-y-6 py-8 md:py-12"><Link className="nav-link inline-flex gap-2 text-link" href="/marketplace"><ArrowLeft className="size-4" aria-hidden="true" />Marketplace</Link><Suspense fallback={<MarketplaceLoading />}><Detail params={params} /></Suspense></div>;
+  return <div className="space-y-6"><Link className="nav-link inline-flex gap-2 text-link" href="/marketplace"><ArrowLeft className="size-4" aria-hidden="true" />Marketplace</Link><Suspense fallback={<MarketplaceLoading />}><Detail params={params} /></Suspense></div>;
 }

@@ -9,11 +9,11 @@ export function ProjectUnavailable() {
       <EmptyState
         icon={<FolderOpen className="size-7" />}
         title="Project unavailable"
-        description="Open a saved project from your dashboard."
+        description="Open a saved draft from Projects."
         primaryAction={
           <Button
             nativeButton={false}
-            render={<Link href="/dashboard#projects" />}
+            render={<Link href="/dashboard/projects" />}
           >
             Your projects
           </Button>

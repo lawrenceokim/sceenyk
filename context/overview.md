@@ -1,5 +1,12 @@
 # Sceenyk
 
+## Studio-first workspace — Phase 1 (2026-10-18)
+
+The authorized workspace foundation replaces dashboard-first Home with Studio at /create. Projects now live at /dashboard/projects; Studio, Projects, public Marketplace and private Settings share the new navigation/content shell. /dashboard is a compatibility redirect, with old project pagination/bookmarks preserved. Create → Studio; Workspace → Projects and planned Templates; Discover → Marketplace; Resources → planned Documentation; Account → Credits and Settings. Identity/account links live at the bottom; Credits opens existing Settings → Credits & Billing. No new billing, template, auth or generation system is introduced.
+
+The desktop sidebar collapses from 240px to an 80px icon rail with local preference, accessible names and keyboard/hover tooltips. Mobile uses a hamburger/logo header and accessible drawer, without a permanent rail. Both themes use existing tokens and logos. Studio guest configuration remains public; generation and private data retain existing server guards. Phase 1 implementation and acceptance are tracked separately below and in progress-tracker.md. The current request supersedes the older Not Started/landing-only statements for this unit. Stop here; Phase 2 is Templates/Documentation/remaining internal presentation migration, Phase 3 full desktop Studio, Phase 4 mobile Studio. Inngest Cloud remains paused.
+
+
 ## Current landing-only implementation (2026-10-17)
 
 The user authorizes landing-page motion, responsiveness and visual refinement, plus the explicitly requested shared dark-default theme adjustment. The latest scrolling-copy/navigation/footer follow-up passes local production/browser/visual acceptance, with deployment pending, in [the tracker](progress-tracker.md). Public discovery artwork and the Studio showcase are illustrative; existing tokens and server contracts remain unchanged, and other application pages retain their composition while inheriting the requested dark default. Inngest Cloud stays paused. Earlier documentation-only approval/status below is historical for this bounded landing unit, not permission to start the full redesign.

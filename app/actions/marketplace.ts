@@ -11,7 +11,7 @@ async function run(work: () => Promise<MarketplaceResult>): Promise<MarketplaceR
     if (result.ok) {
       revalidatePath("/marketplace", "layout");
       revalidatePath("/dashboard/marketplace");
-      if ("projectId" in result) revalidatePath("/dashboard");
+      if ("projectId" in result) revalidatePath("/dashboard/projects");
     }
     return result;
   } catch (error: unknown) {

@@ -88,7 +88,7 @@ export default function ProjectPage({
   params: Promise<{ id: string }>;
 }) {
   return (
-    <div className="sceenyk-container py-8 md:py-12">
+    <div className="space-y-8">
       <CreationHeader saved />
       <Suspense
         fallback={

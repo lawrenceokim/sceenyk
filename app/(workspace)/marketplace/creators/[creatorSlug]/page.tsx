@@ -17,5 +17,5 @@ async function Storefront({ params, searchParams }: Props) {
   return <CreatorStorefront data={data} />;
 }
 export default function Page(props: Props) {
-  return <div className="sceenyk-container space-y-6 py-8 md:py-12"><Link href="/marketplace" className="nav-link inline-flex min-h-11 items-center text-link">Back to Marketplace</Link><Suspense fallback={<MarketplaceLoading />}><Storefront {...props} /></Suspense></div>;
+  return <div className="space-y-6"><Link href="/marketplace" className="nav-link inline-flex min-h-11 items-center text-link">Back to Marketplace</Link><Suspense fallback={<MarketplaceLoading />}><Storefront {...props} /></Suspense></div>;
 }

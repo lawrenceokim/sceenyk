@@ -233,7 +233,7 @@ function LandingFooter() {
           </nav>
           <nav aria-label="Footer account navigation">
             <h2>Your workspace</h2>
-            <Link href="/dashboard#projects">Projects</Link>
+            <Link href="/dashboard/projects">Projects</Link>
             <Link href="/dashboard/settings/account">Account</Link>
             <Link href="/dashboard/settings/creator-profile">
               Creator Profile

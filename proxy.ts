@@ -13,6 +13,14 @@ const withClerk = clerkMiddleware(async (auth, request) => {
       unauthenticatedUrl: new URL("/?auth=sign-in", request.url).toString(),
     });
   }
+  if (path === "/dashboard") {
+    // Redirect before streaming: an HTTP redirect preserves legacy fragments
+    // that never reach the server, unlike a streamed page redirect.
+    const page = request.nextUrl.searchParams.get("page");
+    const target = new URL(page === null ? "/create" : "/dashboard/projects", request.url);
+    if (page !== null) target.searchParams.set("page", page);
+    return NextResponse.redirect(target);
+  }
   if (isCreatorProfileResponsePath(path) || path === "/dashboard/settings" || path.startsWith("/dashboard/settings/") || path.startsWith("/dashboard/settings.") || path === "/settings" || path.startsWith("/settings.")) {
     // Deployment routing may present the generated RSC/segment pathname.
     // Keep its response policy identical to the authenticated HTML route.

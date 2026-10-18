@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { UserAvatar, UserButton, useAuth, useUser } from "@clerk/nextjs";
+import { UserButton, useAuth } from "@clerk/nextjs";
 import { ArrowUpRight } from "lucide-react";
 import { AccountAction } from "@/components/account-action";
 import { Button } from "@/components/ui/button";
@@ -38,17 +38,10 @@ function ConfiguredActions({ onNavigate }: { onNavigate?: () => void }) {
   return (
     <>
       <Button
-        variant="ghost"
-        nativeButton={false}
-        render={<Link href="/dashboard" onClick={onNavigate} />}
-      >
-        Dashboard
-      </Button>
-      <Button
         nativeButton={false}
         render={<Link href="/create" onClick={onNavigate} />}
       >
-        Create <ArrowUpRight aria-hidden="true" />
+        Studio <ArrowUpRight aria-hidden="true" />
       </Button>
       <Button variant="ghost" nativeButton={false} render={<Link href="/dashboard/settings/account" onClick={onNavigate} />}>Settings</Button>
       <UserButton userProfileMode="modal" />
@@ -62,43 +55,5 @@ export function AccountControls({ onNavigate }: { onNavigate?: () => void }) {
     <ConfiguredActions onNavigate={onNavigate} />
   ) : (
     <SignedOutActions />
-  );
-}
-
-export function DashboardUserButton() {
-  // UserButton reads live SDK readiness. A streamed dashboard can hydrate after
-  // that changes; useAuth preserves the server snapshot for its first render.
-  const { isLoaded } = useAuth();
-  if (!isLoaded) return <span className="size-11 shrink-0" aria-hidden="true" />;
-  return <UserButton userProfileMode="modal" />;
-}
-
-export function DashboardAccount({
-  interactive = true,
-}: {
-  interactive?: boolean;
-}) {
-  const { user, isLoaded } = useUser();
-  return (
-    <div className="flex items-center gap-3 border-t border-sidebar-border p-5">
-      {interactive ? <DashboardUserButton /> : <UserAvatar />}
-      <div className="min-w-0">
-        <p className="truncate text-body-sm font-medium">
-          {isLoaded ? user?.firstName || "Your account" : "Your account"}
-        </p>
-        <p className="mt-1 text-caption text-muted-foreground">
-          Manage your account
-        </p>
-      </div>
-    </div>
-  );
-}
-
-export function DashboardGreeting() {
-  const { user } = useUser();
-  return (
-    <h1 className="mt-3 text-heading-2 font-bold tracking-tight md:text-heading-1">
-      Welcome back{user?.firstName ? `, ${user.firstName}` : ""}
-    </h1>
   );
 }

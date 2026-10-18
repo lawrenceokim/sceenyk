@@ -1,5 +1,6 @@
+import { WorkspacePageFrame } from "@/components/workspace/workspace-page-frame";
 import { Suspense, type ReactNode } from "react";
-import { DashboardShell } from "@/components/dashboard/dashboard-shell";
+import { WorkspaceShell } from "@/components/workspace/workspace-shell";
 import { WorkspaceUnavailable } from "@/components/dashboard/workspace-unavailable";
 import { AppUserSyncError, ensureAppUser } from "@/lib/auth/ensure-app-user";
 
@@ -10,12 +11,12 @@ async function ProtectedDashboard({ children }: { children: ReactNode }) {
     // Auth redirects still propagate; only identity-sync failures use this UI.
     if (!(error instanceof AppUserSyncError)) throw error;
     return (
-      <DashboardShell>
+      <WorkspaceShell>
         <WorkspaceUnavailable />
-      </DashboardShell>
+      </WorkspaceShell>
     );
   }
-  return <DashboardShell>{children}</DashboardShell>;
+  return <WorkspaceShell><WorkspacePageFrame>{children}</WorkspacePageFrame></WorkspaceShell>;
 }
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {

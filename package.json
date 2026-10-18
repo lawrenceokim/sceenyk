@@ -46,7 +46,9 @@
     "test:payout-support:concurrency": "node scripts/check-payout-support.mjs --native-postgres",
     "test:settings": "node scripts/check-settings.mjs",
     "test:settings-ui": "node scripts/check-settings-ui.mjs",
-    "acceptance:settings": "node scripts/acceptance-settings.mjs"
+    "acceptance:settings": "node scripts/acceptance-settings.mjs",
+    "test:workspace-browser": "node scripts/check-workspace-browser.mjs",
+    "test:workspace-navigation": "node scripts/check-workspace-navigation.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1148.0",

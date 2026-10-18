@@ -1,5 +1,10 @@
 # AI Workflow Rules
 
+## Current authorized unit — workspace foundation (2026-10-18)
+
+Implement only Phase 1 of the current four-phase workspace request: reusable shell, grouped/collapsible desktop navigation, bottom account menu, mobile Sheet, existing themes, Dashboard compatibility, shared content frame and bounded Studio/Projects/Marketplace/Settings migration. This supersedes earlier landing-only/documentation-only restrictions for this unit. Preserve guest Studio access, all URLs where possible, root auth/theme, Settings architecture/private caching and existing server/domain/financial/provider behavior. Templates and Documentation remain planned until Phase 2; full desktop Studio is Phase 3 and mobile Studio Phase 4. Never start those automatically. Validate lint/types/build, real browser navigation/responsiveness/themes and proportionate auth/ownership/Settings/Marketplace/financial regressions; state fixture versus live evidence. No hosted Inngest events.
+
+
 ## Current authorized unit — landing-only refinement (2026-10-17)
 
 The user explicitly authorizes landing animation, responsive composition and visual refinement against supplied light/dark screenshots, with build/lint/TypeScript, actual production-browser screenshots and relevant regressions. This supersedes the earlier documentation-only scope for this bounded landing unit. Preserve all other application-page compositions, services, financial/security contracts and existing tokens. The latest user request additionally authorizes a shared Dark default while retaining saved Light/Dark, explicit System, before-paint initialization, favicon synchronization and blocked-storage behavior. Do not trigger hosted Inngest. Record real local production acceptance and deployment status separately; do not claim deployed acceptance from a local build. No broader workspace or feature unit starts automatically.

@@ -1,0 +1,59 @@
+"use client";
+
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { BookOpen, Clapperboard, Coins, FolderOpen, LayoutTemplate, Settings2, Store } from "lucide-react";
+import { Tooltip } from "@base-ui/react/tooltip";
+import { useId, type ReactElement } from "react";
+import { cn } from "@/lib/utils";
+
+const groups = [
+  { label: "Create", items: [{ label: "Studio", icon: Clapperboard, href: "/create" }] },
+  { label: "Workspace", items: [
+    { label: "Projects", icon: FolderOpen, href: "/dashboard/projects" },
+    { label: "Templates", icon: LayoutTemplate, href: null },
+  ] },
+  { label: "Discover", items: [{ label: "Marketplace", icon: Store, href: "/marketplace" }] },
+  { label: "Resources", items: [{ label: "Documentation", icon: BookOpen, href: null }] },
+  { label: "Account", items: [
+    { label: "Credits", icon: Coins, href: "/dashboard/settings/credits" },
+    { label: "Settings", icon: Settings2, href: "/dashboard/settings/account" },
+  ] },
+] as const;
+
+export function WorkspaceTooltip({ label, children, enabled = true }: {
+  label: string; children: ReactElement; enabled?: boolean;
+}) {
+  const id = useId();
+  if (!enabled) return children;
+  return <Tooltip.Root><Tooltip.Trigger render={children} aria-describedby={id} />
+    <Tooltip.Portal><Tooltip.Positioner side="right" sideOffset={12} className="z-[70]">
+      <Tooltip.Popup id={id} role="tooltip" className="rounded-lg border border-border bg-popover px-3 py-2 text-caption text-popover-foreground shadow-popover">{label}</Tooltip.Popup>
+    </Tooltip.Positioner></Tooltip.Portal>
+  </Tooltip.Root>;
+}
+
+export function WorkspaceNavigation({ collapsed = false, onNavigate }: {
+  collapsed?: boolean; onNavigate?: () => void;
+}) {
+  const pathname = usePathname();
+  return <nav aria-label="Workspace navigation" className="space-y-5">
+    {groups.map(group => <div key={group.label}>
+      <p className={cn("mb-1.5 px-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground", collapsed && "sr-only")}>{group.label}</p>
+      <ul className="space-y-1">{group.items.map(item => {
+        const Icon = item.icon;
+        const active = item.label === "Studio" ? pathname === "/create" || pathname.startsWith("/projects/")
+          : item.label === "Marketplace" ? pathname.startsWith("/marketplace") || pathname.startsWith("/dashboard/marketplace")
+          : item.label === "Settings" ? pathname.startsWith("/dashboard/settings/") && pathname !== "/dashboard/settings/credits"
+          : item.href === pathname;
+        const label = item.href ? item.label : `${item.label} — planned for Phase 2`;
+        const classes = cn("flex min-h-11 w-full items-center gap-3 rounded-xl px-3 py-2 text-body-sm font-medium outline-none transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sidebar-ring motion-reduce:transition-none", collapsed && "justify-center px-0", item.href ? "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground" : "cursor-default text-muted-foreground", active && "bg-sidebar-accent text-sidebar-accent-foreground");
+        const content = <><Icon className="size-[18px] shrink-0" aria-hidden="true" /><span className={collapsed ? "sr-only" : "truncate"}>{item.label}</span>{!item.href && !collapsed && <span className="ml-auto text-[10px] font-normal">Soon</span>}</>;
+        return <li key={item.label}><WorkspaceTooltip label={label} enabled={collapsed}>
+          {item.href ? <Link href={item.href} aria-label={collapsed ? label : undefined} aria-current={active ? "page" : undefined} onClick={onNavigate} className={classes}>{content}</Link>
+            : <button type="button" aria-disabled="true" aria-label={label} className={classes}>{content}</button>}
+        </WorkspaceTooltip></li>;
+      })}</ul>
+    </div>)}
+  </nav>;
+}

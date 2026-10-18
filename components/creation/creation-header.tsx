@@ -5,7 +5,7 @@ export function CreationHeader({ saved = false }: { saved?: boolean }) {
   return (
     <>
       <Link
-        href={saved ? "/dashboard#projects" : "/"}
+        href={saved ? "/dashboard/projects" : "/"}
         className="nav-link mb-6"
       >
         <ArrowLeft className="size-4" aria-hidden="true" />
@@ -15,7 +15,7 @@ export function CreationHeader({ saved = false }: { saved?: boolean }) {
         <div className="max-w-2xl">
           <p className="eyebrow">THE IMAGINATION STUDIO</p>
           <h1 className="mt-3 text-heading-2 font-bold tracking-tight md:text-heading-1">
-            Create with Sceenyk
+            Sceenyk Studio
           </h1>
           <p className="mt-3 text-body-lg text-muted-foreground">
             Describe your next scene, bring your own media, and set the creative

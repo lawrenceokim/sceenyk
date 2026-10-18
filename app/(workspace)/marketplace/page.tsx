@@ -35,7 +35,7 @@ async function Discovery({ searchParams }: { searchParams: SearchParams }) {
   </div>;
 }
 export default function MarketplacePage({ searchParams }: { searchParams: SearchParams }) {
-  return <div className="sceenyk-container space-y-8 py-8 md:py-12">
+  return <div className="space-y-8">
     <header className="flex flex-col justify-between gap-5 md:flex-row md:items-end"><div className="max-w-2xl space-y-3"><p className="eyebrow">MADE TO MAKE YOUR OWN</p><h1 className="text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl">A starting point for your next idea.</h1><p className="text-body text-muted-foreground">Discover reusable creator templates. Adopt one for free, add your own ideas and media, then create something new.</p></div><Button variant="outline" nativeButton={false} render={<Link href="/dashboard/marketplace" />}>My Marketplace Listings</Button></header>
     <p className="rounded-xl border border-border bg-accent/50 p-4 text-body-sm text-muted-foreground">Free adoption costs zero credits. Normal Sceenyk generation credits may still be required to create your result.</p>
     <Suspense fallback={<MarketplaceLoading />}><Discovery searchParams={searchParams} /></Suspense>

@@ -1,5 +1,10 @@
 # Sceenyk project overview
 
+## Workspace foundation update (2026-10-18)
+
+Phase 1 implements a Studio-first authenticated workspace and public guest Studio/Marketplace presentation using components/workspace and app/(workspace). Dashboard cards are removed; /dashboard redirects to /create, while /dashboard/projects owns existing project browsing. Public URLs, root Clerk/theme, Settings sections and owner-scoped services are retained. Navigation groups are Create, Workspace, Discover, Resources and Account; the bottom account menu links to existing Settings, and Credits opens Settings billing. Desktop has a persistent collapsible rail; mobile has a focus-managed hamburger Sheet. Templates and Documentation are visibly planned until Phase 2. Full Studio redesign is deferred. See architecture.md and progress-tracker.md for compatibility, evidence and acceptance limits. No backend/financial/provider migration or hosted Inngest execution.
+
+
 ## Current direction — approved full UI/UX redesign (2026-10-17)
 
 **Creative studio first. SaaS dashboard second.** The canonical [product direction](overview.md#approved-full-uiux-redesign-direction-2026-10-17) and [full redesign contract](ui-context.md) supersede older next-unit/navigation/layout guidance. **Redesign implementation: Not Started.** Documentation only; no application, route, backend, provider, financial or theme changes occur here.

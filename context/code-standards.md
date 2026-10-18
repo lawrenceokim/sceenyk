@@ -1,5 +1,10 @@
 # Code Standards
 
+## Authorized workspace foundation (2026-10-18)
+
+The current request authorizes Phase 1 implementation and supersedes historical documentation-only/landing-only restrictions for this unit. Shared navigation/shell/page-frame modules live in components/workspace; existing project cards/status presentation lives in components/projects. Use the public app/(workspace) route group for guest Studio, owned project editing and Marketplace, with independent server guards unchanged. Keep protected app/dashboard layout and Settings URLs to preserve cache/security/payment compatibility. Do not move domain services or introduce new features while migrating presentation. Phase 2/3/4 of the current brief supersede earlier scheduling; stop after Phase 1 and record actual local/deployed acceptance separately.
+
+
 ## Approved redesign implementation boundaries (2026-10-17)
 
 Follow [the approved UI/UX redesign contract](ui-context.md) in separately scoped phases; **implementation is Not Started** and the current task changes documentation only. The first recommended unit is **Phase 1 — shared public/workspace shells and navigation architecture**. Prefer clear public shell, workspace shell, Studio, Marketplace, Settings, shared brand/navigation and creative-control boundaries, reusing existing services/hooks and accessible primitives. No broad backend restructuring or route/domain renaming is needed for Studio's user-facing label.
