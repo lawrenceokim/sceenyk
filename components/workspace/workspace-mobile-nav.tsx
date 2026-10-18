@@ -22,7 +22,7 @@ export function WorkspaceMobileNav() {
       <SheetContent side="left" className="gap-0 bg-sidebar text-sidebar-foreground data-[side=left]:w-[min(19rem,calc(100%-1rem))]">
         <div className="shrink-0 px-5 pb-5 pt-5 pr-16"><Brand variant="full" onNavigate={() => setOpen(false)} /></div>
         <SheetTitle className="sr-only">Workspace navigation</SheetTitle>
-        <SheetDescription className="sr-only">Open Studio, your projects, Marketplace or Settings. Templates and Documentation are planned.</SheetDescription>
+        <SheetDescription className="sr-only">Open Studio, Projects, Templates, Marketplace, Documentation, Credits or Settings.</SheetDescription>
         <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-5"><WorkspaceNavigation onNavigate={() => setOpen(false)} /></div>
         <WorkspaceUserMenu onNavigate={() => setOpen(false)} />
       </SheetContent>

@@ -11,10 +11,10 @@ const groups = [
   { label: "Create", items: [{ label: "Studio", icon: Clapperboard, href: "/create" }] },
   { label: "Workspace", items: [
     { label: "Projects", icon: FolderOpen, href: "/dashboard/projects" },
-    { label: "Templates", icon: LayoutTemplate, href: null },
+    { label: "Templates", icon: LayoutTemplate, href: "/dashboard/templates" },
   ] },
   { label: "Discover", items: [{ label: "Marketplace", icon: Store, href: "/marketplace" }] },
-  { label: "Resources", items: [{ label: "Documentation", icon: BookOpen, href: null }] },
+  { label: "Resources", items: [{ label: "Documentation", icon: BookOpen, href: "/documentation" }] },
   { label: "Account", items: [
     { label: "Credits", icon: Coins, href: "/dashboard/settings/credits" },
     { label: "Settings", icon: Settings2, href: "/dashboard/settings/account" },
@@ -45,13 +45,12 @@ export function WorkspaceNavigation({ collapsed = false, onNavigate }: {
         const active = item.label === "Studio" ? pathname === "/create" || pathname.startsWith("/projects/")
           : item.label === "Marketplace" ? pathname.startsWith("/marketplace") || pathname.startsWith("/dashboard/marketplace")
           : item.label === "Settings" ? pathname.startsWith("/dashboard/settings/") && pathname !== "/dashboard/settings/credits"
+          : item.label === "Documentation" ? pathname === "/documentation" || pathname.startsWith("/documentation/")
           : item.href === pathname;
-        const label = item.href ? item.label : `${item.label} — planned for Phase 2`;
-        const classes = cn("flex min-h-11 w-full items-center gap-3 rounded-xl px-3 py-2 text-body-sm font-medium outline-none transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sidebar-ring motion-reduce:transition-none", collapsed && "justify-center px-0", item.href ? "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground" : "cursor-default text-muted-foreground", active && "bg-sidebar-accent text-sidebar-accent-foreground");
-        const content = <><Icon className="size-[18px] shrink-0" aria-hidden="true" /><span className={collapsed ? "sr-only" : "truncate"}>{item.label}</span>{!item.href && !collapsed && <span className="ml-auto text-[10px] font-normal">Soon</span>}</>;
-        return <li key={item.label}><WorkspaceTooltip label={label} enabled={collapsed}>
-          {item.href ? <Link href={item.href} aria-label={collapsed ? label : undefined} aria-current={active ? "page" : undefined} onClick={onNavigate} className={classes}>{content}</Link>
-            : <button type="button" aria-disabled="true" aria-label={label} className={classes}>{content}</button>}
+        const classes = cn("flex min-h-11 w-full items-center gap-3 rounded-xl px-3 py-2 text-body-sm font-medium outline-none transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sidebar-ring motion-reduce:transition-none hover:bg-sidebar-accent hover:text-sidebar-accent-foreground", collapsed && "justify-center px-0", active && "bg-sidebar-accent text-sidebar-accent-foreground");
+        const content = <><Icon className="size-[18px] shrink-0" aria-hidden="true" /><span className={collapsed ? "sr-only" : "truncate"}>{item.label}</span></>;
+        return <li key={item.label}><WorkspaceTooltip label={item.label} enabled={collapsed}>
+          <Link href={item.href} aria-label={collapsed ? item.label : undefined} aria-current={active ? "page" : undefined} onClick={onNavigate} className={classes}>{content}</Link>
         </WorkspaceTooltip></li>;
       })}</ul>
     </div>)}

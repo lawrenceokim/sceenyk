@@ -1,5 +1,12 @@
 # Sceenyk design system
 
+## Phase 2 page composition (2026-10-18)
+
+Existing palette, theme controller, logos, frame radius and responsive padding remain authoritative. New WorkspacePageHeader centralizes the existing eyebrow, 30/36px heading, body description and action hierarchy for new pages and creator-management consistency. Templates uses existing configuration covers, restrained border-border rounded-2xl cards, gap-6 gallery spacing, text-muted-foreground metadata and text-link actions. No new media assets or theme tokens.
+
+Documentation composition decisions are Inferred from the supplied reference and adjusted for content fit: 12rem topic rail at xl, article max 46rem, optional 10rem contents rail at 2xl, gap-8, sticky top-8, 16px article copy with 32px line height and shared heading scale. Mobile uses the existing field token/control height for topic selection, a single readable article column and the existing workspace hamburger. Anchors have responsive scroll margins and focus rings. These are implementation choices, not Exact reference measurements. All existing source-confidence labels remain intact.
+
+
 ## Workspace presentation application (2026-10-18)
 
 Phase 1 reuses existing light/dark tokens and official full/compact PNG logos. Reference screenshots inform composition only; the following are implementation decisions rather than exact measurements from the references: 240px expanded sidebar, 80px collapsed rail, 1024px desktop threshold, 64px mobile header, 16px content-surface radius, 16/24/32/40px responsive inner padding. Use bg-background around a restrained border-border/bg-card workspace surface; sidebar active/hover and focus use existing sidebar-accent/sidebar-ring tokens. No new palette, glow, gradient or theme controller. Sidebar links/actions have at least 44px targets. Base UI Menu, Tooltip and existing Sheet retain keyboard/focus behavior. Full desktop/mobile Studio panel geometry remains deferred.

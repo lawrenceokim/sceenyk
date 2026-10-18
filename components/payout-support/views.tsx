@@ -15,7 +15,7 @@ function Status({ status, review }: { status: string; review: boolean }) {
   return <div className="flex flex-wrap gap-2"><span className="rounded-full bg-accent px-3 py-1 text-caption font-medium capitalize text-accent-foreground">{status}</span>{review && <span className="rounded-full bg-warning-surface px-3 py-1 text-caption font-medium text-warning-foreground">Needs Review</span>}</div>;
 }
 export function SupportUnavailable() {
-  return <section className="sceenyk-card space-y-3 p-6"><h1 className="text-xl font-semibold">Payout support is unavailable</h1><p role="alert" className="text-muted-foreground">Internal data couldn’t be loaded. Refresh before continuing.</p><Link className="nav-link text-link" href="/dashboard">Return to dashboard</Link></section>;
+  return <section className="sceenyk-card space-y-3 p-6"><h1 className="text-xl font-semibold">Payout support is unavailable</h1><p role="alert" className="text-muted-foreground">Internal data couldn’t be loaded. Refresh before continuing.</p><Link className="nav-link text-link" href="/create">Return to Studio</Link></section>;
 }
 export function PayoutQueueView({ data, query, status }: { data: PayoutQueue; query: string; status: keyof typeof labels }) {
   const href = (page: number) => `/admin/payouts?${new URLSearchParams({ query, status, page: String(page) })}`;

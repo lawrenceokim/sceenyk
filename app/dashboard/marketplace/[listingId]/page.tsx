@@ -1,3 +1,4 @@
+import { WorkspacePageHeader } from "@/components/workspace/workspace-page-header";
 import { Suspense } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -18,5 +19,5 @@ async function OwnedListing({ params }: { params: Promise<{ listingId: string }>
   return <ListingEditor clerkUserId={user.clerk_user_id} listing={listing} />;
 }
 export default function ManageListingPage({ params }: { params: Promise<{ listingId: string }> }) {
-  return <><header className="space-y-3"><p className="eyebrow">YOUR REUSABLE TEMPLATE</p><h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Manage listing</h1><p className="text-muted-foreground">Edit its public metadata and control when it appears in Marketplace.</p></header><Suspense fallback={<MarketplaceLoading />}><OwnedListing params={params} /></Suspense></>;
+  return <><WorkspacePageHeader title="Manage listing" eyebrow="YOUR CREATOR SPACE" description="Edit this listing’s public metadata and control when it appears in Marketplace."></WorkspacePageHeader><Suspense fallback={<MarketplaceLoading />}><OwnedListing params={params} /></Suspense></>;
 }

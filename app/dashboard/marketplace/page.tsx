@@ -1,3 +1,4 @@
+import { WorkspacePageHeader } from "@/components/workspace/workspace-page-header";
 import { Suspense } from "react";
 import Link from "next/link";
 import type { Metadata } from "next";
@@ -20,5 +21,5 @@ async function Listings({ searchParams }: { searchParams: Promise<Record<string,
   return <OwnedListings clerkUserId={user.clerk_user_id} result={result} />;
 }
 export default function MyListingsPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
-  return <><header className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end"><div className="space-y-3"><p className="eyebrow">YOUR CREATOR SPACE</p><h1 className="text-3xl font-bold tracking-tight sm:text-4xl">My Marketplace Listings</h1><p className="text-muted-foreground">Manage your drafts, published templates and unpublished listings.</p></div><Button nativeButton={false} render={<Link href="/dashboard/marketplace/new" />}>Publish a template</Button></header><nav className="flex flex-wrap gap-4 text-body-sm"><Link className="nav-link text-link" href="/dashboard/settings/creator-profile">Public creator profile</Link><Link className="nav-link text-link" href="/dashboard/settings/earnings">Creator earnings</Link><Link className="nav-link text-link" href="/dashboard/marketplace/purchases">My Marketplace purchases</Link></nav><Suspense fallback={<MarketplaceLoading />}><Listings searchParams={searchParams} /></Suspense></>;
+  return <><WorkspacePageHeader title="My Marketplace Listings" eyebrow="YOUR CREATOR SPACE" description="Manage your drafts, published templates and unpublished listings."><Button nativeButton={false} render={<Link href="/dashboard/marketplace/new" />}>Publish a template</Button></WorkspacePageHeader><nav className="flex flex-wrap gap-4 text-body-sm"><Link className="nav-link text-link" href="/dashboard/settings/creator-profile">Public creator profile</Link><Link className="nav-link text-link" href="/dashboard/settings/earnings">Creator earnings</Link><Link className="nav-link text-link" href="/dashboard/marketplace/purchases">My Marketplace purchases</Link></nav><Suspense fallback={<MarketplaceLoading />}><Listings searchParams={searchParams} /></Suspense></>;
 }

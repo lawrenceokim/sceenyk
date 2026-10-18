@@ -1,3 +1,4 @@
+import { WorkspacePageHeader } from "@/components/workspace/workspace-page-header";
 import { Suspense } from "react";
 import Link from "next/link";
 import type { Metadata } from "next";
@@ -29,5 +30,5 @@ async function NewListing({ searchParams }: { searchParams: Promise<Record<strin
   return <section className="sceenyk-card space-y-5 p-5 sm:p-6"><h2 className="text-xl font-semibold">Choose a saved project</h2><p className="text-body-sm text-muted-foreground">Its creative settings become the template. You’ll write separate public instructions and confirm your rights before publishing.</p>{result.projects.length ? <ul className="divide-y divide-border">{result.projects.map(project => <li key={project.id}><Link href={`/dashboard/marketplace/new?project=${project.id}`} className="nav-link flex min-h-14 justify-between gap-3 py-3"><span className="min-w-0 break-words font-medium">{project.title}</span><span className="shrink-0 text-caption text-muted-foreground">{project.settings.aspectRatio} · {project.settings.duration}s</span></Link></li>)}</ul> : <p className="text-muted-foreground">Save a project in the creation workspace first.</p>}<MarketplacePagination {...result} href={page => `/dashboard/marketplace/new?page=${page}`} /><Link href="/create" className="nav-link text-link">Create a project</Link></section>;
 }
 export default function PublishPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
-  return <><header className="space-y-3"><p className="eyebrow">SHARE YOUR CREATIVE APPROACH</p><h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Publish to Marketplace</h1><p className="text-muted-foreground">Turn a saved project into a free reusable template.</p></header><Suspense fallback={<MarketplaceLoading />}><NewListing searchParams={searchParams} /></Suspense></>;
+  return <><WorkspacePageHeader title="Publish to Marketplace" eyebrow="SHARE YOUR CREATIVE APPROACH" description="Turn a saved project into a reusable template."></WorkspacePageHeader><Suspense fallback={<MarketplaceLoading />}><NewListing searchParams={searchParams} /></Suspense></>;
 }

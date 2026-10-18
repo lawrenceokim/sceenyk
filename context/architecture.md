@@ -1,5 +1,14 @@
 # Architecture Context
 
+## Workspace Phase 2 architecture (2026-10-18)
+
+Phase 2 implements presentation only. /dashboard/templates uses the existing protected layout, using listOwnedMarketplaceListings and the existing live-account presentation fence; it is a gallery of the owner's existing Marketplace template configurations, with existing manage/public-listing actions and pagination. Adopted templates remain ordinary owned Projects; purchase recovery remains on its existing page. No saved-template system, search, categories or media previews are invented. Route-only invalidation for this new view accompanies existing listing changes.
+
+At the Phase 2 baseline there was no end-user Documentation route/content (README is framework setup; context is internal architecture/acceptance). Public /documentation and /documentation/[topic] now live within the intentionally shared workspace presentation, using a curated static product guide drawn from verified UI wording/capabilities, not runtime imports of internal context files. Topics, articles and anchors share one typed public content source. Desktop has sticky topics/article/optional secondary contents links; mobile has a labeled compact topic picker. No identity, billing data, provider internals or internal acceptance fixtures enter this content.
+
+The formerly separate /admin internal shell now uses the existing workspace shell/page frame while retaining readSupportPage(requireAdminOrSupport), independent service guards, URLs, private response policy and support-only local navigation. Existing dashboard pages already inherit the shared frame. Public landing, Marketplace, storefronts and pricing keep their intentional current access/presentation. Legacy template bookmarks remain useful through the Studio fragment redirect and a link at the original Projects anchor. Phase 1 shell/collapse/mobile/profile/credits/redirect architecture and Studio editor remain unchanged apart from activating Templates/Documentation destinations. Stop before Phase 3.
+
+
 ## Workspace foundation — Phase 1 (2026-10-18)
 
 Current authorization supersedes earlier documentation-only and landing-only boundaries for this unit. Shared components/workspace presentation serves public guest /create, owned /projects/[id], public /marketplace and its detail/storefront routes through app/(workspace)/layout.tsx. The existing /dashboard protected layout keeps server identity enforcement and wraps Settings, Marketplace management and the new /dashboard/projects page in the same shell. One root auth/theme provider remains authoritative; presentation never grants data access. No backend/domain/schema/provider changes are required.

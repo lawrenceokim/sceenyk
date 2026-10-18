@@ -1,5 +1,10 @@
 # Code Standards
 
+## Authorized Phase 2 presentation (2026-10-18)
+
+Current authorization supersedes the older Phase 1 stop boundary for Templates, public product Documentation, remaining internal presentation and small cross-page consistency fixes. Reuse components/workspace, the existing owned-listing service/account fence, configuration covers and server guards. Public docs content belongs in lib/documentation/content.ts; never render internal context/acceptance files as a manual. New Templates invalidation is routing integration only; business services, schema, payment/provider work and the Studio editor remain unchanged. Stop before Phase 3 and record fixture, local-browser and deployed evidence separately.
+
+
 ## Authorized workspace foundation (2026-10-18)
 
 The current request authorizes Phase 1 implementation and supersedes historical documentation-only/landing-only restrictions for this unit. Shared navigation/shell/page-frame modules live in components/workspace; existing project cards/status presentation lives in components/projects. Use the public app/(workspace) route group for guest Studio, owned project editing and Marketplace, with independent server guards unchanged. Keep protected app/dashboard layout and Settings URLs to preserve cache/security/payment compatibility. Do not move domain services or introduce new features while migrating presentation. Phase 2/3/4 of the current brief supersede earlier scheduling; stop after Phase 1 and record actual local/deployed acceptance separately.

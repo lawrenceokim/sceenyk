@@ -1,5 +1,16 @@
 # UI Context
 
+## Workspace Phase 2 presentation (2026-10-18)
+
+The supplied gallery and Documentation references guide composition/spacing, not branding or copied features. Templates is an owner-only creative gallery of existing Marketplace template configurations: large existing aspect-video covers, 2 columns from sm and 3 from 2xl, quiet status/description and existing manage/public links. Empty/out-of-range views point to existing project publishing or Marketplace. No invented library filters, media artwork, saved-template storage or new adoption controls. Adopted work remains in Projects.
+
+Documentation uses the shared outer rounded frame. At xl (1280px), a sticky 12rem grouped topic column sits beside a readable article (max 46rem); at 2xl (1536px), a subtle sticky 10rem On this page column appears. Below xl, topics become a labeled hydration-safe native select; contents links hide below 2xl. Twenty-one stable focusable section anchors, previous/next topic links, semantic headings and native scrolling preserve keyboard/deep-link behavior. Public guide content is curated from verified UI capabilities; no internal context files are rendered.
+
+Templates and Documentation are active sidebar links without Soon markers; subtopics activate Documentation. Desktop collapse, tooltips, mobile Sheet/profile and Credits routing retain Phase 1 behavior. Legacy /dashboard#templates opens /dashboard/templates; /dashboard/projects#templates retains a useful link. Landing footer adds the public Documentation destination.
+
+Creator listing/publish/manage/purchase headers share WorkspacePageHeader. Private payout-support pages use WorkspaceShell/PageFrame behind the existing role guard, with support-only local navigation. Settings section navigation now sticks 2rem from the top because the old global dashboard header is gone. Light/dark share the same geometry and existing semantic tokens; Studio editor, Marketplace discovery and financial controls remain unchanged. Acceptance is in the tracker; Phase 3 is not started.
+
+
 ## Workspace foundation — current Phase 1 (2026-10-18)
 
 The supplied Pryzm screenshots inform sidebar placement, grouping, spacing, collapse and rounded content composition only. Sceenyk retains its own PNG logos, Lucide icon choices and purple/blue semantic tokens. Shared shell: desktop 240px sidebar or 80px icon rail; main content gains the released width. The large rounded bordered card surface uses generous responsive padding, without a global dashboard header/footer. Sidebar groups: CREATE (Studio), WORKSPACE (Projects, Templates), DISCOVER (Marketplace), RESOURCES (Documentation), ACCOUNT (Credits, Settings). Templates and Documentation show Soon with accessible planned labels; they have no working standalone routes yet. The old Templates placeholder is retained on Projects for legacy bookmarks.

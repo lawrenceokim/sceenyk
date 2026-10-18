@@ -22,14 +22,14 @@ for (const [input, expected] of [['/dashboard','/create'],['/dashboard?page=2','
   check('authenticated compatibility redirect '+input, result.status === 307 && result.url === 'https://example.test'+expected);
 }
 check('compatibility still authenticates', protections === 3);
-for (const url of ['/create','/marketplace','/marketplace/creators/example']) {
+for (const url of ['/create','/marketplace','/marketplace/creators/example','/documentation','/documentation/credits']) {
   const before = protections; await proxy(request(url), {}); check('public exploration '+url, before === protections);
 }
 for (const url of ['/api/inngest','/api/payments/paypal/webhook']) {
   const before = protections; check('callback bypass preserved '+url, (await proxy(request(url), {})).next && before === protections);
 }
 signedIn = false;
-for (const url of ['/dashboard','/dashboard/projects','/dashboard/settings/account','/projects/foreign']) {
+for (const url of ['/dashboard','/dashboard/projects','/dashboard/templates','/dashboard/settings/account','/projects/foreign']) {
   await assert.rejects(() => proxy(request(url), {}), /AUTH_REQUIRED/); check('anonymous private route denied '+url, true);
 }
 authEnabled = false;
@@ -40,6 +40,7 @@ check('save invalidates new Projects destination and editor', invalidations.incl
 invalidations.length = 0;
 await load('app/actions/marketplace.ts').adoptMarketplaceAction({});
 check('free adoption invalidates new Projects destination', invalidations.includes('/dashboard/projects'));
+check('listing changes invalidate the Templates gallery', invalidations.includes('/dashboard/templates'));
 invalidations.length = 0;
 await load('app/actions/marketplace-payments.ts').recoverMarketplacePurchaseAction({});
 check('paid recovery invalidates new Projects destination', invalidations.includes('/dashboard/projects'));

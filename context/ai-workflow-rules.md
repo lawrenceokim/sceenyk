@@ -1,5 +1,10 @@
 # AI Workflow Rules
 
+## Current authorization — Phase 2 (2026-10-18)
+
+Complete Templates and Documentation presentation, remaining internal shell migration and small workspace consistency fixes. Reuse the completed Phase 1 shell/collapse/mobile/profile/Credits/redirect system. Templates uses existing owner-scoped Marketplace configurations and actions; no new template features. Public Documentation is curated from verified product behavior and stays free of internal/private data. Preserve all existing routes/access/ownership/Settings/private caching/financial/provider contracts. Do not trigger hosted Inngest or change the Studio editor. The exact next unit is Phase 3 — full Studio workspace redesign: Navigation | Sources | Preview Stage | Properties. Do not start it automatically.
+
+
 ## Current authorized unit — workspace foundation (2026-10-18)
 
 Implement only Phase 1 of the current four-phase workspace request: reusable shell, grouped/collapsible desktop navigation, bottom account menu, mobile Sheet, existing themes, Dashboard compatibility, shared content frame and bounded Studio/Projects/Marketplace/Settings migration. This supersedes earlier landing-only/documentation-only restrictions for this unit. Preserve guest Studio access, all URLs where possible, root auth/theme, Settings architecture/private caching and existing server/domain/financial/provider behavior. Templates and Documentation remain planned until Phase 2; full desktop Studio is Phase 3 and mobile Studio Phase 4. Never start those automatically. Validate lint/types/build, real browser navigation/responsiveness/themes and proportionate auth/ownership/Settings/Marketplace/financial regressions; state fixture versus live evidence. No hosted Inngest events.

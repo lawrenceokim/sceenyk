@@ -1,5 +1,12 @@
 # Sceenyk project overview
 
+## Workspace Phase 2 (2026-10-18)
+
+Templates (/dashboard/templates) uses the existing protected layout, owned Marketplace listing service, live-account fence and configuration previews; it adds presentation rather than a new domain system. Documentation (/documentation plus six topic paths) uses static public content with grouped topic navigation, readable articles, stable section anchors and optional contents links. These routes activate the existing workspace navigation without replacing Phase 1 shell/profile/credits/theme behavior.
+
+The remaining /admin payout-support layout now uses the shared shell/frame while retaining server role enforcement, local support navigation and private response controls. Existing creator listing/publishing/purchase pages receive shared header composition; Settings sticky navigation aligns with the header-free workspace. Existing URLs and public access remain intact, old template bookmarks reach the working destination and internal content stays protected. See architecture and tracker for exact scope, checks and limits. Phase 3 — full Studio workspace redesign: Navigation | Sources | Preview Stage | Properties — is next and is not started.
+
+
 ## Workspace foundation update (2026-10-18)
 
 Phase 1 implements a Studio-first authenticated workspace and public guest Studio/Marketplace presentation using components/workspace and app/(workspace). Dashboard cards are removed; /dashboard redirects to /create, while /dashboard/projects owns existing project browsing. Public URLs, root Clerk/theme, Settings sections and owner-scoped services are retained. Navigation groups are Create, Workspace, Discover, Resources and Account; the bottom account menu links to existing Settings, and Credits opens Settings billing. Desktop has a persistent collapsible rail; mobile has a focus-managed hamburger Sheet. Templates and Documentation are visibly planned until Phase 2. Full Studio redesign is deferred. See architecture.md and progress-tracker.md for compatibility, evidence and acceptance limits. No backend/financial/provider migration or hosted Inngest execution.

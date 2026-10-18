@@ -1,5 +1,49 @@
 # Progress Tracker
 
+## Workspace Phase 2 (2026-10-18)
+
+**Complete within local production/browser/visual and explicitly scoped fixture acceptance. Deployment: Not performed. Phase 3: Not Started.** Templates and Documentation are working destinations in the shared workspace. Phase 1 shell/collapse/profile/Credits/auth architecture is reused; Studio editor and business services are unchanged. No hosted Inngest execution is initiated.
+
+### Implemented surfaces and route audit
+
+| Surface | Migration and access |
+| --- | --- |
+| Templates | New /dashboard/templates under the existing protected dashboard layout. Gallery uses listOwnedMarketplaceListings, the existing live Clerk-account fence, existing configuration covers, listing status/description, manage/public links and pagination. No template engine, saved collection, invented filters/categories or fabricated media. Adopted templates remain owned Projects; existing purchases/recovery stay linked. |
+| Documentation | New public /documentation plus /documentation/{studio,projects-templates,marketplace,credits,earnings,settings} within the intentionally shared workspace presentation. Seven topics and 21 stable anchors use one typed public content source. No prior end-user docs route existed; content is curated from verified existing Studio/Marketplace/Settings behavior, without importing internal context/acceptance files at runtime. /documentation/getting-started canonicalizes to the index; unknown topics have safe recovery. |
+| Internal payout support | Existing /admin/payouts and /admin/payouts/[id] now use WorkspaceShell/PageFrame. readSupportPage(requireAdminOrSupport), independent data/action guards, private response policy, URLs and local support navigation remain. No support link is added to the general sidebar or public documentation. |
+| Creator management | Existing listing, publish, manage and purchases routes inherit the workspace as before; shared WorkspacePageHeader aligns typography/actions/spacing. No listing, adoption, payment, entitlement, recovery or payout behavior changes. |
+| Settings | Nine sections remain intact. Sticky section navigation moves to top-8 to match the header-free Phase 1 frame; controls, caching and account/security behavior remain unchanged. |
+| Legacy / public surfaces | /dashboard redirect, Studio /create and all existing public/private URLs remain. /dashboard#templates now reaches the migrated gallery; /dashboard/projects#templates retains a link. Landing footer links to Documentation. Landing/pricing retain public chrome; Marketplace/storefronts retain their intentional public/shared presentation. Compatibility-only Settings/credits/profile/earnings routes remain redirects. No other old internal shell remains; existing loading/error/unavailable components remain within their existing route boundaries. |
+
+### Components and visual consistency
+
+Added components/templates/template-library.tsx, components/documentation/{documentation-navigation,documentation-article}.tsx, lib/documentation/content.ts, shared workspace-page-header.tsx and the new route files. Existing owned-listings has an optional library presentation behind its unchanged account fence. Existing shell/sidebar/mobile/user-menu behavior is retained; only working Templates/Documentation destinations and corresponding descriptive text are activated, removing Soon. One route-cache invalidation for /dashboard/templates accompanies existing listing changes; domain services, SQL, financial rules and providers are untouched.
+
+Templates emphasizes existing aspect-video configuration covers, a restrained responsive gallery, secondary metadata and existing actions. Long titles wrap within cards with the status badge retained. Documentation has sticky 12rem grouped topics from xl, a readable max-46rem article, and optional subtle 10rem On this page links from 2xl. Mobile uses a labeled hydration-safe topic select and normal article flow, with the unchanged workspace hamburger. Both themes share exact structure/spacing and existing tokens; no new palette, theme controller, assets or dependencies.
+
+### Validation and evidence
+
+| Check | Result / scope |
+| --- | --- |
+| Lint / TypeScript / production build / whitespace | Pass. Standalone TypeScript passes; all 51 production pages build; final full lint, changed-script lint and diff whitespace checks pass. |
+| Templates | 13 checks render the actual account fence/gallery with explicit identity/listing fixtures: configuration covers, existing actions, pagination, no fabricated filters/media, non-public listings, empty/out-of-range recovery and stale-account exclusion. |
+| Documentation | 67 checks validate seven topics, all 21 unique/stable anchors, every internal product/documentation destination against actual routes, canonical index/unknown-topic behavior and absence of internal operational content. |
+| Navigation | 22 actual proxy/action checks with explicit session/domain fixtures cover public Documentation, private Templates denial, preserved redirects/callbacks, fixed internal destinations and new gallery invalidation. |
+| Settings / Marketplace / authorization / support | Settings 64, Marketplace 76, authorization boundary 32 and payout support 118 pass against isolated SQL/services/role/clock/provider fixtures. No hosted financial/provider operation. |
+| Financial regressions | Credit purchases 87 and paid Marketplace 74 pass with actual isolated SQL and provider/HTTP fixtures; no new real Sandbox transaction, Live payment, withdrawal, payout or hosted workflow is initiated. |
+| Settings/support presentation | Settings 160 and payout-support 48 Chrome/component/CSS checks pass with explicit identity/DTO/router/action/HTTP fixtures. Evidence: %TEMP%/sceenyk-settings-ui-k4x8a0 and %TEMP%/sceenyk-payout-support-ui-lgDUWL. |
+| Internal layout boundary | 4 checks exercise the actual admin layout and readSupportPage with explicit role/transport/UI-wrapper fixtures: authorized composition, ordinary-user denial, safe lookup-failure fallback and fresh guard reads. No existing reserved account has admin/support access, and no role grant/change is performed. |
+| Real local production browser | 223 Chrome checks pass with actual reserved Clerk accounts and hosted owned reads. Guest Studio/Marketplace/Documentation, private denial, all legacy navigation, collapse/reload/unwritable storage/tooltips/profile/sign-out, mobile focus trapping/Escape/resize, existing pages, docs picker/all anchors/recovery, ordinary-user support denial, A resume, B project exclusion/denial, non-empty A listing fixture exclusion from B Templates and B foreign-listing management denial pass. Zero browser exceptions. |
+| Responsive / themes / visual review | Studio, Projects, Marketplace, Settings, Templates and Documentation fit 1600/1440/1024/768/390/320px in both themes without horizontal overflow. Template title/badge containment is asserted inside cards at every width/theme. Three creator pages also pass 1440/390 containment. Topic/contents columns adapt correctly; all 21 anchors receive native focus. Representative wide three-column docs, mobile docs, gallery, themes and rail screenshots are visually reviewed. |
+| Protected state / workflow boundary | Before/after hashes of generation accounts/jobs, credit ledger/purchases, creator withdrawals and earnings ledger are unchanged. Browser observes no hosted Inngest/provider request. Checks use ordinary Clerk sessions/identity sync and owned reads; no user-content edit or generation/financial confirmation. |
+| Client secrets | Final 41 client files checked against 12 configured privileged values: zero leaks and zero server-only markers. |
+
+Final production evidence: **%TEMP%/sceenyk-render-cloud-browser-pExEcA/report.json** and **27 PNG captures**. Initial visual acceptance caught a long-title/status row clipped inside the mobile template card despite page-level containment; min-w-0/flex-1 fixes the title and the final suite includes nested-card bounds. Harness readiness fixes wait for public SDK availability where needed and the selected documentation article/visible anchor before interacting; no error assertion is suppressed. A prior 210-check run and a partial 194-check run are superseded by the final 223-check run on the corrected build.
+
+**Limits:** no deployment, physical-device/non-Chromium/screen-reader certification, new real Sandbox transaction or hosted privileged-admin session is claimed. Privileged layout/role and support-view acceptance uses explicit fixtures because no reserved privileged identity exists; actual ordinary-user denial is verified. Existing account synchronization may run during real sign-in. No schema/migration/dependency/environment/role/hosting/provider configuration changes, commits or pushes. No unsupported template collection/search, private-media previews, guest draft restoration or full Studio editor is implemented. Inngest Cloud remains paused.
+
+**Exact next unit: Phase 3 — full Studio workspace redesign: Navigation | Sources | Preview Stage | Properties.** Do not start it automatically. This phase stops here.
+
 ## Workspace foundation — Phase 1 (2026-10-18)
 
 **Complete within local production/browser/visual acceptance. Deployment: Not performed. Phase 2: Not Started.** Dashboard-first Home is removed from the main navigation. Studio (/create), Projects (/dashboard/projects), public Marketplace and all nine private Settings sections now share the workspace presentation. Studio remains guest-accessible; no provider execution, financial system, auth policy or schema is added.

@@ -9,8 +9,10 @@ export function WorkspaceLegacyLinks() {
   const router = useRouter();
   useEffect(() => {
     function restoreBookmark() {
-      if (location.hash === "#projects" || location.hash === "#templates") {
+      if (location.hash === "#projects") {
         router.replace(`/dashboard/projects${location.search}${location.hash}`);
+      } else if (location.hash === "#templates") {
+        router.replace(`/dashboard/templates${location.search}`);
       } else if (location.hash === "#credits") {
         router.replace("/dashboard/settings/credits");
       }

@@ -230,6 +230,7 @@ function LandingFooter() {
             <Link href="/create">Studio</Link>
             <Link href="/marketplace">Marketplace</Link>
             <Link href="/#pricing">Pricing</Link>
+            <Link href="/documentation">Documentation</Link>
           </nav>
           <nav aria-label="Footer account navigation">
             <h2>Your workspace</h2>

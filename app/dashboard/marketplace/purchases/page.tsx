@@ -1,3 +1,4 @@
+import { WorkspacePageHeader } from "@/components/workspace/workspace-page-header";
 import { Suspense } from "react";
 import Link from "next/link";
 import { unstable_rethrow } from "next/navigation";
@@ -14,5 +15,5 @@ async function Content({ searchParams }: { searchParams: Promise<Record<string, 
   return <FinancialPanel clerkUserId={result.clerkUserId} page={current} purchases={result} />;
 }
 export default function Page({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
-  return <><header className="space-y-3"><p className="eyebrow">MARKETPLACE · SANDBOX</p><h1 className="text-3xl font-bold tracking-tight">My Marketplace purchases</h1></header><nav className="flex flex-wrap gap-4 text-body-sm"><Link className="nav-link text-link" href="/dashboard/marketplace">My Marketplace Listings</Link><Link className="nav-link text-link" href="/dashboard/settings/earnings">Creator earnings</Link></nav><Suspense fallback={<p role="status">Loading your Marketplace account…</p>}><Content searchParams={searchParams} /></Suspense></>;
+  return <><WorkspacePageHeader title="My Marketplace purchases" eyebrow="MARKETPLACE · SANDBOX" description="Review your existing purchases and recover an adopted project."></WorkspacePageHeader><nav className="flex flex-wrap gap-4 text-body-sm"><Link className="nav-link text-link" href="/dashboard/marketplace">My Marketplace Listings</Link><Link className="nav-link text-link" href="/dashboard/settings/earnings">Creator earnings</Link></nav><Suspense fallback={<p role="status">Loading your Marketplace account…</p>}><Content searchParams={searchParams} /></Suspense></>;
 }

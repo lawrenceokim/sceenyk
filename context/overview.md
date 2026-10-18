@@ -1,5 +1,14 @@
 # Sceenyk
 
+## Remaining workspace migration — Phase 2 (2026-10-18)
+
+Phase 2 adds an authenticated Templates gallery at /dashboard/templates and public product Documentation at /documentation and /documentation/[topic], using the existing shared workspace environment. Templates renders the owner's existing Marketplace listing configurations and existing actions; adopted templates remain owned Projects and paid recovery stays in Marketplace purchases. There is no new saved-template system, fabricated media or unsupported gallery filter.
+
+Documentation now presents seven source-verified topics: getting started, Studio, projects/templates, Marketplace, credits, earnings and Settings/privacy. No prior end-user docs route existed, so this is a curated guide based on existing product UI rather than a rewrite or exposure of internal context. It explicitly distinguishes available behavior from guest-restoration, notification/export/deletion and final-rendering limits. Sidebar Soon markers are removed for these working destinations.
+
+Internal payout support now shares the workspace presentation behind its unchanged admin/support guard. Existing public landing/pricing, intentionally shared public Marketplace/storefronts, private Settings and Studio access keep their boundaries. Small shared heading/spacing adjustments align creator management and Settings. Runtime acceptance and deployment limits are in the tracker. Stop after Phase 2; the exact next unit is Phase 3 — full Studio workspace redesign: Navigation | Sources | Preview Stage | Properties. Inngest Cloud remains paused.
+
+
 ## Studio-first workspace — Phase 1 (2026-10-18)
 
 The authorized workspace foundation replaces dashboard-first Home with Studio at /create. Projects now live at /dashboard/projects; Studio, Projects, public Marketplace and private Settings share the new navigation/content shell. /dashboard is a compatibility redirect, with old project pagination/bookmarks preserved. Create → Studio; Workspace → Projects and planned Templates; Discover → Marketplace; Resources → planned Documentation; Account → Credits and Settings. Identity/account links live at the bottom; Credits opens existing Settings → Credits & Billing. No new billing, template, auth or generation system is introduced.
