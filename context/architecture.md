@@ -1,5 +1,11 @@
 # Architecture Context
 
+## Projects and Settings visual redesign — Phase 4 (2026-10-19)
+
+Projects retains `/projects/[id]` as the existing owner-loaded Studio editing route. Gallery previews reuse uploaded image/video asset metadata and the existing owner-checked media-read action; absent previews retain the category placeholder. Rename is a strict ID/title-only server action and owner-filtered column update, so concurrent brief edits, source references and generation settings are not overwritten. No sharing or deletion implementation exists; restricted project dependencies and unsupported controls are preserved rather than adding a new destructive workflow. No schema or provider changes.
+
+Settings keeps its existing authenticated routes, private-cache policy and child components. A client presentation shell owns independent center scrolling, compact navigation/mobile picker and optional headings derived from the visible section after streamed content arrives. Active frame attributes constrain Projects/Settings to the viewport without selecting hidden cached page descendants. Existing Clerk, creator, financial, preference and theme owners stay authoritative. Only focused project-update/ownership and static checks are required for this unit; manual visual review remains with the user.
+
 ## Documentation reading layout — Phase 3 (2026-10-19)
 
 Documentation retains its public routes and static content source. Server-rendered article content composes with a small client reading pane for contained anchor scrolling, hash navigation and active-section tracking. Active-route frame attributes constrain only Documentation to the viewport, including mobile; cached hidden route markup must not restyle other destinations. The stationary header sits outside the article scroller, topics scroll independently, and React's retained route state preserves reading position on return while new topics begin at the top (or their explicit hash). Existing workspace navigation, auth, server services and providers are unchanged. Validation follows Fast UI Development Mode; stop for manual review.

@@ -3,8 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { unstable_rethrow } from "next/navigation";
 import { AppUserSyncError } from "@/lib/auth/ensure-app-user";
-import { saveOwnedProject } from "@/lib/projects/server";
-import type { SaveProjectResult } from "@/lib/projects/types";
+import { renameOwnedProject, saveOwnedProject } from "@/lib/projects/server";
+import type { RenameProjectResult, SaveProjectResult } from "@/lib/projects/types";
 
 export async function saveProjectAction(
   input: unknown,
@@ -31,4 +31,18 @@ export async function saveProjectAction(
     revalidatePath(`/projects/${result.project.id}`);
   }
   return result;
+}
+
+export async function renameProjectAction(input: unknown): Promise<RenameProjectResult> {
+  try {
+    const result = await renameOwnedProject(input);
+    if (result.ok) {
+      revalidatePath("/projects");
+      revalidatePath(`/projects/${result.project.id}`);
+    }
+    return result;
+  } catch (error: unknown) {
+    unstable_rethrow(error);
+    return { ok: false, code: "UNAVAILABLE", message: "Your project couldn’t be renamed. Please try again." };
+  }
 }

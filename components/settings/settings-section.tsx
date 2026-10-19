@@ -1,8 +1,8 @@
 import type { ReactNode } from "react";
 
 export function SettingsSection({ title, description, children }: { title: string; description: string; children: ReactNode }) {
-  return <section className="min-w-0 space-y-6">
-    <header className="space-y-2"><h2 className="text-2xl font-semibold tracking-tight">{title}</h2><p className="max-w-2xl text-body-sm leading-relaxed text-muted-foreground">{description}</p></header>
+  return <section className="workspace-settings-section min-w-0 space-y-6">
+    <header className="space-y-2"><h1>{title}</h1><p className="max-w-2xl text-body-sm leading-relaxed text-muted-foreground">{description}</p></header>
     {children}
   </section>;
 }

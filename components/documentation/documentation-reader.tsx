@@ -21,7 +21,7 @@ export function DocumentationReader({ topic, children }: { topic: DocumentationT
         if (heading.getBoundingClientRect().top <= top + 40) current = heading.id;
       }
       if (article.scrollHeight > article.clientHeight && article.scrollTop + article.clientHeight >= article.scrollHeight - 2) {
-        current = headings.at(-1)?.id;
+        current = headings.at(-1)?.id ?? current;
       }
       setActiveSection(current);
     };

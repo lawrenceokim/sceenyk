@@ -36,3 +36,7 @@ export const saveProjectSchema = z.strictObject({
   }),
 });
 export const projectPageSchema = z.number().int().min(1).max(100_000);
+export const renameProjectSchema = z.strictObject({
+  id: projectIdSchema,
+  title: saveProjectSchema.shape.title,
+});

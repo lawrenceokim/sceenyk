@@ -5,13 +5,16 @@ import { EmptyState } from "@/components/empty-state";
 import { ProjectCard } from "./project-card";
 import type { ProjectPage } from "@/lib/projects/types";
 import type { GenerationStatus } from "@/lib/generation/contract";
+import type { ProjectAsset } from "@/lib/media/types";
 
 export function ProjectsSection({
   data,
   jobStatuses,
+  previews = {},
 }: {
   data: ProjectPage;
   jobStatuses: Record<string, GenerationStatus | "unavailable" | null>;
+  previews?: Record<string, ProjectAsset | null>;
 }) {
   const lastPage = Math.max(1, Math.ceil(data.total / data.pageSize));
   return (
@@ -21,7 +24,7 @@ export function ProjectsSection({
       aria-labelledby="projects-heading"
       className="scroll-mt-8 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
     >
-      <div className="workspace-projects-header">
+      <div className="sr-only">
         <h2
           id="projects-heading"
           className="text-lg font-semibold tracking-tight"
@@ -66,7 +69,7 @@ export function ProjectsSection({
       ) : (
         <>
           <ul
-            className="workspace-gallery py-3"
+            className="workspace-project-grid"
             aria-label="Saved projects"
           >
             {data.projects.map((project) => (
@@ -74,6 +77,7 @@ export function ProjectsSection({
                 <ProjectCard
                   project={project}
                   jobStatus={jobStatuses[project.id]}
+                  preview={previews[project.id]}
                 />
               </li>
             ))}

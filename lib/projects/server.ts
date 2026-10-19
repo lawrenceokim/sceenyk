@@ -7,12 +7,14 @@ import {
   projectIdSchema,
   projectPageSchema,
   saveProjectSchema,
+  renameProjectSchema,
 } from "./validation";
 import type {
   ProjectPage,
   ProjectSummary,
   SavedProject,
   SaveProjectResult,
+  RenameProjectResult,
 } from "./types";
 
 const briefColumns =
@@ -147,6 +149,22 @@ export async function getOwnedProject(
     throw new ProjectAccessError();
   }
   return data ? toBrief(data) : null;
+}
+
+export async function renameOwnedProject(input: unknown): Promise<RenameProjectResult> {
+  const user = await ensureAppUser();
+  const parsed = renameProjectSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, code: "INVALID_INPUT", message: "Enter a project name between 1 and 120 characters." };
+  // Update only the title: renaming must not overwrite a concurrently edited brief.
+  const { data, error } = await createDatabaseClient().from("projects")
+    .update({ title: parsed.data.title })
+    .eq("id", parsed.data.id).eq("owner_user_id", user.id)
+    .select("id,title,updated_at").maybeSingle();
+  if (error) {
+    logDatabaseError("rename", error);
+    return { ok: false, code: "UNAVAILABLE", message: "Your project couldn’t be renamed. Please try again." };
+  }
+  return data ? { ok: true, project: { id: data.id, title: data.title, updatedAt: data.updated_at } } : notFoundResult;
 }
 
 export async function listOwnedProjects(

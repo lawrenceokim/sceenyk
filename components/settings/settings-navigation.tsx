@@ -8,7 +8,6 @@ import { cn } from "@/lib/utils";
 export const settingsSections = [
   ["account", "Account"],
   ["creator-profile", "Creator Profile"],
-  ["templates", "Manage Templates"],
   ["credits", "Credits & Billing"],
   ["earnings", "Earnings & Payouts"],
   ["creation", "Creation Preferences"],
@@ -16,6 +15,7 @@ export const settingsSections = [
   ["appearance", "Appearance"],
   ["privacy", "Privacy & Security"],
   ["data", "Data & Account"],
+  ["templates", "Manage Templates"],
 ] as const;
 const subscribeReadiness = () => () => {};
 const clientReady = () => true;
@@ -27,12 +27,13 @@ export function SettingsNavigation() {
   const router = useRouter();
   // The section picker needs the router handler before it can navigate.
   const ready = useSyncExternalStore(subscribeReadiness, clientReady, serverReady);
-  return <><div className="space-y-2 lg:hidden"><label htmlFor="settings-section" className="text-body-sm font-medium">Settings section</label><select id="settings-section" disabled={!ready} value={`/settings/${selected}`} onChange={event => router.push(event.target.value)} className="min-h-11 w-full rounded-lg border border-input bg-field px-3 text-body-sm">{settingsSections.map(([section, label]) => <option key={section} value={`/settings/${section}`}>{label}</option>)}</select></div><nav aria-label="Settings sections" className="hidden gap-1 lg:sticky lg:top-8 lg:grid lg:grid-cols-1">
+  return <aside className="workspace-settings-navigation"><div className="workspace-settings-picker"><label htmlFor="settings-section" className="sr-only">Settings section</label><select id="settings-section" disabled={!ready} value={`/settings/${selected}`} onChange={event => router.push(event.target.value, { scroll: false })} className="sceenyk-field">{settingsSections.map(([section, label]) => <option key={section} value={`/settings/${section}`}>{label}</option>)}</select></div><nav aria-label="Settings sections" className="workspace-settings-nav-list" tabIndex={0}>
+    <p>Settings</p>
     {settingsSections.map(([section, label]) => {
       const href = `/settings/${section}`;
       const active = section === selected;
-      return <Link key={section} href={href} aria-current={active ? "page" : undefined}
-        className={cn("flex min-h-11 items-center rounded-lg px-3 py-2 text-body-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring motion-reduce:transition-none", active ? "bg-accent text-accent-foreground" : "text-muted-foreground")}>{label}</Link>;
+      return <Link key={section} href={href} scroll={false} aria-current={active ? "page" : undefined}
+        className={cn("transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring motion-reduce:transition-none", active ? "bg-accent text-accent-foreground" : "text-foreground")}>{label}</Link>;
     })}
-  </nav></>;
+  </nav></aside>;
 }

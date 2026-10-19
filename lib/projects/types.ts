@@ -15,6 +15,9 @@ export type SavedProject = ProjectDraft & {
   updatedAt: string;
 };
 export type ProjectSummary = Omit<SavedProject, "prompt">;
+export type RenameProjectResult =
+  | { ok: true; project: Pick<SavedProject, "id" | "title" | "updatedAt"> }
+  | { ok: false; code: "INVALID_INPUT" | "NOT_FOUND" | "UNAVAILABLE"; message: string };
 export type ProjectPage = {
   projects: ProjectSummary[];
   total: number;
