@@ -1,9 +1,12 @@
 /* Gallery geometry follows the supplied Pryzm desktop/mobile references.
    Existing Sceenyk tokens and configuration-only previews remain authoritative. */
-.workspace-page[data-workspace-page="content"]:has(> .marketplace-index),
-.workspace-page[data-workspace-page="content"]:has(> .workspace-templates) {
+.workspace-content .workspace-page[data-workspace-page="content"][data-workspace-view="marketplace"] {
   padding: 54px 24px 32px;
 }
+/* Use the active route: hidden cached detail markup must not remove padding
+   from the Templates gallery after navigating back. */
+.workspace-content .workspace-page[data-workspace-page="content"][data-workspace-view="templates"] { padding: 60px 24px 32px; }
+.workspace-content .workspace-page[data-workspace-page="content"][data-workspace-view="templates"] > .workspace-templates { margin-top: 0; }
 .marketplace-heading h1 { margin: 0; font-weight: 700; }
 .marketplace-heading > p { max-width: 610px; margin-top: 12px; color: var(--muted-foreground); font-size: 20px; line-height: 1.4; letter-spacing: -.025em; }
 .workspace-marketplace.marketplace-index { gap: 24px; }
@@ -41,26 +44,34 @@
 .template-saved-card a:focus-visible, .marketplace-configuration summary:focus-visible,
 .template-library-footer a:focus-visible { outline: 2px solid var(--ring); outline-offset: 3px; }
 
-/* The saved listing color is shared by every preview and the detail fade.
-   No private media is requested for these configuration-only covers. */
-.marketplace-listing-card .workspace-template-cover,
-.marketplace-detail-preview .workspace-template-cover,
-.template-saved-card .workspace-template-cover {
+/* The saved color is the artwork's actual base, rather than a weak tint on
+   the gray field. ID-derived geometry keeps repeated hues visually distinct. */
+.workspace-template-cover.template-placeholder {
   isolation: isolate;
-  background: linear-gradient(140deg, color-mix(in srgb, var(--template-color) 65%, var(--card)), color-mix(in srgb, var(--template-color) 38%, var(--field)));
+  display: block;
+  padding: 0;
+  background: var(--template-color);
+  --preview-light: color-mix(in srgb, var(--template-color) 55%, #e0d9f0);
+  --preview-deep: color-mix(in srgb, var(--template-color) 62%, #101829);
 }
-.marketplace-listing-card .workspace-template-cover::before,
-.marketplace-detail-preview .workspace-template-cover::before,
-.template-saved-card .workspace-template-cover::before {
-  position: absolute; z-index: -1; inset: 0; content: "";
-  background: repeating-linear-gradient(90deg, transparent 0 17px, color-mix(in srgb, var(--template-color) 6%, transparent) 18px, transparent 19px 36px);
+.template-placeholder::before, .template-placeholder::after { position: absolute; z-index: -1; inset: 0; content: ""; pointer-events: none; }
+.template-placeholder::before {
+  background: radial-gradient(ellipse at var(--preview-x) var(--preview-y), var(--preview-light), transparent 64%), linear-gradient(var(--preview-angle), var(--preview-deep), transparent 70%);
 }
+.template-placeholder[data-pattern="fold"]::after { background: repeating-linear-gradient(var(--preview-angle), #ffffff15 0, transparent 3%, #10182925 6%, transparent 10%); }
+.template-placeholder[data-pattern="orbit"]::after { background: radial-gradient(ellipse at var(--preview-y) var(--preview-x), transparent 24%, #ffffff20 25%, transparent 28%, #10182935 46%, transparent 50%, #ffffff18 66%, transparent 70%); }
+.template-placeholder[data-pattern="ripple"]::after { background: repeating-radial-gradient(ellipse at var(--preview-x) 120%, transparent 0 8%, #ffffff18 8.5%, transparent 9%, #1018291a 10%, transparent 14%); }
+.template-placeholder[data-pattern="wash"]::after { background: radial-gradient(ellipse at 90% 90%, var(--preview-deep), transparent 60%), radial-gradient(ellipse at 5% 5%, #ffffff16, transparent 50%); }
+.template-placeholder .template-placeholder-label { position: absolute; left: 10px; bottom: 10px; padding: 3px 6px; border-radius: 5px; background: #10152166; color: #fff; font-size: 10px; font-weight: 500; line-height: 14px; }
+.template-placeholder .template-placeholder-meta { position: absolute; left: 16px; bottom: 16px; display: none; color: #fff; font-size: 12px; line-height: 18px; }
+.template-placeholder[data-large="true"] .template-placeholder-label { left: 16px; bottom: 42px; }
+.template-placeholder[data-large="true"] .template-placeholder-meta { display: block; }
 
-.workspace-page[data-workspace-page="content"]:has(> .marketplace-detail) { padding: 0; }
-.workspace-page[data-workspace-page="content"]:has(> .marketplace-detail) > * + .marketplace-detail { margin-top: 0; }
+.workspace-content .workspace-page[data-workspace-page="content"][data-workspace-view="template-detail"] { padding: 0; }
+.workspace-content .workspace-page[data-workspace-page="content"][data-workspace-view="template-detail"] > .marketplace-detail { margin-top: 0; }
 .marketplace-detail { position: relative; isolation: isolate; min-width: 0; padding: 54px 24px 32px; border-radius: var(--ui-radius-frame); container-type: inline-size; }
-.marketplace-detail::before { position: absolute; z-index: -1; top: 0; right: 0; left: 0; height: 500px; max-height: 100%; border-radius: var(--ui-radius-frame) var(--ui-radius-frame) 0 0; background: linear-gradient(180deg, color-mix(in srgb, var(--template-color, var(--brand-purple)) 20%, var(--card)) 0%, color-mix(in srgb, var(--template-color, var(--brand-purple)) 9%, var(--card)) 42%, var(--card) 100%); content: ""; pointer-events: none; }
-.dark .marketplace-detail::before { background: linear-gradient(180deg, color-mix(in srgb, var(--template-color, var(--brand-purple)) 32%, var(--card)) 0%, color-mix(in srgb, var(--template-color, var(--brand-purple)) 13%, var(--card)) 42%, var(--card) 100%); }
+.marketplace-detail::before { position: absolute; z-index: -1; top: 0; right: 0; left: 0; height: 620px; max-height: 100%; border-radius: var(--ui-radius-frame) var(--ui-radius-frame) 0 0; background: linear-gradient(180deg, color-mix(in srgb, var(--template-color, var(--muted)) 48%, var(--card)) 0%, color-mix(in srgb, var(--template-color, var(--muted)) 22%, var(--card)) 40%, color-mix(in srgb, var(--template-color, var(--muted)) 5%, var(--card)) 72%, var(--card) 100%); content: ""; pointer-events: none; }
+.dark .marketplace-detail::before { background: linear-gradient(180deg, color-mix(in srgb, var(--template-color, var(--muted)) 65%, var(--card)) 0%, color-mix(in srgb, var(--template-color, var(--muted)) 30%, var(--card)) 40%, color-mix(in srgb, var(--template-color, var(--muted)) 7%, var(--card)) 72%, var(--card) 100%); }
 .marketplace-back { display: inline-flex; align-items: center; gap: 5px; min-height: 24px; margin-bottom: 24px; padding: 3px 8px; border-radius: 7px; background: color-mix(in srgb, var(--foreground) 5%, transparent); font-size: 12px; font-weight: 600; line-height: 18px; }
 .marketplace-back:hover { background: color-mix(in srgb, var(--foreground) 9%, transparent); }
 .marketplace-detail-main { display: grid; min-width: 0; align-items: start; gap: 36px; }
@@ -102,9 +113,8 @@
 .template-saved-card { position: relative; min-width: 0; overflow: hidden; border-radius: 12px; background: var(--field); }
 .template-saved-open { position: relative; display: block; aspect-ratio: 4 / 3; }
 .template-saved-card .template-saved-open:focus-visible { outline-offset: -3px; }
-.template-saved-card .workspace-template-cover { width: 100%; height: 100%; padding-bottom: 52px; }
-.template-saved-card .workspace-template-cover > span svg { width: 24px; height: 24px; }
-.template-saved-card .workspace-template-cover p { font-size: 10px; line-height: 14px; }
+.template-saved-card .workspace-template-cover { width: 100%; height: 100%; }
+.template-saved-card .template-placeholder .template-placeholder-label { bottom: 64px; }
 .template-saved-caption { position: absolute; right: 0; bottom: 0; left: 0; display: flex; min-height: 52px; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px; background: linear-gradient(0deg, #0009, #0005); color: #fff; }
 .template-saved-caption h2 { display: -webkit-box; min-width: 0; overflow: hidden; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow-wrap: anywhere; font-size: 14px; font-weight: 650; line-height: 20px; letter-spacing: -.02em; }
 .template-saved-caption time { flex-shrink: 0; font-size: 12px; font-weight: 500; line-height: 18px; color: #ffffffe0; }
@@ -128,15 +138,13 @@
   .template-saved-gallery { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 599px) {
-  .workspace-page[data-workspace-page="content"]:has(> .marketplace-index) { padding: 40px 16px 24px; }
-  .workspace-page[data-workspace-page="content"]:has(> .workspace-templates) { padding: 32px 16px 24px; }
+  .workspace-content .workspace-page[data-workspace-page="content"][data-workspace-view="marketplace"] { padding: 40px 16px 24px; }
+  .workspace-content .workspace-page[data-workspace-page="content"][data-workspace-view="templates"] { padding: 32px 16px 24px; }
   .marketplace-heading > p { font-size: 18px; line-height: 27px; }
   [data-workspace-shell] .workspace-gallery.marketplace-gallery { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
   .workspace-gallery-card.marketplace-listing-card { padding: 8px; border-radius: 18px; }
   .marketplace-listing-card .workspace-gallery-copy h2 { font-size: 13px; }
   .marketplace-card-link .workspace-template-cover { aspect-ratio: 4 / 3; padding: 8px; gap: 4px; }
-  .marketplace-card-link .workspace-template-cover p { font-size: 10px; line-height: 14px; overflow-wrap: anywhere; }
-  .marketplace-card-link .workspace-template-cover svg { width: 24px; height: 24px; }
   .marketplace-tags { gap: 4px; }
   .marketplace-tags > span { padding-inline: 5px; font-size: 10px; line-height: 16px; }
   .marketplace-detail { padding: 40px 16px 24px; }
@@ -149,7 +157,6 @@
   .template-saved-gallery { grid-template-columns: minmax(0, 1fr); }
   .template-saved-actions a { width: 32px; height: 32px; }
   .template-saved-actions svg { width: 14px; height: 14px; }
-  .template-saved-card .workspace-template-cover p { font-size: 12px; line-height: 18px; }
   .template-saved-open { aspect-ratio: 4 / 3; }
 }
 @media (max-width: 379px) {

@@ -14,7 +14,7 @@ export function TemplateDetail({ listing, owned = false, children }: { listing: 
   return <div className="marketplace-detail" style={templateAppearance(listing)}>
     <Link className="marketplace-back" href={owned ? "/templates" : "/marketplace"}><ArrowLeft className="size-3" aria-hidden="true" />{owned ? "Templates" : "Marketplace"}</Link>
     <div className="marketplace-detail-main">
-      <div className="marketplace-detail-preview"><TemplateCover template={listing.template} fallbackColor={listing.fallbackColor} large /></div>
+      <div className="marketplace-detail-preview"><TemplateCover template={listing.template} fallbackColor={listing.fallbackColor} previewId={listing.id} large /></div>
       <div className="marketplace-detail-info">
         <h1>{listing.title}</h1>
         <p className="marketplace-detail-description">{listing.description}</p>

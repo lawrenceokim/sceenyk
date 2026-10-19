@@ -7,5 +7,7 @@ import { cn } from "@/lib/utils";
 export function WorkspacePageFrame({ children, className }: { children: ReactNode; className?: string }) {
   const pathname = usePathname();
   const studio = pathname === "/studio" || pathname.startsWith("/projects/");
-  return <div data-workspace-page={studio ? "studio" : "content"} className={cn("workspace-page min-w-0", className)}>{children}</div>;
+  const detail = pathname.startsWith("/templates/") || (/^\/marketplace\/[^/]+$/.test(pathname) && pathname !== "/marketplace/purchases");
+  const view = pathname === "/templates" ? "templates" : pathname === "/marketplace" ? "marketplace" : detail ? "template-detail" : undefined;
+  return <div data-workspace-page={studio ? "studio" : "content"} data-workspace-view={view} className={cn("workspace-page min-w-0", className)}>{children}</div>;
 }

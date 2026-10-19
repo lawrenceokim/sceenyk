@@ -3,20 +3,17 @@ import { ArrowUpRight, Layers3, Store } from "lucide-react";
 import { creationCategories } from "@/components/creation/creation-options";
 import type { Listing, TemplateSnapshot } from "@/lib/marketplace/contract";
 import { CreatorAvatar } from "./creator-avatar";
-import { templateAppearance } from "./template-appearance";
+import { templateAppearance, templatePattern } from "./template-appearance";
 
 export function ListingCreator({ listing }: { listing: Listing }) {
   const identity = <><CreatorAvatar name={listing.creatorName} url={listing.creatorAvatar} /><span className="min-w-0 break-words">By {listing.creatorName}</span></>;
   return listing.creatorSlug ? <Link href={`/marketplace/creators/${listing.creatorSlug}`} className="nav-link flex min-h-11 items-center gap-3 text-body-sm text-muted-foreground" aria-label={`View ${listing.creatorName}’s storefront`}>{identity}</Link> : <p className="flex items-center gap-3 text-body-sm text-muted-foreground">{identity}</p>;
 }
 
-export function TemplateCover({ template, fallbackColor, large = false }: { template: TemplateSnapshot; fallbackColor?: string | null; large?: boolean }) {
-  const category = creationCategories.find(item => item.id === template.category)!;
-  const Icon = category.icon;
-  return <div className="workspace-template-cover" data-large={large} style={templateAppearance({ fallbackColor })} aria-label="Template configuration preview">
-    <span><Icon className={large ? "size-14" : "size-7"} aria-hidden="true" /></span>
-    <p className="font-medium">{template.settings.visualStyle} · {template.settings.aspectRatio}</p>
-    <p className="text-muted-foreground">Configuration preview · {template.settings.duration}s</p>
+export function TemplateCover({ template, fallbackColor, previewId, large = false }: { template: TemplateSnapshot; fallbackColor?: string | null; previewId?: string; large?: boolean }) {
+  return <div className="workspace-template-cover template-placeholder" data-large={large} data-pattern={templatePattern(previewId ?? fallbackColor ?? "template")} style={templateAppearance({ id: previewId, fallbackColor })} aria-label="Abstract template placeholder; not generated media">
+    <span className="template-placeholder-label">Template preview</span>
+    <span className="template-placeholder-meta">{template.settings.visualStyle} · {template.settings.aspectRatio} · {template.settings.duration}s</span>
   </div>;
 }
 export function GenerationEstimate({ listing }: { listing: Pick<Listing, "estimate"> }) {
@@ -28,7 +25,7 @@ export function ListingCard({ listing }: { listing: Listing }) {
   const category = creationCategories.find(item => item.id === listing.category)!;
   return <article className="workspace-gallery-card marketplace-listing-card" style={templateAppearance(listing)}>
     <Link href={`/marketplace/${listing.id}`} className="marketplace-card-link" aria-label={`Explore ${listing.title}`}>
-      <div className="marketplace-card-preview"><TemplateCover template={listing.template} fallbackColor={listing.fallbackColor} /><span className="marketplace-card-arrow" aria-hidden="true"><ArrowUpRight /></span></div>
+      <div className="marketplace-card-preview"><TemplateCover template={listing.template} fallbackColor={listing.fallbackColor} previewId={listing.id} /><span className="marketplace-card-arrow" aria-hidden="true"><ArrowUpRight /></span></div>
       <div className="workspace-gallery-copy">
         <h2 className="line-clamp-1 break-words">{listing.title}</h2>
         <p className="line-clamp-2 break-words text-body-sm text-muted-foreground">{listing.description}</p>

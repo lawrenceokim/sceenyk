@@ -18,7 +18,7 @@ export function TemplateLibrary({ result }: { result: ListingPage<OwnedListing> 
             <li key={listing.id} className="min-w-0">
               <article className="template-saved-card" style={templateAppearance(listing)}>
                 <Link href={`/templates/${listing.id}`} aria-label={`Open template ${listing.title}`} className="template-saved-open">
-                  <TemplateCover template={listing.template} fallbackColor={listing.fallbackColor} />
+                  <TemplateCover template={listing.template} fallbackColor={listing.fallbackColor} previewId={listing.id} />
                   <div className="template-saved-caption">
                     <h2>{listing.title}</h2>
                     <time dateTime={listing.publishedAt ?? listing.createdAt} title={listing.publishedAt ? "Published date" : "Created date"}>{new Date(listing.publishedAt ?? listing.createdAt).toLocaleDateString("en", { month: "short", day: "numeric", timeZone: "UTC" })}</time>

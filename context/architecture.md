@@ -1,5 +1,11 @@
 # Architecture Context
 
+## Preview palette repair and shared abstract covers (2026-10-19)
+
+Migration 029 is user-confirmed applied and must not be rerun. A read-only hosted audit confirmed 23 saved colors and matching browse/detail/owned JSON; both published items had the same legacy gray. Migration 030 is a necessary presentation-only follow-up: expand the existing fallback_color palette to 32 muted colors, allocate unused/least-used colors with recent hue-family avoidance, and repair only missing/invalid/legacy duplicate assignments while preserving one valid legacy assignment per color (published first). Valid new assignments remain unchanged on reruns, including after palette exhaustion. The repair keeps every other listing field, including updated_at, unchanged; the normal immutable template/ownership guard remains enabled and the existing color guard is restored before commit. No adoption/financial snapshot or new storage field is introduced.
+
+Shared previews use saved fallbackColor as their actual background; listing IDs deterministically vary abstract geometry only. No rendering-time random colors or generated-media claims. Templates frame spacing is owned by a route attribute rather than dependent on direct child markup across Suspense. Migration application/validation status belongs to the tracker; hosted writes, deployment and providers remain outside this task's execution.
+
 ## Clean routes and template presentation metadata (2026-10-18)
 
 Current authorization migrates private index pages into `app/(account)` with the existing authenticated workspace layout; public Studio, Marketplace and Documentation stay in `app/(workspace)`. Canonical paths are `/projects`, `/templates`, `/templates/[listingId]` and `/settings/*`. Template management reuses the current owner-scoped services at `/settings/templates`, `/settings/templates/new` and `/settings/templates/[listingId]`; purchase history is `/marketplace/purchases`. Next configuration redirects legacy `/dashboard/*` bookmarks, forwarding queries. Existing PayPal return/cancel URLs and API callbacks remain unchanged and resolve through these redirects. Preserve Clerk/account fences and Settings response-header transforms for all HTML/RSC/prefetch/segment forms.

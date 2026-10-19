@@ -1,5 +1,13 @@
 # UI Context
 
+## Saved-color artwork and Templates spacing (2026-10-19)
+
+This refinement replaces the earlier muted field/configuration-box appearance. Shared covers use persisted fallbackColor directly, with four subtle abstract gradient/pattern variants and deterministic geometry derived only from listing ID. The same template has identical base color and geometry in Marketplace, More looks, Templates and either detail view. Small Template preview labels distinguish placeholder artwork from generated media; real public media fields remain unavailable. The upper detail fade uses the selected saved color at 48% light/65% dark near the top and returns fully to the normal theme surface without blur or a hard edge.
+
+Templates frame padding is active-route-owned: 60px top and 24px sides on desktop, 32px top and 16px sides on mobile. Heading/subtitle gap is 12px; gallery separation is 40px desktop/24px mobile; saved cards remain 250px at desktop, 4:3, 16px apart and single-column on mobile. Avoid `:has()` on cached detail markup when selecting frame padding; use WorkspacePageFrame's data-workspace-view.
+
+Migration 029 is already applied. Hosted read-only inspection confirmed both published listings share a valid saved gray; query delivery works. Migration 030 expands the existing palette/allocation and safely repairs legacy duplicates without replacing unique assignments, changing timestamps or introducing another color store. It remains a manual setup step. No private media, business rules, browser suites, build, deployment or hosted workflows are part of this refinement.
+
 ## Marketplace and Templates refinements — clean routes (2026-10-19)
 
 Current implementation supersedes the Phase 2 style-derived cover color and visible discovery pagination below. Navigation and account pages use `/projects`, `/templates`, `/templates/[listingId]` and `/settings/*`; no `app/dashboard` route folder remains. Manage Templates, existing publish controls and owner-only editing live at `/settings/templates`, `/settings/templates/new` and `/settings/templates/[listingId]`. Template cards open their own private detail, with Back to Templates, Update Template and a Marketplace link only while published. The same detail component renders public Marketplace and private template information, retaining account fences and the existing adoption controls.
