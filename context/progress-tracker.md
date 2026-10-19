@@ -1,5 +1,11 @@
 # Progress Tracker
 
+## Mobile Marketplace and Templates scrolling/cards (2026-10-19)
+
+**Implemented; manual mobile review pending.** Marketplace/Templates and the shared listing-detail view now reuse the fixed workspace frame pattern below 1024px: viewport height less the mobile header/gutters, outer overflow hidden and an explicit height/min-height:0/overflow-y:auto inner page. Previously these pages only had desktop height constraints, so mobile content expanded the frame and scrolled the document. Existing scrollbar hiding and overscroll containment preserve native scrolling. Infinite discovery automatically finds the new inner page through the existing nearest-scroll-root helper; no observer/data changes.
+
+Marketplace discovery, related listing cards and Templates use one full-width column through 767px, replacing the two-column mobile rules. Runtime changes are limited to marketplace.css; UI/architecture notes are synchronized. CSS parsing and whitespace checks pass; mobile scrolling/layout remains for manual inspection. Desktop presentation, routes, account/financial/generation behavior and saved colors are unchanged. No browser/screenshot suites, production build, deployment or hosted workflows. Next.js feedback review found no qualifying framework issue. Stop for manual inspection.
+
 ## Enabled project Delete confirmation (2026-10-19)
 
 **Implemented locally; migration 031 application and manual UI review pending.** Project cards now open a compact Base UI confirmation naming the selected project, with matching Cancel/Delete actions, safe initial focus, pending/duplicate-submit protection and inline errors. An ID-only Server Action derives identity on the server, invokes the owner-checked deletion RPC and refreshes Projects/editor caches. Existing adjacent Rename/Delete placement and tinted artwork remain unchanged.

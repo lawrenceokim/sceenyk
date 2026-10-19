@@ -1,5 +1,9 @@
 # Architecture Context
 
+## Mobile gallery scroll containment (2026-10-19)
+
+Marketplace, Templates and their shared listing-detail view reuse Documentation's active-route viewport constraint below the desktop sidebar breakpoint. The outer shell/frame is height-bound and does not scroll; WorkspacePageFrame is the inner native scroller. Existing listingScrollRoot walks overflow styles and therefore automatically selects this page on mobile for infinite discovery (the desktop workspace scroller remains unchanged). No route, observer, data, authentication or pagination contract changes.
+
 ## Owned project deletion (2026-10-19)
 
 The user now authorizes functional deletion, superseding the unavailable-icon boundary. Deletion is an owner-checked, idempotent database operation that sets projects.status to deleted and marks projects.deleted_at; owned lists/editor/media reads require the existing draft status. This keeps ordinary reads compatible before the migration is applied while deletion itself fails closed. Linked uploads, generated records and immutable Marketplace/financial history remain retained. Queued/processing generation blocks deletion without changing reservations or jobs. A project-row lock serializes deletion with insert guards discovered from actual project foreign keys; new jobs, quotes, sources or source listings cannot attach after deletion. Existing foreign keys, RLS and browser-role restrictions remain. Only a service-only RPC can set the deletion marker, and deleted project updates are rejected.

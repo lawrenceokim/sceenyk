@@ -1,5 +1,9 @@
 # UI Context
 
+## Fixed mobile Marketplace and Templates frames (2026-10-19)
+
+Below the 1024px desktop sidebar breakpoint, Marketplace, Templates and their shared listing-detail view keep the outer workspace frame stationary under the mobile header. The inner page owns native vertical scrolling, overscroll containment and the existing hidden scrollbars. Marketplace discovery, related listings and Templates cards use one column through 767px; larger gallery layouts remain unchanged. This supersedes the earlier two-column mobile Marketplace and viewport-scrolling guidance.
+
 ## Enabled project Delete confirmation (2026-10-19)
 
 The latest request replaces the disabled Delete indicator with an enabled trash trigger and compact shared Base UI dialog. Name the selected project in the confirmation, explain removal from saved projects, and present matching Cancel/Delete actions with Delete styled destructive. Keep focus/Escape/dismissal behavior, block repeat submissions and dismissal during saving, show errors inline and close on success. Deletion remains owner-authoritative and requires the new migration; active generations display a safe wait message. No other card styling changes.
