@@ -8,6 +8,7 @@ import { listOwnedMarketplaceListings } from "@/lib/marketplace/server";
 import { MarketplaceFailure, MarketplaceLoading } from "@/components/marketplace/listing-card";
 import { OwnedListings } from "@/components/marketplace/owned-listings";
 import { Button } from "@/components/ui/button";
+import "@/components/marketplace/manage-templates.css";
 
 
 export const metadata: Metadata = { title: "My Marketplace Listings — Sceenyk", robots: { index: false, follow: false } };
@@ -21,5 +22,5 @@ async function Listings({ searchParams }: { searchParams: Promise<Record<string,
   return <OwnedListings clerkUserId={user.clerk_user_id} result={result} />;
 }
 export default function MyListingsPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
-  return <SettingsSection title="Manage Templates" description="Manage your drafts, published templates and unpublished listings."><Button nativeButton={false} render={<Link href="/settings/templates/new" />}>Publish a template</Button><nav className="flex flex-wrap gap-4 text-body-sm"><Link className="nav-link text-link" href="/settings/creator-profile">Public creator profile</Link><Link className="nav-link text-link" href="/settings/earnings">Creator earnings</Link><Link className="nav-link text-link" href="/marketplace/purchases">My Marketplace purchases</Link></nav><Suspense fallback={<MarketplaceLoading />}><Listings searchParams={searchParams} /></Suspense></SettingsSection>;
+  return <div className="manage-templates-page"><SettingsSection title="Manage Templates" description="Manage your drafts, published templates and unpublished listings."><div><Button nativeButton={false} render={<Link href="/settings/templates/new" />}>Publish a template</Button></div><nav className="manage-templates-links flex flex-wrap gap-4 text-body-sm"><Link className="nav-link text-link" href="/settings/creator-profile">Public creator profile</Link><Link className="nav-link text-link" href="/settings/earnings">Creator earnings</Link><Link className="nav-link text-link" href="/marketplace/purchases">My Marketplace purchases</Link></nav><Suspense fallback={<MarketplaceLoading />}><Listings searchParams={searchParams} /></Suspense></SettingsSection></div>;
 }

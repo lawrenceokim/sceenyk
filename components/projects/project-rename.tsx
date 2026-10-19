@@ -34,8 +34,8 @@ export function ProjectRename({ projectId, title }: { projectId: string; title: 
         <input id={`rename-${projectId}`} className="sceenyk-field" value={value} onChange={event => setValue(event.target.value)} maxLength={projectTitleLimit} required disabled={busy} autoComplete="off" onFocus={event => event.target.select()} aria-invalid={!!error} aria-describedby={error ? `rename-error-${projectId}` : undefined} />
         {error && <p id={`rename-error-${projectId}`} role="alert" className="text-destructive">{error}</p>}
         <div className="workspace-project-rename-actions">
-          <DialogClose render={<Button variant="outline" type="button" disabled={busy} />}>Cancel</DialogClose>
-          <Button type="submit" disabled={busy || !value.trim() || value.trim() === title}>{busy ? "Renaming…" : "Rename"}</Button>
+          <DialogClose render={<Button size="xs" className="workspace-project-rename-button" variant="outline" type="button" disabled={busy} />}>Cancel</DialogClose>
+          <Button size="xs" className="workspace-project-rename-button" type="submit" disabled={busy || !value.trim() || value.trim() === title}>{busy ? "Renaming…" : "Rename"}</Button>
         </div>
       </form>
     </DialogContent>

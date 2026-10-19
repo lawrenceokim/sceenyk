@@ -1,5 +1,21 @@
 # UI Context
 
+## Settings sidebar active state (2026-10-19)
+
+The main workspace sidebar highlights Settings for `/settings` and every `/settings/*` section, including Credits & Billing. Credits remains a working shortcut to `/settings/credits` and does not claim a separate active state. The section navigation inside Settings still marks Credits & Billing as selected. This supersedes the earlier separate Credits highlight rule; shared desktop/collapsed/mobile navigation uses the same behavior.
+
+## Projects preview and modal refinement (2026-10-19)
+
+Project cards keep real private source previews first. Missing/unavailable media uses the shared abstract preview geometry and existing 32-color muted palette, selected deterministically from project ID without storing or changing a database color. Color and pattern use different hash bits to diversify neighboring cards while preserving the same project's appearance across refresh/order changes. The entire card receives a subdued matching tint in both themes. Keep My Projects sizing, reduce desktop subtitle to 15px/23px, remove the bottom Templates/Marketplace message and size both rename dialog actions through one explicit class/variant rather than data-slot selectors.
+
+The user selected a disabled trash icon beside Rename, with a tooltip explaining that project deletion is unavailable. It is not a working delete action; the existing restricted deletion boundary stays intact.
+
+Follow-up: action wrappers occupy two fixed adjacent columns (30px desktop/44px touch), and the matching card tint remains visible through the information area before fading to the normal surface. The former fade reached neutral too soon underneath the preview.
+
+## Manage Templates compact cards (2026-10-19)
+
+Management cards reuse Marketplace's shared preview, saved fallbackColor appearance and hover behavior. Use compact 4:3 previews with a small top-left status badge, left-aligned title/two-line muted description, three short Adoptions/Sales/Earnings rows and compact purple Manage listing plus a public-link arrow. The public arrow is enabled only for published listings and has a hover/focus tooltip. Card tint softly fades from the same saved hue into the normal surface without changing stored colors. Navigation links gain hover/focus underlines. A responsive gallery and small infinite-loading status replace management pagination, observing the existing Settings center scroller; fixed heading/navigation and other Settings sections stay intact. Manual review remains pending.
+
 ## Settings layout correction — Documentation pattern (2026-10-19)
 
 Supersedes the Phase 4 Settings composition: exactly two columns, using existing Documentation layout/navigation classes. Reuse its 198px navigation, 40px gap, 32px desktop top/22px side padding, 28px navigation rows and fixed header/article grid. Restore Settings and “Make Sceenyk feel like a creative home.” above the independent section scroller. Remove the contents rail and centered narrow layout; readable section content is left-aligned with a 720px maximum. Desktop always shows the navigation; the Documentation content-width breakpoint adapts tablets/mobile to the existing native picker. Keep compact Pryzm-style controls and existing tokens/functionality. Manual review remains pending.

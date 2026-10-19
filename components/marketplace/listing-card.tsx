@@ -3,7 +3,8 @@ import { ArrowUpRight, Layers3, Store } from "lucide-react";
 import { creationCategories } from "@/components/creation/creation-options";
 import type { Listing, TemplateSnapshot } from "@/lib/marketplace/contract";
 import { CreatorAvatar } from "./creator-avatar";
-import { templateAppearance, templatePattern } from "./template-appearance";
+import { templateAppearance } from "./template-appearance";
+import { AbstractPreview } from "./abstract-preview";
 
 export function ListingCreator({ listing }: { listing: Listing }) {
   const identity = <><CreatorAvatar name={listing.creatorName} url={listing.creatorAvatar} /><span className="min-w-0 break-words">By {listing.creatorName}</span></>;
@@ -11,10 +12,7 @@ export function ListingCreator({ listing }: { listing: Listing }) {
 }
 
 export function TemplateCover({ template, fallbackColor, previewId, large = false }: { template: TemplateSnapshot; fallbackColor?: string | null; previewId?: string; large?: boolean }) {
-  return <div className="workspace-template-cover template-placeholder" data-large={large} data-pattern={templatePattern(previewId ?? fallbackColor ?? "template")} style={templateAppearance({ id: previewId, fallbackColor })} aria-label="Abstract template placeholder; not generated media">
-    <span className="template-placeholder-label">Template preview</span>
-    <span className="template-placeholder-meta">{template.settings.visualStyle} · {template.settings.aspectRatio} · {template.settings.duration}s</span>
-  </div>;
+  return <AbstractPreview previewId={previewId} fallbackColor={fallbackColor} large={large} metadata={`${template.settings.visualStyle} · ${template.settings.aspectRatio} · ${template.settings.duration}s`} />;
 }
 export function GenerationEstimate({ listing }: { listing: Pick<Listing, "estimate"> }) {
   return <p className="text-body-sm text-muted-foreground">{listing.estimate

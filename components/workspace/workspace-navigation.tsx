@@ -42,9 +42,11 @@ export function WorkspaceNavigation({ collapsed = false, onNavigate }: {
       <p className={cn("workspace-nav-label text-muted-foreground", collapsed && "sr-only")}>{group.label}</p>
       <ul>{group.items.map(item => {
         const Icon = item.icon;
-        const active = item.label === "Studio" ? pathname === "/studio" || pathname.startsWith("/projects/")
+        // Credits is a shortcut into Settings, so Settings owns its active state.
+        const active = item.label === "Credits" ? false
+          : item.label === "Studio" ? pathname === "/studio" || pathname.startsWith("/projects/")
           : item.label === "Marketplace" ? pathname.startsWith("/marketplace")
-          : item.label === "Settings" ? pathname.startsWith("/settings/") && pathname !== "/settings/credits"
+          : item.label === "Settings" ? pathname === "/settings" || pathname.startsWith("/settings/")
           : item.label === "Documentation" ? pathname === "/documentation" || pathname.startsWith("/documentation/")
           : item.label === "Templates" ? pathname === "/templates" || pathname.startsWith("/templates/")
           : item.href === pathname;

@@ -6,6 +6,7 @@ import { listingSchema, type ListingPage } from "@/lib/marketplace/contract";
 import type { CategoryId } from "@/lib/projects/options";
 import { ListingCard } from "./listing-card";
 import { z } from "zod";
+import { appendUniqueListings, listingScrollRoot } from "./infinite-listings";
 
 const pageSchema = z.object({ items: z.array(listingSchema.extend({ estimate: z.object({ credits: z.number(), test: z.boolean() }).nullable() })), total: z.number().int().nonnegative(), page: z.number().int().positive(), pageSize: z.literal(12) });
 
@@ -33,14 +34,7 @@ export function MarketplaceInfiniteGallery({ initial, query, category }: { initi
       const result = pageSchema.parse(await response.json());
       if (request.signal.aborted) return;
       if (result.page !== page) throw new Error("INVALID_PAGE");
-      setItems(previous => {
-        const seen = new Set(previous.map(item => item.id));
-        return [...previous, ...result.items.filter(item => {
-          if (seen.has(item.id)) return false;
-          seen.add(item.id);
-          return true;
-        })];
-      });
+      setItems(previous => appendUniqueListings(previous, result.items));
       nextPage.current = page + 1;
       setHasMore(result.items.length > 0 && page * result.pageSize < result.total);
     } catch {
@@ -60,8 +54,7 @@ export function MarketplaceInfiniteGallery({ initial, query, category }: { initi
     let observer: IntersectionObserver;
     const observe = () => {
       observer?.disconnect();
-      const workspace = target.closest(".workspace-content");
-      const root = workspace && /auto|scroll/.test(getComputedStyle(workspace).overflowY) ? workspace : null;
+      const root = listingScrollRoot(target);
       observer = new IntersectionObserver(entries => {
         if (entries.some(entry => entry.isIntersecting)) void loadMore();
       }, { root, rootMargin: "0px 0px 320px 0px" });

@@ -78,6 +78,5 @@ export default async function ProjectsPage({
     <ProjectsAccountFence clerkUserId={userId}><ProjectJobStatusesProvider key={projects.projects.map(({ id }) => id).join(",")} initial={jobStatuses}>
       <ProjectsSection data={projects} jobStatuses={jobStatuses} previews={previews} />
     </ProjectJobStatusesProvider></ProjectsAccountFence>
-    <aside id="templates" className="workspace-projects-template-link">Reusable listings live in <Link href="/templates" className="text-link">Templates</Link>. Find more starting points in <Link href="/marketplace" className="text-link">Marketplace</Link>.</aside>
   </div>;
 }

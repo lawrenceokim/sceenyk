@@ -1,5 +1,13 @@
 # Architecture Context
 
+## Project fallback artwork refinement (2026-10-19)
+
+Projects has no stored preview-color field. Its placeholder palette mirrors the existing muted listing palette and derives display-only color from project ID; shared templateAppearance/pattern geometry still uses saved listing fallbackColor on Marketplace/Templates. Real project media read/ownership behavior is unchanged. No project deletion action, confirmation flow or database delete grant exists in this repository; reuse-only deletion cannot be connected without separately defining/implementing it. Do not bypass the existing restricted foreign keys or introduce a destructive workflow in this visual refinement.
+
+## Manage Templates compact gallery and owned infinite reads (2026-10-19)
+
+Manage Templates keeps its existing authenticated route, identity fence and owner-scoped marketplace_owned pagination/ordering. A read-only Server Action validates the requested page, derives Clerk/application identity and reuses listOwnedMarketplaceListings; no owner is accepted from the browser. Management progressively appends validated pages, deduplicates listing IDs and stops at the reported end. In-flight reads are guarded and inactive responses ignored. Marketplace's existing scroll-root/deduplication behavior is shared with management so the observer uses the nearest actual Settings center scroller. Library presentation remains paginated and unchanged. Existing listing mutations, financial calculations, schema and preview contracts are unchanged.
+
 ## Settings two-column scrolling correction (2026-10-19)
 
 Follow-up after manual review: the Settings page now has a definite viewport-derived height (less the mobile header, gutters and frame border). Its Documentation grid fills that positioned frame, avoiding percentage-height propagation through nested route/layout wrappers. The center explicitly retains min-height:0 and overflow-y:auto below the fixed header, with bottom padding for the last controls. This supersedes the earlier claim that explicit reader rows alone resolved clipping; the user reported scrolling still unavailable after that change.

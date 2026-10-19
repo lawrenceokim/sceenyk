@@ -13,7 +13,7 @@ export function ProjectPreview({ asset, children }: { asset?: ProjectAsset | nul
     let active = true;
     readMediaAction({ projectId: asset.projectId, assetId: asset.id }).then(result => {
       if (active && result.ok) setSource({ assetId: asset.id, url: result.value.url });
-    }).catch(() => { /* Keep the existing category placeholder on unavailable media. */ });
+    }).catch(() => { /* Keep the shared abstract placeholder on unavailable media. */ });
     return () => { active = false; };
   }, [asset]);
   if (!asset || source?.assetId !== asset.id || failed === source.url) return children;

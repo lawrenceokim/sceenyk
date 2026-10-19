@@ -6,6 +6,20 @@ function artworkSeed(id: string) {
   return hash >>> 0;
 }
 
+// The existing 32 muted listing colors (migration 030). Projects have no saved
+// color field: this is deterministic display metadata only, never a DB write.
+const mutedPreviewPalette = [
+  "#77618f", "#637ca0", "#8a6ba0", "#527f80", "#a06f83", "#9c825c", "#728b72", "#627c8a",
+  "#796e9e", "#587b95", "#8d749d", "#6a8c82", "#a08191", "#9a8a73", "#858959", "#6d8b94",
+  "#746b8a", "#7a83a0", "#8f819e", "#557e87", "#8d6f7b", "#9c7e64", "#7e966c", "#789194",
+  "#7b719b", "#6b7eaa", "#92768e", "#608b86", "#9b746d", "#a08a7d", "#8b966f", "#6e8393",
+] as const;
+
+export function projectPreviewColor(projectId: string) {
+  // Keep palette selection independent of the low bits used by templatePattern.
+  return mutedPreviewPalette[(artworkSeed(projectId) >>> 2) % mutedPreviewPalette.length];
+}
+
 export function templatePattern(id: string) {
   return (["wash", "fold", "orbit", "ripple"] as const)[artworkSeed(id) % 4];
 }
