@@ -1,5 +1,9 @@
 # UI Context
 
+## Enabled project Delete confirmation (2026-10-19)
+
+The latest request replaces the disabled Delete indicator with an enabled trash trigger and compact shared Base UI dialog. Name the selected project in the confirmation, explain removal from saved projects, and present matching Cancel/Delete actions with Delete styled destructive. Keep focus/Escape/dismissal behavior, block repeat submissions and dismissal during saving, show errors inline and close on success. Deletion remains owner-authoritative and requires the new migration; active generations display a safe wait message. No other card styling changes.
+
 ## Settings sidebar active state (2026-10-19)
 
 The main workspace sidebar highlights Settings for `/settings` and every `/settings/*` section, including Credits & Billing. Credits remains a working shortcut to `/settings/credits` and does not claim a separate active state. The section navigation inside Settings still marks Credits & Billing as selected. This supersedes the earlier separate Credits highlight rule; shared desktop/collapsed/mobile navigation uses the same behavior.

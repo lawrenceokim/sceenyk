@@ -38,9 +38,10 @@ export type ProjectFields = {
 export type ProjectRow = ProjectFields & {
   id: string;
   owner_user_id: string;
-  status: "draft";
+  status: "draft" | "deleted";
   created_at: string;
   updated_at: string;
+  deleted_at: string | null;
 };
 
 export type AssetRow = {
@@ -248,6 +249,7 @@ export type Database = {
     };
     Views: Record<string, never>;
     Functions: {
+      delete_owned_project: { Args: { p_owner_user_id: string; p_project_id: string }; Returns: unknown };
       creation_preferences_read: { Args: { p_owner: string }; Returns: import("@/lib/settings/contract").CreationPreferences | null };
       creation_preferences_save: { Args: { p_owner: string; p_aspect_ratio: string; p_category: string }; Returns: import("@/lib/settings/contract").CreationPreferences };
       creator_profile_listing_identities: { Args: { p_ids: string[] }; Returns: unknown };

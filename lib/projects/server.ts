@@ -1,4 +1,5 @@
 import "server-only";
+import { z } from "zod";
 import { ensureAppUser } from "@/lib/auth/ensure-app-user";
 import { createDatabaseClient } from "@/lib/db/server";
 import type { ProjectFields, ProjectRow } from "@/lib/db/types";
@@ -8,6 +9,7 @@ import {
   projectPageSchema,
   saveProjectSchema,
   renameProjectSchema,
+  deleteProjectSchema,
 } from "./validation";
 import type {
   ProjectPage,
@@ -15,6 +17,7 @@ import type {
   SavedProject,
   SaveProjectResult,
   RenameProjectResult,
+  DeleteProjectResult,
 } from "./types";
 
 const briefColumns =
@@ -42,8 +45,9 @@ function logDatabaseError(operation: string, error: unknown) {
 }
 
 function toSummary(
-  row: Omit<ProjectRow, "owner_user_id" | "prompt">,
+  row: Omit<ProjectRow, "owner_user_id" | "prompt" | "deleted_at">,
 ): ProjectSummary {
+  if (row.status !== "draft") throw new ProjectAccessError();
   return {
     id: row.id,
     title: row.title,
@@ -60,7 +64,7 @@ function toSummary(
   };
 }
 
-function toBrief(row: Omit<ProjectRow, "owner_user_id">): SavedProject {
+function toBrief(row: Omit<ProjectRow, "owner_user_id" | "deleted_at">): SavedProject {
   return { ...toSummary(row), prompt: row.prompt };
 }
 
@@ -119,6 +123,7 @@ export async function saveOwnedProject(
     .update(fields)
     .eq("id", id)
     .eq("owner_user_id", user.id)
+    .eq("status", "draft")
     .select(briefColumns)
     .maybeSingle();
   if (error) {
@@ -143,6 +148,7 @@ export async function getOwnedProject(
     .select(briefColumns)
     .eq("id", parsed.data)
     .eq("owner_user_id", user.id)
+    .eq("status", "draft")
     .maybeSingle();
   if (error) {
     logDatabaseError("read", error);
@@ -158,13 +164,29 @@ export async function renameOwnedProject(input: unknown): Promise<RenameProjectR
   // Update only the title: renaming must not overwrite a concurrently edited brief.
   const { data, error } = await createDatabaseClient().from("projects")
     .update({ title: parsed.data.title })
-    .eq("id", parsed.data.id).eq("owner_user_id", user.id)
+    .eq("id", parsed.data.id).eq("owner_user_id", user.id).eq("status", "draft")
     .select("id,title,updated_at").maybeSingle();
   if (error) {
     logDatabaseError("rename", error);
     return { ok: false, code: "UNAVAILABLE", message: "Your project couldn’t be renamed. Please try again." };
   }
   return data ? { ok: true, project: { id: data.id, title: data.title, updatedAt: data.updated_at } } : notFoundResult;
+}
+
+export async function deleteOwnedProject(input: unknown): Promise<DeleteProjectResult> {
+  const user = await ensureAppUser();
+  const parsed = deleteProjectSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, code: "INVALID_INPUT", message: "Choose a saved project to delete." };
+  const { data, error } = await createDatabaseClient().rpc("delete_owned_project", { p_owner_user_id: user.id, p_project_id: parsed.data.id });
+  if (error) {
+    logDatabaseError("delete", error);
+    return { ok: false, code: "UNAVAILABLE", message: "Your project couldn’t be deleted. Please try again." };
+  }
+  const result = z.object({ code: z.enum(["DELETED", "NOT_FOUND", "ACTIVE_GENERATION"]) }).safeParse(data);
+  if (!result.success) return { ok: false, code: "UNAVAILABLE", message: "Your project couldn’t be deleted. Please try again." };
+  if (result.data.code === "DELETED") return { ok: true, projectId: parsed.data.id };
+  if (result.data.code === "ACTIVE_GENERATION") return { ok: false, code: "ACTIVE_GENERATION", message: "This project is still generating. Wait for it to finish before deleting." };
+  return { ok: false, code: "NOT_FOUND", message: "This project is no longer available." };
 }
 
 export async function listOwnedProjects(
@@ -178,6 +200,7 @@ export async function listOwnedProjects(
     .from("projects")
     .select(summaryColumns, { count: "exact" })
     .eq("owner_user_id", user.id)
+    .eq("status", "draft")
     .order("updated_at", { ascending: false })
     .order("id", { ascending: false })
     .range(offset, offset + projectPageSize - 1);

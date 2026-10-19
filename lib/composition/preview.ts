@@ -20,7 +20,7 @@ export async function readOwnedScenePreview(input: unknown) {
   const { projectId, jobId, sceneId } = parsed.data;
   const user = await ensureAppUser(), db = createDatabaseClient();
   const [project, job, result] = await Promise.all([
-    db.from("projects").select("id").eq("id", projectId).eq("owner_user_id", user.id).maybeSingle(),
+    db.from("projects").select("id").eq("id", projectId).eq("owner_user_id", user.id).eq("status", "draft").maybeSingle(),
     db.from("generation_jobs").select("id,composition_ready_at").eq("id", jobId).eq("project_id", projectId).eq("owner_user_id", user.id).maybeSingle(),
     db.from("composition_plans").select("plan").eq("job_id", jobId).eq("project_id", projectId).eq("owner_user_id", user.id).eq("status", "ready").maybeSingle(),
   ]);

@@ -3,8 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { unstable_rethrow } from "next/navigation";
 import { AppUserSyncError } from "@/lib/auth/ensure-app-user";
-import { renameOwnedProject, saveOwnedProject } from "@/lib/projects/server";
-import type { RenameProjectResult, SaveProjectResult } from "@/lib/projects/types";
+import { deleteOwnedProject, renameOwnedProject, saveOwnedProject } from "@/lib/projects/server";
+import type { DeleteProjectResult, RenameProjectResult, SaveProjectResult } from "@/lib/projects/types";
 
 export async function saveProjectAction(
   input: unknown,
@@ -44,5 +44,19 @@ export async function renameProjectAction(input: unknown): Promise<RenameProject
   } catch (error: unknown) {
     unstable_rethrow(error);
     return { ok: false, code: "UNAVAILABLE", message: "Your project couldn’t be renamed. Please try again." };
+  }
+}
+
+export async function deleteProjectAction(input: unknown): Promise<DeleteProjectResult> {
+  try {
+    const result = await deleteOwnedProject(input);
+    if (result.ok) {
+      revalidatePath("/projects");
+      revalidatePath(`/projects/${result.projectId}`);
+    }
+    return result;
+  } catch (error: unknown) {
+    unstable_rethrow(error);
+    return { ok: false, code: "UNAVAILABLE", message: "Your project couldn’t be deleted. Please try again." };
   }
 }

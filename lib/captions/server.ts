@@ -34,7 +34,7 @@ async function ownedReference(input: unknown) {
   const db = createDatabaseClient();
   const job = await db.from("generation_jobs").select("id").eq("id", ref.data.jobId)
     .eq("project_id", ref.data.projectId).eq("owner_user_id", user.id).maybeSingle();
-  const project = await db.from("projects").select("id").eq("id", ref.data.projectId).eq("owner_user_id", user.id).maybeSingle();
+  const project = await db.from("projects").select("id").eq("id", ref.data.projectId).eq("owner_user_id", user.id).eq("status", "draft").maybeSingle();
   if (job.error || project.error) throw new Error("CAPTIONS_UNAVAILABLE");
   return job.data && project.data ? { ...ref.data, ownerId: user.id } : null;
 }

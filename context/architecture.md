@@ -1,5 +1,11 @@
 # Architecture Context
 
+## Owned project deletion (2026-10-19)
+
+The user now authorizes functional deletion, superseding the unavailable-icon boundary. Deletion is an owner-checked, idempotent database operation that sets projects.status to deleted and marks projects.deleted_at; owned lists/editor/media reads require the existing draft status. This keeps ordinary reads compatible before the migration is applied while deletion itself fails closed. Linked uploads, generated records and immutable Marketplace/financial history remain retained. Queued/processing generation blocks deletion without changing reservations or jobs. A project-row lock serializes deletion with insert guards discovered from actual project foreign keys; new jobs, quotes, sources or source listings cannot attach after deletion. Existing foreign keys, RLS and browser-role restrictions remain. Only a service-only RPC can set the deletion marker, and deleted project updates are rejected.
+
+The UI confirms the project name with Cancel/Delete, prevents duplicate submission and refreshes the owned list/editor route on success. A new migration is required; its prerequisite checks inspect actual table/column catalogs before installing triggers. Hosted schema verification was blocked by automatic approval-review capacity, so local migration/catalog tests establish only local correctness. Hosted application and deployed acceptance remain separate; no workflow, financial or provider operation is authorized.
+
 ## Project fallback artwork refinement (2026-10-19)
 
 Projects has no stored preview-color field. Its placeholder palette mirrors the existing muted listing palette and derives display-only color from project ID; shared templateAppearance/pattern geometry still uses saved listing fallbackColor on Marketplace/Templates. Real project media read/ownership behavior is unchanged. No project deletion action, confirmation flow or database delete grant exists in this repository; reuse-only deletion cannot be connected without separately defining/implementing it. Do not bypass the existing restricted foreign keys or introduce a destructive workflow in this visual refinement.

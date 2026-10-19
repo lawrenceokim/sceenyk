@@ -1,5 +1,13 @@
 # Progress Tracker
 
+## Enabled project Delete confirmation (2026-10-19)
+
+**Implemented locally; migration 031 application and manual UI review pending.** Project cards now open a compact Base UI confirmation naming the selected project, with matching Cancel/Delete actions, safe initial focus, pending/duplicate-submit protection and inline errors. An ID-only Server Action derives identity on the server, invokes the owner-checked deletion RPC and refreshes Projects/editor caches. Existing adjacent Rename/Delete placement and tinted artwork remain unchanged.
+
+Migration `20261019003100_project_deletion.sql` adds logical deletion (deleted status/timestamp) while preserving restricted foreign keys, private uploads, generated records, published listings and financial history. Active queued/processing generations block deletion. Row locks and verified FK-catalog insert guards prevent attaching new jobs/quotes/sources/listings after deletion; normal writes cannot resurrect a deleted project. All user-facing owned project/media/generation reads reject deleted projects. Ordinary reads use the existing draft status, so they remain compatible before migration application. This is removal from saved projects, not physical media/history purging. Architecture/UI context now supersedes the prior unavailable Delete boundary.
+
+Focused local actual-schema checks: 39 deletion/access/ownership/retention/accounting/idempotency/migration-rerun checks and 19 existing rename checks pass. Standalone TypeScript, targeted ESLint, Projects CSS parsing and whitespace checks pass. Read-only hosted schema verification was blocked because automatic approval review could not complete due to model capacity; no hosted migration, deletion, workflow or provider operation occurred. Apply migration 031 after the preceding migrations before using Delete against the hosted database. No browser/screenshot/full regression suite, production build or deployment. Next.js feedback review found no qualifying framework issue. Stop for manual review.
+
 ## Settings owns Credits sidebar highlight (2026-10-19)
 
 Updated workspace-navigation.tsx so Settings remains active on `/settings` and all child routes, including `/settings/credits`. Credits stays a working shortcut without a competing active highlight; internal Settings section selection is unchanged. Shared desktop/collapsed/mobile navigation uses this rule. Quick JSX parsing and whitespace checks pass. No routing, credit/account functionality, backend, browser suite, build, deployment or hosted workflow changes. Next.js feedback review found no qualifying framework issue.

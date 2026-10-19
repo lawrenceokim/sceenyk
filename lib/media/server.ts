@@ -53,6 +53,7 @@ async function ownedContext(projectId: string) {
     .select("id")
     .eq("id", projectId)
     .eq("owner_user_id", user.id)
+    .eq("status", "draft")
     .maybeSingle();
   if (error) throw unavailable();
   if (!data) throw notFound();

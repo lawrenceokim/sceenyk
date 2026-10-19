@@ -123,6 +123,7 @@ async function context(projectId: string, owner: string) {
     .select("id")
     .eq("id", projectId)
     .eq("owner_user_id", owner)
+    .eq("status", "draft")
     .maybeSingle();
   if (error) {
     logError("project", error);
@@ -243,6 +244,7 @@ export async function getLatestProjectGenerations(
     .from("projects")
     .select("id")
     .eq("owner_user_id", user.id)
+    .eq("status", "draft")
     .in("id", ids);
   if (error || !data) throw new GenerationAccessError();
   return Object.fromEntries(

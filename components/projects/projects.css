@@ -29,8 +29,7 @@
 .workspace-project-icon svg { width: 14px; height: 14px; }
 .workspace-project-icon:hover { background: var(--muted); color: var(--foreground); }
 .workspace-project-icon:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
-.workspace-project-icon[aria-disabled="true"] { opacity: .45; cursor: not-allowed; }
-.workspace-project-icon[aria-disabled="true"]:hover { background: transparent; color: var(--muted-foreground); }
+.workspace-project-delete [data-slot="dialog-description"] { font-size: 12px; line-height: 20px; }
 .workspace-project-rename[data-slot="dialog-content"] { width: 336px; max-width: calc(100% - 32px); padding: 20px; gap: 14px; border-radius: 13px; box-shadow: none; }
 .workspace-project-rename [data-slot="dialog-title"] { font-size: 14px; line-height: 20px; font-weight: 600; }
 .workspace-project-rename .sceenyk-field { height: 36px; min-height: 36px; padding: 6px 8px; border-radius: 7px; font-size: 12px; }

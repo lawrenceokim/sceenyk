@@ -40,3 +40,4 @@ export const renameProjectSchema = z.strictObject({
   id: projectIdSchema,
   title: saveProjectSchema.shape.title,
 });
+export const deleteProjectSchema = z.strictObject({ id: projectIdSchema });

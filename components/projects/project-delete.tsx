@@ -1,17 +1,38 @@
 "use client";
 
+import { startTransition, useRef, useState } from "react";
 import { Trash2 } from "lucide-react";
-import { Tooltip } from "@base-ui/react/tooltip";
+import { deleteProjectAction } from "@/app/actions/projects";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogTrigger, DialogContent, DialogTitle, DialogDescription, DialogClose } from "@/components/ui/dialog";
 
-// No project deletion service/confirmation exists, and the current DB grants
-// prohibit deletes. Keep that limitation explicit rather than inventing a flow.
-export function ProjectDeleteUnavailable({ title }: { title: string }) {
-  return <Tooltip.Root>
-    <Tooltip.Trigger render={<button type="button" className="workspace-project-icon" aria-disabled="true" aria-label={`Delete ${title} (unavailable)`} onClick={event => { event.preventDefault(); event.stopPropagation(); }} />}>
-      <Trash2 aria-hidden="true" />
-    </Tooltip.Trigger>
-    <Tooltip.Portal><Tooltip.Positioner side="bottom" sideOffset={6} className="z-[70]">
-      <Tooltip.Popup className="rounded-md border border-border bg-popover px-2 py-1 text-caption text-popover-foreground">Project deletion is not available.</Tooltip.Popup>
-    </Tooltip.Positioner></Tooltip.Portal>
-  </Tooltip.Root>;
+export function ProjectDelete({ projectId, title }: { projectId: string; title: string }) {
+  const [open, setOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const running = useRef(false);
+  async function remove() {
+    if (running.current) return;
+    running.current = true; setBusy(true); setError("");
+    try {
+      const result = await deleteProjectAction({ id: projectId });
+      if (result.ok) setOpen(false);
+      else setError(result.message);
+    } catch { setError("Your project couldn’t be deleted. Please try again."); }
+    finally { running.current = false; setBusy(false); }
+  }
+  return <Dialog open={open} onOpenChange={next => { if (!running.current) { setOpen(next); if (next) setError(""); } }}>
+    <DialogTrigger render={<button type="button" className="workspace-project-icon" aria-label={`Delete ${title}`} />}><Trash2 aria-hidden="true" /></DialogTrigger>
+    <DialogContent className="workspace-project-rename workspace-project-delete">
+      <DialogTitle>Delete project</DialogTitle>
+      <DialogDescription>You are about to delete the project <strong className="break-words text-foreground">“{title}”</strong>. It will be removed from your saved projects.</DialogDescription>
+      <form onSubmit={event => { event.preventDefault(); startTransition(async () => { await remove(); }); }}>
+        {error && <p role="alert" className="text-destructive">{error}</p>}
+        <div className="workspace-project-rename-actions">
+          <DialogClose render={<Button size="xs" className="workspace-project-rename-button" variant="outline" type="button" disabled={busy} autoFocus />}>Cancel</DialogClose>
+          <Button size="xs" className="workspace-project-rename-button" variant="destructive" type="submit" disabled={busy}>{busy ? "Deleting…" : "Delete"}</Button>
+        </div>
+      </form>
+    </DialogContent>
+  </Dialog>;
 }

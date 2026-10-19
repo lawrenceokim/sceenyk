@@ -9,7 +9,7 @@ export async function readOwnedNarration(input: unknown) {
   const user = await ensureAppUser();
   if (!user) throw new Error("NARRATION_UNAVAILABLE");
   const db = createDatabaseClient();
-  const project = await db.from("projects").select("id").eq("id", projectId).eq("owner_user_id", user.id).maybeSingle();
+  const project = await db.from("projects").select("id").eq("id", projectId).eq("owner_user_id", user.id).eq("status", "draft").maybeSingle();
   const narration = await db.from("narration_segments").select("id,job_id,scene_order,output_asset_id,expected_duration_ms,timing_mismatch").eq("scene_execution_id", sceneId).eq("project_id", projectId).eq("owner_user_id", user.id).eq("status", "completed").maybeSingle();
   if (project.error || narration.error || !project.data || !narration.data?.output_asset_id) throw new Error("NARRATION_UNAVAILABLE");
   const result = await db.from("narration_assets").select("*").eq("id", narration.data.output_asset_id).eq("narration_segment_id", narration.data.id).eq("job_id", narration.data.job_id).eq("owner_user_id", user.id).eq("project_id", projectId).maybeSingle();

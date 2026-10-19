@@ -24,7 +24,7 @@ const database = { from(table) {
       try {
         if (update) { assert.deepEqual(Object.keys(update), ['title']); writes++; }
         const args = update ? [update.title] : [];
-        const where = filters.map(([column, value]) => { assert.ok(['id', 'owner_user_id'].includes(column)); args.push(value); return `${column}=$${args.length}`; }).join(' and ');
+        const where = filters.map(([column, value]) => { assert.ok(['id', 'owner_user_id', 'status'].includes(column)); args.push(value); return `${column}=$${args.length}`; }).join(' and ');
         const sql = update ? `update projects set title=$1 where ${where} returning ${columns}` : `select ${columns} from projects where ${where}`;
         return { data: (await pg.query(sql, args)).rows[0] ?? null, error: null };
       } finally { await pg.exec('reset role'); }

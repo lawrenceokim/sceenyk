@@ -7,6 +7,8 @@ import { inspectR2Object, signR2Read } from "@/lib/storage/r2";
 export async function getOwnedFinalVideo(input:unknown){
   const user=await ensureAppUser(),ref=generationReferenceSchema.safeParse(input);if(!ref.success)return null;
   const db=createDatabaseClient();
+  const project=await db.from("projects").select("id").eq("id",ref.data.projectId).eq("owner_user_id",user.id).eq("status","draft").maybeSingle();
+  if(project.error)throw new Error("FINAL_VIDEO_UNAVAILABLE");if(!project.data)return null;
   const job=await db.from("generation_jobs").select("id,status").eq("id",ref.data.jobId).eq("project_id",ref.data.projectId).eq("owner_user_id",user.id).maybeSingle();
   if(job.error)throw new Error("FINAL_VIDEO_UNAVAILABLE");if(job.data?.status!=="completed")return null;
   const result=await db.from("final_video_assets").select("*").eq("generation_job_id",ref.data.jobId).eq("owner_user_id",user.id).eq("project_id",ref.data.projectId).maybeSingle();

@@ -4,7 +4,7 @@ import type { GenerationStatus } from "@/lib/generation/contract";
 import type { ProjectAsset } from "@/lib/media/types";
 import { ProjectJobBadge } from "./project-job-statuses";
 import { ProjectRename } from "./project-rename";
-import { ProjectDeleteUnavailable } from "./project-delete";
+import { ProjectDelete } from "./project-delete";
 import { ProjectPreview } from "./project-preview";
 import { AbstractPreview } from "@/components/marketplace/abstract-preview";
 import { projectPreviewColor, templateAppearance } from "@/components/marketplace/template-appearance";
@@ -29,7 +29,7 @@ export function ProjectCard({ project, jobStatus, preview }: {
     </Link>
     <div className="workspace-project-actions">
       <span className="workspace-project-action"><ProjectRename projectId={project.id} title={project.title} /></span>
-      <span className="workspace-project-action"><ProjectDeleteUnavailable title={project.title} /></span>
+      <span className="workspace-project-action"><ProjectDelete projectId={project.id} title={project.title} /></span>
     </div>
   </article>;
 }
