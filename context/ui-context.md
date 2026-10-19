@@ -1,5 +1,9 @@
 # UI Context
 
+## Settings layout correction — Documentation pattern (2026-10-19)
+
+Supersedes the Phase 4 Settings composition: exactly two columns, using existing Documentation layout/navigation classes. Reuse its 198px navigation, 40px gap, 32px desktop top/22px side padding, 28px navigation rows and fixed header/article grid. Restore Settings and “Make Sceenyk feel like a creative home.” above the independent section scroller. Remove the contents rail and centered narrow layout; readable section content is left-aligned with a 720px maximum. Desktop always shows the navigation; the Documentation content-width breakpoint adapts tablets/mobile to the existing native picker. Keep compact Pryzm-style controls and existing tokens/functionality. Manual review remains pending.
+
 ## Visual redesign Phase 4 — Projects and Settings (2026-10-19)
 
 Use the six supplied Pryzm screenshots for approximate geometry, retaining Sceenyk branding/themes. Projects uses My Projects and the requested saved-project description, a 32px desktop title, compact New Project action, approximately 206px cards with 4:3 source previews, quiet title/edited date and Open/rename controls. Mobile is a single full-width card column with New Project below the description. Reuse the category placeholder where no uploaded image/video exists, never fabricate output. Rename uses the existing Base UI dialog at roughly 336px width, 20px padding and compact actions.

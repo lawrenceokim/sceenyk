@@ -1,5 +1,11 @@
 # Architecture Context
 
+## Settings two-column scrolling correction (2026-10-19)
+
+Follow-up after manual review: the Settings page now has a definite viewport-derived height (less the mobile header, gutters and frame border). Its Documentation grid fills that positioned frame, avoiding percentage-height propagation through nested route/layout wrappers. The center explicitly retains min-height:0 and overflow-y:auto below the fixed header, with bottom padding for the last controls. This supersedes the earlier claim that explicit reader rows alone resolved clipping; the user reported scrolling still unavailable after that change.
+
+The latest correction supersedes Phase 4's optional Settings contents rail and centered 550px reader. Settings reuses Documentation's existing frame, topic-navigation, reader/header and article-scroll classes, with exactly navigation/content columns. A fixed Settings heading/description occupies the reader's auto row above the explicit minmax(0,1fr) scrolling row. This replaces the separate reader's implicit content-sized track inside overflow-hidden wrappers. The active Settings frame uses the same named container and viewport constraints as Documentation; desktop always retains navigation, while narrower tablets/mobile use the existing picker. All route children, state owners, account/financial/security boundaries remain unchanged. Documentation itself is not edited.
+
 ## Projects and Settings visual redesign — Phase 4 (2026-10-19)
 
 Projects retains `/projects/[id]` as the existing owner-loaded Studio editing route. Gallery previews reuse uploaded image/video asset metadata and the existing owner-checked media-read action; absent previews retain the category placeholder. Rename is a strict ID/title-only server action and owner-filtered column update, so concurrent brief edits, source references and generation settings are not overwritten. No sharing or deletion implementation exists; restricted project dependencies and unsupported controls are preserved rather than adding a new destructive workflow. No schema or provider changes.
