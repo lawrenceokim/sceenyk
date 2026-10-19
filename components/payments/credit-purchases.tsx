@@ -148,7 +148,19 @@ function PurchaseAccount({ packs, configured, checkoutInNewTab = false }: Props)
   const completedPurchase = wallet?.purchases.find(purchase => purchase.orderId === completedOrder && purchase.status === "completed");
   const activityCopy = { purchase: "Credits purchased", reservation: "Generation reservation", consumption: "Generation completed", release: "Reservation restored" };
   return <div className="space-y-6" aria-busy={busy}>
-    <section className="sceenyk-card flex flex-wrap items-center justify-between gap-4 p-5 sm:p-6" aria-label="Paid credit balance">
+    <section className={`
+      [@layer_components]:[border:1px_solid_var(--border)] [@layer_components]:rounded-[var(--radius-xl)]
+      [@layer_components]:[background:var(--card)] [@layer_components]:text-[color:var(--card-foreground)]
+      [@layer_components]:[box-shadow:var(--elevation-card)] sceenyk-card flex flex-wrap items-center justify-between gap-4
+      p-5 sm:p-6 [.marketplace-configuration_>_&&]:[border:0] [.marketplace-configuration_>_&&]:rounded-[0]
+      [.marketplace-configuration_>_&&]:[background:transparent] [.marketplace-configuration_>_&&]:pt-[16px]
+      [.marketplace-configuration_>_&&]:pr-[0] [.marketplace-configuration_>_&&]:pb-[0]
+      [.marketplace-configuration_>_&&]:pl-[0] [[data-workspace-shell]_&&]:[box-shadow:none]
+      [.workspace-settings-inner_label&&]:min-h-[0] [.workspace-settings-inner_label&&]:gap-[8px]
+      [.workspace-settings-inner_label&&]:pt-[12px] [.workspace-settings-inner_label&&]:pr-[12px]
+      [.workspace-settings-inner_label&&]:pb-[12px] [.workspace-settings-inner_label&&]:pl-[12px]
+      [.workspace-settings-inner_label&&_svg]:w-[18px] [.workspace-settings-inner_label&&_svg]:h-[18px]
+    `} aria-label="Paid credit balance">
       <div>
         <p className="text-caption text-muted-foreground">Available paid credits</p>
         <p className="mt-2 text-3xl font-bold">{wallet ? wallet.available.toLocaleString() : "—"}</p>
@@ -165,7 +177,19 @@ function PurchaseAccount({ packs, configured, checkoutInNewTab = false }: Props)
     {approvalLink && <Button nativeButton={false} variant="outline" render={<a href={approvalLink} target="_blank" rel="noopener noreferrer" />}>Continue to PayPal Sandbox <ExternalLink className="size-4" aria-hidden="true" /></Button>}
     {error && <p className="rounded-lg bg-destructive-surface p-4 text-body-sm text-destructive" role="alert">{error}</p>}
     <section aria-label="Sandbox demo credit packs" className="grid gap-4 md:grid-cols-3">
-      {packs.map(pack => <article key={pack.id} className="sceenyk-card flex min-w-0 flex-col gap-4 p-5 sm:p-6">
+      {packs.map(pack => <article key={pack.id} className={`
+      [@layer_components]:[border:1px_solid_var(--border)] [@layer_components]:rounded-[var(--radius-xl)]
+      [@layer_components]:[background:var(--card)] [@layer_components]:text-[color:var(--card-foreground)]
+      [@layer_components]:[box-shadow:var(--elevation-card)] sceenyk-card flex min-w-0 flex-col gap-4 p-5 sm:p-6
+      [.marketplace-configuration_>_&&]:[border:0] [.marketplace-configuration_>_&&]:rounded-[0]
+      [.marketplace-configuration_>_&&]:[background:transparent] [.marketplace-configuration_>_&&]:pt-[16px]
+      [.marketplace-configuration_>_&&]:pr-[0] [.marketplace-configuration_>_&&]:pb-[0]
+      [.marketplace-configuration_>_&&]:pl-[0] [[data-workspace-shell]_&&]:[box-shadow:none]
+      [.workspace-settings-inner_label&&]:min-h-[0] [.workspace-settings-inner_label&&]:gap-[8px]
+      [.workspace-settings-inner_label&&]:pt-[12px] [.workspace-settings-inner_label&&]:pr-[12px]
+      [.workspace-settings-inner_label&&]:pb-[12px] [.workspace-settings-inner_label&&]:pl-[12px]
+      [.workspace-settings-inner_label&&_svg]:w-[18px] [.workspace-settings-inner_label&&_svg]:h-[18px]
+    `}>
         <span className="w-fit rounded-full bg-accent px-3 py-1 text-caption font-medium text-accent-foreground">Sandbox test pack</span>
         <Coins className="size-6 text-link" aria-hidden="true" />
         <h2 className="text-lg font-semibold">{pack.name}</h2>
@@ -177,7 +201,19 @@ function PurchaseAccount({ packs, configured, checkoutInNewTab = false }: Props)
         </Button>
       </article>)}
     </section>
-    <section className="sceenyk-card space-y-4 p-5 sm:p-6" aria-labelledby="purchases-heading">
+    <section className={`
+      [@layer_components]:[border:1px_solid_var(--border)] [@layer_components]:rounded-[var(--radius-xl)]
+      [@layer_components]:[background:var(--card)] [@layer_components]:text-[color:var(--card-foreground)]
+      [@layer_components]:[box-shadow:var(--elevation-card)] sceenyk-card space-y-4 p-5 sm:p-6
+      [.marketplace-configuration_>_&&]:[border:0] [.marketplace-configuration_>_&&]:rounded-[0]
+      [.marketplace-configuration_>_&&]:[background:transparent] [.marketplace-configuration_>_&&]:pt-[16px]
+      [.marketplace-configuration_>_&&]:pr-[0] [.marketplace-configuration_>_&&]:pb-[0]
+      [.marketplace-configuration_>_&&]:pl-[0] [[data-workspace-shell]_&&]:[box-shadow:none]
+      [.workspace-settings-inner_label&&]:min-h-[0] [.workspace-settings-inner_label&&]:gap-[8px]
+      [.workspace-settings-inner_label&&]:pt-[12px] [.workspace-settings-inner_label&&]:pr-[12px]
+      [.workspace-settings-inner_label&&]:pb-[12px] [.workspace-settings-inner_label&&]:pl-[12px]
+      [.workspace-settings-inner_label&&_svg]:w-[18px] [.workspace-settings-inner_label&&_svg]:h-[18px]
+    `} aria-labelledby="purchases-heading">
       <h2 id="purchases-heading" className="text-lg font-semibold">Recent purchases</h2>
       {!wallet ? <p className="text-body-sm text-muted-foreground">{walletLoaded ? "Saved purchases are unavailable. Check purchases to try again." : "Loading saved purchases…"}</p> : !wallet.purchases.length ? <p className="text-body-sm text-muted-foreground">No credit purchases yet.</p> :
         <ul className="divide-y divide-border">{wallet.purchases.map((purchase, index) => <li key={purchase.orderId ?? `${purchase.created_at}-${index}`} className="space-y-2 py-4">
@@ -195,7 +231,19 @@ function PurchaseAccount({ packs, configured, checkoutInNewTab = false }: Props)
           </div>}
         </li>)}</ul>}
     </section>
-    <section className="sceenyk-card space-y-4 p-5 sm:p-6" aria-labelledby="credit-activity-heading">
+    <section className={`
+      [@layer_components]:[border:1px_solid_var(--border)] [@layer_components]:rounded-[var(--radius-xl)]
+      [@layer_components]:[background:var(--card)] [@layer_components]:text-[color:var(--card-foreground)]
+      [@layer_components]:[box-shadow:var(--elevation-card)] sceenyk-card space-y-4 p-5 sm:p-6
+      [.marketplace-configuration_>_&&]:[border:0] [.marketplace-configuration_>_&&]:rounded-[0]
+      [.marketplace-configuration_>_&&]:[background:transparent] [.marketplace-configuration_>_&&]:pt-[16px]
+      [.marketplace-configuration_>_&&]:pr-[0] [.marketplace-configuration_>_&&]:pb-[0]
+      [.marketplace-configuration_>_&&]:pl-[0] [[data-workspace-shell]_&&]:[box-shadow:none]
+      [.workspace-settings-inner_label&&]:min-h-[0] [.workspace-settings-inner_label&&]:gap-[8px]
+      [.workspace-settings-inner_label&&]:pt-[12px] [.workspace-settings-inner_label&&]:pr-[12px]
+      [.workspace-settings-inner_label&&]:pb-[12px] [.workspace-settings-inner_label&&]:pl-[12px]
+      [.workspace-settings-inner_label&&_svg]:w-[18px] [.workspace-settings-inner_label&&_svg]:h-[18px]
+    `} aria-labelledby="credit-activity-heading">
       <h2 id="credit-activity-heading" className="text-lg font-semibold">Paid credit activity</h2>
       <p className="text-caption text-muted-foreground">Last 20 paid credit movements. Completion spends credits already reserved; it does not deduct them twice. Free generations are tracked separately.</p>
       {!wallet ? <p className="text-body-sm text-muted-foreground">{walletLoaded ? "Credit activity is unavailable. Check purchases to try again." : "Loading activity…"}</p> : !wallet.activity.length ? <p className="text-body-sm text-muted-foreground">No paid credit activity yet.</p> : <ul className="divide-y divide-border">

@@ -34,7 +34,11 @@ function SectionHeading({
 }) {
   return (
     <div className="max-w-2xl">
-      <p className="eyebrow">{eyebrow}</p>
+      <p className={`
+      [@layer_components]:text-[color:var(--link)] [@layer_components]:text-[length:var(--text-caption)]
+      [@layer_components]:font-[600] [@layer_components]:tracking-[0.12em] eyebrow
+      [.workspace-page[data-workspace-page='content']_&&]:hidden
+    `}>{eyebrow}</p>
       <h2 className="mt-3 text-heading-2 font-bold tracking-tight md:text-heading-1">
         {title}
       </h2>
@@ -98,7 +102,19 @@ export function CreationCategoryCard({
   index,
 }: (typeof categories)[number] & { index: number }) {
   return (
-    <article className="sceenyk-card flex flex-col p-6">
+    <article className={`
+      [@layer_components]:[border:1px_solid_var(--border)] [@layer_components]:rounded-[var(--radius-xl)]
+      [@layer_components]:[background:var(--card)] [@layer_components]:text-[color:var(--card-foreground)]
+      [@layer_components]:[box-shadow:var(--elevation-card)] sceenyk-card flex flex-col p-6
+      [.marketplace-configuration_>_&&]:[border:0] [.marketplace-configuration_>_&&]:rounded-[0]
+      [.marketplace-configuration_>_&&]:[background:transparent] [.marketplace-configuration_>_&&]:pt-[16px]
+      [.marketplace-configuration_>_&&]:pr-[0] [.marketplace-configuration_>_&&]:pb-[0]
+      [.marketplace-configuration_>_&&]:pl-[0] [[data-workspace-shell]_&&]:[box-shadow:none]
+      [.workspace-settings-inner_label&&]:min-h-[0] [.workspace-settings-inner_label&&]:gap-[8px]
+      [.workspace-settings-inner_label&&]:pt-[12px] [.workspace-settings-inner_label&&]:pr-[12px]
+      [.workspace-settings-inner_label&&]:pb-[12px] [.workspace-settings-inner_label&&]:pl-[12px]
+      [.workspace-settings-inner_label&&_svg]:w-[18px] [.workspace-settings-inner_label&&_svg]:h-[18px]
+    `}>
       <div className="mb-6 flex items-center justify-between">
         <span
           className={cn(
@@ -127,7 +143,12 @@ export function CreationCategoryCard({
 
 export function CreationCategories() {
   return (
-    <section id="features" className="landing-section sceenyk-container">
+    <section id="features" className={`
+      [@layer_components]:pt-[clamp(var(--space-12),_7vw,_6rem)] [@layer_components]:pb-[clamp(var(--space-12),_7vw,_6rem)]
+      [@layer_components]:w-[100%] [@layer_components]:max-w-[var(--content-width)] [@layer_components]:ml-[auto]
+      [@layer_components]:mr-[auto] [@layer_components]:pl-[var(--page-gutter)] [@layer_components]:pr-[var(--page-gutter)]
+      landing-section sceenyk-container
+    `}>
       <div className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
         <SectionHeading
           eyebrow="A NEW WAY TO CREATE"
@@ -187,7 +208,12 @@ export function HowItWorksStep({
 export function HowItWorks() {
   return (
     <section id="how-it-works" className="border-y border-border bg-muted/40">
-      <div className="landing-section sceenyk-container">
+      <div className={`
+      [@layer_components]:pt-[clamp(var(--space-12),_7vw,_6rem)] [@layer_components]:pb-[clamp(var(--space-12),_7vw,_6rem)]
+      [@layer_components]:w-[100%] [@layer_components]:max-w-[var(--content-width)] [@layer_components]:ml-[auto]
+      [@layer_components]:mr-[auto] [@layer_components]:pl-[var(--page-gutter)] [@layer_components]:pr-[var(--page-gutter)]
+      landing-section sceenyk-container
+    `}>
         <SectionHeading
           eyebrow="LESS FRICTION. MORE IMAGINATION."
           title="You bring the idea. We bring it together."
@@ -223,8 +249,17 @@ export function HowItWorks() {
 
 export function FeatureSection() {
   return (
-    <section className="landing-section sceenyk-container grid items-center gap-12 lg:grid-cols-2">
-      <div className="sceenyk-feature-card relative overflow-hidden p-6 sm:p-8">
+    <section className={`
+      [@layer_components]:pt-[clamp(var(--space-12),_7vw,_6rem)] [@layer_components]:pb-[clamp(var(--space-12),_7vw,_6rem)]
+      [@layer_components]:w-[100%] [@layer_components]:max-w-[var(--content-width)] [@layer_components]:ml-[auto]
+      [@layer_components]:mr-[auto] [@layer_components]:pl-[var(--page-gutter)] [@layer_components]:pr-[var(--page-gutter)]
+      landing-section sceenyk-container grid items-center gap-12 lg:grid-cols-2
+    `}>
+      <div className={`
+      [@layer_components]:[border:1px_solid_var(--border)] [@layer_components]:rounded-[var(--radius-xl)]
+      [@layer_components]:[background:var(--gradient-surface)] [@layer_components]:text-[color:var(--card-foreground)]
+      [@layer_components]:[box-shadow:var(--elevation-card)] sceenyk-feature-card relative overflow-hidden p-6 sm:p-8
+    `}>
         <div className="flex items-center justify-between text-caption">
           <span className="font-medium tracking-wider text-muted-foreground">
             YOUR CONNECTED CREATIVE FLOW
@@ -298,7 +333,19 @@ export function MediaPreviewCard({
   variant: SceneVariant;
 }) {
   return (
-    <article className="sceenyk-card overflow-hidden">
+    <article className={`
+      [@layer_components]:[border:1px_solid_var(--border)] [@layer_components]:rounded-[var(--radius-xl)]
+      [@layer_components]:[background:var(--card)] [@layer_components]:text-[color:var(--card-foreground)]
+      [@layer_components]:[box-shadow:var(--elevation-card)] sceenyk-card overflow-hidden
+      [.marketplace-configuration_>_&&]:[border:0] [.marketplace-configuration_>_&&]:rounded-[0]
+      [.marketplace-configuration_>_&&]:[background:transparent] [.marketplace-configuration_>_&&]:pt-[16px]
+      [.marketplace-configuration_>_&&]:pr-[0] [.marketplace-configuration_>_&&]:pb-[0]
+      [.marketplace-configuration_>_&&]:pl-[0] [[data-workspace-shell]_&&]:[box-shadow:none]
+      [.workspace-settings-inner_label&&]:min-h-[0] [.workspace-settings-inner_label&&]:gap-[8px]
+      [.workspace-settings-inner_label&&]:pt-[12px] [.workspace-settings-inner_label&&]:pr-[12px]
+      [.workspace-settings-inner_label&&]:pb-[12px] [.workspace-settings-inner_label&&]:pl-[12px]
+      [.workspace-settings-inner_label&&_svg]:w-[18px] [.workspace-settings-inner_label&&_svg]:h-[18px]
+    `}>
       <div className="relative aspect-[16/10] overflow-hidden">
         <SceneArtwork variant={variant} className="size-full" />
         <span className="absolute left-4 top-4 rounded-md border border-primary-foreground/20 bg-neutral-950/80 px-2 py-1 text-caption font-medium text-primary-foreground">
@@ -321,7 +368,12 @@ export function MediaPreviewCard({
 export function Showcase() {
   return (
     <section id="showcase" className="border-y border-border bg-muted/30">
-      <div className="landing-section sceenyk-container">
+      <div className={`
+      [@layer_components]:pt-[clamp(var(--space-12),_7vw,_6rem)] [@layer_components]:pb-[clamp(var(--space-12),_7vw,_6rem)]
+      [@layer_components]:w-[100%] [@layer_components]:max-w-[var(--content-width)] [@layer_components]:ml-[auto]
+      [@layer_components]:mr-[auto] [@layer_components]:pl-[var(--page-gutter)] [@layer_components]:pr-[var(--page-gutter)]
+      landing-section sceenyk-container
+    `}>
         <SectionHeading
           eyebrow="A LITTLE INSPIRATION"
           title="Imagine what comes next."
@@ -376,9 +428,25 @@ export function PricingCard({
   return (
     <article
       className={cn(
-        "sceenyk-card relative flex flex-col p-6 sm:p-8",
+        `
+      [@layer_components]:[border:1px_solid_var(--border)] [@layer_components]:rounded-[var(--radius-xl)]
+      [@layer_components]:[background:var(--card)] [@layer_components]:text-[color:var(--card-foreground)]
+      [@layer_components]:[box-shadow:var(--elevation-card)] sceenyk-card relative flex flex-col p-6 sm:p-8
+      [.marketplace-configuration_>_&&]:[border:0] [.marketplace-configuration_>_&&]:rounded-[0]
+      [.marketplace-configuration_>_&&]:[background:transparent] [.marketplace-configuration_>_&&]:pt-[16px]
+      [.marketplace-configuration_>_&&]:pr-[0] [.marketplace-configuration_>_&&]:pb-[0]
+      [.marketplace-configuration_>_&&]:pl-[0] [[data-workspace-shell]_&&]:[box-shadow:none]
+      [.workspace-settings-inner_label&&]:min-h-[0] [.workspace-settings-inner_label&&]:gap-[8px]
+      [.workspace-settings-inner_label&&]:pt-[12px] [.workspace-settings-inner_label&&]:pr-[12px]
+      [.workspace-settings-inner_label&&]:pb-[12px] [.workspace-settings-inner_label&&]:pl-[12px]
+      [.workspace-settings-inner_label&&_svg]:w-[18px] [.workspace-settings-inner_label&&_svg]:h-[18px]
+    `,
         featured &&
-          "sceenyk-feature-card border-primary shadow-glow",
+          `
+      [@layer_components]:[border:1px_solid_var(--border)] [@layer_components]:rounded-[var(--radius-xl)]
+      [@layer_components]:[background:var(--gradient-surface)] [@layer_components]:text-[color:var(--card-foreground)]
+      [@layer_components]:[box-shadow:var(--elevation-card)] sceenyk-feature-card border-primary shadow-glow
+    `,
       )}
     >
       {featured && (
@@ -411,9 +479,18 @@ export function PricingCard({
 
 export function PricingPreview() {
   return (
-    <section id="pricing" className="landing-section sceenyk-container">
+    <section id="pricing" className={`
+      [@layer_components]:pt-[clamp(var(--space-12),_7vw,_6rem)] [@layer_components]:pb-[clamp(var(--space-12),_7vw,_6rem)]
+      [@layer_components]:w-[100%] [@layer_components]:max-w-[var(--content-width)] [@layer_components]:ml-[auto]
+      [@layer_components]:mr-[auto] [@layer_components]:pl-[var(--page-gutter)] [@layer_components]:pr-[var(--page-gutter)]
+      landing-section sceenyk-container
+    `}>
       <div className="mx-auto max-w-2xl text-center">
-        <p className="eyebrow">START SMALL. DREAM BIG.</p>
+        <p className={`
+      [@layer_components]:text-[color:var(--link)] [@layer_components]:text-[length:var(--text-caption)]
+      [@layer_components]:font-[600] [@layer_components]:tracking-[0.12em] eyebrow
+      [.workspace-page[data-workspace-page='content']_&&]:hidden
+    `}>START SMALL. DREAM BIG.</p>
         <h2 className="mt-3 text-heading-2 font-bold tracking-tight md:text-heading-1">
           Room for your first spark.
         </h2>
@@ -461,8 +538,16 @@ export function PricingPreview() {
 
 export function FinalCta() {
   return (
-    <section className="sceenyk-container pb-16 md:pb-24">
-      <div className="final-cta relative overflow-hidden rounded-2xl border border-border px-6 py-14 text-center sm:px-12">
+    <section className={`
+      [@layer_components]:w-[100%] [@layer_components]:max-w-[var(--content-width)] [@layer_components]:ml-[auto]
+      [@layer_components]:mr-[auto] [@layer_components]:pl-[var(--page-gutter)] [@layer_components]:pr-[var(--page-gutter)]
+      sceenyk-container pb-16 md:pb-24
+    `}>
+      <div className={`
+
+      [@layer_components]:[background:radial-gradient(_ellipse_at_0%_100%,_color-mix(in_srgb,_var(--brand-blue)_12%,_transparent),_transparent_55%_),_radial-gradient(_ellipse_at_100%_0%,_color-mix(in_srgb,_var(--brand-purple)_15%,_transparent),_transparent_55%_),_var(--card)]
+      final-cta relative overflow-hidden rounded-2xl border border-border px-6 py-14 text-center sm:px-12
+    `}>
         <span className="relative mx-auto mb-5 flex size-12 items-center justify-center rounded-xl bg-accent text-accent-foreground">
           <Sparkles className="size-6" aria-hidden="true" />
         </span>

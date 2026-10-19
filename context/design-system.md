@@ -10,7 +10,7 @@ Do not create page/component `.css` files, CSS Modules (`*.module.css`, `*.modul
 
 Reserve the single global stylesheet for genuinely shared tokens/variables, reset/base rules, fonts, reusable scrollbar hiding, shared animation keyframes, browser-specific fixes, third-party overrides or minimal reusable effects/utilities that Tailwind cannot reasonably express. Complex keyframes, browser-specific pseudo-elements and unsupported selectors can qualify; ordinary layout or repeated component classes do not. Explain each necessary exception and why Tailwind alone was insufficient. Prefer a reusable React component over moving ordinary styling into global CSS.
 
-Existing separate stylesheets and historical shared-class examples describe the current/legacy implementation. When a future task modifies a CSS-backed component, prefer migrating the relevant styling to Tailwind; preserve unrelated styles and delete an old file only after all its styles/consumers have been safely replaced. This policy update does not begin that migration. Older screenshot geometry and visual evidence remain useful, but their CSS implementation examples do not override this policy.
+The subsequently authorized full migration is implemented: app/globals.css is the only project-owned stylesheet. Existing class markers remain for DOM/state selectors, but their appearance now comes from static Tailwind utilities on React elements. Historical separate-stylesheet/shared-class examples are implementation history, not permission to recreate those files. Older screenshot geometry and visual evidence remain useful; retain the same visual system. Shared inclusive responsive variants preserve the previous max-width/container boundaries exactly. Runtime template colors, artwork geometry and caption paint remain dynamic; the isolated next/og renderer retains its required inline styles. Manual visual review remains pending.
 
 ## Focused Studio refinement and canonical URL (2026-10-18)
 
@@ -377,7 +377,7 @@ Tailwind-first composition example (reuse an existing React field/card component
 // <Button>Generate</Button> uses the shared action treatment automatically.
 ```
 
-Existing legacy global classes include `.sceenyk-feature-card`, `.sceenyk-interactive`, `.sceenyk-upload` and `.sceenyk-action`; preserve working consumers until their relevant UI task safely replaces them. Prefer reusable React components and Tailwind variants rather than adding more component classes. Shared theme utilities such as `shadow-card`, `shadow-popover`, `shadow-glow`, `bg-gradient-brand`, `bg-gradient-purple`, `bg-gradient-blue` and `bg-gradient-dark` remain available. Global CSS layering beneath utilities is an existing implementation detail, not permission to move ordinary component styling there.
+Markers such as `.sceenyk-feature-card`, `.sceenyk-interactive`, `.sceenyk-upload` and `.sceenyk-action` no longer define global component CSS; their existing React consumers carry Tailwind classes. Reuse React components/variants rather than adding global component rules. Shared theme utilities such as `shadow-card`, `shadow-popover`, `shadow-glow`, `bg-gradient-brand`, `bg-gradient-purple`, `bg-gradient-blue` and `bg-gradient-dark` remain available. The component-layer Tailwind variant keeps former shared defaults below caller utilities; repeated-selector variants retain the specificity of former contextual overrides without changing component/state structure.
 
 ## Implementation boundaries and remaining decisions
 

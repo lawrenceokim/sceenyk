@@ -40,5 +40,5 @@ function ConfiguredUserMenu({ collapsed, onNavigate }: { collapsed: boolean; onN
 
 export function WorkspaceUserMenu({ collapsed = false, onNavigate }: { collapsed?: boolean; onNavigate?: () => void }) {
   const available = useAuthAvailable();
-  return <div className="workspace-account shrink-0 p-2">{available ? <ConfiguredUserMenu collapsed={collapsed} onNavigate={onNavigate} /> : <GuestAccount collapsed={collapsed} onNavigate={onNavigate} />}</div>;
+  return <div className={"workspace-account shrink-0 p-2 [[data-workspace-shell]_&&_[aria-label='Open_account_menu']]:pt-[4px] [[data-workspace-shell]_&&_[aria-label='Open_account_menu']]:pb-[4px]"}>{available ? <ConfiguredUserMenu collapsed={collapsed} onNavigate={onNavigate} /> : <GuestAccount collapsed={collapsed} onNavigate={onNavigate} />}</div>;
 }

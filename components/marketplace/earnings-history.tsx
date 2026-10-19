@@ -5,10 +5,34 @@ export function EarningsHistory({ earnings }: { earnings: CreatorEarnings }) {
   return <>
     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
       {[["Pending earnings", earnings.pending], ["Available earnings", earnings.available], ["Lifetime gross sales", earnings.lifetimeGross], ["Lifetime net after reversals", earnings.lifetime], ["Creator net reversed", earnings.reversedNet], ["Platform fees reversed", earnings.reversedFee]].map(([label, value]) =>
-        <section key={label} className="sceenyk-card space-y-2 p-5"><h2 className="text-body-sm text-muted-foreground">{label}</h2><p className="text-2xl font-semibold">{usd(Number(value))}</p></section>)}
+        <section key={label} className={`
+      [@layer_components]:[border:1px_solid_var(--border)] [@layer_components]:rounded-[var(--radius-xl)]
+      [@layer_components]:[background:var(--card)] [@layer_components]:text-[color:var(--card-foreground)]
+      [@layer_components]:[box-shadow:var(--elevation-card)] sceenyk-card space-y-2 p-5
+      [.marketplace-configuration_>_&&]:[border:0] [.marketplace-configuration_>_&&]:rounded-[0]
+      [.marketplace-configuration_>_&&]:[background:transparent] [.marketplace-configuration_>_&&]:pt-[16px]
+      [.marketplace-configuration_>_&&]:pr-[0] [.marketplace-configuration_>_&&]:pb-[0]
+      [.marketplace-configuration_>_&&]:pl-[0] [[data-workspace-shell]_&&]:[box-shadow:none]
+      [.workspace-settings-inner_label&&]:min-h-[0] [.workspace-settings-inner_label&&]:gap-[8px]
+      [.workspace-settings-inner_label&&]:pt-[12px] [.workspace-settings-inner_label&&]:pr-[12px]
+      [.workspace-settings-inner_label&&]:pb-[12px] [.workspace-settings-inner_label&&]:pl-[12px]
+      [.workspace-settings-inner_label&&_svg]:w-[18px] [.workspace-settings-inner_label&&_svg]:h-[18px]
+    `}><h2 className="text-body-sm text-muted-foreground">{label}</h2><p className="text-2xl font-semibold">{usd(Number(value))}</p></section>)}
     </div>
     <p className="text-body-sm text-muted-foreground">Creator money is separate from AI credits. New verified sales use a 10% Marketplace fee and 90% creator share, with valid earnings available immediately. Historical Sandbox sales retain their original terms. Withdrawals reserve earnings and are held for 7 days before payout. Refunded gross sales: {usd(earnings.reversedGross)}.</p>
-    <div className="space-y-4">{earnings.sales.map((sale, i) => <article key={i} className="sceenyk-card space-y-3 p-5">
+    <div className="space-y-4">{earnings.sales.map((sale, i) => <article key={i} className={`
+      [@layer_components]:[border:1px_solid_var(--border)] [@layer_components]:rounded-[var(--radius-xl)]
+      [@layer_components]:[background:var(--card)] [@layer_components]:text-[color:var(--card-foreground)]
+      [@layer_components]:[box-shadow:var(--elevation-card)] sceenyk-card space-y-3 p-5
+      [.marketplace-configuration_>_&&]:[border:0] [.marketplace-configuration_>_&&]:rounded-[0]
+      [.marketplace-configuration_>_&&]:[background:transparent] [.marketplace-configuration_>_&&]:pt-[16px]
+      [.marketplace-configuration_>_&&]:pr-[0] [.marketplace-configuration_>_&&]:pb-[0]
+      [.marketplace-configuration_>_&&]:pl-[0] [[data-workspace-shell]_&&]:[box-shadow:none]
+      [.workspace-settings-inner_label&&]:min-h-[0] [.workspace-settings-inner_label&&]:gap-[8px]
+      [.workspace-settings-inner_label&&]:pt-[12px] [.workspace-settings-inner_label&&]:pr-[12px]
+      [.workspace-settings-inner_label&&]:pb-[12px] [.workspace-settings-inner_label&&]:pl-[12px]
+      [.workspace-settings-inner_label&&_svg]:w-[18px] [.workspace-settings-inner_label&&_svg]:h-[18px]
+    `}>
       <h2 className="break-words font-semibold">{sale.title}</h2>
       <p className="text-caption text-muted-foreground">{new Date(sale.createdAt).toLocaleDateString()} · {sale.state}{sale.reversedGross > 0 && sale.state !== "reversed" ? " · partially refunded" : ""}</p>
       {sale.state === "pending" && sale.eligibleAt && <p className="text-body-sm text-muted-foreground">Test eligibility: {new Date(sale.eligibleAt).toLocaleString()}. Payment verification is required before availability.</p>}

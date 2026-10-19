@@ -69,7 +69,7 @@ export function ProjectsSection({
       ) : (
         <>
           <ul
-            className="workspace-project-grid"
+            className={"workspace-project-grid [&&]:grid [&&]:[grid-template-columns:repeat(auto-fill,_206px)] [&&]:gap-[16px] max-767:[&&]:[grid-template-columns:minmax(0,_1fr)]"}
             aria-label="Saved projects"
           >
             {data.projects.map((project) => (

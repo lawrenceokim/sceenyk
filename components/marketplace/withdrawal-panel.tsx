@@ -54,9 +54,33 @@ export function WithdrawalPanel({ account, page, clerkUserId, onChanged }: { acc
     finally { inFlight.current = false; setBusy(false); }
   }
   return <section className="space-y-5" aria-label="Creator withdrawals">
-    <div className="grid gap-4 sm:grid-cols-3">{[["Available Earnings", account.available], ["Pending Payout", account.pending], ["Paid", account.paid]].map(([label, value]) => <div className="sceenyk-card p-5" key={label}><p className="text-body-sm text-muted-foreground">{label}</p><p className="mt-2 text-2xl font-semibold">{usd(Number(value))}</p></div>)}</div>
+    <div className="grid gap-4 sm:grid-cols-3">{[["Available Earnings", account.available], ["Pending Payout", account.pending], ["Paid", account.paid]].map(([label, value]) => <div className={`
+      [@layer_components]:[border:1px_solid_var(--border)] [@layer_components]:rounded-[var(--radius-xl)]
+      [@layer_components]:[background:var(--card)] [@layer_components]:text-[color:var(--card-foreground)]
+      [@layer_components]:[box-shadow:var(--elevation-card)] sceenyk-card p-5 [.marketplace-configuration_>_&&]:[border:0]
+      [.marketplace-configuration_>_&&]:rounded-[0] [.marketplace-configuration_>_&&]:[background:transparent]
+      [.marketplace-configuration_>_&&]:pt-[16px] [.marketplace-configuration_>_&&]:pr-[0]
+      [.marketplace-configuration_>_&&]:pb-[0] [.marketplace-configuration_>_&&]:pl-[0]
+      [[data-workspace-shell]_&&]:[box-shadow:none] [.workspace-settings-inner_label&&]:min-h-[0]
+      [.workspace-settings-inner_label&&]:gap-[8px] [.workspace-settings-inner_label&&]:pt-[12px]
+      [.workspace-settings-inner_label&&]:pr-[12px] [.workspace-settings-inner_label&&]:pb-[12px]
+      [.workspace-settings-inner_label&&]:pl-[12px] [.workspace-settings-inner_label&&_svg]:w-[18px]
+      [.workspace-settings-inner_label&&_svg]:h-[18px]
+    `} key={label}><p className="text-body-sm text-muted-foreground">{label}</p><p className="mt-2 text-2xl font-semibold">{usd(Number(value))}</p></div>)}</div>
     {account.deficit > 0 && <p className="rounded-xl bg-warning-surface p-4 text-warning-foreground">Creator earnings deficit: {usd(account.deficit)}. Future Marketplace earnings will offset this amount before becoming available. New withdrawals are blocked.</p>}
-    <div className="sceenyk-card space-y-5 p-5">
+    <div className={`
+      [@layer_components]:[border:1px_solid_var(--border)] [@layer_components]:rounded-[var(--radius-xl)]
+      [@layer_components]:[background:var(--card)] [@layer_components]:text-[color:var(--card-foreground)]
+      [@layer_components]:[box-shadow:var(--elevation-card)] sceenyk-card space-y-5 p-5
+      [.marketplace-configuration_>_&&]:[border:0] [.marketplace-configuration_>_&&]:rounded-[0]
+      [.marketplace-configuration_>_&&]:[background:transparent] [.marketplace-configuration_>_&&]:pt-[16px]
+      [.marketplace-configuration_>_&&]:pr-[0] [.marketplace-configuration_>_&&]:pb-[0]
+      [.marketplace-configuration_>_&&]:pl-[0] [[data-workspace-shell]_&&]:[box-shadow:none]
+      [.workspace-settings-inner_label&&]:min-h-[0] [.workspace-settings-inner_label&&]:gap-[8px]
+      [.workspace-settings-inner_label&&]:pt-[12px] [.workspace-settings-inner_label&&]:pr-[12px]
+      [.workspace-settings-inner_label&&]:pb-[12px] [.workspace-settings-inner_label&&]:pl-[12px]
+      [.workspace-settings-inner_label&&_svg]:w-[18px] [.workspace-settings-inner_label&&_svg]:h-[18px]
+    `}>
       <h2 className="text-xl font-semibold">Withdraw creator earnings</h2>
       <p className="text-body-sm text-muted-foreground">Minimum withdrawal: $5 USD. Withdrawals are held for 7 days before payout. The requested amount is reserved immediately. Refunds may reduce or cancel a pending withdrawal. AI credits are separate. Payouts use PayPal Sandbox.</p>
       <form className="space-y-3" onSubmit={event => { event.preventDefault(); void submit(true); }}>
@@ -75,7 +99,19 @@ export function WithdrawalPanel({ account, page, clerkUserId, onChanged }: { acc
     </div>
     <h2 className="text-xl font-semibold">Withdrawal history</h2>
     {!account.history.length && <p className="text-muted-foreground">No withdrawals yet.</p>}
-    {account.history.map(w => <article key={w.id} className="sceenyk-card space-y-2 p-5">
+    {account.history.map(w => <article key={w.id} className={`
+      [@layer_components]:[border:1px_solid_var(--border)] [@layer_components]:rounded-[var(--radius-xl)]
+      [@layer_components]:[background:var(--card)] [@layer_components]:text-[color:var(--card-foreground)]
+      [@layer_components]:[box-shadow:var(--elevation-card)] sceenyk-card space-y-2 p-5
+      [.marketplace-configuration_>_&&]:[border:0] [.marketplace-configuration_>_&&]:rounded-[0]
+      [.marketplace-configuration_>_&&]:[background:transparent] [.marketplace-configuration_>_&&]:pt-[16px]
+      [.marketplace-configuration_>_&&]:pr-[0] [.marketplace-configuration_>_&&]:pb-[0]
+      [.marketplace-configuration_>_&&]:pl-[0] [[data-workspace-shell]_&&]:[box-shadow:none]
+      [.workspace-settings-inner_label&&]:min-h-[0] [.workspace-settings-inner_label&&]:gap-[8px]
+      [.workspace-settings-inner_label&&]:pt-[12px] [.workspace-settings-inner_label&&]:pr-[12px]
+      [.workspace-settings-inner_label&&]:pb-[12px] [.workspace-settings-inner_label&&]:pl-[12px]
+      [.workspace-settings-inner_label&&_svg]:w-[18px] [.workspace-settings-inner_label&&_svg]:h-[18px]
+    `}>
       <p className="font-semibold">{usd(w.amount)} · {w.status.charAt(0).toUpperCase() + w.status.slice(1)}</p>
       <p className="text-body-sm text-muted-foreground">Requested {usd(w.requested)} on {new Date(w.requestedAt).toLocaleString()}</p>
       <p className="text-body-sm text-muted-foreground">Hold until {new Date(w.holdUntil).toLocaleString()}</p>

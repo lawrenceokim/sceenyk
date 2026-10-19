@@ -7,7 +7,6 @@ import { loadOwnedListingsAction } from "@/app/actions/owned-listings";
 import type { ListingPage, OwnedListing } from "@/lib/marketplace/contract";
 import { appendUniqueListings, listingScrollRoot } from "./infinite-listings";
 import { ManageTemplateCard } from "./manage-template-card";
-import "./manage-templates.css";
 
 export function OwnedInfiniteGallery({ initial, clerkUserId }: { initial: ListingPage<OwnedListing>; clerkUserId: string }) {
   const [items, setItems] = useState(initial.items);
@@ -61,8 +60,14 @@ export function OwnedInfiniteGallery({ initial, clerkUserId }: { initial: Listin
   }, [hasMore, loading, error, loadMore]);
 
   return <Tooltip.Provider>
-    <div className="manage-template-gallery" aria-busy={loading}>{items.map(listing => <ManageTemplateCard key={listing.id} listing={listing} />)}</div>
-    <div ref={sentinel} className="marketplace-load-status" role="status" aria-live="polite">
+    <div className={`
+      manage-template-gallery [&&]:grid [&&]:[grid-template-columns:repeat(auto-fill,_minmax(min(100%,_200px),_1fr))]
+      [&&]:items-stretch [&&]:gap-[16px] max-599:[&&]:[grid-template-columns:minmax(0,_1fr)]
+    `} aria-busy={loading}>{items.map(listing => <ManageTemplateCard key={listing.id} listing={listing} />)}</div>
+    <div ref={sentinel} className={`
+      marketplace-load-status [&&]:flex [&&]:min-h-[44px] [&&]:items-center [&&]:justify-center [&&]:gap-[8px] [&&]:mt-[12px]
+      [&&]:text-[color:var(--muted-foreground)] [&&]:text-[length:12px]
+    `} role="status" aria-live="polite">
       {loading && <><LoaderCircle className="size-3.5 motion-safe:animate-spin" aria-hidden="true" />Loading more templates…</>}
       {error && <span>More templates couldn’t be loaded. <button type="button" onClick={() => setError(false)} className="underline underline-offset-4">Try loading more</button></span>}
     </div>

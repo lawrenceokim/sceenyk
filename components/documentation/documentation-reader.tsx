@@ -73,15 +73,79 @@ export function DocumentationReader({ topic, children }: { topic: DocumentationT
     });
   }
 
-  return <div className="workspace-doc-reader" data-has-contents={showContents}>
-    <header className="workspace-doc-header">
+  return <div className={`
+      workspace-doc-reader [&&]:grid [&&]:[grid-template-columns:minmax(0,_1fr)]
+      [&&]:[grid-template-rows:auto_minmax(0,_1fr)] [&&]:min-w-[0] [&&]:min-h-[0] [&&]:overflow-hidden
+      [&&_a:focus-visible]:rounded-[4px] [&&_a:focus-visible]:[outline:2px_solid_var(--ring)]
+      [&&_a:focus-visible]:[outline-offset:-2px]
+      @min-[1050px]/documentation:[&&[data-has-contents='true']]:[grid-template-columns:minmax(0,_1fr)_198px]
+      @min-[1050px]/documentation:[&&[data-has-contents='true']]:gap-x-[48px]
+    `} data-has-contents={showContents}>
+    <header className={`
+      workspace-doc-header [&&]:[grid-column:1_/_-1] [&&]:relative [&&]:z-[1] [&&]:pb-[20px] [&&]:[background:var(--card)]
+      [.workspace-page[data-workspace-view='documentation']_&&_h1]:mt-[0]
+      [.workspace-page[data-workspace-view='documentation']_&&_h1]:mr-[0]
+      [.workspace-page[data-workspace-view='documentation']_&&_h1]:mb-[0]
+      [.workspace-page[data-workspace-view='documentation']_&&_h1]:ml-[0]
+      [.workspace-page[data-workspace-view='documentation']_&&_h1]:text-[length:28px]
+      [.workspace-page[data-workspace-view='documentation']_&&_h1]:leading-[38px]
+      [.workspace-page[data-workspace-view='documentation']_&&_h1]:font-[650]
+      [.workspace-page[data-workspace-view='documentation']_&&_h1]:tracking-[-.035em] [&&_p]:mt-[10px]
+      [&&_p]:text-[color:var(--muted-foreground)] [&&_p]:text-[length:14px] [&&_p]:leading-[22px]
+      [&&_p]:[overflow-wrap:anywhere]
+      @min-[760px]/documentation:[.workspace-page[data-workspace-view='documentation']_&&_h1]:text-[length:32px]
+      @min-[1050px]/documentation:[&&_p]:max-w-[720px]
+    `}>
       <h1>Documentation</h1>
       <p>{topic.description}</p>
     </header>
-    <article ref={articleRef} aria-label={topic.label} tabIndex={0} className="workspace-doc-article">
+    <article ref={articleRef} aria-label={topic.label} tabIndex={0} className={`
+      workspace-doc-article [&&]:min-w-[0] [&&]:min-h-[0] [&&]:overflow-y-auto [&&]:overscroll-contain
+      [&&]:[scroll-padding-top:8px] [&&]:pt-[2px] [&&]:pr-[2px] [&&]:pb-[36px] [&&]:pl-[2px] [&&]:[overflow-wrap:anywhere]
+      [&&]:text-[color:var(--muted-foreground)] [&&]:text-[length:14px] [&&]:leading-[23px]
+      [&&:focus-visible]:[outline:2px_solid_var(--ring)] [&&:focus-visible]:[outline-offset:-2px] [&&_>_*_+_*]:mt-[28px]
+      [&&_section_>_*_+_*]:mt-[16px] [&&_:is(h2,_h3)]:text-[color:var(--foreground)] [&&_:is(h2,_h3)]:text-[length:13px]
+      [&&_:is(h2,_h3)]:leading-[20px] [&&_:is(h2,_h3)]:font-[600] [&&_:is(h2,_h3)]:tracking-[-.01em]
+      [&&_:is(h2,_h3)]:[scroll-margin-top:8px] [&&_>_section:first-child_>_h2]:text-[length:20px]
+      [&&_>_section:first-child_>_h2]:leading-[28px] [&&_>_section:first-child_>_h2]:tracking-[-.025em]
+      [&&_[id]:focus-visible]:rounded-[4px] [&&_[id]:focus-visible]:[outline:2px_solid_var(--ring)]
+      [&&_[id]:focus-visible]:[outline-offset:-2px] [&&_:is(ul,_ol)]:pl-[18px] [&&_li_+_li]:mt-[6px]
+      [&&_strong]:text-[color:var(--foreground)] [&&_strong]:font-[600] [&&_table]:block [&&_table]:max-w-[100%]
+      [&&_table]:overflow-x-auto [&&_table]:[border-collapse:collapse] [&&_table]:text-[length:13px]
+      [&&_table]:leading-[19px] [&&_:is(th,_td)]:pt-[7px] [&&_:is(th,_td)]:pr-[10px] [&&_:is(th,_td)]:pb-[7px]
+      [&&_:is(th,_td)]:pl-[10px] [&&_:is(th,_td)]:[border:1px_solid_var(--border)] [&&_:is(th,_td)]:text-left
+      [&&_th]:text-[color:var(--foreground)] [&&_th]:font-[600] [&&_pre]:max-w-[100%] [&&_pre]:overflow-x-auto
+      [&&_pre]:pt-[12px] [&&_pre]:pr-[12px] [&&_pre]:pb-[12px] [&&_pre]:pl-[12px] [&&_pre]:[border:1px_solid_var(--border)]
+      [&&_pre]:rounded-[8px] [&&_pre]:[background:var(--background)] [&&_pre]:text-[length:12px] [&&_blockquote]:ml-[0]
+      [&&_blockquote]:mr-[0] [&&_blockquote]:pt-[10px] [&&_blockquote]:pr-[12px] [&&_blockquote]:pb-[10px]
+      [&&_blockquote]:pl-[12px] [&&_blockquote]:[border:1px_solid_var(--border)] [&&_blockquote]:rounded-[8px]
+      [&&_blockquote]:[background:var(--background)] [&&_blockquote]:text-[length:13px] [&&_blockquote]:leading-[21px]
+    `}>
       {children}
     </article>
-    {showContents && <nav aria-label="On this page" className="workspace-doc-contents">
+    {showContents && <nav aria-label="On this page" className={`
+      workspace-doc-contents [&&]:hidden @min-[1050px]/documentation:[&&]:block
+      @min-[1050px]/documentation:[&&]:[grid-column:2] @min-[1050px]/documentation:[&&]:[grid-row:2]
+      @min-[1050px]/documentation:[&&]:min-h-[0] @min-[1050px]/documentation:[&&]:overflow-y-auto
+      @min-[1050px]/documentation:[&&]:overscroll-contain @min-[1050px]/documentation:[&&]:pt-[12px]
+      @min-[1050px]/documentation:[&&]:pr-[0] @min-[1050px]/documentation:[&&]:pb-[24px]
+      @min-[1050px]/documentation:[&&]:pl-[0] @min-[1050px]/documentation:[&&_>_p]:pl-[10px]
+      @min-[1050px]/documentation:[&&_>_p]:pr-[10px] @min-[1050px]/documentation:[&&_>_p]:mb-[4px]
+      @min-[1050px]/documentation:[&&_>_p]:text-[length:10px] @min-[1050px]/documentation:[&&_>_p]:leading-[16px]
+      @min-[1050px]/documentation:[&&_>_p]:font-[600] @min-[1050px]/documentation:[&&_>_p]:uppercase
+      @min-[1050px]/documentation:[&&_>_p]:text-[color:var(--muted-foreground)] @min-[1050px]/documentation:[&&_a]:flex
+      @min-[1050px]/documentation:[&&_a]:items-center @min-[1050px]/documentation:[&&_a]:min-h-[28px]
+      @min-[1050px]/documentation:[&&_a]:pt-[4px] @min-[1050px]/documentation:[&&_a]:pr-[10px]
+      @min-[1050px]/documentation:[&&_a]:pb-[4px] @min-[1050px]/documentation:[&&_a]:pl-[10px]
+      @min-[1050px]/documentation:[&&_a]:rounded-[7px]
+      @min-[1050px]/documentation:[&&_a]:text-[color:var(--muted-foreground)]
+      @min-[1050px]/documentation:[&&_a]:text-[length:12px] @min-[1050px]/documentation:[&&_a]:leading-[20px]
+      @min-[1050px]/documentation:[&&_a:hover]:[background:var(--muted)]
+      @min-[1050px]/documentation:[&&_a:hover]:text-[color:var(--foreground)]
+      @min-[1050px]/documentation:[&&_a[aria-current='location']]:[background:var(--muted)]
+      @min-[1050px]/documentation:[&&_a[aria-current='location']]:text-[color:var(--foreground)]
+      @min-[1050px]/documentation:[&&_a[aria-current='location']]:font-[600] [@media_(pointer:_coarse)]:[&&_a]:min-h-[44px]
+    `}>
       <p>On this page</p>
       <ul>{topic.sections.map(section => <li key={section.id}>
         <a href={`#${section.id}`} aria-current={activeSection === section.id ? "location" : undefined} onClick={event => navigateSection(event, section.id)}>{section.title}</a>

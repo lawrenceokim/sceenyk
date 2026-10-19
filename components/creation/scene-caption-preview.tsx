@@ -147,7 +147,7 @@ export function SceneCaptionPreview({ projectId, jobId, track, enabled, style, s
         </select>
       </label>
     </div>
-    <div ref={frame} className="relative mx-auto overflow-hidden rounded-md bg-neutral-950" style={{ aspectRatio: track.aspect_ratio.replace(":", " / "), width: "100%", maxWidth: track.aspect_ratio === "9:16" ? "20rem" : undefined }}>
+    <div ref={frame} className="relative mx-auto w-full overflow-hidden rounded-md bg-neutral-950" style={{ aspectRatio: track.aspect_ratio.replace(":", " / "), maxWidth: track.aspect_ratio === "9:16" ? "20rem" : undefined }}>
       {media?.sceneId === sceneId && scene.visual.media_type === "video" && <video key={sceneId + media.url} ref={video} src={media.url}
         className="absolute inset-0 size-full object-contain" playsInline preload="metadata" muted={muted}
         onLoadedMetadata={event => { event.currentTarget.currentTime = scene.visual!.input_start_ms / 1000; sync(scene, scene.visual!.input_start_ms, true); }}

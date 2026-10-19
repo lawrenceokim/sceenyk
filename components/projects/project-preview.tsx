@@ -21,6 +21,10 @@ export function ProjectPreview({ asset, children }: { asset?: ProjectAsset | nul
     {asset.kind === "image"
       ? <Image src={source.url} alt={`Saved project source: ${asset.filename}`} fill unoptimized sizes="(max-width: 767px) 100vw, 206px" onError={() => setFailed(source.url)} />
       : <video src={source.url} muted playsInline preload="metadata" aria-label={`Saved project source: ${asset.filename}`} onError={() => setFailed(source.url)} />}
-    <span className="workspace-project-source-label">Source preview</span>
+    <span className={`
+      workspace-project-source-label [&&]:absolute [&&]:bottom-[5px] [&&]:left-[5px] [&&]:pt-[1px] [&&]:pr-[5px]
+      [&&]:pb-[1px] [&&]:pl-[5px] [&&]:rounded-[4px] [&&]:[background:var(--card)] [&&]:text-[color:var(--muted-foreground)]
+      [&&]:text-[length:9px] [&&]:leading-[14px]
+    `}>Source preview</span>
   </>;
 }

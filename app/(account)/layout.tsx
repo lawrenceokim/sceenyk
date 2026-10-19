@@ -29,7 +29,11 @@ export default function AccountWorkspaceLayout({ children }: { children: ReactNo
       fallback={
         <p
           role="status"
-          className="sceenyk-container py-10 text-muted-foreground"
+          className={`
+      [@layer_components]:w-[100%] [@layer_components]:max-w-[var(--content-width)] [@layer_components]:ml-[auto]
+      [@layer_components]:mr-[auto] [@layer_components]:pl-[var(--page-gutter)] [@layer_components]:pr-[var(--page-gutter)]
+      sceenyk-container py-10 text-muted-foreground
+    `}
         >
           Opening your workspace…
         </p>

@@ -42,5 +42,37 @@ export function PaidAdoption({ listingId, estimate }: { listingId: string; estim
     } catch { if (alive.current) setError("Check your saved Marketplace purchases before starting another checkout."); }
     finally { if (alive.current) setBusy(false); inFlight.current = false; }
   }
-  return <><Button className="w-full" disabled={busy} onClick={() => void run("summary")}>Adopt with PayPal Sandbox</Button><Dialog open={open} onOpenChange={setOpen}><DialogContent><DialogTitle>Adopt this creator template</DialogTitle><DialogDescription>Sandbox payment unlocks one adopted template project. It does not include future AI generation usage.</DialogDescription>{purchase && <div className="space-y-3"><p className="break-words font-semibold">{purchase.title}</p><p>Template price: {usd(purchase.amountMinor)} USD</p><p className="text-body-sm text-muted-foreground">{estimate ? `Estimated AI generation: ~${estimate.credits} Sceenyk credits${estimate.test ? " (test pricing)" : ""}` : "AI generation cost: review in your project"}</p><p className="text-caption text-muted-foreground">This saved checkout retains its reviewed price. No AI credits are purchased or consumed.</p><Button className="w-full" disabled={busy || purchase.status === "failed"} onClick={() => void run(purchase.status === "completed" ? "recover" : "pay")}>{busy ? "Checking purchase…" : purchase.status === "completed" ? "Open adopted project" : "Pay with PayPal Sandbox"}</Button>{approval && <a className="nav-link block text-link" href={approval}>Continue to PayPal Sandbox</a>}<Button variant="outline" className="w-full" disabled={busy} onClick={() => void run("recover")}>Check saved purchase</Button></div>}<p role="status" className="text-body-sm text-destructive">{error || (!purchase && busy ? "Loading payment summary…" : "")}</p><Link className="nav-link text-link" href="/marketplace/purchases">My Marketplace purchases</Link></DialogContent></Dialog></>;
+  return <><Button className="w-full" disabled={busy} onClick={() => void run("summary")}>Adopt with PayPal Sandbox</Button><Dialog open={open} onOpenChange={setOpen}><DialogContent><DialogTitle>Adopt this creator template</DialogTitle><DialogDescription>Sandbox payment unlocks one adopted template project. It does not include future AI generation usage.</DialogDescription>{purchase && <div className="space-y-3"><p className="break-words font-semibold">{purchase.title}</p><p>Template price: {usd(purchase.amountMinor)} USD</p><p className="text-body-sm text-muted-foreground">{estimate ? `Estimated AI generation: ~${estimate.credits} Sceenyk credits${estimate.test ? " (test pricing)" : ""}` : "AI generation cost: review in your project"}</p><p className="text-caption text-muted-foreground">This saved checkout retains its reviewed price. No AI credits are purchased or consumed.</p><Button className="w-full" disabled={busy || purchase.status === "failed"} onClick={() => void run(purchase.status === "completed" ? "recover" : "pay")}>{busy ? "Checking purchase…" : purchase.status === "completed" ? "Open adopted project" : "Pay with PayPal Sandbox"}</Button>{approval && <a className={`
+      [@layer_components]:inline-flex [@layer_components]:min-h-[var(--control-height)] [@layer_components]:items-center
+      [@layer_components]:gap-[var(--space-1)] [@layer_components]:text-[color:var(--muted-foreground)]
+      [@layer_components]:text-[length:var(--text-body-sm)] [@layer_components]:font-[500]
+      [@layer_components]:[transition:color_var(--duration-fast)]
+      [@layer_components]:[@media_(prefers-reduced-motion:_reduce)]:[transition:none] nav-link block text-link
+      [@layer_components]:[&:hover]:text-[color:var(--link)]
+      [@layer_components]:[&:focus-visible]:[outline:2px_solid_var(--ring)]
+      [@layer_components]:[&:focus-visible]:[outline-offset:4px] [.marketplace-detail-info_>_&&]:min-h-[32px]
+      [.marketplace-detail-info_>_&&]:gap-[8px] [.marketplace-detail-info_>_&&]:text-[length:13px]
+      [.marketplace-detail-info_>_&&_img]:w-[28px] [.marketplace-detail-info_>_&&_img]:h-[28px]
+      [.marketplace-detail-info_>_&&_.rounded-full]:w-[28px] [.marketplace-detail-info_>_&&_.rounded-full]:h-[28px]
+      [.workspace-gallery-copy_&&]:min-h-[24px] [.workspace-gallery-copy_&&]:gap-[6px]
+      [.workspace-gallery-copy_&&]:text-[length:inherit] [.workspace-gallery-copy_&&]:leading-[inherit]
+      [.workspace-settings-inner_&&]:min-h-[28px] [.workspace-settings-inner_&&]:text-[length:12px]
+      [@media_(pointer:_coarse)]:[.workspace-settings-inner_&&]:min-h-[44px]
+    `} href={approval}>Continue to PayPal Sandbox</a>}<Button variant="outline" className="w-full" disabled={busy} onClick={() => void run("recover")}>Check saved purchase</Button></div>}<p role="status" className="text-body-sm text-destructive">{error || (!purchase && busy ? "Loading payment summary…" : "")}</p><Link className={`
+      [@layer_components]:inline-flex [@layer_components]:min-h-[var(--control-height)] [@layer_components]:items-center
+      [@layer_components]:gap-[var(--space-1)] [@layer_components]:text-[color:var(--muted-foreground)]
+      [@layer_components]:text-[length:var(--text-body-sm)] [@layer_components]:font-[500]
+      [@layer_components]:[transition:color_var(--duration-fast)]
+      [@layer_components]:[@media_(prefers-reduced-motion:_reduce)]:[transition:none] nav-link text-link
+      [@layer_components]:[&:hover]:text-[color:var(--link)]
+      [@layer_components]:[&:focus-visible]:[outline:2px_solid_var(--ring)]
+      [@layer_components]:[&:focus-visible]:[outline-offset:4px] [.marketplace-detail-info_>_&&]:min-h-[32px]
+      [.marketplace-detail-info_>_&&]:gap-[8px] [.marketplace-detail-info_>_&&]:text-[length:13px]
+      [.marketplace-detail-info_>_&&_img]:w-[28px] [.marketplace-detail-info_>_&&_img]:h-[28px]
+      [.marketplace-detail-info_>_&&_.rounded-full]:w-[28px] [.marketplace-detail-info_>_&&_.rounded-full]:h-[28px]
+      [.workspace-gallery-copy_&&]:min-h-[24px] [.workspace-gallery-copy_&&]:gap-[6px]
+      [.workspace-gallery-copy_&&]:text-[length:inherit] [.workspace-gallery-copy_&&]:leading-[inherit]
+      [.workspace-settings-inner_&&]:min-h-[28px] [.workspace-settings-inner_&&]:text-[length:12px]
+      [@media_(pointer:_coarse)]:[.workspace-settings-inner_&&]:min-h-[44px]
+    `} href="/marketplace/purchases">My Marketplace purchases</Link></DialogContent></Dialog></>;
 }

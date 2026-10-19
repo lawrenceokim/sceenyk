@@ -7,7 +7,16 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "sceenyk-action",
+        default: `
+      [@layer_components]:[background-color:var(--primary)] [@layer_components]:[background-image:var(--gradient-action)]
+      [@layer_components]:text-[color:var(--primary-foreground)] [@layer_components]:[box-shadow:var(--glow-primary)]
+      [@layer_components]:[transition:background-color_var(--duration-fast),_box-shadow_var(--duration-fast),_transform_var(--duration-fast)]
+      [@layer_components]:[@media_(prefers-reduced-motion:_reduce)]:[transition:none] sceenyk-action
+      [@layer_components]:[&:focus-visible]:[outline:2px_solid_var(--ring)]
+      [@layer_components]:[&:focus-visible]:[outline-offset:3px]
+      [@layer_components]:[@media_(hover:_hover)]:[&:hover:not(:disabled,_[aria-disabled='true'],_[data-disabled])]:[background-image:var(--gradient-action-hover)]
+      [@layer_components]:[@media_(hover:_hover)]:[&:hover:not(:disabled,_[aria-disabled='true'],_[data-disabled])]:[box-shadow:var(--glow-primary-hover)]
+    `,
         outline:
           "border-input bg-card text-card-foreground hover:bg-accent hover:text-accent-foreground aria-expanded:bg-accent aria-expanded:text-accent-foreground",
         secondary:

@@ -8,7 +8,7 @@ Use Tailwind utilities directly in components for layout, spacing, sizing, typog
 
 Only genuinely shared styling that Tailwind cannot reasonably express belongs in the single global stylesheet: tokens, reset/base/font rules, reusable scrollbar hiding, shared keyframes, browser-specific fixes, third-party overrides and minimal reusable specialized effects. Explain why Tailwind alone was insufficient. Never move normal component styles there merely to avoid utilities.
 
-Existing separate CSS files are legacy, not a pattern for new UI. Prefer migrating a touched component's relevant styles in its future UI task, preserving unrelated CSS and removing an old file only after all its styles/consumers have been safely replaced. No CSS migration or deletion is authorized by this documentation update.
+The subsequently authorized migration is implemented: app/globals.css is now the only project-owned stylesheet. All nine standalone stylesheets and their imports are removed after conversion to static Tailwind utilities; the obsolete landing class-name adapter is removed too. Existing component/DOM structure, state markers, handlers, themes, viewport/container boundaries and runtime style values are preserved. Historical CSS-file notes below remain evidence of earlier implementation. No new page/component CSS should be introduced. Manual visual review remains pending.
 
 ## Fixed mobile Marketplace and Templates frames (2026-10-19)
 
@@ -552,7 +552,7 @@ The size utilities carry line heights, not weights; apply weight classes explici
 - shadcn is the base library: `components.json` uses `base-nova`, Base UI primitives, CSS variables, Lucide, and `@/components/ui`. Its `baseColor: neutral` is generator metadata; Sceenyk tokens own the runtime appearance.
 - Reuse existing components first. Normally add common primitives through `npx shadcn add <component>`, then review their token use and density. Do not reinitialize the theme or replace the customized stylesheet.
 - `components/ui/` contains `Button`, `Dialog`, and `Sheet`. Button supports default, secondary, outline, ghost, destructive, and link variants; primary uses `.sceenyk-action`. Heights are xs 28, sm 36, default 44, lg 48px, with matching icon-button sizes. Dialog/Sheet reuse semantic overlay/popover, viewport-safe sizing, 44px close controls, and reduced-motion support.
-- Existing global `.sceenyk-card`, `.sceenyk-feature-card`, `.sceenyk-field`, `.sceenyk-upload`, `.sceenyk-container` and `.sceenyk-interactive` classes are legacy shared treatments, not templates for adding ordinary component CSS. Prefer existing React components/variants and Tailwind utilities for new work; migrate relevant legacy styles only within an authorized UI task. Use real links/buttons/inputs and preserve primitive behavior.
+- `.sceenyk-card`, `.sceenyk-feature-card`, `.sceenyk-field`, `.sceenyk-upload`, `.sceenyk-container` and `.sceenyk-interactive` remain DOM markers; their existing React consumers now carry Tailwind utilities instead of relying on global component rules. Prefer reusable React components/variants for new work. Use real links/buttons/inputs and preserve primitive behavior.
 - Customize through shared tokens, Tailwind utilities and reusable React variants. Add global CSS only under the Styling Policy's exception criteria. Preserve accessible labels, keyboard navigation, focus/disabled states, responsive behavior and dialog focus management. Inspect the relevant installed Next.js guide before writing application code, as required by `AGENTS.md`.
 
 ## Layout Patterns

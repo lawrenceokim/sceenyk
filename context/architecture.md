@@ -1,5 +1,11 @@
 # Architecture Context
 
+## Tailwind styling migration (2026-10-19)
+
+The separately authorized styling migration replaces all nine project-owned standalone stylesheets and the landing class-name adapter with static Tailwind utilities in their existing React owners. app/globals.css is the only project-owned stylesheet. Existing DOM/state markers, component structure, handlers, routes and runtime style values remain; arbitrary selector variants preserve descendant/state/portal styling without adding a CSS runtime or another framework. Shared component defaults retain their lower cascade priority through Tailwind's component-layer variant, while former contextual overrides retain their specificity. Shared inclusive max-width/container variants preserve the exact previous breakpoint boundaries and ordering.
+
+The global stylesheet contains Tailwind/package imports, semantic theme/font/spacing/workspace variables, base/reset/selection rules, shared gradient utilities, responsive variants, scrollbar browser fixes and shared reduced-motion behavior. It does not collect the removed page/component rules. Package-owned Tailwind, tw-animate-css, shadcn and Clerk styles remain external imports. Runtime preview colors/pattern geometry, sidebar width, media URLs, caption paint/geometry and existing native-dialog/animation style updates remain dynamic. next/og's isolated image renderer retains its existing inline styles because it does not consume the application's compiled stylesheet. No backend, authentication, financial, generation or ownership contract changes. Earlier references to separate stylesheets describe historical implementation; see the latest tracker entry for checks and manual visual-review limits.
+
 ## Mobile gallery scroll containment (2026-10-19)
 
 Marketplace, Templates and their shared listing-detail view reuse Documentation's active-route viewport constraint below the desktop sidebar breakpoint. The outer shell/frame is height-bound and does not scroll; WorkspacePageFrame is the inner native scroller. Existing listingScrollRoot walks overflow styles and therefore automatically selects this page on mobile for infinite discovery (the desktop workspace scroller remains unchanged). No route, observer, data, authentication or pagination contract changes.

@@ -120,11 +120,21 @@ export function ProjectGeneration({
         )}
       </div>
 );
-  const output = <div className="studio-output">{state.job?.status === "completed" && projectId && <FinalVideoResult key={state.job.id} projectId={projectId} jobId={state.job.id} />}{projectId && signedIn && state.job?.compositionReadyAt && <CaptionTrackPreview key={state.job.id} projectId={projectId} jobId={state.job.id} />}</div>;
+  const output = <div className={"studio-output [&&_video]:max-h-[72dvh]"}>{state.job?.status === "completed" && projectId && <FinalVideoResult key={state.job.id} projectId={projectId} jobId={state.job.id} />}{projectId && signedIn && state.job?.compositionReadyAt && <CaptionTrackPreview key={state.job.id} projectId={projectId} jobId={state.job.id} />}</div>;
   const controls = (
     <section
       aria-label="Project generation"
-      className="studio-generation"
+      className={`
+      studio-generation [&&]:text-[length:12px] [&&]:pt-[16px] [&&_>_*_+_*]:mt-[12px] [&&_dl]:[grid-template-columns:1fr]
+      [&&_[data-slot='button']]:min-h-[var(--workspace-control-height)] [&&_[data-slot='button']]:h-[auto]
+      [&&_[data-slot='button']]:pt-[6px] [&&_[data-slot='button']]:pr-[8px] [&&_[data-slot='button']]:pb-[6px]
+      [&&_[data-slot='button']]:pl-[8px] [&&_[data-slot='button']]:rounded-[var(--ui-radius-control)]
+      [&&_[data-slot='button']]:text-[length:var(--ui-text-control)] [&&_[data-slot='button']]:whitespace-normal
+      [&&_.generation-submit]:w-[100%] [&&_.generation-submit]:whitespace-normal [&&_.generation-submit]:h-[auto]
+      [&&_.generation-submit]:min-h-[36px] [&&_.generation-submit]:pt-[8px] [&&_.generation-submit]:pr-[8px]
+      [&&_.generation-submit]:pb-[8px] [&&_.generation-submit]:pl-[8px] [&&_.generation-submit]:text-[length:12px]
+      [&&_h2]:text-[length:var(--ui-text-panel)] [&&_h2]:font-[600]
+    `}
     >
       <div className="space-y-3">
         <div>
@@ -176,7 +186,10 @@ export function ProjectGeneration({
           </AccountAction>
         )}
       </div>
-      <details className="studio-generation-help"><summary>Before you generate</summary><p className="text-caption leading-relaxed text-muted-foreground">
+      <details className={`
+      studio-generation-help [&&]:text-[color:var(--muted-foreground)] [&&_summary]:pt-[4px] [&&_summary]:pb-[4px]
+      [&&_summary]:text-[length:12px] [&&_summary]:cursor-pointer [&&_p]:mt-[8px]
+    `}><summary>Before you generate</summary><p className="text-caption leading-relaxed text-muted-foreground">
         Requests are saved for media analysis, production planning and supported
         visual scenes. Final rendering is currently deferred while worker capacity is resolved.
         Confirming reserves the displayed allowance or credits. The reservation

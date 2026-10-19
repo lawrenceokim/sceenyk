@@ -12,7 +12,7 @@ Before editing frontend code, read that policy and [design-system.md](design-sys
 4. When touching legacy CSS-backed components, prefer migrating their relevant styles to Tailwind within the authorized task. Preserve unrelated CSS, and remove an old stylesheet only once all of its styles/consumers are safely replaced. Do not start a large unrelated migration.
 5. Before completion, review the changed-file list for prohibited new stylesheets and confirm any global CSS addition satisfies the exception criteria. Report any exception and why Tailwind alone was insufficient. Apply the validation level appropriate to the task; this policy does not add browser suites or builds to Fast UI Development Mode.
 
-The approval recorded here is documentation only: no application edits, CSS deletion or migration are part of this policy update.
+The original policy approval was documentation only. A subsequent explicit user request authorized the full styling migration, now implemented in source with app/globals.css as the sole project-owned stylesheet. This does not authorize future unrelated migrations or redesigns. Keep static classes discoverable by Tailwind; use runtime style props only for data-dependent values or an explained renderer/dependency requirement. Actual checks and manual visual-review limits belong in the progress tracker.
 
 ## Fast UI Development Mode
 

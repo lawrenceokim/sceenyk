@@ -49,7 +49,24 @@ export function MediaDropzone({
   const [dragging, setDragging] = useState(false);
   return (
     <section
-      className="studio-property"
+      className={`
+      studio-property [&&]:min-w-[0] [&&]:text-[length:var(--ui-text-control)] [&&_h2]:text-[length:var(--ui-text-panel)]
+      [&&_h2]:font-[600] [&&_legend]:text-[length:var(--ui-text-panel)] [&&_legend]:font-[600]
+      [&&_.text-body-sm]:text-[length:12px] [&&_.text-body-sm]:leading-[18px]
+      [&&_[data-slot='button']]:min-h-[var(--workspace-control-height)] [&&_[data-slot='button']]:h-[auto]
+      [&&_[data-slot='button']]:pt-[6px] [&&_[data-slot='button']]:pr-[8px] [&&_[data-slot='button']]:pb-[6px]
+      [&&_[data-slot='button']]:pl-[8px] [&&_[data-slot='button']]:text-[length:var(--ui-text-control)]
+      [&&_[data-slot='button']]:rounded-[var(--ui-radius-control)] [&&_fieldset]:min-w-[0]
+      [.studio-inspector-content_>_&&_>_h2]:absolute [.studio-inspector-content_>_&&_>_h2]:w-[1px]
+      [.studio-inspector-content_>_&&_>_h2]:h-[1px] [.studio-inspector-content_>_&&_>_h2]:overflow-hidden
+      [.studio-inspector-content_>_&&_>_h2]:[clip-path:inset(50%)] [.studio-inspector-content_>_&&_>_label]:mt-[0]
+      [.studio-sources_&&_>_div:first-child]:gap-[8px] [.studio-sources_&&_>_div:first-child_>_span]:pt-[2px]
+      [.studio-sources_&&_>_div:first-child_>_span]:pr-[8px] [.studio-sources_&&_>_div:first-child_>_span]:pb-[2px]
+      [.studio-sources_&&_>_div:first-child_>_span]:pl-[8px] [.studio-sources_&&_h2_svg]:w-[16px]
+      [.studio-sources_&&_h2_svg]:h-[16px] [.studio-sources_&&_h2_svg]:text-[color:var(--muted-foreground)]
+      [.studio-sources_&&_>_div:first-child_>_span.rounded-full]:[background:var(--muted)]
+      [.studio-sources_&&_>_div:first-child_>_span.rounded-full]:text-[color:var(--muted-foreground)]
+    `}
       aria-labelledby={`${id}-heading`}
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -66,7 +83,26 @@ export function MediaDropzone({
       <div
         role="region"
         aria-label="Local media dropzone"
-        className="sceenyk-upload mt-3 text-center"
+        className={`
+      [@layer_components]:grid [@layer_components]:[place-items:center] [@layer_components]:min-w-[0]
+      [@layer_components]:gap-[var(--space-2)] [@layer_components]:pt-[var(--space-6)]
+      [@layer_components]:pr-[var(--space-6)] [@layer_components]:pb-[var(--space-6)] [@layer_components]:pl-[var(--space-6)]
+      [@layer_components]:[border:1px_dashed_var(--primary)] [@layer_components]:rounded-[var(--radius-lg)]
+      [@layer_components]:[background:var(--field)] [@layer_components]:text-[color:var(--foreground)]
+      [@layer_components]:[transition:border-color_var(--duration-fast),_background-color_var(--duration-fast)]
+      [@layer_components]:[@media_(prefers-reduced-motion:_reduce)]:[transition:none] sceenyk-upload mt-3 text-center
+      [@layer_components]:[&_>_*]:min-w-[0] [@layer_components]:[&_>_*]:max-w-[100%]
+      [@layer_components]:[&:focus-within]:[border-color:var(--ring)]
+      [@layer_components]:[&:focus-within]:[box-shadow:var(--focus-shadow)]
+      [@layer_components]:[&[data-dragging='true']]:[background:var(--accent)]
+      [@layer_components]:[&[data-dragging='true']]:[border-color:var(--ring)]
+      [@layer_components]:[&[aria-disabled='true']]:opacity-[0.5]
+      [@layer_components]:[&[aria-disabled='true']]:cursor-not-allowed
+      [@layer_components]:[@media_(hover:_hover)]:[&:hover:not([aria-disabled='true'])]:[background:var(--accent)]
+      [.studio-sources_&&]:min-h-[0] [.studio-sources_&&]:pt-[12px] [.studio-sources_&&]:pr-[8px]
+      [.studio-sources_&&]:pb-[12px] [.studio-sources_&&]:pl-[8px] [.studio-sources_&&]:[border-color:var(--input)]
+      [.studio-sources_&&_>_span]:hidden
+    `}
         data-dragging={dragging}
         onDragEnter={(event) => {
           event.preventDefault();

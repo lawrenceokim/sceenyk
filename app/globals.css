@@ -241,203 +241,7 @@
   }
 }
 
-/* Opt-in composition styles: no blanket overrides of shadcn internals. */
-@layer components {
-  .landing-section {
-    padding-block: clamp(var(--space-12), 7vw, 6rem);
-  }
-  .nav-link {
-    display: inline-flex;
-    min-height: var(--control-height);
-    align-items: center;
-    gap: var(--space-1);
-    color: var(--muted-foreground);
-    font-size: var(--text-body-sm);
-    font-weight: 500;
-    transition: color var(--duration-fast);
-  }
-  .nav-link:hover {
-    color: var(--link);
-  }
-  .nav-link:focus-visible {
-    outline: 2px solid var(--ring);
-    outline-offset: 4px;
-  }
-  .eyebrow {
-    color: var(--link);
-    font-size: var(--text-caption);
-    font-weight: 600;
-    letter-spacing: 0.12em;
-  }
-  .hero-section {
-    background:
-      radial-gradient(
-        ellipse at 85% 35%,
-        color-mix(in srgb, var(--brand-purple) 11%, transparent),
-        transparent 55%
-      ),
-      var(--background);
-  }
-  .scene-board {
-    box-shadow: var(--elevation-popover), var(--glow-primary);
-  }
-  .art-caption {
-    background: linear-gradient(transparent, var(--neutral-950));
-  }
-  .final-cta {
-    background:
-      radial-gradient(
-        ellipse at 0% 100%,
-        color-mix(in srgb, var(--brand-blue) 12%, transparent),
-        transparent 55%
-      ),
-      radial-gradient(
-        ellipse at 100% 0%,
-        color-mix(in srgb, var(--brand-purple) 15%, transparent),
-        transparent 55%
-      ),
-      var(--card);
-  }
-  .skip-link {
-    position: fixed;
-    top: var(--space-3);
-    left: var(--space-4);
-    z-index: 60;
-    padding: var(--space-3) var(--space-4);
-    border-radius: var(--radius-lg);
-    background: var(--primary);
-    color: var(--primary-foreground);
-    transform: translateY(-200%);
-  }
-  .skip-link:focus {
-    transform: translateY(0);
-  }
-  .sceenyk-container {
-    width: 100%;
-    max-width: var(--content-width);
-    margin-inline: auto;
-    padding-inline: var(--page-gutter);
-  }
-  .sceenyk-card {
-    border: 1px solid var(--border);
-    border-radius: var(--radius-xl);
-    background: var(--card);
-    color: var(--card-foreground);
-    box-shadow: var(--elevation-card);
-  }
-  .sceenyk-feature-card {
-    border: 1px solid var(--border);
-    border-radius: var(--radius-xl);
-    background: var(--gradient-surface);
-    color: var(--card-foreground);
-    box-shadow: var(--elevation-card);
-  }
-  .sceenyk-field {
-    width: 100%;
-    min-height: var(--control-height);
-    border: 1px solid var(--input);
-    border-radius: var(--radius-md);
-    padding: var(--space-3) var(--space-4);
-    background: var(--field);
-    color: var(--foreground);
-    transition: border-color var(--duration-fast), box-shadow var(--duration-fast);
-  }
-  .sceenyk-field::placeholder {
-    color: var(--muted-foreground);
-    opacity: 1;
-  }
-  .sceenyk-upload {
-    display: grid;
-    place-items: center;
-    min-width: 0;
-    gap: var(--space-2);
-    padding: var(--space-6);
-    border: 1px dashed var(--primary);
-    border-radius: var(--radius-lg);
-    background: var(--field);
-    color: var(--foreground);
-    transition: border-color var(--duration-fast), background-color var(--duration-fast);
-  }
-  .sceenyk-upload > * {
-    min-width: 0;
-    max-width: 100%;
-  }
-  .sceenyk-upload:focus-within {
-    border-color: var(--ring);
-    box-shadow: var(--focus-shadow);
-  }
-  .sceenyk-upload[data-dragging="true"] {
-    background: var(--accent);
-    border-color: var(--ring);
-  }
-  .sceenyk-action {
-    background-color: var(--primary);
-    background-image: var(--gradient-action);
-    color: var(--primary-foreground);
-    box-shadow: var(--glow-primary);
-    transition: background-color var(--duration-fast), box-shadow var(--duration-fast), transform var(--duration-fast);
-  }
-  .sceenyk-field:focus-visible {
-    outline: 2px solid var(--ring);
-    outline-offset: 2px;
-    border-color: var(--ring);
-    box-shadow: var(--focus-shadow);
-  }
-  .sceenyk-field[aria-invalid="true"] {
-    border-color: var(--destructive);
-  }
-  .sceenyk-field[aria-invalid="true"]:focus-visible {
-    outline-color: var(--destructive);
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--destructive) 24%, transparent);
-  }
-  .sceenyk-field:disabled,
-  .sceenyk-upload[aria-disabled="true"] {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-  /* Only interactive cards should opt into this class. */
-  .sceenyk-interactive {
-    transition: border-color var(--duration-fast), box-shadow var(--duration-fast);
-  }
-  .sceenyk-interactive:focus-visible {
-    outline: 2px solid var(--ring);
-    outline-offset: 3px;
-  }
-  .sceenyk-action:focus-visible {
-    outline: 2px solid var(--ring);
-    outline-offset: 3px;
-  }
-  @media (hover: hover) {
-    .sceenyk-action:hover:not(:disabled, [aria-disabled="true"], [data-disabled]) {
-      background-image: var(--gradient-action-hover);
-      box-shadow: var(--glow-primary-hover);
-    }
-    .sceenyk-interactive:hover:not(:disabled, [aria-disabled="true"]) {
-      border-color: var(--ring);
-      box-shadow: var(--elevation-card), var(--glow-primary);
-    }
-    .sceenyk-upload:hover:not([aria-disabled="true"]) {
-      background: var(--accent);
-    }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    html { scroll-behavior: auto; }
-    .nav-link { transition: none; }
-    .sceenyk-action,
-    .sceenyk-field,
-    .sceenyk-upload,
-    .sceenyk-interactive,
-    [data-slot="button"] {
-      transition: none;
-    }
-    [data-slot="button"]:active {
-      transform: none;
-      translate: none;
-    }
-  }
-}
-
-/* Decorative ramps: use .sceenyk-action for controls with white labels. */
+/* Shared decorative theme ramps. Controls use their React/Tailwind variants. */
 @utility bg-gradient-brand {
   background-image: var(--gradient-brand);
 }
@@ -450,3 +254,67 @@
 @utility bg-gradient-dark {
   background-image: var(--gradient-dark);
 }
+/* Shared inclusive responsive variants retain existing CSS boundaries. */
+@custom-variant container-max-859 (@container (max-width: 859px));
+@custom-variant container-max-530 (@container (max-width: 530px));
+@custom-variant container-max-359 (@container (max-width: 359px));
+@custom-variant max-1100 (@media (max-width: 1100px));
+@custom-variant max-1023 (@media (max-width: 1023px));
+@custom-variant max-999 (@media (max-width: 999px));
+@custom-variant max-767 (@media (max-width: 767px));
+@custom-variant max-699 (@media (max-width: 699px));
+@custom-variant max-599 (@media (max-width: 599px));
+@custom-variant max-359 (@media (max-width: 359px));
+@layer components { @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } [data-slot="button"] { transition: none; } [data-slot="button"]:active { transform: none; translate: none; } } }
+[data-workspace-shell], .workspace-drawer {
+  --ui-space-1: 4px;
+  --ui-space-2: 8px;
+  --ui-space-3: 12px;
+  --ui-space-4: 16px;
+  --ui-space-6: 24px;
+  --workspace-nav-open: 252px;
+  --workspace-nav-closed: 64px;
+  --workspace-rail: 254px;
+  --workspace-inspector: 252px;
+  --workspace-gap: var(--ui-space-2);
+  --workspace-inset: var(--ui-space-2);
+  --workspace-panel-padding: var(--ui-space-4);
+  --workspace-toolbar-height: 54px;
+  --workspace-panel-header-height: 54px;
+  --workspace-mobile-header-height: 50px;
+  --workspace-control-height: 32px;
+  --workspace-property-row-height: 52px;
+  --ui-radius-frame: 14px;
+  --ui-radius-media: 12px;
+  --ui-radius-control: 8px;
+  --ui-text-panel: 14px;
+  --ui-text-control: 12px;
+  --ui-text-caption: 12px;
+}
+[data-workspace-shell], .workspace-drawer {
+  --background: #f7f7f8;
+  --card: #fff;
+  --field: #f6f6f7;
+  --muted: #eeeef0;
+  --muted-foreground: #6c6c73;
+  --border: #dedee2;
+  --input: #d7d7dc;
+  --sidebar: #f0f0f2;
+  --elevation-card: none;
+  --glow-primary: none;
+  --glow-primary-hover: none;
+  --gradient-action: none;
+  --gradient-action-hover: none;
+}
+.dark [data-workspace-shell], .dark .workspace-drawer {
+  --background: #050505;
+  --card: #131313;
+  --field: #1e1e1e;
+  --muted: #242424;
+  --muted-foreground: #99999f;
+  --border: #303030;
+  --input: #353535;
+  --sidebar: #252525;
+}
+.scrollbar-hidden, [data-workspace-shell], [data-workspace-shell] *, .workspace-drawer, .workspace-drawer * { scrollbar-width: none; -ms-overflow-style: none; }
+.scrollbar-hidden::-webkit-scrollbar, [data-workspace-shell]::-webkit-scrollbar, [data-workspace-shell] *::-webkit-scrollbar, .workspace-drawer::-webkit-scrollbar, .workspace-drawer *::-webkit-scrollbar { display: none; width: 0; height: 0; }

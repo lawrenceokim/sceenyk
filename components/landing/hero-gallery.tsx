@@ -3,7 +3,6 @@
 import Image from "next/image";
 import { useEffect, useRef, type CSSProperties } from "react";
 import { landingArtwork } from "./artwork";
-import { landingStyles as styles } from "./landing-styles";
 
 // Percentage geometry scales with the viewport; repeated artwork reuses the
 // same optimized image requests instead of introducing more source assets.
@@ -106,12 +105,48 @@ export function HeroGallery() {
     };
   }, []);
   return (
-    <div ref={gallery} className={styles.gallery} data-landing-gallery aria-hidden="true">
-      <div className={styles.galleryCanvas}>
+    <div ref={gallery} className={`
+      sceenyk-landing-gallery [&&::after]:[content:''] [&&::after]:absolute [&&::after]:top-[0] [&&::after]:right-[0]
+      [&&::after]:bottom-[0] [&&::after]:left-[0] [&&::after]:z-[3] [&&::after]:pointer-events-none
+      [&&::after]:[background:linear-gradient(transparent_48%,_color-mix(in_srgb,_var(--background)_94%,_transparent)_73%,_var(--background)_100%)]
+      [&&]:sticky [&&]:top-[0] [&&]:h-[100dvh] [&&]:mb-[-100dvh] [&&]:z-[0] [&&]:overflow-clip [&&]:pointer-events-none
+      [&&]:[background:var(--background)] [&&::before]:[content:''] [&&::before]:absolute [&&::before]:top-[0]
+      [&&::before]:right-[0] [&&::before]:bottom-[0] [&&::before]:left-[0]
+      [&&::before]:[background:radial-gradient(ellipse_at_30%_50%,_color-mix(in_srgb,_var(--brand-purple)_10%,_transparent),_transparent_45%),_radial-gradient(ellipse_at_75%_70%,_color-mix(in_srgb,_var(--brand-blue)_9%,_transparent),_transparent_45%)]
+      max-699:[&&::after]:[background:linear-gradient(transparent_39%,_color-mix(in_srgb,_var(--background)_96%,_transparent)_66%,_var(--background)_82%)]
+      [@media_(prefers-reduced-motion:_reduce)]:[&&]:relative
+    `} data-landing-gallery aria-hidden="true">
+      <div className={"sceenyk-landing-galleryCanvas [&&]:relative [&&]:h-[100%] [&&]:w-[100%] [&&]:ml-[auto] [&&]:mr-[auto] max-699:[&&]:w-[100%]"}>
         {images.map((item, index) => (
-          <div key={`${item.image}-${index}`} className={styles.heroTile} data-depth={item.depth} data-artwork={item.image} data-edge={"edge" in item ? item.edge : undefined}
+          <div key={`${item.image}-${index}`} className={`
+      sceenyk-landing-heroTile [&&]:absolute [&&]:left-[var(--tile-x)] [&&]:top-[var(--tile-y)] [&&]:w-[var(--tile-width)]
+      [&&]:h-[var(--tile-height)] [&&]:overflow-hidden [&&]:rounded-[9px] [&&]:z-[1]
+      [&&]:[border:1px_solid_color-mix(in_srgb,_var(--brand-purple)_25%,_var(--border))]
+      [&&]:[box-shadow:var(--elevation-card)]
+      [&&]:[transform:translate3d(var(--move-x,_0px),_var(--move-y,_0px),_0)_rotate(var(--rotation))]
+      [.sceenyk-landing-gallery[data-parallax-active]_&&]:[will-change:transform] [&&:nth-child(2)]:z-[2]
+      [&&:nth-child(5)]:z-[2] [&&:nth-child(8)]:z-[2] [&&:nth-child(9)]:z-[2] [&&[data-edge]]:z-[0]
+      [&&[data-edge]]:[border:0] [&&[data-edge]]:rounded-[24px] [&&[data-edge]]:[box-shadow:none]
+      [&&[data-edge]]:opacity-[.26] [&&[data-edge]]:[mask-image:linear-gradient(to_right,_black_65%,_transparent_100%)]
+      [&&[data-edge='right']]:[mask-image:linear-gradient(to_left,_black_65%,_transparent_100%)]
+      [&&:nth-child(2)_img]:[object-position:50%_32%] max-699:[&&]:w-[30%] max-699:[&&]:h-[18%]
+      max-699:[&&:nth-child(3n)]:hidden max-699:[&&:nth-child(1)]:left-[-14%] max-699:[&&:nth-child(1)]:top-[13%]
+      max-699:[&&:nth-child(2)]:left-[8%] max-699:[&&:nth-child(2)]:top-[12%] max-699:[&&:nth-child(2)]:h-[24%]
+      max-699:[&&:nth-child(2)]:w-[34%] max-699:[&&:nth-child(4)]:left-[45%] max-699:[&&:nth-child(4)]:top-[21%]
+      max-699:[&&:nth-child(4)]:w-[32%] max-699:[&&:nth-child(5)]:left-[76%] max-699:[&&:nth-child(5)]:top-[11%]
+      max-699:[&&:nth-child(5)]:h-[25%] max-699:[&&:nth-child(7)]:left-[-18%] max-699:[&&:nth-child(7)]:top-[37%]
+      max-699:[&&:nth-child(8)]:left-[81%] max-699:[&&:nth-child(8)]:top-[39%] max-699:[&&:nth-child(10)]:left-[-9%]
+      max-699:[&&:nth-child(10)]:top-[42%] max-699:[&&:nth-child(10)]:h-[22%] max-699:[&&:nth-child(11)]:left-[18%]
+      max-699:[&&:nth-child(11)]:top-[39%] max-699:[&&:nth-child(13)]:left-[44%] max-699:[&&:nth-child(13)]:top-[44%]
+      max-699:[&&:nth-child(14)]:left-[70%] max-699:[&&:nth-child(14)]:top-[49%] max-699:[&&:nth-child(14)]:h-[20%]
+      max-699:[&&:nth-child(16)]:hidden max-699:[&&:nth-child(17)]:hidden max-699:[&&[data-edge]]:block
+      max-699:[&&[data-edge]]:w-[80%] max-699:[&&[data-edge]]:h-[80%] max-699:[&&[data-edge]]:top-[5%]
+      max-699:[&&[data-edge='left']]:left-[-65%] max-699:[&&[data-edge='right']]:left-[88%]
+      [@media_(prefers-reduced-motion:_reduce),_(hover:_none),_(pointer:_coarse)]:[&&]:[transform:rotate(var(--rotation))]
+      [@media_(prefers-reduced-motion:_reduce),_(hover:_none),_(pointer:_coarse)]:[&&]:[will-change:auto]
+    `} data-depth={item.depth} data-artwork={item.image} data-edge={"edge" in item ? item.edge : undefined}
             style={{ "--tile-x": `${item.x}%`, "--tile-y": `${item.y}%`, "--tile-width": `${item.width}%`, "--tile-height": `${item.height}%`, "--rotation": `${item.rotation}deg` } as CSSProperties}>
-            <Image src={landingArtwork[item.image]} alt="" fill sizes={"edge" in item ? "(max-width: 699px) 75vw, 54vw" : "(max-width: 699px) 33vw, (max-width: 1560px) 17vw, 265px"} loading={item.image === "portrait" ? "eager" : "lazy"} fetchPriority={item.image === "portrait" ? "high" : "auto"} className={styles.artwork} />
+            <Image src={landingArtwork[item.image]} alt="" fill sizes={"edge" in item ? "(max-width: 699px) 75vw, 54vw" : "(max-width: 699px) 33vw, (max-width: 1560px) 17vw, 265px"} loading={item.image === "portrait" ? "eager" : "lazy"} fetchPriority={item.image === "portrait" ? "high" : "auto"} className={"sceenyk-landing-artwork [&&]:object-cover"} />
           </div>
         ))}
       </div>
