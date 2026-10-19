@@ -1,5 +1,9 @@
 # UI Context
 
+## Visual redesign Phase 3 — Documentation (2026-10-19)
+
+The four supplied Pryzm Documentation screenshots supersede older docs geometry below. Retain the shared workspace sidebar/frame and all seven existing topics, content, routes, anchors, fonts and theme tokens. Documentation uses compact grouped topics, a stationary Documentation heading/current topic description, an independently scrolling article and optional stationary On This Page rail. Only the topic list and article scroll; the frame stays viewport-bound on desktop and mobile, with hidden scrollbars and overscroll containment. Approximate screenshot targets: 198px side rails, 40px topic/article gap, 32px page title, 14px/23px muted body text and 28px desktop navigation rows. Contents hides at narrower available widths; mobile uses the existing native topic picker separately from the workspace hamburger. Anchors scroll/focus only the article, respect reduced motion and highlight the current section. Manual review remains pending; no product content or backend changes.
+
 ## Saved-color artwork and Templates spacing (2026-10-19)
 
 This refinement replaces the earlier muted field/configuration-box appearance. Shared covers use persisted fallbackColor directly, with four subtle abstract gradient/pattern variants and deterministic geometry derived only from listing ID. The same template has identical base color and geometry in Marketplace, More looks, Templates and either detail view. Small Template preview labels distinguish placeholder artwork from generated media; real public media fields remain unavailable. The upper detail fade uses the selected saved color at 48% light/65% dark near the top and returns fully to the normal theme surface without blur or a hard edge.

@@ -1,5 +1,19 @@
 # Progress Tracker
 
+## Shared workspace stylesheet resolution fix (2026-10-19)
+
+The reported Studio build error identified the new nested Documentation CSS import in workspace.css. The file exists and the current isolated Tailwind loader resolves it, so the earlier resolver failure is not reproducible in isolation. Replaced that nested CSS import with an explicit documentation.css module import immediately after workspace.css in WorkspaceShell, giving Next.js a direct stylesheet dependency while preserving the documentation rules. No CSS declarations, Studio controls, content or server behavior changed.
+
+Verified against the existing local development server: `/studio` and `/documentation` both return HTTP 200 without the reported build error; every linked stylesheet returns 200 and their compiled CSS includes workspace and Documentation selectors. Whitespace check passes. No production build, browser suite, deployment, hosted workflow or provider operation. Next.js feedback review retained no qualifying framework issue; the underlying transient resolver failure could not be reproduced. Manual visual review remains pending.
+
+## Visual redesign Phase 3 — Documentation (2026-10-19)
+
+**Status: Implemented; pending user manual visual review.** The existing seven topics, public routes, 21 anchors, article text and product links remain intact. DocumentationArticle now composes server-rendered content with DocumentationReader's stationary Documentation heading/current description, contained article scrolling and optional On This Page navigation. DocumentationNavigation uses compact grouped topic rows and the existing native topic picker. Dedicated documentation.css replaces the older oversized docs rules; WorkspacePageFrame marks the active Documentation route so cached hidden pages cannot change other destinations.
+
+Desktop uses approximately 198px topic/contents rails, a flexible middle article, 40px/48px column gaps, 32px title, compact 13px section headings and 14px/23px muted copy. The outer frame remains viewport-bound, including below the unchanged mobile workspace header. Topics and article scroll independently with hidden scrollbars and overscroll containment; the header is an opaque separate grid row and the contents rail stays outside article scrolling. Internal anchors focus and smoothly scroll only the article, respect reduced motion, retain hash URLs and update the current-section highlight. New topics initialize at the top or explicit hash; retained routes preserve their reading position. Contents hides below 1050px available frame width or when there is only one section; topics switch to the compact picker below 760px. Mobile keeps separate workspace hamburger/topic controls, contained tables/code and touch-sized controls.
+
+Minimal checks: targeted ESLint passes for the four changed TSX components; both changed stylesheets parse without warnings; whitespace check passes. Manual browser/scroll/responsive/light-dark review is pending with the user. No browser/screenshot/regression suites, production build, deployment, hosted Inngest or provider calls. Next.js feedback review found no qualifying framework issue. No backend, authentication, Marketplace, Studio, Projects, Settings or product-content changes. Stop after Phase 3; do not start Phase 4.
+
 ## Saved preview-color repair and Templates spacing (2026-10-19)
 
 **Status: UI implemented; follow-up SQL application and manual visual review pending.** Migration 029 is already applied (user confirmed; not rerun). Read-only hosted inspection found all 23 listings have valid saved fallback colors. Browse/detail/owned JSON returns them correctly; both published listings share `#66616f`. The original six similar low-chroma colors and random reuse caused the duplicated gray, while weak CSS mixes reduced visible color further. No missing query field or hard-coded background override was found.

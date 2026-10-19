@@ -4,6 +4,7 @@ import { useEffect, useSyncExternalStore, type CSSProperties, type ReactNode } f
 import { WorkspaceSidebar } from "./workspace-sidebar";
 import { WorkspaceMobileNav } from "./workspace-mobile-nav";
 import "./workspace.css";
+import "../documentation/documentation.css";
 
 const preferenceKey = "sceenyk-workspace-collapsed";
 let temporaryPreference: boolean | null = null;

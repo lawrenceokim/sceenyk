@@ -1,5 +1,9 @@
 # Architecture Context
 
+## Documentation reading layout — Phase 3 (2026-10-19)
+
+Documentation retains its public routes and static content source. Server-rendered article content composes with a small client reading pane for contained anchor scrolling, hash navigation and active-section tracking. Active-route frame attributes constrain only Documentation to the viewport, including mobile; cached hidden route markup must not restyle other destinations. The stationary header sits outside the article scroller, topics scroll independently, and React's retained route state preserves reading position on return while new topics begin at the top (or their explicit hash). Existing workspace navigation, auth, server services and providers are unchanged. Validation follows Fast UI Development Mode; stop for manual review.
+
 ## Preview palette repair and shared abstract covers (2026-10-19)
 
 Migration 029 is user-confirmed applied and must not be rerun. A read-only hosted audit confirmed 23 saved colors and matching browse/detail/owned JSON; both published items had the same legacy gray. Migration 030 is a necessary presentation-only follow-up: expand the existing fallback_color palette to 32 muted colors, allocate unused/least-used colors with recent hue-family avoidance, and repair only missing/invalid/legacy duplicate assignments while preserving one valid legacy assignment per color (published first). Valid new assignments remain unchanged on reruns, including after palette exhaustion. The repair keeps every other listing field, including updated_at, unchanged; the normal immutable template/ownership guard remains enabled and the existing color guard is restored before commit. No adoption/financial snapshot or new storage field is introduced.
