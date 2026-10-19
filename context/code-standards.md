@@ -1,5 +1,32 @@
 # Code Standards
 
+## Styling Policy
+
+**Approved 2026-10-19; applies to all future frontend work unless the user explicitly instructs otherwise.** Sceenyk uses **Tailwind CSS + global.css**, not **Tailwind + scattered component CSS files**. Tailwind CSS is the primary and default styling system. This policy takes precedence over older styling guidance, reference snippets and implementation history in the context documents.
+
+**Global stylesheet name:** the policy's `global.css` refers to the single existing global stylesheet, [`app/globals.css`](../app/globals.css), already used by the root layout and shadcn configuration. Keep that existing filename; do not create a second `global.css`, rename files or change imports as part of this documentation update.
+
+### Required rules
+
+1. Use Tailwind utility classes directly in React/Next.js components for layout, spacing, sizing, typography, colors, borders, radius, responsive behavior, hover/focus/active states, transitions, positioning, overflow, flex/grid and light/dark themes.
+2. Do not create new page-specific or component-specific `.css` files.
+3. Do not create CSS Modules, including `*.module.css` or `*.module.scss`.
+4. Do not use inline `<style>` blocks or styled-components unless an existing dependency absolutely requires that mechanism. Document the dependency requirement; it does not authorize introducing another styling framework.
+5. `global.css` (the existing `app/globals.css`) is the only approved custom CSS file for normal application styling.
+6. Use it only for genuinely shared/reusable styling that Tailwind cannot express cleanly or would express awkwardly: global CSS variables/design tokens, base/reset styles, font declarations, reusable scrollbar-hiding utilities, shared animation keyframes, reusable browser-specific fixes, shared utility classes and third-party library overrides.
+7. Do not move ordinary component styling into the global stylesheet just to avoid Tailwind. Repeated utility combinations should first become reusable React components or component variants.
+8. Prefer existing Tailwind design tokens and reusable React components before adding any new global CSS.
+9. Reuse the current Sceenyk Tailwind theme, spacing system, breakpoints, colors and light/dark behavior. Preserve accessibility and existing shared component behavior.
+10. When modifying a component that currently imports a separate CSS file, prefer migrating the relevant styling to Tailwind within that future UI task. Do not automatically perform a large unrelated CSS migration. Remove an old stylesheet only after all its styles and consumers have been safely replaced and its import is no longer needed.
+11. Do not introduce another styling framework.
+12. Future Codex UI implementations must use Tailwind as the default styling approach unless the user explicitly instructs otherwise. Existing separate stylesheets are legacy implementation, not permission to create more.
+
+### Exceptions
+
+Custom CSS is allowed only when Tailwind is genuinely unsuitable, such as complex keyframe animation, browser-specific pseudo-elements, unsupported selectors, third-party component overrides or specialized visual effects that cannot reasonably be expressed with Tailwind. First consider existing utilities, variants and arbitrary values/selectors. When an exception is necessary, place it in the single global stylesheet, keep it reusable and minimal, and explain why Tailwind alone was insufficient in the implementation notes and completion report. Ordinary responsive layout, overflow, hover states or a long class list are not exceptions. The dependency-required mechanism in rule 4 must be explicitly explained as such.
+
+This policy does not authorize deleting existing CSS files or starting a repository-wide migration. Historical descriptions of separate stylesheets remain implementation evidence, not the styling approach for new work.
+
 ## Focused Studio refinement and canonical URL (2026-10-18)
 
 The latest request supersedes the earlier edge-to-edge Sources overlay and side-by-side tablet layout. Studio is canonical at /studio; /create permanently redirects with query parameters, while owned /projects/[id] routes and existing handlers remain unchanged. At desktop viewport widths with at least 930px available Studio width, Sources/Stage/Properties use 254px/flexible/252px columns. Otherwise Stage precedes Properties; Sources opens as a 254px right-side nonmodal panel from 768px viewport width, or as a focus-managed modal inset 8px on every edge below 768px. One mounted Sources tree retains inputs and local media. Only the mobile modal locks background scrolling. Cached route deactivation releases the native Sources dialog and its body lock; reactivation resynchronizes its CSS mode without remounting controls. Root scrollbar hiding uses active WorkspaceShell effects, because hidden cached DOM must not affect the public landing page. Toolbar controls are 32px with a centered compact aspect segment/popover for the existing 9:16,16:9,1:1 choices; no invented Share or generation options. Existing completed-video download appears as Export in the toolbar through a presentation-only portal; URLs, fetching and handlers stay with the existing result component. At 320px the selected ratio/menu and icon-only Save/Export preserve space and accessible names. Workspace-only scrollbar hiding preserves scrolling and leaves public landing scrollbars unchanged. Preserve logos, themes, business logic and ownership; no hosted Inngest. Stop after Studio review.
@@ -88,12 +115,12 @@ Read [architecture.md](architecture.md) for planned provider boundaries and impl
 ## Styling
 
 - Follow [ui-context.md](ui-context.md) and [design-system.md](design-system.md). The PNGs are visual references; preserve their Exact/Approximate/Inferred/Needs confirmation distinctions. `app/globals.css` owns implementation tokens.
-- Tailwind 4 is CSS-first: use the existing `@theme inline`, utilities, and shared classes. No separate Tailwind config exists; do not introduce one or a competing palette/theme system without a documented need.
+- Follow the [Styling Policy](#styling-policy): use Tailwind utilities in components and the single global stylesheet only for approved shared exceptions. Tailwind 4's CSS-first `@theme inline` configures tokens; it does not authorize page/component stylesheets or ordinary component rules in global CSS. No separate Tailwind config exists; do not introduce one or a competing palette/theme system without explicit user direction.
 - Use semantic pairs such as `bg-card text-card-foreground`, `text-muted-foreground`, `border-border`, and `ring-ring`. Never hardcode theme hex colors in components when a token applies.
 - Reuse the existing spacing, type, radius, shadow, gradient, and motion scales. Inter is the UI/display font; Geist Mono is for code/mono content. Purple leads, with supporting blue/cyan and selective gradients/glow.
 - Support light `:root` and `.dark` on `<html>` equally, preserving root font classes. Use the implemented Light/Dark/System preference controller through Settings → Appearance; preserve before-paint initialization and `sceenyk-theme` persistence.
 - Use shadcn as the common-control base, normally adding needed primitives through `npx shadcn add <component>`. Review generated changes; do not reinitialize or overwrite Sceenyk's theme. Button, Dialog, and Sheet currently exist.
-- Prefer shared variants, composition, and `cn` over repeated large class strings or primitive rewrites. Reuse `@/lib/utils` for `cn`; the existing Button imports it directly from the installed `cn` package.
+- Prefer reusable React components, Tailwind-based variants, composition and `cn` over repeated large class strings or primitive rewrites. Do not extract utility combinations into new CSS classes merely to shorten JSX. Reuse `@/lib/utils` for `cn`; the existing Button imports it directly from the installed `cn` package.
 - Build responsive layouts from the start using approved per-experience adaptations, not a desktop layout merely shrunk. Maintain contrast, focus, keyboard behavior, touch targets, and disabled states. Keep animation purposeful and respect reduced motion; effects must not substitute for accessible state cues.
 
 ## API Routes and Server Logic

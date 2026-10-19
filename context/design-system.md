@@ -1,5 +1,17 @@
 # Sceenyk design system
 
+## Styling Policy — Tailwind CSS + global.css
+
+Follow the mandatory [Styling Policy](code-standards.md#styling-policy) for all future frontend work unless the user explicitly instructs otherwise. Sceenyk uses **Tailwind CSS + global.css**, not **Tailwind + scattered component CSS files**. The global stylesheet's existing repository filename is `app/globals.css`; this is one file, not permission to create an additional `global.css`.
+
+Express layout, spacing, sizing, typography, semantic colors, borders/radius, responsive behavior, interaction states, transitions, positioning, overflow, flex/grid and light/dark themes with Tailwind utilities directly in React/Next.js components. Reuse existing theme tokens, spacing, breakpoints, shared React components and component variants. Tailwind 4's CSS-first token definitions do not make hand-written component CSS the default.
+
+Do not create page/component `.css` files, CSS Modules (`*.module.css`, `*.module.scss`) or another styling framework. Do not use inline `<style>` blocks or styled-components unless an existing dependency absolutely requires that mechanism and the requirement is explained.
+
+Reserve the single global stylesheet for genuinely shared tokens/variables, reset/base rules, fonts, reusable scrollbar hiding, shared animation keyframes, browser-specific fixes, third-party overrides or minimal reusable effects/utilities that Tailwind cannot reasonably express. Complex keyframes, browser-specific pseudo-elements and unsupported selectors can qualify; ordinary layout or repeated component classes do not. Explain each necessary exception and why Tailwind alone was insufficient. Prefer a reusable React component over moving ordinary styling into global CSS.
+
+Existing separate stylesheets and historical shared-class examples describe the current/legacy implementation. When a future task modifies a CSS-backed component, prefer migrating the relevant styling to Tailwind; preserve unrelated styles and delete an old file only after all its styles/consumers have been safely replaced. This policy update does not begin that migration. Older screenshot geometry and visual evidence remain useful, but their CSS implementation examples do not override this policy.
+
 ## Focused Studio refinement and canonical URL (2026-10-18)
 
 The latest request supersedes the earlier edge-to-edge Sources overlay and side-by-side tablet layout. Studio is canonical at /studio; /create permanently redirects with query parameters, while owned /projects/[id] routes and existing handlers remain unchanged. At desktop viewport widths with at least 930px available Studio width, Sources/Stage/Properties use 254px/flexible/252px columns. Otherwise Stage precedes Properties; Sources opens as a 254px right-side nonmodal panel from 768px viewport width, or as a focus-managed modal inset 8px on every edge below 768px. One mounted Sources tree retains inputs and local media. Only the mobile modal locks background scrolling. Cached route deactivation releases the native Sources dialog and its body lock; reactivation resynchronizes its CSS mode without remounting controls. Root scrollbar hiding uses active WorkspaceShell effects, because hidden cached DOM must not affect the public landing page. Toolbar controls are 32px with a centered compact aspect segment/popover for the existing 9:16,16:9,1:1 choices; no invented Share or generation options. Existing completed-video download appears as Export in the toolbar through a presentation-only portal; URLs, fetching and handlers stay with the existing result component. At 320px the selected ratio/menu and icon-only Save/Export preserve space and accessible names. Workspace-only scrollbar hiding preserves scrolling and leaves public landing scrollbars unchanged. Preserve logos, themes, business logic and ownership; no hosted Inngest. Stop after Studio review.
@@ -351,21 +363,21 @@ Theme switching is CSS-ready:
 
 The implemented controller adds/removes `dark` on `document.documentElement`, preserving font/layout classes. `color-scheme` follows the selected theme. The HTML and static inline head script default to Dark before first paint. Saved `sceenyk-theme` light/dark choices are retained; explicit system is persisted separately and follows OS changes. Missing/invalid preferences default to Dark, including blocked-storage initialization. Settings → Appearance already implements Light/Dark/System through this controller; no global toggle is added. Cross-tab changes, favicon synchronization and in-page blocked-storage choices remain supported. Blocked storage must not prevent in-page switching. Keep the theme root on the document so portals resolve the same tokens.
 
-Shared compositions available now:
+Tailwind-first composition example (reuse an existing React field/card component when available):
 
 ```tsx
-<section className="sceenyk-container">
-  <article className="sceenyk-card p-6">
-    <h2 className="text-heading-3 font-semibold">Project details</h2>
-    <p className="text-body-sm text-muted-foreground">Describe your scene.</p>
+<section className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+  <article className="rounded-xl border border-border bg-card p-6 text-card-foreground shadow-card">
+    <h2 className="text-xl font-semibold">Project details</h2>
+    <p className="text-sm text-muted-foreground">Describe your scene.</p>
     <label htmlFor="scene">Scene</label>
-    <textarea id="scene" className="sceenyk-field mt-3" />
+    <textarea id="scene" className="mt-3 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" />
   </article>
 </section>
 // <Button>Generate</Button> uses the shared action treatment automatically.
 ```
 
-Other shared classes/utilities: `.sceenyk-feature-card`, `.sceenyk-interactive`, `.sceenyk-upload`, `.sceenyk-action`, `shadow-card`, `shadow-popover`, `shadow-glow`, `bg-gradient-brand`, `bg-gradient-purple`, `bg-gradient-blue`, and `bg-gradient-dark`. Shared CSS is layered beneath utilities so local composition can override it without specificity fights.
+Existing legacy global classes include `.sceenyk-feature-card`, `.sceenyk-interactive`, `.sceenyk-upload` and `.sceenyk-action`; preserve working consumers until their relevant UI task safely replaces them. Prefer reusable React components and Tailwind variants rather than adding more component classes. Shared theme utilities such as `shadow-card`, `shadow-popover`, `shadow-glow`, `bg-gradient-brand`, `bg-gradient-purple`, `bg-gradient-blue` and `bg-gradient-dark` remain available. Global CSS layering beneath utilities is an existing implementation detail, not permission to move ordinary component styling there.
 
 ## Implementation boundaries and remaining decisions
 

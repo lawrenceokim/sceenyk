@@ -26,6 +26,14 @@ or making any architectural decision:
 6. `context/progress-tracker.md` — current phase,
    completed work, open questions, and next steps
 
+For every frontend task, also read `context/design-system.md` and follow the
+approved [Styling Policy](context/code-standards.md#styling-policy), reinforced
+in `context/ai-workflow-rules.md` and `context/ui-context.md`. Default to
+Tailwind utilities in components plus the single existing `app/globals.css`
+(the policy's `global.css`); do not create page/component CSS files or CSS
+Modules. Older CSS examples and legacy stylesheets do not override this rule.
+Only explicit user instructions can change the default styling approach.
+
 Update `context/progress-tracker.md` after each
 meaningful implementation change.
 

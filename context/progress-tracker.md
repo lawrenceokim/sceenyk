@@ -1,5 +1,13 @@
 # Progress Tracker
 
+## Tailwind-first styling policy — documentation only (2026-10-19)
+
+**Complete as a documentation update; no application migration performed.** The approved Styling Policy in code-standards.md makes Tailwind utilities the mandatory default for future frontend work, with only minimal reusable shared exceptions in the existing app/globals.css (the policy's global.css). It bans new page/component stylesheets, CSS Modules, additional styling frameworks and inline style blocks/styled-components except for an explained absolute requirement of an existing dependency. Reuse existing tokens, spacing, breakpoints, light/dark behavior and React components; ordinary component styles do not belong in global CSS.
+
+Workflow, design-system and UI guidance now reinforce the policy, its precedence over older notes and scoped migration rules. AGENTS.md explicitly references the policy and requires frontend readers to consult design-system.md. Broad shared-class guidance and the reference's standalone layout CSS example were replaced with Tailwind/component guidance and utility-based examples. Historical stylesheet descriptions remain evidence of legacy implementation, not authorization to add more CSS files. app/layout.tsx and components.json confirm the actual global filename is app/globals.css; no second global.css is introduced.
+
+Existing application code, stylesheets, CSS imports and dependencies are untouched. No CSS files were deleted, no migration was begun, and no application tests, build, deployment or hosted workflow were run. Documentation-only scope, all 12 required rules, 14 local policy links and tracked-file whitespace checks pass across the seven updated documents; the local Pryzm reference is already Git-ignored and remains so. Next.js feedback review found no qualifying framework issue. Stop after this documentation update.
+
 ## Mobile Marketplace and Templates scrolling/cards (2026-10-19)
 
 **Implemented; manual mobile review pending.** Marketplace/Templates and the shared listing-detail view now reuse the fixed workspace frame pattern below 1024px: viewport height less the mobile header/gutters, outer overflow hidden and an explicit height/min-height:0/overflow-y:auto inner page. Previously these pages only had desktop height constraints, so mobile content expanded the frame and scrolled the document. Existing scrollbar hiding and overscroll containment preserve native scrolling. Infinite discovery automatically finds the new inner page through the existing nearest-scroll-root helper; no observer/data changes.

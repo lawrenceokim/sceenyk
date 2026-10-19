@@ -1,5 +1,19 @@
 # AI Workflow Rules
 
+## Styling Policy — mandatory frontend workflow
+
+All future frontend work follows the approved [Styling Policy](code-standards.md#styling-policy): **Tailwind CSS + global.css**, not **Tailwind + scattered component CSS files**. In this repository `global.css` means the existing `app/globals.css`; do not create a second global stylesheet. This rule takes precedence over older CSS implementation notes and reference examples unless the user explicitly instructs otherwise.
+
+Before editing frontend code, read that policy and [design-system.md](design-system.md). Then:
+
+1. Implement ordinary styling directly with Tailwind utilities in React/Next.js components. Reuse existing tokens, spacing, breakpoints, theme behavior and React components/variants.
+2. Do not add page/component `.css` files, CSS Modules (`*.module.css`, `*.module.scss`), another styling framework, inline `<style>` blocks or styled-components. Only an existing dependency's absolute requirement may justify the latter two mechanisms, and the reason must be documented.
+3. For a genuine Tailwind limitation, use only minimal reusable custom CSS in `app/globals.css` and explain the limitation. Do not relocate normal component styling there to avoid utilities; share repeated Tailwind patterns through React components.
+4. When touching legacy CSS-backed components, prefer migrating their relevant styles to Tailwind within the authorized task. Preserve unrelated CSS, and remove an old stylesheet only once all of its styles/consumers are safely replaced. Do not start a large unrelated migration.
+5. Before completion, review the changed-file list for prohibited new stylesheets and confirm any global CSS addition satisfies the exception criteria. Report any exception and why Tailwind alone was insufficient. Apply the validation level appropriate to the task; this policy does not add browser suites or builds to Fast UI Development Mode.
+
+The approval recorded here is documentation only: no application edits, CSS deletion or migration are part of this policy update.
+
 ## Fast UI Development Mode
 
 Apply this mode to all future tasks involving only UI design, styling, component sizing, layout, spacing, responsiveness, or animations. It takes precedence over older UI validation requirements in this file, including browser acceptance, screenshot comparisons, multi-size/theme testing, and production-build checklists.
