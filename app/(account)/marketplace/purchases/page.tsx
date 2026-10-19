@@ -11,9 +11,9 @@ async function Content({ searchParams }: { searchParams: Promise<Record<string, 
   const current = typeof page === "string" && /^\d{1,6}$/.test(page) ? Math.max(1, Math.min(100000, Number(page))) : 1;
   let result;
   try { result = await getMarketplacePurchases(current); }
-  catch (error) { unstable_rethrow(error); return <MarketplaceFailure href="/dashboard/marketplace/purchases" />; }
+  catch (error) { unstable_rethrow(error); return <MarketplaceFailure href="/marketplace/purchases" />; }
   return <FinancialPanel clerkUserId={result.clerkUserId} page={current} purchases={result} />;
 }
 export default function Page({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
-  return <><WorkspacePageHeader title="My Marketplace purchases" eyebrow="MARKETPLACE · SANDBOX" description="Review your existing purchases and recover an adopted project."></WorkspacePageHeader><nav className="flex flex-wrap gap-4 text-body-sm"><Link className="nav-link text-link" href="/dashboard/marketplace">My Marketplace Listings</Link><Link className="nav-link text-link" href="/dashboard/settings/earnings">Creator earnings</Link></nav><Suspense fallback={<p role="status">Loading your Marketplace account…</p>}><Content searchParams={searchParams} /></Suspense></>;
+  return <><WorkspacePageHeader title="My Marketplace purchases" eyebrow="MARKETPLACE · SANDBOX" description="Review your existing purchases and recover an adopted project."></WorkspacePageHeader><nav className="flex flex-wrap gap-4 text-body-sm"><Link className="nav-link text-link" href="/settings/templates">My Marketplace Listings</Link><Link className="nav-link text-link" href="/settings/earnings">Creator earnings</Link></nav><Suspense fallback={<p role="status">Loading your Marketplace account…</p>}><Content searchParams={searchParams} /></Suspense></>;
 }

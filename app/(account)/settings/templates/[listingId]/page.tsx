@@ -1,4 +1,4 @@
-import { WorkspacePageHeader } from "@/components/workspace/workspace-page-header";
+import { SettingsSection } from "@/components/settings/settings-section";
 import { Suspense } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -14,10 +14,10 @@ async function OwnedListing({ params }: { params: Promise<{ listingId: string }>
   const user = await ensureAppUser();
   let listing;
   try { listing = await getOwnedMarketplaceListing(listingId); }
-  catch (error) { unstable_rethrow(error); return <MarketplaceFailure href="/dashboard/marketplace" />; }
-  if (!listing) return <section className="sceenyk-card space-y-3 p-6"><h2 className="text-lg font-semibold">This listing is unavailable</h2><Link className="nav-link text-link" href="/dashboard/marketplace">My Marketplace Listings</Link></section>;
+  catch (error) { unstable_rethrow(error); return <MarketplaceFailure href="/settings/templates" />; }
+  if (!listing) return <section className="sceenyk-card space-y-3 p-6"><h2 className="text-lg font-semibold">This listing is unavailable</h2><Link className="nav-link text-link" href="/settings/templates">My Marketplace Listings</Link></section>;
   return <ListingEditor clerkUserId={user.clerk_user_id} listing={listing} />;
 }
 export default function ManageListingPage({ params }: { params: Promise<{ listingId: string }> }) {
-  return <><WorkspacePageHeader title="Manage listing" eyebrow="YOUR CREATOR SPACE" description="Edit this listing’s public metadata and control when it appears in Marketplace."></WorkspacePageHeader><Suspense fallback={<MarketplaceLoading />}><OwnedListing params={params} /></Suspense></>;
+  return <SettingsSection title="Manage listing" description="Edit this listing’s public metadata and control when it appears in Marketplace."><Suspense fallback={<MarketplaceLoading />}><OwnedListing params={params} /></Suspense></SettingsSection>;
 }

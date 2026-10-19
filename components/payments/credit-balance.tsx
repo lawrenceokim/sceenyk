@@ -45,7 +45,7 @@ function BalanceRead({ compact }: { compact: boolean }) {
     };
   }, []);
   const balance = summary?.available.toLocaleString() ?? (compact ? loaded ? "Unavailable" : "Loading…" : "—");
-  return compact ? <Link href="/dashboard/settings/credits" className="nav-link flex flex-wrap gap-x-2 text-caption" aria-label={`Paid credits: ${balance}. Buy credits`}>
+  return compact ? <Link href="/settings/credits" className="nav-link flex flex-wrap gap-x-2 text-caption" aria-label={`Paid credits: ${balance}. Buy credits`}>
     <span aria-live="polite">Paid credits: {balance}</span>
     {summary?.lowBalance && <span className="text-warning-foreground">Low balance</span>}
   </Link> : <span aria-live="polite">{balance}</span>;

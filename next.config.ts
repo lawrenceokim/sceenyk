@@ -3,36 +3,29 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   async redirects() {
     // Next forwards query parameters; the HTTP redirect also retains fragments.
-    return [{ source: "/create", destination: "/studio", permanent: true }];
+    return [
+      { source: "/create", destination: "/studio", permanent: true },
+      { source: "/settings", destination: "/settings/account", permanent: true },
+      { source: "/dashboard", has: [{ type: "query", key: "page" }], destination: "/projects", permanent: true },
+      { source: "/dashboard", destination: "/studio", permanent: true },
+      { source: "/dashboard/credits", destination: "/settings/credits", permanent: true },
+      { source: "/dashboard/marketplace/profile", destination: "/settings/creator-profile", permanent: true },
+      { source: "/dashboard/marketplace/earnings", destination: "/settings/earnings", permanent: true },
+      { source: "/dashboard/marketplace/purchases", destination: "/marketplace/purchases", permanent: true },
+      { source: "/dashboard/marketplace/:path*", destination: "/settings/templates/:path*", permanent: true },
+      { source: "/dashboard/:path+", destination: "/:path+", permanent: true },
+    ];
   },
   async headers() {
     // PPR can resume a cached shell with request-specific content. Cover its
     // generated response paths too: /profile/:path* does not match /profile.rsc.
     return [
-      "/dashboard/settings/:path*",
-      "/dashboard/settings.html",
-      "/dashboard/settings.rsc",
-      "/dashboard/settings.prefetch.rsc",
-      "/dashboard/settings.segments/:path*",
-      // Keep the financial account and each emitted resource explicitly
-      // private as well as applying the general Settings policy above.
-      "/dashboard/settings/credits/:path*",
-      "/dashboard/settings/credits.html",
-      "/dashboard/settings/credits.rsc",
-      "/dashboard/settings/credits.prefetch.rsc",
-      "/dashboard/settings/credits.segments/:path*",
-      "/settings/:path*",
-      "/settings.html",
-      "/settings.rsc",
-      "/settings.prefetch.rsc",
-      "/settings.segments/:path*",
+      ...["/settings", "/templates", "/projects", "/marketplace/purchases"].flatMap(base => [
+        `${base}/:path*`, `${base}.html`, `${base}.rsc`,
+        `${base}.prefetch.rsc`, `${base}.segments/:path*`,
+      ]),
       "/admin/:path*",
       "/api/admin/:path*",
-      "/dashboard/marketplace/profile/:path*",
-      "/dashboard/marketplace/profile.html",
-      "/dashboard/marketplace/profile.rsc",
-      "/dashboard/marketplace/profile.prefetch.rsc",
-      "/dashboard/marketplace/profile.segments/:path*",
       "/api/marketplace/creator-avatar",
     ].map((source) => ({
       source,

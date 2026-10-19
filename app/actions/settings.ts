@@ -15,7 +15,7 @@ export async function creationPreferencesAction() { return run(getCreationPrefer
 export async function saveCreationPreferencesAction(input: unknown) {
   return run(async () => {
     const result = await saveCreationPreferences(input);
-    revalidatePath("/dashboard/settings/creation");
+    revalidatePath("/settings/creation");
     return result;
   });
 }

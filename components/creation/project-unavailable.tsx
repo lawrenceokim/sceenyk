@@ -13,7 +13,7 @@ export function ProjectUnavailable() {
         primaryAction={
           <Button
             nativeButton={false}
-            render={<Link href="/dashboard/projects" />}
+            render={<Link href="/projects" />}
           >
             Your projects
           </Button>

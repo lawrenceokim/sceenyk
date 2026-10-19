@@ -43,7 +43,7 @@ function ConfiguredActions({ onNavigate }: { onNavigate?: () => void }) {
       >
         Studio <ArrowUpRight aria-hidden="true" />
       </Button>
-      <Button variant="ghost" nativeButton={false} render={<Link href="/dashboard/settings/account" onClick={onNavigate} />}>Settings</Button>
+      <Button variant="ghost" nativeButton={false} render={<Link href="/settings/account" onClick={onNavigate} />}>Settings</Button>
       <UserButton userProfileMode="modal" />
     </>
   );

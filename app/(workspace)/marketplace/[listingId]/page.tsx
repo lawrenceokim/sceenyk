@@ -5,11 +5,8 @@ import { ArrowLeft } from "lucide-react";
 import { unstable_rethrow } from "next/navigation";
 import { browseMarketplace, getMarketplaceListing } from "@/lib/marketplace/server";
 import type { Listing } from "@/lib/marketplace/contract";
-import { usd } from "@/lib/marketplace/payments/contract";
-import { AdoptButton } from "@/components/marketplace/adopt-button";
-import { GenerationEstimate, ListingCard, ListingCreator, MarketplaceFailure, MarketplaceLoading, TemplateCover, TemplateInformation } from "@/components/marketplace/listing-card";
-import { creationCategories } from "@/components/creation/creation-options";
-import { templateAppearance } from "@/components/marketplace/template-appearance";
+import { ListingCard, MarketplaceFailure, MarketplaceLoading } from "@/components/marketplace/listing-card";
+import { TemplateDetail } from "@/components/marketplace/template-detail";
 
 export const metadata: Metadata = { title: "Creator template — Sceenyk Marketplace" };
 
@@ -47,24 +44,9 @@ async function Detail({ params }: { params: Promise<{ listingId: string }> }) {
   try { listing = await getMarketplaceListing(listingId); }
   catch (error) { unstable_rethrow(error); return <div className="marketplace-detail"><MarketplaceBack /><MarketplaceFailure href={`/marketplace/${encodeURIComponent(listingId)}`} /></div>; }
   if (!listing) return <div className="marketplace-detail"><MarketplaceBack /><section className="space-y-3"><h1 className="text-2xl font-bold">This template is unavailable</h1><p className="text-muted-foreground">It may no longer be published. Explore other creator templates.</p></section></div>;
-  const category = creationCategories.find(item => item.id === listing.category)!;
-  return <div className="marketplace-detail" style={templateAppearance(listing.template)}>
-    <MarketplaceBack />
-    <div className="marketplace-detail-main">
-      <div className="marketplace-detail-preview"><TemplateCover template={listing.template} large /></div>
-      <div className="marketplace-detail-info">
-        <h1>{listing.title}</h1>
-        <p className="marketplace-detail-description">{listing.description}</p>
-        <div className="marketplace-tags"><span>{category.title}</span>{listing.tags.map(tag => <span key={tag}>{tag}</span>)}</div>
-        <ListingCreator listing={listing} />
-        <div className="marketplace-detail-price"><p><span>Adoption price</span><strong>{listing.adoptionType === "free" ? "Free" : usd(listing.priceMinor)}</strong>{listing.adoptionType === "paid" && <span>USD · PayPal Sandbox</span>}</p><GenerationEstimate listing={listing} /></div>
-        <div className="marketplace-detail-adopt"><AdoptButton listingId={listing.id} paid={listing.adoptionType === "paid"} estimate={listing.estimate} /></div>
-        <p className="marketplace-detail-note">Adoption creates your own editable project; creator media stays private. AI generation is separate, with a quote shown before you generate.</p>
-        <details className="marketplace-configuration"><summary>What you’ll adopt</summary><TemplateInformation template={listing.template} /></details>
-      </div>
-    </div>
+  return <TemplateDetail listing={listing}>
     <Suspense fallback={<section className="marketplace-more" aria-busy="true"><h2>More looks</h2><p role="status" className="text-body-sm text-muted-foreground">Loading more templates…</p></section>}><MoreLooks listing={listing} /></Suspense>
-  </div>;
+  </TemplateDetail>;
 }
 export default function ListingPage({ params }: { params: Promise<{ listingId: string }> }) {
   return <Suspense fallback={<div className="marketplace-detail"><MarketplaceBack /><MarketplaceLoading /></div>}><Detail params={params} /></Suspense>;

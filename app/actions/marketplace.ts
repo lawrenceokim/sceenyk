@@ -10,9 +10,13 @@ async function run(work: () => Promise<MarketplaceResult>): Promise<MarketplaceR
     const result = await work();
     if (result.ok) {
       revalidatePath("/marketplace", "layout");
-      revalidatePath("/dashboard/marketplace");
-      revalidatePath("/dashboard/templates");
-      if ("projectId" in result) revalidatePath("/dashboard/projects");
+      revalidatePath("/settings/templates");
+      revalidatePath("/templates");
+      if ("listingId" in result) {
+        revalidatePath(`/templates/${result.listingId}`);
+        revalidatePath(`/settings/templates/${result.listingId}`);
+      }
+      if ("projectId" in result) revalidatePath("/projects");
     }
     return result;
   } catch (error: unknown) {

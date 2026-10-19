@@ -1,5 +1,15 @@
 # Progress Tracker
 
+## Marketplace, Templates and clean-route refinements (2026-10-19)
+
+**Status: Implemented; migration application and user manual UI review pending.** Clean account routes and legacy Next redirects use the existing guards/account fences; Settings contains Manage Templates and owner-only editing/publishing. `/templates/[listingId]` reuses the Marketplace detail presentation and gates public links on published status. Marketplace has transform-only hover lift, clipped preview scaling and an accessible focus/hover arrow; infinite discovery reuses 12-item server pagination through a public read-only endpoint, deduplicates, resets with filters, cancels inactive requests and observes the actual workspace scroller (viewport on mobile).
+
+Migration `20261018002900_marketplace_preview_colors.sql` adds `marketplace_listings.fallback_color`: one random muted palette assignment per listing, null-only backfill, default for new listings and immutable assignment. The existing public paid-instructions mask is preserved. Gallery, owned Templates, shared detail and More looks reuse the saved color, with a soft theme-aware upper detail fade. Public preview-media fields still do not exist; no private media or unrelated artwork is used. Older DTOs render a neutral placeholder until the migration is applied.
+
+Focused verification: listing columns were confirmed read-only against configured Supabase. `node scripts/check-marketplace-refinements.mjs` passes 51 local assertions: 12 legacy redirect cases, query preservation including payment return/cancel, private response variants, SQL backfill/default/rerun safety and color immutability, snapshot preservation, category/search pagination, paid-instructions masking, A/B private read/edit denial, browser-role table denial and GET validation. A separate check confirms `/settings` redirects to Account with query parameters. `next typegen`, a single standalone TypeScript check, targeted ESLint and whitespace check pass. The Settings browser fixture's moved imports were updated; no browser suite was run. No qualifying Next.js feedback candidate remained after review.
+
+**Manual setup:** apply migration 029 to the configured Supabase project; it was verified locally, not applied remotely. No new environment variables. Existing PayPal return/cancel URLs and API callback routes are unchanged and forward via legacy redirects. Runtime links, auth destinations, routing invalidations, private path guards and Settings final-response cache transforms follow clean routes. No financial/generation service or immutable snapshot logic, production build, broad regressions, screenshots, hosted acceptance, Inngest or deployment. Stop for manual inspection; do not begin another feature.
+
 ## Visual redesign Phase 2 — Marketplace and Templates (2026-10-18)
 
 **Status: Implemented; pending user manual visual review.** UI-only work follows the nine supplied desktop/mobile screenshots and the Pryzm reference document; this entry supersedes older Marketplace/Templates presentation notes.

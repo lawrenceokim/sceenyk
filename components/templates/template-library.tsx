@@ -16,9 +16,9 @@ export function TemplateLibrary({ result }: { result: ListingPage<OwnedListing> 
         <ul className="template-saved-gallery">
           {result.items.map(listing => (
             <li key={listing.id} className="min-w-0">
-              <article className="template-saved-card" style={templateAppearance(listing.template)}>
-                <Link href={`/dashboard/marketplace/${listing.id}`} aria-label={`Open template ${listing.title}`} className="template-saved-open">
-                  <TemplateCover template={listing.template} />
+              <article className="template-saved-card" style={templateAppearance(listing)}>
+                <Link href={`/templates/${listing.id}`} aria-label={`Open template ${listing.title}`} className="template-saved-open">
+                  <TemplateCover template={listing.template} fallbackColor={listing.fallbackColor} />
                   <div className="template-saved-caption">
                     <h2>{listing.title}</h2>
                     <time dateTime={listing.publishedAt ?? listing.createdAt} title={listing.publishedAt ? "Published date" : "Created date"}>{new Date(listing.publishedAt ?? listing.createdAt).toLocaleDateString("en", { month: "short", day: "numeric", timeZone: "UTC" })}</time>
@@ -26,10 +26,10 @@ export function TemplateLibrary({ result }: { result: ListingPage<OwnedListing> 
                 </Link>
                 <div className="template-saved-actions">
                   <div>
-                    {listing.status !== "archived" && <Link href={`/dashboard/marketplace/${listing.id}`} aria-label={`Manage template ${listing.title}`} title="Manage template"><Pencil aria-hidden="true" /></Link>}
+                    {listing.status !== "archived" && <Link href={`/settings/templates/${listing.id}`} aria-label={`Manage template ${listing.title}`} title="Manage template"><Pencil aria-hidden="true" /></Link>}
                     {listing.status !== "published" && <span className="template-saved-status">{listing.status}</span>}
                   </div>
-                  <Link href={listing.status === "published" ? `/marketplace/${listing.id}` : `/dashboard/marketplace/${listing.id}`} aria-label={`${listing.status === "published" ? "Open public listing" : "View template"} ${listing.title}`} title={listing.status === "published" ? "Open public listing" : "View template"}><ArrowUpRight aria-hidden="true" /></Link>
+                  <Link href={`/templates/${listing.id}`} aria-label={`View template ${listing.title}`} title="View template"><ArrowUpRight aria-hidden="true" /></Link>
                 </div>
               </article>
             </li>
@@ -39,11 +39,11 @@ export function TemplateLibrary({ result }: { result: ListingPage<OwnedListing> 
         <div className="rounded-2xl border border-dashed border-border">
           <EmptyState icon={<LayoutTemplate className="size-7" />} title={result.page > 1 ? "No templates on this page" : "Your next starting point"}
             description={result.page > 1 ? "Return to your latest templates." : "Templates from your Marketplace listings appear here. Choose an owned saved project to publish a reusable configuration; your original project and media stay private."}
-            primaryAction={<Button nativeButton={false} render={<Link href={result.page > 1 ? "/dashboard/templates" : "/dashboard/marketplace/new"} />}>{result.page > 1 ? "Latest templates" : "Choose a project"}</Button>}
+            primaryAction={<Button nativeButton={false} render={<Link href={result.page > 1 ? "/templates" : "/settings/templates/new"} />}>{result.page > 1 ? "Latest templates" : "Choose a project"}</Button>}
             secondaryAction={<Button variant="outline" nativeButton={false} render={<Link href="/marketplace" />}>Explore Marketplace</Button>} />
         </div>
       )}
-      {result.total > result.pageSize && <MarketplacePagination {...result} itemLabel="template" prefetch={false} href={page => `/dashboard/templates?page=${page}`} />}
+      {result.total > result.pageSize && <MarketplacePagination {...result} itemLabel="template" prefetch={false} href={page => `/templates?page=${page}`} />}
     </section>
   );
 }

@@ -10,9 +10,9 @@ export const metadata = { title: "Public creator profile — Sceenyk", robots: {
 async function Content() {
   let result;
   try { result = await getOwnedCreatorProfile(); }
-  catch (error) { unstable_rethrow(error); return <MarketplaceFailure href="/dashboard/settings/creator-profile" />; }
+  catch (error) { unstable_rethrow(error); return <MarketplaceFailure href="/settings/creator-profile" />; }
   return <CreatorProfileEditor {...result} />;
 }
 export default function Page() {
-  return <SettingsSection title="Creator Profile" description="Choose how you appear on the public Marketplace."><header className="space-y-3"><p className="eyebrow">YOUR CREATOR SPACE</p></header><Link href="/dashboard/marketplace" className="nav-link text-link">My Marketplace Listings</Link><Suspense fallback={<p role="status">Loading your profile…</p>}><Content /></Suspense></SettingsSection>;
+  return <SettingsSection title="Creator Profile" description="Choose how you appear on the public Marketplace."><header className="space-y-3"><p className="eyebrow">YOUR CREATOR SPACE</p></header><Link href="/settings/templates" className="nav-link text-link">My Marketplace Listings</Link><Suspense fallback={<p role="status">Loading your profile…</p>}><Content /></Suspense></SettingsSection>;
 }

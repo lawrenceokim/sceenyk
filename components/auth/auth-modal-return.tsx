@@ -21,7 +21,7 @@ function ModalReturn() {
     url.searchParams.delete("auth");
     window.history.replaceState(null, "", url);
     if (isSignedIn) {
-      window.location.replace("/dashboard");
+      window.location.replace("/studio");
       return;
     }
     if (intent === "sign-up") openSignUp();

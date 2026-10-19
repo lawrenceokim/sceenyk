@@ -30,7 +30,7 @@ function ConfiguredUserMenu({ collapsed, onNavigate }: { collapsed: boolean; onN
     </Menu.Trigger>
     <Menu.Portal><Menu.Positioner side="top" align="start" sideOffset={8} className="z-[70]">
       <Menu.Popup aria-label="Account actions" className="w-60 max-w-[calc(100vw-2rem)] rounded-xl border border-border bg-popover p-1.5 text-popover-foreground shadow-popover outline-none">
-        {accountLinks.map(([label, section]) => <Menu.Item key={label} render={<Link href={`/dashboard/settings/${section}`} />} onClick={onNavigate} className="flex min-h-11 items-center rounded-lg px-3 text-body-sm outline-none data-highlighted:bg-accent data-highlighted:text-accent-foreground">{label}</Menu.Item>)}
+        {accountLinks.map(([label, section]) => <Menu.Item key={label} render={<Link href={`/settings/${section}`} />} onClick={onNavigate} className="flex min-h-11 items-center rounded-lg px-3 text-body-sm outline-none data-highlighted:bg-accent data-highlighted:text-accent-foreground">{label}</Menu.Item>)}
         <Menu.Separator className="my-1 border-t border-border" />
         <Menu.Item onClick={() => { onNavigate?.(); void signOut({ redirectUrl: "/" }); }} className="flex min-h-11 items-center gap-2 rounded-lg px-3 text-body-sm outline-none data-highlighted:bg-accent"><LogOut className="size-4" aria-hidden="true" />Sign out</Menu.Item>
       </Menu.Popup>

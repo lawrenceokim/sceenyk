@@ -32,7 +32,7 @@ function ClerkAction({ children, intent, ...props }: AccountActionProps) {
       <Button
         {...props}
         nativeButton={false}
-        render={<Link href="/dashboard" />}
+        render={<Link href="/studio" />}
       >
         {children}
       </Button>

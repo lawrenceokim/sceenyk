@@ -13,7 +13,7 @@ export async function createMarketplaceOrderAction(input: unknown) { return run(
 export async function recoverMarketplacePurchaseAction(input: unknown) {
   return run(async () => {
     const result = await recoverMarketplacePurchase(input);
-    revalidatePath("/dashboard/projects"); revalidatePath("/dashboard/marketplace", "layout");
+    revalidatePath("/projects"); revalidatePath("/settings/templates", "layout");
     return result;
   });
 }

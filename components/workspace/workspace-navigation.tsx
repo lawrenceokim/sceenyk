@@ -10,14 +10,14 @@ import { cn } from "@/lib/utils";
 const groups = [
   { label: "Studio", items: [{ label: "Studio", icon: Clapperboard, href: "/studio" }] },
   { label: "Workspace", items: [
-    { label: "Projects", icon: FolderOpen, href: "/dashboard/projects" },
-    { label: "Templates", icon: LayoutTemplate, href: "/dashboard/templates" },
+    { label: "Projects", icon: FolderOpen, href: "/projects" },
+    { label: "Templates", icon: LayoutTemplate, href: "/templates" },
   ] },
   { label: "Discover", items: [{ label: "Marketplace", icon: Store, href: "/marketplace" }] },
   { label: "Resources", items: [{ label: "Documentation", icon: BookOpen, href: "/documentation" }] },
   { label: "Account", items: [
-    { label: "Credits", icon: Coins, href: "/dashboard/settings/credits" },
-    { label: "Settings", icon: Settings2, href: "/dashboard/settings/account" },
+    { label: "Credits", icon: Coins, href: "/settings/credits" },
+    { label: "Settings", icon: Settings2, href: "/settings/account" },
   ] },
 ] as const;
 
@@ -43,9 +43,10 @@ export function WorkspaceNavigation({ collapsed = false, onNavigate }: {
       <ul>{group.items.map(item => {
         const Icon = item.icon;
         const active = item.label === "Studio" ? pathname === "/studio" || pathname.startsWith("/projects/")
-          : item.label === "Marketplace" ? pathname.startsWith("/marketplace") || pathname.startsWith("/dashboard/marketplace")
-          : item.label === "Settings" ? pathname.startsWith("/dashboard/settings/") && pathname !== "/dashboard/settings/credits"
+          : item.label === "Marketplace" ? pathname.startsWith("/marketplace")
+          : item.label === "Settings" ? pathname.startsWith("/settings/") && pathname !== "/settings/credits"
           : item.label === "Documentation" ? pathname === "/documentation" || pathname.startsWith("/documentation/")
+          : item.label === "Templates" ? pathname === "/templates" || pathname.startsWith("/templates/")
           : item.href === pathname;
         const classes = cn("workspace-nav-item flex w-full items-center rounded-lg text-body-sm font-medium outline-none transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sidebar-ring motion-reduce:transition-none hover:bg-sidebar-accent hover:text-sidebar-accent-foreground", collapsed && "justify-center", active && "bg-sidebar-accent text-sidebar-accent-foreground");
         const content = <><Icon className="size-4 shrink-0" aria-hidden="true" /><span className={collapsed ? "sr-only" : "truncate"}>{item.label}</span></>;

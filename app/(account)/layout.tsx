@@ -4,7 +4,7 @@ import { WorkspaceShell } from "@/components/workspace/workspace-shell";
 import { WorkspaceUnavailable } from "@/components/dashboard/workspace-unavailable";
 import { AppUserSyncError, ensureAppUser } from "@/lib/auth/ensure-app-user";
 
-async function ProtectedDashboard({ children }: { children: ReactNode }) {
+async function ProtectedWorkspace({ children }: { children: ReactNode }) {
   try {
     await ensureAppUser();
   } catch (error: unknown) {
@@ -23,7 +23,7 @@ async function ProtectedDashboard({ children }: { children: ReactNode }) {
   );
 }
 
-export default function DashboardLayout({ children }: { children: ReactNode }) {
+export default function AccountWorkspaceLayout({ children }: { children: ReactNode }) {
   return (
     <Suspense
       fallback={
@@ -35,7 +35,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         </p>
       }
     >
-      <ProtectedDashboard>{children}</ProtectedDashboard>
+      <ProtectedWorkspace>{children}</ProtectedWorkspace>
     </Suspense>
   );
 }

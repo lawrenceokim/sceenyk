@@ -57,7 +57,7 @@ export function ProjectsSection({
             <Button
               variant="outline"
               nativeButton={false}
-              render={<Link href="/dashboard/projects" />}
+              render={<Link href="/projects" />}
             >
               Latest projects
             </Button>
@@ -89,7 +89,7 @@ export function ProjectsSection({
                   nativeButton={false}
                   render={
                     <Link
-                      href={`/dashboard/projects?page=${data.page - 1}`}
+                      href={`/projects?page=${data.page - 1}`}
                       prefetch={false}
                     />
                   }
@@ -110,7 +110,7 @@ export function ProjectsSection({
                   nativeButton={false}
                   render={
                     <Link
-                      href={`/dashboard/projects?page=${data.page + 1}`}
+                      href={`/projects?page=${data.page + 1}`}
                       prefetch={false}
                     />
                   }

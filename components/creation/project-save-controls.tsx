@@ -91,7 +91,7 @@ export function ProjectSaveControls({
           </Link>
         )}
       </div>
-      {signedIn && projectId && <div className="mt-3 text-center"><Link href={`/dashboard/marketplace/new?project=${projectId}`} prefetch={false} className="nav-link justify-center text-body-sm text-link">Publish to Marketplace</Link><p className="mt-1 text-caption text-muted-foreground">Uses your last saved settings. You’ll write separate public instructions.</p></div>}
+      {signedIn && projectId && <div className="mt-3 text-center"><Link href={`/settings/templates/new?project=${projectId}`} prefetch={false} className="nav-link justify-center text-body-sm text-link">Publish to Marketplace</Link><p className="mt-1 text-caption text-muted-foreground">Uses your last saved settings. You’ll write separate public instructions.</p></div>}
       <div
         role="status"
         aria-live="polite"

@@ -9,7 +9,7 @@ export async function POST(request: Request) {
   try {
     const profile = await uploadCreatorAvatar(request);
     revalidatePath("/marketplace", "layout");
-    revalidatePath("/dashboard/settings/creator-profile");
+    revalidatePath("/settings/creator-profile");
     return Response.json({ ok: true, profile }, { headers });
   }
   catch (error) {

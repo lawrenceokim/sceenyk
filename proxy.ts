@@ -13,15 +13,7 @@ const withClerk = clerkMiddleware(async (auth, request) => {
       unauthenticatedUrl: new URL("/?auth=sign-in", request.url).toString(),
     });
   }
-  if (path === "/dashboard") {
-    // Redirect before streaming: an HTTP redirect preserves legacy fragments
-    // that never reach the server, unlike a streamed page redirect.
-    const page = request.nextUrl.searchParams.get("page");
-    const target = new URL(page === null ? "/studio" : "/dashboard/projects", request.url);
-    if (page !== null) target.searchParams.set("page", page);
-    return NextResponse.redirect(target);
-  }
-  if (isCreatorProfileResponsePath(path) || path === "/dashboard/settings" || path.startsWith("/dashboard/settings/") || path.startsWith("/dashboard/settings.") || path === "/settings" || path.startsWith("/settings.")) {
+  if (isPrivatePath(path)) {
     // Deployment routing may present the generated RSC/segment pathname.
     // Keep its response policy identical to the authenticated HTML route.
     const response = NextResponse.next();
@@ -32,21 +24,9 @@ const withClerk = clerkMiddleware(async (auth, request) => {
   }
 });
 
-function isCreatorProfileResponsePath(path: string) {
-  const base = "/dashboard/marketplace/profile";
-  return path === base || path.startsWith(`${base}/`) ||
-    path.startsWith(`${base}.segments/`) ||
-    [".html", ".rsc", ".prefetch.rsc"].some((suffix) => path === base + suffix);
-}
-
 function isPrivatePath(path: string) {
-  return (
-    path === "/settings" || path.startsWith("/settings.") ||
-    path === "/dashboard" ||
-    path.startsWith("/dashboard/") ||
-    path === "/projects" ||
-    path.startsWith("/projects/")
-  );
+  return ["/settings", "/templates", "/projects", "/marketplace/purchases"].some(base =>
+    path === base || path.startsWith(`${base}/`) || path.startsWith(`${base}.`));
 }
 
 export default function proxy(request: NextRequest, event: NextFetchEvent) {
@@ -67,7 +47,8 @@ export default function proxy(request: NextRequest, event: NextFetchEvent) {
 export const config = {
   matcher: [
     "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
-    "/dashboard/:path*",
+    "/settings/:path*",
+    "/templates/:path*",
     "/projects/:path*",
     "/(api|trpc)(.*)",
   ],

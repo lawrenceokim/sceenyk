@@ -20,8 +20,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       publishableKey={publishableKey}
       signInUrl="/?auth=sign-in"
       signUpUrl="/?auth=sign-up"
-      signInForceRedirectUrl="/dashboard"
-      signUpForceRedirectUrl="/dashboard"
+      signInForceRedirectUrl="/studio"
+      signUpForceRedirectUrl="/studio"
       afterSignOutUrl="/"
       appearance={{
         theme: shadcn,

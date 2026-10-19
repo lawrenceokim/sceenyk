@@ -7,11 +7,10 @@ import { creationCategories } from "@/components/creation/creation-options";
 import { EmptyState } from "@/components/empty-state";
 import { Button } from "@/components/ui/button";
 import {
-  ListingCard,
   MarketplaceFailure,
   MarketplaceLoading,
 } from "@/components/marketplace/listing-card";
-import { MarketplacePagination } from "@/components/marketplace/pagination";
+import { MarketplaceInfiniteGallery } from "@/components/marketplace/infinite-gallery";
 import { browseMarketplace } from "@/lib/marketplace/server";
 import { categoryIds } from "@/lib/projects/options";
 import type { CategoryId } from "@/lib/projects/options";
@@ -33,8 +32,6 @@ async function Discovery({ searchParams }: { searchParams: SearchParams }) {
     typeof params.page === "string" && /^\d{1,6}$/.test(params.page)
       ? Math.max(1, Math.min(100000, Number(params.page)))
       : 1;
-  const href = (nextPage: number) =>
-    `/marketplace?${new URLSearchParams({ ...(query ? { q: query } : {}), ...(category ? { category } : {}), page: String(nextPage) })}`;
   let result;
   try {
     result = await browseMarketplace({ query, category, page });
@@ -84,11 +81,7 @@ async function Discovery({ searchParams }: { searchParams: SearchParams }) {
         </div>
       )}
       {result.items.length ? (
-        <div className="workspace-gallery marketplace-gallery">
-          {result.items.map((listing) => (
-            <ListingCard key={listing.id} listing={listing} />
-          ))}
-        </div>
+        <MarketplaceInfiniteGallery key={`${query}:${category ?? "all"}:${page}`} initial={result} query={query} category={category} />
       ) : (
         <div className="sceenyk-card">
           <EmptyState
@@ -114,7 +107,7 @@ async function Discovery({ searchParams }: { searchParams: SearchParams }) {
                     href={
                       query || category || page > 1
                         ? "/marketplace"
-                        : "/dashboard/marketplace/new"
+                        : "/settings/templates/new"
                     }
                   />
                 }
@@ -127,7 +120,6 @@ async function Discovery({ searchParams }: { searchParams: SearchParams }) {
           />
         </div>
       )}
-      <MarketplacePagination {...result} href={href} />
     </div>
   );
 }
@@ -146,7 +138,7 @@ export default function MarketplacePage({
         <Discovery searchParams={searchParams} />
       </Suspense>
       <Link
-        href="/dashboard/marketplace"
+        href="/settings/templates"
         className="marketplace-management-link nav-link text-muted-foreground hidden"
       >
         Manage my listings

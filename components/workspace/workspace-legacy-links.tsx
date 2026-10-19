@@ -10,11 +10,11 @@ export function WorkspaceLegacyLinks() {
   useEffect(() => {
     function restoreBookmark() {
       if (location.hash === "#projects") {
-        router.replace(`/dashboard/projects${location.search}${location.hash}`);
+        router.replace(`/projects${location.search}${location.hash}`);
       } else if (location.hash === "#templates") {
-        router.replace(`/dashboard/templates${location.search}`);
+        router.replace(`/templates${location.search}`);
       } else if (location.hash === "#credits") {
-        router.replace("/dashboard/settings/credits");
+        router.replace("/settings/credits");
       }
     }
     restoreBookmark();

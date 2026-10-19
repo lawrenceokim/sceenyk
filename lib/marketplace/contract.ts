@@ -39,6 +39,8 @@ export const listingSchema = z.strictObject({
   creatorAvatar: z.string().regex(/^\/api\/marketplace\/creators\/[a-z0-9]+(?:-[a-z0-9]+)*\/avatar$/).nullable().default(null), template: templateSnapshotSchema,
   adoptionType: z.enum(["free", "paid"]), priceMinor: z.number().int().nonnegative(), currency: z.literal("USD"), status: z.enum(listingStatuses),
   createdAt: z.string(), publishedAt: z.string().nullable(),
+  // Nullable compatibility keeps existing reads available before migration 029.
+  fallbackColor: z.string().regex(/^#[0-9a-f]{6}$/).nullable().default(null),
 });
 export const ownedListingSchema = listingSchema.extend({ sourceProjectId: z.uuid(), rightsConfirmed: z.boolean(), adoptionCount: z.number().int().nonnegative(), paidSalesCount: z.number().int().nonnegative(), creatorEarningsMinor: z.number().int().nonnegative() });
 export const originSchema = z.strictObject({ listingId: z.uuid(), title: z.string().max(120) });

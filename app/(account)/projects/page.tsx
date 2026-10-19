@@ -63,6 +63,6 @@ export default async function ProjectsPage({
     <ProjectJobStatusesProvider key={projects.projects.map(({ id }) => id).join(",")} initial={jobStatuses}>
       <ProjectsSection data={projects} jobStatuses={jobStatuses} />
     </ProjectJobStatusesProvider>
-    <section id="templates" className="scroll-mt-8 border-t border-border pt-6" aria-labelledby="templates-heading"><h2 id="templates-heading" className="text-lg font-semibold">Templates</h2><p className="mt-2 text-body-sm text-muted-foreground">Find your existing reusable listings in <Link href="/dashboard/templates" className="text-link underline underline-offset-4">Templates</Link>, or explore creator templates in <Link href="/marketplace" className="text-link underline underline-offset-4">Marketplace</Link>.</p></section>
+    <section id="templates" className="scroll-mt-8 border-t border-border pt-6" aria-labelledby="templates-heading"><h2 id="templates-heading" className="text-lg font-semibold">Templates</h2><p className="mt-2 text-body-sm text-muted-foreground">Find your existing reusable listings in <Link href="/templates" className="text-link underline underline-offset-4">Templates</Link>, or explore creator templates in <Link href="/marketplace" className="text-link underline underline-offset-4">Marketplace</Link>.</p></section>
   </div>;
 }

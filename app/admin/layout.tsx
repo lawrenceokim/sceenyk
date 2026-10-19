@@ -12,7 +12,7 @@ async function ProtectedInternal({ children }: { children: ReactNode }) {
   return <WorkspaceShell><WorkspacePageFrame>
     <nav aria-label="Internal navigation" className="flex flex-wrap gap-x-6 gap-y-2 border-b border-border pb-5 text-body-sm">
       <Link prefetch={false} href="/admin/payouts" className="nav-link text-link">Payout support</Link>
-      <Link className="nav-link text-muted-foreground" href="/dashboard/settings/appearance">Appearance</Link>
+      <Link className="nav-link text-muted-foreground" href="/settings/appearance">Appearance</Link>
       <Link className="nav-link text-muted-foreground" href="/studio">Return to Studio</Link>
     </nav>
     {authorized.ok ? children : <SupportUnavailable />}

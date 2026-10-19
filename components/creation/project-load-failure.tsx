@@ -29,7 +29,7 @@ export function ProjectLoadFailure() {
         <Button
           variant="outline"
           nativeButton={false}
-          render={<Link href="/dashboard/projects" />}
+          render={<Link href="/projects" />}
         >
           Your projects
         </Button>

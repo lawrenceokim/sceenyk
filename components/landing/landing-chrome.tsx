@@ -78,7 +78,7 @@ function ConfiguredDrawerAccount({
     );
   return isSignedIn ? (
     <Link
-      href="/dashboard/settings/account"
+      href="/settings/account"
       onClick={onClose}
       className={styles.drawerAvatar}
     >
@@ -193,7 +193,7 @@ function LandingNavbar() {
             onAuthenticate={authenticate}
           />
           <Link
-            href="/dashboard/settings/appearance"
+            href="/settings/appearance"
             onClick={() => setOpen(false)}
           >
             Appearance
@@ -234,16 +234,16 @@ function LandingFooter() {
           </nav>
           <nav aria-label="Footer account navigation">
             <h2>Your workspace</h2>
-            <Link href="/dashboard/projects">Projects</Link>
-            <Link href="/dashboard/settings/account">Account</Link>
-            <Link href="/dashboard/settings/creator-profile">
+            <Link href="/projects">Projects</Link>
+            <Link href="/settings/account">Account</Link>
+            <Link href="/settings/creator-profile">
               Creator Profile
             </Link>
           </nav>
           <nav aria-label="Footer settings navigation">
             <h2>Preferences</h2>
-            <Link href="/dashboard/settings/appearance">Appearance</Link>
-            <Link href="/dashboard/settings/privacy">
+            <Link href="/settings/appearance">Appearance</Link>
+            <Link href="/settings/privacy">
               Privacy &amp; Security
             </Link>
           </nav>

@@ -15,7 +15,7 @@ async function Templates({ searchParams }: { searchParams: Promise<{ page?: stri
   const current = typeof page === "string" && /^\d{1,6}$/.test(page) ? Math.max(1, Math.min(100000, Number(page))) : 1;
   let result;
   try { result = await listOwnedMarketplaceListings(current); }
-  catch (error) { unstable_rethrow(error); return <MarketplaceFailure href="/dashboard/templates" />; }
+  catch (error) { unstable_rethrow(error); return <MarketplaceFailure href="/templates" />; }
   return <OwnedListings clerkUserId={user.clerk_user_id} result={result} presentation="library" />;
 }
 
@@ -25,8 +25,8 @@ export default function TemplatesPage({ searchParams }: { searchParams: Promise<
       <header className="marketplace-heading"><h1>My Templates</h1><p>Templates you&apos;ve published. Open one to manage or continue your work.</p></header>
       <Suspense fallback={<p role="status" className="py-8 text-muted-foreground">Opening your templates…</p>}><Templates searchParams={searchParams} /></Suspense>
       <footer className="template-library-footer">
-        <nav aria-label="Template library links"><Link href="/dashboard/marketplace/new">Publish from a project</Link><Link href="/dashboard/marketplace">Manage listings</Link><Link href="/dashboard/marketplace/purchases">Marketplace purchases</Link></nav>
-        <p>Adopted templates live in <Link href="/dashboard/projects">Projects</Link>.</p>
+        <nav aria-label="Template library links"><Link href="/settings/templates/new">Publish from a project</Link><Link href="/settings/templates">Manage listings</Link><Link href="/marketplace/purchases">Marketplace purchases</Link></nav>
+        <p>Adopted templates live in <Link href="/projects">Projects</Link>.</p>
       </footer>
     </div>
   );

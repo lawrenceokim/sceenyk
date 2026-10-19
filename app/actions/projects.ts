@@ -27,7 +27,7 @@ export async function saveProjectAction(
     };
   }
   if (result.ok) {
-    revalidatePath("/dashboard/projects");
+    revalidatePath("/projects");
     revalidatePath(`/projects/${result.project.id}`);
   }
   return result;

@@ -1,5 +1,13 @@
 # UI Context
 
+## Marketplace and Templates refinements — clean routes (2026-10-19)
+
+Current implementation supersedes the Phase 2 style-derived cover color and visible discovery pagination below. Navigation and account pages use `/projects`, `/templates`, `/templates/[listingId]` and `/settings/*`; no `app/dashboard` route folder remains. Manage Templates, existing publish controls and owner-only editing live at `/settings/templates`, `/settings/templates/new` and `/settings/templates/[listingId]`. Template cards open their own private detail, with Back to Templates, Update Template and a Marketplace link only while published. The same detail component renders public Marketplace and private template information, retaining account fences and the existing adoption controls.
+
+Marketplace cards lift 3px with a 220ms transform; covers scale inside rounded clipping and a top-right arrow appears on hover/focus (always visible on touch). Borders do not highlight; keyboard rings remain and reduced motion disables lift/scale. Infinite discovery loads 12 listings per request through the existing validated browse service, deduplicates IDs, retains q/category filters, resets on filter changes and observes the actual desktop workspace scroller or mobile viewport. No visible page controls or scrollbar are added.
+
+Migration 029 persists a random muted palette color once per listing, backfills only nulls and prevents reassignment. All gallery, More looks, Templates and detail surfaces use that saved color; the upper detail fade returns fully to the normal theme background. The public listing contract still has no preview-media field; configuration covers remain labeled and no private media or unrelated artwork is substituted. Before applying migration 029, the compatible reader uses a neutral placeholder. Manual visual inspection and hosted migration application remain pending; no deployment or hosted workflows.
+
 ## Visual redesign Phase 2 — Marketplace and Templates (2026-10-18)
 
 The latest request supersedes earlier gallery presentation requirements. The nine supplied Pryzm desktop/mobile screenshots and Pryzm_Design_System_Reference_for_Sceenyk.md guide this UI-only phase. Retain the existing workspace sidebar/frame, branding, themes and server contracts. Marketplace uses the exact requested heading/subtitle, compact All/supported-category links (resetting pagination while retaining URL search), and approximately five columns at 1366px. Shared gallery cards show preview, title, two-line description and category/tags only; creator, price and generation estimates appear on detail, not gallery cards. The visible search form is removed; q URLs and existing server search remain supported.

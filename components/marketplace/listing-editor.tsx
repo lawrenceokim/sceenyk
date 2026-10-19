@@ -48,7 +48,7 @@ function Editor({ project, listing }: Props) {
       const result = listing ? await updateMarketplaceAction({ ...metadata, status }) : await createMarketplaceAction({ ...metadata, sourceProjectId: project!.id, instructions, publish: status === "published" });
       if (!result.ok || !("listingId" in result)) { setError(result.ok ? "Please try again." : result.message); return; }
       setSuccess(result.existing ? "This project already has a listing. Opening it…" : status === "published" ? "Published to Marketplace." : status === "unpublished" ? "Listing unpublished." : status === "archived" ? "Listing archived." : "Draft saved.");
-      router.replace(`/dashboard/marketplace/${result.listingId}`); router.refresh();
+      router.replace(`/settings/templates/${result.listingId}`); router.refresh();
     } catch { setError("Your listing couldn’t be saved. Try again to recover the same listing."); }
     finally { setPending(""); inFlight.current = false; }
   }
@@ -74,8 +74,8 @@ function Editor({ project, listing }: Props) {
       </fieldset>
       <div role="status" aria-live="polite" className={`min-h-5 text-body-sm ${error ? "text-destructive" : "text-success-foreground"}`}>{error || success || (pending && pending !== "published" ? "Saving listing…" : "")}</div>
       {archived && <p className="text-body-sm text-muted-foreground">This archived listing is retained for adoption history and cannot be republished.</p>}
-      <div className="flex flex-wrap gap-4 text-body-sm"><Link className="nav-link text-link" href="/dashboard/marketplace">My Marketplace Listings</Link>{listing?.status === "published" && <Link className="nav-link text-link" href={`/marketplace/${listing.id}`}>View public listing</Link>}</div>
+      <div className="flex flex-wrap gap-4 text-body-sm"><Link className="nav-link text-link" href="/settings/templates">My Marketplace Listings</Link>{listing?.status === "published" && <Link className="nav-link text-link" href={`/marketplace/${listing.id}`}>View public listing</Link>}</div>
     </form>
-    <aside className="sceenyk-card min-w-0 overflow-hidden"><TemplateCover template={snapshot} large /><div className="space-y-3 p-5"><h2 className="text-lg font-semibold">{adoptionType === "free" ? "Free to adopt" : `Creator adoption price: ${usd(Math.round(Number(price || 0) * 100))}`}</h2><p className="text-body-sm text-muted-foreground">The template copies {snapshot.settings.aspectRatio}, {snapshot.settings.duration}s, {snapshot.settings.visualStyle} and {snapshot.settings.tone} settings. Its preview uses these choices; it contains no project media.</p><p className="text-body-sm text-muted-foreground">Adoption uses zero AI credits. Normal generation credits may still be required when someone creates their result.</p></div></aside>
+    <aside className="sceenyk-card min-w-0 overflow-hidden"><TemplateCover template={snapshot} fallbackColor={listing?.fallbackColor} large /><div className="space-y-3 p-5"><h2 className="text-lg font-semibold">{adoptionType === "free" ? "Free to adopt" : `Creator adoption price: ${usd(Math.round(Number(price || 0) * 100))}`}</h2><p className="text-body-sm text-muted-foreground">The template copies {snapshot.settings.aspectRatio}, {snapshot.settings.duration}s, {snapshot.settings.visualStyle} and {snapshot.settings.tone} settings. Its preview uses these choices; it contains no project media.</p><p className="text-body-sm text-muted-foreground">Adoption uses zero AI credits. Normal generation credits may still be required when someone creates their result.</p></div></aside>
   </div>;
 }
