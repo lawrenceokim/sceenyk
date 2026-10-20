@@ -1,5 +1,25 @@
 # UI Context
 
+## UGC dropdown, concise Studio copy and fixed mobile panels (2026-10-20)
+
+Creation Type stays in Sources but now uses the shared compact dropdown with only UGC available. Preserve its person icon and current internal category value; the previous non-dropdown instruction is superseded. Studio features should show a heading/control and at most one short useful description. Remove repeated tutorials, explanations, prompt echoes and technical IDs; keep essential dynamic errors, upload/save status, disabled reasons and explicit credit/free confirmation details concise.
+
+On mobile, Stage sits above Properties inside the workspace's own viewport/gutters. Both panel borders stay contained and stationary; only Properties content scrolls, with its header outside the scroller. Use dynamic viewport height, min-height:0, bounded grid rows and contained media. Do not substitute body scrolling or allow expanded inspector content to grow the panels. Sources remains the existing focus-managed overlay. Ancillary preview controls/status use Properties without duplicating media/state.
+
+Credits left navigation now has Credits & Billing (/credits) and Earnings & Payouts (/credits/earnings). The selected tab drives the fixed center heading/short description; existing content scrolls below it. Remove Earnings from Settings and preserve old bookmarks/pagination through redirects. This supersedes the former Settings earnings placement and one-tab Credits navigation.
+
+## Credits workspace and compact sidebar hints (2026-10-20)
+
+Credits & Billing is a separate /credits destination, removed from Settings sections. Reuse the Settings two-column geometry: compact 198px left rail with Credits & Billing selected, fixed center Credits & Billing heading/description and independently scrollable native center content. Preserve balance/top-up/history/free allowance components and Sandbox copy. Main Credits navigation owns its active state; Settings highlights only its own sections. Keep both themes and responsive account-layout constraints. Old credit URLs/checkout query parameters remain compatible. This supersedes earlier rules placing Credits inside Settings.
+
+Collapsed sidebar tooltips sit 4px from the hovered/focused button, with compact 11px text, 16px line height and 8px/4px padding. Shared Select must pass an absent/undefined default portal container; explicit null suppresses its options. Native-dialog selects still mount inside that dialog. No backend/business behavior changes.
+
+## Shared dropdowns, pointer cursors and UGC Sources control (2026-10-20)
+
+Use components/ui/select.tsx for all app-owned ordinary dropdowns; visible browser-native menus are disallowed unless an explicit technical constraint requires them. The shared installed Base UI foundation provides keyboard/typeahead, Escape/outside dismissal, focus, check indicators, grouped options and form values. Match the supplied Pryzm geometry with compact trigger/rows, small text/corners, subtle borders and selected/hover backgrounds while keeping Sceenyk light/dark tokens. Use the [shared Select standard](design-system.md#shared-select-pointer-cursors-and-fixed-studio-type-2026-10-20), 220ms soft ease-out motion and reduced-motion support. Existing segmented controls, tabs, action menus and accordions keep their semantics.
+
+Sources order is Your Project → Creation Type → Project Media, with compact spacing and existing subtle dividers. Creation Type is a single fixed UGC person-icon control, never a dropdown; remove it and its former alternatives from Properties. It stays in the same mounted Sources tree on desktop, tablet and mobile. Existing brief category state and its saved/adopted/restored/default value remain unchanged because current backend contracts have no UGC enum; UGC is the sole Studio presentation label, not a new generation mode. Other surfaces' existing category options/data remain intact. Genuine interactive controls use pointer cursors; disabled controls use actual disabled behavior and the appropriate disabled cursor/style. No pointer on ordinary text or containers. This rule supersedes old multi-type Studio/native picker presentation guidance.
+
 ## Motion & Interaction Standard (2026-10-20)
 
 All future UI follows the [shared motion scale](design-system.md#motion--interaction-standard-2026-10-20): fast response, subtle inertia and a soft cubic-bezier(0.22, 1, 0.36, 1) finish. Micro interactions take 150–200ms (180 default), popovers 180–250ms (220), modals 220–300ms (260), sidebar/panels 250–350ms (300), and optional section reveals 300–500ms (420). Use shared tokens and Tailwind utilities; no new stylesheets.

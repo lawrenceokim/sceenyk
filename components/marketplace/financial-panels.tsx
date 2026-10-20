@@ -101,5 +101,5 @@ function Panel(props: Props) {
       [.workspace-settings-inner_label&&]:pt-[12px] [.workspace-settings-inner_label&&]:pr-[12px]
       [.workspace-settings-inner_label&&]:pb-[12px] [.workspace-settings-inner_label&&]:pl-[12px]
       [.workspace-settings-inner_label&&_svg]:w-[18px] [.workspace-settings-inner_label&&_svg]:h-[18px]
-    `}>{earnings ? "No Marketplace sales yet." : "No paid Marketplace purchases yet."}</p>}<MarketplacePagination total={total} page={props.page} pageSize={12} href={page => `${earnings ? "/settings/earnings" : "/marketplace/purchases"}?page=${page}`} /></div>;
+    `}>{earnings ? "No Marketplace sales yet." : "No paid Marketplace purchases yet."}</p>}<MarketplacePagination total={total} page={props.page} pageSize={12} href={page => `${earnings ? "/credits/earnings" : "/marketplace/purchases"}?page=${page}`} /></div>;
 }

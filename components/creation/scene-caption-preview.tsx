@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Select } from "@/components/ui/select";
 import { StudioPropertyControls } from "./studio-property-controls";
 import { Button } from "@/components/ui/button";
 import type { CaptionTrack } from "@/lib/captions/contract";
@@ -138,16 +139,14 @@ export function SceneCaptionPreview({ projectId, jobId, track, enabled, style, s
   const resolvedStyle = resolveCaptionStyle(style, track.aspect_ratio);
   const safe = resolvedStyle.safe_area_percent;
   const cue = track.cues.find(item => item.id === activeCueId);
-  return <section className="space-y-3 rounded-lg border border-border p-3" aria-label="Scene caption overlay preview">
-    <div className="flex flex-wrap items-center justify-between gap-2">
+  return <section className="space-y-3 rounded-lg border border-border p-3 max-767:flex max-767:min-h-0 max-767:flex-1 max-767:flex-col max-767:border-0 max-767:p-0" aria-label="Scene caption overlay preview">
+    <StudioPropertyControls><div className="flex flex-wrap items-center justify-between gap-2">
       <h3 className="text-body-sm font-semibold">Scene preview</h3>
       <label className="text-caption">Scene{" "}
-        <select className="min-h-11 rounded-md border border-input bg-background px-2 text-foreground" value={sceneId} onChange={event => selectScene(event.target.value)}>
-          {plan?.scenes.map(item => <option key={item.scene_execution_id} value={item.scene_execution_id}>Scene {item.scene_order}{item.narration ? " · narrated" : " · silent"}</option>)}
-        </select>
+        <Select aria-label="Scene" className="w-auto min-w-32" value={sceneId} onValueChange={selectScene} options={plan?.scenes.map(item => ({ value: item.scene_execution_id, label: `Scene ${item.scene_order}${item.narration ? " · narrated" : " · silent"}` })) ?? []} />
       </label>
     </div>
-    <div ref={frame} className="relative mx-auto w-full overflow-hidden rounded-md bg-neutral-950" style={{ aspectRatio: track.aspect_ratio.replace(":", " / "), maxWidth: track.aspect_ratio === "9:16" ? "20rem" : undefined }}>
+    </StudioPropertyControls><div ref={frame} className="relative mx-auto w-full overflow-hidden rounded-md bg-neutral-950 max-767:min-h-0 max-767:h-full max-767:w-auto max-767:max-h-full max-767:max-w-full" style={{ aspectRatio: track.aspect_ratio.replace(":", " / "), maxWidth: track.aspect_ratio === "9:16" ? "20rem" : undefined }}>
       {media?.sceneId === sceneId && scene.visual.media_type === "video" && <video key={sceneId + media.url} ref={video} src={media.url}
         className="absolute inset-0 size-full object-contain" playsInline preload="metadata" muted={muted}
         onLoadedMetadata={event => { event.currentTarget.currentTime = scene.visual!.input_start_ms / 1000; sync(scene, scene.visual!.input_start_ms, true); }}
@@ -164,7 +163,7 @@ export function SceneCaptionPreview({ projectId, jobId, track, enabled, style, s
       </div>}
       {!media && <span className="absolute inset-0 grid place-items-center text-body-sm text-white">{loadingMedia ? "Loading private scene…" : "Scene unavailable"}</span>}
     </div>
-    {mediaError && <p role="status" className="text-caption text-destructive">{mediaError}</p>}
+    <StudioPropertyControls>{mediaError && <p role="status" className="text-caption text-destructive">{mediaError}</p>}
     <div className="flex flex-wrap items-center gap-2">
       <Button type="button" variant="outline" disabled={!media || loadingMedia} onClick={() => void togglePlayback()}>{playing ? "Pause" : displayMs >= scene.duration_ms ? "Replay" : "Play"}</Button>
       {scene.visual.media_type === "video" && <Button type="button" variant="outline" disabled={!media} onClick={() => { const next = !muted; setMuted(next); if (video.current) video.current.muted = next; }}>{muted ? "Unmute" : "Mute"}</Button>}
@@ -172,14 +171,14 @@ export function SceneCaptionPreview({ projectId, jobId, track, enabled, style, s
       <span className="text-caption tabular-nums text-muted-foreground">{timeLabel(displayMs)} / {timeLabel(scene.duration_ms)}</span>
       <Button type="button" variant="ghost" disabled={loadingMedia} onClick={() => void loadMedia(sceneId)}>Refresh preview</Button>
     </div>
-    <StudioPropertyControls><div className="mt-3 grid grid-cols-2 gap-3 text-caption">
-      <label>Preset <select className="mt-1 min-h-11 w-full rounded-md border border-input bg-background px-2 text-foreground" value={style.preset} disabled={savingStyle} onChange={event => onStyleChange(selectionForCaptionPreset(event.target.value as CaptionStyleSelection["preset"]))}><option value="default">Default</option><option value="clean">Clean</option><option value="bold">Bold</option></select></label>
-      <label>Position <select className="mt-1 min-h-11 w-full rounded-md border border-input bg-background px-2 text-foreground" value={style.position} disabled={savingStyle} onChange={event => onStyleChange({ ...style, position: event.target.value as CaptionStyleSelection["position"] })}><option value="bottom">Bottom</option><option value="top">Top</option></select></label>
-      <label>Text size <select className="mt-1 min-h-11 w-full rounded-md border border-input bg-background px-2 text-foreground" value={style.size} disabled={savingStyle} onChange={event => onStyleChange({ ...style, size: event.target.value as CaptionStyleSelection["size"] })}><option value="normal">Default</option><option value="large">Large</option></select></label>
-      <label>Alignment <select className="mt-1 min-h-11 w-full rounded-md border border-input bg-background px-2 text-foreground" value={style.alignment} disabled={savingStyle} onChange={event => onStyleChange({ ...style, alignment: event.target.value as CaptionStyleSelection["alignment"] })}><option value="center">Center</option><option value="left">Left</option></select></label>
-      <label>Contrast <select className="mt-1 min-h-11 w-full rounded-md border border-input bg-background px-2 text-foreground" value={style.contrast} disabled={savingStyle} onChange={event => onStyleChange({ ...style, contrast: event.target.value as CaptionStyleSelection["contrast"] })}><option value="default">Default</option><option value="high">High</option><option value="shadow">Shadow</option></select></label>
+    <div className="mt-3 grid grid-cols-2 gap-3 text-caption">
+      <label>Preset <Select<CaptionStyleSelection["preset"]> aria-label="Caption preset" className="mt-1" value={style.preset} disabled={savingStyle} onValueChange={preset => onStyleChange(selectionForCaptionPreset(preset))} options={[{ value: "default", label: "Default" }, { value: "clean", label: "Clean" }, { value: "bold", label: "Bold" }]} /></label>
+      <label>Position <Select<CaptionStyleSelection["position"]> aria-label="Caption position" className="mt-1" value={style.position} disabled={savingStyle} onValueChange={position => onStyleChange({ ...style, position })} options={[{ value: "bottom", label: "Bottom" }, { value: "top", label: "Top" }]} /></label>
+      <label>Text size <Select<CaptionStyleSelection["size"]> aria-label="Caption text size" className="mt-1" value={style.size} disabled={savingStyle} onValueChange={size => onStyleChange({ ...style, size })} options={[{ value: "normal", label: "Default" }, { value: "large", label: "Large" }]} /></label>
+      <label>Alignment <Select<CaptionStyleSelection["alignment"]> aria-label="Caption alignment" className="mt-1" value={style.alignment} disabled={savingStyle} onValueChange={alignment => onStyleChange({ ...style, alignment })} options={[{ value: "center", label: "Center" }, { value: "left", label: "Left" }]} /></label>
+      <label>Contrast <Select<CaptionStyleSelection["contrast"]> aria-label="Caption contrast" className="mt-1" value={style.contrast} disabled={savingStyle} onValueChange={contrast => onStyleChange({ ...style, contrast })} options={[{ value: "default", label: "Default" }, { value: "high", label: "High" }, { value: "shadow", label: "Shadow" }]} /></label>
     </div>
+    {savingStyle && <p role="status" className="text-caption text-muted-foreground">Saving caption style…</p>}
     </StudioPropertyControls>
-    <p role="status" className="text-caption text-muted-foreground">{savingStyle ? "Saving caption style…" : "Caption style is saved for this generation."} Timing is estimated from the saved narration window.</p>
   </section>;
 }

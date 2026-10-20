@@ -84,22 +84,22 @@ export function ProjectGeneration({
               <p className="text-body-sm text-muted-foreground">
                 {state.job.dispatchStatus === "dispatch_failed" ||
                 state.job.dispatchStatus === "pending"
-                  ? "Your request is saved and waiting for delivery. Background recovery will retry; you can leave and return."
-                  : "Your request is queued for background preparation. You can leave and return to this project."}
+                  ? "Delivery pending. Recovery will retry."
+                  : "Queued for preparation."}
               </p>
             )}
             {planReady && (
-              <p className="text-body-sm text-muted-foreground">Your plan is saved. Supported visual scenes are next.</p>
+              <p className="text-body-sm text-muted-foreground">Plan saved. Preparing scenes.</p>
             )}
-            {state.job.status === "processing" && state.job.compositionReadyAt && <p className="text-body-sm text-muted-foreground">Your timeline is saved. Final rendering is deferred while worker capacity is resolved; your reservation remains held.</p>}
+            {state.job.status === "processing" && state.job.compositionReadyAt && <p className="text-body-sm text-muted-foreground">Timeline saved. Rendering deferred; reservation held.</p>}
             {state.job.status === "processing" && state.job.compositionPendingAt && <>
               {[...new Set(state.job.compositionIssues?.map(compositionIssueMessage))].slice(0, 4).map(message => <p key={message} className="text-body-sm text-muted-foreground">{message}</p>)}
-              <p className="text-body-sm text-muted-foreground">Your produced scenes are saved and your reservation remains held. Timing must be resolved before rendering.</p>
+              <p className="text-body-sm text-muted-foreground">Timing needs attention; reservation held.</p>
             </>}
-            {state.job.status === "processing" && state.job.audioReadyAt && !state.job.compositionReadyAt && !state.job.compositionPendingAt && <p className="text-body-sm text-muted-foreground">Checking your saved media and scene timing. Your reservation remains held.</p>}
-            {state.job.status === "processing" && state.job.narrationPendingAt && <p className="text-body-sm text-muted-foreground">Narration needs background recovery or configuration. Your saved plan and visual scenes are preserved; your reservation remains held.</p>}
-            {state.job.status === "processing" && state.job.visualsReadyAt && !state.job.audioReadyAt && !state.job.narrationPendingAt && <p className="text-body-sm text-muted-foreground">Visual scenes are saved. {state.job.stage === "voice" ? "Generating required narration." : "Preparing narration."} Your reservation remains held.</p>}
-            {state.job.visualsPendingAt && <p className="text-body-sm text-muted-foreground">Some scenes need an unsupported operation or background recovery. Your saved plan and any completed scenes are preserved.</p>}
+            {state.job.status === "processing" && state.job.audioReadyAt && !state.job.compositionReadyAt && !state.job.compositionPendingAt && <p className="text-body-sm text-muted-foreground">Checking timing; reservation held.</p>}
+            {state.job.status === "processing" && state.job.narrationPendingAt && <p className="text-body-sm text-muted-foreground">Narration needs recovery; reservation held.</p>}
+            {state.job.status === "processing" && state.job.visualsReadyAt && !state.job.audioReadyAt && !state.job.narrationPendingAt && <p className="text-body-sm text-muted-foreground">Visual scenes are saved. {state.job.stage === "voice" ? "Generating required narration." : "Preparing narration."} Reservation held.</p>}
+            {state.job.visualsPendingAt && <p className="text-body-sm text-muted-foreground">Scenes saved. Recovery required.</p>}
             {state.job.status === "processing" && state.job.stage && !planReady && !state.job.visualsReadyAt && !state.job.visualsPendingAt && (
               <p className="text-body-sm text-muted-foreground">
                 {generationStageLabels[state.job.stage]}
@@ -110,9 +110,6 @@ export function ProjectGeneration({
                 {state.job.errorMessage}
               </p>
             )}
-            <p className="break-all text-caption text-muted-foreground">
-              Request {state.job.id}
-            </p>
           </>
         )}
         {state.statusError && (
@@ -120,7 +117,7 @@ export function ProjectGeneration({
         )}
       </div>
 );
-  const output = <div className={"studio-output [&&_video]:max-h-[72dvh]"}>{state.job?.status === "completed" && projectId && <FinalVideoResult key={state.job.id} projectId={projectId} jobId={state.job.id} />}{projectId && signedIn && state.job?.compositionReadyAt && <CaptionTrackPreview key={state.job.id} projectId={projectId} jobId={state.job.id} />}</div>;
+  const output = <div className={"studio-output [&&:empty]:hidden max-767:[&&]:flex max-767:[&&]:min-h-0 max-767:[&&]:flex-1 max-767:[&&]:flex-col max-767:[&&_>_*]:min-h-0 max-767:[&&_>_*]:flex-1 [&&_video]:max-h-[72dvh] max-767:[&&_video]:max-h-full"}>{state.job?.status === "completed" && projectId && <FinalVideoResult key={state.job.id} projectId={projectId} jobId={state.job.id} />}{projectId && signedIn && state.job?.compositionReadyAt && <CaptionTrackPreview key={state.job.id} projectId={projectId} jobId={state.job.id} />}</div>;
   const controls = (
     <section
       aria-label="Project generation"
@@ -139,14 +136,14 @@ export function ProjectGeneration({
       <div className="space-y-3">
         <div>
           <p className="text-body-sm font-medium">Generation</p>
-          <p id={helpId} className="mt-1 text-caption text-muted-foreground">
+          <p id={helpId} className={projectId && !hasLocalFiles && !mediaError ? "sr-only" : "mt-1 text-caption text-muted-foreground"}>
             {!projectId
               ? "Save your draft before generating."
               : hasLocalFiles
                 ? "Upload or remove local files before generating."
                 : mediaError
                   ? "Refresh your media before generating."
-                  : "Queue the current prompt, settings and all uploaded project media."}
+                  : "Review cost before confirming."}
           </p>
         </div>
         {signedIn ? (
@@ -186,16 +183,6 @@ export function ProjectGeneration({
           </AccountAction>
         )}
       </div>
-      <details className={`
-      studio-generation-help [&&]:text-[color:var(--muted-foreground)] [&&_summary]:pt-[4px] [&&_summary]:pb-[4px]
-      [&&_summary]:text-[length:12px] [&&_summary]:cursor-pointer [&&_p]:mt-[8px]
-    `}><summary>Before you generate</summary><p className="text-caption leading-relaxed text-muted-foreground">
-        Requests are saved for media analysis, production planning and supported
-        visual scenes. Final rendering is currently deferred while worker capacity is resolved.
-        Confirming reserves the displayed allowance or credits. The reservation
-        stays held for later production and is restored after a total failure
-        without usable scenes.
-      </p></details>
       {signedIn && <div className="flex flex-wrap items-center justify-between gap-3"><CreditBalance compact /><CreditTopUp /></div>}
       {state.quote && (
         <div className="space-y-3 rounded-lg border border-border bg-muted p-4" role="status" aria-live="polite">
@@ -211,12 +198,12 @@ export function ProjectGeneration({
             <div><dt className="text-muted-foreground">Available paid balance</dt><dd className="font-semibold">{state.quote.availableCredits.toLocaleString()} credits</dd></div>
             <div><dt className="text-muted-foreground">After reservation</dt><dd className="font-semibold">{state.quote.expectedRemainingCredits === null ? "—" : `${state.quote.expectedRemainingCredits.toLocaleString()} credits`}</dd></div>
           </dl>
-          {state.quote.eligibleFreeGeneration && <p className="text-caption text-muted-foreground">Uses one lifetime free generation. Your paid credits stay unchanged.</p>}
+          {state.quote.eligibleFreeGeneration && <p className="text-caption text-muted-foreground">Free allowance · no paid credits used.</p>}
           {state.quoteExpired && <p className="text-body-sm text-warning-foreground">This quote has expired. Update the quote before confirming.</p>}
           <p className="text-caption text-muted-foreground">
             {state.quote.breakdown.durationSeconds} seconds · {state.quote.breakdown.operation === "transformation" ? "Video transformation" : "New generation"}.
-            {state.quote.pricingMode === "test" && " Development/test credit configuration — not final pricing."}
-            {" "}Quotes expire after five minutes. Editing your request requires a new quote.
+            {state.quote.pricingMode === "test" && " Test pricing."}
+            {" "}Valid for five minutes; edits require a new quote.
           </p>
           {state.quote.status === "insufficient_credits" && (
             <p className="text-body-sm text-destructive">
@@ -224,18 +211,17 @@ export function ProjectGeneration({
             </p>
           )}
           {state.quote.status === "pricing_unavailable" && (
-            <p className="text-body-sm text-muted-foreground">Free generations are limited to 10 seconds and your remaining allowance. Paid credit rates are awaiting approval.</p>
+            <p className="text-body-sm text-muted-foreground">Paid pricing unavailable. Free generation: up to 10 seconds.</p>
           )}
           <div className="flex flex-wrap gap-2">
             <Button type="button" variant="outline" disabled={disabled} onClick={() => void state.reviewCost()}>Update quote</Button>
           </div>
         </div>
       )}
-      <FreeAllowanceSummary signedIn={signedIn} refreshKey={state.job?.updatedAt ?? ""} />
+      <FreeAllowanceSummary compact signedIn={signedIn} refreshKey={state.job?.updatedAt ?? ""} />
       {state.retrying && (
         <p className="text-caption text-muted-foreground">
-          Retry keeps the original submitted inputs, including any settings you
-          have since edited.
+          Retry uses the original request.
         </p>
       )}
       {state.error && (

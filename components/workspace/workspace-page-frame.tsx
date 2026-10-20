@@ -10,10 +10,14 @@ export function WorkspacePageFrame({ children, className }: { children: ReactNod
   const studio = pathname === "/studio" || pathname.startsWith("/projects/");
   const detail = pathname.startsWith("/templates/") || (/^\/marketplace\/[^/]+$/.test(pathname) && pathname !== "/marketplace/purchases");
   const documentation = pathname === "/documentation" || pathname.startsWith("/documentation/");
+  const credits = pathname === "/credits" || pathname.startsWith("/credits/");
   const settings = pathname === "/settings" || pathname.startsWith("/settings/");
-  const view = settings ? "settings" : pathname === "/projects" ? "projects" : documentation ? "documentation" : pathname === "/templates" ? "templates" : pathname === "/marketplace" ? "marketplace" : detail ? "template-detail" : undefined;
-  return <div data-workspace-page={studio ? "studio" : "content"} data-workspace-view={view} className={cn(`
+  const view = credits ? "credits" : settings ? "settings" : pathname === "/projects" ? "projects" : documentation ? "documentation" : pathname === "/templates" ? "templates" : pathname === "/marketplace" ? "marketplace" : detail ? "template-detail" : undefined;
+  return <div data-workspace-page={studio ? "studio" : "content"} data-workspace-view={view} data-workspace-layout={settings || credits ? "account" : undefined} className={cn(`
       workspace-page min-w-0
+      [&&[data-workspace-page='studio']]:h-[calc(100dvh_-_var(--workspace-mobile-header-height)_-_var(--workspace-inset)_*_2)]
+      [&&[data-workspace-page='studio']]:min-h-0 [&&[data-workspace-page='studio']]:overflow-hidden
+      min-[1024px]:[&&[data-workspace-page='studio']]:h-[calc(100dvh_-_var(--workspace-inset)_*_2)]
       [.workspace-content_&&[data-workspace-page='content'][data-workspace-view='marketplace']]:pt-[54px]
       [.workspace-content_&&[data-workspace-page='content'][data-workspace-view='marketplace']]:pr-[24px]
       [.workspace-content_&&[data-workspace-page='content'][data-workspace-view='marketplace']]:pb-[32px]
@@ -70,14 +74,14 @@ export function WorkspacePageFrame({ children, className }: { children: ReactNod
       max-767:[&&[data-workspace-page='content'][data-workspace-view='projects']]:pl-[14px]
       max-767:[&&[data-workspace-page='content'][data-workspace-view='projects']_h1]:text-[length:26px]
       max-767:[&&[data-workspace-page='content'][data-workspace-view='projects']_h1]:leading-[32px]
-      [&&[data-workspace-page='content'][data-workspace-view='settings']]:relative
-      [&&[data-workspace-page='content'][data-workspace-view='settings']]:h-[calc(100dvh_-_var(--workspace-mobile-header-height)_-_var(--workspace-inset)_*_2_-_2px)]
-      [&&[data-workspace-page='content'][data-workspace-view='settings']]:min-h-[0]
-      [&&[data-workspace-page='content'][data-workspace-view='settings']]:pt-[0]
-      [&&[data-workspace-page='content'][data-workspace-view='settings']]:pr-[0]
-      [&&[data-workspace-page='content'][data-workspace-view='settings']]:pb-[0]
-      [&&[data-workspace-page='content'][data-workspace-view='settings']]:pl-[0]
-      [&&[data-workspace-page='content'][data-workspace-view='settings']]:[container:documentation_/_inline-size]
-      min-[1024px]:[&&[data-workspace-page='content'][data-workspace-view='settings']]:h-[calc(100dvh_-_var(--workspace-inset)_*_2_-_2px)]
+      [&&[data-workspace-page='content'][data-workspace-layout='account']]:relative
+      [&&[data-workspace-page='content'][data-workspace-layout='account']]:h-[calc(100dvh_-_var(--workspace-mobile-header-height)_-_var(--workspace-inset)_*_2_-_2px)]
+      [&&[data-workspace-page='content'][data-workspace-layout='account']]:min-h-[0]
+      [&&[data-workspace-page='content'][data-workspace-layout='account']]:pt-[0]
+      [&&[data-workspace-page='content'][data-workspace-layout='account']]:pr-[0]
+      [&&[data-workspace-page='content'][data-workspace-layout='account']]:pb-[0]
+      [&&[data-workspace-page='content'][data-workspace-layout='account']]:pl-[0]
+      [&&[data-workspace-page='content'][data-workspace-layout='account']]:[container:documentation_/_inline-size]
+      min-[1024px]:[&&[data-workspace-page='content'][data-workspace-layout='account']]:h-[calc(100dvh_-_var(--workspace-inset)_*_2_-_2px)]
     `, className)}>{children}<SmoothScroll workspace /></div>;
 }

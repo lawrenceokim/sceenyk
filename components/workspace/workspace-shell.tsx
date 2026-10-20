@@ -37,6 +37,9 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
   }, []);
   return <div className={`
       workspace-shell min-h-dvh flex-1 bg-background
+      [&&:has(>_div_>_.workspace-gutter_>_.workspace-content_>_[data-workspace-page='studio'])]:h-dvh
+      [&&:has(>_div_>_.workspace-gutter_>_.workspace-content_>_[data-workspace-page='studio'])]:min-h-0
+      [&&:has(>_div_>_.workspace-gutter_>_.workspace-content_>_[data-workspace-page='studio'])]:overflow-clip
       max-1023:[&&:has(_>_div_>_.workspace-gutter_>_.workspace-content_>_:is(_[data-workspace-view='marketplace'],_[data-workspace-view='templates'],_[data-workspace-view='template-detail']_)_)]:h-[100dvh]
       max-1023:[&&:has(_>_div_>_.workspace-gutter_>_.workspace-content_>_:is(_[data-workspace-view='marketplace'],_[data-workspace-view='templates'],_[data-workspace-view='template-detail']_)_)]:min-h-[0]
       max-1023:[&&:has(_>_div_>_.workspace-gutter_>_.workspace-content_>_:is(_[data-workspace-view='marketplace'],_[data-workspace-view='templates'],_[data-workspace-view='template-detail']_)_)]:overflow-clip
@@ -49,9 +52,9 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
       [&&:has(>_div_>_.workspace-gutter_>_.workspace-content_>_[data-workspace-view='projects'])]:h-[100dvh]
       [&&:has(>_div_>_.workspace-gutter_>_.workspace-content_>_[data-workspace-view='projects'])]:min-h-[0]
       [&&:has(>_div_>_.workspace-gutter_>_.workspace-content_>_[data-workspace-view='projects'])]:overflow-clip
-      [&&:has(>_div_>_.workspace-gutter_>_.workspace-content_>_[data-workspace-view='settings'])]:h-[100dvh]
-      [&&:has(>_div_>_.workspace-gutter_>_.workspace-content_>_[data-workspace-view='settings'])]:min-h-[0]
-      [&&:has(>_div_>_.workspace-gutter_>_.workspace-content_>_[data-workspace-view='settings'])]:overflow-clip
+      [&&:has(>_div_>_.workspace-gutter_>_.workspace-content_>_[data-workspace-layout='account'])]:h-[100dvh]
+      [&&:has(>_div_>_.workspace-gutter_>_.workspace-content_>_[data-workspace-layout='account'])]:min-h-[0]
+      [&&:has(>_div_>_.workspace-gutter_>_.workspace-content_>_[data-workspace-layout='account'])]:overflow-clip
     `} data-workspace-shell data-collapsed={collapsed} style={{ "--workspace-sidebar-width": collapsed ? "var(--workspace-nav-closed)" : "var(--workspace-nav-open)" } as CSSProperties}>
     <a href="#workspace-content" className={`
       [@layer_components]:fixed [@layer_components]:top-[var(--space-3)] [@layer_components]:left-[var(--space-4)]
@@ -70,6 +73,8 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
     `}>
         <main id="workspace-content" tabIndex={-1} className={`
       workspace-content min-w-0 text-card-foreground outline-none
+      [&&:has(>_[data-workspace-page='studio'])]:h-[calc(100dvh_-_var(--workspace-mobile-header-height)_-_var(--workspace-inset)_*_2)]
+      [&&:has(>_[data-workspace-page='studio'])]:min-h-0 [&&:has(>_[data-workspace-page='studio'])]:overflow-hidden
       max-1023:[&&:has(_>_:is(_[data-workspace-view='marketplace'],_[data-workspace-view='templates'],_[data-workspace-view='template-detail']_)_)]:h-[calc(_100dvh_-_var(--workspace-mobile-header-height)_-_var(--workspace-inset)_*_2_)]
       max-1023:[&&:has(_>_:is(_[data-workspace-view='marketplace'],_[data-workspace-view='templates'],_[data-workspace-view='template-detail']_)_)]:min-h-[0]
       max-1023:[&&:has(_>_:is(_[data-workspace-view='marketplace'],_[data-workspace-view='templates'],_[data-workspace-view='template-detail']_)_)]:overflow-hidden
@@ -87,9 +92,9 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
       [&&:has(>_[data-workspace-view='projects'])]:min-h-[0] [&&:has(>_[data-workspace-view='projects'])]:overflow-y-auto
       [&&:has(>_[data-workspace-view='projects'])]:overscroll-contain
       min-[1024px]:[&&:has(>_[data-workspace-view='projects'])]:h-[calc(100dvh_-_var(--workspace-inset)_*_2)]
-      [&&:has(>_[data-workspace-view='settings'])]:h-[calc(100dvh_-_var(--workspace-mobile-header-height)_-_var(--workspace-inset)_*_2)]
-      [&&:has(>_[data-workspace-view='settings'])]:min-h-[0] [&&:has(>_[data-workspace-view='settings'])]:overflow-hidden
-      min-[1024px]:[&&:has(>_[data-workspace-view='settings'])]:h-[calc(100dvh_-_var(--workspace-inset)_*_2)]
+      [&&:has(>_[data-workspace-layout='account'])]:h-[calc(100dvh_-_var(--workspace-mobile-header-height)_-_var(--workspace-inset)_*_2)]
+      [&&:has(>_[data-workspace-layout='account'])]:min-h-[0] [&&:has(>_[data-workspace-layout='account'])]:overflow-hidden
+      min-[1024px]:[&&:has(>_[data-workspace-layout='account'])]:h-[calc(100dvh_-_var(--workspace-inset)_*_2)]
     `}>{children}</main>
       </div>
     </div>

@@ -47,5 +47,5 @@ export default function Page({ searchParams }: { searchParams: Promise<Record<st
       [.workspace-gallery-copy_&&]:text-[length:inherit] [.workspace-gallery-copy_&&]:leading-[inherit]
       [.workspace-settings-inner_&&]:min-h-[28px] [.workspace-settings-inner_&&]:text-[length:12px]
       [@media_(pointer:_coarse)]:[.workspace-settings-inner_&&]:min-h-[44px]
-    `} href="/settings/earnings">Creator earnings</Link></nav><Suspense fallback={<p role="status">Loading your Marketplace account…</p>}><Content searchParams={searchParams} /></Suspense></>;
+    `} href="/credits/earnings">Creator earnings</Link></nav><Suspense fallback={<p role="status">Loading your Marketplace account…</p>}><Content searchParams={searchParams} /></Suspense></>;
 }

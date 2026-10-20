@@ -1,5 +1,13 @@
 # Payments and PayPal Sandbox payouts
 
+## Earnings & Payouts under Credits (2026-10-20)
+
+The existing earnings/withdrawals screen is now /credits/earnings, the second tab of the Credits workspace. It reuses getCreatorEarnings, getWithdrawalAccount, FinancialPanel and WithdrawalPanel without changing financial logic, ownership or provider behavior. Old /settings/earnings, /dashboard/settings/earnings and /dashboard/marketplace/earnings redirect with page parameters. Navigation/pagination links and withdrawal/destination cache invalidation target /credits/earnings; legacy invalidation remains. The existing authenticated/private /credits prefix covers this route and its generated responses. No financial or hosted provider execution was performed.
+
+## Credits & Billing page relocation (2026-10-20)
+
+The user-facing credit account now lives at /credits outside Settings navigation. It reuses CreditPurchases, FreeAllowanceSummary, existing authentication, packs, balance/history/reconciliation and completion/cancellation handling. Old /settings/credits, /dashboard/settings/credits and /dashboard/credits redirect to /credits with query parameters; provider-created callback URLs are preserved. Credit completion/reconciliation now also invalidate /credits. Private/no-store policies cover the new route and its generated representations. No payment/credit business rules or provider operations change; deployment/real checkout acceptance was not performed in this unit.
+
 ## Settings credit/earnings relocation (2026-10-16)
 
 Credits & Billing at /dashboard/settings/credits reuses the existing owned wallet, purchases, manual PayPal Sandbox top-up and free allowance. New credit orders return/cancel there. Existing /dashboard/credits bookmarks forward all query parameters into Settings; Marketplace purchase return URLs remain unchanged. Earnings & Payouts at /dashboard/settings/earnings reuses the existing safe financial/withdrawal UI and private destination, with pagination and action invalidation updated. The legacy earnings URL forwards its page query. No policy, ledger, amount, fulfilment, provider-verification or payout execution logic changes. No new payment or withdrawal is initiated during the Settings acceptance checks.

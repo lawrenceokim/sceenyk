@@ -126,16 +126,11 @@ export function ProjectSaveControls({
         value={title}
         maxLength={projectTitleLimit}
         onChange={(event) => onTitleChange(event.target.value)}
-        aria-describedby={`${id}-help`}
         autoComplete="off"
       />
-      <p id={`${id}-help`} className="mt-2 text-caption text-muted-foreground">
-        Save your title, prompt and creative settings to return to them later.
-      </p>
       {hasLocalMedia && (
         <p className="mt-4 rounded-lg border border-warning/30 bg-warning-surface p-3 text-body-sm text-warning-foreground">
-          Selected local media isn’t saved with your draft. Use Upload to project
-          to keep it when you reopen.
+          Local files are not saved until uploaded.
         </p>
       )}
       <div className="mt-3">
@@ -181,7 +176,7 @@ export function ProjectSaveControls({
       [.workspace-gallery-copy_&&]:text-[length:inherit] [.workspace-gallery-copy_&&]:leading-[inherit]
       [.workspace-settings-inner_&&]:min-h-[28px] [.workspace-settings-inner_&&]:text-[length:12px]
       [@media_(pointer:_coarse)]:[.workspace-settings-inner_&&]:min-h-[44px]
-    `}>Publish to Marketplace</Link><p className="mt-1 text-caption text-muted-foreground">Uses your last saved settings. You’ll write separate public instructions.</p></div>}
+    `}>Publish to Marketplace</Link></div>}
       <div
         role="status"
         aria-live="polite"
@@ -192,7 +187,7 @@ export function ProjectSaveControls({
         ) : state.status === "error" ? (
           <span className="text-destructive">{state.message}</span>
         ) : !signedIn ? (
-          "Sign in to keep your projects private."
+          "Sign in to save."
         ) : dirty ? (
           "Unsaved changes"
         ) : state.status === "saved" ? (
@@ -201,7 +196,7 @@ export function ProjectSaveControls({
             Draft saved
           </span>
         ) : (
-          "Your draft hasn’t been saved yet."
+          "Draft not saved."
         )}
       </div>
     </section>

@@ -84,12 +84,13 @@ export function StudioLayout({ sources, toolbar, stage, properties }: {
     };
   }, []);
   return <StudioPropertiesTarget.Provider value={propertiesTarget}><StudioToolbarTarget.Provider value={toolbarTarget}><div className={`
-      studio-container [&&]:[container-type:inline-size]
+      studio-container [&&]:[container-type:inline-size] [&&]:h-[var(--studio-panel-height)] [&&]:min-h-0
       [&&]:[--studio-panel-height:calc(100dvh_-_var(--workspace-mobile-header-height)_-_var(--workspace-inset)_*_2)]
       min-[1024px]:[&&]:[--studio-panel-height:calc(100dvh_-_var(--workspace-inset)_*_2)]
     `} ref={root}>
     <div className={`
-      studio-layout [&&]:[--studio-sources-mode:modal] [&&]:grid [&&]:gap-[18px] [&&]:min-w-[0]
+      studio-layout [&&]:[--studio-sources-mode:modal] [&&]:grid [&&]:gap-[16px] [&&]:min-w-[0] [&&]:h-full [&&]:min-h-0
+      max-767:[&&]:[grid-template-rows:minmax(0,0.95fr)_minmax(0,1fr)]
       min-[768px]:[&&]:[--studio-sources-mode:panel] min-[768px]:[&&]:[--studio-short-stage:clamp(208px,42dvh,320px)]
       min-[768px]:[&&]:gap-[32px] min-[1024px]:@min-[930px]:[&&]:[--studio-sources-mode:inline]
       min-[1024px]:@min-[930px]:[&&]:[grid-template-columns:var(--workspace-rail)_minmax(0,1fr)_var(--workspace-inspector)]
@@ -108,7 +109,7 @@ export function StudioLayout({ sources, toolbar, stage, properties }: {
     `} aria-labelledby="studio-sources-title"
         onCancel={event => { event.preventDefault(); closeSources(); }}
         onKeyDown={event => {
-          if (event.key === "Escape" && mode.current === "panel") { event.preventDefault(); closeSources(); }
+          if (event.key === "Escape" && mode.current === "panel" && !event.defaultPrevented) { event.preventDefault(); closeSources(); }
         }}
         onClickCapture={event => {
           if ((event.target as HTMLElement).closest("[data-account-auth]") && mode.current !== "inline") {
@@ -142,15 +143,15 @@ export function StudioLayout({ sources, toolbar, stage, properties }: {
       [.studio-sources_&&]:[flex:1] [.studio-sources_&&]:min-h-[0] [.studio-sources_&&]:overflow-y-auto
       [.studio-sources_&&]:overscroll-contain [.studio-sources_&&]:pb-[max(24px,_env(safe-area-inset-bottom))]
       [.studio-sources_&&_>_*_+_*]:mt-[16px] [.studio-sources_&&_>_*_+_*]:pt-[16px]
-      [.studio-sources_&&_>_*_+_*]:[border-top:1px_solid_var(--border)] min-[768px]:[.studio-properties_&&]:overflow-y-auto
-      min-[768px]:[.studio-properties_&&]:min-h-[0] min-[768px]:[.studio-properties_&&]:[flex:1]
-      min-[768px]:[.studio-properties_&&]:overscroll-contain [&&:focus-visible]:[outline:2px_solid_var(--ring)]
+      [.studio-sources_&&_>_*_+_*]:[border-top:1px_solid_var(--border)] [.studio-properties_&&]:overflow-y-auto
+      [.studio-properties_&&]:min-h-[0] [.studio-properties_&&]:[flex:1]
+      [.studio-properties_&&]:overscroll-contain [&&:focus-visible]:[outline:2px_solid_var(--ring)]
       [&&:focus-visible]:[outline-offset:-2px] [&&:focus-visible]:rounded-[8px]
       [.studio-properties_>_&&]:pt-[var(--workspace-panel-padding)]
     `} tabIndex={0} role="region" aria-label="Sources controls">{sources}</div>
       </dialog>
       <section className={`
-      studio-stage studio-panel [&&]:flex [&&]:flex-col min-[768px]:[&&]:h-[var(--studio-short-stage)]
+      studio-stage studio-panel [&&]:min-h-0 [&&]:overflow-hidden [&&]:flex [&&]:flex-col min-[768px]:[&&]:h-[var(--studio-short-stage)]
       min-[1024px]:@min-[930px]:[&&]:h-[var(--studio-panel-height)] [&&]:min-w-[0] [&&]:[border:1px_solid_var(--border)]
       [&&]:rounded-[var(--ui-radius-frame)] [&&]:[background:var(--card)] [&&]:text-[color:var(--card-foreground)]
     `} aria-label="Preview Stage">
@@ -176,7 +177,7 @@ export function StudioLayout({ sources, toolbar, stage, properties }: {
           <div ref={setToolbarTarget} className={"studio-toolbar-actions [&&]:flex [&&]:items-center [&&]:gap-[4px] [&&]:shrink-0 [&&:empty]:hidden"} />
         </div>
         <div className={`
-      studio-stage-body [&&]:pt-[var(--workspace-inset)] [&&]:pr-[var(--workspace-inset)] [&&]:pb-[var(--workspace-inset)]
+      studio-stage-body [&&]:min-h-0 [&&]:flex-1 max-767:[&&]:overflow-hidden max-767:[&&]:gap-2 max-767:[&&_>_*_+_*]:mt-0 [&&]:pt-[var(--workspace-inset)] [&&]:pr-[var(--workspace-inset)] [&&]:pb-[var(--workspace-inset)]
       [&&]:pl-[var(--workspace-inset)] [&&]:min-w-[0] [&&]:flex [&&]:flex-col [&&_>_[aria-label='Creation_preview']]:[flex:1]
       [&&_>_[aria-label='Creation_preview']]:min-h-[0] [&&_>_[aria-label='Creation_preview']]:flex
       [&&_>_[aria-label='Creation_preview']]:flex-col [&&_>_*_+_*]:mt-[12px] [&&_>_[role='status']:empty]:hidden
@@ -186,7 +187,7 @@ export function StudioLayout({ sources, toolbar, stage, properties }: {
     `} tabIndex={0} role="region" aria-label="Preview content">{stage}</div>
       </section>
       <aside className={`
-      studio-properties studio-panel [&&]:flex [&&]:flex-col
+      studio-properties studio-panel [&&]:min-h-0 [&&]:overflow-hidden [&&]:flex [&&]:flex-col
       min-[768px]:[&&]:h-[calc(var(--studio-panel-height)_-_var(--studio-short-stage)_-_32px)] min-[768px]:[&&]:min-h-[160px]
       min-[1024px]:@min-[930px]:[&&]:h-[var(--studio-panel-height)] [&&]:min-w-[0] [&&]:[border:1px_solid_var(--border)]
       [&&]:rounded-[var(--ui-radius-frame)] [&&]:[background:var(--card)] [&&]:text-[color:var(--card-foreground)]
@@ -203,9 +204,9 @@ export function StudioLayout({ sources, toolbar, stage, properties }: {
       [.studio-sources_&&]:[flex:1] [.studio-sources_&&]:min-h-[0] [.studio-sources_&&]:overflow-y-auto
       [.studio-sources_&&]:overscroll-contain [.studio-sources_&&]:pb-[max(24px,_env(safe-area-inset-bottom))]
       [.studio-sources_&&_>_*_+_*]:mt-[16px] [.studio-sources_&&_>_*_+_*]:pt-[16px]
-      [.studio-sources_&&_>_*_+_*]:[border-top:1px_solid_var(--border)] min-[768px]:[.studio-properties_&&]:overflow-y-auto
-      min-[768px]:[.studio-properties_&&]:min-h-[0] min-[768px]:[.studio-properties_&&]:[flex:1]
-      min-[768px]:[.studio-properties_&&]:overscroll-contain [&&:focus-visible]:[outline:2px_solid_var(--ring)]
+      [.studio-sources_&&_>_*_+_*]:[border-top:1px_solid_var(--border)] [.studio-properties_&&]:overflow-y-auto
+      [.studio-properties_&&]:min-h-[0] [.studio-properties_&&]:[flex:1]
+      [.studio-properties_&&]:overscroll-contain [&&:focus-visible]:[outline:2px_solid_var(--ring)]
       [&&:focus-visible]:[outline-offset:-2px] [&&:focus-visible]:rounded-[8px]
       [.studio-properties_>_&&]:pt-[var(--workspace-panel-padding)]
     `} tabIndex={0} role="region" aria-label="Properties controls">{properties}<div ref={setPropertiesTarget} className={`

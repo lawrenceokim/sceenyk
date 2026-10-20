@@ -6,6 +6,7 @@ import { getWithdrawalAccount, requestWithdrawal, savePayoutDestination } from "
 async function mutation(work: () => Promise<unknown>) {
   try {
     await work();
+    revalidatePath("/credits/earnings");
     revalidatePath("/settings/earnings");
     return { ok: true as const };
   } catch (error) {

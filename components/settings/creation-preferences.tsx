@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { Select } from "@/components/ui/select";
 import { useAuth } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
 import { aspectRatios } from "@/lib/projects/options";
@@ -47,7 +48,7 @@ function PreferenceForm({ clerkUserId, preferences }: { clerkUserId: string; pre
       [.workspace-settings-inner_label&&]:pb-[12px] [.workspace-settings-inner_label&&]:pl-[12px]
       [.workspace-settings-inner_label&&_svg]:w-[18px] [.workspace-settings-inner_label&&_svg]:h-[18px]
     `} onSubmit={event => { event.preventDefault(); void save(); }}><fieldset disabled={busy} className="grid gap-5 sm:grid-cols-2">
-    <div className="space-y-2"><label className="text-body-sm font-medium" htmlFor="default-aspect">Default aspect ratio</label><select id="default-aspect" name="aspectRatio" value={value.aspectRatio} onChange={event => setValue(creationPreferencesSchema.parse({ ...value, aspectRatio: event.target.value }))} className="sceenyk-input min-h-11 w-full rounded-lg border border-input bg-field px-3">{aspectRatios.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}</select></div>
-    <div className="space-y-2"><label className="text-body-sm font-medium" htmlFor="default-category">Default creation category</label><select id="default-category" name="category" value={value.category} onChange={event => setValue(creationPreferencesSchema.parse({ ...value, category: event.target.value }))} className="sceenyk-input min-h-11 w-full rounded-lg border border-input bg-field px-3">{creationCategories.map(option => <option key={option.id} value={option.id}>{option.title}</option>)}</select></div>
+    <div className="space-y-2"><label className="text-body-sm font-medium" htmlFor="default-aspect">Default aspect ratio</label><Select id="default-aspect" name="aspectRatio" value={value.aspectRatio} disabled={busy} onValueChange={aspectRatio => setValue(creationPreferencesSchema.parse({ ...value, aspectRatio }))} options={aspectRatios} /></div>
+    <div className="space-y-2"><label className="text-body-sm font-medium" htmlFor="default-category">Default creation category</label><Select id="default-category" name="category" value={value.category} disabled={busy} onValueChange={category => setValue(creationPreferencesSchema.parse({ ...value, category }))} options={creationCategories.map(option => ({ value: option.id, label: option.title }))} /></div>
   </fieldset><div className="flex flex-wrap items-center gap-3"><Button type="submit" disabled={busy}>{busy ? "Saving…" : "Save defaults"}</Button><p role="status" className={error ? "text-body-sm text-destructive" : "text-body-sm text-muted-foreground"}>{message}</p></div></form>;
 }

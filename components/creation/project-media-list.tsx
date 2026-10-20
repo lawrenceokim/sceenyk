@@ -68,8 +68,7 @@ export function ProjectMediaList({
             ) : asset.status === "pending" ? (
               <>
                 <p className="mt-2 text-caption text-muted-foreground">
-                  Check a completed transfer. If the file never reached storage,
-                  select it again above and choose Upload to project.
+                  Upload incomplete.
                 </p>
                 <Button
                   type="button"
@@ -85,10 +84,6 @@ export function ProjectMediaList({
           </li>
         ))}
       </ul>
-      <p className="mt-3 text-caption text-muted-foreground">
-        Uploaded media returns when you reopen this project. Permanent deletion
-        is coming in a later unit.
-      </p>
     </div>
   );
 }

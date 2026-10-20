@@ -119,6 +119,6 @@ export function WithdrawalPanel({ account, page, clerkUserId, onChanged }: { acc
       {w.reviewRequired && <p className="text-body-sm text-warning">PayPal reported a return after payout. Contact support to reconcile it; the original paid record is preserved.</p>}
       {w.failureMessage && <p className="text-body-sm text-muted-foreground">{w.failureMessage}</p>}
     </article>)}
-    <MarketplacePagination total={account.total} page={page} pageSize={12} itemLabel="withdrawal" href={value => `/settings/earnings?page=${value}`} />
+    <MarketplacePagination total={account.total} page={page} pageSize={12} itemLabel="withdrawal" href={value => `/credits/earnings?page=${value}`} />
   </section>;
 }

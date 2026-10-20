@@ -104,7 +104,7 @@ function NewAccountWorkspace({ userId }: { userId: string }) {
     return () => { active = false; };
   }, [userId]);
   if (!result) return <p role="status">Loading your creation defaults…</p>;
-  return <>{result.unavailable && <p role="status" className="mb-4 text-body-sm text-muted-foreground">Your saved creation defaults are unavailable. This new draft uses standard defaults; you can adjust them below.</p>}<WorkspaceEditor signedIn authReady initialPreferences={result.preferences} restoredDraft={guestDraft ?? undefined} /></>;
+  return <WorkspaceEditor signedIn authReady initialPreferences={result.preferences} preferencesUnavailable={result.unavailable} restoredDraft={guestDraft ?? undefined} />;
 }
 
 export function CreationWorkspace(props: WorkspaceProps) {
@@ -124,6 +124,7 @@ function WorkspaceEditor({
   initialGenerationError = "",
   initialOrigin = null,
   initialPreferences = defaultCreationPreferences,
+  preferencesUnavailable = false,
   signedIn,
   authReady,
   restoredDraft,
@@ -136,10 +137,11 @@ function WorkspaceEditor({
   initialGenerationError?: string;
   initialOrigin?: ProjectOrigin | null;
   initialPreferences?: CreationPreferences;
+  preferencesUnavailable?: boolean;
   signedIn: boolean;
   authReady: boolean;
 }) {
-  const [selectedCategory, setSelectedCategory] = useState<CategoryId>(
+  const [selectedCategory] = useState<CategoryId>(
     initialProject?.category ?? restoredDraft?.brief.category ?? initialPreferences.category,
   );
   const [prompt, setPrompt] = useState(initialProject?.prompt ?? restoredDraft?.brief.prompt ?? "");
@@ -328,10 +330,10 @@ function WorkspaceEditor({
               <StudioLayout
                 sources={
                   <>
+                    {preferencesUnavailable && <p role="status" className="text-caption text-muted-foreground">Creation defaults unavailable.</p>}
                     {restoredDraft?.missingFiles && (
                       <p role="status" className="text-caption text-warning-foreground">
-                        Your brief was restored. Select your local files again after signing in;
-                        files are not stored in the browser draft.
+                        Brief restored. Reselect local files.
                       </p>
                     )}
                     {initialOrigin && (
@@ -354,7 +356,7 @@ function WorkspaceEditor({
       [.studio-sources_&&_>_div:first-child_>_span.rounded-full]:text-[color:var(--muted-foreground)]
     `} aria-label="Adopted template">
                         <p className="font-semibold">Adopted from {initialOrigin.title}</p>
-                        <p className="text-caption text-muted-foreground">Your independent project. Add your own media.</p>
+                        <p className="text-caption text-muted-foreground">Independent project</p>
                         <Link className={`
       [@layer_components]:inline-flex [@layer_components]:min-h-[var(--control-height)] [@layer_components]:items-center
       [@layer_components]:gap-[var(--space-1)] [@layer_components]:text-[color:var(--muted-foreground)]
@@ -375,6 +377,7 @@ function WorkspaceEditor({
                       </section>
                     )}
                     {project}
+                    <CategorySelector selected={selectedCategory} />
                     <MediaDropzone
           files={selectedFiles}
           selectedId={activeMedia?.id ?? activeAsset?.id}
@@ -409,18 +412,14 @@ function WorkspaceEditor({
                   <>
                     {output}
                     {(!output || activeMedia || activeAsset) && (
-                      <CreationPreview category={category} settings={settings} prompt={prompt}
+                      <CreationPreview settings={settings}
                         media={activeMedia} asset={activeAsset} />
                     )}
-                    {status}
+                    <div className="hidden md:block">{status}</div>
                   </>
                 }
                 properties={
                   <>
-                    <StudioInspectorSection title="Creation type"><CategorySelector
-          selected={selectedCategory}
-          onChange={setSelectedCategory}
-        /></StudioInspectorSection>
                     <StudioInspectorSection title="Describe your scene"><PromptComposer
           prompt={prompt}
           category={category}
@@ -445,8 +444,9 @@ function WorkspaceEditor({
       [.studio-sources_&&_>_div:first-child_>_span.rounded-full]:[background:var(--muted)]
       [.studio-sources_&&_>_div:first-child_>_span.rounded-full]:text-[color:var(--muted-foreground)]
     `}>
-                      <p className="mt-2 text-caption text-muted-foreground">Include any narration direction in your prompt.</p>
+                      <p className="mt-2 text-caption text-muted-foreground">Narration follows your prompt.</p>
                     </section></StudioInspectorSection>
+                    <div className="md:hidden">{status}</div>
                     {controls}
                   </>
                 }

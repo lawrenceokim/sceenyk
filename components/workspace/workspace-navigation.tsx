@@ -17,7 +17,7 @@ const groups = [
   { label: "Discover", items: [{ label: "Marketplace", icon: Store, href: "/marketplace" }] },
   { label: "Resources", items: [{ label: "Documentation", icon: BookOpen, href: "/documentation" }] },
   { label: "Account", items: [
-    { label: "Credits", icon: Coins, href: "/settings/credits" },
+    { label: "Credits", icon: Coins, href: "/credits" },
     { label: "Settings", icon: Settings2, href: "/settings/account" },
   ] },
 ] as const;
@@ -27,8 +27,8 @@ export function WorkspaceTooltip({ label, children, enabled = true }: {
 }) {
   const id = useId();
   return <Tooltip.Root disabled={!enabled}><Tooltip.Trigger render={children} aria-describedby={enabled ? id : undefined} />
-    <Tooltip.Portal><Tooltip.Positioner side="right" sideOffset={12} className="z-[70]">
-      <Tooltip.Popup id={id} role="tooltip" className={cn(popupMotion, "rounded-lg border border-border bg-popover px-3 py-2 text-caption text-popover-foreground shadow-popover")}>{label}</Tooltip.Popup>
+    <Tooltip.Portal><Tooltip.Positioner side="right" sideOffset={4} className="z-[70]">
+      <Tooltip.Popup id={id} role="tooltip" className={cn(popupMotion, "rounded-lg border border-border bg-popover px-2 py-1 text-[11px] leading-4 text-popover-foreground shadow-popover")}>{label}</Tooltip.Popup>
     </Tooltip.Positioner></Tooltip.Portal>
   </Tooltip.Root>;
 }
@@ -49,8 +49,7 @@ export function WorkspaceNavigation({ collapsed = false, onNavigate }: {
     `, collapsed && "opacity-0 -translate-x-1")} aria-hidden={collapsed}>{group.label}</p>
       <ul>{group.items.map(item => {
         const Icon = item.icon;
-        // Credits is a shortcut into Settings, so Settings owns its active state.
-        const active = item.label === "Credits" ? false
+        const active = item.label === "Credits" ? pathname === "/credits" || pathname.startsWith("/credits/")
           : item.label === "Studio" ? pathname === "/studio" || pathname.startsWith("/projects/")
           : item.label === "Marketplace" ? pathname.startsWith("/marketplace")
           : item.label === "Settings" ? pathname === "/settings" || pathname.startsWith("/settings/")

@@ -45,7 +45,7 @@ function BalanceRead({ compact }: { compact: boolean }) {
     };
   }, []);
   const balance = summary?.available.toLocaleString() ?? (compact ? loaded ? "Unavailable" : "Loading…" : "—");
-  return compact ? <Link href="/settings/credits" className={`
+  return compact ? <Link href="/credits" className={`
       [@layer_components]:inline-flex [@layer_components]:min-h-[var(--control-height)] [@layer_components]:items-center
       [@layer_components]:gap-[var(--space-1)] [@layer_components]:text-[color:var(--muted-foreground)]
       [@layer_components]:text-[length:var(--text-body-sm)] [@layer_components]:font-[500]

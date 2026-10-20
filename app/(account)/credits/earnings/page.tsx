@@ -1,4 +1,3 @@
-import { SettingsSection } from "@/components/settings/settings-section";
 import { Suspense } from "react";
 import Link from "next/link";
 import { unstable_rethrow } from "next/navigation";
@@ -12,11 +11,11 @@ async function Content({ searchParams }: { searchParams: Promise<Record<string, 
   const current = typeof page === "string" && /^\d{1,6}$/.test(page) ? Math.max(1, Math.min(100000, Number(page))) : 1;
   let result, withdrawals;
   try { [result, withdrawals] = await Promise.all([getCreatorEarnings(current), getWithdrawalAccount(current)]); }
-  catch (error) { unstable_rethrow(error); return <MarketplaceFailure href="/settings/earnings" />; }
+  catch (error) { unstable_rethrow(error); return <MarketplaceFailure href="/credits/earnings" />; }
   return <FinancialPanel clerkUserId={result.clerkUserId} page={current} earnings={result.earnings} withdrawals={withdrawals.account} />;
 }
 export default function Page({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
-  return <SettingsSection title="Earnings & Payouts" description="Your creator earnings and withdrawals, separate from AI credits."><header className="space-y-3"><p className={`
+  return <div className="space-y-6"><header className="space-y-3"><p className={`
       [@layer_components]:text-[color:var(--link)] [@layer_components]:text-[length:var(--text-caption)]
       [@layer_components]:font-[600] [@layer_components]:tracking-[0.12em] eyebrow
       [.workspace-page[data-workspace-page='content']_&&]:hidden
@@ -52,5 +51,5 @@ export default function Page({ searchParams }: { searchParams: Promise<Record<st
       [.workspace-gallery-copy_&&]:text-[length:inherit] [.workspace-gallery-copy_&&]:leading-[inherit]
       [.workspace-settings-inner_&&]:min-h-[28px] [.workspace-settings-inner_&&]:text-[length:12px]
       [@media_(pointer:_coarse)]:[.workspace-settings-inner_&&]:min-h-[44px]
-    `} href="/marketplace/purchases">My Marketplace purchases</Link></nav><Suspense fallback={<p role="status">Loading your Marketplace account…</p>}><Content searchParams={searchParams} /></Suspense></SettingsSection>;
+    `} href="/marketplace/purchases">My Marketplace purchases</Link></nav><Suspense fallback={<p role="status">Loading your Marketplace account…</p>}><Content searchParams={searchParams} /></Suspense></div>;
 }

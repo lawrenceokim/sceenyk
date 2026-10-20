@@ -231,6 +231,13 @@
   * {
     @apply border-border outline-ring/50;
   }
+  /* Shared interaction affordance; component-specific styling stays Tailwind. */
+  :where(a[href], button, summary, [role="button"], [role="link"], [role="tab"], [role="menuitem"], [role="menuitemradio"], [role="menuitemcheckbox"], [role="option"], input:is([type="button"], [type="submit"], [type="reset"], [type="checkbox"], [type="radio"], [type="range"], [type="file"]), label:has(input:is([type="checkbox"], [type="radio"], [type="file"]))):not(:disabled, [aria-disabled="true"], [data-disabled]) {
+    cursor: pointer;
+  }
+  :where(:disabled, [aria-disabled="true"], [data-disabled], label:has(input:disabled)) {
+    cursor: not-allowed;
+  }
   body {
     @apply bg-background text-foreground;
     font-size: var(--text-body);

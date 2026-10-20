@@ -57,7 +57,7 @@ export default function MyListingsPage({ searchParams }: { searchParams: Promise
       [.workspace-gallery-copy_&&]:text-[length:inherit] [.workspace-gallery-copy_&&]:leading-[inherit]
       [.workspace-settings-inner_&&]:min-h-[28px] [.workspace-settings-inner_&&]:text-[length:12px]
       [@media_(pointer:_coarse)]:[.workspace-settings-inner_&&]:min-h-[44px]
-    `} href="/settings/earnings">Creator earnings</Link><Link className={`
+    `} href="/credits/earnings">Creator earnings</Link><Link className={`
       [@layer_components]:inline-flex [@layer_components]:min-h-[var(--control-height)] [@layer_components]:items-center
       [@layer_components]:gap-[var(--space-1)] [@layer_components]:text-[color:var(--muted-foreground)]
       [@layer_components]:text-[length:var(--text-body-sm)] [@layer_components]:font-[500]

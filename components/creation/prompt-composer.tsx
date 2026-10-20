@@ -57,7 +57,7 @@ export function PromptComposer({
         rows={5}
         maxLength={projectPromptLimit}
         placeholder="Describe what you want Sceenyk to create..."
-        aria-describedby={`${id}-help ${id}-count`}
+        aria-describedby={`${id}-count`}
         className={`
       [@layer_components]:w-[100%] [@layer_components]:min-h-[var(--control-height)]
       [@layer_components]:[border:1px_solid_var(--input)] [@layer_components]:rounded-[var(--radius-md)]
@@ -102,18 +102,12 @@ export function PromptComposer({
     `}
       />
       <div className="mt-2 flex flex-wrap justify-between gap-2 text-caption text-muted-foreground">
-        <p id={`${id}-help`}>
-          Think subject, mood, movement, and the story you want to tell.
-        </p>
         <span id={`${id}-count`}>
           {prompt.length.toLocaleString()} /{" "}
           {projectPromptLimit.toLocaleString()} characters
         </span>
       </div>
       <div className="mt-3">
-        <p className="mb-2 text-caption font-medium text-muted-foreground">
-          NEED A FIRST SPARK?
-        </p>
         <Button
           type="button"
           variant="ghost"
@@ -121,7 +115,7 @@ export function PromptComposer({
           className="h-auto min-h-11 w-full justify-start gap-3 whitespace-normal px-3 py-3 text-left font-normal"
         >
           <Sparkles className="size-4 shrink-0 text-link" aria-hidden="true" />
-          <span>{category.example}</span>
+          <span>Use example prompt</span>
         </Button>
       </div>
     </section>

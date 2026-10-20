@@ -12,7 +12,7 @@ export function SmoothScroll({ workspace = false }: { workspace?: boolean }) {
 
   useEffect(() => {
     const page = workspace ? marker.current?.closest<HTMLElement>("[data-workspace-page]") : null;
-    if (workspace && (!page || page.dataset.workspacePage === "studio" || ["documentation", "settings"].includes(page.dataset.workspaceView ?? ""))) return;
+    if (workspace && (!page || page.dataset.workspacePage === "studio" || ["documentation", "settings", "credits"].includes(page.dataset.workspaceView ?? ""))) return;
 
     const reduced = matchMedia("(prefers-reduced-motion: reduce)");
     let lenis: Lenis | undefined;

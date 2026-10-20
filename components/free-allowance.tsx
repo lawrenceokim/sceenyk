@@ -9,6 +9,7 @@ import { useAuthAvailable } from "@/components/auth/auth-availability";
 type AllowanceProps = {
   signedIn?: boolean;
   refreshKey?: string;
+  compact?: boolean;
 };
 
 export function FreeAllowanceSummary(props: AllowanceProps) {
@@ -16,22 +17,23 @@ export function FreeAllowanceSummary(props: AllowanceProps) {
   return configured ? (
     <AccountAllowance {...props} />
   ) : (
-    <AllowanceRead signedIn={false} />
+    <AllowanceRead signedIn={false} compact={props.compact} />
   );
 }
 
-function AccountAllowance({ signedIn = true, refreshKey }: AllowanceProps) {
+function AccountAllowance({ signedIn = true, refreshKey, compact }: AllowanceProps) {
   const { userId, isLoaded, isSignedIn } = useAuth();
   return (
     <AllowanceRead
       key={userId ?? "visitor"}
       signedIn={signedIn && isLoaded && !!isSignedIn}
       refreshKey={refreshKey}
+      compact={compact}
     />
   );
 }
 
-function AllowanceRead({ signedIn = false, refreshKey = "" }: AllowanceProps) {
+function AllowanceRead({ signedIn = false, refreshKey = "", compact = false }: AllowanceProps) {
   const [allowance, setAllowance] = useState<FreeAllowance | null>(null);
   const [error, setError] = useState("");
   const [revision, setRevision] = useState(0);
@@ -89,11 +91,11 @@ function AllowanceRead({ signedIn = false, refreshKey = "" }: AllowanceProps) {
       {signedIn && allowance && !error && allowance.reserved > 0 && (
         <p>{allowance.reserved} reserved for generation in progress.</p>
       )}
-      <p>
+      {!compact && <><p>
         2 lifetime free video generations, up to 10 seconds each. Failed
         generations restore the reserved allowance.
       </p>
-      <p>Sandbox credit purchases are available. Paid generations require configured credit rates.</p>
+      <p>Sandbox credit purchases are available. Paid generations require configured credit rates.</p></>}
       {signedIn && error && (
         <>
           <p role="alert" className="text-destructive">{error}</p>

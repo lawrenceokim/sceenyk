@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { MarketplacePagination } from "@/components/marketplace/pagination";
 import { usd } from "@/lib/marketplace/payments/contract";
@@ -67,7 +68,7 @@ export function PayoutQueueView({ data, query, status }: { data: PayoutQueue; qu
       [.workspace-settings-inner_label&&_svg]:w-[18px] [.workspace-settings-inner_label&&_svg]:h-[18px]
     `} method="get" action="/admin/payouts">
       <div className="min-w-0 space-y-2"><label className="text-body-sm font-medium" htmlFor="payout-search">Search withdrawals</label><input id="payout-search" name="query" maxLength={120} defaultValue={query} placeholder="Reference, creator or payout reference" className="min-h-11 w-full rounded-lg border border-input bg-field px-3 text-foreground focus-visible:outline-2 focus-visible:outline-ring" /></div>
-      <div className="space-y-2"><label className="text-body-sm font-medium" htmlFor="payout-status">Status</label><select id="payout-status" name="status" defaultValue={status} className="min-h-11 w-full rounded-lg border border-input bg-field px-3 text-foreground focus-visible:outline-2 focus-visible:outline-ring">{Object.entries(labels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></div>
+      <div className="space-y-2"><label className="text-body-sm font-medium" htmlFor="payout-status">Status</label><Select id="payout-status" name="status" defaultValue={status} options={Object.entries(labels).map(([value, label]) => ({ value, label }))} /></div>
       <Button type="submit">Apply filters</Button>
     </form>
     {!data.items.length && <section className={`

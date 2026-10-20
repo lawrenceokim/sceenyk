@@ -1,4 +1,3 @@
-import { SettingsSection } from "@/components/settings/settings-section";
 import { Suspense } from "react";
 import type { Metadata } from "next";
 import { ensureAppUser } from "@/lib/auth/ensure-app-user";
@@ -7,7 +6,7 @@ import { isPayPalConfigured } from "@/lib/payments/paypal/config";
 import { CreditPurchases } from "@/components/payments/credit-purchases";
 import { FreeAllowanceSummary } from "@/components/free-allowance";
 
-export const metadata: Metadata = { title: "Buy Credits — Sceenyk Sandbox" };
+export const metadata: Metadata = { title: "Credits & Billing — Sceenyk Sandbox" };
 
 async function CreditAccount() {
   const user = await ensureAppUser();
@@ -34,7 +33,7 @@ async function CreditAccount() {
 }
 
 export default function CreditsPage() {
-  return <SettingsSection title="Credits & Billing" description="Buy credits. Create what you need. Top up when you need more.">
+  return <div className="space-y-6">
     <div className="space-y-3">
       <p className={`
       [@layer_components]:text-[color:var(--link)] [@layer_components]:text-[length:var(--text-caption)]
@@ -45,5 +44,5 @@ export default function CreditsPage() {
       <p className="max-w-2xl text-body text-muted-foreground">Test the credit purchase flow with a PayPal Sandbox buyer account. No real money is charged. These temporary hackathon packs are not production pricing.</p>
     </div>
     <Suspense fallback={<p role="status">Loading your credit account…</p>}><CreditAccount /></Suspense>
-  </SettingsSection>;
+  </div>;
 }

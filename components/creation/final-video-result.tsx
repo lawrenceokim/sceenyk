@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
 import { StudioToolbarAction } from "./studio-toolbar-actions";
+import { StudioPropertyControls } from "./studio-property-controls";
 type Video={id:string;url:string;downloadUrl:string;durationMs:number;width:number;height:number};
 export function FinalVideoResult({projectId,jobId}:{projectId:string;jobId:string}){
   const [attempt,setAttempt]=useState(0),[state,setState]=useState<{video?:Video;error?:string}>({});
@@ -14,8 +15,8 @@ export function FinalVideoResult({projectId,jobId}:{projectId:string;jobId:strin
     }).catch(()=>{if(!abort.signal.aborted)setState({error:"Your video couldn’t be loaded. Refresh the video to try again."});});
     return()=>abort.abort();
   },[projectId,jobId,attempt]);
-  return <div className="space-y-3">
-    {state.video&&<><video controls playsInline preload="metadata" src={state.video.url} aria-label="Final generated video" className="max-h-96 w-full rounded-lg bg-muted" onError={()=>setState({error:"Video access may have expired. Refresh the video to continue."})}/>
+  return <div className="space-y-3 max-767:flex max-767:min-h-0 max-767:flex-col">
+    {state.video&&<><video controls playsInline preload="metadata" src={state.video.url} aria-label="Final generated video" className="max-h-96 w-full rounded-lg bg-muted max-767:min-h-0 max-767:flex-1 max-767:max-h-full max-767:object-contain" onError={()=>setState({error:"Video access may have expired. Refresh the video to continue."})}/>
       <StudioToolbarAction><a className={`
       [@layer_components]:[transition:border-color_var(--duration-fast),_box-shadow_var(--duration-fast)]
       [@layer_components]:[@media_(prefers-reduced-motion:_reduce)]:[transition:none] studio-export sceenyk-interactive
@@ -35,7 +36,7 @@ export function FinalVideoResult({projectId,jobId}:{projectId:string;jobId:strin
       [[data-workspace-shell]_&&:hover]:[box-shadow:none] [[data-workspace-shell]_&&:hover]:[border-color:var(--input)]
     `} href={state.video.downloadUrl} download="sceenyk-video.mp4" aria-label="Export video"><Download className="size-4" aria-hidden="true" /><span>Export</span></a></StudioToolbarAction></>}
     {!state.video&&!state.error&&<p className="text-body-sm text-muted-foreground">Loading your video…</p>}
-    {state.error&&<p role="alert" className="text-body-sm text-destructive">{state.error}</p>}
-    <Button type="button" variant="outline" onClick={()=>{setState({});setAttempt(n=>n+1);}}>Refresh video</Button>
+    <StudioPropertyControls>{state.error&&<p role="alert" className="text-body-sm text-destructive">{state.error}</p>}
+    <Button type="button" variant="outline" onClick={()=>{setState({});setAttempt(n=>n+1);}}>Refresh video</Button></StudioPropertyControls>
   </div>;
 }

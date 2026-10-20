@@ -1,5 +1,21 @@
 # Code Standards
 
+## Studio containment and Credits tab rules (2026-10-20)
+
+Creation Type in Sources uses shared Select with exactly one UGC label, retaining the current internal category enum/value. Studio explanatory copy stays concise: feature heading/control and at most a short description, with necessary dynamic errors/status and financial confirmations retained. For mobile Studio, constrain shell/frame/grid/panels/media with dynamic viewport height and min-height:0; keep the Stage stationary and make only the Properties body scroll, outside its fixed header. Use Tailwind utilities and existing presentation portals without duplicating media or changing state/handlers.
+
+Earnings & Payouts belongs at /credits/earnings alongside Credits & Billing at /credits. Reuse account layout and financial components/services, preserving owner checks, generated-response cache policy, paging queries and legacy redirects. Update direct links and page invalidation when relocating sections. Do not change payment/withdrawal calculations, schema or provider workflows for these UI changes.
+
+## Account route and Select safeguards (2026-10-20)
+
+Credits & Billing belongs at /credits, not in Settings navigation. Reuse SettingsWorkspace and the active account-layout marker for the two-column fixed-header/native-scroller geometry; keep separate route/view identity. Moving private account UI requires equivalent proxy guards, Next HTML/RSC/prefetch/segment and Vercel final-response private/no-store policies, legacy query-preserving redirects and cache invalidation. Reuse financial components/services; do not change provider callback or accounting contracts for a page move. In Base UI Select, undefined uses the default portal while explicit null defers mounting; do not pass null for ordinary selects. Sidebar hints default to compact 11px type and 4px trigger spacing.
+
+## Shared Select and interaction affordances (2026-10-20)
+
+Future app-owned user-facing dropdowns must reuse components/ui/select.tsx, using the installed Base UI Select rather than a second Radix/custom state system. Do not expose native browser select menus unless technically unavoidable and explicitly documented. Follow the [compact Select standard](design-system.md#shared-select-pointer-cursors-and-fixed-studio-type-2026-10-20): small trigger/options/check, theme tokens, keyboard/typeahead/focus/dismissal, grouped choices and 180–250ms soft ease-out/reduced-motion behavior. Keep named form values, validation, disabled fieldsets, readiness guards and existing callbacks. The only visible popup implementation belongs in the shared component; no standalone CSS. Do not replace non-dropdown control patterns.
+
+Use pointer cursors for genuine clickable buttons/links/cards/triggers/options/tabs/navigation/role controls, with actual disabled states and appropriate disabled cursors. A minimal shared semantic base rule in app/globals.css is authorized; ordinary styling stays Tailwind-first. Studio Creation Type is fixed visually to UGC in Sources after Your Project and before Project Media, not in Properties. Carry WorkspaceEditor's existing category without inventing a UGC enum or rewriting saved/adopted/restored/default categories; generation/save contracts stay intact. Shared Select portals must remain reachable inside native dialogs and preserve independent scroll ownership.
+
 ## Motion & Interaction Standard (2026-10-20)
 
 Future UI must respond immediately, finish softly and use the [approved motion tokens](design-system.md#motion--interaction-standard-2026-10-20) in app/globals.css. Ranges/defaults: micro 150–200/180ms; popup 180–250/220ms; modal 220–300/260ms; sidebar/panel 250–350/300ms; optional reveal 300–500/420ms. Easing: cubic-bezier(0.22, 1, 0.36, 1). Use Tailwind transition properties, token durations/easing, restrained transforms and opacity. Reuse components/ui/motion.ts for Base UI popup/backdrop presence; preserve unmount/close lifecycles, focus/keyboard behavior and accessible labels. Keep icons/row geometry stable during sidebar collapse and synchronize the main inset. Prefer subtle card lift/preview zoom/color feedback. Do not add animation state, timers, blur transitions, bounce or another framework for simple effects.

@@ -76,9 +76,6 @@ export function MediaDropzone({
         >
           Project media
         </h2>
-        <span className="text-caption text-muted-foreground">
-          Optional · private project media
-        </span>
       </div>
       <div
         role="region"
@@ -131,14 +128,7 @@ export function MediaDropzone({
         <span className="flex size-11 items-center justify-center rounded-xl bg-accent text-accent-foreground">
           <Upload className="size-5" aria-hidden="true" />
         </span>
-        <p className="text-body-sm font-medium">
-          {dragging
-            ? "Drop to add local media"
-            : "Drop a little inspiration here"}
-        </p>
-        <p className="text-caption text-muted-foreground">
-          Video, images, or audio · preview locally, then upload
-        </p>
+        {dragging && <p className="text-body-sm font-medium">Drop files</p>}
         <input
           ref={input}
           type="file"
@@ -164,9 +154,7 @@ export function MediaDropzone({
         </Button>
       </div>
       <p id={`${id}-help`} className="mt-3 text-caption text-muted-foreground">
-        Upload to keep media in your private project. A new draft is saved
-        first. Preview support depends on your browser. SVG files are local
-        previews only.
+        Images, video & audio · SVG preview only.
       </p>
       <p
         role="status"

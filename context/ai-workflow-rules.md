@@ -1,5 +1,21 @@
 # AI Workflow Rules
 
+## Focused Studio and Credits refinements (2026-10-20)
+
+Latest instructions supersede fixed-button UGC and Settings earnings placement: Sources' shared Select offers UGC only, with no backend enum change; Earnings & Payouts is /credits/earnings in the Credits workspace. Keep Studio headings/short descriptions concise while preserving essential errors, status and financial confirmation. Inspect the entire mobile height/overflow chain before constraining Stage/Properties; only Properties content scrolls and its header stays fixed. Keep media/state mounted and reuse presentation portals for ancillary controls.
+
+Retain account guards, private/no-store policy, page queries, old redirects and financial service boundaries during the earnings move. Use targeted route/source checks appropriate to the change; no browser/screenshot suites, full builds, deployment, hosted Inngest, real generation or financial operations. Document actual checks and stop for manual UI inspection.
+
+## Credits route and dropdown follow-up (2026-10-20)
+
+Future account work treats /credits as the separate Credits & Billing destination, using the existing Settings layout and financial components. Keep legacy checkout queries, authenticated/private-cache boundaries and active-route layout markers intact when moving account pages. Do not change payment/provider or generation logic for presentation changes. For dropdown regressions, distinguish trigger state from portal mounting: Base UI container=null suppresses a popup; use undefined for the normal portal. A focused local reproduction may resolve a reported implementation error; it does not authorize broad browser/screenshot suites or deployment. Collapsed hints remain close (4px) and compact (11px).
+
+## Shared dropdown and Studio type rules (2026-10-20)
+
+Before modifying dropdowns, inventory app-owned native selects and reuse components/ui/select.tsx on the installed Base UI foundation. All future user-facing normal dropdowns use this compact Pryzm-inspired, Sceenyk-themed pattern with check/hover/selected states, keyboard/focus/Escape/outside dismissal, shared soft ease-out motion and reduced-motion support. Visible browser-native dropdowns are disallowed unless a documented technical constraint makes replacement unavoidable. Do not replace controls that are not dropdowns or change their form values/state owners.
+
+Clickable controls must show pointer cursors; disabled controls retain actual disabled behavior and an appropriate cursor/style. Tailwind remains the default; only the shared semantic cursor rule belongs in app/globals.css. Studio currently exposes only UGC as a fixed person-icon control in Sources, between Your Project and Project Media. No Creation Type alternatives/control in Properties. Inspect the backend contract first: it has existing creative-brief category enums but no UGC enum; preserve saved/adopted/restored/default category state rather than inventing an enum, recategorizing projects or changing generation behavior. Update relevant context/tracker and stop after this focused implementation for manual review under Fast UI Development Mode. No hosted Inngest, backend/financial changes, browser/screenshot suites, broad regressions, lengthy builds or deployment checks.
+
 ## Motion & Interaction Standard (2026-10-20)
 
 For every future UI task, follow the [motion standard](design-system.md#motion--interaction-standard-2026-10-20): immediate input response, soft ease-out finish, modest inertia, consistent tokens, smooth sidebar/panel/menu/modal/drawer lifecycles and restrained hover motion. Approved ranges/defaults: micro 150–200/180ms, popup 180–250/220ms, modal 220–300/260ms, panel 250–350/300ms, optional reveal 300–500/420ms; cubic-bezier(0.22, 1, 0.36, 1).

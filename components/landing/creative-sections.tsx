@@ -283,7 +283,7 @@ export function MarketplaceStory() {
 
 const offers = [
   { title: "Free", subtitle: "2 lifetime free generations", description: "Explore Studio and see what you can create.", icon: Gift, features: ["Up to 10 seconds per free generation", "Start with a prompt or your own media", "Explore templates and Marketplace"], action: "Explore Studio", href: "/studio" },
-  { title: "Credit Top-up", subtitle: "Create at your own pace", description: "Flexible pay-as-you-go usage. No subscription.", icon: Coins, features: ["Review cost before generating", "Purchased credits do not expire", "Manually top up when you need more", "Free allowance stays separate"], action: "Explore credit packs", href: "/settings/credits", featured: true },
+  { title: "Credit Top-up", subtitle: "Create at your own pace", description: "Flexible pay-as-you-go usage. No subscription.", icon: Coins, features: ["Review cost before generating", "Purchased credits do not expire", "Manually top up when you need more", "Free allowance stays separate"], action: "Explore credit packs", href: "/credits", featured: true },
   { title: "Creator Earnings", subtitle: "Publish to Marketplace", description: "Share a creative starting point. Earn from your work.", icon: Star, features: ["Publish your own reusable projects", "Earn a 90% creator share", "10% platform fee", "Adoption money is separate from AI credits"], action: "Explore Marketplace", href: "/marketplace" },
 ];
 

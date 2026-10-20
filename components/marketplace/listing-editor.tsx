@@ -1,6 +1,7 @@
 "use client";
 
 import { useId, useRef, useState, type FormEvent } from "react";
+import { Select } from "@/components/ui/select";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
@@ -154,48 +155,7 @@ function Editor({ project, listing }: Props) {
       [.studio-property_textarea&&]:text-[length:13px] [.studio-property_textarea&&]:leading-[20px]
       [.studio-setting-select_select&&]:pr-[28px]
     `} value={description} onChange={e => setDescription(e.target.value)} /></div>
-        <div className="grid gap-5 sm:grid-cols-2"><div><label className="text-body-sm font-medium" htmlFor={`${prefix}-category`}>Listing category</label><select id={`${prefix}-category`} name="category" className={`
-      [@layer_components]:w-[100%] [@layer_components]:min-h-[var(--control-height)]
-      [@layer_components]:[border:1px_solid_var(--input)] [@layer_components]:rounded-[var(--radius-md)]
-      [@layer_components]:pt-[var(--space-3)] [@layer_components]:pr-[var(--space-4)] [@layer_components]:pb-[var(--space-3)]
-      [@layer_components]:pl-[var(--space-4)] [@layer_components]:[background:var(--field)]
-      [@layer_components]:text-[color:var(--foreground)]
-      [@layer_components]:[transition:border-color_var(--duration-fast),_box-shadow_var(--duration-fast)]
-      [@layer_components]:[@media_(prefers-reduced-motion:_reduce)]:[transition:none] sceenyk-field mt-2
-      [@layer_components]:[&::placeholder]:text-[color:var(--muted-foreground)]
-      [@layer_components]:[&::placeholder]:opacity-[1] [@layer_components]:[&:focus-visible]:[outline:2px_solid_var(--ring)]
-      [@layer_components]:[&:focus-visible]:[outline-offset:2px]
-      [@layer_components]:[&:focus-visible]:[border-color:var(--ring)]
-      [@layer_components]:[&:focus-visible]:[box-shadow:var(--focus-shadow)]
-      [@layer_components]:[&[aria-invalid='true']]:[border-color:var(--destructive)]
-      [@layer_components]:[&[aria-invalid='true']:focus-visible]:[outline-color:var(--destructive)]
-      [@layer_components]:[&[aria-invalid='true']:focus-visible]:[box-shadow:0_0_0_3px_color-mix(in_srgb,_var(--destructive)_24%,_transparent)]
-      [@layer_components]:[&:disabled]:opacity-[0.5] [@layer_components]:[&:disabled]:cursor-not-allowed
-      [.workspace-marketplace-search_&&]:min-h-[32px] [.workspace-marketplace-search_&&]:h-[32px]
-      [.workspace-marketplace-search_&&]:pt-[4px] [.workspace-marketplace-search_&&]:pb-[4px]
-      [.workspace-marketplace-search_&&]:text-[length:12px] [.workspace-marketplace-search_&&]:rounded-[16px]
-      [.workspace-doc-picker_&&]:w-[100%] [.workspace-doc-picker_&&]:h-[36px] [.workspace-doc-picker_&&]:min-h-[36px]
-      [.workspace-doc-picker_&&]:pt-[6px] [.workspace-doc-picker_&&]:pb-[6px]
-      [.workspace-doc-picker_&&]:rounded-[var(--ui-radius-control)] [.workspace-doc-picker_&&]:text-[length:13px]
-      [@media_(pointer:_coarse)]:[.workspace-doc-picker_&&]:h-[44px]
-      [@media_(pointer:_coarse)]:[.workspace-doc-picker_&&]:min-h-[44px] [.workspace-project-rename_&&]:h-[36px]
-      [.workspace-project-rename_&&]:min-h-[36px] [.workspace-project-rename_&&]:pt-[6px]
-      [.workspace-project-rename_&&]:pr-[8px] [.workspace-project-rename_&&]:pb-[6px] [.workspace-project-rename_&&]:pl-[8px]
-      [.workspace-project-rename_&&]:rounded-[7px] [.workspace-project-rename_&&]:text-[length:12px]
-      [@media_(pointer:_coarse)]:[.workspace-project-rename_&&]:min-h-[44px] [.workspace-settings-inner_textarea&&]:h-[auto]
-      [.workspace-settings-inner_textarea&&]:min-h-[96px] [.workspace-settings-inner_textarea&&]:pt-[8px]
-      [.workspace-settings-inner_textarea&&]:pr-[8px] [.workspace-settings-inner_textarea&&]:pb-[8px]
-      [.workspace-settings-inner_textarea&&]:pl-[8px] [.workspace-settings-inner_textarea&&]:text-[length:12px]
-      [@media_(pointer:_coarse)]:[.workspace-settings-picker_&&]:min-h-[44px]
-      [.studio-property_&&]:min-h-[var(--workspace-control-height)] [.studio-property_&&]:rounded-[var(--ui-radius-control)]
-      [.studio-property_&&]:pt-[6px] [.studio-property_&&]:pr-[8px] [.studio-property_&&]:pb-[6px]
-      [.studio-property_&&]:pl-[8px] [.studio-property_&&]:text-[length:var(--ui-text-control)]
-      [.studio-property_&&]:leading-[18px] [.studio-property_textarea&&]:min-h-[112px]
-      [.studio-property_textarea&&]:pt-[var(--ui-space-3)] [.studio-property_textarea&&]:pr-[var(--ui-space-3)]
-      [.studio-property_textarea&&]:pb-[var(--ui-space-3)] [.studio-property_textarea&&]:pl-[var(--ui-space-3)]
-      [.studio-property_textarea&&]:text-[length:13px] [.studio-property_textarea&&]:leading-[20px]
-      [.studio-setting-select_select&&]:pr-[28px]
-    `} value={category} onChange={e => setCategory(e.target.value as CategoryId)}>{creationCategories.map(item => <option value={item.id} key={item.id}>{item.title}</option>)}</select></div>
+        <div className="grid gap-5 sm:grid-cols-2"><div><label className="text-body-sm font-medium" htmlFor={`${prefix}-category`}>Listing category</label><Select id={`${prefix}-category`} name="category" disabled={!!pending || archived} value={category} onValueChange={setCategory} options={creationCategories.map(item => ({ value: item.id, label: item.title }))} /></div>
           <div><label className="text-body-sm font-medium" htmlFor={`${prefix}-tags`}>Tags</label><input id={`${prefix}-tags`} name="tags" className={`
       [@layer_components]:w-[100%] [@layer_components]:min-h-[var(--control-height)]
       [@layer_components]:[border:1px_solid_var(--input)] [@layer_components]:rounded-[var(--radius-md)]
@@ -280,48 +240,7 @@ function Editor({ project, listing }: Props) {
       [.studio-property_textarea&&]:text-[length:13px] [.studio-property_textarea&&]:leading-[20px]
       [.studio-setting-select_select&&]:pr-[28px]
     `} value={instructions} onChange={e => setInstructions(e.target.value)} aria-describedby={`${prefix}-instructions-help`} /><p id={`${prefix}-instructions-help`} className="mt-2 text-caption text-muted-foreground">{listing ? "The saved template is immutable. You can edit its listing metadata." : "Describe a reusable approach. Leave out personal details, links, private IDs and access keys. This becomes the adopter’s editable starting prompt."}</p></div>
-        <div className="space-y-3 rounded-xl border border-border p-4"><label htmlFor={`${prefix}-adoption`} className="text-body-sm font-medium">Creator adoption price</label><select id={`${prefix}-adoption`} name="adoptionType" className={`
-      [@layer_components]:w-[100%] [@layer_components]:min-h-[var(--control-height)]
-      [@layer_components]:[border:1px_solid_var(--input)] [@layer_components]:rounded-[var(--radius-md)]
-      [@layer_components]:pt-[var(--space-3)] [@layer_components]:pr-[var(--space-4)] [@layer_components]:pb-[var(--space-3)]
-      [@layer_components]:pl-[var(--space-4)] [@layer_components]:[background:var(--field)]
-      [@layer_components]:text-[color:var(--foreground)]
-      [@layer_components]:[transition:border-color_var(--duration-fast),_box-shadow_var(--duration-fast)]
-      [@layer_components]:[@media_(prefers-reduced-motion:_reduce)]:[transition:none] sceenyk-field
-      [@layer_components]:[&::placeholder]:text-[color:var(--muted-foreground)]
-      [@layer_components]:[&::placeholder]:opacity-[1] [@layer_components]:[&:focus-visible]:[outline:2px_solid_var(--ring)]
-      [@layer_components]:[&:focus-visible]:[outline-offset:2px]
-      [@layer_components]:[&:focus-visible]:[border-color:var(--ring)]
-      [@layer_components]:[&:focus-visible]:[box-shadow:var(--focus-shadow)]
-      [@layer_components]:[&[aria-invalid='true']]:[border-color:var(--destructive)]
-      [@layer_components]:[&[aria-invalid='true']:focus-visible]:[outline-color:var(--destructive)]
-      [@layer_components]:[&[aria-invalid='true']:focus-visible]:[box-shadow:0_0_0_3px_color-mix(in_srgb,_var(--destructive)_24%,_transparent)]
-      [@layer_components]:[&:disabled]:opacity-[0.5] [@layer_components]:[&:disabled]:cursor-not-allowed
-      [.workspace-marketplace-search_&&]:min-h-[32px] [.workspace-marketplace-search_&&]:h-[32px]
-      [.workspace-marketplace-search_&&]:pt-[4px] [.workspace-marketplace-search_&&]:pb-[4px]
-      [.workspace-marketplace-search_&&]:text-[length:12px] [.workspace-marketplace-search_&&]:rounded-[16px]
-      [.workspace-doc-picker_&&]:w-[100%] [.workspace-doc-picker_&&]:h-[36px] [.workspace-doc-picker_&&]:min-h-[36px]
-      [.workspace-doc-picker_&&]:pt-[6px] [.workspace-doc-picker_&&]:pb-[6px]
-      [.workspace-doc-picker_&&]:rounded-[var(--ui-radius-control)] [.workspace-doc-picker_&&]:text-[length:13px]
-      [@media_(pointer:_coarse)]:[.workspace-doc-picker_&&]:h-[44px]
-      [@media_(pointer:_coarse)]:[.workspace-doc-picker_&&]:min-h-[44px] [.workspace-project-rename_&&]:h-[36px]
-      [.workspace-project-rename_&&]:min-h-[36px] [.workspace-project-rename_&&]:pt-[6px]
-      [.workspace-project-rename_&&]:pr-[8px] [.workspace-project-rename_&&]:pb-[6px] [.workspace-project-rename_&&]:pl-[8px]
-      [.workspace-project-rename_&&]:rounded-[7px] [.workspace-project-rename_&&]:text-[length:12px]
-      [@media_(pointer:_coarse)]:[.workspace-project-rename_&&]:min-h-[44px] [.workspace-settings-inner_textarea&&]:h-[auto]
-      [.workspace-settings-inner_textarea&&]:min-h-[96px] [.workspace-settings-inner_textarea&&]:pt-[8px]
-      [.workspace-settings-inner_textarea&&]:pr-[8px] [.workspace-settings-inner_textarea&&]:pb-[8px]
-      [.workspace-settings-inner_textarea&&]:pl-[8px] [.workspace-settings-inner_textarea&&]:text-[length:12px]
-      [@media_(pointer:_coarse)]:[.workspace-settings-picker_&&]:min-h-[44px]
-      [.studio-property_&&]:min-h-[var(--workspace-control-height)] [.studio-property_&&]:rounded-[var(--ui-radius-control)]
-      [.studio-property_&&]:pt-[6px] [.studio-property_&&]:pr-[8px] [.studio-property_&&]:pb-[6px]
-      [.studio-property_&&]:pl-[8px] [.studio-property_&&]:text-[length:var(--ui-text-control)]
-      [.studio-property_&&]:leading-[18px] [.studio-property_textarea&&]:min-h-[112px]
-      [.studio-property_textarea&&]:pt-[var(--ui-space-3)] [.studio-property_textarea&&]:pr-[var(--ui-space-3)]
-      [.studio-property_textarea&&]:pb-[var(--ui-space-3)] [.studio-property_textarea&&]:pl-[var(--ui-space-3)]
-      [.studio-property_textarea&&]:text-[length:13px] [.studio-property_textarea&&]:leading-[20px]
-      [.studio-setting-select_select&&]:pr-[28px]
-    `} value={adoptionType} onChange={e => setAdoptionType(e.target.value as "free" | "paid")}><option value="free">Free</option><option value="paid">Paid — PayPal Sandbox</option></select>{adoptionType === "paid" && <><label htmlFor={`${prefix}-price`} className="block text-body-sm font-medium">Adoption price (USD)</label><input id={`${prefix}-price`} name="price" type="number" inputMode="decimal" min={sandboxMarketplacePricing.minMinor / 100} max={sandboxMarketplacePricing.maxMinor / 100} step="0.01" required className={`
+        <div className="space-y-3 rounded-xl border border-border p-4"><label htmlFor={`${prefix}-adoption`} className="text-body-sm font-medium">Creator adoption price</label><Select<"free" | "paid"> id={`${prefix}-adoption`} name="adoptionType" disabled={!!pending || archived} value={adoptionType} onValueChange={setAdoptionType} options={[{ value: "free", label: "Free" }, { value: "paid", label: "Paid — PayPal Sandbox" }]} />{adoptionType === "paid" && <><label htmlFor={`${prefix}-price`} className="block text-body-sm font-medium">Adoption price (USD)</label><input id={`${prefix}-price`} name="price" type="number" inputMode="decimal" min={sandboxMarketplacePricing.minMinor / 100} max={sandboxMarketplacePricing.maxMinor / 100} step="0.01" required className={`
       [@layer_components]:w-[100%] [@layer_components]:min-h-[var(--control-height)]
       [@layer_components]:[border:1px_solid_var(--input)] [@layer_components]:rounded-[var(--radius-md)]
       [@layer_components]:pt-[var(--space-3)] [@layer_components]:pr-[var(--space-4)] [@layer_components]:pb-[var(--space-3)]

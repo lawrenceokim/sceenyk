@@ -14,7 +14,7 @@ export function WorkspaceLegacyLinks() {
       } else if (location.hash === "#templates") {
         router.replace(`/templates${location.search}`);
       } else if (location.hash === "#credits") {
-        router.replace("/settings/credits");
+        router.replace("/credits");
       }
     }
     restoreBookmark();

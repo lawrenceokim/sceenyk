@@ -68,7 +68,7 @@ export function CaptionTrackPreview({ projectId, jobId }: { projectId: string; j
     } finally { savingRef.current = false; if (alive.current) setSavingStyle(false); }
   }
   const track = data?.track;
-  return <div className="space-y-3 border-t border-border pt-4" aria-label="Captions">
+  return <div className="space-y-3 border-t border-border pt-4 max-767:flex max-767:min-h-0 max-767:flex-col max-767:border-0 max-767:p-0" aria-label="Captions">
     <StudioPropertyControls><h3 className="text-body-sm font-semibold">Captions</h3><div className="flex flex-wrap items-center justify-between gap-3">
       <label className="flex min-h-11 items-center gap-3 text-body-sm font-medium">
         <input type="checkbox" className="size-5 accent-primary" checked={data?.enabled ?? true}
@@ -80,15 +80,14 @@ export function CaptionTrackPreview({ projectId, jobId }: { projectId: string; j
       </Button>
     </div>
     </StudioPropertyControls>
-    <p role="status" aria-live="polite" className="text-body-sm text-muted-foreground">
+    <StudioPropertyControls><p role="status" aria-live="polite" className="text-body-sm text-muted-foreground">
       {error || (track?.status === "timing_issue" ? "Caption timing issue" : track?.status === "ready" ?
         track.cues.length ? "Captions ready — estimated phrase timing" : "Captions ready — no spoken narration" : "Preparing captions")}
-    </p>
+    </p></StudioPropertyControls>
     {track?.status === "ready" && track.cues.length > 0 && <>
-      <p className="text-caption text-muted-foreground">Timing follows the measured narration window and is estimated, not word-perfect. Your choice applies to this generation’s future video.</p>
       {data && <SceneCaptionPreview projectId={projectId} jobId={jobId} track={track} enabled={data.enabled}
         style={data.style} savingStyle={savingStyle} onStyleChange={next => void changeStyle(next)} />}
-      <details className="text-body-sm">
+      <StudioPropertyControls><details className="text-body-sm">
         <summary className="cursor-pointer py-2 font-medium">Preview {track.cues.length} caption {track.cues.length === 1 ? "cue" : "cues"}</summary>
         <ol className="max-h-64 space-y-3 overflow-y-auto py-2">
           {track.cues.map(cue => <li key={cue.id} className="space-y-1 break-words">
@@ -100,8 +99,8 @@ export function CaptionTrackPreview({ projectId, jobId }: { projectId: string; j
       <div className="flex flex-wrap gap-4 text-body-sm">
         <a className="min-h-11 py-3 text-link underline" href={`${endpoint}&format=srt`}>Download SRT</a>
         <a className="min-h-11 py-3 text-link underline" href={`${endpoint}&format=vtt`}>Download VTT</a>
-      </div>
+      </div></StudioPropertyControls>
     </>}
-    {track?.status === "timing_issue" && <p className="text-caption text-muted-foreground">The saved narration could not fit readable captions. No caption track is ready for rendering.</p>}
+    {track?.status === "timing_issue" && <StudioPropertyControls><p className="text-caption text-muted-foreground">Caption timing needs attention.</p></StudioPropertyControls>}
   </div>;
 }

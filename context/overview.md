@@ -1,5 +1,19 @@
 # Sceenyk
 
+## Studio containment and Credits earnings tab (2026-10-20)
+
+The latest focused refinement supersedes the prior fixed-button Creation Type rule: Sources now exposes the shared custom dropdown with exactly one UGC option, preserving the existing brief category value and backend enums. Studio uses compact feature headings/short descriptions instead of tutorial paragraphs. Errors, upload/save state, quote confirmation and required reservation/pricing notices remain concise and functional. Mobile Stage and Properties stay inside the viewport-bound workspace frame, with a fixed Properties header and only its control body scrolling. Sources retains its existing mounted panel/modal behavior.
+
+Earnings & Payouts moves from Settings to /credits/earnings as the second Credits navigation tab beside Credits & Billing at /credits. It reuses the same fixed-header/scrollable-center composition and existing financial services/components. Old Settings/dashboard earnings URLs redirect with query parameters; financial values, ownership, payment/withdrawal behavior and private-cache policies remain unchanged. Manual UI review is pending; no hosted Inngest or deployment.
+
+## Dedicated Credits workspace and interaction fixes (2026-10-20)
+
+Credits & Billing now lives at authenticated /credits, with its own compact left section navigation, fixed Credits & Billing heading/description and independently scrolling center content using the Settings layout. It is removed from Settings navigation. Main sidebar, account menu, landing, balance and Documentation links point directly there. Old /settings/credits, /dashboard/settings/credits and /dashboard/credits bookmarks/checkout returns redirect with their query parameters. Existing purchase, balance, free allowance, reconciliation and history components/services remain unchanged. Credits has the same private/no-store protections as Settings. Shared dropdown portals now use the library default when no native dialog exists; collapsed-sidebar hints use a 4px offset and compact 11px type. Manual layout review remains pending; no hosted workflows or deployment.
+
+## Focused dropdown and Studio Sources refinement (2026-10-20)
+
+App-owned ordinary dropdowns now share the installed Base UI Select with compact Pryzm-inspired geometry, Sceenyk theme tokens, keyboard/focus/dismissal behavior and approved reduced-motion-aware transitions. Genuine clickable controls show pointer cursors; disabled controls retain their proper behavior/style. Studio exposes one Creation Type label, UGC, as a fixed person-icon control in Sources after Your Project and before Project Media, with no Creation Type choices in Properties. Current saving/generation category enums and saved/adopted/restored/account-default values stay unchanged; no new UGC backend/provider mode is introduced. This is a UI-only refinement, pending manual review; no hosted Inngest or deployment.
+
 ## Current Marketplace/Templates routing refinement (2026-10-19)
 
 Canonical private destinations are `/projects`, `/templates`, `/templates/[listingId]` and `/settings/*`. Templates is the owner's visual gallery; Manage Templates and existing publish/edit controls live in Settings. Public Marketplace remains `/marketplace`, with filtered infinite discovery and unchanged adoption/payment rules; private purchase history is `/marketplace/purchases`. Old dashboard bookmarks and existing payment-return URLs redirect to the clean destinations. Persistent muted fallback preview colors are listing presentation metadata only, introduced by migration 029; private creator media and immutable financial/adoption snapshots stay excluded. Implementation/verification and pending migration setup are recorded in the progress tracker. Stop for manual review; no deployment or hosted Inngest execution is authorized.

@@ -5,12 +5,16 @@ const nextConfig: NextConfig = {
     // Next forwards query parameters; the HTTP redirect also retains fragments.
     return [
       { source: "/create", destination: "/studio", permanent: true },
+      { source: "/settings/earnings", destination: "/credits/earnings", permanent: true },
+      { source: "/dashboard/settings/earnings", destination: "/credits/earnings", permanent: true },
+      { source: "/settings/credits", destination: "/credits", permanent: true },
+      { source: "/dashboard/settings/credits", destination: "/credits", permanent: true },
       { source: "/settings", destination: "/settings/account", permanent: true },
       { source: "/dashboard", has: [{ type: "query", key: "page" }], destination: "/projects", permanent: true },
       { source: "/dashboard", destination: "/studio", permanent: true },
-      { source: "/dashboard/credits", destination: "/settings/credits", permanent: true },
+      { source: "/dashboard/credits", destination: "/credits", permanent: true },
       { source: "/dashboard/marketplace/profile", destination: "/settings/creator-profile", permanent: true },
-      { source: "/dashboard/marketplace/earnings", destination: "/settings/earnings", permanent: true },
+      { source: "/dashboard/marketplace/earnings", destination: "/credits/earnings", permanent: true },
       { source: "/dashboard/marketplace/purchases", destination: "/marketplace/purchases", permanent: true },
       { source: "/dashboard/marketplace/:path*", destination: "/settings/templates/:path*", permanent: true },
       { source: "/dashboard/:path+", destination: "/:path+", permanent: true },
@@ -20,7 +24,7 @@ const nextConfig: NextConfig = {
     // PPR can resume a cached shell with request-specific content. Cover its
     // generated response paths too: /profile/:path* does not match /profile.rsc.
     return [
-      ...["/settings", "/templates", "/projects", "/marketplace/purchases"].flatMap(base => [
+      ...["/settings", "/credits", "/templates", "/projects", "/marketplace/purchases"].flatMap(base => [
         `${base}/:path*`, `${base}.html`, `${base}.rsc`,
         `${base}.prefetch.rsc`, `${base}.segments/:path*`,
       ]),
