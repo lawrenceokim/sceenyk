@@ -1,5 +1,9 @@
 # Progress Tracker
 
+## Studio panel bottom clipping (2026-10-20)
+
+**Implemented locally; manual review pending.** The Studio main frame's more-specific height selector kept subtracting the 50px mobile header on desktop, overriding the generic desktop height. Its hidden overflow consequently clipped the Sources, Preview and Properties bottoms. Added a desktop override with the same Studio selector so the outer frame and existing panel/frame heights agree, preserving mobile bounds and independent panel scrolling. Targeted ESLint, Tailwind/Lightning CSS compilation and whitespace checks pass. No browser suite, production build or deployment; inspect the desktop panel bottom edges manually.
+
 ## UGC dropdown, concise Studio, Credits earnings and contained mobile panels (2026-10-20)
 
 **Implemented locally; manual review pending.** Sources' Creation Type now uses the shared custom Select with only UGC, carrying the existing category value and retaining its person icon. Child dropdown Escape no longer also dismisses tablet Sources. Removed redundant Studio tutorial/help paragraphs, duplicate prompt text and visible request IDs; retained compact headings/actions and essential status/errors/quote/allowance information. The free-allowance component has a presentation-only compact mode used by Studio; credit account copy/data remain unchanged.

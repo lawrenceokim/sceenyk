@@ -74,6 +74,7 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
         <main id="workspace-content" tabIndex={-1} className={`
       workspace-content min-w-0 text-card-foreground outline-none
       [&&:has(>_[data-workspace-page='studio'])]:h-[calc(100dvh_-_var(--workspace-mobile-header-height)_-_var(--workspace-inset)_*_2)]
+      min-[1024px]:[&&:has(>_[data-workspace-page='studio'])]:h-[calc(100dvh_-_var(--workspace-inset)_*_2)]
       [&&:has(>_[data-workspace-page='studio'])]:min-h-0 [&&:has(>_[data-workspace-page='studio'])]:overflow-hidden
       max-1023:[&&:has(_>_:is(_[data-workspace-view='marketplace'],_[data-workspace-view='templates'],_[data-workspace-view='template-detail']_)_)]:h-[calc(_100dvh_-_var(--workspace-mobile-header-height)_-_var(--workspace-inset)_*_2_)]
       max-1023:[&&:has(_>_:is(_[data-workspace-view='marketplace'],_[data-workspace-view='templates'],_[data-workspace-view='template-detail']_)_)]:min-h-[0]
