@@ -1,5 +1,11 @@
 # UI Context
 
+## Motion & Interaction Standard (2026-10-20)
+
+All future UI follows the [shared motion scale](design-system.md#motion--interaction-standard-2026-10-20): fast response, subtle inertia and a soft cubic-bezier(0.22, 1, 0.36, 1) finish. Micro interactions take 150–200ms (180 default), popovers 180–250ms (220), modals 220–300ms (260), sidebar/panels 250–350ms (300), and optional section reveals 300–500ms (420). Use shared tokens and Tailwind utilities; no new stylesheets.
+
+Ordinary public/workspace/gallery scrolling uses Lenis with modest wheel/trackpad smoothing and native touch. Documentation article/navigation, Settings center/navigation and Studio Sources/Properties remain independently native; infinite observers keep their existing DOM roots. Sidebar labels stay mounted while fading/sliding, with fixed icon coordinates and synchronized width/inset transitions. Menus, aspect popup and Settings mobile Base UI section picker share quiet fade/translate/scale. Existing dialogs fade/settle on open and close; mobile drawers slide and Sources preserves its mounted native dialog/focus lifecycle. Cards use restrained lift/preview zoom and controls use quiet color/opacity transitions. Clerk overlays remain provider-managed. Reduced motion disables inertia and nonessential transforms, with instant transitions and usable controls. No snapping unless technically required; no bounce, heavy effects or deferred input handling. Manual review is pending; this rule supersedes historical motion timings and native Settings picker descriptions.
+
 ## Styling Policy — default for all frontend work
 
 Sceenyk uses **Tailwind CSS + global.css**, not **Tailwind + scattered component CSS files**. Follow the approved [Styling Policy](code-standards.md#styling-policy); it overrides older CSS implementation suggestions unless the user explicitly instructs otherwise. `global.css` names the role of the existing `app/globals.css`, not a new file to create.

@@ -21,7 +21,7 @@ export function TemplateLibrary({ result }: { result: ListingPage<OwnedListing> 
           {result.items.map(listing => (
             <li key={listing.id} className="min-w-0">
               <article className={`
-      template-saved-card [&&_a:focus-visible]:[outline:2px_solid_var(--ring)] [&&_a:focus-visible]:[outline-offset:3px]
+      template-saved-card transition-transform duration-[var(--motion-popover)] ease-[var(--motion-ease)] motion-safe:hover:-translate-y-0.5 [&&_a:focus-visible]:[outline:2px_solid_var(--ring)] [&&_a:focus-visible]:[outline-offset:3px]
       [&&]:relative [&&]:min-w-[0] [&&]:overflow-hidden [&&]:rounded-[12px] [&&]:[background:var(--field)]
     `} style={templateAppearance(listing)}>
                 <Link href={`/templates/${listing.id}`} aria-label={`Open template ${listing.title}`} className={"template-saved-open [&&]:relative [&&]:block [&&]:[aspect-ratio:4_/_3] [.template-saved-card_&&:focus-visible]:[outline-offset:-3px] max-599:[&&]:[aspect-ratio:4_/_3]"}>
@@ -44,7 +44,7 @@ export function TemplateLibrary({ result }: { result: ListingPage<OwnedListing> 
       [&&]:gap-[8px] [&&]:pointer-events-none [&&_>_div]:flex [&&_>_div]:min-w-[0] [&&_>_div]:items-center
       [&&_>_div]:gap-[6px] [&&_a]:inline-flex [&&_a]:w-[28px] [&&_a]:h-[28px] [&&_a]:shrink-0 [&&_a]:items-center
       [&&_a]:justify-center [&&_a]:rounded-[999px] [&&_a]:[background:#0007] [&&_a]:text-[color:white]
-      [&&_a]:pointer-events-auto [&&_a]:[transition:background-color_150ms] [&&_a:hover]:[background:#000b] [&&_svg]:w-[13px]
+      [&&_a]:pointer-events-auto [&&_a]:[transition:background-color_var(--motion-micro)_var(--motion-ease)] [&&_a:hover]:[background:#000b] [&&_svg]:w-[13px]
       [&&_svg]:h-[13px] [&&_>_a]:rounded-[8px] max-599:[&&_a]:w-[32px] max-599:[&&_a]:h-[32px] max-599:[&&_svg]:w-[14px]
       max-599:[&&_svg]:h-[14px] [@media_(prefers-reduced-motion:_reduce)]:[&&_a]:[transition:none]
     `}>

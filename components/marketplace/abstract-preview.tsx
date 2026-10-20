@@ -11,7 +11,7 @@ export function AbstractPreview({ previewId, fallbackColor, label = "Template pr
   return <div className={`
       workspace-template-cover template-placeholder [.marketplace-card-preview_&&]:[aspect-ratio:4_/_3]
       [.marketplace-card-preview_&&]:[border:0] [.marketplace-card-preview_&&]:rounded-[0]
-      [.marketplace-card-preview_&&]:[transition:transform_220ms_ease]
+      [.marketplace-card-preview_&&]:[transition:transform_var(--motion-popover)_var(--motion-ease)]
       [@media_(hover:_hover)]:[.marketplace-listing-card:hover_&&]:[transform:scale(1.04)]
       [.marketplace-detail-preview_&&[data-large='true']]:min-h-[0]
       [.marketplace-detail-preview_&&[data-large='true']]:[aspect-ratio:1]

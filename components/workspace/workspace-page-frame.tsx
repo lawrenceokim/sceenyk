@@ -3,6 +3,7 @@
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
+import { SmoothScroll } from "@/components/ui/smooth-scroll";
 
 export function WorkspacePageFrame({ children, className }: { children: ReactNode; className?: string }) {
   const pathname = usePathname();
@@ -78,5 +79,5 @@ export function WorkspacePageFrame({ children, className }: { children: ReactNod
       [&&[data-workspace-page='content'][data-workspace-view='settings']]:pl-[0]
       [&&[data-workspace-page='content'][data-workspace-view='settings']]:[container:documentation_/_inline-size]
       min-[1024px]:[&&[data-workspace-page='content'][data-workspace-view='settings']]:h-[calc(100dvh_-_var(--workspace-inset)_*_2_-_2px)]
-    `, className)}>{children}</div>;
+    `, className)}>{children}<SmoothScroll workspace /></div>;
 }

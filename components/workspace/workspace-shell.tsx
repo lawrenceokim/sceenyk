@@ -62,10 +62,10 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
       [@layer_components]:[&:focus]:[transform:translateY(0)]
     `}>Skip to content</a>
     <WorkspaceSidebar collapsed={collapsed} onToggle={toggleCollapsed} />
-    <div className="min-w-0 lg:pl-[var(--workspace-sidebar-width)]">
+    <div className="min-w-0 lg:pl-[var(--workspace-sidebar-width)] transition-[padding-left] duration-[var(--motion-panel)] ease-[var(--motion-ease)] motion-reduce:transition-none">
       <WorkspaceMobileNav />
       <div className={`
-      workspace-gutter [&&]:pt-[var(--workspace-inset)] [&&]:pr-[var(--workspace-inset)] [&&]:pb-[var(--workspace-inset)]
+      workspace-gutter transition-[padding-left] duration-[var(--motion-panel)] ease-[var(--motion-ease)] motion-reduce:transition-none [&&]:pt-[var(--workspace-inset)] [&&]:pr-[var(--workspace-inset)] [&&]:pb-[var(--workspace-inset)]
       [&&]:pl-[var(--workspace-inset)] min-[1024px]:[[data-collapsed='true']_&&]:pl-[0]
     `}>
         <main id="workspace-content" tabIndex={-1} className={`

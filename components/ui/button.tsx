@@ -3,14 +3,14 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "cn"
 
 const buttonVariants = cva(
-  "group/button inline-flex shrink-0 items-center justify-center rounded-lg border border-transparent bg-clip-padding text-sm font-medium whitespace-nowrap transition-all outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:not-aria-[haspopup]:translate-y-px motion-reduce:transition-none motion-reduce:active:translate-y-0 disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+  "group/button inline-flex shrink-0 items-center justify-center rounded-lg border border-transparent bg-clip-padding text-sm font-medium whitespace-nowrap transition-[color,background-color,border-color,box-shadow,translate,transform,opacity] duration-[var(--motion-micro)] ease-[var(--motion-ease)] outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:not-aria-[haspopup]:translate-y-px motion-reduce:transition-none motion-reduce:active:translate-y-0 disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
   {
     variants: {
       variant: {
         default: `
       [@layer_components]:[background-color:var(--primary)] [@layer_components]:[background-image:var(--gradient-action)]
       [@layer_components]:text-[color:var(--primary-foreground)] [@layer_components]:[box-shadow:var(--glow-primary)]
-      [@layer_components]:[transition:background-color_var(--duration-fast),_box-shadow_var(--duration-fast),_transform_var(--duration-fast)]
+      [@layer_components]:[transition:background-color_var(--duration-fast)_var(--motion-ease),_box-shadow_var(--duration-fast)_var(--motion-ease),_transform_var(--duration-fast)_var(--motion-ease)]
       [@layer_components]:[@media_(prefers-reduced-motion:_reduce)]:[transition:none] sceenyk-action
       [@layer_components]:[&:focus-visible]:[outline:2px_solid_var(--ring)]
       [@layer_components]:[&:focus-visible]:[outline-offset:3px]

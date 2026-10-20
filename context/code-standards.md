@@ -1,5 +1,11 @@
 # Code Standards
 
+## Motion & Interaction Standard (2026-10-20)
+
+Future UI must respond immediately, finish softly and use the [approved motion tokens](design-system.md#motion--interaction-standard-2026-10-20) in app/globals.css. Ranges/defaults: micro 150–200/180ms; popup 180–250/220ms; modal 220–300/260ms; sidebar/panel 250–350/300ms; optional reveal 300–500/420ms. Easing: cubic-bezier(0.22, 1, 0.36, 1). Use Tailwind transition properties, token durations/easing, restrained transforms and opacity. Reuse components/ui/motion.ts for Base UI popup/backdrop presence; preserve unmount/close lifecycles, focus/keyboard behavior and accessible labels. Keep icons/row geometry stable during sidebar collapse and synchronize the main inset. Prefer subtle card lift/preview zoom/color feedback. Do not add animation state, timers, blur transitions, bounce or another framework for simple effects.
+
+Use components/ui/smooth-scroll.tsx for ordinary surfaces; never introduce a global nested-panel controller or change infinite-observer roots. Lenis owns its own frame loop and follows active-route cleanup, scroll locks and responsive scroll-root changes. Documentation, Settings center/navigation, Studio panels, modal content and touch scrolling remain native. Destroy inertia when prefers-reduced-motion changes, suppress nonessential transforms and shorten/remove transitions. Native anchors/keyboard/history retain control. Shared discrete native-dialog transitions and Lenis compatibility rules are the minimal CSS exceptions in the sole global stylesheet; ordinary styling stays Tailwind-first. Allow instant behavior only where platform/technical constraints require it. Preserve backend/business/security contracts. Use Fast UI Development Mode for motion-only tasks.
+
 ## Styling Policy
 
 **Approved 2026-10-19; applies to all future frontend work unless the user explicitly instructs otherwise.** Sceenyk uses **Tailwind CSS + global.css**, not **Tailwind + scattered component CSS files**. Tailwind CSS is the primary and default styling system. This policy takes precedence over older styling guidance, reference snippets and implementation history in the context documents.

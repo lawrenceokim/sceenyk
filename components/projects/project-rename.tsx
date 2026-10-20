@@ -25,7 +25,7 @@ export function ProjectRename({ projectId, title }: { projectId: string; title: 
   }
   return <Dialog open={open} onOpenChange={next => { if (!running.current) { setOpen(next); if (next) { setValue(title); setError(""); } } }}>
     <DialogTrigger render={<button type="button" className={`
-      workspace-project-icon [&&]:flex [&&]:w-[30px] [&&]:h-[30px] [&&]:items-center [&&]:justify-center [&&]:rounded-[6px]
+      workspace-project-icon transition-colors duration-[var(--motion-micro)] ease-[var(--motion-ease)] motion-reduce:transition-none [&&]:flex [&&]:w-[30px] [&&]:h-[30px] [&&]:items-center [&&]:justify-center [&&]:rounded-[6px]
       [&&]:text-[color:var(--muted-foreground)] [&&]:cursor-pointer [&&_svg]:w-[14px] [&&_svg]:h-[14px]
       [&&:hover]:[background:var(--muted)] [&&:hover]:text-[color:var(--foreground)]
       [&&:focus-visible]:[outline:2px_solid_var(--ring)] [&&:focus-visible]:[outline-offset:2px]

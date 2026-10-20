@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Popover } from "@base-ui/react/popover";
 import { MoreHorizontal, RectangleHorizontal, RectangleVertical, Square } from "lucide-react";
 import { aspectRatios, type CreationSettings } from "./creation-options";
+import { popupMotion } from "@/components/ui/motion";
 
 const formats = {
   "1:1": { label: "Square", icon: Square },
@@ -43,7 +44,7 @@ export function StudioAspectControl({ value, onChange }: {
     </div>
     <Popover.Portal>
       <Popover.Positioner side="bottom" align="center" sideOffset={8} collisionPadding={8} className={"studio-aspect-positioner [&&]:z-[70]"}>
-        <Popover.Popup className={`
+        <Popover.Popup data-lenis-prevent className={`${popupMotion}
       studio-aspect-popup [&&]:w-[252px] [&&]:max-w-[calc(100vw_-_16px)] [&&]:pt-[12px] [&&]:pr-[12px] [&&]:pb-[12px]
       [&&]:pl-[12px] [&&]:[border:1px_solid_#dedee2] [&&]:rounded-[8px] [&&]:[background:#fff] [&&]:text-[color:#19191d]
       [&&]:[box-shadow:0_8px_24px_#0002] [&&]:[outline:none] [.dark_&&]:[background:#171717]

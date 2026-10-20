@@ -23,7 +23,7 @@ export function ProjectCard({ project, jobStatus, preview }: {
       [.workspace-project-grid_&&]:pb-[10px] [.workspace-project-grid_&&]:pl-[10px]
       [.workspace-project-grid_&&]:[border:1px_solid_var(--border)] [.workspace-project-grid_&&]:rounded-[13px]
       [.workspace-project-grid_&&]:[background:linear-gradient(180deg,_color-mix(in_srgb,_var(--template-color)_32%,_var(--card))_0%,_color-mix(in_srgb,_var(--template-color)_24%,_var(--card))_65%,_var(--card)_100%)]
-      [.workspace-project-grid_&&]:[transition:transform_180ms_ease]
+      [.workspace-project-grid_&&]:[transition:transform_var(--motion-popover)_var(--motion-ease)]
       [.dark_.workspace-project-grid_&&]:[background:linear-gradient(180deg,_color-mix(in_srgb,_var(--template-color)_44%,_var(--card))_0%,_color-mix(in_srgb,_var(--template-color)_30%,_var(--card))_65%,_var(--card)_100%)]
       [&&:hover]:[transform:translateY(-2px)] [&&:has(.workspace-project-open:focus-visible)]:[outline:2px_solid_var(--ring)]
       [&&:has(.workspace-project-open:focus-visible)]:[outline-offset:3px] [.workspace-project-grid_&&_h3]:mt-[10px]

@@ -7,7 +7,7 @@ import { WorkspaceUserMenu } from "./workspace-user-menu";
 
 export function WorkspaceSidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => void }) {
   const label = collapsed ? "Expand sidebar" : "Collapse sidebar";
-  return <aside aria-label="Workspace sidebar" className="fixed inset-y-0 left-0 z-40 hidden w-[var(--workspace-sidebar-width)] flex-col bg-background text-sidebar-foreground lg:flex">
+  return <aside aria-label="Workspace sidebar" className="fixed inset-y-0 left-0 z-40 hidden w-[var(--workspace-sidebar-width)] flex-col bg-background text-sidebar-foreground lg:flex overflow-hidden transition-[width] duration-[var(--motion-panel)] ease-[var(--motion-ease)] motion-reduce:transition-none">
     <div className={`
       workspace-brand [&&]:h-[100px] [&&]:pt-[24px] [&&]:pr-[16px] [&&]:pb-[24px] [&&]:pl-[16px] [&&]:flex [&&]:items-center
       [&&]:shrink-0 [&&_a]:justify-start [&&_img]:w-[140px] [&&_img]:max-w-[100%] [&&_img]:h-[auto] [&&_img]:object-contain
@@ -19,10 +19,10 @@ export function WorkspaceSidebar({ collapsed, onToggle }: { collapsed: boolean; 
     <div className={`
       workspace-collapse [&&]:shrink-0 [&&]:pt-[8px] [&&]:pr-[8px] [&&]:pb-[8px] [&&]:pl-[8px] [&&_button]:h-[32px]
       [&&_button]:pt-[0] [&&_button]:pr-[8px] [&&_button]:pb-[0] [&&_button]:pl-[8px]
-      [[data-collapsed='true']_&&_button]:justify-center [[data-collapsed='true']_&&_button]:pt-[0]
+      [[data-collapsed='true']_&&_button]:pt-[0]
       [[data-collapsed='true']_&&_button]:pr-[0] [[data-collapsed='true']_&&_button]:pb-[0]
-      [[data-collapsed='true']_&&_button]:pl-[0]
-    `}><WorkspaceTooltip label={label} enabled={collapsed}><button type="button" aria-label={label} aria-expanded={!collapsed} onClick={onToggle} className="flex w-full items-center gap-2 rounded-lg text-body-sm text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:outline-2 focus-visible:outline-ring">{collapsed ? <PanelLeftOpen className="size-4" aria-hidden="true" /> : <><PanelLeftClose className="size-4" aria-hidden="true" />Collapse</>}</button></WorkspaceTooltip></div>
+      [[data-collapsed='true']_&&_button]:pl-[8px]
+    `}><WorkspaceTooltip label={label} enabled={collapsed}><button type="button" aria-label={label} aria-expanded={!collapsed} onClick={onToggle} className="flex w-full items-center gap-2 overflow-hidden rounded-lg text-body-sm text-muted-foreground transition-colors duration-[var(--motion-micro)] ease-[var(--motion-ease)] hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:outline-2 focus-visible:outline-ring">{collapsed ? <PanelLeftOpen className="size-4 shrink-0" aria-hidden="true" /> : <PanelLeftClose className="size-4 shrink-0" aria-hidden="true" />}<span aria-hidden={collapsed} className={`whitespace-nowrap transition-[opacity,translate] duration-[var(--motion-panel)] ease-[var(--motion-ease)] motion-reduce:transition-none motion-reduce:translate-none ${collapsed ? "opacity-0 -translate-x-1" : "opacity-100 translate-x-0"}`}>Collapse</span></button></WorkspaceTooltip></div>
     <WorkspaceUserMenu collapsed={collapsed} />
   </aside>;
 }

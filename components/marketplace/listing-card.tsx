@@ -46,7 +46,7 @@ export function ListingCard({ listing }: { listing: Listing }) {
       [.workspace-gallery-card&&]:pr-[8px] [.workspace-gallery-card&&]:pb-[8px] [.workspace-gallery-card&&]:pl-[8px]
       [.workspace-gallery-card&&]:rounded-[18px]
       [.workspace-gallery-card&&]:[background:linear-gradient(_180deg,_color-mix(in_srgb,_var(--template-color)_35%,_var(--card)),_var(--card)_)]
-      [.workspace-gallery-card&&]:[transition:transform_220ms_ease]
+      [.workspace-gallery-card&&]:[transition:transform_var(--motion-popover)_var(--motion-ease)]
       [@media_(hover:_hover)]:[&&:hover]:[transform:translateY(-3px)] max-599:[.workspace-gallery-card&&]:pt-[8px]
       max-599:[.workspace-gallery-card&&]:pr-[8px] max-599:[.workspace-gallery-card&&]:pb-[8px]
       max-599:[.workspace-gallery-card&&]:pl-[8px] max-599:[.workspace-gallery-card&&]:rounded-[18px]
@@ -62,7 +62,7 @@ export function ListingCard({ listing }: { listing: Listing }) {
       <div className={"marketplace-card-preview [&&]:relative [&&]:shrink-0 [&&]:overflow-hidden [&&]:rounded-[12px] [.manage-template-card_&&]:rounded-[10px]"}><TemplateCover template={listing.template} fallbackColor={listing.fallbackColor} previewId={listing.id} /><span className={`
       marketplace-card-arrow [&&]:absolute [&&]:top-[8px] [&&]:right-[8px] [&&]:flex [&&]:w-[24px] [&&]:h-[24px]
       [&&]:items-center [&&]:justify-center [&&]:rounded-[999px] [&&]:[background:#0007] [&&]:text-[color:#fff]
-      [&&]:opacity-[0] [&&]:[transition:opacity_200ms_ease] [&&_svg]:w-[13px] [&&_svg]:h-[13px]
+      [&&]:opacity-[0] [&&]:[transition:opacity_var(--motion-micro)_var(--motion-ease)] [&&_svg]:w-[13px] [&&_svg]:h-[13px]
       [.marketplace-listing-card:focus-within_&&]:opacity-[1]
       [@media_(hover:_hover)]:[.marketplace-listing-card:hover_&&]:opacity-[1] [@media_(hover:_none)]:[&&]:opacity-[1]
       [@media_(prefers-reduced-motion:_reduce)]:[&&]:[transition:none]

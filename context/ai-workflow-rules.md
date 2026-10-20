@@ -1,5 +1,11 @@
 # AI Workflow Rules
 
+## Motion & Interaction Standard (2026-10-20)
+
+For every future UI task, follow the [motion standard](design-system.md#motion--interaction-standard-2026-10-20): immediate input response, soft ease-out finish, modest inertia, consistent tokens, smooth sidebar/panel/menu/modal/drawer lifecycles and restrained hover motion. Approved ranges/defaults: micro 150–200/180ms, popup 180–250/220ms, modal 220–300/260ms, panel 250–350/300ms, optional reveal 300–500/420ms; cubic-bezier(0.22, 1, 0.36, 1).
+
+Inspect actual scroll ownership first. Reuse the Lenis surface integration for ordinary pages, while retaining native independent Documentation, Settings and Studio panels, native touch, keyboard/focus/history/anchors, scroll locks and correct infinite-observer roots. Keep Base UI/native focus and close lifecycles, stable sidebar icon positions and live reduced-motion support. Tailwind-first utilities and shared motion tokens are mandatory; only minimal reusable native-dialog/Lenis compatibility CSS belongs in app/globals.css. Do not add standalone CSS, redundant animation state/frame loops, excessive effects or abrupt snapping unless technically required. Record manual-review limits honestly. Motion-only work uses Fast UI Development Mode: minimal source checks, no automatic browser/screenshot/regression suites, full builds, deployment or hosted Inngest execution.
+
 ## Styling Policy — mandatory frontend workflow
 
 All future frontend work follows the approved [Styling Policy](code-standards.md#styling-policy): **Tailwind CSS + global.css**, not **Tailwind + scattered component CSS files**. In this repository `global.css` means the existing `app/globals.css`; do not create a second global stylesheet. This rule takes precedence over older CSS implementation notes and reference examples unless the user explicitly instructs otherwise.

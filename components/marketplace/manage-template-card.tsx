@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { popupMotion } from "@/components/ui/motion";
 import { ArrowUpRight, ShoppingBag, UsersRound, Wallet } from "lucide-react";
 import { Tooltip } from "@base-ui/react/tooltip";
 import { Button } from "@/components/ui/button";
@@ -19,7 +20,7 @@ export function ManageTemplateCard({ listing }: { listing: OwnedListing }) {
       [.workspace-gallery-card&&]:pr-[8px] [.workspace-gallery-card&&]:pb-[8px] [.workspace-gallery-card&&]:pl-[8px]
       [.workspace-gallery-card&&]:rounded-[18px]
       [.workspace-gallery-card&&]:[background:linear-gradient(_180deg,_color-mix(in_srgb,_var(--template-color)_35%,_var(--card)),_var(--card)_)]
-      [.workspace-gallery-card&&]:[transition:transform_220ms_ease]
+      [.workspace-gallery-card&&]:[transition:transform_var(--motion-popover)_var(--motion-ease)]
       [@media_(hover:_hover)]:[&&:hover]:[transform:translateY(-3px)] max-599:[.workspace-gallery-card&&]:pt-[8px]
       max-599:[.workspace-gallery-card&&]:pr-[8px] max-599:[.workspace-gallery-card&&]:pb-[8px]
       max-599:[.workspace-gallery-card&&]:pl-[8px] max-599:[.workspace-gallery-card&&]:rounded-[18px]
@@ -72,7 +73,7 @@ export function ManageTemplateCard({ listing }: { listing: OwnedListing }) {
         <Button nativeButton={false} size="xs" render={<Link href={`/settings/templates/${listing.id}`} />}>{listing.status === "archived" ? "View listing" : "Manage listing"}</Button>
         {listing.status === "published" ? <Tooltip.Root>
           <Tooltip.Trigger render={<Button nativeButton={false} variant="outline" size="icon-xs" render={<Link href={`/marketplace/${listing.id}`} />} aria-label="View public listing" />}><ArrowUpRight aria-hidden="true" /></Tooltip.Trigger>
-          <Tooltip.Portal><Tooltip.Positioner side="bottom" sideOffset={6} className="z-[70]"><Tooltip.Popup className={`
+          <Tooltip.Portal><Tooltip.Positioner side="bottom" sideOffset={6} className="z-[70]"><Tooltip.Popup className={`${popupMotion}
       manage-template-tooltip [&&]:max-w-[220px] [&&]:[border:1px_solid_var(--border)] [&&]:rounded-[6px] [&&]:pt-[4px]
       [&&]:pr-[7px] [&&]:pb-[4px] [&&]:pl-[7px] [&&]:[background:var(--popover)] [&&]:text-[color:var(--popover-foreground)]
       [&&]:text-[length:11px] [&&]:leading-[16px]

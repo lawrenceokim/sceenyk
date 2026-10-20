@@ -6,6 +6,7 @@ import { cn } from "cn";
 
 import { Button } from "@/components/ui/button";
 import { XIcon } from "lucide-react";
+import { backdropMotion } from "./motion";
 
 function Dialog({ ...props }: DialogPrimitive.Root.Props) {
   return <DialogPrimitive.Root data-slot="dialog" {...props} />;
@@ -31,7 +32,8 @@ function DialogOverlay({
     <DialogPrimitive.Backdrop
       data-slot="dialog-overlay"
       className={cn(
-        "fixed inset-0 isolate z-50 bg-overlay duration-150 supports-backdrop-filter:backdrop-blur-xs data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0 motion-reduce:animate-none",
+        "fixed inset-0 isolate z-50 bg-overlay supports-backdrop-filter:backdrop-blur-xs",
+        backdropMotion,
         className,
       )}
       {...props}
@@ -53,9 +55,10 @@ function DialogContent({
       <DialogPrimitive.Popup
         data-slot="dialog-content"
         className={cn(
-          "fixed top-1/2 left-1/2 z-50 grid max-h-[calc(100dvh-2rem)] w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 overflow-y-auto rounded-2xl border border-border bg-popover p-6 text-sm text-popover-foreground shadow-popover duration-150 outline-none sm:max-w-md data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95 motion-reduce:animate-none",
+          "fixed top-1/2 left-1/2 z-50 grid max-h-[calc(100dvh-2rem)] w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 overflow-y-auto rounded-2xl border border-border bg-popover p-6 text-sm text-popover-foreground shadow-popover outline-none sm:max-w-md transition-[opacity,scale,transform] duration-[var(--motion-modal)] ease-[var(--motion-ease)] data-starting-style:opacity-0 data-starting-style:scale-[0.98] data-starting-style:transform-[translateY(6px)] data-ending-style:opacity-0 data-ending-style:scale-[0.98] data-ending-style:transform-[translateY(6px)] motion-reduce:transition-none motion-reduce:scale-100! motion-reduce:transform-none!",
           className,
         )}
+        data-lenis-prevent
         {...props}
       >
         {children}

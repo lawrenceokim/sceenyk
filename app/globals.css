@@ -169,9 +169,15 @@
   --glow-primary: 0 4px 16px rgb(139 92 246 / 18%);
   --glow-primary-hover: 0 6px 22px rgb(139 92 246 / 26%);
   --focus-shadow: 0 0 0 3px color-mix(in srgb, var(--ring) 24%, transparent);
-  --duration-fast: 150ms;
-  --duration-normal: 200ms;
-  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --motion-micro: 180ms;
+  --motion-popover: 220ms;
+  --motion-modal: 260ms;
+  --motion-panel: 300ms;
+  --motion-reveal: 420ms;
+  --motion-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --duration-fast: var(--motion-micro);
+  --duration-normal: var(--motion-popover);
+  --ease-standard: var(--motion-ease);
   --space-1: 0.25rem;
   --space-2: 0.5rem;
   --space-3: 0.75rem;
@@ -318,3 +324,43 @@
 }
 .scrollbar-hidden, [data-workspace-shell], [data-workspace-shell] *, .workspace-drawer, .workspace-drawer * { scrollbar-width: none; -ms-overflow-style: none; }
 .scrollbar-hidden::-webkit-scrollbar, [data-workspace-shell]::-webkit-scrollbar, [data-workspace-shell] *::-webkit-scrollbar, .workspace-drawer::-webkit-scrollbar, .workspace-drawer *::-webkit-scrollbar { display: none; width: 0; height: 0; }
+
+/* Minimal Lenis integration: preserve existing viewport heights and scroll roots. */
+.lenis.lenis-smooth { scroll-behavior: auto !important; }
+.lenis.lenis-stopped { overflow: clip !important; }
+.lenis [data-lenis-prevent] { overscroll-behavior: contain; }
+
+/* Native dialog display/top-layer exit requires discrete CSS transitions.
+   Shared utility only; ordinary panel geometry remains in Tailwind consumers. */
+@utility motion-native-panel {
+  &:not([data-sources-mode="inline"]) {
+    opacity: 0;
+    translate: 16px 0;
+    transition: opacity var(--motion-panel) var(--motion-ease), translate var(--motion-panel) var(--motion-ease), display var(--motion-panel) allow-discrete, overlay var(--motion-panel) allow-discrete;
+    &[open] { opacity: 1; translate: 0 0; }
+    @starting-style { &[open] { opacity: 0; translate: 16px 0; } }
+    &::backdrop {
+      opacity: 0;
+      transition: opacity var(--motion-modal) var(--motion-ease), display var(--motion-panel) allow-discrete, overlay var(--motion-panel) allow-discrete;
+    }
+    &[open]::backdrop { opacity: 1; }
+    @starting-style { &[open]::backdrop { opacity: 0; } }
+    @media (prefers-reduced-motion: reduce) {
+      translate: none;
+      transition: none;
+      &::backdrop { transition: none; }
+      @starting-style { &[open] { opacity: 1; translate: none; } }
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-micro: 0ms;
+    --motion-popover: 0ms;
+    --motion-modal: 0ms;
+    --motion-panel: 0ms;
+    --motion-reveal: 0ms;
+  }
+  html { scroll-behavior: auto; }
+}

@@ -1,6 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import { Select } from "@base-ui/react/select";
+import { Check, ChevronDown } from "lucide-react";
+import { popupMotion } from "@/components/ui/motion";
 import { usePathname, useRouter } from "next/navigation";
 import { useSyncExternalStore } from "react";
 import { cn } from "@/lib/utils";
@@ -27,7 +30,7 @@ export function SettingsNavigation() {
   const router = useRouter();
   // The section picker needs the router handler before it can navigate.
   const ready = useSyncExternalStore(subscribeReadiness, clientReady, serverReady);
-  return <aside className={"workspace-doc-topics workspace-settings-navigation [&&]:min-w-[0] [&&]:min-h-[0] @min-[760px]/documentation:[&&]:overflow-hidden min-[1024px]:[&&]:overflow-hidden"} aria-label="Settings navigation"><div className={"workspace-doc-picker workspace-settings-picker @min-[760px]/documentation:[&&]:hidden min-[1024px]:[&&]:hidden"}><label htmlFor="settings-section" className="sr-only">Settings section</label><select id="settings-section" disabled={!ready} value={`/settings/${selected}`} onChange={event => router.push(event.target.value, { scroll: false })} className={`
+  return <aside className={"workspace-doc-topics workspace-settings-navigation [&&]:min-w-[0] [&&]:min-h-[0] @min-[760px]/documentation:[&&]:overflow-hidden min-[1024px]:[&&]:overflow-hidden"} aria-label="Settings navigation"><div className={"workspace-doc-picker workspace-settings-picker @min-[760px]/documentation:[&&]:hidden min-[1024px]:[&&]:hidden"}><label htmlFor="settings-section" className="sr-only">Settings section</label><Select.Root value={`/settings/${selected}`} disabled={!ready} items={settingsSections.map(([value, label]) => ({ value: `/settings/${value}`, label }))} onValueChange={value => { if (value) router.push(value, { scroll: false }); }}><Select.Trigger id="settings-section" className={`flex items-center justify-between gap-2 text-left
       [@layer_components]:w-[100%] [@layer_components]:min-h-[var(--control-height)]
       [@layer_components]:[border:1px_solid_var(--input)] [@layer_components]:rounded-[var(--radius-md)]
       [@layer_components]:pt-[var(--space-3)] [@layer_components]:pr-[var(--space-4)] [@layer_components]:pb-[var(--space-3)]
@@ -68,7 +71,15 @@ export function SettingsNavigation() {
       [.studio-property_textarea&&]:pb-[var(--ui-space-3)] [.studio-property_textarea&&]:pl-[var(--ui-space-3)]
       [.studio-property_textarea&&]:text-[length:13px] [.studio-property_textarea&&]:leading-[20px]
       [.studio-setting-select_select&&]:pr-[28px]
-    `}>{settingsSections.map(([section, label]) => <option key={section} value={`/settings/${section}`}>{label}</option>)}</select></div><nav aria-label="Settings sections" className={`
+    `}><Select.Value /><Select.Icon><ChevronDown className="size-4" aria-hidden="true" /></Select.Icon></Select.Trigger>
+      <Select.Portal><Select.Positioner alignItemWithTrigger={false} align="start" sideOffset={6} collisionPadding={8} className="z-[70]">
+        <Select.Popup data-lenis-prevent className={cn(popupMotion, "max-h-[var(--available-height)] min-w-[var(--anchor-width)] max-w-[calc(100vw-2rem)] overflow-hidden rounded-lg border border-border bg-popover p-1 text-popover-foreground shadow-popover")}>
+          <Select.List className="max-h-[min(24rem,var(--available-height))] overflow-y-auto overscroll-contain">
+            {settingsSections.map(([value, label]) => <Select.Item key={value} value={`/settings/${value}`} className="flex min-h-11 cursor-default items-center justify-between gap-3 rounded-md px-3 text-body-sm outline-none transition-colors duration-[var(--motion-micro)] ease-[var(--motion-ease)] data-highlighted:bg-accent data-highlighted:text-accent-foreground"><Select.ItemText>{label}</Select.ItemText><Select.ItemIndicator><Check className="size-4" aria-hidden="true" /></Select.ItemIndicator></Select.Item>)}
+          </Select.List>
+        </Select.Popup>
+      </Select.Positioner></Select.Portal>
+    </Select.Root></div><nav aria-label="Settings sections" className={`
       workspace-doc-topic-list workspace-settings-nav-list [&&]:hidden [&&:focus-visible]:[outline:2px_solid_var(--ring)]
       [&&:focus-visible]:[outline-offset:-2px] @min-[760px]/documentation:[&&]:block @min-[760px]/documentation:[&&]:h-[100%]
       @min-[760px]/documentation:[&&]:overflow-y-auto @min-[760px]/documentation:[&&]:overscroll-contain

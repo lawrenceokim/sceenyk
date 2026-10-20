@@ -12,14 +12,17 @@ export function LandingMotion({ children }: { children: ReactNode }) {
     const reduced = matchMedia("(prefers-reduced-motion: reduce)");
     const animations = new Set<Animation>();
     const seen = new WeakSet<Element>();
+    const tokens = getComputedStyle(element);
+    const duration = parseFloat(tokens.getPropertyValue("--motion-reveal")) || 420;
+    const easing = tokens.getPropertyValue("--motion-ease").trim();
     const observer = new IntersectionObserver((entries) => {
       for (const entry of entries) {
         if (!entry.isIntersecting || seen.has(entry.target)) continue;
         seen.add(entry.target); observer.unobserve(entry.target);
         if (reduced.matches) continue;
         const animation = entry.target.animate(
-          [{ opacity: 0.35, transform: "translateY(22px)" }, { opacity: 1, transform: "translateY(0)" }],
-          { duration: 620, easing: "cubic-bezier(.2,.7,.2,1)" },
+          [{ opacity: 0.35, transform: "translateY(12px)" }, { opacity: 1, transform: "translateY(0)" }],
+          { duration, easing },
         );
         animations.add(animation);
         animation.onfinish = () => animations.delete(animation);

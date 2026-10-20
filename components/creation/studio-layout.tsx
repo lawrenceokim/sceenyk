@@ -47,6 +47,7 @@ export function StudioLayout({ sources, toolbar, stage, properties }: {
       // CSS owns the viewport/container breakpoints. Read the resulting mode
       // so the same Sources tree follows layout without duplicating thresholds.
       const next = getComputedStyle(layout).getPropertyValue("--studio-sources-mode").trim();
+      dialog.dataset.sourcesMode = next;
       if (next === mode.current) return;
       const wasFloating = dialog.open && mode.current !== "inline";
       returnFocus.current = false;
@@ -94,8 +95,8 @@ export function StudioLayout({ sources, toolbar, stage, properties }: {
       min-[1024px]:@min-[930px]:[&&]:[grid-template-columns:var(--workspace-rail)_minmax(0,1fr)_var(--workspace-inspector)]
       min-[1024px]:@min-[930px]:[&&]:gap-[var(--workspace-gap)]
     `}>
-      <dialog id="studio-sources" ref={sourcesDialog} className={`
-      studio-sources studio-panel [&&]:hidden [&&]:mt-[0] [&&]:mr-[0] [&&]:mb-[0] [&&]:ml-[0] [&&]:pt-[0] [&&]:pr-[0]
+      <dialog id="studio-sources" ref={sourcesDialog} data-lenis-prevent className={`
+      motion-native-panel studio-sources studio-panel [&&]:hidden [&&]:mt-[0] [&&]:mr-[0] [&&]:mb-[0] [&&]:ml-[0] [&&]:pt-[0] [&&]:pr-[0]
       [&&]:pb-[0] [&&]:pl-[0] [&&]:max-w-[none] [&&]:max-h-[none] [&&[open]]:fixed [&&[open]]:top-[8px]
       [&&[open]]:right-[8px] [&&[open]]:bottom-[8px] [&&[open]]:left-[8px] [&&[open]]:w-[calc(100vw_-_16px)]
       [&&[open]]:h-[calc(100dvh_-_16px)] [&&[open]]:flex [&&[open]]:flex-col [&&[open]]:z-[60]
@@ -105,6 +106,7 @@ export function StudioLayout({ sources, toolbar, stage, properties }: {
       [&&]:min-w-[0] [&&]:[border:1px_solid_var(--border)] [&&]:rounded-[var(--ui-radius-frame)]
       [&&]:[background:var(--card)] [&&]:text-[color:var(--card-foreground)]
     `} aria-labelledby="studio-sources-title"
+        onCancel={event => { event.preventDefault(); closeSources(); }}
         onKeyDown={event => {
           if (event.key === "Escape" && mode.current === "panel") { event.preventDefault(); closeSources(); }
         }}

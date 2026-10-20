@@ -253,7 +253,7 @@ export function MarketplaceStory() {
     `}>
             <div className={`
       sceenyk-landing-conceptImage [&&]:relative [&&]:[aspect-ratio:2.05] [&&]:overflow-hidden
-      [&&_img]:[object-position:50%_35%] [&&_img]:[transition:transform_220ms_ease-out] max-999:[&&]:[aspect-ratio:2.2]
+      [&&_img]:[object-position:50%_35%] [&&_img]:[transition:transform_var(--motion-popover)_var(--motion-ease)] max-999:[&&]:[aspect-ratio:2.2]
       max-699:[&&]:[aspect-ratio:1.5] max-359:[&&]:[aspect-ratio:2]
       [@media_(prefers-reduced-motion:_reduce)]:[&&_img]:[transition:none]
     `}><Image src={landingArtwork[concept.image]} alt="" fill sizes="(max-width: 550px) 90vw, (max-width: 1000px) 45vw, 310px" className={"sceenyk-landing-artwork [&&]:object-cover"} /></div>

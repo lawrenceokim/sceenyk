@@ -1,5 +1,25 @@
 # Sceenyk design system
 
+## Motion & Interaction Standard (2026-10-20)
+
+This is the default for all future Sceenyk UI, superseding older motion timings in reference/history sections. Respond immediately and finish with a soft ease-out and restrained momentum. Preserve existing branding, layout and theme behavior; motion is progressive enhancement, never a delay before an action.
+
+| Purpose | Approved range | Global token/default |
+| --- | --- | --- |
+| Micro interaction, hover, icon/button | 150–200ms | --motion-micro: 180ms |
+| Dropdown, popover, tooltip, section picker | 180–250ms | --motion-popover: 220ms |
+| Modal/backdrop | 220–300ms | --motion-modal: 260ms |
+| Sidebar, panel, drawer | 250–350ms | --motion-panel: 300ms |
+| Optional major section reveal | 300–500ms | --motion-reveal: 420ms |
+
+Use --motion-ease: cubic-bezier(0.22, 1, 0.36, 1). Existing --duration-fast/normal and --ease-standard alias this scale. Compose Tailwind transition properties, duration-[var(--motion-*)], ease-[var(--motion-ease)], opacity and small translate/scale values. Share Base UI presence classes through components/ui/motion.ts; keep focus trapping, Escape, focus return and the primitive's transition lifecycle. Native Sources uses the reusable motion-native-panel utility for discrete display/top-layer exit; unsupported browsers may dismiss it instantly. This browser-specific CSS belongs only in app/globals.css.
+
+Sidebar width and matching main inset move together for 300ms; keep row heights/icon coordinates fixed, keep labels mounted and fade/slide them rather than remounting navigation. Use small card lifts (2–3px), clipped preview zoom where already present, and quiet background/opacity transitions. Avoid bounce, dramatic scale, blur animation, large glows and incidental reveals everywhere. Avoid abrupt snapping unless a native/platform constraint or responsive mode switch requires it.
+
+Lenis provides ordinary wheel/trackpad inertia (lerp 0.18, no multiplier boost) on public pages and normal workspace/gallery roots. It uses actual DOM scrolling; do not replace scroll containers or infinite-observer roots with transformed content. Touch, keyboard/focus, history and anchors retain native behavior. Documentation article/topics/contents, Settings center/navigation (including its infinite management gallery), Studio Sources/Properties, dialogs and other nested panels remain native and independently contained. Never route nested panels through one global controller. Settings mobile selection uses the existing Base UI Select package with shared popup motion; Documentation's native topic picker stays native. Clerk-managed overlays retain their provider lifecycle.
+
+Respect live prefers-reduced-motion changes: destroy inertia, remove nonessential transforms/reveals and make transitions instant. Preserve positioning transforms (such as centered dialogs), accessible state, keyboard controls and usability. Lenis alone owns its animation-frame loop; do not add React scroll state or new animation frameworks. Native display/overlay transitions and tiny Lenis compatibility rules are justified shared CSS exceptions; ordinary motion stays Tailwind-first. Manual motion review remains required; source checks do not establish perceived smoothness.
+
 ## Styling Policy — Tailwind CSS + global.css
 
 Follow the mandatory [Styling Policy](code-standards.md#styling-policy) for all future frontend work unless the user explicitly instructs otherwise. Sceenyk uses **Tailwind CSS + global.css**, not **Tailwind + scattered component CSS files**. The global stylesheet's existing repository filename is `app/globals.css`; this is one file, not permission to create an additional `global.css`.
