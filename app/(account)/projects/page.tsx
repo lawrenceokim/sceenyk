@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { AppUserSyncError } from "@/lib/auth/ensure-app-user";
 import { requireClerkUser } from "@/lib/auth/require-user";
 import { listOwnedProjects, ProjectAccessError } from "@/lib/projects/server";
@@ -7,7 +8,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { listOwnedAssets, MediaAccessError } from "@/lib/media/server";
-import { ProjectsSection } from "@/components/projects/projects-section";
+import { ProjectsGallerySkeleton, ProjectsSection } from "@/components/projects/projects-section";
 import {
   GenerationAccessError,
   getLatestProjectGenerations,
@@ -24,11 +25,13 @@ export const metadata: Metadata = {
     "Explore the Sceenyk creative workspace: project library, generation activity, and creation tools.",
 };
 
-export default async function ProjectsPage({
-  searchParams,
-}: {
+type ProjectsPageProps = {
   searchParams: Promise<{ page?: string | string[] }>;
-}) {
+};
+
+async function OwnedProjects({
+  searchParams,
+}: ProjectsPageProps) {
   const { page } = await searchParams;
   const { userId } = await requireClerkUser();
   let projects;
@@ -74,6 +77,16 @@ export default async function ProjectsPage({
   let templateIds: Record<string, string> = {};
   try { templateIds = await getOwnedProjectTemplates(projects.projects.map(project => project.id)); }
   catch (error) { unstable_rethrow(error); /* Publish still resolves the existing listing on the server. */ }
+  return (
+    <ProjectsAccountFence clerkUserId={userId}>
+      <ProjectJobStatusesProvider key={projects.projects.map(({ id }) => id).join(",")} initial={jobStatuses}>
+        <ProjectsSection data={projects} jobStatuses={jobStatuses} previews={previews} templateIds={templateIds} />
+      </ProjectJobStatusesProvider>
+    </ProjectsAccountFence>
+  );
+}
+
+export default function ProjectsPage({ searchParams }: ProjectsPageProps) {
   return <div className="workspace-projects">
     <header className={`
       workspace-projects-heading [&&]:flex [&&]:items-end [&&]:justify-between [&&]:gap-[24px] [&&]:mb-[36px]
@@ -88,8 +101,8 @@ export default async function ProjectsPage({
       <div><h1>My Projects</h1><p>Projects you&apos;ve saved. Open one to pick up right where you left off.</p></div>
       <Button nativeButton={false} render={<Link href="/studio" />}><Plus aria-hidden="true" />New Project</Button>
     </header>
-    <ProjectsAccountFence clerkUserId={userId}><ProjectJobStatusesProvider key={projects.projects.map(({ id }) => id).join(",")} initial={jobStatuses}>
-      <ProjectsSection data={projects} jobStatuses={jobStatuses} previews={previews} templateIds={templateIds} />
-    </ProjectJobStatusesProvider></ProjectsAccountFence>
+    <Suspense fallback={<ProjectsGallerySkeleton />}>
+      <OwnedProjects searchParams={searchParams} />
+    </Suspense>
   </div>;
 }

@@ -7,6 +7,28 @@ import type { ProjectPage } from "@/lib/projects/types";
 import type { GenerationStatus } from "@/lib/generation/contract";
 import type { ProjectAsset } from "@/lib/media/types";
 
+const projectGridClassName = "workspace-project-grid [&&]:grid [&&]:[grid-template-columns:repeat(auto-fill,_206px)] [&&]:gap-[16px] max-767:[&&]:[grid-template-columns:minmax(0,_1fr)]";
+
+export function ProjectsGallerySkeleton() {
+  return (
+    <section role="status" aria-busy="true" aria-label="Loading your projects">
+      <span className="sr-only">Loading your projects…</span>
+      <ul className={projectGridClassName} aria-hidden="true">
+        {Array.from({ length: 6 }, (_, index) => (
+          <li key={index} className="min-w-0 rounded-[13px] border border-border bg-card p-[10px]">
+            <div className="motion-safe:animate-pulse">
+              <div className="aspect-[4/3] w-full rounded-[9px] bg-muted" />
+              <div className="mx-1 mt-[10px] h-[18px] w-3/4 rounded bg-muted" />
+              <div className="mx-1 mt-0.5 h-4 w-1/2 rounded bg-muted" />
+              <div className="mt-2 h-[30px] rounded bg-muted [@media(pointer:coarse)]:h-11" />
+            </div>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
 export function ProjectsSection({
   data,
   jobStatuses,
@@ -71,7 +93,7 @@ export function ProjectsSection({
       ) : (
         <>
           <ul
-            className={"workspace-project-grid [&&]:grid [&&]:[grid-template-columns:repeat(auto-fill,_206px)] [&&]:gap-[16px] max-767:[&&]:[grid-template-columns:minmax(0,_1fr)]"}
+            className={projectGridClassName}
             aria-label="Saved projects"
           >
             {data.projects.map((project) => (

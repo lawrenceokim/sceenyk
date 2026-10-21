@@ -1,5 +1,9 @@
 # Architecture Context
 
+## Projects request streaming (2026-10-21)
+
+`/projects` keeps its heading, description, New Project control and stable layout in a synchronous Server Component. A page-local Suspense boundary wraps async `OwnedProjects`, which resolves search parameters and Clerk identity before the existing owner-checked project, generation-status, media and Template-link reads. Its compact gallery skeleton shares the real grid sizing and reserves the preview/metadata/action dimensions. The shared account-layout boundary alone cannot cover client navigation within that layout; personalized page work must remain beneath the local boundary. Existing account synchronization, `connection()`, server ownership checks, client account fence and private/no-store policy remain unchanged. No authenticated shared cache or blocking route opt-out is introduced.
+
 ## Template deletion (2026-10-21)
 
 My Templates deletion uses a strict-ID Server Action and independently authenticated `deleteOwnedTemplate` service. Migration 034 adds `marketplace_listings.deleted_at`; service-only `delete_owned_template` locks the owner-filtered listing, atomically marks it deleted and archives it, and treats retries as success. Owned gallery filtering/counts/pagination exclude deleted rows, while ordinary archived listings retain their existing visibility. Existing published-status checks remove deleted listings from Marketplace/detail/public preview and block new adoption/purchase attempts. Revalidation reuses the Marketplace/Template/Project paths.
