@@ -58,9 +58,9 @@ export function ProjectCard({ project, jobStatus, preview, listingId }: {
       <h3>{project.title}</h3>
       <time dateTime={project.updatedAt}>Edited {new Intl.DateTimeFormat("en", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" }).format(new Date(project.updatedAt))}</time>
     </Link>
-    <div className="relative z-10 mt-2 flex min-w-0 flex-wrap items-center gap-x-1">
-      <Link href={`/projects/${project.id}`} prefetch={false} className="inline-flex min-h-[30px] items-center px-1 text-[11px] font-medium outline-none hover:text-link focus-visible:ring-2 focus-visible:ring-ring [@media(pointer:coarse)]:min-h-11">Open</Link>
-      <ProjectPublish projectId={project.id} listingId={listingId} compact />
+    <div className="relative z-10 mt-2 flex min-w-0 items-center gap-x-1">
+      <Link href={`/projects/${project.id}`} prefetch={false} className="inline-flex min-h-[30px] shrink-0 items-center px-1 text-[11px] font-medium outline-none hover:text-link focus-visible:ring-2 focus-visible:ring-ring [@media(pointer:coarse)]:min-h-11">Open</Link>
+      {!listingId && <ProjectPublish projectId={project.id} compact />}
       <div className="workspace-project-actions ml-auto flex shrink-0 items-center gap-1">
       <span className={"workspace-project-action [.workspace-project-actions_>_&&]:flex [.workspace-project-actions_>_&&]:items-center [.workspace-project-actions_>_&&]:justify-center [.workspace-project-actions_>_&&]:min-w-[0]"}><ProjectRename projectId={project.id} title={project.title} /></span>
       <span className={"workspace-project-action [.workspace-project-actions_>_&&]:flex [.workspace-project-actions_>_&&]:items-center [.workspace-project-actions_>_&&]:justify-center [.workspace-project-actions_>_&&]:min-w-[0]"}><ProjectDelete projectId={project.id} title={project.title} /></span>

@@ -1,5 +1,9 @@
 # UI Context
 
+## Focused Project/Template card actions and label (2026-10-21)
+
+On `/templates`, the existing fallback Template preview badge sits 5px from the preview's bottom/left edges, with Project-style 9px text, 1px/5px padding and 4px corners. Remove the legacy 64px bottom offset; preview media/content stays unchanged. On `/projects`, render compact primary-purple Publish only when the existing source-Project → Template mapping has no listing ID. When a Template already exists, render no button, status or replacement in that position. Keep Open on the left and edit/delete icons on the right in one row. Publish uses 24px desktop height, 10px text and 8px horizontal padding, with existing coarse-pointer touch sizing and reduced-motion behavior. Template selection/management elsewhere keeps its current actions and publishing remains guarded/server-authoritative. Manual visual review pending.
+
 ## Template card deletion (2026-10-21)
 
 My Templates cards now match Projects' compact 206px desktop cards, 10px padding, bordered/tinted surface, 4:3 inset preview, small title/date and bottom Open/edit/trash actions. Mobile remains one column. Keep existing private/approved previews, persisted fallback appearance, detail route, non-archived edit destination, status indication, gallery empty state and pagination. No Publish or Manage Template text buttons are added. Only this gallery's card presentation changes.

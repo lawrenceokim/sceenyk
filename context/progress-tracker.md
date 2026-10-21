@@ -1,5 +1,11 @@
 # Progress Tracker
 
+## Focused Projects/Templates card UI refinement (2026-10-21)
+
+**Implemented locally; manual review pending.** Template fallback preview badge moved from the old 64px offset to a compact Project-style badge 5px from the preview's bottom-left. `/projects` reuses the existing `listingId` mapping to show Publish only for Projects without a Template; already-linked Projects show no Manage Template, Published or replacement action. Eligible Publish uses compact primary-purple styling. Open stays left, edit/delete stay right in a single row, with existing touch sizes, truncation and reduced-motion behavior. Shared noncompact project-picker actions and all publish/ownership/persistence/routes/media remain unchanged. Tailwind-only; no schema, migrations, browser/screenshot suites, production build, deployment, hosted Inngest or regressions. UI context updated.
+
+Targeted ESLint and whitespace checks pass. Overview/architecture wording now reflects the Project-card presentation without changing its relationship/query. Next.js feedback review found no qualifying framework issue. Stop for the user's manual visual review.
+
 ## Template cards and confirmed deletion (2026-10-21)
 
 **Implemented locally; focused checks pass, migration 034 and manual review pending.** My Templates cards now match Projects' compact inset-preview/title/date/Open/edit/trash layout without Publish/Manage Template text buttons. Existing previews/fallback colors, detail/edit routes, empty state and pagination stay intact. The shared Base UI confirmation dialog follows ProjectDelete with named Template, Cancel/Delete, pending guards, inline retryable errors and theme/reduced-motion support. User confirmed deletion should remove the Template from both My Templates and Marketplace.
