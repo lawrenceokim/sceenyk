@@ -1,5 +1,5 @@
-import type { CategoryId, CreationSettings } from "@/lib/projects/options";
-import type { MediaKind } from "@/lib/media/types";
+import type { CategoryId, CreationSettings, CreationType, UgcType } from "@/lib/projects/options";
+import type { MediaKind, StudioMediaRole } from "@/lib/media/types";
 import type { GenerationSnapshot } from "@/lib/generation/types";
 import type { DispatchStatus } from "@/lib/generation/dispatch-contract";
 import type {
@@ -27,6 +27,8 @@ export type AppUserProfile = Pick<
 >;
 
 export type ProjectFields = {
+  creation_type: CreationType;
+  ugc_type: UgcType;
   title: string;
   category: CategoryId;
   prompt: string;
@@ -45,6 +47,9 @@ export type ProjectRow = ProjectFields & {
 };
 
 export type AssetRow = {
+  studio_role: StudioMediaRole;
+  reference_id: string | null;
+  removed_from_draft: boolean;
   id: string;
   owner_user_id: string;
   project_id: string;
@@ -221,9 +226,9 @@ export type Database = {
         Row: AssetRow;
         Insert: Omit<
           AssetRow,
-          "created_at" | "updated_at" | "upload_status" | "verified_etag"
+          "created_at" | "updated_at" | "upload_status" | "verified_etag" | "removed_from_draft"
         >;
-        Update: Partial<Pick<AssetRow, "upload_status" | "verified_etag">>;
+        Update: Partial<Pick<AssetRow, "upload_status" | "verified_etag" | "removed_from_draft">>;
         Relationships: [];
       };
       app_users: {

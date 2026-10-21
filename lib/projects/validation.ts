@@ -7,6 +7,8 @@ import {
   tones,
   projectTitleLimit,
   projectPromptLimit,
+  creationTypes,
+  ugcTypes,
 } from "./options";
 
 export const projectIdSchema = z.uuid();
@@ -22,6 +24,9 @@ export const saveProjectSchema = z.strictObject({
       `Keep the title within ${projectTitleLimit} characters.`,
     ),
   category: z.enum(categoryIds),
+  // Omitted values belong to older clients/projects with the general flow.
+  creationType: z.enum(creationTypes).default("freestyle"),
+  ugcType: z.enum(ugcTypes.map(({ value }) => value)).default("advertisement"),
   prompt: z
     .string()
     .max(

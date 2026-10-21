@@ -13,6 +13,10 @@ import type { ProjectDraft, SavedProject } from "@/lib/projects/types";
 import type { GenerationJob } from "@/lib/generation/types";
 import { ProjectGeneration } from "./project-generation";
 import { CategorySelector } from "./category-selector";
+import { StudioReferenceSources } from "./studio-reference-sources";
+import { collectStudioSources, prepareStudioInputs } from "./studio-inputs";
+import type { CreationType, UgcType } from "@/lib/projects/options";
+import { mediaKindForMime } from "@/lib/media/validation";
 import { CreationPreview } from "./creation-preview";
 import { StudioLayout } from "./studio-layout";
 import { StudioInspectorSection } from "./studio-inspector-section";
@@ -22,7 +26,7 @@ import { MediaDropzone } from "./media-dropzone";
 import { PromptComposer } from "./prompt-composer";
 import { ProjectSaveControls, type SaveState } from "./project-save-controls";
 import { useProjectMedia } from "./use-project-media";
-import type { ProjectAsset } from "@/lib/media/types";
+import type { ProjectAsset, StudioMediaRole } from "@/lib/media/types";
 import type { ProjectOrigin } from "@/lib/marketplace/contract";
 import Link from "next/link";
 import {
@@ -145,6 +149,10 @@ function WorkspaceEditor({
     initialProject?.category ?? restoredDraft?.brief.category ?? initialPreferences.category,
   );
   const [prompt, setPrompt] = useState(initialProject?.prompt ?? restoredDraft?.brief.prompt ?? "");
+  const [creationType, setCreationType] = useState<CreationType>(
+    initialProject ? initialProject.creationType ?? "freestyle" : restoredDraft?.brief.creationType ?? "ugc",
+  );
+  const [ugcType, setUgcType] = useState<UgcType>(initialProject?.ugcType ?? restoredDraft?.brief.ugcType ?? "advertisement");
   const [title, setTitle] = useState(
     initialProject?.title ?? restoredDraft?.brief.title ?? "Untitled Project",
   );
@@ -172,18 +180,19 @@ function WorkspaceEditor({
   const category =
     creationCategories.find((item) => item.id === selectedCategory) ??
     creationCategories[2];
-  const activeMedia =
-    selectedFiles.find((media) => media.id === selectedFileId) ??
-    (selectedFileId ? undefined : selectedFiles[0]);
   const brief: ProjectDraft = {
     title,
     category: selectedCategory,
     prompt,
     settings,
+    creationType,
+    ugcType,
   };
   const dirty =
     savedBrief !== null &&
     (title !== savedBrief.title ||
+      creationType !== (savedBrief.creationType ?? "freestyle") ||
+      ugcType !== (savedBrief.ugcType ?? "advertisement") ||
       prompt !== savedBrief.prompt ||
       selectedCategory !== savedBrief.category ||
       settings.aspectRatio !== savedBrief.settings.aspectRatio ||
@@ -236,38 +245,53 @@ function WorkspaceEditor({
     projectId,
     ensureProject: () =>
       persistedId.current ? Promise.resolve(persistedId.current) : saveDraft(),
-    onUploaded: (localId, assetId) => {
+    onUploaded: (localId, assetId, role) => {
       setSelectedFiles((files) =>
         files.filter((media) => media.id !== localId),
       );
-      setSelectedFileId(assetId);
+      if (role === "freestyle") setSelectedFileId(assetId);
     },
   });
+  // Upload UGC images sequentially using the same private project-first service.
+  // Failed files wait for explicit retry; changing type never cancels/clears them.
+  useEffect(() => {
+    if (!signedIn || mediaUpload.busy) return;
+    const next = selectedFiles.find(file => file.studioRole && file.studioRole !== "freestyle" && !mediaUpload.uploadStates[file.id]);
+    if (next) void mediaUpload.upload(next);
+  }, [signedIn, selectedFiles, mediaUpload]);
+  const sources = collectStudioSources(selectedFiles, mediaUpload.assets);
+  const studioInputs = prepareStudioInputs(brief, sources);
+  const freestyle = sources.projectMedia;
+  const activeMedia = creationType === "freestyle"
+    ? freestyle.files.find(media => media.id === selectedFileId) ?? (selectedFileId ? undefined : freestyle.files[0])
+    : undefined;
   const activeAsset =
-    mediaUpload.assets.find(
+    creationType === "freestyle" ? freestyle.assets.find(
       (asset) => asset.id === selectedFileId && asset.status === "uploaded",
     ) ??
     (!selectedFileId && !activeMedia
-      ? mediaUpload.assets.find((asset) => asset.status === "uploaded")
-      : undefined);
+      ? freestyle.assets.find((asset) => asset.status === "uploaded")
+      : undefined) : undefined;
 
-  function addFiles(files: File[]) {
+  function addFiles(files: File[], studioRole: StudioMediaRole = "freestyle") {
     const accepted: LocalMedia[] = [];
     const rejected: string[] = [];
     for (const file of files) {
       const kind = getMediaKind(file);
-      if (!kind || file.size === 0) {
+      if (!kind || file.size === 0 || (studioRole !== "freestyle" && (kind !== "image" || mediaKindForMime(file.type) !== "image"))) {
         rejected.push(file.name);
         continue;
       }
-      accepted.push({ id: crypto.randomUUID(), file, kind });
+      const id = crypto.randomUUID();
+      accepted.push({ id, file, kind, studioRole, ...(studioRole !== "freestyle" ? { referenceId: id } : {}) });
     }
     setSelectedFiles((current) => {
       const updated = [...current];
       for (const media of accepted) {
         if (
           !updated.some(
-            ({ file }) =>
+            ({ file, studioRole: existingRole }) =>
+              (existingRole ?? "freestyle") === studioRole &&
               file.name === media.file.name &&
               file.size === media.file.size &&
               file.lastModified === media.file.lastModified &&
@@ -280,13 +304,15 @@ function WorkspaceEditor({
     });
     setMediaError(
       rejected.length
-        ? `Couldn’t add ${rejected.join(", ")}. Choose a non-empty image, video, or audio file.`
+        ? `Couldn’t add ${rejected.join(", ")}. ${studioRole === "freestyle" ? "Choose a non-empty image, video, or audio file." : "Choose a supported, non-empty image (PNG, JPEG, WebP, GIF, AVIF, BMP, HEIC or HEIF)."}`
         : "",
     );
   }
 
-  function removeFile(id: string) {
+  async function removeFile(id: string) {
     if (mediaUpload.busy) return;
+    const media = selectedFiles.find(file => file.id === id);
+    if (media?.studioRole && media.studioRole !== "freestyle" && !(await mediaUpload.removeLocalReference(media))) return;
     setSelectedFiles((files) => files.filter((media) => media.id !== id));
     if (selectedFileId === id) setSelectedFileId(null);
     setMediaError("");
@@ -317,10 +343,11 @@ function WorkspaceEditor({
             category: selectedCategory,
             settings,
             assetIds: mediaUpload.assets
-              .filter((asset) => asset.status === "uploaded")
+              .filter((asset) => asset.status === "uploaded" && !asset.removedFromDraft && (asset.studioRole ?? "freestyle") === "freestyle")
               .map((asset) => asset.id),
           }}
-          hasLocalFiles={selectedFiles.length > 0}
+          hasLocalFiles={freestyle.files.length > 0}
+          creationType={creationType}
           mediaBusy={mediaUpload.busy}
           mediaError={!!mediaUpload.assetError}
           signedIn={signedIn}
@@ -377,12 +404,22 @@ function WorkspaceEditor({
                       </section>
                     )}
                     {project}
-                    <CategorySelector selected={selectedCategory} />
-                    <MediaDropzone
-          files={selectedFiles}
+                    <CategorySelector selected={creationType} onChange={setCreationType} />
+                    {studioInputs.creationType === "ugc" ? <>
+                      <StudioReferenceSources label="Characters" addLabel="Add Character" references={studioInputs.characters}
+                        onAdd={files => addFiles(files, "character")} onRemoveLocal={removeFile} onRemoveAsset={mediaUpload.removeReference}
+                        onUpload={mediaUpload.upload} onRecover={mediaUpload.recover} uploadStates={mediaUpload.uploadStates}
+                        busy={mediaUpload.busy} signedIn={signedIn} authReady={authReady} />
+                      <StudioReferenceSources label="Product / Props" addLabel="Add Product / Prop" references={studioInputs.products}
+                        onAdd={files => addFiles(files, "product")} onRemoveLocal={removeFile} onRemoveAsset={mediaUpload.removeReference}
+                        onUpload={mediaUpload.upload} onRecover={mediaUpload.recover} uploadStates={mediaUpload.uploadStates}
+                        busy={mediaUpload.busy} signedIn={signedIn} authReady={authReady} />
+                      {(mediaError || mediaUpload.assetError) && <p role="status" className="break-words text-xs text-destructive">{mediaError || mediaUpload.assetError}</p>}
+                    </> : <MediaDropzone
+          files={freestyle.files}
           selectedId={activeMedia?.id ?? activeAsset?.id}
           error={mediaError}
-          onAdd={addFiles}
+          onAdd={files => addFiles(files)}
           onSelect={setSelectedFileId}
           onRemove={removeFile}
           onUpload={mediaUpload.upload}
@@ -390,10 +427,10 @@ function WorkspaceEditor({
           busy={mediaUpload.busy}
           signedIn={signedIn}
           authReady={authReady}
-          assets={mediaUpload.assets}
+          assets={freestyle.assets}
           assetError={mediaUpload.assetError}
           onRecover={mediaUpload.recover}
-        />
+        />}
                   </>
                 }
                 toolbar={
@@ -412,7 +449,7 @@ function WorkspaceEditor({
                   <>
                     {output}
                     {(!output || activeMedia || activeAsset) && (
-                      <CreationPreview settings={settings}
+                      <CreationPreview settings={settings} creationType={creationType} ugcType={ugcType}
                         media={activeMedia} asset={activeAsset} />
                     )}
                     <div className="hidden md:block">{status}</div>
@@ -425,7 +462,8 @@ function WorkspaceEditor({
           category={category}
           onChange={setPrompt}
         /></StudioInspectorSection>
-                    <StudioInspectorSection title="Style & pacing"><GenerationSettings settings={settings} onChange={setSettings} /></StudioInspectorSection>
+                    <StudioInspectorSection title="Style & pacing"><GenerationSettings settings={settings} onChange={setSettings}
+                      ugcType={creationType === "ugc" ? ugcType : undefined} onUgcTypeChange={setUgcType} /></StudioInspectorSection>
                     <StudioInspectorSection title="Narration"><section className={`
       studio-property [&&]:min-w-[0] [&&]:text-[length:var(--ui-text-control)] [&&_h2]:text-[length:var(--ui-text-panel)]
       [&&_h2]:font-[600] [&&_legend]:text-[length:var(--ui-text-panel)] [&&_legend]:font-[600]

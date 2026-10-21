@@ -1,5 +1,9 @@
 # AI Workflow Rules
 
+## Current unit: dynamic Studio Sources/Properties (2026-10-20)
+
+This explicitly authorized feature supersedes older UGC-only/presentation-only constraints for its bounded draft/media changes. Creation Type offers UGC and Freestyle, with retained per-flow inputs and persisted UGC Type. Inspect/reuse owned projects, private R2 media and shared dropdowns. Additive migration 032 keeps old/adopted projects Freestyle and groups image references for future expansion. Do not implement generation, character/product sheets, scripts, videos, or trigger hosted Inngest. Preserve financial/auth/Marketplace behavior and Studio geometry. The user requests minimal TypeScript/lint and focused checks only: no full build, browser/screenshot/deployment acceptance or broad regressions. Stop for manual UI inspection and record migration application as pending until verified.
+
 ## Focused Studio and Credits refinements (2026-10-20)
 
 Latest instructions supersede fixed-button UGC and Settings earnings placement: Sources' shared Select offers UGC only, with no backend enum change; Earnings & Payouts is /credits/earnings in the Credits workspace. Keep Studio headings/short descriptions concise while preserving essential errors, status and financial confirmation. Inspect the entire mobile height/overflow chain before constraining Stage/Properties; only Properties content scrolls and its header stays fixed. Keep media/state mounted and reuse presentation portals for ancillary controls.

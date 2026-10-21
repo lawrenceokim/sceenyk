@@ -1,5 +1,13 @@
 # Architecture Context
 
+## Dynamic Studio creation inputs (2026-10-20)
+
+This unit supersedes the earlier UGC-only presentation rule. Creation Type is a separate project field (`ugc | freestyle`), independent of legacy category/provider enums. New Studio drafts default to UGC; existing and adopted projects/older payloads without the field retain Freestyle. UGC Type (`advertisement | explanation | unboxing`) defaults to Advertisement and stays saved when hidden. Sources/Properties conditionally present inputs without clearing either flow's state. Existing narration remains prompt-driven with its centrally configured voice.
+
+Migration 032 adds creation_type/ugc_type to existing projects and studio_role/reference_id/removed_from_draft to existing project_assets. Characters and products reuse the same owned upload authorization, private R2 bytes, signature verification and signed reads. Each selected image is one reference; stable reference IDs can group more images later. Freestyle assets keep the default role. Explicit UGC removal detaches only that image through an owner/project-filtered server action; bytes and historical links remain retained. No new storage/table/provider architecture. Apply the migration before using the updated application; live schema/application status is recorded in the tracker.
+
+WorkspaceEditor retains both flows' local files and persisted media independently of the selected type. Guest handoff retains only validated brief choices in sessionStorage; File objects/roles/reference IDs stay in memory, so reload still requires reselection. Prepared Studio inputs distinguish characters/products from Freestyle project media and include title, scene, duration/style/tone and existing narration mode. UGC generation is unavailable in this input-only unit; Freestyle keeps existing generation inputs/controls. No character/product sheets, scripts, videos or hosted Inngest execution are introduced.
+
 ## Contained mobile Studio and Earnings under Credits (2026-10-20)
 
 Studio Sources' Creation Type now uses the shared Base UI Select, with one option labeled UGC carrying the existing selectedCategory value. No new enum/state/provider mode is introduced. Sources remains one mounted tree; Escape consumed by a child Select does not also close the tablet Sources panel.

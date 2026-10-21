@@ -1,5 +1,9 @@
 # Code Standards
 
+## Studio creation inputs (2026-10-20)
+
+The current feature supersedes prior UGC-only UI restrictions. Persist creationType/ugcType independently of legacy category and retain both source roles on switches. New Studio drafts explicitly choose UGC; omitted older payloads/projects use Freestyle and Advertisement. Reuse existing owned draft/private-media services, validate UGC references as images, retain stable reference grouping IDs, and authorize every reference removal/read by current owner and project. Removal detaches one UGC image without deleting storage/history or Freestyle media. Only Freestyle reaches the existing generation controls in this unit. Use shared Select, Tailwind and the unchanged Studio layout; do not implement sheets/scripts/videos. Migration 032 must precede application use; record local versus hosted evidence separately.
+
 ## Studio containment and Credits tab rules (2026-10-20)
 
 Creation Type in Sources uses shared Select with exactly one UGC label, retaining the current internal category enum/value. Studio explanatory copy stays concise: feature heading/control and at most a short description, with necessary dynamic errors/status and financial confirmations retained. For mobile Studio, constrain shell/frame/grid/panels/media with dynamic viewport height and min-height:0; keep the Stage stationary and make only the Properties body scroll, outside its fixed header. Use Tailwind utilities and existing presentation portals without duplicating media or changing state/handlers.

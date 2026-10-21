@@ -79,6 +79,8 @@ export interface LocalMedia {
   id: string;
   file: File;
   kind: "image" | "video" | "audio";
+  studioRole?: import("@/lib/media/types").StudioMediaRole;
+  referenceId?: string;
 }
 
 // Advisory local preview detection; permanent upload uses lib/media/validation.

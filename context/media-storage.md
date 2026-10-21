@@ -1,5 +1,9 @@
 # Private project media
 
+## Studio reference roles (2026-10-20)
+
+Migration 032 adds role/group/removal metadata to existing project_assets; the private R2 bucket/keys, authorization, direct upload, signature verification and signed reads remain the same. UGC Characters and Product / Props accept supported images only and upload sequentially after sign-in. One image represents one reference; stable reference_id permits future multiple-image grouping. Freestyle preserves the existing manual Project Media upload path and default role. Both sets remain stored across Creation Type switches. A new owner/project-filtered action detaches only the requested UGC image through removed_from_draft, including pending/rejected uploads, without deleting bytes or breaking historical links. Draft controls and project preview selection exclude detached references. Apply migration 032 before using the revision; hosted application/acceptance remains pending in the tracker. No new environment variables/storage or cleanup policy.
+
 Cloudflare R2 is the implemented object-storage provider for this unit; Supabase PostgreSQL stores metadata only. Live browser/hosted-Supabase/R2 development acceptance now passes; production deployment and full administrative audits remain separate. Read the current acceptance status in [progress-tracker.md](progress-tracker.md).
 
 ## Development setup

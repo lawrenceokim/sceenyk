@@ -1,5 +1,9 @@
 # Sceenyk design system
 
+## Dynamic Studio creation controls (2026-10-20)
+
+This supersedes earlier UGC-only/fixed-type guidance. Sources' shared Select offers UGC/UserRound and Freestyle/Sparkles. Keep compact section labels and sibling dividers; UGC Characters and Product / Props use small Add controls, wrapping 64px square rounded thumbnails, individual X actions and a trailing +. Use existing theme borders/surfaces/focus and restrained motion; no large upload cards or standalone CSS. Preserve Sources' existing desktop/tablet/mobile geometry and native scroll/focus behavior. Properties uses the existing SettingSelect for Type (Advertisement, Explanation, Unboxing) only when UGC is selected. Freestyle keeps Project Media and hides UGC Type. Preview summary follows the active type. All interactive controls use pointer cursors with real disabled states and visible keyboard focus.
+
 ## Current Studio and Credits presentation refinement (2026-10-20)
 
 Sources Creation Type is a shared Select with one UGC option and a person icon; it is now a dropdown, superseding the earlier fixed checked-control rule. It retains the existing backend category value. Follow shared motion, accessible keyboard/focus, dialog-local portals and theme tokens.

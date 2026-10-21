@@ -3,10 +3,12 @@ import { LocalMediaPreview } from "./local-media-preview";
 import { PersistentMediaPreview } from "./persistent-media-preview";
 import type { ProjectAsset } from "@/lib/media/types";
 import type { CreationSettings, LocalMedia } from "./creation-options";
+import { ugcTypes, type CreationType, type UgcType } from "@/lib/projects/options";
 
-export function CreationPreview({ settings, media, asset }: {
+export function CreationPreview({ settings, media, asset, creationType = "freestyle", ugcType = "advertisement" }: {
   settings: CreationSettings;
   media?: LocalMedia; asset?: ProjectAsset;
+  creationType?: CreationType; ugcType?: UgcType;
 }) {
   return <div aria-label="Creation preview">
     {media || asset ? <div className={`
@@ -33,7 +35,9 @@ export function CreationPreview({ settings, media, asset }: {
       <Clapperboard className="size-7 text-muted-foreground" aria-hidden="true" />
       <div><h2 className="text-base font-medium tracking-tight">Preview</h2>
       </div>
-      <p className="text-caption text-muted-foreground">UGC · {settings.aspectRatio} · {settings.duration} sec</p>
+      <p className="text-caption text-muted-foreground">{creationType === "ugc"
+        ? `UGC · ${ugcTypes.find(type => type.value === ugcType)?.label}`
+        : "Freestyle"} · {settings.duration} sec</p>
     </div>}
   </div>;
 }

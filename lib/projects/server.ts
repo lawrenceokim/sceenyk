@@ -21,9 +21,9 @@ import type {
 } from "./types";
 
 const briefColumns =
-  "id,title,category,prompt,aspect_ratio,duration,visual_style,tone,status,created_at,updated_at";
+  "id,title,category,prompt,creation_type,ugc_type,aspect_ratio,duration,visual_style,tone,status,created_at,updated_at";
 const summaryColumns =
-  "id,title,category,aspect_ratio,duration,visual_style,tone,status,created_at,updated_at";
+  "id,title,category,creation_type,ugc_type,aspect_ratio,duration,visual_style,tone,status,created_at,updated_at";
 
 export class ProjectAccessError extends Error {
   constructor() {
@@ -52,6 +52,8 @@ function toSummary(
     id: row.id,
     title: row.title,
     category: row.category,
+    creationType: row.creation_type ?? "freestyle",
+    ugcType: row.ugc_type ?? "advertisement",
     settings: {
       aspectRatio: row.aspect_ratio,
       duration: row.duration,
@@ -89,11 +91,13 @@ export async function saveOwnedProject(
         : "Check your project details and selected settings.";
     return { ok: false, code: "INVALID_INPUT", message };
   }
-  const { id, mode, title, category, prompt, settings } = parsed.data;
+  const { id, mode, title, category, prompt, settings, creationType, ugcType } = parsed.data;
   const fields: ProjectFields = {
     title,
     category,
     prompt,
+    creation_type: creationType,
+    ugc_type: ugcType,
     aspect_ratio: settings.aspectRatio,
     duration: settings.duration,
     visual_style: settings.visualStyle,

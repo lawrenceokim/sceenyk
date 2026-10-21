@@ -63,5 +63,10 @@ export const authorizeUploadSchema = z
       .refine((value) => mediaKindForMime(value) !== null),
     sizeBytes: z.number().int().positive().max(singlePutMaximumBytes),
     kind: z.enum(["image", "video", "audio"]),
+    studioRole: z.enum(["freestyle", "character", "product"]).default("freestyle"),
+    referenceId: z.uuid().nullable().default(null),
   })
-  .refine((value) => mediaKindForMime(value.mimeType) === value.kind);
+  .refine((value) => mediaKindForMime(value.mimeType) === value.kind)
+  .refine((value) => value.studioRole === "freestyle"
+    ? value.referenceId === null
+    : value.kind === "image" && value.referenceId !== null);

@@ -15,6 +15,7 @@ import { FinalVideoResult } from "./final-video-result";
 import { CreditTopUp } from "@/components/payments/credit-top-up";
 import { CreditBalance } from "@/components/payments/credit-balance";
 import { CaptionTrackPreview } from "./caption-track";
+import type { CreationType } from "@/lib/projects/options";
 
 function generationLabel(job: GenerationJob | null, planReady: boolean) {
   if (!job) return "Preview";
@@ -44,6 +45,7 @@ export function ProjectGeneration({
   mediaError,
   signedIn,
   authReady,
+  creationType = "freestyle",
   children,
 }: {
   projectId: string | null;
@@ -55,6 +57,7 @@ export function ProjectGeneration({
   mediaError: boolean;
   signedIn: boolean;
   authReady: boolean;
+  creationType?: CreationType;
   children: (parts: { controls: ReactNode; output: ReactNode; status: ReactNode; label: string }) => ReactNode;
 }) {
   const helpId = useId();
@@ -64,6 +67,7 @@ export function ProjectGeneration({
   const planReady = state.job?.status === "processing" &&
     state.job.stage === "planning" && !!state.job.productionPlanReadyAt;
   const disabled =
+    creationType === "ugc" ||
     !authReady ||
     !projectId ||
     !inputs.prompt.trim() ||
@@ -136,7 +140,7 @@ export function ProjectGeneration({
       <div className="space-y-3">
         <div>
           <p className="text-body-sm font-medium">Generation</p>
-          <p id={helpId} className={projectId && !hasLocalFiles && !mediaError ? "sr-only" : "mt-1 text-caption text-muted-foreground"}>
+          <p id={helpId} className={creationType === "ugc" || (projectId && !hasLocalFiles && !mediaError) ? "sr-only" : "mt-1 text-caption text-muted-foreground"}>
             {!projectId
               ? "Save your draft before generating."
               : hasLocalFiles
@@ -146,7 +150,7 @@ export function ProjectGeneration({
                   : "Review cost before confirming."}
           </p>
         </div>
-        {signedIn ? (
+        {creationType === "ugc" ? <p className="text-caption text-muted-foreground">UGC generation is not available yet.</p> : signedIn ? (
           <Button
             type="button"
             size="lg"
@@ -184,7 +188,7 @@ export function ProjectGeneration({
         )}
       </div>
       {signedIn && <div className="flex flex-wrap items-center justify-between gap-3"><CreditBalance compact /><CreditTopUp /></div>}
-      {state.quote && (
+      {creationType === "freestyle" && state.quote && (
         <div className="space-y-3 rounded-lg border border-border bg-muted p-4" role="status" aria-live="polite">
           <p className="text-body-sm font-semibold">
             {state.quote.eligibleFreeGeneration

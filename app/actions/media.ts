@@ -7,6 +7,7 @@ import {
   listOwnedAssets,
   MediaAccessError,
   readOwnedAsset,
+  removeOwnedStudioReference,
 } from "@/lib/media/server";
 import { StorageConfigurationError } from "@/lib/storage/config";
 import type { MediaResult } from "@/lib/media/types";
@@ -42,4 +43,7 @@ export async function listMediaAction(projectId: unknown) {
 }
 export async function readMediaAction(input: unknown) {
   return run(() => readOwnedAsset(input));
+}
+export async function removeStudioReferenceAction(input: unknown) {
+  return run(() => removeOwnedStudioReference(input));
 }

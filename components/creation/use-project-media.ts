@@ -5,13 +5,14 @@ import {
   authorizeMediaAction,
   finalizeMediaAction,
   listMediaAction,
+  removeStudioReferenceAction,
 } from "@/app/actions/media";
 import {
   uploadFileDirectly,
   type UploadState,
 } from "@/lib/media/upload-client";
 import { mediaKindForMime, normalizeMediaMime } from "@/lib/media/validation";
-import type { ProjectAsset } from "@/lib/media/types";
+import type { ProjectAsset, StudioMediaRole } from "@/lib/media/types";
 import type { LocalMedia } from "./creation-options";
 
 export function useProjectMedia({
@@ -25,7 +26,7 @@ export function useProjectMedia({
   initialError: string;
   projectId: string | null;
   ensureProject: () => Promise<string | null>;
-  onUploaded: (localId: string, assetId: string) => void;
+  onUploaded: (localId: string, assetId: string, role: StudioMediaRole) => void;
 }) {
   const [assets, setAssets] = useState(initialAssets);
   const [assetError, setAssetError] = useState(initialError);
@@ -57,10 +58,10 @@ export function useProjectMedia({
           setAssets((current) => {
             const merged = new Map(current.map((asset) => [asset.id, asset]));
             for (const asset of result.value) {
-              // A response begun before finalization cannot roll ready media back.
+              // Stale refreshes cannot restore detached media or roll back readiness.
               if (
-                merged.get(asset.id)?.status === "uploaded" &&
-                asset.status === "pending"
+                merged.get(asset.id)?.removedFromDraft ||
+                (!asset.removedFromDraft && merged.get(asset.id)?.status === "uploaded" && asset.status === "pending")
               )
                 continue;
               merged.set(asset.id, asset);
@@ -153,7 +154,7 @@ export function useProjectMedia({
         if (attempt.signal.aborted) return;
         if (recovered.ok) {
           remember(recovered.value);
-          onUploaded(media.id, recovered.value.id);
+          onUploaded(media.id, recovered.value.id, media.studioRole ?? "freestyle");
           return;
         }
         if (recovered.code !== "NOT_READY") throw new Error(recovered.message);
@@ -166,11 +167,14 @@ export function useProjectMedia({
         sizeBytes: media.file.size,
         mimeType,
         kind: media.kind,
+        studioRole: media.studioRole ?? "freestyle",
+        referenceId: media.referenceId ?? null,
       });
       if (attempt.signal.aborted) return;
       if (!authorized.ok) throw new Error(authorized.message);
       asset = authorized.value.asset;
       pendingAssets.current.set(media.id, asset);
+      if (media.studioRole && media.studioRole !== "freestyle") remember(asset);
       if (authorized.value.upload) {
         state({ status: "uploading" });
         await uploadFileDirectly(
@@ -190,7 +194,7 @@ export function useProjectMedia({
         asset = finalized.value;
       }
       remember(asset);
-      onUploaded(media.id, asset.id);
+      onUploaded(media.id, asset.id, media.studioRole ?? "freestyle");
     } catch (error: unknown) {
       state({
         status: "failed",
@@ -237,5 +241,30 @@ export function useProjectMedia({
       if (controller.current === attempt) controller.current = null;
     }
   }
-  return { assets, assetError, uploadStates, busy, upload, recover };
+  async function removeReference(asset: ProjectAsset) {
+    if (controller.current) return false;
+    const attempt = new AbortController();
+    controller.current = attempt;
+    setBusy(true);
+    try {
+      const result = await removeStudioReferenceAction({ projectId: asset.projectId, assetId: asset.id });
+      if (attempt.signal.aborted) return false;
+      if (result.ok) { remember(result.value); return true; }
+      setAssetError(result.message);
+      return false;
+    } catch {
+      if (!attempt.signal.aborted) setAssetError("This reference couldn’t be removed. Please try again.");
+      return false;
+    } finally {
+      if (controller.current === attempt) {
+        controller.current = null;
+        setBusy(false);
+      }
+    }
+  }
+  async function removeLocalReference(media: LocalMedia) {
+    const asset = pendingAssets.current.get(media.id) ?? assets.find(asset => asset.referenceId === media.referenceId);
+    return asset ? removeReference(asset) : true;
+  }
+  return { assets, assetError, uploadStates, busy, upload, recover, removeReference, removeLocalReference };
 }

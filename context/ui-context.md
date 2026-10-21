@@ -1,5 +1,11 @@
 # UI Context
 
+## Dynamic Studio inputs (2026-10-20)
+
+Supersedes the previous fixed/one-option UGC control. Keep the current Studio geometry and single Sources panel/modal tree. Sources order is Your Project → Creation Type → dynamic inputs. Shared custom Select offers UGC with UserRound and Freestyle with Sparkles; new drafts start with UGC. UGC shows Characters then Product / Props, with compact Add Character/Add Product / Prop image pickers and rounded square thumbnails with individual X actions and a trailing +. Thumbnails wrap inside the narrow rail; existing subtle sibling dividers separate sections. Freestyle shows the existing Project Media controls. Switching changes visibility only and retains both flows' inputs.
+
+Properties → Style & pacing retains Duration, Visual style and Tone, followed by the shared Type dropdown only for UGC: Advertisement (default), Explanation, Unboxing. Shared scene and existing narration controls remain. Empty Preview metadata is UGC · Advertisement · 30 sec or Freestyle · 30 sec according to selected values. Use Tailwind/theme/motion tokens and pointer/focus/disabled states. Image upload/verification errors and recovery remain compact and accessible. New UGC images upload sequentially after sign-in through existing private services; guests retain local previews and the current reload/reselection limitation. Desktop, tablet panel and mobile overlay use the same state owner. Manual inspection remains pending; no automated browser/screenshot suites or layout redesign.
+
 ## UGC dropdown, concise Studio copy and fixed mobile panels (2026-10-20)
 
 Creation Type stays in Sources but now uses the shared compact dropdown with only UGC available. Preserve its person icon and current internal category value; the previous non-dropdown instruction is superseded. Studio features should show a heading/control and at most one short useful description. Remove repeated tutorials, explanations, prompt echoes and technical IDs; keep essential dynamic errors, upload/save status, disabled reasons and explicit credit/free confirmation details concise.

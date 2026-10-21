@@ -89,9 +89,9 @@ export function LocalMediaPreview({ media }: { media: LocalMedia }) {
   );
 }
 
-export function LocalMediaThumbnail({ media }: { media: LocalMedia }) {
+export function LocalMediaThumbnail({ media, className = "size-10", alt = "" }: { media: LocalMedia; className?: string; alt?: string }) {
   const url = useObjectUrl(media.file);
-  return media.kind === "image" && url ? <span className="relative size-10 shrink-0 overflow-hidden rounded-md bg-field">
-    <Image src={url} alt="" fill unoptimized sizes="40px" className="object-cover" />
+  return media.kind === "image" && url ? <span className={`relative block shrink-0 overflow-hidden rounded-md bg-field ${className}`}>
+    <Image src={url} alt={alt} fill unoptimized sizes="64px" className="object-cover" />
   </span> : null;
 }

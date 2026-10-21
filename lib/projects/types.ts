@@ -1,10 +1,12 @@
-import type { CategoryId, CreationSettings } from "./options";
+import type { CategoryId, CreationSettings, CreationType, UgcType } from "./options";
 
 export type ProjectDraft = {
   title: string;
   category: CategoryId;
   prompt: string;
   settings: CreationSettings;
+  creationType: CreationType;
+  ugcType: UgcType;
 };
 
 // Only the brief needed by the workspace; ownership records stay server-side.

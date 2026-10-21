@@ -63,7 +63,7 @@ export default async function ProjectsPage({
   const previews = Object.fromEntries(await Promise.all(projects.projects.map(async project => {
     try {
       const assets = await listOwnedAssets(project.id);
-      return [project.id, assets.find(asset => asset.status === "uploaded" && (asset.kind === "image" || asset.kind === "video")) ?? null] as const;
+      return [project.id, assets.find(asset => !asset.removedFromDraft && asset.status === "uploaded" && (asset.kind === "image" || asset.kind === "video")) ?? null] as const;
     } catch (error) {
       if (!(error instanceof MediaAccessError || error instanceof AppUserSyncError)) throw error;
       return [project.id, null] as const;

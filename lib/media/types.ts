@@ -1,4 +1,5 @@
 export type MediaKind = "image" | "video" | "audio";
+export type StudioMediaRole = "freestyle" | "character" | "product";
 export type ProjectAsset = {
   id: string;
   projectId: string;
@@ -8,6 +9,9 @@ export type ProjectAsset = {
   kind: MediaKind;
   status: "pending" | "uploaded" | "rejected";
   createdAt: string;
+  studioRole?: StudioMediaRole;
+  referenceId?: string | null;
+  removedFromDraft?: boolean;
 };
 export type MediaResult<T> =
   | { ok: true; value: T }

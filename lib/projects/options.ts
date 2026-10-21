@@ -1,4 +1,13 @@
 // Creative-brief choices, not provider capabilities or generation eligibility.
+export const creationTypes = ["ugc", "freestyle"] as const;
+export type CreationType = (typeof creationTypes)[number];
+export const ugcTypes = [
+  { value: "advertisement", label: "Advertisement" },
+  { value: "explanation", label: "Explanation" },
+  { value: "unboxing", label: "Unboxing" },
+] as const;
+export type UgcType = (typeof ugcTypes)[number]["value"];
+
 export const categoryIds = [
   "transformation",
   "product-ad",

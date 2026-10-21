@@ -1,5 +1,11 @@
 # Sceenyk
 
+## Dynamic Studio creation flows (2026-10-20)
+
+Studio now supports UGC (User-Generated Content) and Freestyle through the shared custom Creation Type dropdown in Sources. New drafts default to UGC. UGC shows compact Characters and Product / Props image references instead of Project Media, plus Type in Properties → Style & pacing: Advertisement (default), Explanation or Unboxing. Freestyle shows the existing image/video/audio Project Media flow and hides UGC Type. Scene, duration, visual style, tone and existing prompt-driven narration remain shared. Switching types retains both flows' data and the hidden UGC choice; only explicit removal detaches references. Empty Preview summarizes the chosen flow/type/duration.
+
+This supersedes earlier one-option UGC presentation guidance. Creation Type is independent of legacy creative categories; older saved/adopted projects fall back to Freestyle to preserve general creation behavior. References reuse existing owned/private project media, one image per character/product for now with grouping IDs for future references. Migration 032 is required before using this revision. This unit prepares structured inputs only; UGC generation is unavailable, with no sheets, scripts, videos, hosted Inngest or deployment. Application/verification status is in the tracker.
+
 ## Studio containment and Credits earnings tab (2026-10-20)
 
 The latest focused refinement supersedes the prior fixed-button Creation Type rule: Sources now exposes the shared custom dropdown with exactly one UGC option, preserving the existing brief category value and backend enums. Studio uses compact feature headings/short descriptions instead of tutorial paragraphs. Errors, upload/save state, quote confirmation and required reservation/pricing notices remain concise and functional. Mobile Stage and Properties stay inside the viewport-bound workspace frame, with a fixed Properties header and only its control body scrolling. Sources retains its existing mounted panel/modal behavior.

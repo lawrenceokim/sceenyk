@@ -1,5 +1,13 @@
 # Sceenyk project overview
 
+## Dynamic Sources and Properties (2026-10-20)
+
+Creation Types are UGC (User-Generated Content) and Freestyle. New Studio projects start as UGC; older saved/adopted projects without this setting retain Freestyle. Creation Type is persisted separately from the legacy category. Studio inputs conditionally change with the selected type while keeping both flows' values/files/references in the same project.
+
+UGC Sources: Characters and Product / Props, with multiple image references, compact wrapping thumbnails and individual removal. Each image represents one character/product; stable reference IDs permit future multiple-image grouping. UGC Properties adds Type under Style & pacing: Advertisement (default), Explanation, Unboxing. Freestyle Sources keeps existing Project Media and Properties has no UGC Type. Shared scene/settings/prompt-driven narration remain unchanged. Empty Preview shows UGC · Type · duration or Freestyle · duration.
+
+The existing owned drafts, media metadata and private R2 upload/read services persist these inputs with additive migration 032; no replacement storage system. Switching types does not remove data. UGC generation remains unavailable in this input-preparation unit; generation/sheets/scripts/videos and hosted workflows are excluded. The tracker distinguishes local checks from pending migration application and manual UI inspection.
+
 ## Studio Phase 3 — implemented (2026-10-18)
 
 Current authorization includes desktop, tablet and mobile Studio. Reuse the shared navigation; Sources owns presentation of project title/origin and existing image/video/audio import/upload/recovery; the Stage owns source/result playback, durable status and scene caption preview; Properties owns category, prompt, duration/style/tone, existing generation quote/confirmation and caption preferences. Aspect ratio and Save move to a fixed 64px toolbar. WorkspaceEditor remains the brief/save/media-selection owner; useProjectMedia and useProjectGeneration retain their existing server calls, guards and state. Caption controls use React portals into Properties while their existing preview component owns state. No new scene editor, voice selector, share engine or export capability is introduced.

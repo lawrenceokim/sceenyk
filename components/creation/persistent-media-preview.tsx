@@ -5,8 +5,9 @@ import Image from "next/image";
 import { readMediaAction } from "@/app/actions/media";
 import type { ProjectAsset } from "@/lib/media/types";
 import { Button } from "@/components/ui/button";
+import { RefreshCw } from "lucide-react";
 
-export function PersistentMediaPreview({ asset }: { asset: ProjectAsset }) {
+export function PersistentMediaPreview({ asset, thumbnail = false }: { asset: ProjectAsset; thumbnail?: boolean }) {
   const [source, setSource] = useState<{ url?: string; error?: string }>({});
   const [refresh, setRefresh] = useState(0);
   useEffect(() => {
@@ -31,6 +32,15 @@ export function PersistentMediaPreview({ asset }: { asset: ProjectAsset }) {
       error:
         "Your browser couldn’t play this file, or its private preview link expired.",
     });
+  if (thumbnail) {
+    if (source.error) return <button type="button" className="flex size-full cursor-pointer items-center justify-center rounded-md text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      aria-label={`Refresh preview for ${asset.filename}`} title={source.error}
+      onClick={() => { setSource({}); setRefresh(value => value + 1); }}>
+      <RefreshCw className="size-4" aria-hidden="true" />
+    </button>;
+    return source.url ? <Image src={source.url} alt={asset.filename} fill unoptimized sizes="64px" className="object-cover" onError={failed} />
+      : <span className="flex size-full items-center justify-center text-[10px] text-muted-foreground" role="status">Loading…</span>;
+  }
   if (source.error)
     return (
       <div className="rounded-lg bg-field p-5">

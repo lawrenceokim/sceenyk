@@ -43,6 +43,9 @@ function toAsset(row: AssetRow): ProjectAsset {
     kind: row.media_type,
     status: row.upload_status,
     createdAt: row.created_at,
+    studioRole: row.studio_role ?? "freestyle",
+    referenceId: row.reference_id ?? null,
+    removedFromDraft: row.removed_from_draft ?? false,
   };
 }
 async function ownedContext(projectId: string) {
@@ -104,7 +107,7 @@ export async function authorizeOwnedUpload(
       "INVALID_INPUT",
       "Choose a supported non-empty image, video or audio file with a valid MIME type and filename.",
     );
-  const { projectId, requestId, filename, mimeType, sizeBytes, kind } =
+  const { projectId, requestId, filename, mimeType, sizeBytes, kind, studioRole, referenceId } =
     parsed.data;
   const { user, database } = await ownedContext(projectId);
   const config = getStorageConfig();
@@ -138,6 +141,8 @@ export async function authorizeOwnedUpload(
         mime_type: mimeType,
         size_bytes: sizeBytes,
         media_type: kind,
+        studio_role: studioRole,
+        reference_id: referenceId,
       })
       .select("*")
       .single();
@@ -153,7 +158,10 @@ export async function authorizeOwnedUpload(
     asset.original_filename !== filename ||
     asset.mime_type !== mimeType ||
     asset.size_bytes !== sizeBytes ||
-    asset.media_type !== kind
+    asset.media_type !== kind ||
+    (asset.studio_role ?? "freestyle") !== studioRole ||
+    (asset.reference_id ?? null) !== referenceId ||
+    asset.removed_from_draft
   )
     throw new MediaAccessError(
       "CONFLICT",
@@ -225,4 +233,18 @@ export async function readOwnedAsset(input: unknown) {
       "This media isn’t ready to preview.",
     );
   return createReadUrl(asset.storage_key, asset.verified_etag, asset.mime_type);
+}
+
+// Detach one UGC image from this draft; immutable media/history stays retained.
+export async function removeOwnedStudioReference(input: unknown): Promise<ProjectAsset> {
+  const { projectId, assetId } = parseReference(input);
+  const { user, database } = await ownedContext(projectId);
+  const { data, error } = await database.from("project_assets")
+    .update({ removed_from_draft: true })
+    .eq("id", assetId).eq("project_id", projectId).eq("owner_user_id", user.id)
+    .in("studio_role", ["character", "product"])
+    .select("*").maybeSingle();
+  if (error) throw unavailable();
+  if (!data) throw notFound();
+  return toAsset(data);
 }

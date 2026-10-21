@@ -1,5 +1,6 @@
 import { useId } from "react";
 import { Select } from "@/components/ui/select";
+import { ugcTypes, type UgcType } from "@/lib/projects/options";
 import {
   durations,
   visualStyles,
@@ -27,9 +28,13 @@ export function SettingSelect<T extends string>({
 export function GenerationSettings({
   settings,
   onChange,
+  ugcType,
+  onUgcTypeChange,
 }: {
   settings: CreationSettings;
   onChange: (settings: CreationSettings) => void;
+  ugcType?: UgcType;
+  onUgcTypeChange?: (value: UgcType) => void;
 }) {
   const headingId = useId();
   return (
@@ -79,6 +84,8 @@ export function GenerationSettings({
           choices={tones.map((value) => ({ value, label: value }))}
           onChange={(tone) => onChange({ ...settings, tone })}
         />
+        {ugcType && onUgcTypeChange && <SettingSelect id="ugc-type" label="Type"
+          value={ugcType} choices={ugcTypes} onChange={onUgcTypeChange} />}
       </div>
     </section>
   );
