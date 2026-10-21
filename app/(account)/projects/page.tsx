@@ -15,6 +15,8 @@ import {
 import type { GenerationStatus } from "@/lib/generation/contract";
 import { ProjectJobStatusesProvider } from "@/components/projects/project-job-statuses";
 import { ProjectsAccountFence } from "@/components/projects/projects-account-fence";
+import { getOwnedProjectTemplates } from "@/lib/marketplace/project-template";
+import { unstable_rethrow } from "next/navigation";
 
 export const metadata: Metadata = {
   title: "Projects — Sceenyk",
@@ -69,6 +71,9 @@ export default async function ProjectsPage({
       return [project.id, null] as const;
     }
   })));
+  let templateIds: Record<string, string> = {};
+  try { templateIds = await getOwnedProjectTemplates(projects.projects.map(project => project.id)); }
+  catch (error) { unstable_rethrow(error); /* Publish still resolves the existing listing on the server. */ }
   return <div className="workspace-projects">
     <header className={`
       workspace-projects-heading [&&]:flex [&&]:items-end [&&]:justify-between [&&]:gap-[24px] [&&]:mb-[36px]
@@ -84,7 +89,7 @@ export default async function ProjectsPage({
       <Button nativeButton={false} render={<Link href="/studio" />}><Plus aria-hidden="true" />New Project</Button>
     </header>
     <ProjectsAccountFence clerkUserId={userId}><ProjectJobStatusesProvider key={projects.projects.map(({ id }) => id).join(",")} initial={jobStatuses}>
-      <ProjectsSection data={projects} jobStatuses={jobStatuses} previews={previews} />
+      <ProjectsSection data={projects} jobStatuses={jobStatuses} previews={previews} templateIds={templateIds} />
     </ProjectJobStatusesProvider></ProjectsAccountFence>
   </div>;
 }

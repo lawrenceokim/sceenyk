@@ -5,8 +5,9 @@ import { ensureAppUser } from "@/lib/auth/ensure-app-user";
 import { createDatabaseClient } from "@/lib/db/server";
 import { quoteGenerationCost } from "@/lib/pricing/config";
 import { validateMarketplacePrice } from "./payments/config";
+import { prepareTemplatePreview } from "./preview-server";
 import {
-  adoptListingSchema, browseSchema, createListingSchema, listingSchema,
+  adoptListingSchema, browseSchema, createListingSchema, deleteTemplateSchema, listingSchema,
   originSchema, ownedListingSchema, updateListingSchema,
   type Listing, type ListingPage, type MarketplaceResult, type OwnedListing, type TemplateSnapshot,
 } from "./contract";
@@ -103,17 +104,22 @@ export async function createMarketplaceListing(input: unknown): Promise<Marketpl
   });
   return mutationResult(data, error);
 }
-export async function updateMarketplaceListing(input: unknown): Promise<MarketplaceResult> {
+export async function updateMarketplaceListing(input: unknown, preview?: FormData): Promise<MarketplaceResult> {
   const user = await ensureAppUser();
   const parsed = updateListingSchema.safeParse(input);
   if (!parsed.success) return { ok: false, code: "INVALID_INPUT", message: parsed.error.issues[0].message };
   const v = parsed.data;
   try { validateMarketplacePrice(v.adoptionType, v.priceMinor); } catch { return { ok: false, code: "INVALID_INPUT", message: "Choose Free or a Sandbox price from $1.00 to $25.00." }; }
-  const { data, error } = await createDatabaseClient().rpc("marketplace_update_priced", {
+  if (preview && !v.rightsConfirmed) return { ok: false, code: "INVALID_INPUT", message: "Confirm your rights to the preview before publishing." };
+  const derivative = preview ? await prepareTemplatePreview(user.id, v.id, preview) : null;
+  const args = {
     p_owner_user_id: user.id, p_listing_id: v.id, p_title: v.title, p_description: v.description,
     p_category: v.category, p_tags: v.tags, p_status: v.status, p_rights_confirmed: v.rightsConfirmed,
     p_adoption_type: v.adoptionType, p_price_minor: v.priceMinor,
-  });
+  };
+  const { data, error } = derivative || v.instructions !== undefined
+    ? await createDatabaseClient().rpc("marketplace_update_template", { ...args, p_instructions: v.instructions ?? null, ...(derivative ?? { p_preview_key: null, p_preview_etag: null, p_preview_size: null }) })
+    : await createDatabaseClient().rpc("marketplace_update_priced", args);
   return mutationResult(data, error);
 }
 export async function adoptMarketplaceListing(input: unknown): Promise<MarketplaceResult> {
@@ -122,4 +128,15 @@ export async function adoptMarketplaceListing(input: unknown): Promise<Marketpla
   if (!parsed.success) return { ok: false, code: "INVALID_INPUT", message: "Reopen the listing and try adopting again." };
   const { data, error } = await createDatabaseClient().rpc("marketplace_adopt", { p_owner_user_id: user.id, p_listing_id: parsed.data.listingId, p_request_id: parsed.data.requestId });
   return mutationResult(data, error);
+}
+
+export async function deleteOwnedTemplate(input: unknown): Promise<MarketplaceResult> {
+  const user = await ensureAppUser();
+  const parsed = deleteTemplateSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, code: "INVALID_INPUT", message: "Choose a saved template to delete." };
+  const { data, error } = await createDatabaseClient().rpc("delete_owned_template", { p_owner_user_id: user.id, p_listing_id: parsed.data.id });
+  const result = z.object({ code: z.enum(["DELETED", "NOT_FOUND"]), listingId: z.uuid().optional() }).parse(checked(data, error));
+  return result.code === "DELETED" && result.listingId
+    ? { ok: true, listingId: result.listingId }
+    : { ok: false, code: "NOT_FOUND", message: "This template is no longer available." };
 }

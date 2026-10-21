@@ -1,5 +1,11 @@
 # Sceenyk
 
+## Project → Template lifecycle (2026-10-21)
+
+Templates originate from existing owned Projects: **Project → Publish as Template → Manage Template → Publish to Marketplace**. Project cards expose Publish or Manage Template; `/templates` has New Template, opening `/settings/templates/new` to select a Project with its preview/name/edited date. Both entry points initialize a private draft or open the source Project's existing `/settings/templates/[listingId]`. The existing unique creator/source relationship prevents duplicates, including retries. No independent blank-template system.
+
+Project title, public-text-compatible brief, category, creation/UGC type and settings prefill the separate Template. Draft instructions remain reviewable until first publication; existing rights confirmation explicitly covers privacy and preview rights. Published configuration and purchase/adoption snapshots stay fixed. Later Project edits never automatically overwrite published information. Private views reuse source previews; Marketplace receives a separately re-encoded, metadata-free still/poster after explicit rights-confirmed saving. Source URLs remain private. Existing abstract artwork is the fallback for absent/unavailable media. Migration 033 after 032 is required; local/manual verification limits are in the tracker.
+
 ## Dynamic Studio creation flows (2026-10-20)
 
 Studio now supports UGC (User-Generated Content) and Freestyle through the shared custom Creation Type dropdown in Sources. New drafts default to UGC. UGC shows compact Characters and Product / Props image references instead of Project Media, plus Type in Properties → Style & pacing: Advertisement (default), Explanation or Unboxing. Freestyle shows the existing image/video/audio Project Media flow and hides UGC Type. Scene, duration, visual style, tone and existing prompt-driven narration remain shared. Switching types retains both flows' data and the hidden UGC choice; only explicit removal detaches references. Empty Preview summarizes the chosen flow/type/duration.

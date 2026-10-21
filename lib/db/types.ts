@@ -280,11 +280,17 @@ export type Database = {
       marketplace_browse: { Args: { p_query: string; p_category: string | null; p_page: number }; Returns: unknown };
       marketplace_detail: { Args: { p_listing_id: string }; Returns: unknown };
       marketplace_owned: { Args: { p_owner_user_id: string; p_page: number }; Returns: unknown };
+      delete_owned_template: { Args: { p_owner_user_id: string; p_listing_id: string }; Returns: unknown };
       marketplace_owned_listing: { Args: { p_owner_user_id: string; p_listing_id: string | null; p_project_id: string | null }; Returns: unknown };
       marketplace_origin: { Args: { p_owner_user_id: string; p_project_id: string }; Returns: unknown };
       marketplace_create: { Args: { p_owner_user_id: string; p_listing_id: string; p_project_id: string; p_title: string; p_description: string; p_category: string; p_tags: string[]; p_instructions: string; p_publish: boolean; p_rights_confirmed: boolean }; Returns: unknown };
       marketplace_create_priced: { Args: { p_owner_user_id: string; p_listing_id: string; p_project_id: string; p_title: string; p_description: string; p_category: string; p_tags: string[]; p_instructions: string; p_publish: boolean; p_rights_confirmed: boolean; p_adoption_type: string; p_price_minor: number }; Returns: unknown };
       marketplace_update_priced: { Args: { p_owner_user_id: string; p_listing_id: string; p_title: string; p_description: string; p_category: string; p_tags: string[]; p_status: string; p_rights_confirmed: boolean; p_adoption_type: string; p_price_minor: number }; Returns: unknown };
+      marketplace_initialize_template: { Args: { p_owner_user_id: string; p_project_id: string; p_listing_id: string; p_title: string; p_description: string; p_instructions: string }; Returns: unknown };
+      marketplace_template_source: { Args: { p_listing_id: string; p_owner_user_id: string }; Returns: unknown };
+      marketplace_project_templates: { Args: { p_owner_user_id: string; p_project_ids: string[] }; Returns: unknown };
+      marketplace_template_preview: { Args: { p_listing_id: string; p_owner_user_id: string | null }; Returns: unknown };
+      marketplace_update_template: { Args: Database["public"]["Functions"]["marketplace_update_priced"]["Args"] & { p_instructions: string | null; p_preview_key: string | null; p_preview_etag: string | null; p_preview_size: number | null }; Returns: unknown };
 
       marketplace_prepare_purchase: { Args: { p_buyer_user_id: string; p_listing_id: string; p_fee_bps: number; p_pricing_version: string }; Returns: unknown };
       marketplace_attach_order: { Args: { p_purchase_id: string; p_buyer_user_id: string; p_order_id: string }; Returns: boolean };

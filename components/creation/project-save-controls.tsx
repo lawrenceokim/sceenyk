@@ -1,8 +1,7 @@
 "use client";
 
-import Link from "next/link";
-import { useId, type ReactNode } from "react";
-import { Check, FolderOpen, LoaderCircle, Save } from "lucide-react";
+import { useEffect, useId, useState, type ReactNode } from "react";
+import { Check, CircleAlert, FolderOpen, LoaderCircle, Save } from "lucide-react";
 import { AccountAction } from "@/components/account-action";
 import { Button } from "@/components/ui/button";
 import { projectTitleLimit } from "@/lib/projects/options";
@@ -10,7 +9,7 @@ import { projectTitleLimit } from "@/lib/projects/options";
 export type SaveState =
   | { status: "idle" }
   | { status: "saving" }
-  | { status: "saved" }
+  | { status: "saved"; savedAt?: number }
   | { status: "error"; message: string };
 
 export function ProjectSaveControls({
@@ -19,7 +18,8 @@ export function ProjectSaveControls({
   onSave,
   state,
   dirty,
-  projectId,
+  mediaBusy,
+  mediaError,
   signedIn,
   authReady,
   hasLocalMedia,
@@ -30,13 +30,27 @@ export function ProjectSaveControls({
   onSave: () => void;
   state: SaveState;
   dirty: boolean;
-  projectId: string | null;
+  mediaBusy: boolean;
+  mediaError?: string;
   signedIn: boolean;
   authReady: boolean;
   hasLocalMedia: boolean;
   children: (parts: { project: ReactNode; save: ReactNode }) => ReactNode;
 }) {
-  const saving = state.status === "saving";
+  const saving = state.status === "saving" || mediaBusy;
+  const error = state.status === "error" ? state.message : mediaError;
+  const clean = state.status === "saved" && !dirty && !error;
+  const savedAt = state.status === "saved" ? state.savedAt : undefined;
+  const [settledSave, setSettledSave] = useState(savedAt);
+  // This timer only controls the success tint; persistence stays with the editor.
+  useEffect(() => {
+    if (savedAt === undefined) return;
+    const timeout = window.setTimeout(() => setSettledSave(savedAt), Math.max(0, savedAt + 1000 - Date.now()));
+    return () => window.clearTimeout(timeout);
+  }, [savedAt]);
+  const success = clean && !saving && savedAt !== undefined && settledSave !== savedAt;
+  const label = saving ? "Saving..." : clean ? "Saved" : "Save";
+  const description = error || (hasLocalMedia ? "Local files are not saved until uploaded." : "");
   const id = useId();
   const project = (
     <section
@@ -52,12 +66,9 @@ export function ProjectSaveControls({
       [.studio-inspector-content_>_&&_>_h2]:absolute [.studio-inspector-content_>_&&_>_h2]:w-[1px]
       [.studio-inspector-content_>_&&_>_h2]:h-[1px] [.studio-inspector-content_>_&&_>_h2]:overflow-hidden
       [.studio-inspector-content_>_&&_>_h2]:[clip-path:inset(50%)] [.studio-inspector-content_>_&&_>_label]:mt-[0]
-      [.studio-sources_&&_>_div:first-child]:gap-[8px] [.studio-sources_&&_>_div:first-child_>_span]:pt-[2px]
-      [.studio-sources_&&_>_div:first-child_>_span]:pr-[8px] [.studio-sources_&&_>_div:first-child_>_span]:pb-[2px]
-      [.studio-sources_&&_>_div:first-child_>_span]:pl-[8px] [.studio-sources_&&_h2_svg]:w-[16px]
+      [.studio-sources_&&_>_div:first-child]:gap-[8px]
+      [.studio-sources_&&_h2_svg]:w-[16px]
       [.studio-sources_&&_h2_svg]:h-[16px] [.studio-sources_&&_h2_svg]:text-[color:var(--muted-foreground)]
-      [.studio-sources_&&_>_div:first-child_>_span.rounded-full]:[background:var(--muted)]
-      [.studio-sources_&&_>_div:first-child_>_span.rounded-full]:text-[color:var(--muted-foreground)]
     `}
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -68,9 +79,6 @@ export function ProjectSaveControls({
           <FolderOpen className="size-5 text-link" aria-hidden="true" />
           Your project
         </h2>
-        <span className="rounded-full bg-accent px-3 py-1 text-caption font-medium text-accent-foreground">
-          Draft
-        </span>
       </div>
       <label
         htmlFor={`${id}-title`}
@@ -128,77 +136,6 @@ export function ProjectSaveControls({
         onChange={(event) => onTitleChange(event.target.value)}
         autoComplete="off"
       />
-      {hasLocalMedia && (
-        <p className="mt-4 rounded-lg border border-warning/30 bg-warning-surface p-3 text-body-sm text-warning-foreground">
-          Local files are not saved until uploaded.
-        </p>
-      )}
-      <div className="mt-3">
-        {projectId && (
-          <Link
-            href={`/projects/${projectId}`}
-            prefetch={false}
-            className={`
-      [@layer_components]:inline-flex [@layer_components]:min-h-[var(--control-height)] [@layer_components]:items-center
-      [@layer_components]:gap-[var(--space-1)] [@layer_components]:text-[color:var(--muted-foreground)]
-      [@layer_components]:text-[length:var(--text-body-sm)] [@layer_components]:font-[500]
-      [@layer_components]:[transition:color_var(--duration-fast)]
-      [@layer_components]:[@media_(prefers-reduced-motion:_reduce)]:[transition:none] nav-link justify-center text-body-sm
-      [@layer_components]:[&:hover]:text-[color:var(--link)]
-      [@layer_components]:[&:focus-visible]:[outline:2px_solid_var(--ring)]
-      [@layer_components]:[&:focus-visible]:[outline-offset:4px] [.marketplace-detail-info_>_&&]:min-h-[32px]
-      [.marketplace-detail-info_>_&&]:gap-[8px] [.marketplace-detail-info_>_&&]:text-[length:13px]
-      [.marketplace-detail-info_>_&&_img]:w-[28px] [.marketplace-detail-info_>_&&_img]:h-[28px]
-      [.marketplace-detail-info_>_&&_.rounded-full]:w-[28px] [.marketplace-detail-info_>_&&_.rounded-full]:h-[28px]
-      [.workspace-gallery-copy_&&]:min-h-[24px] [.workspace-gallery-copy_&&]:gap-[6px]
-      [.workspace-gallery-copy_&&]:text-[length:inherit] [.workspace-gallery-copy_&&]:leading-[inherit]
-      [.workspace-settings-inner_&&]:min-h-[28px] [.workspace-settings-inner_&&]:text-[length:12px]
-      [@media_(pointer:_coarse)]:[.workspace-settings-inner_&&]:min-h-[44px]
-    `}
-          >
-            Open saved draft
-          </Link>
-        )}
-      </div>
-      {signedIn && projectId && <div className="mt-3 text-center"><Link href={`/settings/templates/new?project=${projectId}`} prefetch={false} className={`
-      [@layer_components]:inline-flex [@layer_components]:min-h-[var(--control-height)] [@layer_components]:items-center
-      [@layer_components]:gap-[var(--space-1)] [@layer_components]:text-[color:var(--muted-foreground)]
-      [@layer_components]:text-[length:var(--text-body-sm)] [@layer_components]:font-[500]
-      [@layer_components]:[transition:color_var(--duration-fast)]
-      [@layer_components]:[@media_(prefers-reduced-motion:_reduce)]:[transition:none] nav-link justify-center text-body-sm
-      text-link [@layer_components]:[&:hover]:text-[color:var(--link)]
-      [@layer_components]:[&:focus-visible]:[outline:2px_solid_var(--ring)]
-      [@layer_components]:[&:focus-visible]:[outline-offset:4px] [.marketplace-detail-info_>_&&]:min-h-[32px]
-      [.marketplace-detail-info_>_&&]:gap-[8px] [.marketplace-detail-info_>_&&]:text-[length:13px]
-      [.marketplace-detail-info_>_&&_img]:w-[28px] [.marketplace-detail-info_>_&&_img]:h-[28px]
-      [.marketplace-detail-info_>_&&_.rounded-full]:w-[28px] [.marketplace-detail-info_>_&&_.rounded-full]:h-[28px]
-      [.workspace-gallery-copy_&&]:min-h-[24px] [.workspace-gallery-copy_&&]:gap-[6px]
-      [.workspace-gallery-copy_&&]:text-[length:inherit] [.workspace-gallery-copy_&&]:leading-[inherit]
-      [.workspace-settings-inner_&&]:min-h-[28px] [.workspace-settings-inner_&&]:text-[length:12px]
-      [@media_(pointer:_coarse)]:[.workspace-settings-inner_&&]:min-h-[44px]
-    `}>Publish to Marketplace</Link></div>}
-      <div
-        role="status"
-        aria-live="polite"
-        className="mt-3 min-h-5 text-body-sm text-muted-foreground"
-      >
-        {saving ? (
-          "Saving your creative brief…"
-        ) : state.status === "error" ? (
-          <span className="text-destructive">{state.message}</span>
-        ) : !signedIn ? (
-          "Sign in to save."
-        ) : dirty ? (
-          "Unsaved changes"
-        ) : state.status === "saved" ? (
-          <span className="inline-flex items-center gap-2 text-success-foreground">
-            <Check className="size-4" aria-hidden="true" />
-            Draft saved
-          </span>
-        ) : (
-          "Draft not saved."
-        )}
-      </div>
     </section>
   );
   const save = (<div className={"studio-save [.studio-toolbar_&&]:ml-[auto] [.studio-toolbar_&&]:shrink-0 container-max-359:[.studio-toolbar_&&_button:has(svg)]:w-[32px] container-max-359:[.studio-toolbar_&&_button:has(svg)]:pt-[0] container-max-359:[.studio-toolbar_&&_button:has(svg)]:pr-[0] container-max-359:[.studio-toolbar_&&_button:has(svg)]:pb-[0] container-max-359:[.studio-toolbar_&&_button:has(svg)]:pl-[0]"}>
@@ -208,19 +145,24 @@ export function ProjectSaveControls({
             variant="outline"
             disabled={saving || !title.trim()}
             aria-busy={saving}
-            aria-label={saving ? "Saving project" : state.status === "saved" && !dirty ? "Project saved" : "Save project"}
+            aria-label={saving ? "Saving project" : clean ? "Project saved" : "Save project"}
+            aria-describedby={description ? `${id}-save-description` : undefined}
+            title={description || undefined}
+            data-save-success={success}
             onClick={onSave}
-            className="px-3"
+            className="w-[104px] px-3 [.studio-toolbar_&&]:data-[save-success=true]:border-success/30 [.studio-toolbar_&&]:data-[save-success=true]:bg-success-surface [.studio-toolbar_&&]:data-[save-success=true]:text-success-foreground"
           >
-            {saving ? (
-              <LoaderCircle
-                className="size-4 motion-safe:animate-spin"
-                aria-hidden="true"
-              />
-            ) : (
-              <Save className="size-4" aria-hidden="true" />
-            )}
-            <span className={"studio-save-label container-max-359:[.studio-toolbar_&&]:hidden"}>{saving ? "Saving…" : state.status === "saved" && !dirty ? "Saved" : "Save"}</span>
+            <span aria-hidden="true" className="grid size-4 shrink-0 *:col-start-1 *:row-start-1 *:size-4 *:transition-opacity *:duration-[var(--motion-micro)] *:ease-[var(--motion-ease)] motion-reduce:*:transition-none">
+              <LoaderCircle className={`motion-safe:animate-spin ${saving ? "opacity-100" : "opacity-0"}`} />
+              <Check className={!saving && clean ? "opacity-100" : "opacity-0"} />
+              <CircleAlert className={!saving && error ? "text-destructive opacity-100" : "opacity-0"} />
+              <Save className={!saving && !clean && !error ? "opacity-100" : "opacity-0"} />
+            </span>
+            <span aria-hidden="true" className="studio-save-label grid container-max-359:[.studio-toolbar_&&]:hidden *:col-start-1 *:row-start-1 *:transition-opacity *:duration-[var(--motion-micro)] *:ease-[var(--motion-ease)] motion-reduce:*:transition-none">
+              <span className={!saving && !clean ? "opacity-100" : "opacity-0"}>Save</span>
+              <span className={saving ? "opacity-100" : "opacity-0"}>Saving...</span>
+              <span className={!saving && clean ? "opacity-100" : "opacity-0"}>Saved</span>
+            </span>
           </Button>
         ) : (
           <AccountAction
@@ -232,6 +174,8 @@ export function ProjectSaveControls({
             Sign in
           </AccountAction>
         )}
+        <span role="status" aria-live="polite" className="sr-only">{signedIn ? label : "Sign in to save."}</span>
+        {description && <span id={`${id}-save-description`} role={error ? "alert" : undefined} className="sr-only">{description}</span>}
 </div>);
   return children({ project, save });
 }

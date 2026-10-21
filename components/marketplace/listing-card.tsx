@@ -5,6 +5,7 @@ import type { Listing, TemplateSnapshot } from "@/lib/marketplace/contract";
 import { CreatorAvatar } from "./creator-avatar";
 import { templateAppearance } from "./template-appearance";
 import { AbstractPreview } from "./abstract-preview";
+import { TemplateMediaPreview } from "./template-media-preview";
 
 export function ListingCreator({ listing }: { listing: Listing }) {
   const identity = <><CreatorAvatar name={listing.creatorName} url={listing.creatorAvatar} /><span className="min-w-0 break-words">By {listing.creatorName}</span></>;
@@ -27,8 +28,8 @@ export function ListingCreator({ listing }: { listing: Listing }) {
     `} aria-label={`View ${listing.creatorName}’s storefront`}>{identity}</Link> : <p className="flex items-center gap-3 text-body-sm text-muted-foreground">{identity}</p>;
 }
 
-export function TemplateCover({ template, fallbackColor, previewId, large = false }: { template: TemplateSnapshot; fallbackColor?: string | null; previewId?: string; large?: boolean }) {
-  return <AbstractPreview previewId={previewId} fallbackColor={fallbackColor} large={large} metadata={`${template.settings.visualStyle} · ${template.settings.aspectRatio} · ${template.settings.duration}s`} />;
+export function TemplateCover({ template, fallbackColor, previewId, previewUrl, owned, large = false }: { template: TemplateSnapshot; fallbackColor?: string | null; previewId?: string; previewUrl?: string | null; owned?: boolean; large?: boolean }) {
+  return <TemplateMediaPreview listingId={previewId} previewUrl={previewUrl} owned={owned} large={large}><AbstractPreview previewId={previewId} fallbackColor={fallbackColor} large={large} metadata={`${template.settings.visualStyle} · ${template.settings.aspectRatio} · ${template.settings.duration}s`} /></TemplateMediaPreview>;
 }
 export function GenerationEstimate({ listing }: { listing: Pick<Listing, "estimate"> }) {
   return <p className="text-body-sm text-muted-foreground">{listing.estimate
@@ -59,7 +60,7 @@ export function ListingCard({ listing }: { listing: Listing }) {
       [.workspace-gallery-card_>_&&:first-child]:overflow-visible [.workspace-gallery-card_>_&&:first-child]:rounded-[10px]
       [&&:focus-visible]:[outline:2px_solid_var(--ring)] [&&:focus-visible]:[outline-offset:3px]
     `} aria-label={`Explore ${listing.title}`}>
-      <div className={"marketplace-card-preview [&&]:relative [&&]:shrink-0 [&&]:overflow-hidden [&&]:rounded-[12px] [.manage-template-card_&&]:rounded-[10px]"}><TemplateCover template={listing.template} fallbackColor={listing.fallbackColor} previewId={listing.id} /><span className={`
+      <div className={"marketplace-card-preview [&&]:relative [&&]:shrink-0 [&&]:overflow-hidden [&&]:rounded-[12px] [.manage-template-card_&&]:rounded-[10px]"}><TemplateCover template={listing.template} fallbackColor={listing.fallbackColor} previewId={listing.id} previewUrl={listing.previewUrl} /><span className={`
       marketplace-card-arrow [&&]:absolute [&&]:top-[8px] [&&]:right-[8px] [&&]:flex [&&]:w-[24px] [&&]:h-[24px]
       [&&]:items-center [&&]:justify-center [&&]:rounded-[999px] [&&]:[background:#0007] [&&]:text-[color:#fff]
       [&&]:opacity-[0] [&&]:[transition:opacity_var(--motion-micro)_var(--motion-ease)] [&&_svg]:w-[13px] [&&_svg]:h-[13px]

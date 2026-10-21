@@ -222,7 +222,7 @@ function WorkspaceEditor({
         persistedId.current = result.project.id;
         // Edits made while saving remain unsaved rather than being overwritten.
         setSavedBrief(brief);
-        setSaveState({ status: "saved" });
+        setSaveState({ status: "saved", savedAt: Date.now() });
         return result.project.id;
       } catch {
         setSaveState({
@@ -245,6 +245,12 @@ function WorkspaceEditor({
     projectId,
     ensureProject: () =>
       persistedId.current ? Promise.resolve(persistedId.current) : saveDraft(),
+    onPersisted: () => {
+      // Media has its own existing busy/error signals. Only acknowledge confirmed
+      // writes, and never clear an outstanding brief save or its failure.
+      if (saveInFlight.current) return;
+      setSaveState(current => current.status === "error" ? current : { status: "saved", savedAt: Date.now() });
+    },
     onUploaded: (localId, assetId, role) => {
       setSelectedFiles((files) =>
         files.filter((media) => media.id !== localId),
@@ -252,6 +258,7 @@ function WorkspaceEditor({
       if (role === "freestyle") setSelectedFileId(assetId);
     },
   });
+  const failedUpload = selectedFiles.map(file => mediaUpload.uploadStates[file.id]).find(state => state?.status === "failed");
   // Upload UGC images sequentially using the same private project-first service.
   // Failed files wait for explicit retry; changing type never cancels/clears them.
   useEffect(() => {
@@ -327,8 +334,9 @@ function WorkspaceEditor({
           onTitleChange={setTitle}
           onSave={saveDraft}
           state={saveState}
-          dirty={dirty}
-          projectId={projectId}
+          dirty={dirty || selectedFiles.length > 0 || mediaUpload.assets.some(asset => !asset.removedFromDraft && asset.status !== "uploaded")}
+          mediaBusy={mediaUpload.busy}
+          mediaError={mediaUpload.assetError || failedUpload?.message}
           signedIn={signedIn}
           authReady={authReady}
           hasLocalMedia={selectedFiles.length > 0}

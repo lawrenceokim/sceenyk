@@ -36,7 +36,7 @@ export function TemplateDetail({ listing, owned = false, children }: { listing: 
       @min-[860px]:[&&]:[grid-template-columns:minmax(0,_2.2fr)_minmax(0,_1fr)] @min-[860px]:[&&]:gap-[40px]
       max-599:[&&]:gap-[38px]
     `}>
-      <div className={"marketplace-detail-preview [&&]:min-w-[0] [&&]:overflow-hidden [&&]:rounded-[12px]"}><TemplateCover template={listing.template} fallbackColor={listing.fallbackColor} previewId={listing.id} large /></div>
+      <div className={"marketplace-detail-preview [&&]:min-w-[0] [&&]:overflow-hidden [&&]:rounded-[12px]"}><TemplateCover template={listing.template} fallbackColor={listing.fallbackColor} previewId={listing.id} previewUrl={listing.previewUrl} owned={owned} large /></div>
       <div className={`
       marketplace-detail-info [&&]:flex [&&]:min-w-[0] [&&]:flex-col [&&]:items-start [&&]:gap-[18px] [&&]:pt-[1px]
       [&&]:[overflow-wrap:anywhere] [.workspace-page[data-workspace-page='content']_&&_h1]:text-[length:30px]

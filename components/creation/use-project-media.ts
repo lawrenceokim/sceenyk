@@ -21,12 +21,14 @@ export function useProjectMedia({
   projectId,
   ensureProject,
   onUploaded,
+  onPersisted,
 }: {
   initialAssets: ProjectAsset[];
   initialError: string;
   projectId: string | null;
   ensureProject: () => Promise<string | null>;
   onUploaded: (localId: string, assetId: string, role: StudioMediaRole) => void;
+  onPersisted: () => void;
 }) {
   const [assets, setAssets] = useState(initialAssets);
   const [assetError, setAssetError] = useState(initialError);
@@ -155,6 +157,7 @@ export function useProjectMedia({
         if (recovered.ok) {
           remember(recovered.value);
           onUploaded(media.id, recovered.value.id, media.studioRole ?? "freestyle");
+          onPersisted();
           return;
         }
         if (recovered.code !== "NOT_READY") throw new Error(recovered.message);
@@ -195,6 +198,7 @@ export function useProjectMedia({
       }
       remember(asset);
       onUploaded(media.id, asset.id, media.studioRole ?? "freestyle");
+      onPersisted();
     } catch (error: unknown) {
       state({
         status: "failed",
@@ -231,7 +235,7 @@ export function useProjectMedia({
         assetId: asset.id,
       });
       if (attempt.signal.aborted) return;
-      if (result.ok) remember(result.value);
+      if (result.ok) { remember(result.value); onPersisted(); }
       else setAssetError(result.message);
     } catch {
       if (!attempt.signal.aborted)
@@ -249,7 +253,7 @@ export function useProjectMedia({
     try {
       const result = await removeStudioReferenceAction({ projectId: asset.projectId, assetId: asset.id });
       if (attempt.signal.aborted) return false;
-      if (result.ok) { remember(result.value); return true; }
+      if (result.ok) { remember(result.value); onPersisted(); return true; }
       setAssetError(result.message);
       return false;
     } catch {

@@ -1,5 +1,11 @@
 # Sceenyk project overview
 
+## Project-derived Templates (2026-10-21)
+
+Official lifecycle: **Project → Publish as Template → Manage Template → Publish to Marketplace**. `/projects` Publish and `/templates` → New Template → `/settings/templates/new` → choose an owned Project share one authenticated initialization service. It opens an existing listing or creates a private prefilled draft at `/settings/templates/[listingId]`; PostgreSQL enforces source uniqueness. No blank Template domain/system. `/templates/[listingId]` retains private detail, Update Template and View in Marketplace while published. The gallery removes its old footer links and adds responsive New Template.
+
+Eligible Project title/brief/category/settings and creation/UGC type prefill the Template without making the original public. Draft instructions are reviewable until first publish; published/purchased/adopted snapshots remain independent. Private previews reuse the selected source media; public preview is a separate reviewed still derivative, including video posters. Source keys/URLs stay private. Existing abstract fallback/color remains for unavailable media. Apply migration 033 after 032. Manual visual and hosted storage/schema acceptance remain pending; no hosted Inngest or deployment.
+
 ## Dynamic Sources and Properties (2026-10-20)
 
 Creation Types are UGC (User-Generated Content) and Freestyle. New Studio projects start as UGC; older saved/adopted projects without this setting retain Freestyle. Creation Type is persisted separately from the legacy category. Studio inputs conditionally change with the selected type while keeping both flows' values/files/references in the same project.

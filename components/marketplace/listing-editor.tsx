@@ -12,6 +12,7 @@ import { AccountAction } from "@/components/account-action";
 import { useAuthAvailable } from "@/components/auth/auth-availability";
 import { creationCategories } from "@/components/creation/creation-options";
 import { TemplateCover } from "./listing-card";
+import { templatePreviewPoster } from "./template-media-preview";
 import type { OwnedListing, TemplateSnapshot } from "@/lib/marketplace/contract";
 import type { SavedProject } from "@/lib/projects/types";
 import type { CategoryId } from "@/lib/projects/options";
@@ -29,12 +30,13 @@ function AccountEditor(props: Props) {
 }
 function Editor({ project, listing }: Props) {
   const router = useRouter(); const prefix = useId(); const attempt = useRef<string | null>(listing?.id ?? null); const inFlight = useRef(false);
-  const [title, setTitle] = useState(listing?.title ?? "");
-  const [description, setDescription] = useState(listing?.description ?? "");
+  const [title, setTitle] = useState(listing?.title ?? project?.title ?? "");
+  const [description, setDescription] = useState(listing?.description ?? project?.prompt.slice(0, 2000) ?? "");
   const [category, setCategory] = useState<CategoryId>(listing?.category ?? project!.category);
   const [tags, setTags] = useState(listing?.tags.join(", ") ?? "");
-  const [instructions, setInstructions] = useState(listing?.template.instructions ?? "");
-  const [rights, setRights] = useState(listing?.rightsConfirmed ?? false);
+  const [instructions, setInstructions] = useState(listing?.template.instructions ?? project?.prompt ?? "");
+  // Older text-only listings need a fresh review before a source preview is made public.
+  const [rights, setRights] = useState(!!listing?.previewUrl && !!listing.rightsConfirmed);
   const [adoptionType, setAdoptionType] = useState<"free" | "paid">(listing?.adoptionType ?? "free");
   const [price, setPrice] = useState(listing?.adoptionType === "paid" ? (listing.priceMinor / 100).toFixed(2) : "2.00");
   const [pending, setPending] = useState(""); const [error, setError] = useState(""); const [success, setSuccess] = useState("");
@@ -46,7 +48,12 @@ function Editor({ project, listing }: Props) {
     attempt.current ??= crypto.randomUUID();
     const metadata = { id: attempt.current, title, description, category, tags: tags.split(",").map(tag => tag.trim()).filter(Boolean), rightsConfirmed: rights, adoptionType, priceMinor: adoptionType === "free" ? 0 : Math.round(Number(price) * 100) };
     try {
-      const result = listing ? await updateMarketplaceAction({ ...metadata, status }) : await createMarketplaceAction({ ...metadata, sourceProjectId: project!.id, instructions, publish: status === "published" });
+      let preview: FormData | undefined;
+      if (listing && rights && !listing.previewUrl && (status === "published" || status === "draft")) {
+        try { preview = await templatePreviewPoster(listing.id); }
+        catch { setError("The project preview couldn’t be prepared. Check that the image or video loads, then try again."); return; }
+      }
+      const result = listing ? await updateMarketplaceAction({ ...metadata, status, ...(!listing.publishedAt && listing.status === "draft" ? { instructions } : {}) }, preview) : await createMarketplaceAction({ ...metadata, sourceProjectId: project!.id, instructions, publish: status === "published" });
       if (!result.ok || !("listingId" in result)) { setError(result.ok ? "Please try again." : result.message); return; }
       setSuccess(result.existing ? "This project already has a listing. Opening it…" : status === "published" ? "Published to Marketplace." : status === "unpublished" ? "Listing unpublished." : status === "archived" ? "Listing archived." : "Draft saved.");
       router.replace(`/settings/templates/${result.listingId}`); router.refresh();
@@ -198,7 +205,7 @@ function Editor({ project, listing }: Props) {
       [.studio-property_textarea&&]:text-[length:13px] [.studio-property_textarea&&]:leading-[20px]
       [.studio-setting-select_select&&]:pr-[28px]
     `} value={tags} maxLength={247} onChange={e => setTags(e.target.value)} aria-describedby={`${prefix}-tags-help`} /><p id={`${prefix}-tags-help`} className="mt-2 text-caption text-muted-foreground">Up to 8 tags, separated by commas.</p></div></div>
-        <div><label className="text-body-sm font-medium" htmlFor={`${prefix}-instructions`}>Public reusable instructions</label><textarea id={`${prefix}-instructions`} name="instructions" required readOnly={!!listing} maxLength={4000} rows={6} className={`
+        <div><label className="text-body-sm font-medium" htmlFor={`${prefix}-instructions`}>Public reusable instructions</label><textarea id={`${prefix}-instructions`} name="instructions" required readOnly={!!listing?.publishedAt} maxLength={4000} rows={6} className={`
       [@layer_components]:w-[100%] [@layer_components]:min-h-[var(--control-height)]
       [@layer_components]:[border:1px_solid_var(--input)] [@layer_components]:rounded-[var(--radius-md)]
       [@layer_components]:pt-[var(--space-3)] [@layer_components]:pr-[var(--space-4)] [@layer_components]:pb-[var(--space-3)]
@@ -239,7 +246,7 @@ function Editor({ project, listing }: Props) {
       [.studio-property_textarea&&]:pb-[var(--ui-space-3)] [.studio-property_textarea&&]:pl-[var(--ui-space-3)]
       [.studio-property_textarea&&]:text-[length:13px] [.studio-property_textarea&&]:leading-[20px]
       [.studio-setting-select_select&&]:pr-[28px]
-    `} value={instructions} onChange={e => setInstructions(e.target.value)} aria-describedby={`${prefix}-instructions-help`} /><p id={`${prefix}-instructions-help`} className="mt-2 text-caption text-muted-foreground">{listing ? "The saved template is immutable. You can edit its listing metadata." : "Describe a reusable approach. Leave out personal details, links, private IDs and access keys. This becomes the adopter’s editable starting prompt."}</p></div>
+    `} value={instructions} onChange={e => setInstructions(e.target.value)} aria-describedby={`${prefix}-instructions-help`} /><p id={`${prefix}-instructions-help`} className="mt-2 text-caption text-muted-foreground">{listing?.publishedAt ? "The published template configuration is fixed. You can edit its listing metadata." : "Review these instructions before publishing. Leave out personal details, links, private IDs and access keys. This becomes the adopter’s editable starting prompt."}</p></div>
         <div className="space-y-3 rounded-xl border border-border p-4"><label htmlFor={`${prefix}-adoption`} className="text-body-sm font-medium">Creator adoption price</label><Select<"free" | "paid"> id={`${prefix}-adoption`} name="adoptionType" disabled={!!pending || archived} value={adoptionType} onValueChange={setAdoptionType} options={[{ value: "free", label: "Free" }, { value: "paid", label: "Paid — PayPal Sandbox" }]} />{adoptionType === "paid" && <><label htmlFor={`${prefix}-price`} className="block text-body-sm font-medium">Adoption price (USD)</label><input id={`${prefix}-price`} name="price" type="number" inputMode="decimal" min={sandboxMarketplacePricing.minMinor / 100} max={sandboxMarketplacePricing.maxMinor / 100} step="0.01" required className={`
       [@layer_components]:w-[100%] [@layer_components]:min-h-[var(--control-height)]
       [@layer_components]:[border:1px_solid_var(--input)] [@layer_components]:rounded-[var(--radius-md)]
@@ -282,7 +289,7 @@ function Editor({ project, listing }: Props) {
       [.studio-property_textarea&&]:text-[length:13px] [.studio-property_textarea&&]:leading-[20px]
       [.studio-setting-select_select&&]:pr-[28px]
     `} value={price} onChange={e => setPrice(e.target.value)} /><p className="text-caption text-muted-foreground">Sandbox/demo limits: {usd(sandboxMarketplacePricing.minMinor)}–{usd(sandboxMarketplacePricing.maxMinor)}. Prices and fees are test configuration. New prices apply to new purchases; saved checkouts retain their price.</p></>}<p className="text-body-sm text-muted-foreground">AI generation credits are separate. Adoption includes no future AI generation usage. Paid sales record pending creator earnings, with no withdrawals.</p></div>
-        <label className="flex min-h-11 items-start gap-3 rounded-lg border border-border p-3 text-body-sm"><input name="rightsConfirmed" type="checkbox" checked={rights} onChange={e => setRights(e.target.checked)} className="mt-1 size-4 shrink-0 accent-primary" /><span>I confirm that I have the right to publish, share and, for paid adoption, monetize this reusable template.</span></label>
+        <label className="flex min-h-11 items-start gap-3 rounded-lg border border-border p-3 text-body-sm"><input name="rightsConfirmed" type="checkbox" checked={rights} onChange={e => setRights(e.target.checked)} className="mt-1 size-4 shrink-0 accent-primary" /><span>I have reviewed the public text and preview for private information. I have the right to publish, share and, for paid adoption, monetize this reusable template and its preview.</span></label>
         <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
           <Button type="submit" disabled={!rights}>{pending === "published" && <LoaderCircle className="size-4 motion-safe:animate-spin" aria-hidden="true" />}{pending === "published" ? "Publishing…" : listing?.status === "published" ? "Save published listing" : "Publish to Marketplace"}</Button>
           {(!listing || listing.status === "draft") && <Button type="button" variant="outline" onClick={() => void save("draft")}>Save draft</Button>}
@@ -338,6 +345,6 @@ function Editor({ project, listing }: Props) {
       [.workspace-settings-inner_label&&]:pt-[12px] [.workspace-settings-inner_label&&]:pr-[12px]
       [.workspace-settings-inner_label&&]:pb-[12px] [.workspace-settings-inner_label&&]:pl-[12px]
       [.workspace-settings-inner_label&&_svg]:w-[18px] [.workspace-settings-inner_label&&_svg]:h-[18px]
-    `}><TemplateCover template={snapshot} fallbackColor={listing?.fallbackColor} previewId={listing?.id} large /><div className="space-y-3 p-5"><h2 className="text-lg font-semibold">{adoptionType === "free" ? "Free to adopt" : `Creator adoption price: ${usd(Math.round(Number(price || 0) * 100))}`}</h2><p className="text-body-sm text-muted-foreground">The template copies {snapshot.settings.aspectRatio}, {snapshot.settings.duration}s, {snapshot.settings.visualStyle} and {snapshot.settings.tone} settings. Its preview uses these choices; it contains no project media.</p><p className="text-body-sm text-muted-foreground">Adoption uses zero AI credits. Normal generation credits may still be required when someone creates their result.</p></div></aside>
+    `}><TemplateCover template={snapshot} fallbackColor={listing?.fallbackColor} previewId={listing?.id} previewUrl={listing?.previewUrl} owned large /><div className="space-y-3 p-5"><h2 className="text-lg font-semibold">{adoptionType === "free" ? "Free to adopt" : `Creator adoption price: ${usd(Math.round(Number(price || 0) * 100))}`}</h2><p className="text-body-sm text-muted-foreground">The template copies {snapshot.settings.aspectRatio}, {snapshot.settings.duration}s, {snapshot.settings.visualStyle} and {snapshot.settings.tone} settings. Review the source preview before publishing. Marketplace uses a separate still preview; original media stays private.</p>{snapshot.creationType && <p className="text-body-sm text-muted-foreground">{snapshot.creationType === "ugc" ? `UGC · ${snapshot.ugcType ?? "advertisement"}` : "Freestyle"}</p>}<p className="text-body-sm text-muted-foreground">Adoption uses zero AI credits. Normal generation credits may still be required when someone creates their result.</p></div></aside>
   </div>;
 }

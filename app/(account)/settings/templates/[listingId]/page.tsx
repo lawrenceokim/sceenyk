@@ -8,7 +8,7 @@ import { getOwnedMarketplaceListing } from "@/lib/marketplace/server";
 import { ListingEditor } from "@/components/marketplace/listing-editor";
 import { MarketplaceFailure, MarketplaceLoading } from "@/components/marketplace/listing-card";
 
-export const metadata: Metadata = { title: "Manage listing — Sceenyk", robots: { index: false, follow: false } };
+export const metadata: Metadata = { title: "Manage Template — Sceenyk", robots: { index: false, follow: false } };
 async function OwnedListing({ params }: { params: Promise<{ listingId: string }> }) {
   const { listingId } = await params;
   const user = await ensureAppUser();
@@ -47,5 +47,5 @@ async function OwnedListing({ params }: { params: Promise<{ listingId: string }>
   return <ListingEditor clerkUserId={user.clerk_user_id} listing={listing} />;
 }
 export default function ManageListingPage({ params }: { params: Promise<{ listingId: string }> }) {
-  return <SettingsSection title="Manage listing" description="Edit this listing’s public metadata and control when it appears in Marketplace."><Suspense fallback={<MarketplaceLoading />}><OwnedListing params={params} /></Suspense></SettingsSection>;
+  return <SettingsSection title="Manage Template" description="Review your template and control when it appears in Marketplace."><Suspense fallback={<MarketplaceLoading />}><OwnedListing params={params} /></Suspense></SettingsSection>;
 }

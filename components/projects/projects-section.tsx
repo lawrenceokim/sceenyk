@@ -11,10 +11,12 @@ export function ProjectsSection({
   data,
   jobStatuses,
   previews = {},
+  templateIds = {},
 }: {
   data: ProjectPage;
   jobStatuses: Record<string, GenerationStatus | "unavailable" | null>;
   previews?: Record<string, ProjectAsset | null>;
+  templateIds?: Record<string, string>;
 }) {
   const lastPage = Math.max(1, Math.ceil(data.total / data.pageSize));
   return (
@@ -78,6 +80,7 @@ export function ProjectsSection({
                   project={project}
                   jobStatus={jobStatuses[project.id]}
                   preview={previews[project.id]}
+                  listingId={templateIds[project.id]}
                 />
               </li>
             ))}

@@ -21,11 +21,13 @@ export const createListingSchema = z.strictObject({
   ...metadataFields,
   id: z.uuid(), sourceProjectId: z.uuid(), instructions: publicText(4000), publish: z.boolean(),
 }).refine(value => !value.publish || value.rightsConfirmed, { message: "Confirm your rights before publishing.", path: ["rightsConfirmed"] });
-export const updateListingSchema = z.strictObject({ ...metadataFields, id: z.uuid(), status: z.enum(listingStatuses) });
+export const updateListingSchema = z.strictObject({ ...metadataFields, id: z.uuid(), status: z.enum(listingStatuses), instructions: publicText(4000).optional() });
 export const adoptListingSchema = z.strictObject({ listingId: z.uuid(), requestId: z.uuid() });
+export const deleteTemplateSchema = z.strictObject({ id: z.uuid() });
 export const templateSnapshotSchema = z.strictObject({
   version: z.literal(1), category: saveProjectSchema.shape.category,
   instructions: publicText(4000), settings: saveProjectSchema.shape.settings,
+  creationType: saveProjectSchema.shape.creationType.optional(), ugcType: saveProjectSchema.shape.ugcType.optional(),
 });
 export const browseSchema = z.strictObject({
   query: z.string().trim().max(80).default(""),
@@ -41,6 +43,7 @@ export const listingSchema = z.strictObject({
   createdAt: z.string(), publishedAt: z.string().nullable(),
   // Nullable compatibility keeps existing reads available before migration 029.
   fallbackColor: z.string().regex(/^#[0-9a-f]{6}$/).nullable().default(null),
+  previewUrl: z.string().regex(/^\/api\/marketplace\/listings\/[a-f0-9-]{36}\/preview$/).nullable().default(null),
 });
 export const ownedListingSchema = listingSchema.extend({ sourceProjectId: z.uuid(), rightsConfirmed: z.boolean(), adoptionCount: z.number().int().nonnegative(), paidSalesCount: z.number().int().nonnegative(), creatorEarningsMinor: z.number().int().nonnegative() });
 export const originSchema = z.strictObject({ listingId: z.uuid(), title: z.string().max(120) });

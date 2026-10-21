@@ -5,14 +5,16 @@ import type { ProjectAsset } from "@/lib/media/types";
 import { ProjectJobBadge } from "./project-job-statuses";
 import { ProjectRename } from "./project-rename";
 import { ProjectDelete } from "./project-delete";
+import { ProjectPublish } from "./project-publish";
 import { ProjectPreview } from "./project-preview";
 import { AbstractPreview } from "@/components/marketplace/abstract-preview";
 import { projectPreviewColor, templateAppearance } from "@/components/marketplace/template-appearance";
 
-export function ProjectCard({ project, jobStatus, preview }: {
+export function ProjectCard({ project, jobStatus, preview, listingId }: {
   project: ProjectSummary;
   jobStatus?: GenerationStatus | "unavailable" | null;
   preview?: ProjectAsset | null;
+  listingId?: string;
 }) {
   const fallbackColor = projectPreviewColor(project.id);
   return <article className={`
@@ -55,15 +57,14 @@ export function ProjectCard({ project, jobStatus, preview }: {
       </div>
       <h3>{project.title}</h3>
       <time dateTime={project.updatedAt}>Edited {new Intl.DateTimeFormat("en", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" }).format(new Date(project.updatedAt))}</time>
-      <span className={`
-      workspace-project-open-label [&&]:flex [&&]:items-center [&&]:min-h-[30px] [&&]:mt-[8px] [&&]:mr-[4px] [&&]:mb-[0]
-      [&&]:ml-[4px] [&&]:pr-[68px] [&&]:text-[length:11px] [&&]:leading-[16px] [&&]:font-[500]
-      [@media_(pointer:_coarse)]:[&&]:min-h-[44px] [@media_(pointer:_coarse)]:[&&]:pr-[94px]
-    `}>Open</span>
     </Link>
-    <div className={"workspace-project-actions [.workspace-project-card_&&]:absolute [.workspace-project-card_&&]:z-[1] [.workspace-project-card_&&]:right-[12px] [.workspace-project-card_&&]:bottom-[10px] [.workspace-project-card_&&]:grid [.workspace-project-card_&&]:[grid-template-columns:repeat(2,_30px)] [.workspace-project-card_&&]:items-center [.workspace-project-card_&&]:gap-[4px] [.workspace-project-card_&&]:mt-[0] [.workspace-project-card_&&]:mr-[0] [.workspace-project-card_&&]:mb-[0] [.workspace-project-card_&&]:ml-[0] [@media_(pointer:_coarse)]:[.workspace-project-card_&&]:[grid-template-columns:repeat(2,_44px)]"}>
+    <div className="relative z-10 mt-2 flex min-w-0 flex-wrap items-center gap-x-1">
+      <Link href={`/projects/${project.id}`} prefetch={false} className="inline-flex min-h-[30px] items-center px-1 text-[11px] font-medium outline-none hover:text-link focus-visible:ring-2 focus-visible:ring-ring [@media(pointer:coarse)]:min-h-11">Open</Link>
+      <ProjectPublish projectId={project.id} listingId={listingId} compact />
+      <div className="workspace-project-actions ml-auto flex shrink-0 items-center gap-1">
       <span className={"workspace-project-action [.workspace-project-actions_>_&&]:flex [.workspace-project-actions_>_&&]:items-center [.workspace-project-actions_>_&&]:justify-center [.workspace-project-actions_>_&&]:min-w-[0]"}><ProjectRename projectId={project.id} title={project.title} /></span>
       <span className={"workspace-project-action [.workspace-project-actions_>_&&]:flex [.workspace-project-actions_>_&&]:items-center [.workspace-project-actions_>_&&]:justify-center [.workspace-project-actions_>_&&]:min-w-[0]"}><ProjectDelete projectId={project.id} title={project.title} /></span>
+      </div>
     </div>
   </article>;
 }

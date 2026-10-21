@@ -1,5 +1,17 @@
 # UI Context
 
+## Template card deletion (2026-10-21)
+
+My Templates cards now match Projects' compact 206px desktop cards, 10px padding, bordered/tinted surface, 4:3 inset preview, small title/date and bottom Open/edit/trash actions. Mobile remains one column. Keep existing private/approved previews, persisted fallback appearance, detail route, non-archived edit destination, status indication, gallery empty state and pagination. No Publish or Manage Template text buttons are added. Only this gallery's card presentation changes.
+
+Trash opens the shared Base UI overlay dialog following ProjectDelete: name the Template, explain removal from My Templates and Marketplace while retaining the source Project, and show Cancel and destructive Delete. Cancel receives initial focus; Escape/outside/close behavior and focus return remain library-owned. Guard repeated submissions and dismissal during deletion, display failures inline and close/refresh only after server success. Reuse Tailwind/theme/motion tokens and reduced-motion behavior. Manual visual inspection is pending.
+
+## Project → Template publishing UI (2026-10-21)
+
+Project cards retain Open/Rename/Delete and add compact Publish or Manage Template beside Open. Actions wrap at constrained widths, preserving touch/focus/pending/reduced-motion behavior. `/templates` keeps My Templates, includes drafts in its subtitle, removes the old footer-link row and adds primary + New Template beside/below the heading. Existing compact card/detail styling and routes stay intact.
+
+`/settings/templates/new` selects an owned Project from a preview/name/edited-date gallery. Selection shares Project Publish's POST initializer and opens `/settings/templates/[listingId]`, reusing existing Templates. Management prefills eligible Project text/settings/creation type/UGC type. Draft instructions remain reviewable before first publish; published configuration stays fixed while public metadata remains editable. Explicit privacy/rights review covers the preview. Private source images/videos are reused; Marketplace uses a separate still/poster without private capabilities. Existing fallback colors/artwork remain for missing/unavailable media. Preview decoding/CORS/format failures are reported instead of silently publishing a fallback. Manual responsive/visual review is pending. Tailwind only, no new stylesheet.
+
 ## Dynamic Studio inputs (2026-10-20)
 
 Supersedes the previous fixed/one-option UGC control. Keep the current Studio geometry and single Sources panel/modal tree. Sources order is Your Project → Creation Type → dynamic inputs. Shared custom Select offers UGC with UserRound and Freestyle with Sparkles; new drafts start with UGC. UGC shows Characters then Product / Props, with compact Add Character/Add Product / Prop image pickers and rounded square thumbnails with individual X actions and a trailing +. Thumbnails wrap inside the narrow rail; existing subtle sibling dividers separate sections. Freestyle shows the existing Project Media controls. Switching changes visibility only and retains both flows' inputs.
