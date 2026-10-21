@@ -17,6 +17,7 @@ import type { OwnedListing, TemplateSnapshot } from "@/lib/marketplace/contract"
 import type { SavedProject } from "@/lib/projects/types";
 import type { CategoryId } from "@/lib/projects/options";
 import { usd, sandboxMarketplacePricing } from "@/lib/marketplace/payments/contract";
+import { ListingEditorSkeleton } from "./detail-skeletons";
 
 type Props = { clerkUserId: string; project?: SavedProject; listing?: OwnedListing };
 export function ListingEditor(props: Props) {
@@ -24,7 +25,7 @@ export function ListingEditor(props: Props) {
 }
 function AccountEditor(props: Props) {
   const { isLoaded, userId } = useAuth();
-  if (!isLoaded) return <p role="status">Opening your listing…</p>;
+  if (!isLoaded) return <ListingEditorSkeleton />;
   if (userId !== props.clerkUserId) return <AccountAction intent="sign-in">Sign in to manage listings</AccountAction>;
   return <Editor key={`${userId}:${props.listing?.id ?? props.project?.id}`} {...props} />;
 }

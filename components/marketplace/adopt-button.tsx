@@ -1,5 +1,6 @@
 "use client";
 
+import { Skeleton, SkeletonRegion } from "@/components/ui/skeleton";
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
@@ -14,7 +15,7 @@ type Props = { listingId: string; paid?: boolean; estimate?: { credits: number; 
 
 function SignedInAdoption({ listingId, paid, estimate }: Props) {
   const { isLoaded, isSignedIn, userId } = useAuth();
-  if (!isLoaded) return <Button disabled className="w-full">Loading account…</Button>;
+  if (!isLoaded) return <SkeletonRegion label="Loading account…" className="w-full"><Skeleton className="h-11 w-full" /></SkeletonRegion>;
   if (!isSignedIn) return <AccountAction intent="sign-in" className="w-full">Sign in to adopt</AccountAction>;
   return paid ? <PaidAdoption key={userId} listingId={listingId} estimate={estimate ?? null} /> : <Adoption key={userId} listingId={listingId} identity={userId!} />;
 }

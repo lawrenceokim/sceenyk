@@ -1,3 +1,4 @@
+import { creatorGridClassName } from "@/components/marketplace/gallery-skeletons";
 import type { CreatorProfile } from "@/lib/marketplace/creators/contract";
 import type { Listing } from "@/lib/marketplace/contract";
 import { CreatorAvatar } from "./creator-avatar";
@@ -41,6 +42,6 @@ export function CreatorStorefront({ data }: { data: { profile: CreatorProfile; a
       [.workspace-settings-inner_label&&]:pr-[12px] [.workspace-settings-inner_label&&]:pb-[12px]
       [.workspace-settings-inner_label&&]:pl-[12px] [.workspace-settings-inner_label&&_svg]:w-[18px]
       [.workspace-settings-inner_label&&_svg]:h-[18px]
-    `}><p className="text-muted-foreground">This creator has no published Marketplace items yet.</p></div> : <><div className={"workspace-gallery [[data-workspace-shell]_&&]:grid [[data-workspace-shell]_&&]:[grid-template-columns:repeat(auto-fill,minmax(min(100%,180px),1fr))] [[data-workspace-shell]_&&]:gap-[16px] max-599:[[data-workspace-shell]_&&]:[grid-template-columns:repeat(2,minmax(0,1fr))] max-599:[[data-workspace-shell]_&&]:gap-[8px] max-359:[[data-workspace-shell]_&&]:[grid-template-columns:minmax(0,1fr)]"}>{data.items.map(listing => <ListingCard key={listing.id} listing={listing} />)}</div><MarketplacePagination page={data.page} total={data.total} pageSize={data.pageSize} href={p => `/marketplace/creators/${profile.slug}?page=${p}`} /></>}</section>
+    `}><p className="text-muted-foreground">This creator has no published Marketplace items yet.</p></div> : <><div className={creatorGridClassName}>{data.items.map(listing => <ListingCard key={listing.id} listing={listing} />)}</div><MarketplacePagination page={data.page} total={data.total} pageSize={data.pageSize} href={p => `/marketplace/creators/${profile.slug}?page=${p}`} /></>}</section>
   </div>;
 }

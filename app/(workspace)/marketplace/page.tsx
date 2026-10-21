@@ -1,3 +1,4 @@
+import { MarketplaceDiscoverySkeleton } from "@/components/marketplace/gallery-skeletons";
 import { Suspense } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -21,17 +22,7 @@ export const metadata: Metadata = {
     "Discover creator templates, adopt a creative starting point and make it your own.",
 };
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
-async function Discovery({ searchParams }: { searchParams: SearchParams }) {
-  const params = await searchParams;
-  const query =
-    typeof params.q === "string" ? params.q.trim().slice(0, 80) : "";
-  const category = categoryIds.includes(params.category as CategoryId)
-    ? (params.category as CategoryId)
-    : null;
-  const page =
-    typeof params.page === "string" && /^\d{1,6}$/.test(params.page)
-      ? Math.max(1, Math.min(100000, Number(params.page)))
-      : 1;
+async function DiscoveryResults({ query, category, page }: { query: string; category: CategoryId | null; page: number }) {
   let result;
   try {
     result = await browseMarketplace({ query, category, page });
@@ -39,42 +30,7 @@ async function Discovery({ searchParams }: { searchParams: SearchParams }) {
     unstable_rethrow(error);
     return <MarketplaceFailure />;
   }
-  const filterHref = (value: CategoryId | null) => {
-    const filters = new URLSearchParams({
-      ...(query ? { q: query } : {}),
-      ...(value ? { category: value } : {}),
-    });
-    return `/marketplace${filters.size ? `?${filters}` : ""}`;
-  };
-  return (
-    <div className={"marketplace-discovery [&&]:min-w-[0]"}>
-      <nav aria-label="Marketplace categories" className={`
-      marketplace-filters [&&]:flex [&&]:flex-wrap [&&]:gap-[8px] [&&]:mb-[40px] [&&_a]:inline-flex [&&_a]:min-h-[26px]
-      [&&_a]:items-center [&&_a]:justify-center [&&_a]:pt-[3px] [&&_a]:pr-[12px] [&&_a]:pb-[3px] [&&_a]:pl-[12px]
-      [&&_a]:[border:1px_solid_var(--border)] [&&_a]:rounded-[999px] [&&_a]:text-[color:var(--muted-foreground)]
-      [&&_a]:text-[length:12px] [&&_a]:font-[500] [&&_a]:leading-[18px]
-      [&&_a]:[transition:background-color_150ms,_color_150ms,_border-color_150ms] [&&_a:hover]:text-[color:var(--foreground)]
-      [&&_a:hover]:[background:var(--muted)] [&&_a[aria-current='page']]:[border-color:transparent]
-      [&&_a[aria-current='page']]:[background:var(--foreground)] [&&_a[aria-current='page']]:text-[color:var(--card)]
-      [&&_a:focus-visible]:[outline:2px_solid_var(--ring)] [&&_a:focus-visible]:[outline-offset:3px]
-      [@media_(prefers-reduced-motion:_reduce)]:[&&_a]:[transition:none]
-    `}>
-        <Link
-          href={filterHref(null)}
-          aria-current={!category ? "page" : undefined}
-        >
-          All
-        </Link>
-        {creationCategories.map((item) => (
-          <Link
-            key={item.id}
-            href={filterHref(item.id)}
-            aria-current={category === item.id ? "page" : undefined}
-          >
-            {item.title}
-          </Link>
-        ))}
-      </nav>
+  return <>
       {!!query && (
         <div className={`
       marketplace-query [&&]:flex [&&]:flex-wrap [&&]:justify-between [&&]:gap-[8px] [&&]:mt-[-16px] [&&]:mr-[0]
@@ -162,6 +118,57 @@ async function Discovery({ searchParams }: { searchParams: SearchParams }) {
           />
         </div>
       )}
+  </>;
+}
+
+async function Discovery({ searchParams }: { searchParams: SearchParams }) {
+  const params = await searchParams;
+  const query =
+    typeof params.q === "string" ? params.q.trim().slice(0, 80) : "";
+  const category = categoryIds.includes(params.category as CategoryId)
+    ? (params.category as CategoryId)
+    : null;
+  const page =
+    typeof params.page === "string" && /^\d{1,6}$/.test(params.page)
+      ? Math.max(1, Math.min(100000, Number(params.page)))
+      : 1;
+  const filterHref = (value: CategoryId | null) => {
+    const filters = new URLSearchParams({
+      ...(query ? { q: query } : {}),
+      ...(value ? { category: value } : {}),
+    });
+    return `/marketplace${filters.size ? `?${filters}` : ""}`;
+  };
+  return (
+    <div className={"marketplace-discovery [&&]:min-w-[0]"}>
+      <nav aria-label="Marketplace categories" className={`
+      marketplace-filters [&&]:flex [&&]:flex-wrap [&&]:gap-[8px] [&&]:mb-[40px] [&&_a]:inline-flex [&&_a]:min-h-[26px]
+      [&&_a]:items-center [&&_a]:justify-center [&&_a]:pt-[3px] [&&_a]:pr-[12px] [&&_a]:pb-[3px] [&&_a]:pl-[12px]
+      [&&_a]:[border:1px_solid_var(--border)] [&&_a]:rounded-[999px] [&&_a]:text-[color:var(--muted-foreground)]
+      [&&_a]:text-[length:12px] [&&_a]:font-[500] [&&_a]:leading-[18px]
+      [&&_a]:[transition:background-color_150ms,_color_150ms,_border-color_150ms] [&&_a:hover]:text-[color:var(--foreground)]
+      [&&_a:hover]:[background:var(--muted)] [&&_a[aria-current='page']]:[border-color:transparent]
+      [&&_a[aria-current='page']]:[background:var(--foreground)] [&&_a[aria-current='page']]:text-[color:var(--card)]
+      [&&_a:focus-visible]:[outline:2px_solid_var(--ring)] [&&_a:focus-visible]:[outline-offset:3px]
+      [@media_(prefers-reduced-motion:_reduce)]:[&&_a]:[transition:none]
+    `}>
+        <Link
+          href={filterHref(null)}
+          aria-current={!category ? "page" : undefined}
+        >
+          All
+        </Link>
+        {creationCategories.map((item) => (
+          <Link
+            key={item.id}
+            href={filterHref(item.id)}
+            aria-current={category === item.id ? "page" : undefined}
+          >
+            {item.title}
+          </Link>
+        ))}
+      </nav>
+      <Suspense key={`${query}:${category ?? "all"}:${page}`} fallback={<MarketplaceLoading />}><DiscoveryResults query={query} category={category} page={page} /></Suspense>
     </div>
   );
 }
@@ -181,7 +188,7 @@ export default function MarketplacePage({
         <h1>Marketplace</h1>
         <p>Discover creative projects. Make them your own.</p>
       </header>
-      <Suspense fallback={<MarketplaceLoading />}>
+      <Suspense fallback={<MarketplaceDiscoverySkeleton />}>
         <Discovery searchParams={searchParams} />
       </Suspense>
       <Link

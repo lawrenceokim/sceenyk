@@ -1,3 +1,4 @@
+import { ProjectPickerSkeleton } from "@/components/marketplace/gallery-skeletons";
 import { Suspense } from "react";
 import Link from "next/link";
 import type { Metadata } from "next";
@@ -12,7 +13,7 @@ import { ProjectPublish } from "@/components/projects/project-publish";
 import { TemplateAccountBoundary } from "@/components/templates/template-account-boundary";
 import { AbstractPreview } from "@/components/marketplace/abstract-preview";
 import { projectPreviewColor } from "@/components/marketplace/template-appearance";
-import { MarketplaceFailure, MarketplaceLoading } from "@/components/marketplace/listing-card";
+import { MarketplaceFailure } from "@/components/marketplace/listing-card";
 import { MarketplacePagination } from "@/components/marketplace/pagination";
 
 export const metadata: Metadata = { title: "New Template — Sceenyk", robots: { index: false, follow: false } };
@@ -41,7 +42,7 @@ async function NewListing({ searchParams }: { searchParams: Promise<Record<strin
   } catch (error) { unstable_rethrow(error); return <MarketplaceFailure href="/settings/templates/new" />; }
   if (unavailable) return <p role="alert">This project is unavailable. Choose a project you own.</p>;
   if (typeof params.project === "string" && templateIds[params.project]) redirect(`/settings/templates/${templateIds[params.project]}`);
-  return <TemplateAccountBoundary clerkUserId={user.clerk_user_id}>
+  return <TemplateAccountBoundary clerkUserId={user.clerk_user_id} fallback={<ProjectPickerSkeleton />}>
     <section className="min-w-0 space-y-5">
       <p className="text-sm text-muted-foreground">Choose a saved project. Review its template details before publishing to Marketplace.</p>
       {result.projects.length ? <ul className="grid min-w-0 gap-3 sm:grid-cols-2">
@@ -62,5 +63,5 @@ async function NewListing({ searchParams }: { searchParams: Promise<Record<strin
   </TemplateAccountBoundary>;
 }
 export default function PublishPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
-  return <SettingsSection title="New Template" description="Start with one of your Projects."><Suspense fallback={<MarketplaceLoading />}><NewListing searchParams={searchParams} /></Suspense></SettingsSection>;
+  return <SettingsSection title="New Template" description="Start with one of your Projects."><Suspense fallback={<ProjectPickerSkeleton />}><NewListing searchParams={searchParams} /></Suspense></SettingsSection>;
 }

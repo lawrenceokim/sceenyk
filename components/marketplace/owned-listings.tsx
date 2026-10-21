@@ -10,6 +10,7 @@ import { EmptyState } from "@/components/empty-state";
 import type { ListingPage, OwnedListing } from "@/lib/marketplace/contract";
 import { TemplateLibrary } from "@/components/templates/template-library";
 import { OwnedInfiniteGallery } from "./owned-infinite-gallery";
+import { GallerySkeleton } from "./gallery-skeletons";
 
 type Props = { clerkUserId: string; result: ListingPage<OwnedListing>; presentation?: "management" | "library" };
 export function OwnedListings(props: Props) {
@@ -17,7 +18,7 @@ export function OwnedListings(props: Props) {
 }
 function AccountListings({ clerkUserId, result, presentation = "management" }: Props) {
   const { isLoaded, userId } = useAuth();
-  if (!isLoaded) return <p role="status">Opening your listings…</p>;
+  if (!isLoaded) return <GallerySkeleton variant={presentation === "library" ? "library" : "management"} />;
   if (userId !== clerkUserId) return <AccountAction intent="sign-in">Sign in to manage listings</AccountAction>;
   if (presentation === "library") return <TemplateLibrary result={result} />;
   return result.items.length

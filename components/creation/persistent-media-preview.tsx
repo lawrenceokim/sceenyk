@@ -6,6 +6,7 @@ import { readMediaAction } from "@/app/actions/media";
 import type { ProjectAsset } from "@/lib/media/types";
 import { Button } from "@/components/ui/button";
 import { RefreshCw } from "lucide-react";
+import { MediaPreviewSkeleton } from "@/components/ui/skeleton";
 
 export function PersistentMediaPreview({ asset, thumbnail = false }: { asset: ProjectAsset; thumbnail?: boolean }) {
   const [source, setSource] = useState<{ url?: string; error?: string }>({});
@@ -39,7 +40,7 @@ export function PersistentMediaPreview({ asset, thumbnail = false }: { asset: Pr
       <RefreshCw className="size-4" aria-hidden="true" />
     </button>;
     return source.url ? <Image src={source.url} alt={asset.filename} fill unoptimized sizes="64px" className="object-cover" onError={failed} />
-      : <span className="flex size-full items-center justify-center text-[10px] text-muted-foreground" role="status">Loading…</span>;
+      : <MediaPreviewSkeleton className="size-full rounded-md" />;
   }
   if (source.error)
     return (
@@ -62,12 +63,7 @@ export function PersistentMediaPreview({ asset, thumbnail = false }: { asset: Pr
     );
   if (!source.url)
     return (
-      <p
-        role="status"
-        className="min-h-48 rounded-lg bg-field p-5 text-body-sm text-muted-foreground"
-      >
-        Opening private preview…
-      </p>
+      <MediaPreviewSkeleton className={asset.kind === "audio" ? "h-48 w-full rounded-lg" : "h-64 w-full rounded-lg"} />
     );
   if (asset.kind === "image")
     return (

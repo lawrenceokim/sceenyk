@@ -1,4 +1,6 @@
 "use client";
+import { CreditAccountSkeleton, FinancialRowsSkeleton } from "./financial-skeletons";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useAuth } from "@clerk/nextjs";
 import { Coins, ExternalLink } from "lucide-react";
@@ -19,7 +21,8 @@ type Props = { clerkUserId: string; packs: CreditPack[]; configured: boolean; ch
 
 export function CreditPurchases(props: Props) {
   const { userId, isLoaded, isSignedIn } = useAuth();
-  if (!isLoaded || !isSignedIn || userId !== props.clerkUserId) return <p role="status">Opening your credit account…</p>;
+  if (!isLoaded) return <CreditAccountSkeleton />;
+  if (!isSignedIn || userId !== props.clerkUserId) return <p role="status">Opening your credit account…</p>;
   return <PurchaseAccount key={userId} {...props} />;
 }
 
@@ -163,7 +166,7 @@ function PurchaseAccount({ packs, configured, checkoutInNewTab = false }: Props)
     `} aria-label="Paid credit balance">
       <div>
         <p className="text-caption text-muted-foreground">Available paid credits</p>
-        <p className="mt-2 text-3xl font-bold">{wallet ? wallet.available.toLocaleString() : "—"}</p>
+        <p className="mt-2 text-3xl font-bold">{wallet ? wallet.available.toLocaleString() : walletLoaded ? "—" : <Skeleton className="h-9 w-24" />}</p>
         {wallet && <p className="mt-2 text-caption text-muted-foreground">{wallet.reserved.toLocaleString()} reserved for generations in progress</p>}
         <p className="mt-2 text-caption text-muted-foreground">Purchased credits do not expire.</p>
       </div>
@@ -215,7 +218,7 @@ function PurchaseAccount({ packs, configured, checkoutInNewTab = false }: Props)
       [.workspace-settings-inner_label&&_svg]:w-[18px] [.workspace-settings-inner_label&&_svg]:h-[18px]
     `} aria-labelledby="purchases-heading">
       <h2 id="purchases-heading" className="text-lg font-semibold">Recent purchases</h2>
-      {!wallet ? <p className="text-body-sm text-muted-foreground">{walletLoaded ? "Saved purchases are unavailable. Check purchases to try again." : "Loading saved purchases…"}</p> : !wallet.purchases.length ? <p className="text-body-sm text-muted-foreground">No credit purchases yet.</p> :
+      {!wallet ? walletLoaded ? <p className="text-body-sm text-muted-foreground">Saved purchases are unavailable. Check purchases to try again.</p> : <FinancialRowsSkeleton /> : !wallet.purchases.length ? <p className="text-body-sm text-muted-foreground">No credit purchases yet.</p> :
         <ul className="divide-y divide-border">{wallet.purchases.map((purchase, index) => <li key={purchase.orderId ?? `${purchase.created_at}-${index}`} className="space-y-2 py-4">
           <div className="flex flex-wrap justify-between gap-2 text-body-sm"><p className="font-medium">{purchase.pack_name} · {purchase.credits} credits</p><p>${purchase.amount} {purchase.currency} · {purchase.status}</p></div>
           <p className="text-caption text-muted-foreground">{statusCopy[purchase.status]}</p>
@@ -246,7 +249,7 @@ function PurchaseAccount({ packs, configured, checkoutInNewTab = false }: Props)
     `} aria-labelledby="credit-activity-heading">
       <h2 id="credit-activity-heading" className="text-lg font-semibold">Paid credit activity</h2>
       <p className="text-caption text-muted-foreground">Last 20 paid credit movements. Completion spends credits already reserved; it does not deduct them twice. Free generations are tracked separately.</p>
-      {!wallet ? <p className="text-body-sm text-muted-foreground">{walletLoaded ? "Credit activity is unavailable. Check purchases to try again." : "Loading activity…"}</p> : !wallet.activity.length ? <p className="text-body-sm text-muted-foreground">No paid credit activity yet.</p> : <ul className="divide-y divide-border">
+      {!wallet ? walletLoaded ? <p className="text-body-sm text-muted-foreground">Credit activity is unavailable. Check purchases to try again.</p> : <FinancialRowsSkeleton /> : !wallet.activity.length ? <p className="text-body-sm text-muted-foreground">No paid credit activity yet.</p> : <ul className="divide-y divide-border">
         {wallet.activity.map((entry, index) => <li key={`${entry.createdAt}-${index}`} className="flex flex-wrap items-center justify-between gap-2 py-3 text-body-sm">
           <div><p className="font-medium">{activityCopy[entry.type]}</p><time className="text-caption text-muted-foreground" dateTime={entry.createdAt}>{new Date(entry.createdAt).toLocaleString()}</time></div>
           <p>{entry.type === "consumption" ? `${entry.amount.toLocaleString()} reserved credits used` : `${entry.availableDelta > 0 ? "+" : ""}${entry.availableDelta.toLocaleString()} available credits`}</p>

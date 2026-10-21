@@ -1,3 +1,6 @@
+import { TemplateDetailSkeleton } from "@/components/marketplace/detail-skeletons";
+import { GallerySkeleton } from "@/components/marketplace/gallery-skeletons";
+import { moreLooksGridClassName } from "@/components/marketplace/gallery-skeletons";
 import { Suspense } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -5,7 +8,7 @@ import { ArrowLeft } from "lucide-react";
 import { unstable_rethrow } from "next/navigation";
 import { browseMarketplace, getMarketplaceListing } from "@/lib/marketplace/server";
 import type { Listing } from "@/lib/marketplace/contract";
-import { ListingCard, MarketplaceFailure, MarketplaceLoading } from "@/components/marketplace/listing-card";
+import { ListingCard, MarketplaceFailure } from "@/components/marketplace/listing-card";
 import { TemplateDetail } from "@/components/marketplace/template-detail";
 
 export const metadata: Metadata = { title: "Creator template — Sceenyk Marketplace" };
@@ -39,7 +42,7 @@ async function MoreLooks({ listing }: { listing: Listing }) {
   }
   return <section className={"marketplace-more [&&]:mt-[80px] [&&_>_h2]:mb-[26px] [&&_>_h2]:text-[length:20px] [&&_>_h2]:font-[700] [&&_>_h2]:leading-[26px] [&&_>_h2]:tracking-[-0.035em] max-599:[&&]:mt-[80px]"} aria-labelledby="more-looks">
     <h2 id="more-looks">More looks</h2>
-    {items.length ? <div className={"workspace-gallery marketplace-gallery marketplace-more-grid [[data-workspace-shell]_&&]:grid [[data-workspace-shell]_&&]:[grid-template-columns:repeat(auto-fill,minmax(min(100%,180px),1fr))] [[data-workspace-shell]_&&]:gap-[16px] max-599:[[data-workspace-shell]_&&]:[grid-template-columns:repeat(2,minmax(0,1fr))] max-599:[[data-workspace-shell]_&&]:gap-[8px] max-359:[[data-workspace-shell]_&&]:[grid-template-columns:minmax(0,1fr)] [[data-workspace-shell]_.workspace-gallery&&]:[grid-template-columns:repeat(auto-fill,_minmax(min(100%,_180px),_1fr))] [[data-workspace-shell]_.workspace-gallery&&]:gap-[16px] max-767:[[data-workspace-shell]_.workspace-gallery&&]:[grid-template-columns:minmax(0,_1fr)] max-599:[[data-workspace-shell]_.workspace-gallery&&]:gap-[16px] [[data-workspace-shell]_.workspace-gallery&&]:[grid-template-columns:repeat(4,_minmax(0,_1fr))] [[data-workspace-shell]_.workspace-gallery&&]:gap-[24px] container-max-859:[[data-workspace-shell]_.workspace-gallery&&]:[grid-template-columns:repeat(2,_minmax(0,_1fr))] container-max-859:[[data-workspace-shell]_.workspace-gallery&&]:gap-[16px]"}>{items.slice(0, 4).map(item => <ListingCard key={item.id} listing={item} />)}</div>
+    {items.length ? <div className={moreLooksGridClassName}>{items.slice(0, 4).map(item => <ListingCard key={item.id} listing={item} />)}</div>
       : <p className="text-body-sm text-muted-foreground">More published templates will appear here as creators share them.</p>}
   </section>;
 }
@@ -75,21 +78,9 @@ async function Detail({ params }: { params: Promise<{ listingId: string }> }) {
       max-599:[&&::before]:h-[570px]
     `}><MarketplaceBack /><section className="space-y-3"><h1 className="text-2xl font-bold">This template is unavailable</h1><p className="text-muted-foreground">It may no longer be published. Explore other creator templates.</p></section></div>;
   return <TemplateDetail listing={listing}>
-    <Suspense fallback={<section className={"marketplace-more [&&]:mt-[80px] [&&_>_h2]:mb-[26px] [&&_>_h2]:text-[length:20px] [&&_>_h2]:font-[700] [&&_>_h2]:leading-[26px] [&&_>_h2]:tracking-[-0.035em] max-599:[&&]:mt-[80px]"} aria-busy="true"><h2>More looks</h2><p role="status" className="text-body-sm text-muted-foreground">Loading more templates…</p></section>}><MoreLooks listing={listing} /></Suspense>
+    <Suspense fallback={<section className={"marketplace-more [&&]:mt-[80px] [&&_>_h2]:mb-[26px] [&&_>_h2]:text-[length:20px] [&&_>_h2]:font-[700] [&&_>_h2]:leading-[26px] [&&_>_h2]:tracking-[-0.035em] max-599:[&&]:mt-[80px]"} aria-busy="true"><h2>More looks</h2><GallerySkeleton variant="related" count={4} /></section>}><MoreLooks listing={listing} /></Suspense>
   </TemplateDetail>;
 }
 export default function ListingPage({ params }: { params: Promise<{ listingId: string }> }) {
-  return <Suspense fallback={<div className={`
-      marketplace-detail
-      [.workspace-content_.workspace-page[data-workspace-page='content'][data-workspace-view='template-detail']_>_&&]:mt-[0]
-      [&&]:relative [&&]:isolate [&&]:min-w-[0] [&&]:pt-[54px] [&&]:pr-[24px] [&&]:pb-[32px] [&&]:pl-[24px]
-      [&&]:rounded-[var(--ui-radius-frame)] [&&]:[container-type:inline-size] [&&::before]:absolute [&&::before]:z-[-1]
-      [&&::before]:top-[0] [&&::before]:right-[0] [&&::before]:left-[0] [&&::before]:h-[620px] [&&::before]:max-h-[100%]
-      [&&::before]:rounded-[var(--ui-radius-frame)_var(--ui-radius-frame)_0_0]
-      [&&::before]:[background:linear-gradient(_180deg,_color-mix(in_srgb,_var(--template-color,_var(--muted))_48%,_var(--card))_0%,_color-mix(in_srgb,_var(--template-color,_var(--muted))_22%,_var(--card))_40%,_color-mix(in_srgb,_var(--template-color,_var(--muted))_5%,_var(--card))_72%,_var(--card)_100%_)]
-      [&&::before]:[content:''] [&&::before]:pointer-events-none
-      [.dark_&&::before]:[background:linear-gradient(_180deg,_color-mix(in_srgb,_var(--template-color,_var(--muted))_65%,_var(--card))_0%,_color-mix(in_srgb,_var(--template-color,_var(--muted))_30%,_var(--card))_40%,_color-mix(in_srgb,_var(--template-color,_var(--muted))_7%,_var(--card))_72%,_var(--card)_100%_)]
-      max-1023:[&&]:pt-[40px] max-599:[&&]:pt-[40px] max-599:[&&]:pr-[16px] max-599:[&&]:pb-[24px] max-599:[&&]:pl-[16px]
-      max-599:[&&::before]:h-[570px]
-    `}><MarketplaceBack /><MarketplaceLoading /></div>}><Detail params={params} /></Suspense>;
+  return <Suspense fallback={<TemplateDetailSkeleton />}><Detail params={params} /></Suspense>;
 }

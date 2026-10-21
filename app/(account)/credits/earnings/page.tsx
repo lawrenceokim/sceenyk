@@ -1,3 +1,4 @@
+import { EarningsSkeleton } from "@/components/payments/financial-skeletons";
 import { Suspense } from "react";
 import Link from "next/link";
 import { unstable_rethrow } from "next/navigation";
@@ -51,5 +52,5 @@ export default function Page({ searchParams }: { searchParams: Promise<Record<st
       [.workspace-gallery-copy_&&]:text-[length:inherit] [.workspace-gallery-copy_&&]:leading-[inherit]
       [.workspace-settings-inner_&&]:min-h-[28px] [.workspace-settings-inner_&&]:text-[length:12px]
       [@media_(pointer:_coarse)]:[.workspace-settings-inner_&&]:min-h-[44px]
-    `} href="/marketplace/purchases">My Marketplace purchases</Link></nav><Suspense fallback={<p role="status">Loading your Marketplace account…</p>}><Content searchParams={searchParams} /></Suspense></div>;
+    `} href="/marketplace/purchases">My Marketplace purchases</Link></nav><Suspense fallback={<EarningsSkeleton />}><Content searchParams={searchParams} /></Suspense></div>;
 }

@@ -1,9 +1,10 @@
+import { CreatorStorefrontSkeleton } from "@/components/marketplace/detail-skeletons";
 import { Suspense } from "react";
 import Link from "next/link";
 import { notFound, unstable_rethrow } from "next/navigation";
 import { getCreatorStorefront } from "@/lib/marketplace/creators/server";
 import { CreatorStorefront } from "@/components/marketplace/creator-storefront";
-import { MarketplaceFailure, MarketplaceLoading } from "@/components/marketplace/listing-card";
+import { MarketplaceFailure } from "@/components/marketplace/listing-card";
 
 export const metadata = { title: "Creator storefront — Sceenyk Marketplace" };
 type Props = { params: Promise<{ creatorSlug: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> };
@@ -33,5 +34,5 @@ export default function Page(props: Props) {
       [.workspace-gallery-copy_&&]:text-[length:inherit] [.workspace-gallery-copy_&&]:leading-[inherit]
       [.workspace-settings-inner_&&]:min-h-[28px] [.workspace-settings-inner_&&]:text-[length:12px]
       [@media_(pointer:_coarse)]:[.workspace-settings-inner_&&]:min-h-[44px]
-    `}>Back to Marketplace</Link><Suspense fallback={<MarketplaceLoading />}><Storefront {...props} /></Suspense></div>;
+    `}>Back to Marketplace</Link><Suspense fallback={<CreatorStorefrontSkeleton />}><Storefront {...props} /></Suspense></div>;
 }

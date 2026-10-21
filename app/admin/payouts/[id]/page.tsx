@@ -1,3 +1,4 @@
+import { PayoutSupportSkeleton } from "@/components/payout-support/support-skeletons";
 import { Suspense } from "react";
 import { getPayoutSupportDetail } from "@/lib/payout-support/server";
 import { readSupportPage, supportPageNumber } from "@/lib/payout-support/page-read";
@@ -11,5 +12,5 @@ async function Content({ params, searchParams }: { params: Promise<{ id: string 
   return <PayoutDetailView data={result.data} {...input} />;
 }
 export default function Page(props: { params: Promise<{ id: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
-  return <Suspense fallback={<p role="status">Loading withdrawal support…</p>}><Content {...props} /></Suspense>;
+  return <Suspense fallback={<PayoutSupportSkeleton detail />}><Content {...props} /></Suspense>;
 }

@@ -1,4 +1,5 @@
 "use client";
+import { CreatorProfileSkeleton } from "@/components/settings/settings-skeletons";
 
 import { useId, useRef, useState, type FormEvent } from "react";
 import { useAuth } from "@clerk/nextjs";
@@ -11,7 +12,7 @@ import { CreatorAvatar } from "./creator-avatar";
 
 export function CreatorProfileEditor(props: { clerkUserId: string; profile: CreatorProfile | null }) {
   const { isLoaded, userId } = useAuth();
-  if (!isLoaded) return <p role="status">Opening your public profile settings…</p>;
+  if (!isLoaded) return <CreatorProfileSkeleton />;
   if (userId !== props.clerkUserId) return <AccountAction intent="sign-in">Sign in to manage your public profile</AccountAction>;
   return <Editor key={userId} initial={props.profile} />;
 }

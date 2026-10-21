@@ -6,6 +6,7 @@ import { getOwnedMarketplaceListing } from "@/lib/marketplace/server";
 import { MarketplaceFailure } from "@/components/marketplace/listing-card";
 import { TemplateDetail } from "@/components/marketplace/template-detail";
 import { TemplateAccountBoundary } from "@/components/templates/template-account-boundary";
+import { TemplateDetailSkeleton } from "@/components/marketplace/detail-skeletons";
 
 export const metadata: Metadata = { title: "Your template — Sceenyk", robots: { index: false, follow: false } };
 
@@ -19,5 +20,5 @@ async function OwnedTemplate({ params }: { params: Promise<{ listingId: string }
   return <TemplateAccountBoundary clerkUserId={user.clerk_user_id}><TemplateDetail listing={listing} owned /></TemplateAccountBoundary>;
 }
 export default function TemplatePage({ params }: { params: Promise<{ listingId: string }> }) {
-  return <Suspense fallback={<p role="status">Opening your template…</p>}><OwnedTemplate params={params} /></Suspense>;
+  return <Suspense fallback={<TemplateDetailSkeleton owned />}><OwnedTemplate params={params} /></Suspense>;
 }

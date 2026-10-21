@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle, DialogTrigger } 
 import { CreditPurchases } from "./credit-purchases";
 import { FreeAllowanceSummary } from "@/components/free-allowance";
 import { notifyCreditsChanged } from "@/lib/accounting/client-events";
+import { CreditAccountSkeleton } from "./financial-skeletons";
 
 type CheckoutData = Extract<Awaited<ReturnType<typeof creditCheckoutAction>>, { ok: true }>["data"];
 
@@ -44,5 +45,5 @@ function CheckoutOptions() {
   </> : error ? <div role="alert" className="space-y-3">
     <p>Credit packs couldn’t be loaded.</p>
     <Button variant="outline" onClick={() => setRevision(value => value + 1)}>Check credit packs</Button>
-  </div> : <p role="status">Loading credit packs…</p>;
+  </div> : <CreditAccountSkeleton />;
 }

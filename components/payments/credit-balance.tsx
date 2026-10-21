@@ -1,4 +1,5 @@
 "use client";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@clerk/nextjs";
@@ -62,7 +63,7 @@ function BalanceRead({ compact }: { compact: boolean }) {
       [.workspace-settings-inner_&&]:min-h-[28px] [.workspace-settings-inner_&&]:text-[length:12px]
       [@media_(pointer:_coarse)]:[.workspace-settings-inner_&&]:min-h-[44px]
     `} aria-label={`Paid credits: ${balance}. Buy credits`}>
-    <span aria-live="polite">Paid credits: {balance}</span>
+    <span aria-live="polite">Paid credits: {!loaded && !summary ? <Skeleton className="inline-block h-4 w-10 align-middle" /> : balance}</span>
     {summary?.lowBalance && <span className="text-warning-foreground">Low balance</span>}
-  </Link> : <span aria-live="polite">{balance}</span>;
+  </Link> : <span aria-live="polite">{!loaded && !summary ? <Skeleton className="inline-block h-4 w-10 align-middle" /> : balance}</span>;
 }

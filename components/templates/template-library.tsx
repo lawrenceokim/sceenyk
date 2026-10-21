@@ -1,3 +1,4 @@
+import { templateLibraryGridClassName } from "@/components/marketplace/gallery-skeletons";
 import Link from "next/link";
 import { LayoutTemplate } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
@@ -10,11 +11,7 @@ export function TemplateLibrary({ result }: { result: ListingPage<OwnedListing> 
   return (
     <section id="templates" aria-label="Your template gallery" className="scroll-mt-24 space-y-8 lg:scroll-mt-8">
       {result.items.length ? (
-        <ul className={`
-      template-saved-gallery [&&]:grid [&&]:[grid-template-columns:repeat(auto-fill,_minmax(min(100%,_206px),_206px))]
-      [&&]:gap-[16px]
-      max-767:[&&]:[grid-template-columns:minmax(0,_1fr)]
-    `}>
+        <ul className={templateLibraryGridClassName}>
           {result.items.map(listing => (
             <li key={listing.id} className="min-w-0">
               <TemplateCard listing={listing} />

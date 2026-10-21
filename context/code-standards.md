@@ -1,5 +1,12 @@
 # Code Standards
 
+## Remote async loading composition (2026-10-21)
+
+- Keep stable shells, headings, navigation and safe static controls synchronous. Resolve actual request-bound/uncached data and promised runtime params inside dedicated async Server Components below local Suspense boundaries, following `/projects`; do not start/await that work in a parent before wrapping its resolved JSX. Shared-layout boundaries alone do not cover every client navigation.
+- Reuse `components/ui/skeleton.tsx` primitives and feature-specific compositions matching the final UI dimensions. Share real gallery grid classes and existing scroll/panel owners. Use Tailwind/theme tokens and motion-safe animation; no standalone CSS or generic spinner for primary content.
+- Client effect/action reads use real existing pending/settled/error state rather than decorative Suspense. Retain loaded content during refresh; append matched cards for pagination while preserving its cancellation, identity, duplicate and cursor guards. Skeletons must disappear on failure and leave existing error/empty/retry behavior available.
+- Do not add timers/minimum display durations, placeholders for immediately available local/static content, shared authenticated caches, weakened authorization/ownership, or changed financial/generation logic. Expose meaningful loading status and keep decorative skeletons inaccessible. Validate proportionately; [the loading audit](progress-tracker.md#remote-loading-audit-2026-10-21) records the route/component audit and manual limits.
+
 ## Studio creation inputs (2026-10-20)
 
 The current feature supersedes prior UGC-only UI restrictions. Persist creationType/ugcType independently of legacy category and retain both source roles on switches. New Studio drafts explicitly choose UGC; omitted older payloads/projects use Freestyle and Advertisement. Reuse existing owned draft/private-media services, validate UGC references as images, retain stable reference grouping IDs, and authorize every reference removal/read by current owner and project. Removal detaches one UGC image without deleting storage/history or Freestyle media. Only Freestyle reaches the existing generation controls in this unit. Use shared Select, Tailwind and the unchanged Studio layout; do not implement sheets/scripts/videos. Migration 032 must precede application use; record local versus hosted evidence separately.

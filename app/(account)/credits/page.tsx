@@ -5,6 +5,7 @@ import { sandboxCreditPacks } from "@/lib/payments/packs";
 import { isPayPalConfigured } from "@/lib/payments/paypal/config";
 import { CreditPurchases } from "@/components/payments/credit-purchases";
 import { FreeAllowanceSummary } from "@/components/free-allowance";
+import { CreditAccountSkeleton } from "@/components/payments/financial-skeletons";
 
 export const metadata: Metadata = { title: "Credits & Billing — Sceenyk Sandbox" };
 
@@ -43,6 +44,6 @@ export default function CreditsPage() {
 
       <p className="max-w-2xl text-body text-muted-foreground">Test the credit purchase flow with a PayPal Sandbox buyer account. No real money is charged. These temporary hackathon packs are not production pricing.</p>
     </div>
-    <Suspense fallback={<p role="status">Loading your credit account…</p>}><CreditAccount /></Suspense>
+    <Suspense fallback={<CreditAccountSkeleton />}><CreditAccount /></Suspense>
   </div>;
 }

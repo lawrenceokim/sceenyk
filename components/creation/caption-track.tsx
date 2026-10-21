@@ -1,4 +1,5 @@
 "use client";
+import { Skeleton, SkeletonRegion } from "@/components/ui/skeleton";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { StudioPropertyControls } from "./studio-property-controls";
 import { Button } from "@/components/ui/button";
@@ -69,6 +70,7 @@ export function CaptionTrackPreview({ projectId, jobId }: { projectId: string; j
   }
   const track = data?.track;
   return <div className="space-y-3 border-t border-border pt-4 max-767:flex max-767:min-h-0 max-767:flex-col max-767:border-0 max-767:p-0" aria-label="Captions">
+    {!data && !error && <SkeletonRegion label="Loading captions…" className="space-y-3"><Skeleton className="h-5 w-32" /><Skeleton className="h-12 w-full" /></SkeletonRegion>}
     <StudioPropertyControls><h3 className="text-body-sm font-semibold">Captions</h3><div className="flex flex-wrap items-center justify-between gap-3">
       <label className="flex min-h-11 items-center gap-3 text-body-sm font-medium">
         <input type="checkbox" className="size-5 accent-primary" checked={data?.enabled ?? true}

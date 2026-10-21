@@ -1,5 +1,9 @@
 # Architecture Context
 
+## Remote-content loading composition (2026-10-21)
+
+Stable workspace chrome is presentation-only and renders outside the account identity boundary. `ProtectedWorkspace` still awaits `ensureAppUser()` before exposing any account page children, preserving Clerk redirects and synchronization failures. Its route-aware fallback reuses the selected Settings/Credits workspace and gallery/page geometry while authentication is pending. Individual request-bound page components retain local Suspense boundaries below shared layouts; parent pages must not start private reads before those boundaries. Marketplace category navigation resolves URL parameters separately from its nested database-backed `DiscoveryResults`. Client-owned wallet, media and pagination reads use their existing actual pending/settled states rather than simulated delays or Suspense around effects. No authenticated shared cache, authorization, storage access, schema or financial/provider contract changes.
+
 ## Projects request streaming (2026-10-21)
 
 `/projects` keeps its heading, description, New Project control and stable layout in a synchronous Server Component. A page-local Suspense boundary wraps async `OwnedProjects`, which resolves search parameters and Clerk identity before the existing owner-checked project, generation-status, media and Template-link reads. Its compact gallery skeleton shares the real grid sizing and reserves the preview/metadata/action dimensions. The shared account-layout boundary alone cannot cover client navigation within that layout; personalized page work must remain beneath the local boundary. Existing account synchronization, `connection()`, server ownership checks, client account fence and private/no-store policy remain unchanged. No authenticated shared cache or blocking route opt-out is introduced.

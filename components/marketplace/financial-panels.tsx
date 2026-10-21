@@ -12,6 +12,7 @@ import { EarningsHistory } from "./earnings-history";
 import { WithdrawalPanel } from "./withdrawal-panel";
 import { withdrawalAccountAction } from "@/app/actions/creator-withdrawals";
 import type { WithdrawalAccount } from "@/lib/marketplace/withdrawals/contract";
+import { EarningsSkeleton, PurchasesSkeleton } from "@/components/payments/financial-skeletons";
 
 type Props = { clerkUserId: string; page: number; earnings?: CreatorEarnings; withdrawals?: WithdrawalAccount; purchases?: { items: MarketplacePurchaseSummary[]; total: number } };
 export function FinancialPanel(props: Props) {
@@ -19,7 +20,7 @@ export function FinancialPanel(props: Props) {
 }
 function AccountPanel(props: Props) {
   const { isLoaded, userId } = useAuth();
-  if (!isLoaded) return <p role="status">Loading your Marketplace account…</p>;
+  if (!isLoaded) return props.earnings ? <EarningsSkeleton /> : <PurchasesSkeleton />;
   if (userId !== props.clerkUserId) return <AccountAction intent="sign-in">Sign in to view your Marketplace account</AccountAction>;
   return <Panel key={`${userId}:${props.page}`} {...props} />;
 }

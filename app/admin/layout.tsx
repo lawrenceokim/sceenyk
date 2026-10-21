@@ -1,3 +1,4 @@
+import { SupportLoading } from "@/components/payout-support/support-loading";
 import { Suspense, type ReactNode } from "react";
 import Link from "next/link";
 import { requireAdminOrSupport } from "@/lib/auth/require-admin-or-support";
@@ -9,7 +10,7 @@ import { WorkspacePageFrame } from "@/components/workspace/workspace-page-frame"
 export const metadata = { robots: { index: false, follow: false } };
 async function ProtectedInternal({ children }: { children: ReactNode }) {
   const authorized = await readSupportPage(requireAdminOrSupport);
-  return <WorkspaceShell><WorkspacePageFrame>
+  return <>
     <nav aria-label="Internal navigation" className="flex flex-wrap gap-x-6 gap-y-2 border-b border-border pb-5 text-body-sm">
       <Link prefetch={false} href="/admin/payouts" className={`
       [@layer_components]:inline-flex [@layer_components]:min-h-[var(--control-height)] [@layer_components]:items-center
@@ -64,12 +65,8 @@ async function ProtectedInternal({ children }: { children: ReactNode }) {
     `} href="/studio">Return to Studio</Link>
     </nav>
     {authorized.ok ? children : <SupportUnavailable />}
-  </WorkspacePageFrame></WorkspaceShell>;
+  </>;
 }
 export default function AdminLayout({ children }: { children: ReactNode }) {
-  return <Suspense fallback={<p role="status" className={`
-      [@layer_components]:w-[100%] [@layer_components]:max-w-[var(--content-width)] [@layer_components]:ml-[auto]
-      [@layer_components]:mr-[auto] [@layer_components]:pl-[var(--page-gutter)] [@layer_components]:pr-[var(--page-gutter)]
-      sceenyk-container py-10 text-muted-foreground
-    `}>Opening internal workspace…</p>}><ProtectedInternal>{children}</ProtectedInternal></Suspense>;
+  return <WorkspaceShell><WorkspacePageFrame><Suspense fallback={<SupportLoading />}><ProtectedInternal>{children}</ProtectedInternal></Suspense></WorkspacePageFrame></WorkspaceShell>;
 }

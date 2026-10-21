@@ -3,6 +3,7 @@
 import { useClerk, useUser, UserAvatar } from "@clerk/nextjs";
 import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { AccountSettingsSkeleton } from "./settings-skeletons";
 
 export function AccountSettings({ clerkUserId, security = false }: { clerkUserId: string; security?: boolean }) {
   const { user, isLoaded } = useUser();
@@ -20,7 +21,7 @@ export function AccountSettings({ clerkUserId, security = false }: { clerkUserId
     } catch { setError("Account controls are temporarily unavailable. Reopen Settings and try again."); }
     finally { running.current = false; setBusy(false); }
   }
-  if (!isLoaded) return <p role="status">Loading your account…</p>;
+  if (!isLoaded) return <AccountSettingsSkeleton security={security} />;
   if (!user || user.id !== clerkUserId) return <p role="status">Reopen Settings to view your current account.</p>;
   return <div className={`
       [@layer_components]:[border:1px_solid_var(--border)] [@layer_components]:rounded-[var(--radius-xl)]

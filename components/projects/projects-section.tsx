@@ -1,3 +1,4 @@
+import { SavedCardSkeleton } from "@/components/marketplace/gallery-skeletons";
 import Link from "next/link";
 import { FolderOpen, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -15,14 +16,7 @@ export function ProjectsGallerySkeleton() {
       <span className="sr-only">Loading your projects…</span>
       <ul className={projectGridClassName} aria-hidden="true">
         {Array.from({ length: 6 }, (_, index) => (
-          <li key={index} className="min-w-0 rounded-[13px] border border-border bg-card p-[10px]">
-            <div className="motion-safe:animate-pulse">
-              <div className="aspect-[4/3] w-full rounded-[9px] bg-muted" />
-              <div className="mx-1 mt-[10px] h-[18px] w-3/4 rounded bg-muted" />
-              <div className="mx-1 mt-0.5 h-4 w-1/2 rounded bg-muted" />
-              <div className="mt-2 h-[30px] rounded bg-muted [@media(pointer:coarse)]:h-11" />
-            </div>
-          </li>
+          <li key={index} className="min-w-0"><SavedCardSkeleton /></li>
         ))}
       </ul>
     </section>

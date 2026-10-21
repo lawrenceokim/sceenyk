@@ -1,3 +1,4 @@
+import { PayoutSupportSkeleton } from "@/components/payout-support/support-skeletons";
 import { Suspense } from "react";
 import { getPayoutSupportQueue } from "@/lib/payout-support/server";
 import { readSupportPage, supportPageNumber } from "@/lib/payout-support/page-read";
@@ -11,5 +12,5 @@ async function Content({ searchParams }: { searchParams: Promise<Record<string, 
   return <PayoutQueueView data={result.data} query={result.data.filters.query} status={result.data.filters.status} />;
 }
 export default function Page({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
-  return <Suspense fallback={<p role="status">Loading payout queue…</p>}><Content searchParams={searchParams} /></Suspense>;
+  return <Suspense fallback={<PayoutSupportSkeleton />}><Content searchParams={searchParams} /></Suspense>;
 }

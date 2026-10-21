@@ -1,3 +1,4 @@
+import { GallerySkeleton } from "./gallery-skeletons";
 import Link from "next/link";
 import { ArrowUpRight, Layers3, Store } from "lucide-react";
 import { creationCategories } from "@/components/creation/creation-options";
@@ -107,13 +108,7 @@ export function ListingCard({ listing }: { listing: Listing }) {
   </article>;
 }
 export function MarketplaceLoading() {
-  return <div aria-busy="true" role="status"><p className="mb-5 text-muted-foreground">Loading Marketplace…</p><div className={"workspace-gallery [[data-workspace-shell]_&&]:grid [[data-workspace-shell]_&&]:[grid-template-columns:repeat(auto-fill,minmax(min(100%,180px),1fr))] [[data-workspace-shell]_&&]:gap-[16px] max-599:[[data-workspace-shell]_&&]:[grid-template-columns:repeat(2,minmax(0,1fr))] max-599:[[data-workspace-shell]_&&]:gap-[8px] max-359:[[data-workspace-shell]_&&]:[grid-template-columns:minmax(0,1fr)]"}>{Array.from({ length: 6 }, (_, i) => <div key={i} className={`
-      workspace-gallery-card h-72 bg-muted motion-safe:animate-pulse [&&]:min-w-[0] [&&]:flex [&&]:flex-col
-      [&&]:[border:1px_solid_var(--border)] [&&]:rounded-[18px] [&&]:pt-[8px] [&&]:pr-[8px] [&&]:pb-[8px] [&&]:pl-[8px]
-      [&&]:[background:var(--card)] [&&]:overflow-hidden [&&_>_a:first-child]:rounded-[12px]
-      [&&_>_a:first-child]:overflow-hidden max-599:[&&]:pt-[6px] max-599:[&&]:pr-[6px] max-599:[&&]:pb-[6px]
-      max-599:[&&]:pl-[6px] max-599:[&&]:rounded-[14px]
-    `} />)}</div></div>;
+  return <GallerySkeleton />;
 }
 export function MarketplaceFailure({ href = "/marketplace" }: { href?: string }) {
   return <section className={`

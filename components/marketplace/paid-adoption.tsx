@@ -1,4 +1,5 @@
 "use client";
+import { PurchaseSummarySkeleton } from "@/components/payments/financial-skeletons";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -58,7 +59,7 @@ export function PaidAdoption({ listingId, estimate }: { listingId: string; estim
       [.workspace-gallery-copy_&&]:text-[length:inherit] [.workspace-gallery-copy_&&]:leading-[inherit]
       [.workspace-settings-inner_&&]:min-h-[28px] [.workspace-settings-inner_&&]:text-[length:12px]
       [@media_(pointer:_coarse)]:[.workspace-settings-inner_&&]:min-h-[44px]
-    `} href={approval}>Continue to PayPal Sandbox</a>}<Button variant="outline" className="w-full" disabled={busy} onClick={() => void run("recover")}>Check saved purchase</Button></div>}<p role="status" className="text-body-sm text-destructive">{error || (!purchase && busy ? "Loading payment summary…" : "")}</p><Link className={`
+    `} href={approval}>Continue to PayPal Sandbox</a>}<Button variant="outline" className="w-full" disabled={busy} onClick={() => void run("recover")}>Check saved purchase</Button></div>}{!purchase && busy && !error && <PurchaseSummarySkeleton />}<p role="status" className="text-body-sm text-destructive">{error}</p><Link className={`
       [@layer_components]:inline-flex [@layer_components]:min-h-[var(--control-height)] [@layer_components]:items-center
       [@layer_components]:gap-[var(--space-1)] [@layer_components]:text-[color:var(--muted-foreground)]
       [@layer_components]:text-[length:var(--text-body-sm)] [@layer_components]:font-[500]

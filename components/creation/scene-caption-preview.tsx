@@ -1,4 +1,5 @@
 "use client";
+import { MediaPreviewSkeleton } from "@/components/ui/skeleton";
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Select } from "@/components/ui/select";
@@ -135,7 +136,8 @@ export function SceneCaptionPreview({ projectId, jobId, track, enabled, style, s
   }
 
   if (error) return <p role="status" className="text-body-sm text-muted-foreground">{error}</p>;
-  if (!scene?.visual) return <p role="status" className="text-body-sm text-muted-foreground">Loading scene preview…</p>;
+  if (!plan) return <MediaPreviewSkeleton className="aspect-video max-h-full w-full rounded-lg" />;
+  if (!scene?.visual) return <p role="status" className="text-body-sm text-muted-foreground">Scene preview is unavailable.</p>;
   const resolvedStyle = resolveCaptionStyle(style, track.aspect_ratio);
   const safe = resolvedStyle.safe_area_percent;
   const cue = track.cues.find(item => item.id === activeCueId);
@@ -161,7 +163,7 @@ export function SceneCaptionPreview({ projectId, jobId, track, enabled, style, s
       {enabled && cue && <div data-caption-cue={cue.id} className="pointer-events-none absolute z-10" style={{ left: `${safe.horizontal}%`, right: `${safe.horizontal}%`, [resolvedStyle.position]: `${safe.vertical}%`, textAlign: resolvedStyle.alignment }}>
         <span className="inline-block max-w-full break-words" style={previewCaptionPaint(resolvedStyle, frameHeight)}>{cue.text}</span>
       </div>}
-      {!media && <span className="absolute inset-0 grid place-items-center text-body-sm text-white">{loadingMedia ? "Loading private scene…" : "Scene unavailable"}</span>}
+      {!media && (loadingMedia ? <MediaPreviewSkeleton overlay /> : <span className="absolute inset-0 grid place-items-center text-body-sm text-white">Scene unavailable</span>)}
     </div>
     <StudioPropertyControls>{mediaError && <p role="status" className="text-caption text-destructive">{mediaError}</p>}
     <div className="flex flex-wrap items-center gap-2">

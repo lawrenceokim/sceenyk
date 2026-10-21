@@ -1,3 +1,4 @@
+import { ListingEditorSkeleton } from "@/components/marketplace/detail-skeletons";
 import { SettingsSection } from "@/components/settings/settings-section";
 import { Suspense } from "react";
 import type { Metadata } from "next";
@@ -6,7 +7,7 @@ import { unstable_rethrow } from "next/navigation";
 import { ensureAppUser } from "@/lib/auth/ensure-app-user";
 import { getOwnedMarketplaceListing } from "@/lib/marketplace/server";
 import { ListingEditor } from "@/components/marketplace/listing-editor";
-import { MarketplaceFailure, MarketplaceLoading } from "@/components/marketplace/listing-card";
+import { MarketplaceFailure } from "@/components/marketplace/listing-card";
 
 export const metadata: Metadata = { title: "Manage Template — Sceenyk", robots: { index: false, follow: false } };
 async function OwnedListing({ params }: { params: Promise<{ listingId: string }> }) {
@@ -47,5 +48,5 @@ async function OwnedListing({ params }: { params: Promise<{ listingId: string }>
   return <ListingEditor clerkUserId={user.clerk_user_id} listing={listing} />;
 }
 export default function ManageListingPage({ params }: { params: Promise<{ listingId: string }> }) {
-  return <SettingsSection title="Manage Template" description="Review your template and control when it appears in Marketplace."><Suspense fallback={<MarketplaceLoading />}><OwnedListing params={params} /></Suspense></SettingsSection>;
+  return <SettingsSection title="Manage Template" description="Review your template and control when it appears in Marketplace."><Suspense fallback={<ListingEditorSkeleton />}><OwnedListing params={params} /></Suspense></SettingsSection>;
 }

@@ -1,5 +1,11 @@
 # AI Workflow Rules
 
+## Default loading-state workflow (2026-10-21)
+
+When a task introduces or changes external async reads, inspect its page, layouts, data-access owner and client consumers first. Use Projects' Suspense architecture: render the stable shell immediately, put the actual request-bound read inside the async child, and provide a skeleton matching the final layout. Read installed Next.js streaming/cache/auth guides before changing boundaries. Keep authentication, owner checks and private caching policies unchanged; never share-cache another user's data to suppress a warning.
+
+Reuse shared skeleton primitives and existing feature/card/scroll geometry. Distinguish server Suspense from client effects, first load from refresh, pagination from full replacement, and loading from operational progress/error/empty states. Add no fake delays or skeletons to static/local content. Append compact placeholders while loading more, preserve cancellation/cursor/deduplication and render the existing failure UI when a request settles unsuccessfully. Use Tailwind neutral tokens with reduced-motion support; no generic primary spinner or extra stylesheets. Document affected surfaces and deliberate exclusions in the tracker/audit. Loading-only UI work uses focused TypeScript/lint and only targeted route checks needed for implementation correctness; no automatic browser/screenshot suites, full regressions, deployment or hosted Inngest. Manual visual review remains with the user.
+
 ## Current unit: dynamic Studio Sources/Properties (2026-10-20)
 
 This explicitly authorized feature supersedes older UGC-only/presentation-only constraints for its bounded draft/media changes. Creation Type offers UGC and Freestyle, with retained per-flow inputs and persisted UGC Type. Inspect/reuse owned projects, private R2 media and shared dropdowns. Additive migration 032 keeps old/adopted projects Freestyle and groups image references for future expansion. Do not implement generation, character/product sheets, scripts, videos, or trigger hosted Inngest. Preserve financial/auth/Marketplace behavior and Studio geometry. The user requests minimal TypeScript/lint and focused checks only: no full build, browser/screenshot/deployment acceptance or broad regressions. Stop for manual UI inspection and record migration application as pending until verified.

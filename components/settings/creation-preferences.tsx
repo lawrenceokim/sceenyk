@@ -8,10 +8,11 @@ import { aspectRatios } from "@/lib/projects/options";
 import { creationCategories } from "@/components/creation/creation-options";
 import { creationPreferencesSchema, type CreationPreferences } from "@/lib/settings/contract";
 import { saveCreationPreferencesAction } from "@/app/actions/settings";
+import { CreationPreferencesSkeleton } from "./settings-skeletons";
 
 export function CreationPreferencesForm({ clerkUserId, preferences }: { clerkUserId: string; preferences: CreationPreferences }) {
   const { userId, isLoaded } = useAuth();
-  if (!isLoaded) return <p role="status">Loading creation defaults…</p>;
+  if (!isLoaded) return <CreationPreferencesSkeleton />;
   if (userId !== clerkUserId) return <p role="status">Reopen Settings for your current account.</p>;
   return <PreferenceForm key={userId} clerkUserId={clerkUserId} preferences={preferences} />;
 }

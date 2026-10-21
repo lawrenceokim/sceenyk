@@ -3,26 +3,33 @@
 import Image from "next/image";
 import { useEffect, useState, type ReactNode } from "react";
 import { readTemplateSourceAction } from "@/app/actions/marketplace";
+import { MediaPreviewSkeleton } from "@/components/ui/skeleton";
 
 export function TemplateMediaPreview({ listingId, previewUrl, owned, large, children }: {
   listingId?: string; previewUrl?: string | null; owned?: boolean; large?: boolean; children: ReactNode;
 }) {
   const [source, setSource] = useState<{ id: string; url: string; kind: "image" | "video" } | null>(null);
   const [failed, setFailed] = useState<string | null>(null);
+  const [settledListingId, setSettledListingId] = useState<string | null>(null);
+  const [loadedUrl, setLoadedUrl] = useState<string | null>(null);
   useEffect(() => {
     if (!owned || !listingId || previewUrl) return;
     let active = true;
     void readTemplateSourceAction(listingId).then(result => {
-      if (active && result) setSource({ id: listingId, ...result });
-    }).catch(() => {});
+      if (!active) return;
+      setSettledListingId(listingId);
+      if (result) setSource({ id: listingId, ...result });
+    }).catch(() => { if (active) setSettledListingId(listingId); });
     return () => { active = false; };
   }, [listingId, owned, previewUrl]);
   const media = previewUrl ? { url: previewUrl, kind: "image" as const } : source?.id === listingId ? source : null;
+  if (owned && listingId && !previewUrl && settledListingId !== listingId) return <MediaPreviewSkeleton className={large ? "aspect-square w-full" : "aspect-[4/3] w-full"} />;
   if (!media || failed === media.url) return children;
   return <div className={`relative w-full overflow-hidden bg-muted ${large ? "aspect-square" : "aspect-[4/3]"}`}>
     {media.kind === "image"
-      ? <Image src={media.url} alt="Template preview" fill unoptimized sizes={large ? "(max-width: 767px) 100vw, 70vw" : "(max-width: 767px) 100vw, 250px"} className="object-cover" onError={() => setFailed(media.url)} />
-      : <video src={media.url} muted playsInline preload="metadata" controls={large} className="absolute inset-0 size-full object-cover" aria-label="Template video preview" onError={() => setFailed(media.url)} />}
+      ? <Image src={media.url} alt="Template preview" fill unoptimized sizes={large ? "(max-width: 767px) 100vw, 70vw" : "(max-width: 767px) 100vw, 250px"} className="object-cover" onLoad={() => setLoadedUrl(media.url)} onError={() => setFailed(media.url)} />
+      : <video src={media.url} muted playsInline preload="metadata" controls={large} className="absolute inset-0 size-full object-cover" aria-label="Template video preview" onLoadedMetadata={() => setLoadedUrl(media.url)} onError={() => setFailed(media.url)} />}
+    {loadedUrl !== media.url && <MediaPreviewSkeleton overlay />}
   </div>;
 }
 

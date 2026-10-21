@@ -7,6 +7,7 @@ import { ChevronsUpDown, LogOut, UserRound } from "lucide-react";
 import { useAuthAvailable } from "@/components/auth/auth-availability";
 import { cn } from "@/lib/utils";
 import { popupMotion } from "@/components/ui/motion";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const accountLinks = [
   ["Account", "/settings/account"], ["Creator Profile", "/settings/creator-profile"],
@@ -22,7 +23,7 @@ function ConfiguredUserMenu({ collapsed, onNavigate }: { collapsed: boolean; onN
   const { isLoaded, isSignedIn } = useAuth();
   const { user } = useUser();
   const { signOut } = useClerk();
-  if (!isLoaded) return <div className="h-12 rounded-xl bg-muted" role="status" aria-label="Loading account" />;
+  if (!isLoaded) return <div className="flex min-h-14 items-center gap-3 overflow-hidden rounded-xl p-2" role="status" aria-label="Loading account"><Skeleton className="size-8 shrink-0 rounded-full" />{!collapsed && <div className="min-w-0 flex-1 space-y-1"><Skeleton className="h-4 w-3/4" /><Skeleton className="h-3 w-full" /></div>}</div>;
   if (!isSignedIn || !user) return <GuestAccount collapsed={collapsed} onNavigate={onNavigate} />;
   return <Menu.Root>
     <Menu.Trigger aria-label="Open account menu" title={collapsed ? "Your account" : undefined} className={cn("flex min-h-14 w-full items-center gap-3 overflow-hidden rounded-xl p-2 text-left transition-colors duration-[var(--motion-micro)] ease-[var(--motion-ease)] hover:bg-sidebar-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sidebar-ring")}>

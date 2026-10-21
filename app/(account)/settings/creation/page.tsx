@@ -1,6 +1,7 @@
+import { CreationPreferencesSection } from "@/components/settings/settings-content-shells";
+import { CreationPreferencesSkeleton } from "@/components/settings/settings-skeletons";
 import { Suspense } from "react";
 import { unstable_rethrow } from "next/navigation";
-import { SettingsSection, SettingsCard } from "@/components/settings/settings-section";
 import { CreationPreferencesForm } from "@/components/settings/creation-preferences";
 import { getCreationPreferences } from "@/lib/settings/server";
 async function Content() {
@@ -22,5 +23,5 @@ async function Content() {
   return <CreationPreferencesForm {...result} />;
 }
 export default function Page() {
-  return <SettingsSection title="Creation Preferences" description="Start new projects with your preferred defaults. Change them freely inside each project; saved and adopted projects keep their own settings."><Suspense fallback={<p role="status">Loading creation defaults…</p>}><Content /></Suspense><SettingsCard title="Captions and narration"><p>Caption visibility and style are currently configured per generation. Account defaults for captions and narration voice selection are future work; your existing generation controls remain available.</p></SettingsCard></SettingsSection>;
+  return <CreationPreferencesSection><Suspense fallback={<CreationPreferencesSkeleton />}><Content /></Suspense></CreationPreferencesSection>;
 }

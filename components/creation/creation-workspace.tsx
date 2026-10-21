@@ -1,4 +1,5 @@
 "use client";
+import { StudioSkeleton } from "./studio-skeleton";
 
 import { BeforeAccountAuth } from "@/components/auth/before-account-auth";
 import { clearGuestDraft, readGuestDraft, rememberGuestDraft } from "./guest-draft";
@@ -49,7 +50,8 @@ type WorkspaceProps = {
 
 function AccountWorkspace(props: WorkspaceProps) {
   const { isLoaded, isSignedIn, userId } = useAuth();
-  if (props.initialProject && (!isLoaded || userId !== props.viewerUserId)) {
+  if (!isLoaded) return <StudioSkeleton />;
+  if (props.initialProject && userId !== props.viewerUserId) {
     return (
       <div className={`
       [@layer_components]:[border:1px_solid_var(--border)] [@layer_components]:rounded-[var(--radius-xl)]
@@ -77,7 +79,6 @@ function AccountWorkspace(props: WorkspaceProps) {
       </div>
     );
   }
-  if (!props.initialProject && !isLoaded) return <p role="status">Opening your creation workspace…</p>;
   if (!props.initialProject && isSignedIn && userId) return <NewAccountWorkspace key={userId} userId={userId} />;
   return (
     <WorkspaceEditor
@@ -107,7 +108,7 @@ function NewAccountWorkspace({ userId }: { userId: string }) {
     }).catch(() => { if (active) setResult({ preferences: defaultCreationPreferences, unavailable: true }); });
     return () => { active = false; };
   }, [userId]);
-  if (!result) return <p role="status">Loading your creation defaults…</p>;
+  if (!result) return <StudioSkeleton />;
   return <WorkspaceEditor signedIn authReady initialPreferences={result.preferences} preferencesUnavailable={result.unavailable} restoredDraft={guestDraft ?? undefined} />;
 }
 

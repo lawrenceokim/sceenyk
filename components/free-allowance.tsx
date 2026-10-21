@@ -1,4 +1,5 @@
 "use client";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useEffect, useState } from "react";
 import { useAuth } from "@clerk/nextjs";
 import { freeAllowanceAction } from "@/app/actions/accounting";
@@ -86,7 +87,7 @@ function AllowanceRead({ signedIn = false, refreshKey = "", compact = false }: A
   return (
     <div className="space-y-2 text-caption leading-relaxed text-muted-foreground">
       <p role="status" aria-live="polite" className="font-medium text-foreground">
-        {label}
+        {signedIn && !allowance && !error ? <Skeleton className="h-4 w-44 max-w-full" /> : label}
       </p>
       {signedIn && allowance && !error && allowance.reserved > 0 && (
         <p>{allowance.reserved} reserved for generation in progress.</p>

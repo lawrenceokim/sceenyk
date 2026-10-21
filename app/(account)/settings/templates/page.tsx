@@ -1,3 +1,4 @@
+import { GallerySkeleton } from "@/components/marketplace/gallery-skeletons";
 import { SettingsSection } from "@/components/settings/settings-section";
 import { Suspense } from "react";
 import Link from "next/link";
@@ -5,7 +6,7 @@ import type { Metadata } from "next";
 import { unstable_rethrow } from "next/navigation";
 import { ensureAppUser } from "@/lib/auth/ensure-app-user";
 import { listOwnedMarketplaceListings } from "@/lib/marketplace/server";
-import { MarketplaceFailure, MarketplaceLoading } from "@/components/marketplace/listing-card";
+import { MarketplaceFailure } from "@/components/marketplace/listing-card";
 import { OwnedListings } from "@/components/marketplace/owned-listings";
 import { Button } from "@/components/ui/button";
 
@@ -73,5 +74,5 @@ export default function MyListingsPage({ searchParams }: { searchParams: Promise
       [.workspace-gallery-copy_&&]:text-[length:inherit] [.workspace-gallery-copy_&&]:leading-[inherit]
       [.workspace-settings-inner_&&]:min-h-[28px] [.workspace-settings-inner_&&]:text-[length:12px]
       [@media_(pointer:_coarse)]:[.workspace-settings-inner_&&]:min-h-[44px]
-    `} href="/marketplace/purchases">My Marketplace purchases</Link></nav><Suspense fallback={<MarketplaceLoading />}><Listings searchParams={searchParams} /></Suspense></SettingsSection></div>;
+    `} href="/marketplace/purchases">My Marketplace purchases</Link></nav><Suspense fallback={<GallerySkeleton variant="management" />}><Listings searchParams={searchParams} /></Suspense></SettingsSection></div>;
 }
