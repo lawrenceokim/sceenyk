@@ -18,7 +18,7 @@ export function CreditTopUp() {
     if (!next) notifyCreditsChanged();
   }}>
     <DialogTrigger render={<Button type="button" variant="outline" />}>Top up credits</DialogTrigger>
-    <DialogContent className="sm:max-w-3xl">
+    <DialogContent className="scrollbar-hidden sm:max-w-3xl">
       <DialogTitle className="pr-8 text-xl font-semibold">Buy credits</DialogTitle>
       <DialogDescription>One-time PayPal Sandbox purchases with test funds. Temporary demo prices are not production pricing. Checkout opens in a separate tab so your current draft stays here.</DialogDescription>
       {open && <CheckoutOptions />}

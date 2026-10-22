@@ -15,7 +15,8 @@ import type { GenerationJob } from "@/lib/generation/types";
 import { ProjectGeneration } from "./project-generation";
 import { CategorySelector } from "./category-selector";
 import { StudioReferenceSources } from "./studio-reference-sources";
-import { collectStudioSources, prepareStudioInputs } from "./studio-inputs";
+import { collectStudioSources, prepareStudioInputs, studioReferenceImages } from "./studio-inputs";
+import { ugcV1LimitMessages, ugcV1SelectionError } from "@/lib/projects/ugc-v1";
 import type { CreationType, UgcType } from "@/lib/projects/options";
 import { mediaKindForMime } from "@/lib/media/validation";
 import { CreationPreview } from "./creation-preview";
@@ -167,9 +168,10 @@ function WorkspaceEditor({
   const [savedBrief, setSavedBrief] = useState<ProjectDraft | null>(
     initialProject ?? null,
   );
-  const [selectedFiles, setSelectedFiles] = useState<LocalMedia[]>(restoredDraft?.files ?? []);
+  const [selection, setSelection] = useState<{ files: LocalMedia[]; error: string }>({ files: restoredDraft?.files ?? [], error: "" });
+  const selectedFiles = selection.files;
   const [selectedFileId, setSelectedFileId] = useState<string | null>(null);
-  const [mediaError, setMediaError] = useState("");
+  const mediaError = selection.error;
   const [settings, setSettings] = useState<CreationSettings>(
     initialProject?.settings ?? restoredDraft?.brief.settings ?? {
       aspectRatio: initialPreferences.aspectRatio,
@@ -244,6 +246,12 @@ function WorkspaceEditor({
     initialAssets,
     initialError: initialMediaError,
     projectId,
+    validateUpload: (media, assets) => {
+      if (!media.studioRole || media.studioRole === "freestyle") return null;
+      const retained = collectStudioSources(selectedFiles, assets);
+      const references = media.studioRole === "character" ? retained.characters : retained.products;
+      return studioReferenceImages(references).length > 1 ? ugcV1LimitMessages[media.studioRole] : null;
+    },
     ensureProject: () =>
       persistedId.current ? Promise.resolve(persistedId.current) : saveDraft(),
     onPersisted: () => {
@@ -253,9 +261,7 @@ function WorkspaceEditor({
       setSaveState(current => current.status === "error" ? current : { status: "saved", savedAt: Date.now() });
     },
     onUploaded: (localId, assetId, role) => {
-      setSelectedFiles((files) =>
-        files.filter((media) => media.id !== localId),
-      );
+      setSelection(current => ({ ...current, files: current.files.filter(media => media.id !== localId) }));
       if (role === "freestyle") setSelectedFileId(assetId);
     },
   });
@@ -264,7 +270,9 @@ function WorkspaceEditor({
   // Failed files wait for explicit retry; changing type never cancels/clears them.
   useEffect(() => {
     if (!signedIn || mediaUpload.busy) return;
-    const next = selectedFiles.find(file => file.studioRole && file.studioRole !== "freestyle" && !mediaUpload.uploadStates[file.id]);
+    const retained = collectStudioSources(selectedFiles, mediaUpload.assets);
+    const next = selectedFiles.find(file => file.studioRole && file.studioRole !== "freestyle" && !mediaUpload.uploadStates[file.id]
+      && studioReferenceImages(file.studioRole === "character" ? retained.characters : retained.products).length <= 1);
     if (next) void mediaUpload.upload(next);
   }, [signedIn, selectedFiles, mediaUpload]);
   const sources = collectStudioSources(selectedFiles, mediaUpload.assets);
@@ -282,6 +290,7 @@ function WorkspaceEditor({
       : undefined) : undefined;
 
   function addFiles(files: File[], studioRole: StudioMediaRole = "freestyle") {
+    if (!files.length) return;
     const accepted: LocalMedia[] = [];
     const rejected: string[] = [];
     for (const file of files) {
@@ -293,8 +302,16 @@ function WorkspaceEditor({
       const id = crypto.randomUUID();
       accepted.push({ id, file, kind, studioRole, ...(studioRole !== "freestyle" ? { referenceId: id } : {}) });
     }
-    setSelectedFiles((current) => {
-      const updated = [...current];
+    setSelection((current) => {
+      if (studioRole !== "freestyle") {
+        const retained = collectStudioSources(current.files, mediaUpload.assets);
+        const references = studioRole === "character" ? retained.characters : retained.products;
+        const limitError = ugcV1SelectionError(studioRole, studioReferenceImages(references).length, files.length);
+        if (limitError) {
+          return { ...current, error: limitError };
+        }
+      }
+      const updated = [...current.files];
       for (const media of accepted) {
         if (
           !updated.some(
@@ -308,22 +325,19 @@ function WorkspaceEditor({
         )
           updated.push(media);
       }
-      return updated;
-    });
-    setMediaError(
-      rejected.length
+      const error = rejected.length
         ? `Couldn’t add ${rejected.join(", ")}. ${studioRole === "freestyle" ? "Choose a non-empty image, video, or audio file." : "Choose a supported, non-empty image (PNG, JPEG, WebP, GIF, AVIF, BMP, HEIC or HEIF)."}`
-        : "",
-    );
+        : "";
+      return { files: updated, error };
+    });
   }
 
   async function removeFile(id: string) {
     if (mediaUpload.busy) return;
     const media = selectedFiles.find(file => file.id === id);
     if (media?.studioRole && media.studioRole !== "freestyle" && !(await mediaUpload.removeLocalReference(media))) return;
-    setSelectedFiles((files) => files.filter((media) => media.id !== id));
+    setSelection(current => ({ files: current.files.filter(media => media.id !== id), error: "" }));
     if (selectedFileId === id) setSelectedFileId(null);
-    setMediaError("");
   }
 
   return (
@@ -415,11 +429,11 @@ function WorkspaceEditor({
                     {project}
                     <CategorySelector selected={creationType} onChange={setCreationType} />
                     {studioInputs.creationType === "ugc" ? <>
-                      <StudioReferenceSources label="Characters" addLabel="Add Character" references={studioInputs.characters}
+                      <StudioReferenceSources label="Characters" addLabel="Add Character" role="character" references={studioInputs.characters}
                         onAdd={files => addFiles(files, "character")} onRemoveLocal={removeFile} onRemoveAsset={mediaUpload.removeReference}
                         onUpload={mediaUpload.upload} onRecover={mediaUpload.recover} uploadStates={mediaUpload.uploadStates}
                         busy={mediaUpload.busy} signedIn={signedIn} authReady={authReady} />
-                      <StudioReferenceSources label="Product / Props" addLabel="Add Product / Prop" references={studioInputs.products}
+                      <StudioReferenceSources label="Product / Props" addLabel="Add Product / Prop" role="product" references={studioInputs.products}
                         onAdd={files => addFiles(files, "product")} onRemoveLocal={removeFile} onRemoveAsset={mediaUpload.removeReference}
                         onUpload={mediaUpload.upload} onRecover={mediaUpload.recover} uploadStates={mediaUpload.uploadStates}
                         busy={mediaUpload.busy} signedIn={signedIn} authReady={authReady} />

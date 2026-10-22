@@ -13,6 +13,8 @@ import {
 import { assetReferenceSchema, authorizeUploadSchema } from "./validation";
 import type { MediaResult, ProjectAsset, UploadAuthorization } from "./types";
 import { z } from "zod";
+import { ugcV1LimitMessages } from "@/lib/projects/ugc-v1";
+import { readOwnedUgcV1References } from "@/lib/projects/ugc-v1-server";
 
 export class MediaAccessError extends Error {
   constructor(
@@ -126,6 +128,13 @@ export async function authorizeOwnedUpload(
       .maybeSingle();
   let { data: asset, error } = await findRequest();
   if (error) throw unavailable();
+  if (studioRole !== "freestyle") {
+    const references = await readOwnedUgcV1References(database, user.id, projectId);
+    if (!references) throw unavailable();
+    const count = (studioRole === "character" ? references.characters : references.products).length;
+    if (count > (asset && !asset.removed_from_draft ? 1 : 0))
+      throw new MediaAccessError("INVALID_INPUT", ugcV1LimitMessages[studioRole]);
+  }
   if (!asset) {
     const id = randomUUID();
     const inserted = await database
@@ -146,6 +155,9 @@ export async function authorizeOwnedUpload(
       })
       .select("*")
       .single();
+    // The DB guard also serializes concurrent new uploads across tabs/clients.
+    if (studioRole !== "freestyle" && inserted.error?.code === "23514" && inserted.error.message === ugcV1LimitMessages[studioRole])
+      throw new MediaAccessError("INVALID_INPUT", ugcV1LimitMessages[studioRole]);
     if (inserted.error?.code === "23505")
       ({ data: asset, error } = await findRequest());
     else {
@@ -185,6 +197,13 @@ export async function finalizeOwnedUpload(
   const { projectId, assetId } = parseReference(input);
   const { user, database, asset } = await ownedAsset(projectId, assetId);
   if (asset.upload_status === "uploaded") return toAsset(asset);
+  if (asset.studio_role !== "freestyle") {
+    if (asset.removed_from_draft) throw notFound();
+    const references = await readOwnedUgcV1References(database, user.id, projectId);
+    if (!references) throw unavailable();
+    if ((asset.studio_role === "character" ? references.characters : references.products).length > 1)
+      throw new MediaAccessError("INVALID_INPUT", ugcV1LimitMessages[asset.studio_role]);
+  }
   if (asset.upload_status === "rejected")
     throw new MediaAccessError(
       "REJECTED",
@@ -214,7 +233,11 @@ export async function finalizeOwnedUpload(
     .eq("upload_status", "pending")
     .select("*")
     .maybeSingle();
-  if (error) throw unavailable();
+  if (error) {
+    if (asset.studio_role !== "freestyle" && error.code === "23514" && error.message === ugcV1LimitMessages[asset.studio_role])
+      throw new MediaAccessError("INVALID_INPUT", ugcV1LimitMessages[asset.studio_role]);
+    throw unavailable();
+  }
   // Concurrent finalizers may already have committed the same verified result.
   const result = data ?? (await ownedAsset(projectId, assetId)).asset;
   if (result.upload_status !== "uploaded")

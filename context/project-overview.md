@@ -1,5 +1,9 @@
 # Sceenyk project overview
 
+## UGC V1 input contract (2026-10-22)
+
+UGC V1 supports exactly one Character and one Product / Prop per project. Empty drafts are allowed; adding an image disables its Add control and removes any additional + path. Removing the reference re-enables replacement without refreshing. Client/server/database validation rejects excess references, preserving existing ownership and private uploads. Older extras remain intact and individually removable with warnings, while future UGC generation readiness requires exactly one uploaded image of each role plus the other valid inputs. UGC template adoption therefore requires one Character and one Product / Prop supplied by the adopting user before generation; source creator private files are not copied. Freestyle is unaffected. No generation pipeline is implemented. Migration 035 and manual review are tracked separately; earlier multiple-reference descriptions below are superseded for V1.
+
 ## Project-derived Templates (2026-10-21)
 
 Official lifecycle: **Project → Publish as Template → Manage Template → Publish to Marketplace**. `/projects` Publish and `/templates` → New Template → `/settings/templates/new` → choose an owned Project share one authenticated initialization service. It opens an existing listing or creates a private prefilled draft at `/settings/templates/[listingId]`; PostgreSQL enforces source uniqueness. No blank Template domain/system. `/templates/[listingId]` retains private detail, Update Template and View in Marketplace while published. The gallery removes its old footer links and adds responsive New Template.

@@ -1,5 +1,9 @@
 # Sceenyk
 
+## UGC V1 reference limits (2026-10-22)
+
+UGC V1 supports exactly one Character and one Product / Prop per project. Incomplete drafts may start empty; once an image is selected/uploaded, that role's Add button disables and no extra + tile is shown. Removing the reference re-enables replacement immediately without refreshing. State, owned upload/save validation and migration 035 enforce a maximum of one per role, including concurrent uploads. Older extras remain stored/removable with clear warnings; UGC generation readiness is blocked until reduced to one of each. Future generation also requires uploaded references and the other valid UGC inputs; this unit adds no generation pipeline. UGC template adoption therefore requires one Character and one Product / Prop from the adopting user before generation; creator private references are not copied. Freestyle is unaffected. This supersedes the earlier multiple-reference UI capability. Migration/manual review status is in the tracker.
+
 ## Project → Template lifecycle (2026-10-21)
 
 Templates originate from existing owned Projects: **Project → Publish as Template → Manage Template → Publish to Marketplace**. Project cards expose Publish only while no Template exists, with no replacement action once linked; `/templates` has New Template, opening `/settings/templates/new` to select a Project with its preview/name/edited date. Both entry points initialize a private draft or open the source Project's existing `/settings/templates/[listingId]`. The existing unique creator/source relationship prevents duplicates, including retries. No independent blank-template system.

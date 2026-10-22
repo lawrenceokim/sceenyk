@@ -4,6 +4,8 @@ import { ensureAppUser } from "@/lib/auth/ensure-app-user";
 import { createDatabaseClient } from "@/lib/db/server";
 import type { ProjectFields, ProjectRow } from "@/lib/db/types";
 import { projectPageSize } from "./options";
+import { ugcV1ReferenceLimitsSchema } from "./ugc-v1";
+import { readOwnedUgcV1References } from "./ugc-v1-server";
 import {
   projectIdSchema,
   projectPageSchema,
@@ -104,6 +106,12 @@ export async function saveOwnedProject(
     tone: settings.tone,
   };
   const database = createDatabaseClient();
+  if (creationType === "ugc") {
+    const references = await readOwnedUgcV1References(database, user.id, id);
+    if (!references) return { ok: false, code: "UNAVAILABLE", message: "Your UGC references couldn’t be checked. Please try again." };
+    const limits = ugcV1ReferenceLimitsSchema.safeParse(references);
+    if (!limits.success) return { ok: false, code: "INVALID_INPUT", message: limits.error.issues[0].message };
+  }
   if (mode === "create") {
     const { data, error } = await database
       .from("projects")

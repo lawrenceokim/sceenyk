@@ -1,5 +1,9 @@
 # Private project media
 
+## UGC V1 role capacity (2026-10-22)
+
+Each project may acquire at most one active Character image and one active Product / Prop image. Local selections plus pending/uploaded/rejected rows occupy the role until explicitly removed. Existing project-first/private R2 upload/signature/read/ownership paths remain. Role-specific client/service validation and migration 035 prevent second references, including concurrent inserts/reactivation; retries of the same existing upload remain supported. Old extras are retained without backfill/deletion, stay removable, and block UGC save/generation readiness until reduced. Removing a reference re-enables replacement. UGC template adopters provide their own references; no creator private source copying. Freestyle uploads remain unrestricted by this rule. Migration status and verification limits are in the tracker.
+
 ## Studio reference roles (2026-10-20)
 
 Migration 032 adds role/group/removal metadata to existing project_assets; the private R2 bucket/keys, authorization, direct upload, signature verification and signed reads remain the same. UGC Characters and Product / Props accept supported images only and upload sequentially after sign-in. One image represents one reference; stable reference_id permits future multiple-image grouping. Freestyle preserves the existing manual Project Media upload path and default role. Both sets remain stored across Creation Type switches. A new owner/project-filtered action detaches only the requested UGC image through removed_from_draft, including pending/rejected uploads, without deleting bytes or breaking historical links. Draft controls and project preview selection exclude detached references. Apply migration 032 before using the revision; hosted application/acceptance remains pending in the tracker. No new environment variables/storage or cleanup policy.

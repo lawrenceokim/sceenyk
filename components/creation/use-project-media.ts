@@ -21,6 +21,7 @@ export function useProjectMedia({
   projectId,
   ensureProject,
   onUploaded,
+  validateUpload = () => null,
   onPersisted,
 }: {
   initialAssets: ProjectAsset[];
@@ -28,6 +29,7 @@ export function useProjectMedia({
   projectId: string | null;
   ensureProject: () => Promise<string | null>;
   onUploaded: (localId: string, assetId: string, role: StudioMediaRole) => void;
+  validateUpload?: (media: LocalMedia, assets: ProjectAsset[]) => string | null;
   onPersisted: () => void;
 }) {
   const [assets, setAssets] = useState(initialAssets);
@@ -98,13 +100,14 @@ export function useProjectMedia({
   }
   async function upload(media: LocalMedia) {
     if (controller.current) return;
+    const referenceError = validateUpload(media, assets);
     const mimeType = normalizeMediaMime(media.file.type);
-    if (mediaKindForMime(mimeType) !== media.kind || !media.file.size) {
+    if (referenceError || mediaKindForMime(mimeType) !== media.kind || !media.file.size) {
       setUploadStates((current) => ({
         ...current,
         [media.id]: {
           status: "failed",
-          message:
+          message: referenceError ??
             "This format or MIME type isn’t supported for upload. Choose a supported image, video or audio file.",
         },
       }));

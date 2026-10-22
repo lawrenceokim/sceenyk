@@ -9,12 +9,14 @@ import { PersistentMediaPreview } from "./persistent-media-preview";
 import type { LocalMedia } from "./creation-options";
 import type { ProjectAsset } from "@/lib/media/types";
 import type { UploadState } from "@/lib/media/upload-client";
-import type { StudioReference } from "./studio-inputs";
+import { studioReferenceImages, type StudioReference } from "./studio-inputs";
+import { ugcV1LimitMessages } from "@/lib/projects/ugc-v1";
 
-export function StudioReferenceSources({ label, addLabel, references, onAdd, onRemoveLocal, onRemoveAsset,
+export function StudioReferenceSources({ label, addLabel, role, references, onAdd, onRemoveLocal, onRemoveAsset,
   onUpload, onRecover, uploadStates, busy, signedIn, authReady }: {
   label: string;
   addLabel: string;
+  role: "character" | "product";
   references: StudioReference[];
   onAdd: (files: File[]) => void;
   onRemoveLocal: (id: string) => void;
@@ -29,20 +31,20 @@ export function StudioReferenceSources({ label, addLabel, references, onAdd, onR
   const id = useId();
   const input = useRef<HTMLInputElement>(null);
   const add = useRef<HTMLButtonElement>(null);
-  const buttonClass = "h-8 min-h-8 cursor-pointer gap-1.5 rounded-lg px-2 text-xs [@media(pointer:coarse)]:min-h-11";
+  const images = studioReferenceImages(references);
+  const atLimit = images.length >= 1;
+  const buttonClass = "h-8 min-h-8 cursor-pointer gap-1.5 rounded-lg px-2 text-xs [&&:disabled]:pointer-events-auto disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground disabled:opacity-50 disabled:hover:bg-muted [@media(pointer:coarse)]:min-h-11";
   return <section className="min-w-0" aria-labelledby={`${id}-heading`}>
     <h3 id={`${id}-heading`} className="mb-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{label}</h3>
-    <input ref={input} type="file" accept="image/*" multiple className="sr-only" tabIndex={-1}
+    <input ref={input} type="file" accept="image/*" disabled={atLimit} className="sr-only" tabIndex={-1}
       aria-label={addLabel} onChange={event => { onAdd(Array.from(event.target.files ?? [])); event.target.value = ""; }} />
-    <Button ref={add} type="button" variant="outline" className={buttonClass} onClick={() => input.current?.click()}>
+    <Button ref={add} type="button" variant="outline" disabled={atLimit} className={buttonClass} onClick={() => { if (!atLimit) input.current?.click(); }}>
       <Plus className="size-3.5" aria-hidden="true" />{addLabel}
     </Button>
     {references.length > 0 && <ul className="mt-3 flex min-w-0 flex-wrap gap-2" aria-label={label}>
-      {references.map(reference => {
-        // One image per reference in this unit; the model already permits more.
-        const { local, asset } = reference.images[0];
+      {images.map(({ local, asset }) => {
         const filename = local?.file.name ?? asset?.filename ?? label;
-        return <li key={reference.id} className="relative size-16 shrink-0 rounded-lg border border-border bg-field" title={filename}>
+        return <li key={local?.id ?? asset?.id} className="relative size-16 shrink-0 rounded-lg border border-border bg-field" title={filename}>
           <div className="relative size-full overflow-hidden rounded-lg">
             {local ? <LocalMediaThumbnail media={local} className="size-full" alt={filename} />
               : asset?.status === "uploaded" ? <PersistentMediaPreview asset={asset} thumbnail />
@@ -55,11 +57,8 @@ export function StudioReferenceSources({ label, addLabel, references, onAdd, onR
           </button>
         </li>;
       })}
-      <li><button type="button" onClick={() => input.current?.click()} aria-label={addLabel}
-        className="flex size-16 cursor-pointer items-center justify-center rounded-lg border border-dashed border-input text-muted-foreground outline-none transition-colors duration-[var(--motion-micro)] ease-[var(--motion-ease)] hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none">
-        <Plus className="size-4" aria-hidden="true" />
-      </button></li>
     </ul>}
+    {images.length > 1 && <p role="alert" className="mt-2 text-xs text-destructive">{ugcV1LimitMessages[role]}</p>}
     <div className="mt-2 space-y-2">
       {references.flatMap(reference => reference.images).map(({ local, asset }) => {
         const state = local ? uploadStates[local.id] : undefined;

@@ -1,5 +1,11 @@
 # UI Context
 
+## UGC V1 reference capacity (2026-10-22)
+
+UGC V1 supports exactly one Character and one Product / Prop per project. Preserve the existing Sources geometry, thumbnail/remove treatment and private upload states. Each single-image picker and Add button disables once its role has a local or retained stored image; keep its existing label/dimensions, muted styling, actual disabled state and cursor-not-allowed. Disabled buttons cannot open a picker. No trailing + tile is displayed. Removing the reference re-enables replacement in the same panel without refreshing. Pending/rejected images occupy the slot until removed; failed uploads retain existing retry/recovery behavior.
+
+Older excess images remain visible with individual removal actions and a clear role-specific V1 warning; never hide unremovable extras or silently drop/delete files. New selections and UGC save/generation readiness reject excess references. Future generation requires one uploaded Character and one uploaded Product / Prop plus other valid UGC inputs. UGC template adoption requires these references from the adopting user before generation. Freestyle is unaffected, as are Studio responsive panels, native scrolling/focus, themes and layout. This supersedes prior multiple-reference/trailing-plus guidance. Tailwind only; manual inspection remains the acceptance step.
+
 ## Default remote-content loading rule (2026-10-21)
 
 Render stable page/workspace structure immediately and reserve matched placeholders only for pending remote content. Projects is the reference: synchronous heading/actions → local Suspense → async owned-data component → real cards. Apply the same hierarchy to Templates, Marketplace, Settings forms, Credits/Billing, earnings/withdrawals, creator profiles and owned Studio drafts. Reuse actual gallery columns/gaps, preview ratios, compact card metadata/actions, selected Settings shell and Studio panels; keep their native inner scroll areas and mobile Sources behavior. Skeletons use shared Tailwind primitives, neutral theme tokens and reduced-motion-aware pulse, with accessible status labels. No generic primary spinner, artificial minimum display time, or full-page blank screen for a partial read.

@@ -1,5 +1,9 @@
 # AI Workflow Rules
 
+## Current UGC V1 reference unit (2026-10-22)
+
+Enforce exactly one Character and one Product / Prop for UGC generation, with zero allowed in incomplete drafts and maximum one during new selection/persistence. Preserve existing Studio layout/private uploads, legacy files/history and all Freestyle behavior. Remove extra upload tiles, disable occupied Add controls and re-enable replacement after explicit removal. Keep legacy extras visible/removable with validation warnings. UGC template adopters supply their own required references before generation. Reuse shared schemas and owner-filtered services; migration 035 adds concurrency enforcement without data cleanup. Use focused TypeScript/lint and targeted offline validation only, no browser/screenshot suites, full regressions/build/deployment or hosted Inngest. Stop after this unit and distinguish local checks from pending hosted migration/manual review.
+
 ## Default loading-state workflow (2026-10-21)
 
 When a task introduces or changes external async reads, inspect its page, layouts, data-access owner and client consumers first. Use Projects' Suspense architecture: render the stable shell immediately, put the actual request-bound read inside the async child, and provide a skeleton matching the final layout. Read installed Next.js streaming/cache/auth guides before changing boundaries. Keep authentication, owner checks and private caching policies unchanged; never share-cache another user's data to suppress a warning.

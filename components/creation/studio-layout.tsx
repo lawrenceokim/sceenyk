@@ -103,6 +103,7 @@ export function StudioLayout({ sources, toolbar, stage, properties }: {
       [&&[open]]:h-[calc(100dvh_-_16px)] [&&[open]]:flex [&&[open]]:flex-col [&&[open]]:z-[60]
       [&&::backdrop]:[background:var(--overlay)] min-[768px]:[&&[open]]:left-[auto]
       min-[768px]:[&&[open]]:w-[var(--workspace-rail)] min-[1024px]:@min-[930px]:[&&[open]]:static
+      min-[1024px]:@min-[930px]:[&&[open]]:z-auto
       min-[1024px]:@min-[930px]:[&&[open]]:w-[auto] min-[1024px]:@min-[930px]:[&&[open]]:h-[var(--studio-panel-height)]
       [&&]:min-w-[0] [&&]:[border:1px_solid_var(--border)] [&&]:rounded-[var(--ui-radius-frame)]
       [&&]:[background:var(--card)] [&&]:text-[color:var(--card-foreground)]

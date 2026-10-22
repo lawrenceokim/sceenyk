@@ -1,5 +1,9 @@
 # Code Standards
 
+## UGC V1 validation (2026-10-22)
+
+UGC V1 supports exactly one Character and one Product / Prop per project. Incomplete drafts may have zero, but state and persistence must reject a second reference with a clear message. Count pending/rejected and local images as occupying a slot; do not silently truncate arrays. Reuse the shared V1 schemas/messages, owned upload/read/removal services and project_assets/R2 model. Migration 035 serializes active role insertion/reactivation/finalization per owned project without deleting older extras or changing Freestyle. Legacy extras stay readable/removable and block UGC saves/generation readiness until reduced. Future generation requires exactly one uploaded owned reference of each role plus valid UGC brief inputs; no pipeline in this unit. Adopting users must supply their own Character/Product references for UGC templates before generation.
+
 ## Remote async loading composition (2026-10-21)
 
 - Keep stable shells, headings, navigation and safe static controls synchronous. Resolve actual request-bound/uncached data and promised runtime params inside dedicated async Server Components below local Suspense boundaries, following `/projects`; do not start/await that work in a parent before wrapping its resolved JSX. Shared-layout boundaries alone do not cover every client navigation.

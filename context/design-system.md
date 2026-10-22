@@ -1,5 +1,9 @@
 # Sceenyk design system
 
+## UGC V1 Add controls (2026-10-22)
+
+Keep the existing compact Add Character/Add Product / Prop labels, dimensions, outline geometry and thumbnail/removal styling. Each role accepts one selected/uploaded image. At capacity disable both the button and single-image input, using muted theme utilities, cursor-not-allowed and actual disabled semantics; override pointer-events only locally so the disabled cursor is visible, while native disabled activation stays blocked. Remove trailing + tiles. Removal re-enables the Add control without refresh. Retain visible/removable legacy extras with concise role warnings; no clipping or destructive trimming. Use Tailwind only and preserve existing native Sources layout/focus/motion. Freestyle is unchanged. This supersedes earlier multiple-reference/trailing-plus guidance.
+
 ## Remote loading states (2026-10-21)
 
 Default to real page structure immediately: persistent navigation, heading, description and safe static actions remain visible while only remote content loads. Match each skeleton to the actual card/preview aspect ratio, typography lines, action row, field, avatar, summary or history layout. Share the real gallery grid classes and reuse Settings/Studio scroll containers; preserve approximate height, minimum widths and nested viewport containment. Neutral `bg-muted`, existing card/border/radius tokens and `motion-safe:animate-pulse` provide light/dark and reduced-motion support without new CSS or glow. Use `components/ui/skeleton.tsx` primitives with feature-specific compositions; expose one meaningful status label and hide decorative shapes from assistive technology. Primary page loading should not use generic spinners. Existing operation/progress indicators may remain for uploads, generation and mutations.
