@@ -8,5 +8,5 @@ export type ReferenceProviderResult =
 export interface ReferenceAnalysisProvider {
   readonly provider: "openai";
   readonly model: string;
-  analyze(role: ReferenceRole, image: Buffer, signal: AbortSignal): Promise<ReferenceProviderResult>;
+  analyze(role: ReferenceRole, image: Buffer, signal: AbortSignal, referenceName?: string): Promise<ReferenceProviderResult>;
 }

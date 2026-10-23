@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { saveProjectSchema } from "@/lib/projects/validation";
 import { mediaKindForMime } from "@/lib/media/validation";
+import { referenceNameSchema, referenceNameLimit } from "@/lib/projects/reference-names";
 
 // One safe issue vocabulary for advisory UI, authoritative reads and enqueue.
 export const ugcInputIssues = {
@@ -13,6 +14,10 @@ export const ugcInputIssues = {
   UGC_CHARACTER_LIMIT: ["character", "UGC V1 supports exactly one character."],
   UGC_PRODUCT_REQUIRED: ["product", "Add one product or prop to continue."],
   UGC_PRODUCT_LIMIT: ["product", "UGC V1 supports exactly one product or prop."],
+  UGC_CHARACTER_NAME_REQUIRED: ["characterName", "Give your character a name to continue."],
+  UGC_PRODUCT_NAME_REQUIRED: ["productName", "Give your product or prop a name to continue."],
+  UGC_CHARACTER_NAME_INVALID: ["characterName", `Keep your character name within ${referenceNameLimit} characters.`],
+  UGC_PRODUCT_NAME_INVALID: ["productName", `Keep your product or prop name within ${referenceNameLimit} characters.`],
   SCENE_DESCRIPTION_REQUIRED: ["sceneDescription", "Describe your scene to continue."],
   SCENE_DESCRIPTION_TOO_LONG: ["sceneDescription", "Keep the scene description within the allowed length."],
   INVALID_DURATION: ["duration", "Choose a supported Studio duration."],
@@ -46,15 +51,20 @@ const referenceSchema = z.strictObject({
 });
 export const ugcNarrationSchema = z.strictObject({ mode: z.literal("prompt") });
 export const ugcDefaultNarration = { mode: "prompt" } as const;
-export const ugcGenerationSnapshotSchema = z.strictObject({
-  schemaVersion: z.literal(2), readiness: z.literal("validated"), projectId: z.uuid(),
+const snapshotFields = {
+  readiness: z.literal("validated"), projectId: z.uuid(),
   projectTitle: saveProjectSchema.shape.title,
   creationType: z.literal("ugc"), ugcType: saveProjectSchema.shape.ugcType.unwrap(),
   sceneDescription: saveProjectSchema.shape.prompt.trim().min(1),
   settings: saveProjectSchema.shape.settings,
   narration: ugcNarrationSchema,
-  character: referenceSchema, product: referenceSchema,
-}).refine(value => value.character.assetId !== value.product.assetId, { path: ["product"], message: "Distinct references are required." });
+};
+// Preserve the meaning of already-created v2 jobs; new requests always use v3.
+export const ugcGenerationSnapshotSchema = z.discriminatedUnion("schemaVersion", [
+  z.strictObject({ ...snapshotFields, schemaVersion: z.literal(2), character: referenceSchema, product: referenceSchema }),
+  z.strictObject({ ...snapshotFields, schemaVersion: z.literal(3),
+    character: referenceSchema.extend({ name: referenceNameSchema }), product: referenceSchema.extend({ name: referenceNameSchema }) }),
+]).refine(value => value.character.assetId !== value.product.assetId, { path: ["product"], message: "Distinct references are required." });
 export type UgcGenerationSnapshot = z.infer<typeof ugcGenerationSnapshotSchema>;
 export type UgcInputValidation = { ready: true; data: UgcGenerationSnapshot } | { ready: false; issues: UgcInputIssue[] };
 
@@ -62,6 +72,11 @@ export type UgcInputValidation = { ready: true; data: UgcGenerationSnapshot } | 
 export function ugcIssuesFromSchema(error: z.ZodError): UgcInputIssue[] {
   const issues = error.issues.map(issue => {
     const root = String(issue.path[0] ?? "");
+    if (["character", "product", "characters", "products"].includes(root) && issue.path.at(-1) === "name") {
+      const character = root === "character" || root === "characters";
+      const missing = issue.code === "too_small" || issue.code === "invalid_type";
+      return ugcInputIssue(character ? missing ? "UGC_CHARACTER_NAME_REQUIRED" : "UGC_CHARACTER_NAME_INVALID" : missing ? "UGC_PRODUCT_NAME_REQUIRED" : "UGC_PRODUCT_NAME_INVALID");
+    }
     if (root === "title" || root === "projectTitle") return ugcInputIssue(issue.code === "too_small" ? "PROJECT_TITLE_REQUIRED" : "PROJECT_TITLE_INVALID");
     if (root === "prompt" || root === "sceneDescription") return ugcInputIssue(issue.code === "too_big" ? "SCENE_DESCRIPTION_TOO_LONG" : "SCENE_DESCRIPTION_REQUIRED");
     if (root === "creationType") return ugcInputIssue("CREATION_TYPE_INVALID");

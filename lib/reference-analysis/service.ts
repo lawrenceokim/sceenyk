@@ -53,7 +53,7 @@ export const analyzeJobReferences: UgcStageHandler = async ({ job, signal }) => 
     // Once intent is durable, all ambiguous outcomes are fenced against replay.
     // Abort after begin also leaves an intent; never claim no request occurred.
     signal.throwIfAborted();
-    const result = await provider.analyze(role, images.get(role)!, signal);
+    const result = await provider.analyze(role, images.get(role)!, signal, snapshot.schemaVersion === 3 ? snapshot[role].name : undefined);
     const stored = await db.rpc("ugc_finish_reference_analysis", {
       p_job_id: job.id, p_claim_token: job.claim_token, p_role: role,
       p_analysis: result.ok ? parseReferenceAnalysis(role, result.analysis) : null,

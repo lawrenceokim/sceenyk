@@ -1,5 +1,11 @@
 # AI Workflow Rules
 
+## Focused prerequisite - reference names before M5 (2026-10-23)
+
+**Implemented in source as a focused prerequisite between Milestones 4 and 5; manual migration/UI/persistence acceptance pending. Milestone 5 remains Not Started.** Current authorization adds only user-assigned Character/Product labels, save/readiness/snapshot integration, and analysis input context. Names are project-specific, trimmed and bounded to 80 characters; do not derive them from files, copy creator private labels on template adoption, or treat a Character label as identity evidence. Future M5+ sheets/storyboards/dialogue/scene/video instructions must use frozen supplied names consistently while retaining stable asset/reference IDs. Read [reference-name contract and setup](ugc-v1-workflow.md#project-specific-reference-names--prerequisite-before-milestone-5).
+
+New snapshot-v3 requests require both names. Existing jobs keep v2 snapshots and successful analyses; do not backfill names, redo paid analysis, enqueue jobs or start a worker. Migration 040 is authored only and applied manually after 039; no older migration is changed. No OpenAI/R2/provider/Render/Inngest execution, browser/screenshot/full regression/build/deploy. Only minimal TypeScript, focused lint and offline schema/static validation. Hosted guards remain active.
+
 ## Current unit - Milestone 4 source Complete (2026-10-23)
 
 **Milestone 4 — Complete in source; manual migration/provider/runtime acceptance pending. Exact next: Milestone 5 — Character Reference Sheet generation. Not Started.** Only analyze_references is newly implemented: official OpenAI SDK Responses image analysis, strict Character/Product schema v1 and reference-analysis-v1 prompts, private R2 inputs and durable per-role records. Read the [provider/schema/privacy/setup contract](reference-analysis.md) before dependent changes. Existing validation now continues under the same claim into analysis. Both completed records lead to queued / character_reference with a non-runnable development pause. No Character/Product sheets, storyboard or video work is authorized.

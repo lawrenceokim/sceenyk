@@ -170,6 +170,7 @@ function WorkspaceEditor({
     initialProject ?? null,
   );
   const [selection, setSelection] = useState<{ files: LocalMedia[]; error: string }>({ files: restoredDraft?.files ?? [], error: "" });
+  const [referenceNameEdits, setReferenceNameEdits] = useState<Record<string, { value: string; savedValue: string }>>({});
   const selectedFiles = selection.files;
   const [selectedFileId, setSelectedFileId] = useState<string | null>(null);
   const mediaError = selection.error;
@@ -192,7 +193,7 @@ function WorkspaceEditor({
     creationType,
     ugcType,
   };
-  const dirty =
+  const briefDirty =
     savedBrief !== null &&
     (title !== savedBrief.title ||
       creationType !== (savedBrief.creationType ?? "freestyle") ||
@@ -211,12 +212,14 @@ function WorkspaceEditor({
     // Keep this ID even if the response is lost after a committed first save.
     const id = attemptId.current ?? crypto.randomUUID();
     attemptId.current = id;
+    const namesForSave = pendingReferenceNames;
     const saving = (async () => {
       try {
         const result = await saveProjectAction({
           ...brief,
           id,
           mode: persistedId.current ? "update" : "create",
+          referenceNames: namesForSave,
         });
         if (!result.ok) {
           setSaveState({ status: "error", message: result.message });
@@ -226,6 +229,14 @@ function WorkspaceEditor({
         persistedId.current = result.project.id;
         // Edits made while saving remain unsaved rather than being overwritten.
         setSavedBrief(brief);
+        setReferenceNameEdits(current => {
+          const next = { ...current };
+          for (const sent of namesForSave) {
+            const latest = next[sent.assetId];
+            if (latest) next[sent.assetId] = { value: latest.value === sent.name ? sent.name.trim() : latest.value, savedValue: sent.name.trim() };
+          }
+          return next;
+        });
         setSaveState({ status: "saved", savedAt: Date.now() });
         return result.project.id;
       } catch {
@@ -276,7 +287,14 @@ function WorkspaceEditor({
       && studioReferenceImages(file.studioRole === "character" ? retained.characters : retained.products).length <= 1);
     if (next) void mediaUpload.upload(next);
   }, [signedIn, selectedFiles, mediaUpload]);
-  const sources = collectStudioSources(selectedFiles, mediaUpload.assets);
+  const pendingReferenceNames = mediaUpload.assets.flatMap(asset => {
+    const edit = referenceNameEdits[asset.id];
+    return !asset.removedFromDraft && asset.status === "uploaded" && (asset.studioRole === "character" || asset.studioRole === "product") && edit && edit.value !== edit.savedValue
+      ? [{ assetId: asset.id, name: edit.value }] : [];
+  });
+  const dirty = briefDirty || pendingReferenceNames.length > 0;
+  const referenceNameValues = Object.fromEntries(Object.entries(referenceNameEdits).map(([id, edit]) => [id, edit.value]));
+  const sources = collectStudioSources(selectedFiles, mediaUpload.assets, referenceNameValues);
   const studioInputs = prepareStudioInputs(brief, sources);
   const freestyle = sources.projectMedia;
   const activeMedia = creationType === "freestyle"
@@ -341,6 +359,20 @@ function WorkspaceEditor({
     if (selectedFileId === id) setSelectedFileId(null);
   }
 
+  function changeReferenceName(asset: ProjectAsset, value: string) {
+    setReferenceNameEdits(current => ({ ...current, [asset.id]: { value, savedValue: current[asset.id]?.savedValue ?? asset.referenceName ?? "" } }));
+  }
+
+  async function removeReference(asset: ProjectAsset) {
+    if (await mediaUpload.removeReference(asset)) {
+      setReferenceNameEdits(current => {
+        const next = { ...current };
+        delete next[asset.id];
+        return next;
+      });
+    }
+  }
+
   return (
     <BeforeAccountAuth.Provider value={() => {
       if (!signedIn && !initialProject) rememberGuestDraft(brief, selectedFiles);
@@ -373,7 +405,7 @@ function WorkspaceEditor({
           hasLocalFiles={freestyle.files.length > 0}
           creationType={creationType}
           ugcControls={studioInputs.creationType === "ugc" ? <UgcGenerationControls
-            projectId={projectId} revision={JSON.stringify([brief, studioInputs.generationValidation, mediaUpload.assets])}
+            projectId={projectId} revision={JSON.stringify([brief, studioInputs.generationValidation, mediaUpload.assets, referenceNameValues])}
             localIssues={studioInputs.generationValidation.issues} dirty={dirty || saveState.status === "saving"}
             hasLocalReferences={selectedFiles.some(file => file.studioRole === "character" || file.studioRole === "product")}
             mediaBusy={mediaUpload.busy} mediaError={!!mediaUpload.assetError} signedIn={signedIn} authReady={authReady}
@@ -437,13 +469,13 @@ function WorkspaceEditor({
                     <CategorySelector selected={creationType} onChange={setCreationType} />
                     {studioInputs.creationType === "ugc" ? <>
                       <StudioReferenceSources label="Characters" addLabel="Add Character" role="character" references={studioInputs.characters}
-                        onAdd={files => addFiles(files, "character")} onRemoveLocal={removeFile} onRemoveAsset={mediaUpload.removeReference}
+                        onAdd={files => addFiles(files, "character")} onRemoveLocal={removeFile} onRemoveAsset={removeReference} onNameChange={changeReferenceName}
                         onUpload={mediaUpload.upload} onRecover={mediaUpload.recover} uploadStates={mediaUpload.uploadStates}
-                        busy={mediaUpload.busy} signedIn={signedIn} authReady={authReady} />
+                        busy={mediaUpload.busy || saveState.status === "saving"} signedIn={signedIn} authReady={authReady} />
                       <StudioReferenceSources label="Product / Props" addLabel="Add Product / Prop" role="product" references={studioInputs.products}
-                        onAdd={files => addFiles(files, "product")} onRemoveLocal={removeFile} onRemoveAsset={mediaUpload.removeReference}
+                        onAdd={files => addFiles(files, "product")} onRemoveLocal={removeFile} onRemoveAsset={removeReference} onNameChange={changeReferenceName}
                         onUpload={mediaUpload.upload} onRecover={mediaUpload.recover} uploadStates={mediaUpload.uploadStates}
-                        busy={mediaUpload.busy} signedIn={signedIn} authReady={authReady} />
+                        busy={mediaUpload.busy || saveState.status === "saving"} signedIn={signedIn} authReady={authReady} />
                       {(mediaError || mediaUpload.assetError) && <p role="status" className="break-words text-xs text-destructive">{mediaError || mediaUpload.assetError}</p>}
                     </> : <MediaDropzone
           files={freestyle.files}

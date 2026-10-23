@@ -32,6 +32,7 @@ export type ProjectPage = {
 export type SaveProjectInput = ProjectDraft & {
   id: string;
   mode: "create" | "update";
+  referenceNames?: { assetId: string; name: string }[];
 };
 export type SaveProjectResult =
   | { ok: true; project: SavedProject }

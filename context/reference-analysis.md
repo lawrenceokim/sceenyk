@@ -1,5 +1,11 @@
 # UGC reference analysis
 
+## Creator-assigned labels - prerequisite refinement (2026-10-23)
+
+**Implemented in source as a focused prerequisite between Milestones 4 and 5; manual migration/UI/persistence acceptance pending. Milestone 5 remains Not Started.** New snapshot-v3 jobs expose character.name and product.name to ReferenceAnalysisProvider.analyze as an optional frozen label argument; old v2 calls remain name-free. The OpenAI adapter encodes labels as JSON user data with fixed system-level creator-label context-v1 instructions: never obey a name as instructions, infer identity/brand/appearance from it, or insert it into visual observations. Character names are fictional/reference labels, not proof of real-person identity. All prior visual-analysis safety rules, structured schema v1 and base reference-analysis-v1 prompts remain. The linked snapshot version distinguishes named input provenance.
+
+Existing completed analysis is still reused before provider submission. No data is relabeled, no provider call/reanalysis is triggered by saving names, and legacy job inputs remain immutable. No image generation is implemented. Future M5+ uses the job's supplied names consistently in prompts/storyboards/dialogue/scene instructions, retaining stable source IDs. Manual migration 040 and UI/persistence review are pending; [reference-name contract and setup](ugc-v1-workflow.md#project-specific-reference-names--prerequisite-before-milestone-5).
+
 ## Milestone 4 - source contract (2026-10-23)
 
 **Milestone 4 — Complete in source. Manual migration application and provider/runtime acceptance pending. Exact next: Milestone 5 — Character Reference Sheet generation.** This document and the current [job contract](generation-jobs.md#milestone-4--openai-reference-analysis-2026-10-23) supersede earlier analysis-not-implemented statements. No sheet, storyboard, video, financial charge or hosted execution is connected.

@@ -1,5 +1,11 @@
 # Sceenyk project overview
 
+## Character and Product names - prerequisite refinement (2026-10-23)
+
+**Implemented in source as a focused prerequisite between Milestones 4 and 5; manual migration/UI/persistence acceptance pending. Milestone 5 remains Not Started.** Each uploaded UGC source now has an editable Character name or Product / Prop name directly beneath its thumbnail. Shared 80-character trimmed labels are saved via the existing Preview-header Save action/status into private project_assets.reference_name, never filenames/R2 keys. Drafts without names remain saveable; new generation readiness requires both names with role-specific issues. New immutable v3 snapshots freeze names/source IDs; existing v2 jobs and completed analyses are not rewritten/replayed. See [reference-name contract and setup](ugc-v1-workflow.md#project-specific-reference-names--prerequisite-before-milestone-5).
+
+Migration 040 is authored for manual application after 039. No new environment variables or hosted executor. The adopter supplies their own Character image/name and Product image/name; private creator labels are excluded from the reusable template projection. Future sheets/storyboards/dialogue/instructions must use the frozen supplied names consistently. Render/Inngest guards remain; no provider/worker/job/deployment execution.
+
 ## Milestone 4 - OpenAI reference analysis (2026-10-23)
 
 **Milestone 4 — Complete in source; manual migration/provider/runtime acceptance pending. Exact next: Milestone 5 — Character Reference Sheet generation. Not Started.** The [provider/schema/privacy/setup contract](reference-analysis.md) describes official Responses multimodal analysis, centralized server-only key/model configuration, ReferenceAnalysisProvider, strict Character/Product schema v1, reference-analysis-v1 prompts, private per-role persistence/usage and fixed safe failures. The local worker continues validate_inputs → analyze_references, checkpoints each role and pauses at character_reference. Completed work is reused on eligible retries; submitted/uncertain requests require review before replay. No sheets, storyboard, video, financial charge or hosted executor is connected.

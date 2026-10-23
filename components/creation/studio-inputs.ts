@@ -13,8 +13,8 @@ export function studioReferenceImages(references: StudioReference[]) {
   return references.flatMap(reference => reference.images.map(image => ({ ...image, referenceId: reference.id })));
 }
 
-export function collectStudioSources(files: LocalMedia[], assets: ProjectAsset[]) {
-  const retained = assets.filter(asset => !asset.removedFromDraft);
+export function collectStudioSources(files: LocalMedia[], assets: ProjectAsset[], referenceNames: Record<string, string> = {}) {
+  const retained = assets.filter(asset => !asset.removedFromDraft).map(asset => ({ ...asset, referenceName: referenceNames[asset.id] ?? asset.referenceName ?? "" }));
   const references = (role: StudioMediaRole): StudioReference[] => {
     const groups = new Map<string, StudioReference>();
     for (const local of files.filter(file => file.studioRole === role)) {
@@ -53,6 +53,7 @@ export function prepareStudioInputs(brief: ProjectDraft, sources: ReturnType<typ
   if (brief.creationType !== "ugc") return { ...shared, creationType: "freestyle" as const, projectMedia: sources.projectMedia };
   const readyReferences = (references: StudioReference[]) => studioReferenceImages(references).map(({ referenceId, asset, local }) => ({
     referenceId,
+    name: asset?.referenceName ?? "",
     assetId: !local && asset?.status === "uploaded" && asset.kind === "image" && !asset.removedFromDraft ? asset.id : undefined,
   }));
   const validation = ugcV1GenerationInputsSchema.safeParse({ ...brief, narration: shared.narration,

@@ -49,6 +49,7 @@ export type ProjectRow = ProjectFields & {
 export type AssetRow = {
   studio_role: StudioMediaRole;
   reference_id: string | null;
+  reference_name: string | null;
   removed_from_draft: boolean;
   id: string;
   owner_user_id: string;
@@ -229,7 +230,7 @@ export type Database = {
         Row: AssetRow;
         Insert: Omit<
           AssetRow,
-          "created_at" | "updated_at" | "upload_status" | "verified_etag" | "removed_from_draft"
+          "created_at" | "updated_at" | "upload_status" | "verified_etag" | "removed_from_draft" | "reference_name"
         >;
         Update: Partial<Pick<AssetRow, "upload_status" | "verified_etag" | "removed_from_draft">>;
         Relationships: [];
@@ -257,6 +258,7 @@ export type Database = {
     };
     Views: Record<string, never>;
     Functions: {
+      ugc_save_reference_names: { Args: { p_owner_user_id: string; p_project_id: string; p_names: { assetId: string; name: string }[] }; Returns: boolean };
       ugc_enqueue_validated_job: { Args: { p_owner_user_id: string; p_project_id: string; p_idempotency_key: string; p_input_snapshot: import("@/lib/ugc-jobs/input-contract").UgcGenerationSnapshot }; Returns: { code: "ACCEPTED"; job: import("@/lib/ugc-jobs/contract").UgcJobRow } | { code: "PROJECT_UNAVAILABLE" | "INPUT_CHANGED" } };
       ugc_finish_input_validation: { Args: { p_job_id: string; p_claim_token: string; p_input_snapshot: import("@/lib/ugc-jobs/input-contract").UgcGenerationSnapshot }; Returns: import("@/lib/ugc-jobs/contract").UgcJobRow | null };
       ugc_enqueue_job: { Args: { p_owner_user_id: string; p_project_id: string; p_idempotency_key: string }; Returns: import("@/lib/ugc-jobs/contract").UgcJobRow | null };

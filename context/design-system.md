@@ -1,5 +1,9 @@
 # Sceenyk design system
 
+## Reference-name fields beneath UGC thumbnails (2026-10-23)
+
+Character name / Product / Prop name appear only beneath uploaded sources, with e.g. Maya / e.g. Nova Watch placeholders and explicit associated labels. Keep 64px thumbnails, compact full-panel-width fields, min-w-0 containment, existing field colors/focus ring and coarse-pointer sizing through Tailwind. Reuse the Preview-header Save feedback and existing readiness messages. No new stylesheet, panel sizing/layout redesign or Sources status system. Removal hides fields; replacement starts empty. Manual visual review pending; Milestone 5 is not started.
+
 ## Milestone 4 - existing Studio controls (2026-10-23)
 
 Use shared 5/10/30 duration choices; preserve a selected historical 15 value with its legacy label until the user changes it. The existing generation control shows References analyzed at the real character_reference pause and retains Check status for paused jobs. No new component styling, layout, theme or stylesheet. Tailwind/global stylesheet policy remains. [Current analysis behavior](reference-analysis.md); manual inspection pending. Earlier duration/pause notes below are historical.

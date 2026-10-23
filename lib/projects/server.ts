@@ -93,7 +93,7 @@ export async function saveOwnedProject(
         : "Check your project details and selected settings.";
     return { ok: false, code: "INVALID_INPUT", message };
   }
-  const { id, mode, title, category, prompt, settings, creationType, ugcType } = parsed.data;
+  const { id, mode, title, category, prompt, settings, creationType, ugcType, referenceNames } = parsed.data;
   const fields: ProjectFields = {
     title,
     category,
@@ -106,6 +106,13 @@ export async function saveOwnedProject(
     tone: settings.tone,
   };
   const database = createDatabaseClient();
+  const finishSave = async (project: SavedProject): Promise<SaveProjectResult> => {
+    if (referenceNames?.length) {
+      const names = await database.rpc("ugc_save_reference_names", { p_owner_user_id: user.id, p_project_id: project.id, p_names: referenceNames });
+      if (names.error || !names.data) return { ok: false, code: "UNAVAILABLE", message: "Your reference names couldn’t be saved. Check the references and save again." };
+    }
+    return { ok: true, project };
+  };
   if (settings.duration === legacyDuration.value) {
     const existing = await database.from("projects").select("duration").eq("id", id).eq("owner_user_id", user.id).eq("status", "draft").maybeSingle();
     if (existing.error || existing.data?.duration !== legacyDuration.value) {
@@ -124,7 +131,7 @@ export async function saveOwnedProject(
       .insert({ id, owner_user_id: user.id, ...fields })
       .select(briefColumns)
       .single();
-    if (!error && data) return { ok: true, project: toBrief(data) };
+    if (!error && data) return finishSave(toBrief(data));
     if (error?.code !== "23505") {
       logDatabaseError("create", error);
       return {
@@ -152,7 +159,7 @@ export async function saveOwnedProject(
       message: "Your draft couldn’t be saved. Please try again.",
     };
   }
-  return data ? { ok: true, project: toBrief(data) } : notFoundResult;
+  return data ? finishSave(toBrief(data)) : notFoundResult;
 }
 
 export async function getOwnedProject(

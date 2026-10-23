@@ -1,5 +1,11 @@
 # Code Standards
 
+## Reference-name standards - M4/M5 prerequisite (2026-10-23)
+
+Use lib/projects/reference-names.ts as the shared 80-character trimmed draft/required-name schema. Empty draft values persist as null; generation requires nonempty labels and stable UGC_CHARACTER_NAME_REQUIRED / UGC_PRODUCT_NAME_REQUIRED issues (bounded invalid-value issues are separate). Reuse existing owner-authenticated Project Save/status; never issue per-keystroke name RPCs or depend on display labels for authorization/storage paths. The name batch RPC checks every asset under the owned Project lock before changing any labels.
+
+Use immutable snapshot v3 for new requests and retain v2 compatibility for already-created jobs. Current name equality is admission-only: later draft renaming must not mutate or invalidate a valid frozen name. Preserve media fingerprint checks and per-job completed-analysis reuse. Creator labels are untrusted prompt data, not identity/brand/appearance evidence. [reference-name contract and setup](ugc-v1-workflow.md#project-specific-reference-names--prerequisite-before-milestone-5). Milestone 5 remains Not Started; manual acceptance and minimal checks only.
+
 ## Milestone 4 - analysis standards (2026-10-23)
 
 **Milestone 4 — Complete in source; manual migration/provider/runtime acceptance pending. Exact next: Milestone 5 — Character Reference Sheet generation. Not Started.** Follow the [provider/schema/privacy/setup contract](reference-analysis.md). All API access belongs in the server-only OpenAI adapter behind ReferenceAnalysisProvider; the workflow uses the abstraction. Use Responses text.format with strict SDK-generated schemas, then application validation before claim-fenced persistence. Central environment configuration has no default model, no browser key, no provider fallback, SDK logging off and maxRetries zero. Freeze requested model/schema version at durable submission intent; retain returned-model/usage separately.

@@ -1,5 +1,11 @@
 # Persistent generation jobs
 
+## Reference names - immutable snapshot v3 (2026-10-23)
+
+**Implemented in source as a focused prerequisite between Milestones 4 and 5; manual migration/UI/persistence acceptance pending. Milestone 5 remains Not Started.** [reference-name contract and setup](ugc-v1-workflow.md#project-specific-reference-names--prerequisite-before-milestone-5). New validated jobs freeze character.name and product.name (trimmed 1–80 characters) alongside their existing assetId/referenceId/MIME/size/ETag. Names come only from the owned active reference rows after explicit Save. Missing/invalid names appear in the existing safe issue catalog and disable preparation. Updated SQL comparison in manual 040 rejects new nameless/v2 snapshots and race-checks names under the same Project/reference locks. Same owner/idempotency recovery still returns its original job.
+
+Legacy v2 snapshots remain interpretable and immutable; none are promoted/backfilled, re-enqueued or automatically reanalyzed. Frozen validation compares media identity/current source availability but never replaces or compares an existing job's labels against later draft edits. For v3, M4 receives the frozen creator label as untrusted context; v2 calls keep their prior name-free input. The visual schema/base prompt version stays v1, with a creator-label context-v1 safety addition for named input. Saved completed analyses are reused as before; no SQL analysis rows, job stages, retries/accounting or execution guards change. M4's character_reference pause and the M5 stop boundary remain.
+
 ## Milestone 4 — OpenAI reference analysis (2026-10-23)
 
 **Milestone 4 — Complete in source; manual migration/provider/runtime acceptance pending. Exact next: Milestone 5 — Character Reference Sheet generation. Not Started.** The [full provider/schema/privacy/manual setup contract](reference-analysis.md) is the implementation reference. Earlier M3 pause/no-provider statements below remain historical.

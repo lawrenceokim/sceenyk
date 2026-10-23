@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { saveProjectSchema, ugcSettingsSchema } from "./validation";
 import { ugcNarrationSchema } from "@/lib/ugc-jobs/input-contract";
+import { referenceNameSchema } from "./reference-names";
 
 export const ugcV1ReferenceLimit = 1;
 export const ugcV1LimitMessages = {
@@ -19,6 +20,7 @@ export const ugcV1ReferenceLimitsSchema = z.strictObject({
 });
 
 const readyReference = z.strictObject({
+  name: referenceNameSchema,
   referenceId: z.uuid("Upload the reference before generating."),
   assetId: z.uuid("Upload the reference before generating."),
 });

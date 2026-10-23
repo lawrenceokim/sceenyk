@@ -47,6 +47,7 @@ function toAsset(row: AssetRow): ProjectAsset {
     createdAt: row.created_at,
     studioRole: row.studio_role ?? "freestyle",
     referenceId: row.reference_id ?? null,
+    referenceName: row.reference_name ?? null,
     removedFromDraft: row.removed_from_draft ?? false,
   };
 }

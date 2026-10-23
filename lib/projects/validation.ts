@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { saveReferenceNamesSchema } from "./reference-names";
 import {
   aspectRatios,
   categoryIds,
@@ -28,6 +29,7 @@ export const saveProjectSchema = z.strictObject({
   // Omitted values belong to older clients/projects with the general flow.
   creationType: z.enum(creationTypes).default("freestyle"),
   ugcType: z.enum(ugcTypes.map(({ value }) => value)).default("advertisement"),
+  referenceNames: saveReferenceNamesSchema.optional(),
   prompt: z
     .string()
     .max(

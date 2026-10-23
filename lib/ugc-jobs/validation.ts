@@ -32,7 +32,9 @@ export async function validateUgcGenerationInput(projectId: string, ownerId: str
     if (!parsed.success || parsed.data.projectId !== projectId) return { ready: false, issues: [ugcInputIssue("INVALID_SNAPSHOT")] };
     // Snapshot strings must already have their canonical representation.
     const raw = options.snapshot as UgcGenerationSnapshot;
-    if (raw.projectTitle !== parsed.data.projectTitle || raw.sceneDescription !== parsed.data.sceneDescription) {
+    if (raw.projectTitle !== parsed.data.projectTitle || raw.sceneDescription !== parsed.data.sceneDescription ||
+      raw.schemaVersion === 3 && parsed.data.schemaVersion === 3 &&
+      (raw.character.name !== parsed.data.character.name || raw.product.name !== parsed.data.product.name)) {
       return { ready: false, issues: [ugcInputIssue("INVALID_SNAPSHOT")] };
     }
     frozen = parsed.data;
@@ -55,11 +57,13 @@ export async function validateUgcGenerationInput(projectId: string, ownerId: str
   const p = project.data;
   if (!frozen && !ugcSettingsSchema.shape.duration.safeParse(p.duration).success) issues.push(ugcInputIssue("INVALID_DURATION"));
   const candidate = frozen ?? {
-    schemaVersion: 2, readiness: "validated", projectId,
+    schemaVersion: 3, readiness: "validated", projectId,
     projectTitle: p.title, creationType: p.creation_type, ugcType: p.ugc_type,
     sceneDescription: p.prompt,
     settings: { duration: p.duration, aspectRatio: p.aspect_ratio, visualStyle: p.visual_style, tone: p.tone },
-    narration: ugcDefaultNarration, character: reference(characters[0]), product: reference(products[0]),
+    narration: ugcDefaultNarration,
+    character: characters[0] ? { ...reference(characters[0]), name: characters[0].reference_name ?? "" } : undefined,
+    product: products[0] ? { ...reference(products[0]), name: products[0].reference_name ?? "" } : undefined,
   };
   const parsed = ugcGenerationSnapshotSchema.safeParse(candidate);
   if (!parsed.success) issues.push(...ugcIssuesFromSchema(parsed.error).filter(issue =>
@@ -71,7 +75,8 @@ export async function validateUgcGenerationInput(projectId: string, ownerId: str
     else if (asset.removed_from_draft) issues.push(ugcInputIssue("MEDIA_NOT_FOUND", role));
     else if (asset.upload_status !== "uploaded" || !asset.verified_etag || !asset.reference_id) issues.push(ugcInputIssue("MEDIA_NOT_READY", role));
     else if (asset.storage_provider !== "r2" || asset.media_type !== "image" || mediaKindForMime(asset.mime_type) !== "image" || asset.size_bytes <= 0) issues.push(ugcInputIssue("INVALID_IMAGE", role));
-    else if (frozen && JSON.stringify(reference(asset)) !== JSON.stringify(frozen[role])) issues.push(ugcInputIssue("INPUT_CHANGED", role));
+    // Label edits never change an existing job's frozen name or media identity.
+    else if (frozen && Object.entries(reference(asset)!).some(([key, value]) => frozen[role][key as keyof NonNullable<ReturnType<typeof reference>>] !== value)) issues.push(ugcInputIssue("INPUT_CHANGED", role));
   }
   if (issues.length || !parsed.success) return { ready: false, issues: uniqueUgcIssues(issues) };
 

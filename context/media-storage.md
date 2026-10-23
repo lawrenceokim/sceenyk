@@ -1,5 +1,9 @@
 # Private project media
 
+## Project reference labels - before Milestone 5 (2026-10-23)
+
+Private reference names live only in project_assets.reference_name and immutable generation snapshots, separate from original_filename, storage_key, object names and read authorization. Owned media DTOs expose the label only through existing private project reads. Explicit removal clears the active row label via manual migration 040's trigger, detaches the source and retains bytes/history; replacement uses a new asset with an empty name. Old frozen jobs retain their original labels. Names do not enter public template projections; adopters provide their own source images and names. [reference-name contract and setup](ugc-v1-workflow.md#project-specific-reference-names--prerequisite-before-milestone-5). No storage/provider call or media deletion/rename was performed.
+
 ## UGC Milestone 4 - private analysis inputs (2026-10-23)
 
 **Milestone 4 — Complete in source; manual migration/provider/runtime acceptance pending. Exact next: Milestone 5 — Character Reference Sheet generation. Not Started.** [Reference media loader](../lib/reference-analysis/media.ts) re-resolves exact frozen role/owner/project/upload/ETag/size/MIME metadata and uses existing conditional private R2 streaming. Bounded bytes are decoded with existing Sharp, oriented, stripped of metadata, resized inside 2048×2048 and sent as ephemeral PNG data content to OpenAI. No public/signed URL, upload, stored derivative or sheet is created; originals remain private/unchanged. Source 100 MiB, decode 40-million-pixel and output 20-MiB safeguards bound resource use; unsupported/multipage/animated inputs fail safely.

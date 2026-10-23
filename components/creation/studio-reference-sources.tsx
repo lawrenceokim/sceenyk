@@ -11,9 +11,10 @@ import type { ProjectAsset } from "@/lib/media/types";
 import type { UploadState } from "@/lib/media/upload-client";
 import { studioReferenceImages, type StudioReference } from "./studio-inputs";
 import { ugcV1LimitMessages } from "@/lib/projects/ugc-v1";
+import { referenceNameLimit } from "@/lib/projects/reference-names";
 
 export function StudioReferenceSources({ label, addLabel, role, references, onAdd, onRemoveLocal, onRemoveAsset,
-  onUpload, onRecover, uploadStates, busy, signedIn, authReady }: {
+  onUpload, onRecover, onNameChange, uploadStates, busy, signedIn, authReady }: {
   label: string;
   addLabel: string;
   role: "character" | "product";
@@ -23,6 +24,7 @@ export function StudioReferenceSources({ label, addLabel, role, references, onAd
   onRemoveAsset: (asset: ProjectAsset) => void;
   onUpload: (media: LocalMedia) => void;
   onRecover: (asset: ProjectAsset) => void;
+  onNameChange: (asset: ProjectAsset, value: string) => void;
   uploadStates: Record<string, UploadState>;
   busy: boolean;
   signedIn: boolean;
@@ -44,7 +46,8 @@ export function StudioReferenceSources({ label, addLabel, role, references, onAd
     {references.length > 0 && <ul className="mt-3 flex min-w-0 flex-wrap gap-2" aria-label={label}>
       {images.map(({ local, asset }) => {
         const filename = local?.file.name ?? asset?.filename ?? label;
-        return <li key={local?.id ?? asset?.id} className="relative size-16 shrink-0 rounded-lg border border-border bg-field" title={filename}>
+        return <li key={local?.id ?? asset?.id} className="min-w-0 max-w-full basis-full">
+          <div className="relative size-16 shrink-0 rounded-lg border border-border bg-field" title={filename}>
           <div className="relative size-full overflow-hidden rounded-lg">
             {local ? <LocalMediaThumbnail media={local} className="size-full" alt={filename} />
               : asset?.status === "uploaded" ? <PersistentMediaPreview asset={asset} thumbnail />
@@ -55,6 +58,18 @@ export function StudioReferenceSources({ label, addLabel, role, references, onAd
             onClick={() => { if (local) onRemoveLocal(local.id); else if (asset) onRemoveAsset(asset); add.current?.focus(); }}>
             <X className="size-3" aria-hidden="true" />
           </button>
+          </div>
+          {!local && asset?.status === "uploaded" && <div className="mt-2 min-w-0 space-y-1">
+            <label htmlFor={`${id}-${asset.id}-name`} className="block text-[11px] font-medium text-foreground">
+              {role === "character" ? "Character name" : "Product / Prop name"}
+            </label>
+            <input id={`${id}-${asset.id}-name`} name={`${role}-name`} type="text" autoComplete="off" aria-required="true"
+              value={asset.referenceName ?? ""} maxLength={referenceNameLimit}
+              placeholder={role === "character" ? "e.g. Maya" : "e.g. Nova Watch"}
+              onChange={event => onNameChange(asset, event.target.value)}
+              onBlur={event => onNameChange(asset, event.target.value.trim())}
+              className="sceenyk-field h-8 min-h-8 w-full min-w-0 max-w-full rounded-lg border border-input bg-field px-2 py-1 text-xs text-foreground outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring [@media(pointer:coarse)]:min-h-11" />
+          </div>}
         </li>;
       })}
     </ul>}

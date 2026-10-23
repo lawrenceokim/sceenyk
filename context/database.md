@@ -1,5 +1,11 @@
 # Development application identity
 
+## Reference names - migration 040 authored (2026-10-23)
+
+Manual 040 after 039 adds nullable project_assets.reference_name (no invented names/backfill) with role/upload/image/length constraints and a trigger for normalization and clearing names on detachment. Existing RLS/ownership/keys/media/history remain. Service-only ugc_save_reference_names locks the owned draft Project and all submitted active uploaded Character/Product rows, validates a bounded unique-ID batch and then persists normalized labels together; no direct name-update grant/browser policy is added.
+
+The existing snapshot comparison helper accepts v2 for frozen historical jobs and v3 for named jobs, while new admission requires v3 and exact stored labels. Later Project name edits never change job snapshots; completed analysis rows remain unchanged. Prerequisites are catalog-checked at manual application, with no missing-relation casts. [reference-name contract and setup](ugc-v1-workflow.md#project-specific-reference-names--prerequisite-before-milestone-5); no SQL executed/remotely applied by Codex.
+
 ## UGC Milestone 4 - migrations 038/039 authored (2026-10-23)
 
 **Milestone 4 — Complete in source; manual migration/provider/runtime acceptance pending. Exact next: Milestone 5 — Character Reference Sheet generation. Not Started.** [038](../supabase/migrations/20261023003800_studio_duration_compatibility.sql) adds 5 to the project duration constraint and legacy snapshot validator while retaining 15 for historical records; there is no row rewrite, tariff/reservation/ledger change. [039](../supabase/migrations/20261023003900_ugc_reference_analysis.sql) adds private ugc_reference_analyses attempt/completion records and job analysis_version/analysis_model. Owned/source FKs, RLS without browser policies, service SELECT plus RPC-only writes, immutable terminal rows, per-role completion uniqueness and fixed safe events preserve ownership/history.

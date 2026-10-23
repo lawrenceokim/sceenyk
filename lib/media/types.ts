@@ -11,6 +11,7 @@ export type ProjectAsset = {
   createdAt: string;
   studioRole?: StudioMediaRole;
   referenceId?: string | null;
+  referenceName?: string | null;
   removedFromDraft?: boolean;
 };
 export type MediaResult<T> =

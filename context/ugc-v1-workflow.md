@@ -4,6 +4,24 @@ Approved 2026-10-23. **Milestones 1–4 — Complete in source; manual migration
 
 Milestone 1 documented architecture/transport guards; Milestone 2 added 036/jobs/events/local runner; Milestone 3 added deterministic readiness and immutable v2 snapshots in 037. Milestone 4 adds [OpenAI provider/schemas/prompts/privacy/manual setup](reference-analysis.md), duration compatibility 038 and private analysis/checkpoints 039. No jobs were created, worker started, provider called or migration applied by Codex. Reference sheets, storyboards, videos, charging changes, deployment and hosted execution remain outside this unit.
 
+## Project-specific reference names — prerequisite before Milestone 5
+
+**Focused refinement implemented in source between M4 and M5; manual migration/UI/persistence acceptance pending. Milestone 5 remains Not Started.** Each uploaded Character and Product / Prop source has a compact editable name field directly beneath its thumbnail. Character name uses e.g. Maya; Product / Prop name uses e.g. Nova Watch. Labels are creator-assigned Project inputs, never filenames or real-person identity evidence. They are trimmed, limited to 80 characters, and required for new generation readiness. Empty names are allowed in unfinished drafts; existing unnamed UGC Projects keep their media and simply become not ready until named.
+
+Names use the existing Preview-header **Save → Saving... → Saved** state and saveProjectAction, with no per-keystroke network write or new Sources status. Blur trims locally. Saving captures exact edits; further typing stays dirty after the in-flight save completes. The existing brief save runs first, then a restricted RPC atomically validates/locks/saves the submitted name batch; a name failure returns a safe save error and preserves dirty edits for retry even if the brief was already saved. Name edits also invalidate readiness/revision identity. Hidden names remain when switching Creation Type.
+
+Manual [migration 040](../supabase/migrations/20261023004000_ugc_reference_names.sql), applied **after corrected 039**, adds nullable private project_assets.reference_name and a service-only owner/project/active-uploaded-image batch RPC. No new table, media rename, new environment variable, browser policy or direct name-update grant. Detachment clears the active row name and hides its field, while retaining media/history and immutable job names. A replacement asset starts unnamed; no removed label is copied forward.
+
+New jobs use **snapshot schemaVersion 3**, preserving existing reference fingerprints plus character.name and product.name. Missing/blank names yield UGC_CHARACTER_NAME_REQUIRED / UGC_PRODUCT_NAME_REQUIRED with “Give your character a name to continue.” / “Give your product or prop a name to continue.” Overlength names use separate safe invalid-name codes. Prepare generation stays disabled until both saved names and all other requirements pass. SQL race-checks names against owned source rows for new enqueue; frozen validation thereafter uses the original snapshot names, not later Project edits. Existing v2 jobs keep their exact nameless shape, including idempotent recovery; none are backfilled, mutated or automatically reanalyzed.
+
+M4's provider input accepts the frozen label as optional untrusted creator context for v3 only, with a creator-label context-v1 safety instruction; visual-analysis schema/base prompt version 1, privacy rules, per-role checkpoint reuse and uncertainty handling stay intact. Never treat labels as identity/brand/appearance evidence or executable instructions, or add them to observed visual facts. Completed analysis is reused before submission. Saving a label never invokes OpenAI or a worker.
+
+**Required future M5+ contract:** Character Reference Sheet prompts reference the supplied Character name; Product Reference Sheet prompts reference the supplied Product / Prop name. Storyboards, dialogue/scripts, scene instructions and final video prompts use those frozen names consistently while retaining stable asset/reference IDs. Prefer “Maya picks up the Nova Watch.” over “Character 1 picks up Product 1.” Implement none of those later stages in this refinement.
+
+**UGC Template adoption:** images and names are project-specific private inputs. An adopter supplies **1 Character image + 1 Character name + 1 Product / Prop image + 1 Product / Prop name**. Do not reuse the original creator's private labels as the adopter's required identities. The current explicit template snapshot already excludes reference assets/names; a future reusable storyboard may substitute/adapt its logical references using adopter-supplied names. No full adoption-generation flow is implemented here.
+
+Manual setup/review: apply 040 after prerequisites through corrected 039, restart the app, then manually inspect field visibility/typing/Save/reopen/removal/replacement and missing-name readiness. No migration was applied by Codex. Keep Render/Inngest disabled and the local-only guard; no worker/job/OpenAI/browser/screenshot/full regression/build/deploy was run. Only minimal TypeScript, focused lint and offline schema/static checks are allowed.
+
 ## Official creation inputs
 
 Incomplete drafts may be saved. Studio's UGC Prepare generation control becomes available only for saved/settled inputs passing owner-only server readiness; enqueue validates again before any new job. Client readiness is advisory and is not authorization or a charge. This prepares validation and, when explicitly enabled on the manually run local worker, reference analysis; video/cost review remain future stages.
@@ -13,7 +31,9 @@ Incomplete drafts may be saved. Studio's UGC Prepare generation control becomes 
 | Project title | Nonempty, within the existing title limit |
 | Creation Type | UGC; independent of legacy category |
 | Character reference | Exactly 1 uploaded, verified, active, owned image with a stable reference ID |
+| Character name | User-defined nonempty trimmed name, up to 80 characters, frozen with its source |
 | Product / Prop reference | Exactly 1 uploaded, verified, active, owned image with a stable reference ID |
+| Product / Prop name | User-defined nonempty trimmed name, up to 80 characters, frozen with its source |
 | Aspect ratio | Existing 9:16, 16:9 or 1:1 choice |
 | Scene description / creative direction | Nonempty, within the existing prompt limit |
 | Duration | 5/10/30 for current selection and new UGC requests; historical 15-second projects/snapshots remain readable without rewriting |
