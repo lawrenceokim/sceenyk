@@ -1,5 +1,13 @@
 # Sceenyk project overview
 
+## Milestone 2 — local UGC job infrastructure (2026-10-23)
+
+**Complete in source; manual migration/runtime acceptance pending.** Migration 036 adds `ugc_generation_jobs` and append-only events, reusing existing app users, owned Projects and server Supabase client. Shared statuses/stages, immutable snapshots, idempotent enqueue, claim-token leases/heartbeats, bounded recovery/retries, safe owner progress and queued/running cancellation are implemented behind server-only services. See [schema/runner/setup](generation-jobs.md#ugc-generation-jobs--milestone-2-complete-in-source-2026-10-23).
+
+After manually applying 036 and any pending prerequisites, the laptop command is `npm run worker:ugc`. It is not started by Codex. Its default stage registry is empty: a claim reaches `validate_inputs`, then fails safely as unimplemented. No Studio wiring, full readiness, OpenAI/reference sheets/storyboard/video, assets or financial behavior is added. Render/Inngest remain guarded/bypassed and configuration is preserved. Minimal static checks only; the user performs manual acceptance.
+
+**Exact next milestone: Milestone 3 — UGC input validation + generation readiness. Not Started.** Earlier Milestone 1/Not Started infrastructure statements below are historical and superseded by this entry.
+
 ## Full UGC V1 architecture approved (2026-10-23)
 
 **Milestone 1 Complete; UGC pipeline Not Started.** The canonical [product overview](overview.md#approved-full-ugc-v1-workflow-2026-10-23) and [full UGC contract](ugc-v1-workflow.md) define required inputs, OpenAI reasoning/reference-image adapters, private Character/Product sheets, structured storyboard and normalized generation package, cost review/confirmation before video, real persisted progress and private Preview output.

@@ -1,8 +1,8 @@
 # UGC V1 workflow contract
 
-Approved 2026-10-23. **Milestone 1 — architecture/context preparation: Complete. UGC pipeline implementation: Not Started.** This is the current contract for future UGC implementation; it supersedes older Gemini/Inngest/Render roadmap statements only for this workflow. Historical implementation and acceptance evidence remain intact. Freestyle remains a separate creation flow with its existing contracts.
+Approved 2026-10-23. **Milestone 1 — Complete. Milestone 2 — job infrastructure Complete in source; manual migration/runtime acceptance pending. Milestone 3 and all provider-dependent stages — Not Started.** This is the current contract for UGC implementation; it supersedes older Gemini/Inngest/Render roadmap statements only for this workflow. Historical implementation and acceptance evidence remain intact. Freestyle remains a separate creation flow with its existing contracts.
 
-This unit documents the architecture and installs only reversible development transport guards. It creates no UGC jobs, schema, runner, OpenAI integration, reference sheets, storyboards or videos. No deployment, migration application, paid AI traffic or hosted execution is authorized.
+Milestone 1 documented the architecture and installed reversible development transport guards. Milestone 2 now adds migration 036, UGC jobs/events, shared state machine, server-only services and `npm run worker:ugc`; see the [actual job/runner contract and manual setup](generation-jobs.md#ugc-generation-jobs--milestone-2-complete-in-source-2026-10-23). No jobs were created, worker started or migration applied by Codex. No OpenAI integration, reference sheets, storyboards, videos, charging changes, deployment or hosted execution is implemented/authorized here.
 
 ## Official creation inputs
 
@@ -107,7 +107,7 @@ The intended experience is **Validate → build/prepare plan → determine cost 
 
 ## Persistence, jobs and resume
 
-Use asynchronous persisted jobs; no HTTP request/browser session must remain open through generation. The request validates/adopts a durable identity and returns an owned job handle; the local worker claims work independently. This is a future model, not an implemented route or runner.
+Use asynchronous persisted jobs; no HTTP request/browser session must remain open through generation. Milestone 2 implements a server-only enqueue service returning safe owned progress and an independent local worker. It exposes no new HTTP route or Studio Generate wiring. Complete validation and generation stages remain future work.
 
 **Existing reusable foundation:** source includes `projects`, `project_assets`, `generation_jobs`, `generation_plans`, provider-attempt/output tables and existing Marketplace snapshots. Current `generation_jobs` already has owner/project/request identity, immutable inputs, status/current stage, lifecycle timestamps, safe failures and legacy dispatch/claim metadata. `generation_plans.plan` is structured JSON but its schema/constraints and legacy stages are not the UGC V1 contract. Inspect the connected catalog, functions, grants and pending migrations before designing extensions; source migration files are not proof of the deployed schema. Do not invent or claim UGC tables/columns exist.
 
@@ -134,9 +134,9 @@ Next.js app → persisted owned job → Job Runner
 Local runner → OpenAI / future video provider → database + private R2
 ```
 
-**ACTIVE describes the approved execution target, not a running/implemented UGC service.** Milestone 2 has not started. No UGC runner/command exists yet. The laptop worker may use hosted Supabase/R2 and explicitly authorized provider APIs; all UGC orchestration/business-stage execution stays on the laptop. UGC development must not depend on hosted or local Inngest. Do not run a local Inngest server as a substitute for building the local runner.
+**ACTIVE describes the approved local execution adapter; Codex has not started the service.** Milestone 2 implements `LocalJobRunner` and `UgcJobRunner`, invoked manually by `npm run worker:ugc` after migration 036. The default registry has no stage handlers: claimed work stops safely at `validate_inputs` with `STAGE_NOT_IMPLEMENTED`, without pretending validation passed. The laptop worker uses existing hosted Supabase; future private R2/provider stages require separate implementation/authorization. All UGC orchestration/business-stage execution stays on the laptop, depending on neither hosted nor local Inngest.
 
-The future runner owns claiming, scheduling/polling and delivery; stage/business services own validation, OpenAI adapters, reference sheets, storyboard/package, persistence and accounting integration. Use database leases/compare-and-set and durable checkpoints so browser refresh and worker restart can resume without repeat spending. Long work runs outside Next.js requests. The existing `npm run worker:media` starts the legacy signed Node/FFmpeg HTTP service; it is **not** a UGC job runner and starting it does not implement this diagram.
+The local execution adapter owns polling/claiming/delivery and invokes the shared workflow runner; future stage/business services own validation, OpenAI, reference sheets, storyboard/package and accounting integration. Database-fenced 90-second leases, 20-second heartbeats, 5-second polling, bounded claims/retries and append-only events provide the infrastructure; see [jobs](generation-jobs.md). Only pre-provider validation is automatically recoverable; later uncertain stages require reconciliation. Long work runs outside Next.js requests. `npm run worker:media` remains the separate legacy signed Node/FFmpeg HTTP service and is deliberately bypassed by the UGC worker.
 
 ### Source inspection and reversible development controls
 
@@ -188,15 +188,15 @@ When another user adopts: copy only the immutable reusable configuration/storybo
 
 During current UGC development and manual testing, the user performs workflow acceptance. **Codex must not automatically run browser suites, screenshot suites, full regression suites, deployed acceptance, provider-generation tests, expensive OpenAI calls, video-generation calls or hosted background-job tests unless the user explicitly instructs Codex to test.** Do not generate paid provider traffic automatically. Only the smallest compile/type/static checks needed to avoid obviously broken code are allowed without that instruction. Historical test/deployment commands in other docs are evidence/reference, not current permission.
 
-This architecture task uses source/document review, focused TypeScript/ESLint and link/whitespace/scope checks only. No automated behavioral suites, job dispatch, worker startup, provider requests, migration application, deployment or Studio redesign. Stop after Milestone 1.
+Milestone 2 uses source/document review, focused TypeScript/ESLint and SQL/link/whitespace/scope review only. No browser/screenshot/integration/regression suites, production build, test jobs, worker startup, provider requests, migration application, deployment or Studio redesign. Stop after Milestone 2; the user applies the migration and performs manual acceptance.
 
 ## Implementation milestones
 
 | Milestone | Bounded outcome | Status |
 | --- | --- | --- |
-| 1 | UGC architecture/context preparation and reversible development execution safeguards — this task | Complete |
-| 2 | Generation-job schema + local job runner/state machine; inspect/reuse existing schema, preserve financial authority and separate preparation from awaiting confirmation | Not Started — exact next implementation milestone |
-| 3 | UGC input validation + generation readiness, including 5/10/30 compatibility and supported narration | Not Started |
+| 1 | UGC architecture/context preparation and reversible development execution safeguards | Complete |
+| 2 | Generation-job schema + local job runner/state machine; preserve financial authority and separate preparation from awaiting confirmation | Complete in source; manual migration/runtime acceptance pending |
+| 3 | UGC input validation + generation readiness, including 5/10/30 compatibility and supported narration | Not Started — exact next milestone |
 | 4 | OpenAI reference analysis; resolve preparation consent/funding before paid calls | Not Started |
 | 5 | Character Reference Sheet generation | Not Started |
 | 6 | Product / Prop Reference Sheet generation | Not Started |
@@ -208,4 +208,4 @@ This architecture task uses source/document review, focused TypeScript/ESLint an
 | 12 | Manual local end-to-end acceptance performed by the user | Not Started |
 | Later | Explicitly approved local → Render transition; review whether Inngest is needed | Deferred |
 
-**Needs confirmation before dependent milestones:** preparation consent/funding/budget policy, actual OpenAI text/image model capabilities and account access, future video provider/capabilities/duration/narration support and pricing, exact additive schema after catalog inspection, narration extensions, final-output duration/transition rules and existing retention/moderation/cancellation decisions. No unresolved choice authorizes fallback to Gemini, hosted execution or invented financial policy. Do not start Milestone 2 in this task.
+**Needs confirmation before dependent milestones:** preparation consent/funding/budget policy, actual OpenAI text/image model capabilities and account access, future video provider/capabilities/duration/narration support and pricing, later stage schema/catalog extensions, narration extensions, final-output duration/transition rules and existing retention/moderation/provider-cancellation decisions. No unresolved choice authorizes fallback to Gemini, hosted execution or invented financial policy. Do not start Milestone 3 in this task.

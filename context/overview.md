@@ -1,5 +1,9 @@
 # Sceenyk
 
+## UGC Milestone 2 — source infrastructure delivered (2026-10-23)
+
+The [UGC job schema/runner](generation-jobs.md#ugc-generation-jobs--milestone-2-complete-in-source-2026-10-23) is Complete in source, with manual migration 036 application and runtime acceptance pending. The local command `npm run worker:ugc` uses persisted owned UGC jobs, centralized states, append-only history, idempotency, leases/heartbeats, bounded recovery/retries and cancellation. It does not start itself or create jobs. The empty stage registry stops safely at unimplemented validation; Studio Generate, provider stages and financial behavior remain unconnected. All Render/Inngest guards/configuration remain intact. Next: **Milestone 3 — UGC input validation + generation readiness (Not Started)**; do not begin it in this unit. The previous architecture-only milestone remains historical evidence.
+
 ## Approved full UGC V1 workflow (2026-10-23)
 
 **Architecture/context Milestone 1: Complete. UGC pipeline implementation: Not Started.** The [UGC V1 workflow contract](ugc-v1-workflow.md) is the current product/implementation contract and supersedes older UGC provider, execution and next-unit recommendations; historical evidence below remains intact. This task adds documentation and reversible local execution guards only. Freestyle stays separate, with its existing product and financial contracts.

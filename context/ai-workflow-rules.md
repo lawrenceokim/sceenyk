@@ -1,5 +1,15 @@
 # AI Workflow Rules
 
+## Current unit — Milestone 2 source infrastructure complete (2026-10-23)
+
+The current request authorized only generation-job schema, local worker and centralized state infrastructure. **Milestone 2 — Complete in source; manual migration/runtime acceptance pending. Exact next milestone: 3 — UGC input validation + generation readiness. Not Started; do not start it automatically.** This supersedes the earlier Milestone 1 stop point below. See the [actual UGC job contract/setup](generation-jobs.md#ugc-generation-jobs--milestone-2-complete-in-source-2026-10-23) and [UGC V1 contract](ugc-v1-workflow.md).
+
+Migration 036 adds UGC jobs/events without changing the accounted legacy generation tables. Existing server identity/database/project ownership are reused. The local adapter polls/claims and calls the portable runner; state/heartbeat/lease changes go through claim-fenced RPCs. No default stage handlers exist, so claimed work stops at unimplemented validation with a safe failure. Studio Generate, complete readiness, OpenAI, reference sheets, storyboard, video, provider/asset writes and financial operations are not connected.
+
+The user must manually apply migration 036 after pending prerequisites and may then run `npm run worker:ugc`. Codex did not apply it, create jobs or start the worker. `SCEENYK_LOCAL_JOBS_ONLY=1` remains active; UGC bypasses all Render/Inngest routes and legacy FFmpeg/provider/financial modules. No hosted state was changed/audited.
+
+**Milestone 2 manual-testing restriction:** do not run browser/screenshot/integration/full regression suites, production builds, deployed acceptance, hosted job tests, test jobs or provider calls without explicit instruction. Only minimal compile/type/static checks; do not spend significant time testing. Documentation/manual setup does not authorize executing those operations. Keep source-complete distinct from unapplied schema and unperformed runtime acceptance.
+
 ## Current UGC V1 phase — documentation complete, implementation not started (2026-10-23)
 
 The [full UGC V1 contract](ugc-v1-workflow.md) takes precedence over older unit authorizations and next-step/test/hosted recommendations below for UGC. **Milestone 1 architecture/context preparation is Complete. UGC pipeline implementation is Not Started. Exact next implementation milestone: 2 — generation-job schema + local job runner/state machine. Do not start Milestone 2 in this task.**

@@ -1,0 +1,83 @@
+// Shared UGC progress/state vocabulary. SQL migration 036 mirrors this graph.
+export const ugcJobStatuses = ["queued", "running", "awaiting_confirmation", "completed", "failed", "cancelled"] as const;
+export type UgcJobStatus = (typeof ugcJobStatuses)[number];
+export const ugcJobStages = [
+  "queued", "validate_inputs", "analyze_references", "character_reference",
+  "product_reference", "build_storyboard", "build_generation_package", "cost_review",
+  "awaiting_confirmation", "video_generation", "finalizing", "complete", "failed", "cancelled",
+] as const;
+export type UgcJobStage = (typeof ugcJobStages)[number];
+export const ugcNextStage: Partial<Record<UgcJobStage, UgcJobStage>> = {
+  queued: "validate_inputs",
+  validate_inputs: "analyze_references",
+  analyze_references: "character_reference",
+  character_reference: "product_reference",
+  product_reference: "build_storyboard",
+  build_storyboard: "build_generation_package",
+  build_generation_package: "cost_review",
+  cost_review: "awaiting_confirmation",
+  awaiting_confirmation: "video_generation",
+  video_generation: "finalizing",
+  finalizing: "complete",
+};
+export const ugcStageMessages: Record<UgcJobStage, string> = {
+  queued: "Waiting for the local worker.",
+  validate_inputs: "Preparing inputs.",
+  analyze_references: "Analyzing references.",
+  character_reference: "Preparing character.",
+  product_reference: "Preparing product.",
+  build_storyboard: "Building storyboard.",
+  build_generation_package: "Preparing generation.",
+  cost_review: "Preparing generation cost review.",
+  awaiting_confirmation: "Waiting for generation cost confirmation.",
+  video_generation: "Generating video.",
+  finalizing: "Finalizing video.",
+  complete: "Complete.",
+  failed: "This job stopped safely.",
+  cancelled: "This job was cancelled.",
+};
+export const ugcJobErrorCodes = [
+  "STAGE_NOT_IMPLEMENTED", "WORKER_INTERRUPTED", "WORKER_ERROR", "LEASE_EXPIRED",
+  "ATTEMPTS_EXHAUSTED", "PROJECT_UNAVAILABLE", "RECONCILIATION_REQUIRED",
+] as const;
+export type UgcJobErrorCode = (typeof ugcJobErrorCodes)[number];
+export const ugcAutomaticRetryStages: readonly UgcJobStage[] = ["validate_inputs"];
+export const ugcLeaseSeconds = 90;
+export const ugcHeartbeatMilliseconds = 20_000;
+export const ugcPollMilliseconds = 5_000;
+
+export function isUgcTransitionAllowed(from: { status: UgcJobStatus; stage: UgcJobStage }, to: { status: UgcJobStatus; stage: UgcJobStage }) {
+  if (from.status === "completed" || from.status === "failed" || from.status === "cancelled") return false;
+  if (to.status === "cancelled") return to.stage === "cancelled";
+  if (to.status === "failed") return to.stage === "failed";
+  if (ugcNextStage[from.stage] !== to.stage) return false;
+  if (from.status === "queued") return to.status === "running" && to.stage === "validate_inputs";
+  if (from.status === "awaiting_confirmation") return to.status === "running" && to.stage === "video_generation";
+  if (from.status !== "running") return false;
+  return to.status === (to.stage === "awaiting_confirmation" ? "awaiting_confirmation" : to.stage === "complete" ? "completed" : "running");
+}
+
+// Internal trusted-server shape. Never send the full row to a browser.
+export type UgcJobRow = {
+  id: string; owner_user_id: string; project_id: string; idempotency_key: string;
+  status: UgcJobStatus; stage: UgcJobStage; resume_stage: UgcJobStage;
+  attempt_count: number; max_attempts: number; retry_eligible: boolean; next_retry_at: string | null;
+  worker_id: string | null; claim_token: string | null; claimed_at: string | null;
+  lease_expires_at: string | null; heartbeat_at: string | null; cancellation_requested_at: string | null;
+  error_code: UgcJobErrorCode | null; safe_error_message: string | null;
+  provider: string | null; provider_job_id: string | null;
+  input_snapshot: Record<string, unknown>; metadata: Record<string, unknown>;
+  created_at: string; updated_at: string; started_at: string | null;
+  completed_at: string | null; failed_at: string | null; cancelled_at: string | null;
+};
+export type UgcJobEventRow = {
+  id: number; job_id: string; status: UgcJobStatus; stage: UgcJobStage;
+  event_type: string; safe_message: string; metadata: { attempt: number; resumeStage: UgcJobStage };
+  created_at: string;
+};
+export type UgcJobProgress = {
+  id: string; status: UgcJobStatus; stage: UgcJobStage; message: string;
+  createdAt: string; updatedAt: string; startedAt: string | null; completedAt: string | null;
+  failedAt: string | null; cancelledAt: string | null; cancellationRequested: boolean;
+  failure: { code: UgcJobErrorCode; message: string } | null;
+};

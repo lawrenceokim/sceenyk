@@ -1,5 +1,11 @@
 # Durable generation dispatch
 
+## Milestone 2 — separate local UGC claiming (2026-10-23)
+
+UGC job infrastructure now uses `ugc_enqueue_job` → persisted `ugc_generation_jobs` → local `ugc_claim_job` polling → shared `UgcJobRunner`, as [documented here](generation-jobs.md#ugc-generation-jobs--milestone-2-complete-in-source-2026-10-23). It uses no legacy generation outbox, Inngest events/cron or media-worker endpoints. Default handlers are absent and stop safely at validation; no provider/financial operation is dispatched. Source Complete does not mean migration applied or runtime accepted.
+
+Existing `SCEENYK_LOCAL_JOBS_ONLY=1`, all Inngest SDK/ingress blocks and hosted Render restrictions remain unchanged; keys/functions/configuration/history are preserved. No hosted sync/execution or local worker startup occurred. Manual migration 036 and `npm run worker:ugc` setup are documented, not executed. Exact next milestone: 3 — UGC input validation + generation readiness. Do not start it or behavioral test suites automatically.
+
 ## Current UGC development execution policy (2026-10-23)
 
 **This section supersedes the local Inngest commands and hosted activation recommendations below during UGC development.** [UGC V1](ugc-v1-workflow.md#job-runner-and-development-execution) uses a persisted job → future local laptop runner; it depends on neither hosted nor local Inngest. UGC pipeline/runner implementation is Not Started. Historical SDK/Cloud evidence and workflows remain preserved.

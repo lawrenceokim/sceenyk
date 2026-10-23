@@ -1,5 +1,58 @@
 # Persistent generation jobs
 
+## UGC generation jobs — Milestone 2 Complete in source (2026-10-23)
+
+Manual migration application and runtime acceptance are pending. **Next: Milestone 3 — UGC input validation + generation readiness. Not Started.** No Studio Generate wiring or AI/provider stage is implemented by this infrastructure unit. This section supersedes the earlier Not Started UGC extension below; legacy generation history remains intact.
+
+### Schema and reuse
+
+New manual migration: [20261023003600_ugc_generation_jobs.sql](../supabase/migrations/20261023003600_ugc_generation_jobs.sql), ordered after 035. It checks required existing column types and the owned Project unique constraint, is transactional, and permits reruns only for its marked v1 tables. Do not apply it remotely automatically. Existing `generation_jobs` has accounting-coupled admission, immutable legacy snapshots and different status/claim constraints; changing it would affect accepted Freestyle/financial behavior. The UGC extension therefore uses two purpose-specific tables with the same existing Supabase client, `app_users`, owned Projects, private assets and RPC patterns. No second database client, broker, hosted coordinator or accounting system.
+
+A fresh read-only PostgREST OpenAPI inspection confirmed existing user/project/asset/legacy-job columns and absence of exposed UGC tables before authoring. It did not inspect SQL grants/triggers/constraints or apply migrations; migration prerequisite checks run in the actual catalog when the user applies it. Whether pending 035 has been applied remains a manual prerequisite to verify.
+
+| Table | Actual authored fields / invariants |
+| --- | --- |
+| `ugc_generation_jobs` | UUID `id`, existing `owner_user_id` (the user identity), `project_id`, UUID `idempotency_key`; unique `(owner_user_id,idempotency_key)` and composite owned-Project FK; `status`, `stage`, `resume_stage`; `attempt_count`, `max_attempts` (default 3), `retry_eligible`, `next_retry_at`; `worker_id`, `claim_token`, `claimed_at`, `lease_expires_at`, `heartbeat_at`; `cancellation_requested_at`; `error_code`, `safe_error_message`; reserved `provider`, `provider_job_id`; immutable bounded `input_snapshot` and `metadata`; created/updated/started/completed/failed/cancelled timestamps |
+| `ugc_generation_job_events` | Ordered bigint `id`, `job_id`, `status`, `stage`, `event_type`, fixed `safe_message`, bounded-by-construction safe metadata (`attempt`, `resumeStage`), `created_at`. A trigger appends within the same state-change transaction; direct writes and history UPDATE/DELETE are denied. Heartbeats update the job without flooding event history. |
+
+Both tables enable RLS with no browser policies. PUBLIC/anon/authenticated have no table/function privileges. Service role has SELECT plus only the explicit RPC allowlist; no direct job/event INSERT/UPDATE/DELETE or identity-sequence grant. SECURITY DEFINER functions use an empty search path and qualified relations. Job identity/snapshot/metadata/max attempts/reserved provider fields are immutable in this version. Provider IDs have storage slots but **no writer or API integration yet**; later provider-attempt/idempotency and accounting operations require their own guarded implementation.
+
+### Central state machine and trusted service
+
+[`lib/ugc-jobs/contract.ts`](../lib/ugc-jobs/contract.ts) owns shared TypeScript status/stage constants, messages, adjacent transitions, retry-safe stages and timing. SQL mirrors that graph and constrains valid status/stage/timestamp/error/lease pairs. Worker writes go through [`worker-service.ts`](../lib/ugc-jobs/worker-service.ts) and the claim-fenced SQL RPC; no component writes stage columns.
+
+Statuses: `queued`, `running`, `awaiting_confirmation`, `completed`, `failed`, `cancelled`.
+
+Stages: `queued → validate_inputs → analyze_references → character_reference → product_reference → build_storyboard → build_generation_package → cost_review → awaiting_confirmation → video_generation → finalizing → complete`, with safe `failed` / `cancelled` terminal branches. Ordinary stage advancement is adjacent only. Completed/cancelled jobs cannot restart; failed jobs can only enter the explicit bounded safe retry path. The conceptual future confirmation → video and finalizing → complete edges are represented, but **current SQL deliberately provides no confirmation admission or completion operation**. Later cost/accounting/output milestones must supply those gates; stage code cannot bypass them with a generic advance.
+
+[`UgcJobRunner`](../lib/ugc-jobs/runner.ts) is the portable workflow coordinator with an explicit stage-handler registry. **The default registry is empty.** A newly claimed job enters `running / validate_inputs`, then stops as `failed / failed`, records `resume_stage=validate_inputs`, safe `STAGE_NOT_IMPLEMENTED`, and no retry eligibility. It does not pretend validation, AI work or output succeeded. Full input validation is Milestone 3. No paid requests, assets, quotes, reservations, deductions or settlement are connected.
+
+### Claims, leases, recovery and retries
+
+`ugc_claim_job` uses `FOR UPDATE SKIP LOCKED` to select one eligible queued row atomically, increments the attempt, and issues a fresh worker UUID/claim token, claimed/start timestamps and 90-second lease. Worker updates require the exact token, expected stage and an unexpired lease under the row lock. A stale worker cannot heartbeat, advance, fail or finish a reclaimed job. The shared runner serializes heartbeat/state RPCs so an old heartbeat response cannot regress its local stage.
+
+`LocalJobRunner` polls every 5 seconds, processes one job at a time, heartbeats every 20 seconds while running, and backs off 15 seconds on database errors. No aggressive/busy loop or external cron. Each claim poll also reconciles at most 25 expired leases and 25 queued jobs whose owned Project is no longer available. Deleting a Project fails queued work safely; later ordinary draft edits/type switches do not rewrite the frozen input. History/foreign keys remain preserved.
+
+Only `validate_inputs` is currently safe for automatic recovery. An expired claim at that pre-provider boundary records failure then requeues after 5 seconds while attempts remain; after the default 3 claims it fails `ATTEMPTS_EXHAUSTED`. An expired later stage fails nonretryably with `RECONCILIATION_REQUIRED`, preserving its resume stage rather than blindly resubmitting paid work. A cancellation request wins over recovery. Graceful Ctrl+C/SIGTERM releases safe validation work with the same delay/budget; later uncertain stages stop for review. Ownership-verified `retryOwnedUgcJob` explicitly retries only eligible known-safe failures of the same job/snapshot; it never resets attempts or auto-retries `STAGE_NOT_IMPLEMENTED`. Error codes/messages come from fixed allowlists, never raw exceptions.
+
+### Enqueue, frozen inputs, reads and cancellation
+
+[`lib/ugc-jobs/server.ts`](../lib/ugc-jobs/server.ts) is server-only, not a Server Action/public endpoint. Every interactive service independently authenticates through `ensureAppUser()`; no browser-supplied owner is trusted:
+
+- `enqueueOwnedUgcJob({ projectId, idempotencyKey })` → `ugc_enqueue_job`. Initial enqueue locks the owned draft UGC Project and snapshots its current title, UGC/Creation Type, scene direction, settings, prompt narration mode and retained Character/Product asset/reference IDs only. `readiness=not_validated`; complete verified-source/settings/narration readiness is deferred to Milestone 3. No blobs/keys/URLs are copied. The snapshot never changes after enqueue. Retrying the same owner's UUID key returns the same frozen job; reusing it for a different Project conflicts. Database uniqueness resolves concurrent requests and emits only one enqueue event. Distinct intentional requests need distinct keys; future provider/asset/credit operations must derive their own permanent uniqueness/idempotency gates from the same job and persisted stage attempts.
+- `getOwnedUgcJobProgress({ projectId, jobId })` independently checks the visible owned Project and owner/job relationship, then returns an explicit safe projection: ID, status, stage, fixed progress/failure message, timestamps and cancellation-request flag. No snapshot, provider IDs, lease/worker token, ownership internals, keys, stack traces or metadata is returned. No UI/polling endpoint is added in this milestone.
+- `requestOwnedUgcJobCancellation(...)` → `ugc_cancel_owned_job`. Queued/awaiting-confirmation jobs cancel immediately; running jobs record an idempotent cancellation request. The runner signals cooperative interruption and the next safe boundary/lease recovery commits Cancelled. It does not promise remote provider cancellation. Completed/failed jobs cannot be cancelled; repeated cancellation of Cancelled is harmless.
+
+### Manual setup and execution
+
+1. Verify/apply any pending preceding migrations, including 035, then manually apply **only new migration 036** in the intended development Supabase project. Do not rerun unrelated historical migrations. Neither the migration nor its RPCs have been executed by Codex in this task.
+2. Keep ignored development Clerk/Supabase configuration and `SCEENYK_LOCAL_JOBS_ONLY=1`. The worker uses the existing private service-role client; no OpenAI, R2 worker, Inngest or Render credentials are required for this milestone. `.env.local` is loaded with `@next/env` in development mode. Never expose privileged credentials to the browser.
+3. When ready to run the worker yourself, from the repository root use **`npm run worker:ugc`**. Ctrl+C requests graceful shutdown. It enqueues nothing by itself and is intentionally not attached to Studio Generate. Existing jobs will be processed when the command runs; the default missing handler fails safely as described above. No jobs were created by Codex.
+
+[`scripts/ugc-worker.ts`](../scripts/ugc-worker.ts) loads environment, validates local-only execution/database setup, creates an ephemeral UUID worker identity and invokes [`LocalJobRunner`](../lib/ugc-jobs/local-runner.ts). It refuses `SCEENYK_LOCAL_JOBS_ONLY=0` and recognized Render/Vercel execution environments. The adapter only polls/claims/invokes the shared runner. It bypasses legacy `worker:media`, `/prepare`, `/narrate`, `/inspect`, `/render`, Inngest events/ingress/recovery and every AI/payment/storage-write module. Existing hosted guards/configuration stay intact. Hosted platform state was not changed or audited.
+
+**Verification limit:** only minimal TypeScript/ESLint/static source/SQL/link/whitespace review. No browser/screenshot/integration/regression suites, production build, worker startup, test jobs, remote migration, deployed acceptance or provider/hosted calls. Manual migration and runtime/concurrency/security/lease/cancellation acceptance remain with the user. Milestone 2 Complete means source infrastructure delivered, not hosted/manual acceptance or working UGC generation.
+
 ## UGC V1 extension contract — Not Started (2026-10-23)
 
 The existing foundation/history below is retained. The [UGC V1 contract](ugc-v1-workflow.md#persistence-jobs-and-resume) defines a future asynchronous owned job with persisted current stage/status/progress, lifecycle timestamps, immutable inputs/configuration, private source/sheet/output asset references, structured storyboard/package, safe failure information, provider/request IDs, lease/claim and retry/idempotency metadata. This is a conceptual extension, not a migration or new table.

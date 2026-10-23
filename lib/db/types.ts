@@ -69,6 +69,8 @@ export type AssetRow = {
 export type Database = {
   public: {
     Tables: {
+      ugc_generation_jobs: { Row: import("@/lib/ugc-jobs/contract").UgcJobRow; Insert: never; Update: never; Relationships: [] };
+      ugc_generation_job_events: { Row: import("@/lib/ugc-jobs/contract").UgcJobEventRow; Insert: never; Update: never; Relationships: [] };
       payout_support_events: {
         Row: {
           id: string; attempt_id: string; withdrawal_id: string | null; actor_user_id: string | null;
@@ -254,6 +256,11 @@ export type Database = {
     };
     Views: Record<string, never>;
     Functions: {
+      ugc_enqueue_job: { Args: { p_owner_user_id: string; p_project_id: string; p_idempotency_key: string }; Returns: import("@/lib/ugc-jobs/contract").UgcJobRow | null };
+      ugc_claim_job: { Args: { p_worker_id: string }; Returns: import("@/lib/ugc-jobs/contract").UgcJobRow | null };
+      ugc_update_claim: { Args: { p_job_id: string; p_claim_token: string; p_expected_stage: string; p_operation: string; p_error_code: string | null; p_retryable: boolean }; Returns: import("@/lib/ugc-jobs/contract").UgcJobRow | null };
+      ugc_cancel_owned_job: { Args: { p_owner_user_id: string; p_project_id: string; p_job_id: string }; Returns: import("@/lib/ugc-jobs/contract").UgcJobRow | null };
+      ugc_retry_owned_job: { Args: { p_owner_user_id: string; p_project_id: string; p_job_id: string }; Returns: import("@/lib/ugc-jobs/contract").UgcJobRow | null };
       delete_owned_project: { Args: { p_owner_user_id: string; p_project_id: string }; Returns: unknown };
       creation_preferences_read: { Args: { p_owner: string }; Returns: import("@/lib/settings/contract").CreationPreferences | null };
       creation_preferences_save: { Args: { p_owner: string; p_aspect_ratio: string; p_category: string }; Returns: import("@/lib/settings/contract").CreationPreferences };

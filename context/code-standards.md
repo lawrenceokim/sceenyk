@@ -1,5 +1,15 @@
 # Code Standards
 
+## UGC job implementation standards — Milestone 2 (2026-10-23)
+
+Actual source/setup: [UGC job infrastructure](generation-jobs.md#ugc-generation-jobs--milestone-2-complete-in-source-2026-10-23). Use `lib/ugc-jobs/contract.ts` for statuses, stages, messages, adjacent transitions and retry/timing constants. The SQL graph/constraints mirror it; future stage code must use `worker-service.ts` and guarded RPCs, never direct status/stage updates. Keep the portable `UgcJobRunner` separate from `LocalJobRunner` polling/process setup and retain the empty default handler registry until each stage is explicitly implemented.
+
+Interactive enqueue/read/cancel/retry services are server-only and authenticate independently. Derive the owner from Clerk/application identity; return safe DTOs, never full job snapshots/provider/lease fields. Database uniqueness, owned FKs, RLS/no browser grants, restricted SECURITY DEFINER RPCs, immutable identity/snapshots and append-only event triggers enforce the boundary. Job creation is infrastructure only, not accounting admission. Later provider attempts/assets/charges require their own unique persisted identities and existing financial gates.
+
+Every worker write requires a live fresh claim token plus expected stage. Preserve serialized heartbeat/state updates, 90-second leases, 20-second heartbeats, 5-second polling, default 3 claims and explicit bounded retry eligibility. Only pre-provider validation can auto-recover; later uncertain stages stop for reconciliation. Do not implement a generic confirmation/completion bypass; future quote/output/accounting gates must be added separately. Keep `SCEENYK_LOCAL_JOBS_ONLY=1` and bypass all hosted Render/Inngest execution.
+
+Milestone 2 is Complete in source, with manual migration/runtime acceptance pending. Only minimal TypeScript/lint/static SQL/link/whitespace review is allowed here: no integration/browser/screenshot/full regression suites, production build, test jobs, worker startup, remote migration or provider calls. **Next milestone 3 is Not Started.**
+
 ## UGC V1 implementation contract and execution safeguards (2026-10-23)
 
 Read [ugc-v1-workflow.md](ugc-v1-workflow.md) before UGC work. Milestone 1 is Complete; the pipeline and Milestone 2 are Not Started. Reuse current owner/project/media/accounting boundaries; inspect the actual database catalog before additive schema design and never treat conceptual UGC fields/stages as existing columns/enums.

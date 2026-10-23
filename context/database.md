@@ -1,5 +1,11 @@
 # Development application identity
 
+## UGC jobs/events — migration 036 authored (2026-10-23)
+
+[Migration 036](../supabase/migrations/20261023003600_ugc_generation_jobs.sql) creates `ugc_generation_jobs` and `ugc_generation_job_events`, preserving existing accounted `generation_jobs` and financial tables. The [actual job contract](generation-jobs.md#ugc-generation-jobs--milestone-2-complete-in-source-2026-10-23) records fields, RPCs, state constraints, owner/idempotency uniqueness, immutable snapshot, fresh claim tokens, leases/heartbeat, retry/cancellation and append-only history. Reuses `app_users`, composite owned-Project FK and existing server-only client. RLS has no browser policies; service SELECT/explicit RPC grants only, no direct job/history writes.
+
+A read-only connected PostgREST schema inspection confirmed existing required column names/types and no exposed UGC tables before authoring. It does not prove full catalog/grants/triggers; the transactional migration independently validates prerequisite columns/owned uniqueness and refuses unknown same-name relations. Reruns preserve marked v1 data/history. **Not applied remotely or executed locally; no jobs created.** Verify pending 035, then manually apply only new 036 in the intended development database. Milestone 2 is source Complete, manual acceptance pending; Milestone 3 is Not Started.
+
 ## UGC V1 persistence design — future extension (2026-10-23)
 
 [UGC V1](ugc-v1-workflow.md#persistence-jobs-and-resume) requires versioned owned input/job/stage metadata, reference/asset relationships, structured storyboard/package JSON, provider-attempt/idempotency/lease records and existing quote/reservation linkage. Large uploads, sheets and video remain in private R2; PostgreSQL holds metadata/keys only on trusted server paths. Conceptual fields (including template `required_character_count=1` / `required_product_count=1`) and new progress labels are not claims of deployed columns or enums.

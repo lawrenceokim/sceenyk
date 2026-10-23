@@ -1,5 +1,11 @@
 # Render media-preparation worker
 
+## Milestone 2 local UGC adapter — hosted bypass preserved (2026-10-23)
+
+UGC infrastructure is now implemented in source; manual migration 036 and runtime acceptance remain pending. [`npm run worker:ugc`](generation-jobs.md#ugc-generation-jobs--milestone-2-complete-in-source-2026-10-23) invokes a local persisted-job adapter and portable workflow runner, never `worker:media`, signed `/prepare`, `/narrate`, `/inspect`, `/render`, FFmpeg or any provider. Its default registry safely fails at unimplemented `validate_inputs`. No worker/job was started/created in this task.
+
+`SCEENYK_LOCAL_JOBS_ONLY=1` remains active. The local entry refuses its explicit hosted opt-out and recognized Render/Vercel environments. Existing media-client loopback guard, Inngest ingress/transport blocks, Blueprint, Dockerfiles, keys, URL and history remain unchanged. No Render call/deployment/account setting or hosted execution was performed. Later moving the adapter to hosting remains separately scoped; no hosted adapter is implemented. Exact next milestone is 3 — UGC input validation + generation readiness; user manual acceptance only.
+
 ## UGC development: hosted execution disabled locally (2026-10-23)
 
 The [UGC V1 Job Runner contract](ugc-v1-workflow.md#job-runner-and-development-execution) supersedes historical deployment/acceptance/start commands below for this development phase. All UGC stages will run on the laptop; **UGC worker/pipeline implementation is Not Started**. The existing `npm run worker:media` starts a signed Node/FFmpeg HTTP service, not a persisted UGC job runner.
