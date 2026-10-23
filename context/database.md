@@ -1,5 +1,11 @@
 # Development application identity
 
+## UGC input readiness — migration 037 authored (2026-10-23)
+
+New [037](../supabase/migrations/20261023003700_ugc_input_readiness.sql) extends 036 only with `validation_completed_at`, `pause_reason`, valid queued/analyze_references pause constraints, validation/pause events and a runnable-queue index. New validated enqueue and finish-validation RPCs compare normalized frozen inputs against locked existing owned Project/asset records; the original unvalidated enqueue RPC loses application execute privileges. The existing worker RPC is retained internally behind a wrapper that blocks generic validation advance. Claim/cancel operations honor paused rows. No original migration rewrite, binary data, financial changes, RLS weakening or history backfill.
+
+Referenced columns/types and enabled 035 serialization are checked before changes; normalized text matches JavaScript trim. Existing immutable snapshots and append-only events remain. No live schema query or SQL execution was necessary/performed in this milestone: 036 is assumed to be manually applied before runtime testing, and 037 must then also be applied manually. See [snapshot/race/pause contract](generation-jobs.md#milestone-3--ugc-input-readiness-2026-10-23). Source Complete is distinct from pending manual migration/runtime acceptance.
+
 ## UGC jobs/events — migration 036 authored (2026-10-23)
 
 [Migration 036](../supabase/migrations/20261023003600_ugc_generation_jobs.sql) creates `ugc_generation_jobs` and `ugc_generation_job_events`, preserving existing accounted `generation_jobs` and financial tables. The [actual job contract](generation-jobs.md#ugc-generation-jobs--milestone-2-complete-in-source-2026-10-23) records fields, RPCs, state constraints, owner/idempotency uniqueness, immutable snapshot, fresh claim tokens, leases/heartbeat, retry/cancellation and append-only history. Reuses `app_users`, composite owned-Project FK and existing server-only client. RLS has no browser policies; service SELECT/explicit RPC grants only, no direct job/history writes.

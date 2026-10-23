@@ -1,5 +1,11 @@
 # Sceenyk
 
+## UGC Milestone 3 — validation and readiness (2026-10-23)
+
+**Complete in source; manual migration/runtime acceptance pending.** [UGC readiness](generation-jobs.md#milestone-3--ugc-input-readiness-2026-10-23) checks authenticated ownership, complete saved UGC inputs, exactly one verified private Character/Product image and object availability. Studio enables Prepare generation only after server readiness; new enqueue commits an immutable validated snapshot under a race check. Local worker validation records success and pauses before unimplemented reference analysis, with no credit/provider work or fake output. Existing Marketplace/Freestyle and hosted guards stay intact.
+
+Current Studio supports 10/15/30 seconds; the approved 5-second target remains unimplemented under this milestone's actual-configuration scope. Manually apply 037 after 035/036; no SQL, workers/jobs, storage/providers, browser/integration suites, production build or deployment was run by Codex. **Next: Milestone 4 — OpenAI reference analysis (Not Started).**
+
 ## UGC Milestone 2 — source infrastructure delivered (2026-10-23)
 
 The [UGC job schema/runner](generation-jobs.md#ugc-generation-jobs--milestone-2-complete-in-source-2026-10-23) is Complete in source, with manual migration 036 application and runtime acceptance pending. The local command `npm run worker:ugc` uses persisted owned UGC jobs, centralized states, append-only history, idempotency, leases/heartbeats, bounded recovery/retries and cancellation. It does not start itself or create jobs. The empty stage registry stops safely at unimplemented validation; Studio Generate, provider stages and financial behavior remain unconnected. All Render/Inngest guards/configuration remain intact. Next: **Milestone 3 — UGC input validation + generation readiness (Not Started)**; do not begin it in this unit. The previous architecture-only milestone remains historical evidence.

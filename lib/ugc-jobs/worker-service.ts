@@ -1,5 +1,6 @@
 import "server-only";
 import { createDatabaseClient } from "@/lib/db/server";
+import type { UgcGenerationSnapshot } from "./input-contract";
 import {
   isUgcTransitionAllowed, ugcLeaseSeconds, ugcNextStage,
   type UgcJobErrorCode, type UgcJobRow,
@@ -29,6 +30,14 @@ export async function updateUgcClaim(job: UgcJobRow, operation: UgcWorkerOperati
 }
 
 export const ugcWorkerService = {
+  finishValidation: async (job: UgcJobRow, snapshot: UgcGenerationSnapshot) => {
+    if (!job.claim_token || job.stage !== "validate_inputs" || job.status !== "running") throw new Error("UGC_CLAIM_REQUIRED");
+    const { data, error } = await createDatabaseClient().rpc("ugc_finish_input_validation", {
+      p_job_id: job.id, p_claim_token: job.claim_token, p_input_snapshot: snapshot,
+    });
+    if (error) throw new Error("UGC_WORKER_UPDATE_UNAVAILABLE");
+    return data;
+  },
   claim: claimUgcJob,
   heartbeat: (job: UgcJobRow) => updateUgcClaim(job, "heartbeat"),
   advance: (job: UgcJobRow) => updateUgcClaim(job, "advance"),

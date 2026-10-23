@@ -1,5 +1,11 @@
 # Private project media
 
+## UGC readiness checks — Milestone 3 (2026-10-23)
+
+The [central UGC validator](../lib/ugc-jobs/validation.ts) resolves only owned/project-bound active reference records and requires exactly one uploaded, verified supported image per role. It reuses private `verifyStoredMedia` for object existence, bounded signature header, MIME/length and exact ETag; these are deterministic reads, not provider analysis/full decoding/moderation. Keys/URLs/header bytes stay server-side. Readiness returns safe issues only; the private immutable job snapshot stores asset/reference IDs and verification metadata, never raw keys/binaries.
+
+Worker validation rechecks frozen reference IDs/roles and current storage rather than substituting later draft media. Missing/detached/replaced/unverified media blocks/fails validation safely. Adopted UGC Templates use adopter-owned Project assets; creator files/configuration IDs cannot satisfy these queries. Migration 037 race-checks referenced rows before enqueue and validation checkpoint; R2 is not in the SQL transaction, so normal conditional object immutability plus worker/provider-stage rechecks remain required. Existing private R2 runtime configuration is needed; Codex performed no storage requests, uploads/deletion or provider calls. Manual acceptance pending.
+
 ## Full UGC V1 private assets and template projection (2026-10-23)
 
 The [UGC V1 contract](ugc-v1-workflow.md#persistence-jobs-and-resume) requires original Character upload, original Product / Prop upload, generated Character Reference Sheet, generated Product Reference Sheet, final video and large intermediates in existing private R2/object storage. PostgreSQL stores structured descriptions/storyboard/package/settings plus ownership, project/generation relationships, durable asset IDs/keys server-side, verification/MIME/type metadata, status, timestamps and safe errors; never large binary/base64 media or expiring signed URLs as canonical references. No schema/storage migration or asset generation occurs here.

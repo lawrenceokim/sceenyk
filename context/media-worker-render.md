@@ -1,5 +1,11 @@
 # Render media-preparation worker
 
+## Milestone 3 — local validation without hosted execution (2026-10-23)
+
+The UGC runner now registers only deterministic validate_inputs, reusing private storage verification. After a valid frozen snapshot it records a development pause at queued / analyze_references. It calls neither legacy signed media-worker endpoints/FFmpeg nor OpenAI/video/Inngest/Render. [Current setup](generation-jobs.md#milestone-3--ugc-input-readiness-2026-10-23) requires manually applied 036/037 and private R2 credentials alongside existing database/auth configuration.
+
+Current `SCEENYK_LOCAL_JOBS_ONLY=1` and all transport/ingress guards remain active and unchanged; hosted URLs/keys, Blueprint/Dockerfiles and workflow history are retained. No worker/jobs, R2/provider/Render/Inngest calls, deployment or hosted configuration change occurred. Milestone 3 is source Complete with manual acceptance pending; exact next milestone 4 — OpenAI reference analysis — is Not Started.
+
 ## Milestone 2 local UGC adapter — hosted bypass preserved (2026-10-23)
 
 UGC infrastructure is now implemented in source; manual migration 036 and runtime acceptance remain pending. [`npm run worker:ugc`](generation-jobs.md#ugc-generation-jobs--milestone-2-complete-in-source-2026-10-23) invokes a local persisted-job adapter and portable workflow runner, never `worker:media`, signed `/prepare`, `/narrate`, `/inspect`, `/render`, FFmpeg or any provider. Its default registry safely fails at unimplemented `validate_inputs`. No worker/job was started/created in this task.

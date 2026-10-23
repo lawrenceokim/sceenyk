@@ -1,15 +1,17 @@
 import "server-only";
 import { ugcHeartbeatMilliseconds, type UgcJobErrorCode, type UgcJobRow, type UgcJobStage } from "./contract";
 import { ugcWorkerService } from "./worker-service";
+import { ugcStageHandlers } from "./stages";
+import type { UgcGenerationSnapshot } from "./input-contract";
 
-export type UgcStageResult = { kind: "advance" } | { kind: "fail"; code: UgcJobErrorCode; retryable?: boolean };
+export type UgcStageResult = { kind: "advance" } | { kind: "validated"; snapshot: UgcGenerationSnapshot } | { kind: "fail"; code: UgcJobErrorCode; retryable?: boolean };
 export type UgcStageHandler = (context: { job: Readonly<UgcJobRow>; signal: AbortSignal }) => Promise<UgcStageResult>;
 export type UgcStageHandlers = Partial<Record<UgcJobStage, UgcStageHandler>>;
 
 // Portable workflow coordinator. Neither this runner nor its default handlers
 // import Inngest, Render, AI, storage writers or financial services.
 export class UgcJobRunner {
-  constructor(private readonly handlers: UgcStageHandlers = {}) {}
+  constructor(private readonly handlers: UgcStageHandlers = ugcStageHandlers) {}
 
   async run(claimed: UgcJobRow, shutdown: AbortSignal): Promise<void> {
     let current = claimed;
@@ -55,7 +57,8 @@ export class UgcJobRunner {
         }
         const outcome = await handler({ job: current, signal: stageAbort.signal });
         if (await stopAtBoundary()) return;
-        if (outcome.kind === "advance") await apply(ugcWorkerService.advance);
+        if (outcome.kind === "validated") { await apply(job => ugcWorkerService.finishValidation(job, outcome.snapshot)); return; }
+        else if (outcome.kind === "advance") await apply(ugcWorkerService.advance);
         else { await apply(job => ugcWorkerService.fail(job, outcome.code, outcome.retryable)); return; }
       }
     } catch {

@@ -1,5 +1,9 @@
 # Sceenyk design system
 
+## UGC readiness control — Milestone 3 (2026-10-23)
+
+Studio UGC now uses the existing compact generation control area for Prepare generation, safe missing-input paragraphs, Check inputs and owner-only Check status. Preserve Sources/Properties sizing, themes, native focus/scroll and shared Button/AccountAction behavior; ordinary styling remains Tailwind-only with no new stylesheet. Readiness disables the action until saved/settled server-validated inputs; pending checks use real async state. Reference analysis pause is real persisted state, not fake processing. Freestyle cost controls remain unchanged. [Behavior/setup](generation-jobs.md#milestone-3--ugc-input-readiness-2026-10-23); manual UI acceptance pending, no browser/screenshots/build.
+
 ## UGC V1 contract reference (2026-10-23)
 
 The [approved UGC workflow](ugc-v1-workflow.md) documents future required inputs and real persisted Preview stages, including awaiting cost review/confirmation and safe failure. Preserve existing Studio geometry, Tailwind/global stylesheet policy, themes, focus and native scrolling. No controls/layout are changed by this architecture task; current 10/15/30 durations and Cartoon stored value need compatible future UGC 5/10/30 and Cartoon / Illustrated presentation work. No fake progress percentages or fabricated generated assets. Current UGC acceptance is manual; no automatic browser/screenshot/full regression/provider/hosted suites without explicit instruction.

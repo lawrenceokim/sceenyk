@@ -1,5 +1,13 @@
 # Code Standards
 
+## UGC readiness / immutable input standards — Milestone 3 (2026-10-23)
+
+Use [`lib/ugc-jobs/validation.ts`](../lib/ugc-jobs/validation.ts) as the one authoritative server validator and `input-contract.ts` for snapshot/error/narration contracts. Reuse existing Studio/project schemas and MIME rules, with outer-whitespace normalization only. Public readiness is `{ready,issues:[{code,field,message}]}`; never return normalized private snapshot/media/provider details. Interactive services authenticate independently; worker ownership comes from its persisted claimed job.
+
+Before any new enqueue, validate, then compare the complete normalized snapshot against locked Project/reference records through the new validated RPC. Retain database uniqueness and immutable snapshots for retries; revoke the previous unvalidated RPC rather than leaving a bypass. Worker validation uses exact frozen IDs/settings, owned/private storage verification and the claim-fenced checkpoint RPC. Its success records validation and a queued analyze_references pause; do not mark intentional missing analysis Failed or let generic advance bypass validation. No financial/provider work.
+
+UI readiness must invalidate on unsaved edits/unsettled uploads, ignore stale responses and only enqueue on an explicit click. Use shared compact Tailwind controls, safe issues and existing account fencing; do not route UGC into legacy cost/generation hooks. Actual Studio enums remain authoritative (10/15/30 currently; 5 unimplemented). Apply only manually authored 037 after prerequisites; minimal compile/type/static review only. **Milestone 3 source Complete; next 4 Not Started.**
+
 ## UGC job implementation standards — Milestone 2 (2026-10-23)
 
 Actual source/setup: [UGC job infrastructure](generation-jobs.md#ugc-generation-jobs--milestone-2-complete-in-source-2026-10-23). Use `lib/ugc-jobs/contract.ts` for statuses, stages, messages, adjacent transitions and retry/timing constants. The SQL graph/constraints mirror it; future stage code must use `worker-service.ts` and guarded RPCs, never direct status/stage updates. Keep the portable `UgcJobRunner` separate from `LocalJobRunner` polling/process setup and retain the empty default handler registry until each stage is explicitly implemented.

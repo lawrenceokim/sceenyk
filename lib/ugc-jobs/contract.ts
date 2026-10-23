@@ -39,6 +39,7 @@ export const ugcStageMessages: Record<UgcJobStage, string> = {
 export const ugcJobErrorCodes = [
   "STAGE_NOT_IMPLEMENTED", "WORKER_INTERRUPTED", "WORKER_ERROR", "LEASE_EXPIRED",
   "ATTEMPTS_EXHAUSTED", "PROJECT_UNAVAILABLE", "RECONCILIATION_REQUIRED",
+  "INPUT_VALIDATION_FAILED",
 ] as const;
 export type UgcJobErrorCode = (typeof ugcJobErrorCodes)[number];
 export const ugcAutomaticRetryStages: readonly UgcJobStage[] = ["validate_inputs"];
@@ -66,6 +67,8 @@ export type UgcJobRow = {
   lease_expires_at: string | null; heartbeat_at: string | null; cancellation_requested_at: string | null;
   error_code: UgcJobErrorCode | null; safe_error_message: string | null;
   provider: string | null; provider_job_id: string | null;
+  pause_reason: "REFERENCE_ANALYSIS_NOT_IMPLEMENTED" | null;
+  validation_completed_at: string | null;
   input_snapshot: Record<string, unknown>; metadata: Record<string, unknown>;
   created_at: string; updated_at: string; started_at: string | null;
   completed_at: string | null; failed_at: string | null; cancelled_at: string | null;
@@ -79,5 +82,6 @@ export type UgcJobProgress = {
   id: string; status: UgcJobStatus; stage: UgcJobStage; message: string;
   createdAt: string; updatedAt: string; startedAt: string | null; completedAt: string | null;
   failedAt: string | null; cancelledAt: string | null; cancellationRequested: boolean;
+  paused: boolean;
   failure: { code: UgcJobErrorCode; message: string } | null;
 };

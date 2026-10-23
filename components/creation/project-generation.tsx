@@ -46,6 +46,7 @@ export function ProjectGeneration({
   signedIn,
   authReady,
   creationType = "freestyle",
+  ugcControls,
   children,
 }: {
   projectId: string | null;
@@ -58,6 +59,7 @@ export function ProjectGeneration({
   signedIn: boolean;
   authReady: boolean;
   creationType?: CreationType;
+  ugcControls?: ReactNode;
   children: (parts: { controls: ReactNode; output: ReactNode; status: ReactNode; label: string }) => ReactNode;
 }) {
   const helpId = useId();
@@ -150,7 +152,7 @@ export function ProjectGeneration({
                   : "Review cost before confirming."}
           </p>
         </div>
-        {creationType === "ugc" ? <p className="text-caption text-muted-foreground">UGC generation is not available yet.</p> : signedIn ? (
+        {creationType === "ugc" ? ugcControls ?? <p className="text-caption text-muted-foreground">UGC generation is not available yet.</p> : signedIn ? (
           <Button
             type="button"
             size="lg"

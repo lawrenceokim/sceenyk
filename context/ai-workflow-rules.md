@@ -1,5 +1,13 @@
 # AI Workflow Rules
 
+## Current unit — Milestone 3 source Complete (2026-10-23)
+
+The current request implements deterministic UGC input validation/readiness only. [Actual contract/setup](generation-jobs.md#milestone-3--ugc-input-readiness-2026-10-23). **Milestone 3 Complete in source; manual migration/runtime acceptance pending. Exact next: Milestone 4 — OpenAI reference analysis. Not Started; do not begin it automatically.** Older Milestone 2 empty-registry/unvalidated-enqueue statements below are historical.
+
+Reuse the centralized server validator and existing Studio option schemas; no duplicated option lists, user-supplied owner/snapshot or private media DTO. Current Studio duration is 10/15/30 and 5 is not implemented; preserve legacy/Freestyle. New jobs require verified owned media and a race-checked immutable v2 snapshot; failed readiness creates no job/charge/provider request. The worker validates the frozen request and records a non-failure development pause before analysis. Migration 037 is authored only; user applies 036/037 and tests manually.
+
+Do not automatically execute local workers/jobs, storage/provider tests, OpenAI, browser/screenshot/full integration suites, production builds or deployed acceptance. Only minimal TypeScript, focused lint and migration/static review. Keep Render/Inngest/local-only guards and hosted configuration unchanged. No financial changes, paid preparation, reference sheets, storyboard or video integration is authorized. Runtime R2 verification is deterministic read-only validation for later user-driven testing; Codex did not invoke it.
+
 ## Current unit — Milestone 2 source infrastructure complete (2026-10-23)
 
 The current request authorized only generation-job schema, local worker and centralized state infrastructure. **Milestone 2 — Complete in source; manual migration/runtime acceptance pending. Exact next milestone: 3 — UGC input validation + generation readiness. Not Started; do not start it automatically.** This supersedes the earlier Milestone 1 stop point below. See the [actual UGC job contract/setup](generation-jobs.md#ugc-generation-jobs--milestone-2-complete-in-source-2026-10-23) and [UGC V1 contract](ugc-v1-workflow.md).

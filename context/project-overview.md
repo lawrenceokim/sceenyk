@@ -1,5 +1,13 @@
 # Sceenyk project overview
 
+## Milestone 3 — UGC input readiness (2026-10-23)
+
+**Complete in source; manual migration/runtime acceptance pending. Exact next milestone: 4 — OpenAI reference analysis. Not Started.** The [current readiness/job contract](generation-jobs.md#milestone-3--ugc-input-readiness-2026-10-23) supersedes the earlier unvalidated enqueue/empty-registry boundary below. One shared server validator checks owned UGC fields/settings, exactly one private verified Character/Product image and actual storage, returning safe structured issues.
+
+Studio's compact UGC Prepare generation control is disabled until saved/settled inputs pass server readiness. An explicit click revalidates and atomically enqueues a version-2 immutable snapshot, without credits/provider calls. Worker validation checks that exact frozen request and current owned media, records success, then pauses at queued / analyze_references rather than failing because Milestone 4 is absent. Adopters must provide their own private references; Templates cannot satisfy validation with creator media.
+
+Actual shared Studio durations remain 10/15/30; 5 seconds is not yet implemented, and no legacy/Freestyle options are rewritten. Manually apply 037 after 035/036 and retain private R2/Clerk/Supabase configuration. Render/Inngest remain guarded; Codex ran no worker/jobs, storage/providers, SQL, browser/integration suites, production build or deployment. The user performs manual acceptance.
+
 ## Milestone 2 — local UGC job infrastructure (2026-10-23)
 
 **Complete in source; manual migration/runtime acceptance pending.** Migration 036 adds `ugc_generation_jobs` and append-only events, reusing existing app users, owned Projects and server Supabase client. Shared statuses/stages, immutable snapshots, idempotent enqueue, claim-token leases/heartbeats, bounded recovery/retries, safe owner progress and queued/running cancellation are implemented behind server-only services. See [schema/runner/setup](generation-jobs.md#ugc-generation-jobs--milestone-2-complete-in-source-2026-10-23).

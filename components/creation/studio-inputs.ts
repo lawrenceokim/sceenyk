@@ -2,6 +2,7 @@ import type { ProjectAsset, StudioMediaRole } from "@/lib/media/types";
 import type { ProjectDraft } from "@/lib/projects/types";
 import type { LocalMedia } from "./creation-options";
 import { ugcV1GenerationInputsSchema } from "@/lib/projects/ugc-v1";
+import { ugcDefaultNarration, ugcIssuesFromSchema } from "@/lib/ugc-jobs/input-contract";
 
 export type StudioReference = {
   id: string;
@@ -47,7 +48,7 @@ export function prepareStudioInputs(brief: ProjectDraft, sources: ReturnType<typ
     projectTitle: brief.title,
     sceneDescription: brief.prompt,
     ...brief.settings,
-    narration: { mode: "prompt" as const },
+    narration: ugcDefaultNarration,
   };
   if (brief.creationType !== "ugc") return { ...shared, creationType: "freestyle" as const, projectMedia: sources.projectMedia };
   const readyReferences = (references: StudioReference[]) => studioReferenceImages(references).map(({ referenceId, asset, local }) => ({
@@ -57,5 +58,5 @@ export function prepareStudioInputs(brief: ProjectDraft, sources: ReturnType<typ
   const validation = ugcV1GenerationInputsSchema.safeParse({ ...brief, narration: shared.narration,
     characters: readyReferences(sources.characters), products: readyReferences(sources.products) });
   return { ...shared, creationType: "ugc" as const, ugcType: brief.ugcType, characters: sources.characters, products: sources.products,
-    generationValidation: { ready: validation.success, errors: validation.success ? [] : [...new Set(validation.error.issues.map(issue => issue.message))] } };
+    generationValidation: { ready: validation.success, issues: validation.success ? [] : ugcIssuesFromSchema(validation.error), errors: validation.success ? [] : [...new Set(validation.error.issues.map(issue => issue.message))] } };
 }

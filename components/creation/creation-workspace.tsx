@@ -13,6 +13,7 @@ import { saveProjectAction } from "@/app/actions/projects";
 import type { ProjectDraft, SavedProject } from "@/lib/projects/types";
 import type { GenerationJob } from "@/lib/generation/types";
 import { ProjectGeneration } from "./project-generation";
+import { UgcGenerationControls } from "./ugc-generation-controls";
 import { CategorySelector } from "./category-selector";
 import { StudioReferenceSources } from "./studio-reference-sources";
 import { collectStudioSources, prepareStudioInputs, studioReferenceImages } from "./studio-inputs";
@@ -371,6 +372,12 @@ function WorkspaceEditor({
           }}
           hasLocalFiles={freestyle.files.length > 0}
           creationType={creationType}
+          ugcControls={studioInputs.creationType === "ugc" ? <UgcGenerationControls
+            projectId={projectId} revision={JSON.stringify([brief, studioInputs.generationValidation, mediaUpload.assets])}
+            localIssues={studioInputs.generationValidation.issues} dirty={dirty || saveState.status === "saving"}
+            hasLocalReferences={selectedFiles.some(file => file.studioRole === "character" || file.studioRole === "product")}
+            mediaBusy={mediaUpload.busy} mediaError={!!mediaUpload.assetError} signedIn={signedIn} authReady={authReady}
+          /> : undefined}
           mediaBusy={mediaUpload.busy}
           mediaError={!!mediaUpload.assetError}
           signedIn={signedIn}

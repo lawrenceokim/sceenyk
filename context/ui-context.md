@@ -1,5 +1,13 @@
 # UI Context
 
+## Milestone 3 — UGC readiness control (2026-10-23)
+
+Implemented in source within existing Studio Sources/Properties geometry, styles and state ownership. [Readiness behavior](generation-jobs.md#milestone-3--ugc-input-readiness-2026-10-23) now replaces the UGC-only unavailable paragraph with **Prepare generation** and compact safe missing-input messages. It stays disabled for signed-out/unsaved/dirty/unsettled/invalid or unchecked input. The existing guest sign-in handoff remains; local schema checks are advisory and fresh owner-only server readiness is authoritative. Check inputs refreshes readiness without a job; only an explicit Prepare click enqueues validated inputs. No quoted price, charge, automatic job, fake progress or generated output is introduced. Freestyle's existing cost/confirmation controls remain unchanged.
+
+The UI explicitly states video generation is unavailable. A manually run local worker validates frozen inputs and pauses at analyze_references; Check status reads its real safe message, including “Inputs validated. Reference analysis is not available yet.” A purposeful new request uses a fresh key; uncertain responses retain the same key. Full persistent Preview/history/reopen rendering remains a later unit. No Properties redesign/new stylesheet; Tailwind and existing compact buttons/help patterns only.
+
+Enums come from actual Studio configuration: current duration 10/15/30, existing styles/tones/UGC Types and prompt narration. The approved 5-second target is not implemented by inventing a UI-only option or rewriting old projects. **Milestone 3 source Complete; manual 037/UI/storage acceptance pending. Next: 4 — OpenAI reference analysis, Not Started.** No browser/screenshot/worker/provider tests, production build or deployment.
+
 ## Approved UGC V1 creation and Preview contract (2026-10-23)
 
 Documentation only; preserve Studio geometry, themes, panels, focus/scroll ownership and existing state owners. The [UGC V1 contract](ugc-v1-workflow.md#official-creation-inputs) requires title, UGC, exactly 1 Character, exactly 1 Product / Prop, ratio, scene direction, 5/10/30 seconds, Original/Realistic/Cinematic/Anime/Cartoon / Illustrated, Professional/Funny/Dramatic/Energetic/Storytelling, Advertisement/Explanation/Unboxing and valid supported narration. Freestyle remains separate. Current shared durations are 10/15/30 and stored style is Cartoon; these are implementation gaps for Milestone 3, not changed controls in this task. Existing narration remains prompt-driven.
