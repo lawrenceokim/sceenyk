@@ -1,5 +1,13 @@
 # UI Context
 
+## Approved UGC V1 creation and Preview contract (2026-10-23)
+
+Documentation only; preserve Studio geometry, themes, panels, focus/scroll ownership and existing state owners. The [UGC V1 contract](ugc-v1-workflow.md#official-creation-inputs) requires title, UGC, exactly 1 Character, exactly 1 Product / Prop, ratio, scene direction, 5/10/30 seconds, Original/Realistic/Cinematic/Anime/Cartoon / Illustrated, Professional/Funny/Dramatic/Energetic/Storytelling, Advertisement/Explanation/Unboxing and valid supported narration. Freestyle remains separate. Current shared durations are 10/15/30 and stored style is Cartoon; these are implementation gaps for Milestone 3, not changed controls in this task. Existing narration remains prompt-driven.
+
+Future Generate enables only for all valid inputs; server validation remains authoritative and input-only readiness does not activate generation today. Intended flow: validate → prepare plan/package → determine cost → Review Generation Cost → explicit confirmation → expensive video. Show awaiting review distinctly; never charge on typing or auto-confirm. Preparation funding/consent is unresolved before paid preparation; do not imply those stages are free.
+
+Preview eventually displays persisted stages: Preparing inputs, Analyzing references, Preparing character, Preparing product, Building storyboard, Preparing generation, Generating video, Finalizing, Complete or Failed. No fake percentages, timers, fabricated output or provider-internal errors. Owned final video appears only after verified finalization. UGC templates require the adopter's own references and never expose creator sources/sheets. No UI implementation/redesign now; user manual acceptance and only minimal compile/type/static checks unless explicitly asked to test.
+
 ## UGC V1 reference capacity (2026-10-22)
 
 UGC V1 supports exactly one Character and one Product / Prop per project. Preserve the existing Sources geometry, thumbnail/remove treatment and private upload states. Each single-image picker and Add button disables once its role has a local or retained stored image; keep its existing label/dimensions, muted styling, actual disabled state and cursor-not-allowed. Disabled buttons cannot open a picker. No trailing + tile is displayed. Removing the reference re-enables replacement in the same panel without refreshing. Pending/rejected images occupy the slot until removed; failed uploads retain existing retry/recovery behavior.

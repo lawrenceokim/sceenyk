@@ -1,5 +1,9 @@
 # Sceenyk design system
 
+## UGC V1 contract reference (2026-10-23)
+
+The [approved UGC workflow](ugc-v1-workflow.md) documents future required inputs and real persisted Preview stages, including awaiting cost review/confirmation and safe failure. Preserve existing Studio geometry, Tailwind/global stylesheet policy, themes, focus and native scrolling. No controls/layout are changed by this architecture task; current 10/15/30 durations and Cartoon stored value need compatible future UGC 5/10/30 and Cartoon / Illustrated presentation work. No fake progress percentages or fabricated generated assets. Current UGC acceptance is manual; no automatic browser/screenshot/full regression/provider/hosted suites without explicit instruction.
+
 ## UGC V1 Add controls (2026-10-22)
 
 Keep the existing compact Add Character/Add Product / Prop labels, dimensions, outline geometry and thumbnail/removal styling. Each role accepts one selected/uploaded image. At capacity disable both the button and single-image input, using muted theme utilities, cursor-not-allowed and actual disabled semantics; override pointer-events only locally so the disabled cursor is visible, while native disabled activation stays blocked. Remove trailing + tiles. Removal re-enables the Add control without refresh. Retain visible/removable legacy extras with concise role warnings; no clipping or destructive trimming. Use Tailwind only and preserve existing native Sources layout/focus/motion. Freestyle is unchanged. This supersedes earlier multiple-reference/trailing-plus guidance.

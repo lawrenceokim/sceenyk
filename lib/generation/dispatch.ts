@@ -1,6 +1,7 @@
 import "server-only";
 import { createDatabaseClient } from "@/lib/db/server";
 import { inngest, workflowDevelopmentMode } from "@/lib/workflows/client";
+import { localJobsOnly } from "@/lib/workflows/execution-policy";
 import { generationRequested } from "./dispatch-contract";
 
 export function dispatchLog(
@@ -19,6 +20,8 @@ export function dispatchLog(
 // Trusted internal function only. Caller must have verified owned creation or
 // be the signature-protected reconciliation workflow; never a public action.
 export async function dispatchGeneration(generationJobId: string) {
+  // Leave the persisted outbox untouched while legacy workflows are paused.
+  if (localJobsOnly()) return;
   const database = createDatabaseClient();
   const reserved = await database.rpc("reserve_generation_dispatch", {
     p_job_id: generationJobId,

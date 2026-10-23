@@ -1,5 +1,13 @@
 # Development application identity
 
+## UGC V1 persistence design — future extension (2026-10-23)
+
+[UGC V1](ugc-v1-workflow.md#persistence-jobs-and-resume) requires versioned owned input/job/stage metadata, reference/asset relationships, structured storyboard/package JSON, provider-attempt/idempotency/lease records and existing quote/reservation linkage. Large uploads, sheets and video remain in private R2; PostgreSQL holds metadata/keys only on trusted server paths. Conceptual fields (including template `required_character_count=1` / `required_product_count=1`) and new progress labels are not claims of deployed columns or enums.
+
+Reuse/extend existing projects/assets/jobs/plans/Marketplace snapshots where compatible after inspecting the actual connected catalog, functions, grants, RLS and pending migrations. Current generation stages/plan constraints and financial admission are legacy contracts, not drop-in UGC schema. Do not invent tables, rewrite historical snapshots or apply migrations in this task. Migration 035 remains pending according to the current tracker; no fresh hosted schema verification occurred.
+
+Milestone 1 architecture is Complete; **next implementation milestone 2 — generation-job schema + local job runner/state machine — is Not Started**. Resolve preparation-versus-cost-confirmation persistence without changing existing accounting authority; paid preparation funding/consent remains Needs confirmation. Minimal static checks/manual user acceptance only.
+
 ## PayPal Sandbox extension — migration 017 applied, scoped Merchant acceptance verified
 
 Adds private `credit_purchases`, immutable purchase snapshots, unique PayPal order/capture/request IDs and guarded service-only preparation/attachment/state/fulfilment RPCs. Extends the existing immutable `credit_ledger` with purchase/order/capture references and a purchase movement variant while retaining generation foreign keys/checks/history. Account + ledger + purchase completion commit atomically. Browser access and direct service-role writes remain denied. Free usage/reservations and migrations 001–016 are preserved. See [payments.md](payments.md) for configuration, lifecycle and acceptance prerequisites.

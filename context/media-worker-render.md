@@ -1,5 +1,15 @@
 # Render media-preparation worker
 
+## UGC development: hosted execution disabled locally (2026-10-23)
+
+The [UGC V1 Job Runner contract](ugc-v1-workflow.md#job-runner-and-development-execution) supersedes historical deployment/acceptance/start commands below for this development phase. All UGC stages will run on the laptop; **UGC worker/pipeline implementation is Not Started**. The existing `npm run worker:media` starts a signed Node/FFmpeg HTTP service, not a persisted UGC job runner.
+
+Inspection found a non-loopback `MEDIA_WORKER_URL` configured locally and shared `workerConnection()` used by preparation, narration, composition inspection and rendering clients. The reversible server-only `SCEENYK_LOCAL_JOBS_ONLY=1` guard now rejects non-loopback origins there before requests and disables all Inngest transport/ingress. Missing/invalid values remain local-only; exactly `0` is reserved for a later explicitly approved hosted review. Local loopback HTTP remains usable in local development or a local production build, preserving HMAC, nonce, ownership and identifier-only contracts. If an explicitly requested later legacy media run is needed, override only that local process URL to `http://127.0.0.1:3012`; no worker starts in this task.
+
+Hosted URL/credentials remain saved privately; `render.yaml`, Dockerfiles and worker code are unchanged. The Blueprint is a manual Docker web service with auto-deploy off, which alone does not disable requests. No Render account suspension, hosted cancellation or deployment was performed/verified. Existing deployed revisions/in-flight jobs are outside this local source guard; do not describe hosted service state as audited.
+
+Later the same UGC business/stage logic may run under a Render background-worker adapter with minimal execution/environment changes, preserving OpenAI, validation, state machine, persistence and accounting. That transition and Inngest's necessity require later review. No hosted tests, provider generation, capacity upgrade or paid calls are authorized now; user manual testing governs.
+
 ## Final renderer extension — hosted OOM; local optimization verified
 
 Migration016 and the initial deployment are now live. The original10-second hosted render exceeded Free's512MB repeatedly, then safely failed/restored its original reservation with no canonical MP4, final receipt or consumption. The original job remains terminal; do not reset it or retry released accounting. The user confirmed both hosted rollback-only failure SQL cases passing. Successful hosted rendering/playback/settlement acceptance is incomplete.

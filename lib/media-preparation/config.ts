@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { z } from "zod";
 import { PreparationError } from "./contract";
 import { workerSharedSecret } from "./auth";
+import { localJobsOnly } from "@/lib/workflows/execution-policy";
 
 // Visual-only derivatives. Original audio/overlays remain in the immutable source.
 export function normalization(aspectRatio: "16:9" | "9:16" | "1:1") {
@@ -15,6 +16,9 @@ export function workerConnection() {
   const parsed = z.url().safeParse(process.env.MEDIA_WORKER_URL);
   if (!parsed.success) throw new PreparationError("PREPARATION_UNAVAILABLE", true);
   const url = new URL(parsed.data);
-  if (url.username || url.password || url.search || url.hash || url.pathname !== "/" || !(url.protocol === "https:" || process.env.NODE_ENV !== "production" && url.protocol === "http:" && ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname))) throw new PreparationError("PREPARATION_UNAVAILABLE", true);
+  const loopback = ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname);
+  const localOnly = localJobsOnly();
+  if (localOnly && !loopback) throw new PreparationError("PREPARATION_UNAVAILABLE", true);
+  if (url.username || url.password || url.search || url.hash || url.pathname !== "/" || !(url.protocol === "https:" || (localOnly || process.env.NODE_ENV !== "production") && url.protocol === "http:" && loopback)) throw new PreparationError("PREPARATION_UNAVAILABLE", true);
   return { url: new URL("/prepare", url).toString(), secret };
 }

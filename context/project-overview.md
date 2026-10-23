@@ -1,5 +1,13 @@
 # Sceenyk project overview
 
+## Full UGC V1 architecture approved (2026-10-23)
+
+**Milestone 1 Complete; UGC pipeline Not Started.** The canonical [product overview](overview.md#approved-full-ugc-v1-workflow-2026-10-23) and [full UGC contract](ugc-v1-workflow.md) define required inputs, OpenAI reasoning/reference-image adapters, private Character/Product sheets, structured storyboard and normalized generation package, cost review/confirmation before video, real persisted progress and private Preview output.
+
+Exactly one Character and one Product / Prop; approved UGC durations are 5/10/30, while current shared 10/15/30 code needs compatible Milestone 3 work. OpenAI is approved for UGC; Gemini remains legacy-only. UGC Templates reuse public-safe creative snapshots with explicit future required counts of 1 each, never creator private assets.
+
+Local laptop execution is the approved target; the UGC local runner is not implemented. Current local-only transport guards disable Inngest and hosted Render requests while preserving configuration/history. No paid calls, deployment, financial changes or Studio redesign. Manual acceptance belongs to the user; automatic behavioral/provider/hosted testing requires explicit instruction. **Exact next milestone: 2 — generation-job schema + local job runner/state machine**, separately authorized.
+
 ## UGC V1 input contract (2026-10-22)
 
 UGC V1 supports exactly one Character and one Product / Prop per project. Empty drafts are allowed; adding an image disables its Add control and removes any additional + path. Removing the reference re-enables replacement without refreshing. Client/server/database validation rejects excess references, preserving existing ownership and private uploads. Older extras remain intact and individually removable with warnings, while future UGC generation readiness requires exactly one uploaded image of each role plus the other valid inputs. UGC template adoption therefore requires one Character and one Product / Prop supplied by the adopting user before generation; source creator private files are not copied. Freestyle is unaffected. No generation pipeline is implemented. Migration 035 and manual review are tracked separately; earlier multiple-reference descriptions below are superseded for V1.

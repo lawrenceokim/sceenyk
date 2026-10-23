@@ -14,7 +14,9 @@
 /coverage
 
 # context
-/context/
+!/context/
+/context/*
+!/context/ugc-v1-workflow.md
 AGENTS.md
 
 # next.js

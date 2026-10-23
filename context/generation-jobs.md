@@ -1,5 +1,15 @@
 # Persistent generation jobs
 
+## UGC V1 extension contract — Not Started (2026-10-23)
+
+The existing foundation/history below is retained. The [UGC V1 contract](ugc-v1-workflow.md#persistence-jobs-and-resume) defines a future asynchronous owned job with persisted current stage/status/progress, lifecycle timestamps, immutable inputs/configuration, private source/sheet/output asset references, structured storyboard/package, safe failure information, provider/request IDs, lease/claim and retry/idempotency metadata. This is a conceptual extension, not a migration or new table.
+
+Inspect existing `generation_jobs`, `generation_plans`, `project_assets`, ownership/grants/RPCs and pending migrations in the connected catalog before designing changes. Existing stages, plan constraints and reservation-before-dispatch behavior do not automatically implement UGC preparation/awaiting-confirmation. Preserve them while designing a separate versioned UGC path; resolve preparation funding/consent before paid stages.
+
+Durable request identity handles duplicate Generate clicks; stage claims/checkpoints prevent duplicate execution; persisted submission intent/provider reconciliation prevents repeated uncertain paid calls; signed/deduplicated callbacks and existing atomic accounting prevent replay/duplicate charges. Local worker restart resumes compatible verified expensive outputs. Only verified canonical output/finalization can mark Complete.
+
+UGC executes locally without Inngest. The current transport guard is not the UGC runner; all UGC implementation is Not Started. Milestone 1 is Complete; **exact next milestone: 2 — generation-job schema + local job runner/state machine**. User manual acceptance governs; no automatic behavioral/provider/hosted tests or worker startup.
+
 Source implemented 2026-10-10. Hosted table/persistence is now verified during the separately authorized dispatch unit. This document records the foundation; [generation-dispatch.md](generation-dispatch.md) describes current trusted preparation/recovery. No content or allowance/credits are consumed. Pre-migration acceptance notes below are historical.
 
 ## Development setup

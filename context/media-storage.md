@@ -1,5 +1,13 @@
 # Private project media
 
+## Full UGC V1 private assets and template projection (2026-10-23)
+
+The [UGC V1 contract](ugc-v1-workflow.md#persistence-jobs-and-resume) requires original Character upload, original Product / Prop upload, generated Character Reference Sheet, generated Product Reference Sheet, final video and large intermediates in existing private R2/object storage. PostgreSQL stores structured descriptions/storyboard/package/settings plus ownership, project/generation relationships, durable asset IDs/keys server-side, verification/MIME/type metadata, status, timestamps and safe errors; never large binary/base64 media or expiring signed URLs as canonical references. No schema/storage migration or asset generation occurs here.
+
+Each private access remains server-authorized by owner/project; workers reload persisted relationships and narrowly scoped access. Raw R2 keys, provider internals and private links are excluded from client/public projections. Sheets preserve consistency without claiming factual unseen traits or perfect 3D reconstruction; retain observed/generated provenance.
+
+Templates reuse reviewed configuration/storyboard via logical Character/Product slot IDs, with future explicit required counts 1/1. Never publish/copy creator uploads, sheets, private asset IDs or keys into adoption. Adopters supply their own references and generate their own private derived assets. Keep the existing separately reviewed public preview derivative and immutable snapshot rules. Current contract is documentation Complete; UGC pipeline Not Started, with user manual acceptance only.
+
 ## UGC V1 role capacity (2026-10-22)
 
 Each project may acquire at most one active Character image and one active Product / Prop image. Local selections plus pending/uploaded/rejected rows occupy the role until explicitly removed. Existing project-first/private R2 upload/signature/read/ownership paths remain. Role-specific client/service validation and migration 035 prevent second references, including concurrent inserts/reactivation; retries of the same existing upload remain supported. Old extras are retained without backfill/deletion, stay removable, and block UGC save/generation readiness until reduced. Removing a reference re-enables replacement. UGC template adopters provide their own references; no creator private source copying. Freestyle uploads remain unrestricted by this rule. Migration status and verification limits are in the tracker.
