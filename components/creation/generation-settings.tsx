@@ -1,6 +1,6 @@
 import { useId } from "react";
 import { Select } from "@/components/ui/select";
-import { ugcTypes, type UgcType } from "@/lib/projects/options";
+import { legacyDuration, ugcTypes, type UgcType } from "@/lib/projects/options";
 import {
   durations,
   visualStyles,
@@ -67,7 +67,7 @@ export function GenerationSettings({
           id="duration"
           label="Duration"
           value={settings.duration}
-          choices={durations}
+          choices={settings.duration === legacyDuration.value ? [legacyDuration, ...durations] : durations}
           onChange={(duration) => onChange({ ...settings, duration })}
         />
         <SettingSelect

@@ -1,5 +1,11 @@
 # Private project media
 
+## UGC Milestone 4 - private analysis inputs (2026-10-23)
+
+**Milestone 4 — Complete in source; manual migration/provider/runtime acceptance pending. Exact next: Milestone 5 — Character Reference Sheet generation. Not Started.** [Reference media loader](../lib/reference-analysis/media.ts) re-resolves exact frozen role/owner/project/upload/ETag/size/MIME metadata and uses existing conditional private R2 streaming. Bounded bytes are decoded with existing Sharp, oriented, stripped of metadata, resized inside 2048×2048 and sent as ephemeral PNG data content to OpenAI. No public/signed URL, upload, stored derivative or sheet is created; originals remain private/unchanged. Source 100 MiB, decode 40-million-pixel and output 20-MiB safeguards bound resource use; unsupported/multipage/animated inputs fail safely.
+
+Only validated schema-v1 observations and safe usage/provenance live in the new private table, with no bytes, storage keys, descriptions in logs or raw response bodies. Completed roles are not decoded/submitted again; deterministic validation can still inspect their private metadata/header. Details: [provider/schema/privacy/setup contract](reference-analysis.md). Codex made no R2/provider request; runtime acceptance remains manual.
+
 ## UGC readiness checks — Milestone 3 (2026-10-23)
 
 The [central UGC validator](../lib/ugc-jobs/validation.ts) resolves only owned/project-bound active reference records and requires exactly one uploaded, verified supported image per role. It reuses private `verifyStoredMedia` for object existence, bounded signature header, MIME/length and exact ETag; these are deterministic reads, not provider analysis/full decoding/moderation. Keys/URLs/header bytes stay server-side. Readiness returns safe issues only; the private immutable job snapshot stores asset/reference IDs and verification metadata, never raw keys/binaries.

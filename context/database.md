@@ -1,5 +1,11 @@
 # Development application identity
 
+## UGC Milestone 4 - migrations 038/039 authored (2026-10-23)
+
+**Milestone 4 — Complete in source; manual migration/provider/runtime acceptance pending. Exact next: Milestone 5 — Character Reference Sheet generation. Not Started.** [038](../supabase/migrations/20261023003800_studio_duration_compatibility.sql) adds 5 to the project duration constraint and legacy snapshot validator while retaining 15 for historical records; there is no row rewrite, tariff/reservation/ledger change. [039](../supabase/migrations/20261023003900_ugc_reference_analysis.sql) adds private ugc_reference_analyses attempt/completion records and job analysis_version/analysis_model. Owned/source FKs, RLS without browser policies, service SELECT plus RPC-only writes, immutable terminal rows, per-role completion uniqueness and fixed safe events preserve ownership/history.
+
+Live-token/stage/lease-fenced begin/finish RPCs persist intent before submission and validated output/usage afterward. A dedicated both-analyses gate pauses at character_reference. Generic advance cannot bypass validation/analysis. New validation continues under its claim; existing M3 pauses require explicit privileged local resume. Analysis only permits explicit known-safe bounded retries; pending/uncertain submissions block replay. See [provider/schema/privacy/setup contract](reference-analysis.md) for schemas/RPC/privacy/setup details. No SQL was executed or remotely applied; prerequisite columns/functions are checked when manually applied. Restart old processes after manual application.
+
 ## UGC input readiness — migration 037 authored (2026-10-23)
 
 New [037](../supabase/migrations/20261023003700_ugc_input_readiness.sql) extends 036 only with `validation_completed_at`, `pause_reason`, valid queued/analyze_references pause constraints, validation/pause events and a runnable-queue index. New validated enqueue and finish-validation RPCs compare normalized frozen inputs against locked existing owned Project/asset records; the original unvalidated enqueue RPC loses application execute privileges. The existing worker RPC is retained internally behind a wrapper that blocks generic validation advance. Claim/cancel operations honor paused rows. No original migration rewrite, binary data, financial changes, RLS weakening or history backfill.

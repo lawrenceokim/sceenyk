@@ -1,5 +1,11 @@
 # Sceenyk
 
+## Milestone 4 - reference analysis (2026-10-23)
+
+**Milestone 4 — Complete in source; manual migration/provider/runtime acceptance pending. Exact next: Milestone 5 — Character Reference Sheet generation. Not Started.** UGC now uses the official OpenAI SDK Responses API through a narrow provider interface to analyze exactly one private Character and one Product reference separately. Strict versioned visual observations preserve uncertainty and prohibit identity/sensitive inference. Each successful role is persisted/reused; durable submission intents stop unknown outcomes from being repaid automatically. Two analyses lead to a real character_reference development pause, with no generated image/storyboard/video or Sceenyk credit operation. See the [provider/schema/privacy/setup contract](reference-analysis.md).
+
+Studio duration choices now share 5/10/30. Existing 15-second projects remain readable/saveable and frozen snapshots retain their historical value; new UGC preparation requires a current choice. Manually apply 038/039 after prerequisites and configure server-only OPENAI_API_KEY, OPENAI_REFERENCE_ANALYSIS_MODEL and explicit UGC_REFERENCE_ANALYSIS_ENABLED=1 before manually running worker:ugc. Render/Inngest remain guarded/local-only. No paid call, worker/job execution, SQL application, build or deployment was performed by Codex. Earlier milestone statuses below are historical.
+
 ## UGC Milestone 3 — validation and readiness (2026-10-23)
 
 **Complete in source; manual migration/runtime acceptance pending.** [UGC readiness](generation-jobs.md#milestone-3--ugc-input-readiness-2026-10-23) checks authenticated ownership, complete saved UGC inputs, exactly one verified private Character/Product image and object availability. Studio enables Prepare generation only after server readiness; new enqueue commits an immutable validated snapshot under a race check. Local worker validation records success and pauses before unimplemented reference analysis, with no credit/provider work or fake output. Existing Marketplace/Freestyle and hosted guards stay intact.

@@ -40,6 +40,9 @@ export const ugcJobErrorCodes = [
   "STAGE_NOT_IMPLEMENTED", "WORKER_INTERRUPTED", "WORKER_ERROR", "LEASE_EXPIRED",
   "ATTEMPTS_EXHAUSTED", "PROJECT_UNAVAILABLE", "RECONCILIATION_REQUIRED",
   "INPUT_VALIDATION_FAILED",
+  "REFERENCE_CONFIG_INVALID", "REFERENCE_ASSET_UNAVAILABLE", "REFERENCE_IMAGE_UNSUPPORTED",
+  "REFERENCE_AUTH_FAILED", "REFERENCE_RATE_LIMITED", "REFERENCE_TIMEOUT",
+  "REFERENCE_PROVIDER_FAILED", "REFERENCE_OUTPUT_INVALID", "REFERENCE_REFUSED",
 ] as const;
 export type UgcJobErrorCode = (typeof ugcJobErrorCodes)[number];
 export const ugcAutomaticRetryStages: readonly UgcJobStage[] = ["validate_inputs"];
@@ -67,8 +70,9 @@ export type UgcJobRow = {
   lease_expires_at: string | null; heartbeat_at: string | null; cancellation_requested_at: string | null;
   error_code: UgcJobErrorCode | null; safe_error_message: string | null;
   provider: string | null; provider_job_id: string | null;
-  pause_reason: "REFERENCE_ANALYSIS_NOT_IMPLEMENTED" | null;
+  pause_reason: "REFERENCE_ANALYSIS_NOT_IMPLEMENTED" | "CHARACTER_REFERENCE_NOT_IMPLEMENTED" | null;
   validation_completed_at: string | null;
+  analysis_version: number | null; analysis_model: string | null;
   input_snapshot: Record<string, unknown>; metadata: Record<string, unknown>;
   created_at: string; updated_at: string; started_at: string | null;
   completed_at: string | null; failed_at: string | null; cancelled_at: string | null;

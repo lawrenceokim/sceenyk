@@ -15,7 +15,7 @@ export class UgcJobAccessError extends Error {
 export function toUgcJobProgress(row: UgcJobRow): UgcJobProgress {
   return {
     id: row.id, status: row.status, stage: row.stage,
-    message: row.pause_reason ? "Inputs validated. Reference analysis is not available yet." : row.cancellation_requested_at && row.status === "running" ? "Cancellation requested. Waiting for a safe stopping point." : row.safe_error_message ?? ugcStageMessages[row.stage],
+    message: row.pause_reason === "CHARACTER_REFERENCE_NOT_IMPLEMENTED" ? "References analyzed. Character Reference Sheet generation is not available yet." : row.pause_reason ? "Inputs validated. Reference analysis is not available yet." : row.cancellation_requested_at && row.status === "running" ? "Cancellation requested. Waiting for a safe stopping point." : row.safe_error_message ?? ugcStageMessages[row.stage],
     createdAt: row.created_at, updatedAt: row.updated_at, startedAt: row.started_at,
     completedAt: row.completed_at, failedAt: row.failed_at, cancelledAt: row.cancelled_at,
     cancellationRequested: !!row.cancellation_requested_at,

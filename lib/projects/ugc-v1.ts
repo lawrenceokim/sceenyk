@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { saveProjectSchema } from "./validation";
+import { saveProjectSchema, ugcSettingsSchema } from "./validation";
 import { ugcNarrationSchema } from "@/lib/ugc-jobs/input-contract";
 
 export const ugcV1ReferenceLimit = 1;
@@ -29,6 +29,7 @@ export const ugcV1GenerationInputsSchema = saveProjectSchema
   .omit({ id: true, mode: true })
   .extend({
     creationType: z.literal("ugc"),
+    settings: ugcSettingsSchema,
     prompt: saveProjectSchema.shape.prompt.trim().min(1, "Describe your scene before generating."),
     characters: z.array(readyReference).length(1, "UGC V1 requires exactly one uploaded character."),
     products: z.array(readyReference).length(1, "UGC V1 requires exactly one uploaded product / prop."),

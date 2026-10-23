@@ -1,5 +1,9 @@
 # UI Context
 
+## Milestone 4 - durations and real analysis status (2026-10-23)
+
+Studio's shared current duration choices are **5/10/30**. A saved 15-second project retains its value and a labeled legacy choice while open; saving ordinary edits preserves it, but new UGC readiness requires selecting a current duration. No historical project/snapshot is rewritten and no style/tone/geometry change is introduced. Both analysis records produce a persisted character_reference pause and concise “References analyzed” button/status. Check status remains available during a pause so explicit local resume can be observed. Existing sources/properties/theme/Tailwind and Freestyle controls remain. **Milestone 4 — Complete in source; manual migration/provider/runtime acceptance pending. Exact next: Milestone 5 — Character Reference Sheet generation. Not Started.** See the [provider/schema/privacy/setup contract](reference-analysis.md); manual visual/runtime review pending, no browser/screenshot/build.
+
 ## Milestone 3 — UGC readiness control (2026-10-23)
 
 Implemented in source within existing Studio Sources/Properties geometry, styles and state ownership. [Readiness behavior](generation-jobs.md#milestone-3--ugc-input-readiness-2026-10-23) now replaces the UGC-only unavailable paragraph with **Prepare generation** and compact safe missing-input messages. It stays disabled for signed-out/unsaved/dirty/unsettled/invalid or unchecked input. The existing guest sign-in handoff remains; local schema checks are advisory and fresh owner-only server readiness is authoritative. Check inputs refreshes readiness without a job; only an explicit Prepare click enqueues validated inputs. No quoted price, charge, automatic job, fake progress or generated output is introduced. Freestyle's existing cost/confirmation controls remain unchanged.

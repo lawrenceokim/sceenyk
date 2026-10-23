@@ -1,5 +1,11 @@
 # Sceenyk project overview
 
+## Milestone 4 - OpenAI reference analysis (2026-10-23)
+
+**Milestone 4 — Complete in source; manual migration/provider/runtime acceptance pending. Exact next: Milestone 5 — Character Reference Sheet generation. Not Started.** The [provider/schema/privacy/setup contract](reference-analysis.md) describes official Responses multimodal analysis, centralized server-only key/model configuration, ReferenceAnalysisProvider, strict Character/Product schema v1, reference-analysis-v1 prompts, private per-role persistence/usage and fixed safe failures. The local worker continues validate_inputs → analyze_references, checkpoints each role and pauses at character_reference. Completed work is reused on eligible retries; submitted/uncertain requests require review before replay. No sheets, storyboard, video, financial charge or hosted executor is connected.
+
+Current duration options/UGC readiness are 5/10/30; legacy 15 reads/saves and immutable snapshots remain compatible. New migrations 038/039 are authored only. Explicit local enablement plus private OpenAI model/key and existing R2/database setup are required for user-run manual acceptance. TypeScript, focused lint and offline schema checks pass; no OpenAI calls, worker startup, jobs, migration application, browser/integration suites, build or deployment. Render/Inngest guards remain. This supersedes earlier source-not-implemented statements below.
+
 ## Milestone 3 — UGC input readiness (2026-10-23)
 
 **Complete in source; manual migration/runtime acceptance pending. Exact next milestone: 4 — OpenAI reference analysis. Not Started.** The [current readiness/job contract](generation-jobs.md#milestone-3--ugc-input-readiness-2026-10-23) supersedes the earlier unvalidated enqueue/empty-registry boundary below. One shared server validator checks owned UGC fields/settings, exactly one private verified Character/Product image and actual storage, returning safe structured issues.

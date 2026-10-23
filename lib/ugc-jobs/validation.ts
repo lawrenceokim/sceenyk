@@ -4,6 +4,7 @@ import { createDatabaseClient } from "@/lib/db/server";
 import type { AssetRow } from "@/lib/db/types";
 import { mediaKindForMime } from "@/lib/media/validation";
 import { verifyStoredMedia } from "@/lib/storage/server";
+import { ugcSettingsSchema } from "@/lib/projects/validation";
 import {
   ugcDefaultNarration, ugcGenerationSnapshotSchema, ugcInputIssue, ugcIssuesFromSchema, uniqueUgcIssues,
   type UgcInputIssue, type UgcInputValidation, type UgcGenerationSnapshot,
@@ -52,6 +53,7 @@ export async function validateUgcGenerationInput(projectId: string, ownerId: str
   if (products.length > 1) issues.push(ugcInputIssue("UGC_PRODUCT_LIMIT"));
 
   const p = project.data;
+  if (!frozen && !ugcSettingsSchema.shape.duration.safeParse(p.duration).success) issues.push(ugcInputIssue("INVALID_DURATION"));
   const candidate = frozen ?? {
     schemaVersion: 2, readiness: "validated", projectId,
     projectTitle: p.title, creationType: p.creation_type, ugcType: p.ugc_type,

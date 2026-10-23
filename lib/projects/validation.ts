@@ -3,6 +3,7 @@ import {
   aspectRatios,
   categoryIds,
   durations,
+  storedDurationValues,
   visualStyles,
   tones,
   projectTitleLimit,
@@ -35,12 +36,16 @@ export const saveProjectSchema = z.strictObject({
     ),
   settings: z.strictObject({
     aspectRatio: z.enum(aspectRatios.map(({ value }) => value)),
-    duration: z.enum(durations.map(({ value }) => value)),
+    duration: z.enum(storedDurationValues),
     visualStyle: z.enum(visualStyles),
     tone: z.enum(tones),
   }),
 });
 export const projectPageSchema = z.number().int().min(1).max(100_000);
+// New UGC requests use current choices; stored projects/snapshots retain legacy reads.
+export const ugcSettingsSchema = saveProjectSchema.shape.settings.extend({
+  duration: z.enum(durations.map(({ value }) => value)),
+});
 export const renameProjectSchema = z.strictObject({
   id: projectIdSchema,
   title: saveProjectSchema.shape.title,

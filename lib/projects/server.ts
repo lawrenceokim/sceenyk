@@ -3,7 +3,7 @@ import { z } from "zod";
 import { ensureAppUser } from "@/lib/auth/ensure-app-user";
 import { createDatabaseClient } from "@/lib/db/server";
 import type { ProjectFields, ProjectRow } from "@/lib/db/types";
-import { projectPageSize } from "./options";
+import { legacyDuration, projectPageSize } from "./options";
 import { ugcV1ReferenceLimitsSchema } from "./ugc-v1";
 import { readOwnedUgcV1References } from "./ugc-v1-server";
 import {
@@ -106,6 +106,12 @@ export async function saveOwnedProject(
     tone: settings.tone,
   };
   const database = createDatabaseClient();
+  if (settings.duration === legacyDuration.value) {
+    const existing = await database.from("projects").select("duration").eq("id", id).eq("owner_user_id", user.id).eq("status", "draft").maybeSingle();
+    if (existing.error || existing.data?.duration !== legacyDuration.value) {
+      return { ok: false, code: "INVALID_INPUT", message: "Choose a supported Studio duration." };
+    }
+  }
   if (creationType === "ugc") {
     const references = await readOwnedUgcV1References(database, user.id, id);
     if (!references) return { ok: false, code: "UNAVAILABLE", message: "Your UGC references couldn’t be checked. Please try again." };

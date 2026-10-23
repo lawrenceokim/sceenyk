@@ -1,5 +1,11 @@
 # Architecture Context
 
+## Milestone 4 - OpenAI reference analysis (2026-10-23)
+
+**Milestone 4 — Complete in source; manual migration/provider/runtime acceptance pending.** UGC now has an official OpenAI SDK Responses adapter behind ReferenceAnalysisProvider, strict version-1 Character/Product analysis and versioned prompts. The local runner validates immutable inputs, reads private conditional R2 streams, decodes ephemeral bounded PNG inputs and persists each validated role before the next call. Durable submission intent prevents replay of unknown provider outcomes; completed analyses are immutable and reused. Two successful analyses gate a queued character_reference development pause; no sheet generation executes. Details and manual setup: [reference analysis](generation-jobs.md#milestone-4--openai-reference-analysis-2026-10-23).
+
+Manual-only migrations 038/039 extend duration compatibility and private analysis records/RPCs. Studio choices are 5/10/30; legacy 15 remains readable/saveable without rewriting records. New UGC requests reject 15; old immutable snapshots remain interpretable. No credit changes or second execution path. OPENAI_API_KEY and OPENAI_REFERENCE_ANALYSIS_MODEL are server-only; explicit UGC_REFERENCE_ANALYSIS_ENABLED=1 and the existing local-only guard are required before manually starting the worker. Render/Inngest remain guarded. Exact next milestone: **5 - Character Reference Sheet generation**.
+
 ## Milestone 3 — UGC readiness Complete in source (2026-10-23)
 
 Deterministic UGC readiness uses one server-only `validateUgcGenerationInput` and shared existing Studio schemas/options. Readiness returns only safe structured issues; new enqueue revalidates private media and atomically compares a normalized version-2 immutable snapshot against locked current Project/reference records. Worker validation reuses the same validator against frozen inputs and current owned/private media, without substituting later draft edits. Existing private R2 verification checks existence/signature/ETag; no provider or financial call. Current shared Studio durations remain 10/15/30, following the actual-configuration instruction; 5 seconds is not persisted/implemented and is not invented here. See [actual readiness/job contract](generation-jobs.md#milestone-3--ugc-input-readiness-2026-10-23).

@@ -1,5 +1,11 @@
 # Render media-preparation worker
 
+## Milestone 4 - local analysis only (2026-10-23)
+
+**Milestone 4 — Complete in source; manual migration/provider/runtime acceptance pending. Exact next: Milestone 5 — Character Reference Sheet generation. Not Started.** worker:ugc now runs validation and OpenAI reference analysis, then pauses before Character Reference Sheet generation. It uses existing private R2 directly through the server layer and bypasses legacy FFmpeg/media endpoints, Render and Inngest. The [provider/schema/privacy/setup contract](reference-analysis.md) records manual migrations 038/039, Node 22+, private OpenAI key/model, explicit local enablement, resume/retry commands and stop boundary.
+
+SCEENYK_LOCAL_JOBS_ONLY=1 and all transport/ingress/dispatch guards remain unchanged; preserved hosted URL/keys/Blueprint/Dockerfiles are not active proof of hosted suspension. No hosted state/deployment was audited or changed. Codex did not start workers/jobs or call storage/OpenAI/Render/Inngest.
+
 ## Milestone 3 — local validation without hosted execution (2026-10-23)
 
 The UGC runner now registers only deterministic validate_inputs, reusing private storage verification. After a valid frozen snapshot it records a development pause at queued / analyze_references. It calls neither legacy signed media-worker endpoints/FFmpeg nor OpenAI/video/Inngest/Render. [Current setup](generation-jobs.md#milestone-3--ugc-input-readiness-2026-10-23) requires manually applied 036/037 and private R2 credentials alongside existing database/auth configuration.

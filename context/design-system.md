@@ -1,5 +1,9 @@
 # Sceenyk design system
 
+## Milestone 4 - existing Studio controls (2026-10-23)
+
+Use shared 5/10/30 duration choices; preserve a selected historical 15 value with its legacy label until the user changes it. The existing generation control shows References analyzed at the real character_reference pause and retains Check status for paused jobs. No new component styling, layout, theme or stylesheet. Tailwind/global stylesheet policy remains. [Current analysis behavior](reference-analysis.md); manual inspection pending. Earlier duration/pause notes below are historical.
+
 ## UGC readiness control — Milestone 3 (2026-10-23)
 
 Studio UGC now uses the existing compact generation control area for Prepare generation, safe missing-input paragraphs, Check inputs and owner-only Check status. Preserve Sources/Properties sizing, themes, native focus/scroll and shared Button/AccountAction behavior; ordinary styling remains Tailwind-only with no new stylesheet. Readiness disables the action until saved/settled server-validated inputs; pending checks use real async state. Reference analysis pause is real persisted state, not fake processing. Freestyle cost controls remain unchanged. [Behavior/setup](generation-jobs.md#milestone-3--ugc-input-readiness-2026-10-23); manual UI acceptance pending, no browser/screenshots/build.

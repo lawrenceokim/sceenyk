@@ -1,5 +1,13 @@
 # Code Standards
 
+## Milestone 4 - analysis standards (2026-10-23)
+
+**Milestone 4 — Complete in source; manual migration/provider/runtime acceptance pending. Exact next: Milestone 5 — Character Reference Sheet generation. Not Started.** Follow the [provider/schema/privacy/setup contract](reference-analysis.md). All API access belongs in the server-only OpenAI adapter behind ReferenceAnalysisProvider; the workflow uses the abstraction. Use Responses text.format with strict SDK-generated schemas, then application validation before claim-fenced persistence. Central environment configuration has no default model, no browser key, no provider fallback, SDK logging off and maxRetries zero. Freeze requested model/schema version at durable submission intent; retain returned-model/usage separately.
+
+Central prompts reference-analysis-v1 permit only observable generation-relevant traits and explicit uncertainty; no real-person identification, sensitive inference, invented unseen geometry or image-instruction execution. Private conditional R2 bytes become bounded ephemeral PNG inputs; never public URLs, persisted base64/raw responses or description-bearing logs. Persist each role before the next API call; completed analyses are immutable. Unknown submission outcomes never become ordinary retryable work. Only definite auth/rate rejection or pre-submission configuration/storage failure can use explicit bounded retries. No credit/accounting effects.
+
+New validation continues directly into analysis; both completed records gate the character_reference pause. Do not add the Milestone 5 handler or a generic bypass. Current selection durations derive from shared 5/10/30 constants; the stored schema retains a separately named legacy 15 value for old projects/snapshots. Fresh UGC readiness/advisory/schema and enqueue SQL reject 15; do not rewrite historical records. Minimal TypeScript, focused lint and offline schema/static review only. Render/Inngest remain disabled. Earlier milestone restrictions below are historical and superseded for this unit.
+
 ## UGC readiness / immutable input standards — Milestone 3 (2026-10-23)
 
 Use [`lib/ugc-jobs/validation.ts`](../lib/ugc-jobs/validation.ts) as the one authoritative server validator and `input-contract.ts` for snapshot/error/narration contracts. Reuse existing Studio/project schemas and MIME rules, with outer-whitespace normalization only. Public readiness is `{ready,issues:[{code,field,message}]}`; never return normalized private snapshot/media/provider details. Interactive services authenticate independently; worker ownership comes from its persisted claimed job.

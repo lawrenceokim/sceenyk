@@ -1,5 +1,21 @@
 # Persistent generation jobs
 
+## Milestone 4 — OpenAI reference analysis (2026-10-23)
+
+**Milestone 4 — Complete in source; manual migration/provider/runtime acceptance pending. Exact next: Milestone 5 — Character Reference Sheet generation. Not Started.** The [full provider/schema/privacy/manual setup contract](reference-analysis.md) is the implementation reference. Earlier M3 pause/no-provider statements below remain historical.
+
+The existing local runner now registers validate_inputs and analyze_references only. New finish-validation preserves the live claim and advances into analysis; old M3 queued analysis pauses stay excluded until explicit local operator resume. The analysis service validates the immutable v2 snapshot/exact owned private references, loads/decode-bounds both missing sources through existing conditional R2 reads and calls ReferenceAnalysisProvider separately for Character then Product. Strict Responses structured output plus application/schema/uncertainty checks precede each per-role checkpoint. No image-generation tool or sheet handler exists.
+
+Migration 039 adds ugc_reference_analyses and job analysis_version/analysis_model. Each submission has an immutable owner/project/job/source/role/provider/model/schema/prompt identity and claim/attempt record. A committed submitted intent precedes any API call. Completed results are unique per job/role/version and reused; rejected auth/rate attempts retain history and permit only explicit bounded retry. Missing configuration/storage can retry before submission; timeout/service/disconnect/lease/unknown/submitted outcomes require reconciliation with no blind replay. Refusal/malformed output stops safely. Successful Character analysis survives later Product failure. Safe usage stores response ID, model, input/output/total tokens and latency, never raw bodies/bytes/URLs/keys. No credit/reservation/quote/ledger mutation.
+
+Worker RPCs ugc_begin_reference_analysis / ugc_finish_reference_analysis are live-token/stage/lease fenced; a dedicated ugc_finish_references requires both persisted valid records with frozen model/version/source IDs and current source availability. Generic advance cannot skip validation/analysis. Both records produce queued / character_reference / CHARACTER_REFERENCE_NOT_IMPLEMENTED, release the claim/lease and append development_paused with a fixed safe message. This pause is neither failed, completed nor cost confirmation and is excluded from claims. Check status reads it; no automatic M5 execution is possible.
+
+Manual setup: verify 035–037, apply new 038 then 039, use Node 22+, install dependencies and configure OPENAI_API_KEY, OPENAI_REFERENCE_ANALYSIS_MODEL, UGC_REFERENCE_ANALYSIS_ENABLED=1 with existing private DB/R2/Clerk and SCEENYK_LOCAL_JOBS_ONLY=1. Run npm run worker:ugc yourself when ready. For an old M3 pause run npm run worker:ugc -- --resume-analysis JOB_UUID; an eligible known-safe failure uses --retry JOB_UUID. Both use the same existing consumer and can consume other runnable jobs. There is no second executor or automatic queue drain in migration.
+
+Studio shared choices are corrected to 5/10/30. Stored settings retain named legacy 15 compatibility; existing projects save/reopen unchanged and immutable snapshots keep their original duration. New UGC advisory/readiness/enqueue rejects 15. Migration 038 adds 5 to project/legacy snapshot SQL validation without changing financial policy or rewriting old rows.
+
+TypeScript, focused lint and offline strict-schema/duration checks pass. SQL is source-reviewed only; no migration application/runtime/concurrency/hosted acceptance is asserted. Codex did not run workers, enqueue jobs, read private objects, call OpenAI, build/deploy or run browser/screenshot/integration suites. Render/Inngest guards/configuration remain unchanged. **Stop before Milestone 5.**
+
 ## Milestone 3 — UGC input readiness (2026-10-23)
 
 **Complete in source; manual migration/runtime acceptance pending. Exact next milestone: 4 — OpenAI reference analysis. Not Started.** This section supersedes Milestone 2's unvalidated enqueue/empty-registry behavior below. No provider, sheets, storyboard, video, charging or hosted execution is added.

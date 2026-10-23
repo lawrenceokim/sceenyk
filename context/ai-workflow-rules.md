@@ -1,5 +1,13 @@
 # AI Workflow Rules
 
+## Current unit - Milestone 4 source Complete (2026-10-23)
+
+**Milestone 4 — Complete in source; manual migration/provider/runtime acceptance pending. Exact next: Milestone 5 — Character Reference Sheet generation. Not Started.** Only analyze_references is newly implemented: official OpenAI SDK Responses image analysis, strict Character/Product schema v1 and reference-analysis-v1 prompts, private R2 inputs and durable per-role records. Read the [provider/schema/privacy/setup contract](reference-analysis.md) before dependent changes. Existing validation now continues under the same claim into analysis. Both completed records lead to queued / character_reference with a non-runnable development pause. No Character/Product sheets, storyboard or video work is authorized.
+
+The user explicitly authorized implementing paid-provider integration for later **manual** testing. OPENAI_API_KEY and OPENAI_REFERENCE_ANALYSIS_MODEL are private; UGC_REFERENCE_ANALYSIS_ENABLED defaults disabled and must be set to 1 before manually starting worker:ugc. This is development opt-in, not a production preparation credit/budget policy. No charging logic is introduced. Missing configuration fails before claiming; old M3 pauses require an explicit local resume command. Retry only known-safe failures through existing bounded infrastructure; never repeat successful roles or replay unknown submissions.
+
+Studio choices corrected to 5/10/30 with legacy 15 read/save/snapshot compatibility. Migrations 038/039 are authored, not applied. TypeScript/focused lint/offline schema checks pass. Do not run workers, enqueue jobs, call OpenAI/private storage, apply SQL, build/deploy or run browser/screenshot/integration/provider suites automatically. Preserve SCEENYK_LOCAL_JOBS_ONLY=1 and all Render/Inngest guards/configuration. Earlier preparation/source-not-implemented statements below are superseded for M4 only; production economics and future stage consent remain unresolved.
+
 ## Current unit — Milestone 3 source Complete (2026-10-23)
 
 The current request implements deterministic UGC input validation/readiness only. [Actual contract/setup](generation-jobs.md#milestone-3--ugc-input-readiness-2026-10-23). **Milestone 3 Complete in source; manual migration/runtime acceptance pending. Exact next: Milestone 4 — OpenAI reference analysis. Not Started; do not begin it automatically.** Older Milestone 2 empty-registry/unvalidated-enqueue statements below are historical.

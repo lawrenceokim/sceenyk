@@ -1,5 +1,9 @@
 # Durable generation dispatch
 
+## Milestone 4 - same local UGC executor (2026-10-23)
+
+**Milestone 4 — Complete in source; manual migration/provider/runtime acceptance pending. Exact next: Milestone 5 — Character Reference Sheet generation. Not Started.** No second queue/HTTP/background path is introduced. worker:ugc uses the existing portable runner and local polling adapter, with validation → analysis → character_reference development pause. Explicit local resume/retry flags modify only eligible persisted jobs before starting that same consumer; they do not call providers directly. Durable per-role submission intent/checkpoint/reuse is described in the [provider/schema/privacy/setup contract](reference-analysis.md). Legacy outbox, financial dispatch and Inngest/Render guards remain unchanged. No process/jobs/hosted calls or deployment was run.
+
 ## Milestone 2 — separate local UGC claiming (2026-10-23)
 
 UGC job infrastructure now uses `ugc_enqueue_job` → persisted `ugc_generation_jobs` → local `ugc_claim_job` polling → shared `UgcJobRunner`, as [documented here](generation-jobs.md#ugc-generation-jobs--milestone-2-complete-in-source-2026-10-23). It uses no legacy generation outbox, Inngest events/cron or media-worker endpoints. Default handlers are absent and stop safely at validation; no provider/financial operation is dispatched. Source Complete does not mean migration applied or runtime accepted.

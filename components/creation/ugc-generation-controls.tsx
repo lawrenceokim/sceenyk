@@ -37,6 +37,7 @@ export function UgcGenerationControls({ projectId, revision, localIssues, dirty,
   const current = submission?.key === revisionKey ? submission : undefined;
   const job = current?.job;
   const busyJob = !!job && !["failed", "cancelled", "completed"].includes(job.status);
+  const pauseLabel = job?.stage === "character_reference" ? "References analyzed" : "Inputs validated";
   const checking = eligible && !readiness;
   const issues = uniqueUgcIssues([
     ...(!signedIn ? [ugcInputIssue("AUTHENTICATION_REQUIRED")] : []),
@@ -77,7 +78,7 @@ export function UgcGenerationControls({ projectId, revision, localIssues, dirty,
 
   return <div className="space-y-2">
     <Button type="button" size="lg" className="generation-submit" disabled={disabled} aria-busy={checking || !!submission?.busy} aria-describedby={helpId} onClick={() => void prepare()}>
-      {submission?.busy ? "Preparing request…" : busyJob ? job?.paused ? "Inputs validated" : "Generation requested" : checking ? "Checking inputs…" : job ? "Prepare new generation" : "Prepare generation"}
+      {submission?.busy ? "Preparing request…" : busyJob ? job?.paused ? pauseLabel : "Generation requested" : checking ? "Checking inputs…" : job ? "Prepare new generation" : "Prepare generation"}
     </Button>
     {!signedIn && <AccountAction intent="sign-in" disabled={!authReady}>Sign in to generate</AccountAction>}
     <div id={helpId} className="space-y-1 text-caption text-muted-foreground" role="status" aria-live="polite">
@@ -89,6 +90,6 @@ export function UgcGenerationControls({ projectId, revision, localIssues, dirty,
       setSubmission(current => current?.key === revisionKey && !current.job ? undefined : current);
       setRefresh(value => value + 1);
     }}>Check inputs</Button>}
-    {job && busyJob && !job.paused && <Button type="button" variant="ghost" size="sm" onClick={() => void checkStatus()}>Check status</Button>}
+    {job && busyJob && <Button type="button" variant="ghost" size="sm" onClick={() => void checkStatus()}>Check status</Button>}
   </div>;
 }
