@@ -1,5 +1,14 @@
 # Code Standards
 
+
+## Milestone 5 — Character Sheet (2026-10-23)
+
+**Complete in source; manual migration/provider/runtime/visual acceptance pending. Exact next: Milestone 6 — Product / Prop Reference Sheet generation. Not started.** [Character Sheet contract and manual setup](character-sheet.md) supersedes older M5-not-started/OpenAI-Character-image assumptions below; historical evidence remains intact.
+
+Use CharacterSheetProvider/factory and centralized server-only SOUL2 configuration. Centralize asset types, schemaVersion=1 and character-sheet-v1. Persist wardrobe/instructions before calls; use claim-fenced intents/receipts, resume known IDs, reconcile unknown outcomes and retain successful views. Bounded server-side Sharp composition/private immutable R2 only. No PostgreSQL binaries, public keys/URLs, provider error bodies, credit changes or template asset transfer.
+
+Approved full flow: Input → validation → OpenAI analysis → SOUL2 Character Sheet → Product Sheet → one primary Location → structured ChatGPT storyboard/script + stable voice specification → generation package → cost review/confirmation → final video → finalization → Studio Preview. No later stage is implemented. User confirms 039 applied; verify/apply 040 then new 041 manually. Render/Inngest remain disabled; only user-started local worker execution. Codex made no provider calls, ran no jobs/worker, applied no hosted SQL and deployed nothing. Offline in-memory schema validation is separate from manual runtime acceptance.
+
 ## Reference-name standards - M4/M5 prerequisite (2026-10-23)
 
 Use lib/projects/reference-names.ts as the shared 80-character trimmed draft/required-name schema. Empty draft values persist as null; generation requires nonempty labels and stable UGC_CHARACTER_NAME_REQUIRED / UGC_PRODUCT_NAME_REQUIRED issues (bounded invalid-value issues are separate). Reuse existing owner-authenticated Project Save/status; never issue per-keystroke name RPCs or depend on display labels for authorization/storage paths. The name batch RPC checks every asset under the owned Project lock before changing any labels.

@@ -37,7 +37,7 @@ export function UgcGenerationControls({ projectId, revision, localIssues, dirty,
   const current = submission?.key === revisionKey ? submission : undefined;
   const job = current?.job;
   const busyJob = !!job && !["failed", "cancelled", "completed"].includes(job.status);
-  const pauseLabel = job?.stage === "character_reference" ? "References analyzed" : "Inputs validated";
+  const pauseLabel = job?.stage === "product_reference" ? "Character ready" : job?.stage === "character_reference" ? "References analyzed" : "Inputs validated";
   const checking = eligible && !readiness;
   const issues = uniqueUgcIssues([
     ...(!signedIn ? [ugcInputIssue("AUTHENTICATION_REQUIRED")] : []),

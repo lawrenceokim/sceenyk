@@ -30,6 +30,12 @@ export async function updateUgcClaim(job: UgcJobRow, operation: UgcWorkerOperati
 }
 
 export const ugcWorkerService = {
+  finishCharacter: async (job: UgcJobRow) => {
+    if (!job.claim_token || job.stage !== "character_reference" || job.status !== "running") throw new Error("UGC_CLAIM_REQUIRED");
+    const { data, error } = await createDatabaseClient().rpc("ugc_finish_character_sheet", { p_job_id: job.id, p_claim_token: job.claim_token });
+    if (error) throw new Error("UGC_WORKER_UPDATE_UNAVAILABLE");
+    return data;
+  },
   finishReferences: async (job: UgcJobRow) => {
     if (!job.claim_token || job.stage !== "analyze_references" || job.status !== "running") throw new Error("UGC_CLAIM_REQUIRED");
     const { data, error } = await createDatabaseClient().rpc("ugc_finish_references", { p_job_id: job.id, p_claim_token: job.claim_token });

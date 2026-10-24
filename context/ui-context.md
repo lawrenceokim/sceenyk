@@ -1,5 +1,14 @@
 # UI Context
 
+
+## Milestone 5 — Character Sheet (2026-10-23)
+
+**Complete in source; manual migration/provider/runtime/visual acceptance pending. Exact next: Milestone 6 — Product / Prop Reference Sheet generation. Not started.** [Character Sheet contract and manual setup](character-sheet.md) supersedes older M5-not-started/OpenAI-Character-image assumptions below; historical evidence remains intact.
+
+No Studio layout or wardrobe control is added. Existing safe status and paused action label show Character ready at the real Product pause. No fake percentage or final-video output; full generated-asset Preview UI remains a later unit. Tailwind/global stylesheet policy and all existing state owners remain.
+
+Approved full flow: Input → validation → OpenAI analysis → SOUL2 Character Sheet → Product Sheet → one primary Location → structured ChatGPT storyboard/script + stable voice specification → generation package → cost review/confirmation → final video → finalization → Studio Preview. No later stage is implemented. User confirms 039 applied; verify/apply 040 then new 041 manually. Render/Inngest remain disabled; only user-started local worker execution. Codex made no provider calls, ran no jobs/worker, applied no hosted SQL and deployed nothing. Offline in-memory schema validation is separate from manual runtime acceptance.
+
 ## UGC source names - prerequisite refinement (2026-10-23)
 
 **Implemented in source as a focused prerequisite between Milestones 4 and 5; manual migration/UI/persistence acceptance pending. Milestone 5 remains Not Started.** Add compact, properly labeled Character name (e.g. Maya) and Product / Prop name (e.g. Nova Watch) text fields directly below their uploaded thumbnails. Width is bounded to Sources; use existing field/theme tokens, Tailwind-only sizing/focus, native editing and shared 80-character limit. Pending/local-only images show existing upload state until uploaded. Fields hide on successful removal and replacements start empty. No names come from filenames. Existing guest/source/type-switch ownership stays intact; hidden reference edits are retained when switching type.

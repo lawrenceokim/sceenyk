@@ -1,5 +1,14 @@
 # Render media-preparation worker
 
+
+## Milestone 5 — Character Sheet (2026-10-23)
+
+**Complete in source; manual migration/provider/runtime/visual acceptance pending. Exact next: Milestone 6 — Product / Prop Reference Sheet generation. Not started.** [Character Sheet contract and manual setup](character-sheet.md) supersedes older M5-not-started/OpenAI-Character-image assumptions below; historical evidence remains intact.
+
+The portable UGC stage service owns provider/persistence/composition; LocalJobRunner is only its execution adapter. npm run worker:ugc is manually run on the laptop. Render worker endpoints and all Inngest transport/registration/dispatch remain disabled by existing guards. No webhook/callback or public localhost tunnel is needed; durable local polling manages Soul ID and image request IDs.
+
+Approved full flow: Input → validation → OpenAI analysis → SOUL2 Character Sheet → Product Sheet → one primary Location → structured ChatGPT storyboard/script + stable voice specification → generation package → cost review/confirmation → final video → finalization → Studio Preview. No later stage is implemented. User confirms 039 applied; verify/apply 040 then new 041 manually. Render/Inngest remain disabled; only user-started local worker execution. Codex made no provider calls, ran no jobs/worker, applied no hosted SQL and deployed nothing. Offline in-memory schema validation is separate from manual runtime acceptance.
+
 ## Milestone 4 - local analysis only (2026-10-23)
 
 **Milestone 4 — Complete in source; manual migration/provider/runtime acceptance pending. Exact next: Milestone 5 — Character Reference Sheet generation. Not Started.** worker:ugc now runs validation and OpenAI reference analysis, then pauses before Character Reference Sheet generation. It uses existing private R2 directly through the server layer and bypasses legacy FFmpeg/media endpoints, Render and Inngest. The [provider/schema/privacy/setup contract](reference-analysis.md) records manual migrations 038/039, Node 22+, private OpenAI key/model, explicit local enablement, resume/retry commands and stop boundary.

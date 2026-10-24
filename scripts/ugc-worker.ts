@@ -12,15 +12,30 @@ async function main() {
   const { createReferenceAnalysisClient } = await import("../lib/openai/server");
   // Configuration only: constructing the SDK never sends a provider request.
   createReferenceAnalysisClient();
+  const { getCharacterSheetConfig, CharacterSheetConfigurationError, characterSheetEnvironmentPresence } = await import("../lib/character-sheet/config");
+  try { getCharacterSheetConfig(); }
+  catch (error) {
+    console.error("UGC_CHARACTER_CONFIGURATION_INVALID", {
+      issue: error instanceof CharacterSheetConfigurationError ? error.issue : "CHARACTER_ENVIRONMENT_INVALID",
+      environment: characterSheetEnvironmentPresence(),
+    });
+    throw error;
+  }
   const args = process.argv.slice(2);
   if (args.length) {
     const { z } = await import("zod");
-    if (args.length !== 2 || !["--resume-analysis", "--retry"].includes(args[0]) || !z.uuid().safeParse(args[1]).success) throw new Error("UGC_WORKER_ARGUMENT_INVALID");
+    if (args.length !== 2 || !["--resume-analysis", "--resume-character", "--resume-character-output", "--retry"].includes(args[0]) || !z.uuid().safeParse(args[1]).success) throw new Error("UGC_WORKER_ARGUMENT_INVALID");
     const { createDatabaseClient } = await import("../lib/db/server");
     const db = createDatabaseClient();
     if (args[0] === "--resume-analysis") {
       const result = await db.rpc("ugc_resume_reference_analysis", { p_job_id: args[1] });
       if (result.error || !result.data) throw new Error("UGC_RESUME_UNAVAILABLE");
+    } else if (args[0] === "--resume-character") {
+      const result = await db.rpc("ugc_resume_character_sheet", { p_job_id: args[1] });
+      if (result.error || !result.data) throw new Error("UGC_RESUME_UNAVAILABLE");
+    } else if (args[0] === "--resume-character-output") {
+      const result = await db.rpc("ugc_resume_character_output", { p_job_id: args[1] });
+      if (result.error || !result.data) throw new Error("UGC_CHARACTER_OUTPUT_RESUME_UNAVAILABLE");
     } else {
       const job = await db.from("ugc_generation_jobs").select("*").eq("id", args[1]).maybeSingle();
       if (job.error || !job.data) throw new Error("UGC_RETRY_UNAVAILABLE");

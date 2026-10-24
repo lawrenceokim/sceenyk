@@ -1,6 +1,8 @@
 # UGC V1 workflow contract
 
-Approved 2026-10-23. **Milestones 1–4 — Complete in source; manual migration/provider/runtime acceptance pending. Exact next: Milestone 5 — Character Reference Sheet generation. Not Started.** This is the current contract for UGC implementation; it supersedes older Gemini/Inngest/Render roadmap statements only for this workflow. Historical implementation and acceptance evidence remain intact. Freestyle remains a separate creation flow with its existing contracts.
+Approved 2026-10-23. **Milestones 1–5 — Complete in source; manual provider/runtime/visual acceptance pending. Exact next: Milestone 6 — Product / Prop Reference Sheet generation. Not started.** [Character Sheet contract/setup](character-sheet.md) supersedes older M5-not-started/provider assumptions below. Migration 039 is user-confirmed applied; verify/apply 040 then new 041 manually. Historical evidence remains intact; Freestyle stays separate.
+
+Approved complete flow: Input → validation → OpenAI reference analysis → SOUL2 Character Sheet → Product Sheet → one primary Location → structured ChatGPT storyboard/script + stable voice specification → generation package → cost review/explicit confirmation → final video → finalization → Studio Preview. Only Character generation is newly implemented. Product/Location/storyboard/video, user charging and template publication remain deferred. Render/Inngest disabled; only the manually started local worker executes. No real provider calls or jobs were run by Codex.
 
 Milestone 1 documented architecture/transport guards; Milestone 2 added 036/jobs/events/local runner; Milestone 3 added deterministic readiness and immutable v2 snapshots in 037. Milestone 4 adds [OpenAI provider/schemas/prompts/privacy/manual setup](reference-analysis.md), duration compatibility 038 and private analysis/checkpoints 039. No jobs were created, worker started, provider called or migration applied by Codex. Reference sheets, storyboards, videos, charging changes, deployment and hosted execution remain outside this unit.
 
@@ -48,9 +50,9 @@ No multi-character or multi-product generation in V1. Switching Creation Type re
 
 ## Approved provider boundary
 
-**OpenAI is the approved UGC V1 provider for reasoning, source-image analysis and generated reference images. Gemini must not be used or selected as a fallback for any UGC V1 planning/reference-generation stage.** Legacy `lib/ai/` Gemini implementation and its acceptance evidence remain separate; this task neither migrates nor removes it.
+**OpenAI is the approved UGC V1 reasoning/source-analysis/storyboard provider; Higgsfield SOUL2 is the Character Sheet image provider behind CharacterSheetProvider. Product generation belongs to Milestone 6. No Gemini fallback for UGC.** Legacy `lib/ai/` remains separate. M5 supersedes earlier OpenAI Character-image assumptions.
 
-Future server/worker adapters use the official OpenAI API / SDK for interpreting creative direction, analyzing requirements, describing Character and Product references, producing structured storyboards and dialogue, scene/shot planning, camera instructions, timing and final video-generation instructions. OpenAI image-generation capabilities create any required Character and Product / Prop Reference Sheets from the uploaded references. Text reasoning and image generation are separate capabilities behind narrow adapters. The future video provider is a separate, unselected capability; this OpenAI decision does not select a video API or change legacy fal/ElevenLabs behavior.
+Server/worker adapters use the official OpenAI API / SDK for analysis and future structured reasoning/storyboards/dialogue/scene planning. Character generation uses SOUL2 with the original private source via Soul ID v2, saved analysis and persisted deterministic wardrobe. Text reasoning and image generation have separate narrow adapters. Future video provider remains unselected; legacy fal/ElevenLabs behavior is unchanged.
 
 Resolve provider/model configuration centrally from server-only environment/configuration and freeze the resolved configuration/version on each run. Milestone 4 implements official OpenAI SDK Responses multimodal analysis behind ReferenceAnalysisProvider, strict Character/Product schema v1 and reference-analysis-v1 prompts. Central configuration consumes OPENAI_API_KEY, OPENAI_REFERENCE_ANALYSIS_MODEL and explicit UGC_REFERENCE_ANALYSIS_ENABLED=1; no default model is selected. Use a Responses image-input/strict-output capable model and manually verify account access. SDK automatic retries/logging are disabled. New private records preserve validated output/usage and durable submission intent. See [provider/schema/privacy/error/setup details](reference-analysis.md). Future UGC_OPENAI_IMAGE_MODEL / UGC_VIDEO_PROVIDER / UGC_VIDEO_MODEL remain unconsumed placeholders; no image/video API is called.
 
@@ -58,7 +60,7 @@ Official OpenAI documentation checked for this contract: [image inputs and visio
 
 ## Approved staged pipeline
 
-**Validate → analyze source references → Character Reference Sheet → Product / Prop Reference Sheet → structured storyboard → normalized Video Generation Package → determine cost → Review Generation Cost → explicit confirmation → future video generation → finalization → Studio Preview.** Preparation can incur provider cost. M4 is implemented for explicitly enabled, user-run local analysis only, with no automatic provider traffic or Sceenyk charging. Production preparation consent/funding/budget and future stages remain unresolved.
+**Validate → OpenAI source analysis → SOUL2 Character Sheet → Product / Prop Sheet → one primary Location → structured ChatGPT storyboard/script + voice description → normalized Video Generation Package → determine cost → Review Generation Cost → explicit confirmation → future video generation → finalization → Studio Preview.** Explicitly enabled, user-run local preparation may bill OpenAI/Higgsfield; no automatic Codex provider calls or Sceenyk charging. Production preparation consent/funding/budget remains unresolved.
 
 | Stage | Required work and persisted checkpoint |
 | --- | --- |
@@ -218,9 +220,10 @@ Milestone 3 uses source/document review, minimal TypeScript/focused ESLint and S
 | 2 | Generation-job schema + local job runner/state machine; preserve financial authority and separate preparation from awaiting confirmation | Complete in source; manual migration/runtime acceptance pending |
 | 3 | UGC input validation + generation readiness, actual Studio enums/supported narration, immutable v2 snapshot and safe validation pause | Complete in source; manual 037/runtime acceptance pending |
 | 4 | OpenAI Responses reference analysis, strict visual schemas, private checkpoints/usage and explicit local-development opt-in | Complete in source; manual 038/039/provider/runtime acceptance pending |
-| 5 | Character Reference Sheet generation | Not Started — exact next milestone |
-| 6 | Product / Prop Reference Sheet generation | Not Started |
-| 7 | Structured storyboard generation and semantic validation | Not Started |
+| 5 | SOUL2 Character Reference Sheet generation, private views/composition and durable local checkpoints | Complete in source; manual 041/provider/runtime/visual acceptance pending |
+| 6 | Product / Prop Reference Sheet generation | Not Started — exact next milestone |
+| Later preparation | One primary generated Location Reference Sheet/asset, persisted and reused across scenes | Not Started; stage/schema belongs to a later scoped milestone |
+| 7 | Structured ChatGPT storyboard/script, stable voice description and semantic validation | Not Started |
 | 8 | Normalized generation package + existing cost review integration | Not Started |
 | 9 | Approved video-provider integration after explicit cost confirmation | Not Started |
 | 10 | Real Preview progress + final private video playback | Not Started |
@@ -228,4 +231,4 @@ Milestone 3 uses source/document review, minimal TypeScript/focused ESLint and S
 | 12 | Manual local end-to-end acceptance performed by the user | Not Started |
 | Later | Explicitly approved local → Render transition; review whether Inngest is needed | Deferred |
 
-**Needs confirmation before dependent milestones:** preparation consent/funding/budget policy, actual OpenAI text/image model capabilities and account access, future video provider/capabilities/duration/narration support and pricing, later stage schema/catalog extensions, narration extensions, final-output duration/transition rules and existing retention/moderation/provider-cancellation decisions. No unresolved choice authorizes fallback to Gemini, hosted execution or invented financial policy. Do not start Milestone 5 in this task.
+**Needs confirmation before dependent milestones:** production preparation consent/funding/budget policy, account access and manual SOUL2 quality/continuity acceptance, Product/Location generation contracts, future video provider/capabilities/duration/narration support and pricing, later schema extensions, narration extensions, final-output timing and retention/moderation/provider-cancellation policy. No unresolved choice authorizes Gemini fallback, hosted execution or invented pricing. **Stop after Milestone 5; exact next is Milestone 6 — Product / Prop Reference Sheet generation.**

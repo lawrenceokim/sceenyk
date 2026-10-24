@@ -1,5 +1,14 @@
 # Sceenyk
 
+
+## Milestone 5 — Character Sheet (2026-10-23)
+
+**Complete in source; manual migration/provider/runtime/visual acceptance pending. Exact next: Milestone 6 — Product / Prop Reference Sheet generation. Not started.** [Character Sheet contract and manual setup](character-sheet.md) supersedes older M5-not-started/OpenAI-Character-image assumptions below; historical evidence remains intact.
+
+SOUL2 now generates the private canonical Character Reference Sheet through the local worker. One frozen named Character/source/analysis produces persisted wardrobe, front/back/face views and a server-composed neutral-gray sheet. No later generation or credit operation.
+
+Approved full flow: Input → validation → OpenAI analysis → SOUL2 Character Sheet → Product Sheet → one primary Location → structured ChatGPT storyboard/script + stable voice specification → generation package → cost review/confirmation → final video → finalization → Studio Preview. No later stage is implemented. User confirms 039 applied; verify/apply 040 then new 041 manually. Render/Inngest remain disabled; only user-started local worker execution. Codex made no provider calls, ran no jobs/worker, applied no hosted SQL and deployed nothing. Offline in-memory schema validation is separate from manual runtime acceptance.
+
 ## Milestone 4 - reference analysis (2026-10-23)
 
 **Milestone 4 — Complete in source; manual migration/provider/runtime acceptance pending. Exact next: Milestone 5 — Character Reference Sheet generation. Not Started.** UGC now uses the official OpenAI SDK Responses API through a narrow provider interface to analyze exactly one private Character and one Product reference separately. Strict versioned visual observations preserve uncertainty and prohibit identity/sensitive inference. Each successful role is persisted/reused; durable submission intents stop unknown outcomes from being repaid automatically. Two analyses lead to a real character_reference development pause, with no generated image/storyboard/video or Sceenyk credit operation. See the [provider/schema/privacy/setup contract](reference-analysis.md).

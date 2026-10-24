@@ -1,5 +1,14 @@
 # AI Workflow Rules
 
+
+## Milestone 5 — Character Sheet (2026-10-23)
+
+**Complete in source; manual migration/provider/runtime/visual acceptance pending. Exact next: Milestone 6 — Product / Prop Reference Sheet generation. Not started.** [Character Sheet contract and manual setup](character-sheet.md) supersedes older M5-not-started/OpenAI-Character-image assumptions below; historical evidence remains intact.
+
+Only character_reference is newly authorized: centralized CharacterSheetProvider/SOUL2, durable training/view intents, reuse and private composition. Do not execute Product/Location/storyboard/video or change credits. Only TypeScript, focused lint and offline schema/static validation; user manually tests all paid/runtime behavior. Never start a worker/job, call providers/private storage, run browser/screenshot/full integration/build/deploy or apply hosted SQL automatically.
+
+Approved full flow: Input → validation → OpenAI analysis → SOUL2 Character Sheet → Product Sheet → one primary Location → structured ChatGPT storyboard/script + stable voice specification → generation package → cost review/confirmation → final video → finalization → Studio Preview. No later stage is implemented. User confirms 039 applied; verify/apply 040 then new 041 manually. Render/Inngest remain disabled; only user-started local worker execution. Codex made no provider calls, ran no jobs/worker, applied no hosted SQL and deployed nothing. Offline in-memory schema validation is separate from manual runtime acceptance.
+
 ## Focused prerequisite - reference names before M5 (2026-10-23)
 
 **Implemented in source as a focused prerequisite between Milestones 4 and 5; manual migration/UI/persistence acceptance pending. Milestone 5 remains Not Started.** Current authorization adds only user-assigned Character/Product labels, save/readiness/snapshot integration, and analysis input context. Names are project-specific, trimmed and bounded to 80 characters; do not derive them from files, copy creator private labels on template adoption, or treat a Character label as identity evidence. Future M5+ sheets/storyboards/dialogue/scene/video instructions must use frozen supplied names consistently while retaining stable asset/reference IDs. Read [reference-name contract and setup](ugc-v1-workflow.md#project-specific-reference-names--prerequisite-before-milestone-5).

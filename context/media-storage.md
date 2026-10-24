@@ -1,5 +1,14 @@
 # Private project media
 
+
+## Milestone 5 — Character Sheet (2026-10-23)
+
+**Complete in source; manual migration/provider/runtime/visual acceptance pending. Exact next: Milestone 6 — Product / Prop Reference Sheet generation. Not started.** [Character Sheet contract and manual setup](character-sheet.md) supersedes older M5-not-started/OpenAI-Character-image assumptions below; historical evidence remains intact.
+
+Original Character input stays private and owner/project/role/fingerprint checked. Higgsfield receives only an ephemeral five-minute server-signed source URL after a conditional ETag-checked read, never persisted or returned to browsers. Front/back/face/sheet PNGs use private immutable job/sheet-scoped R2 keys. Strict descriptors retain individual asset UUID/type/ETag/SHA256/size/dimensions. PostgreSQL holds metadata only. Canonical gray sheet is server-composed without embedded names/IDs or decoration. No template transfer/public URLs.
+
+Approved full flow: Input → validation → OpenAI analysis → SOUL2 Character Sheet → Product Sheet → one primary Location → structured ChatGPT storyboard/script + stable voice specification → generation package → cost review/confirmation → final video → finalization → Studio Preview. No later stage is implemented. User confirms 039 applied; verify/apply 040 then new 041 manually. Render/Inngest remain disabled; only user-started local worker execution. Codex made no provider calls, ran no jobs/worker, applied no hosted SQL and deployed nothing. Offline in-memory schema validation is separate from manual runtime acceptance.
+
 ## Project reference labels - before Milestone 5 (2026-10-23)
 
 Private reference names live only in project_assets.reference_name and immutable generation snapshots, separate from original_filename, storage_key, object names and read authorization. Owned media DTOs expose the label only through existing private project reads. Explicit removal clears the active row label via manual migration 040's trigger, detaches the source and retains bytes/history; replacement uses a new asset with an empty name. Old frozen jobs retain their original labels. Names do not enter public template projections; adopters provide their own source images and names. [reference-name contract and setup](ugc-v1-workflow.md#project-specific-reference-names--prerequisite-before-milestone-5). No storage/provider call or media deletion/rename was performed.

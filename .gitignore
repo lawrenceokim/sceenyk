@@ -18,6 +18,7 @@
 /context/*
 !/context/ugc-v1-workflow.md
 !/context/reference-analysis.md
+!/context/character-sheet.md
 AGENTS.md
 
 # next.js

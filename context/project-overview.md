@@ -1,5 +1,14 @@
 # Sceenyk project overview
 
+
+## Milestone 5 — Character Sheet (2026-10-23)
+
+**Complete in source; manual migration/provider/runtime/visual acceptance pending. Exact next: Milestone 6 — Product / Prop Reference Sheet generation. Not started.** [Character Sheet contract and manual setup](character-sheet.md) supersedes older M5-not-started/OpenAI-Character-image assumptions below; historical evidence remains intact.
+
+One creator-named Character and Product / Prop remain required; current durations 5/10/30 and one future primary Location. Character sheets are private project outputs and never reusable Template data. Adopters supply their own images/names and receive their own generated references.
+
+Approved full flow: Input → validation → OpenAI analysis → SOUL2 Character Sheet → Product Sheet → one primary Location → structured ChatGPT storyboard/script + stable voice specification → generation package → cost review/confirmation → final video → finalization → Studio Preview. No later stage is implemented. User confirms 039 applied; verify/apply 040 then new 041 manually. Render/Inngest remain disabled; only user-started local worker execution. Codex made no provider calls, ran no jobs/worker, applied no hosted SQL and deployed nothing. Offline in-memory schema validation is separate from manual runtime acceptance.
+
 ## Character and Product names - prerequisite refinement (2026-10-23)
 
 **Implemented in source as a focused prerequisite between Milestones 4 and 5; manual migration/UI/persistence acceptance pending. Milestone 5 remains Not Started.** Each uploaded UGC source now has an editable Character name or Product / Prop name directly beneath its thumbnail. Shared 80-character trimmed labels are saved via the existing Preview-header Save action/status into private project_assets.reference_name, never filenames/R2 keys. Drafts without names remain saveable; new generation readiness requires both names with role-specific issues. New immutable v3 snapshots freeze names/source IDs; existing v2 jobs and completed analyses are not rewritten/replayed. See [reference-name contract and setup](ugc-v1-workflow.md#project-specific-reference-names--prerequisite-before-milestone-5).

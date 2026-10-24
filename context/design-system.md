@@ -1,5 +1,14 @@
 # Sceenyk design system
 
+
+## Milestone 5 — Character Sheet (2026-10-23)
+
+**Complete in source; manual migration/provider/runtime/visual acceptance pending. Exact next: Milestone 6 — Product / Prop Reference Sheet generation. Not started.** [Character Sheet contract and manual setup](character-sheet.md) supersedes older M5-not-started/OpenAI-Character-image assumptions below; historical evidence remains intact.
+
+Existing UGC controls show Character ready at the persisted Product pause. Presentation, geometry, themes, focus/scroll and Tailwind/global stylesheet policy remain. No generated-asset layout or wardrobe control is added; manual visual acceptance is pending.
+
+Approved full flow: Input → validation → OpenAI analysis → SOUL2 Character Sheet → Product Sheet → one primary Location → structured ChatGPT storyboard/script + stable voice specification → generation package → cost review/confirmation → final video → finalization → Studio Preview. No later stage is implemented. User confirms 039 applied; verify/apply 040 then new 041 manually. Render/Inngest remain disabled; only user-started local worker execution. Codex made no provider calls, ran no jobs/worker, applied no hosted SQL and deployed nothing. Offline in-memory schema validation is separate from manual runtime acceptance.
+
 ## Reference-name fields beneath UGC thumbnails (2026-10-23)
 
 Character name / Product / Prop name appear only beneath uploaded sources, with e.g. Maya / e.g. Nova Watch placeholders and explicit associated labels. Keep 64px thumbnails, compact full-panel-width fields, min-w-0 containment, existing field colors/focus ring and coarse-pointer sizing through Tailwind. Reuse the Preview-header Save feedback and existing readiness messages. No new stylesheet, panel sizing/layout redesign or Sources status system. Removal hides fields; replacement starts empty. Manual visual review pending; Milestone 5 is not started.

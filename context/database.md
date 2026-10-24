@@ -1,5 +1,14 @@
 # Development application identity
 
+
+## Milestone 5 — Character Sheet (2026-10-23)
+
+**Complete in source; manual migration/provider/runtime/visual acceptance pending. Exact next: Milestone 6 — Product / Prop Reference Sheet generation. Not started.** [Character Sheet contract and manual setup](character-sheet.md) supersedes older M5-not-started/OpenAI-Character-image assumptions below; historical evidence remains intact.
+
+New manual migration 041 after 040 adds private ugc_character_sheets and claim-fenced preparation/checkpoint/completion/resume RPCs. One sheet per immutable job stores frozen Character/source/name/analysis/snapshot fingerprint, wardrobe, provider/model, versioned per-operation IDs/poll schedules, individual private asset descriptors/status/timestamps. RLS/no browser grants and immutable history/completed data remain. New SQL extends known-request lease recovery and controlled retry, rebinds the safe-error CHECK and stops at Product. No live schema/runtime acceptance is asserted.
+
+Approved full flow: Input → validation → OpenAI analysis → SOUL2 Character Sheet → Product Sheet → one primary Location → structured ChatGPT storyboard/script + stable voice specification → generation package → cost review/confirmation → final video → finalization → Studio Preview. No later stage is implemented. User confirms 039 applied; verify/apply 040 then new 041 manually. Render/Inngest remain disabled; only user-started local worker execution. Codex made no provider calls, ran no jobs/worker, applied no hosted SQL and deployed nothing. Offline in-memory schema validation is separate from manual runtime acceptance.
+
 ## Reference names - migration 040 authored (2026-10-23)
 
 Manual 040 after 039 adds nullable project_assets.reference_name (no invented names/backfill) with role/upload/image/length constraints and a trigger for normalization and clearing names on detachment. Existing RLS/ownership/keys/media/history remain. Service-only ugc_save_reference_names locks the owned draft Project and all submitted active uploaded Character/Product rows, validates a bounded unique-ID batch and then persists normalized labels together; no direct name-update grant/browser policy is added.

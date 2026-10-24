@@ -1,5 +1,14 @@
 # Persistent generation jobs
 
+
+## Milestone 5 — Character Sheet (2026-10-23)
+
+**Complete in source; manual migration/provider/runtime/visual acceptance pending. Exact next: Milestone 6 — Product / Prop Reference Sheet generation. Not started.** [Character Sheet contract and manual setup](character-sheet.md) supersedes older M5-not-started/OpenAI-Character-image assumptions below; historical evidence remains intact.
+
+validate_inputs → analyze_references → character_reference now continues under one claim; old named v3 M4 pauses need --resume-character JOB_UUID via the same local consumer. Known remote IDs and saved views resume after restart within the three-claim budget; unknown intents require reconciliation. Success atomically marks the sheet completed, appends Character ready and releases into queued/product_reference/PRODUCT_REFERENCE_NOT_IMPLEMENTED, excluded from claims. No Product handler/resume or generic advancement bypass.
+
+Approved full flow: Input → validation → OpenAI analysis → SOUL2 Character Sheet → Product Sheet → one primary Location → structured ChatGPT storyboard/script + stable voice specification → generation package → cost review/confirmation → final video → finalization → Studio Preview. No later stage is implemented. User confirms 039 applied; verify/apply 040 then new 041 manually. Render/Inngest remain disabled; only user-started local worker execution. Codex made no provider calls, ran no jobs/worker, applied no hosted SQL and deployed nothing. Offline in-memory schema validation is separate from manual runtime acceptance.
+
 ## Reference names - immutable snapshot v3 (2026-10-23)
 
 **Implemented in source as a focused prerequisite between Milestones 4 and 5; manual migration/UI/persistence acceptance pending. Milestone 5 remains Not Started.** [reference-name contract and setup](ugc-v1-workflow.md#project-specific-reference-names--prerequisite-before-milestone-5). New validated jobs freeze character.name and product.name (trimmed 1–80 characters) alongside their existing assetId/referenceId/MIME/size/ETag. Names come only from the owned active reference rows after explicit Save. Missing/invalid names appear in the existing safe issue catalog and disable preparation. Updated SQL comparison in manual 040 rejects new nameless/v2 snapshots and race-checks names under the same Project/reference locks. Same owner/idempotency recovery still returns its original job.

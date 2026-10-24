@@ -73,6 +73,7 @@ export type Database = {
       ugc_generation_jobs: { Row: import("@/lib/ugc-jobs/contract").UgcJobRow; Insert: never; Update: never; Relationships: [] };
       ugc_generation_job_events: { Row: import("@/lib/ugc-jobs/contract").UgcJobEventRow; Insert: never; Update: never; Relationships: [] };
       ugc_reference_analyses: { Row: import("@/lib/reference-analysis/contract").ReferenceAnalysisRow; Insert: never; Update: never; Relationships: [] };
+      ugc_character_sheets: { Row: import("@/lib/character-sheet/contract").CharacterSheetRow; Insert: never; Update: never; Relationships: [] };
       payout_support_events: {
         Row: {
           id: string; attempt_id: string; withdrawal_id: string | null; actor_user_id: string | null;
@@ -266,6 +267,11 @@ export type Database = {
       ugc_begin_reference_analysis: { Args: { p_job_id: string; p_claim_token: string; p_role: string; p_model: string }; Returns: "SUBMIT" | "REUSE" | "RECONCILE" | "STOP" };
       ugc_finish_reference_analysis: { Args: { p_job_id: string; p_claim_token: string; p_role: string; p_analysis: import("@/lib/reference-analysis/contract").ReferenceAnalysis | null; p_usage: import("@/lib/reference-analysis/contract").ReferenceUsage | null; p_error_code: string | null }; Returns: boolean };
       ugc_finish_references: { Args: { p_job_id: string; p_claim_token: string }; Returns: import("@/lib/ugc-jobs/contract").UgcJobRow | null };
+      ugc_prepare_character_sheet: { Args: { p_job_id: string; p_claim_token: string; p_model: string; p_document: import("@/lib/character-sheet/contract").CharacterSheetDocument }; Returns: import("@/lib/character-sheet/contract").CharacterSheetRow | null };
+      ugc_checkpoint_character_sheet: { Args: { p_job_id: string; p_claim_token: string; p_document: import("@/lib/character-sheet/contract").CharacterSheetDocument; p_message: string }; Returns: boolean };
+      ugc_finish_character_sheet: { Args: { p_job_id: string; p_claim_token: string }; Returns: import("@/lib/ugc-jobs/contract").UgcJobRow | null };
+      ugc_resume_character_sheet: { Args: { p_job_id: string }; Returns: boolean };
+      ugc_resume_character_output: { Args: { p_job_id: string }; Returns: boolean };
       ugc_resume_reference_analysis: { Args: { p_job_id: string }; Returns: boolean };
       ugc_update_claim: { Args: { p_job_id: string; p_claim_token: string; p_expected_stage: string; p_operation: string; p_error_code: string | null; p_retryable: boolean }; Returns: import("@/lib/ugc-jobs/contract").UgcJobRow | null };
       ugc_cancel_owned_job: { Args: { p_owner_user_id: string; p_project_id: string; p_job_id: string }; Returns: import("@/lib/ugc-jobs/contract").UgcJobRow | null };

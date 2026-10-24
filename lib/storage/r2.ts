@@ -11,6 +11,27 @@ import { getStorageConfig } from "./config";
 
 const uploadLifetimeSeconds = 5 * 60;
 const readLifetimeSeconds = 15 * 60;
+// Private UGC images only. Never replace a previously committed generated object.
+export async function putR2CharacterImage(key: string, bytes: Uint8Array, signal: AbortSignal) {
+  if (bytes.byteLength > 20 * 1024 * 1024) throw new Error("CHARACTER_STORAGE_FAILED");
+  const { bucket, sdk } = client();
+  try {
+    await sdk.send(new PutObjectCommand({ Bucket: bucket, Key: key, Body: bytes, ContentLength: bytes.byteLength,
+      ContentType: "image/png", IfNoneMatch: "*" }), { abortSignal: AbortSignal.any([signal, AbortSignal.timeout(60_000)]) });
+  } catch (error) {
+    if (!error || typeof error !== "object" || !("$metadata" in error) || !error.$metadata || typeof error.$metadata !== "object" ||
+      !("httpStatusCode" in error.$metadata) || error.$metadata.httpStatusCode !== 412) throw new Error("CHARACTER_STORAGE_FAILED");
+  }
+}
+// Provider-only capability, never persisted or returned in any client DTO.
+export async function signR2CharacterSource(key: string, etag: string) {
+  if (!etag) throw new Error("CHARACTER_STORAGE_FAILED");
+  const { bucket, sdk } = client();
+  // Provider accepts a URL only, not required signed If-Match headers. The
+  // loader checks ETag conditionally first; every application PUT is immutable.
+  return getSignedUrl(sdk, new GetObjectCommand({ Bucket: bucket, Key: key,
+    ResponseCacheControl: "private, no-store" }), { expiresIn: 5 * 60 });
+}
 // Explicitly public derivative only; bucket remains private. Keys never leave the server.
 export async function putR2CreatorAvatar(key: string, bytes: Uint8Array) {
   const { bucket, sdk } = client();
