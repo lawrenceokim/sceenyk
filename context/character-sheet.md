@@ -1,5 +1,14 @@
 # UGC Character Reference Sheet — Milestone 5
 
+## Milestone 6 — Product / Prop Reference Sheet (2026-10-24)
+
+**Milestone 5 — Complete. Milestone 5.5 — Complete. Milestone 6 — Complete in source; manual migration/provider/runtime/visual acceptance pending. Milestone 7 — Location Reference generation — Not Started.** This section supersedes earlier M6-not-started stop points below. See [Product Sheet contract and manual setup](product-sheet.md).
+
+Character retains its existing SOUL2 adapter, model, prompts, identity training, generated views/storage and completion pause. The approved OpenAI Product model resolves the earlier suitability stop. Local --resume-product consumes that same successful Character sheet and saved analyses, without invoking Character generation or historical Character-output recovery.
+
+Pipeline: Input → OpenAI Reference Analysis → Character Reference Sheet → Product / Prop Reference Sheet → Location Reference → Structured ChatGPT Storyboard → Generation Package → Final Video → Studio Preview. Existing cost-review/accounting gates remain; no user credits are deducted. Manual setup: pending 044 then new 045; OPENAI_PRODUCT_SHEET_MODEL=gpt-image-2.5-sunburst and explicit UGC_PRODUCT_SHEET_ENABLED=1 with existing OPENAI_API_KEY. Keep Render/Inngest disabled. No providers, worker/jobs, private media, remote SQL, browser/screenshot suites, build or deployment executed. Stop after M6.
+
+
 ## Paused Character-complete progress refinement (2026-10-24)
 
 Long-running active workflows may poll, but paused and terminal workflows must not continuously poll. At the existing Product development pause, show Character reference complete / Generation paused / Your character reference is ready. Product Reference generation has not started yet. Keep identity/front/back/face/sheet checks visible; Product and later stages wait. Check status and visible page/tab return only read once; future explicit server-confirmed resume refreshes the same job and restores polling without deleting checkpoints or making a new job. Historical timing cannot establish active processing, so this job shows Started earlier. Manual 044 records leased active processing only for future new jobs; no historical backfill or current-job retry/mutation. No providers, worker/job, browser suite, deployment or SQL execution during this refinement. M6 remains Not Started.

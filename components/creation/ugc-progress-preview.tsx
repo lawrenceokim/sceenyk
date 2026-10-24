@@ -44,10 +44,12 @@ export function UgcProgressPreview({ progress }: { progress: UgcProgressState })
   const paused = stalled || job?.paused || job?.status === "awaiting_confirmation";
   const characterCompletePause = !!job?.paused && job.stage === "product_reference" &&
     job.steps.some(step => step.id === "character_reference" && step.state === "completed");
+  const productCompletePause = !!job?.paused && job.stage === "location_reference" &&
+    job.steps.some(step => step.id === "product_reference" && step.state === "completed");
   if (job?.status === "completed") return null;
   const title = loading ? "Checking generation status" : !job ? "Generation status unavailable" :
     job.status === "failed" ? "Generation stopped" : job.status === "cancelled" ? "Generation cancelled" :
-    characterCompletePause ? "Character reference complete" : stalled ? "Generation appears paused" : paused ? "Generation paused" : "Creating your video";
+    productCompletePause ? "Product reference complete" : characterCompletePause ? "Character reference complete" : stalled ? "Generation appears paused" : paused ? "Generation paused" : "Creating your video";
   const processingMs = job ? ugcProcessingMilliseconds(job, now) : null;
   const expectation = job && !paused && active ? ugcStageExpectation(job.currentStage) : null;
 
@@ -60,7 +62,7 @@ export function UgcProgressPreview({ progress }: { progress: UgcProgressState })
             {job?.status === "failed" && <XCircle className="size-4 shrink-0 text-destructive" aria-hidden="true" />}
             {title}
           </h2>
-          {characterCompletePause && <p className="text-warning-foreground">Generation paused</p>}
+          {(characterCompletePause || productCompletePause) && <p className="text-warning-foreground">Generation paused</p>}
           <p key={`${job?.status}:${job?.message}:${stalled}`} className="break-words text-muted-foreground motion-safe:animate-in motion-safe:fade-in motion-safe:duration-200">
             {loading ? "Reading your saved workflow." : stalled ? "The generation worker may no longer be running." : job?.message ?? "Check status to reconnect to your saved workflow."}
           </p>
@@ -74,14 +76,16 @@ export function UgcProgressPreview({ progress }: { progress: UgcProgressState })
                 className={`flex min-w-0 items-center gap-2 leading-5 transition-colors duration-200 motion-reduce:transition-none ${state === "waiting" ? "text-muted-foreground" : "text-foreground"}`}>
                 <StepIcon state={state} /><span className="min-w-0 break-words">{step.label}<span className="sr-only"> — {state}</span></span>
               </div>
-              {step.id === "character_reference" && job.characterSteps.length > 0 &&
-                (job.currentStage === "character_reference" || job.paused && job.stage === "product_reference") && <ol className="my-1 ml-1.5 space-y-0.5 border-l border-border py-1 pl-4" aria-label="Character reference steps">
-                {job.characterSteps.map(substep => {
+              {((step.id === "character_reference" && job.characterSteps.length > 0 &&
+                (job.currentStage === "character_reference" || job.currentStage === "product_reference" || productCompletePause)) ||
+                (step.id === "product_reference" && (job.productSteps?.length ?? 0) > 0 &&
+                (job.currentStage === "product_reference" || productCompletePause))) && <ol className="my-1 ml-1.5 space-y-0.5 border-l border-border py-1 pl-4" aria-label={step.id === "product_reference" ? "Product reference steps" : "Character reference steps"}>
+                {(step.id === "product_reference" ? job.productSteps : job.characterSteps).map(substep => {
                   const substate = substep.state === "active" && paused ? "paused" : substep.state;
                   return <li key={substep.id} aria-current={substate === "active" ? "step" : undefined}
                     className="flex min-w-0 items-center gap-2 leading-5 text-muted-foreground transition-colors duration-200 motion-reduce:transition-none">
                     <StepIcon state={substate} /><span className="min-w-0 break-words">{substep.label}
-                      {substate === "failed" ? " — failed" : substate === "active" ? " — generating" : <span className="sr-only"> — {substate}</span>}
+                      {substate === "failed" ? " — failed" : substate === "active" ? substep.id === "sheet" ? " — building" : " — generating" : <span className="sr-only"> — {substate}</span>}
                     </span>
                   </li>;
                 })}

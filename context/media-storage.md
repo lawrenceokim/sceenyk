@@ -1,5 +1,14 @@
 # Private project media
 
+## Milestone 6 — Product / Prop Reference Sheet (2026-10-24)
+
+**Milestone 5 — Complete. Milestone 5.5 — Complete. Milestone 6 — Complete in source; manual migration/provider/runtime/visual acceptance pending. Milestone 7 — Location Reference generation — Not Started.** This section supersedes earlier M6-not-started stop points below. See [Product Sheet contract and manual setup](product-sheet.md).
+
+All original/generated Product images, analysis and sheets stay private. Canonical job/sheet-scoped immutable R2 PNGs retain UUID/type/ETag/SHA256/size/dimensions in PostgreSQL metadata. Each edit uses conditionally verified original bytes; three valid views compose on neutral gray without embedded names. Product references and keys never enter Templates or safe progress DTOs.
+
+Pipeline: Input → OpenAI Reference Analysis → Character Reference Sheet → Product / Prop Reference Sheet → Location Reference → Structured ChatGPT Storyboard → Generation Package → Final Video → Studio Preview. Existing cost-review/accounting gates remain; no user credits are deducted. Manual setup: pending 044 then new 045; OPENAI_PRODUCT_SHEET_MODEL=gpt-image-2.5-sunburst and explicit UGC_PRODUCT_SHEET_ENABLED=1 with existing OPENAI_API_KEY. Keep Render/Inngest disabled. No providers, worker/jobs, private media, remote SQL, browser/screenshot suites, build or deployment executed. Stop after M6.
+
+
 
 ## Milestone 5 — Character Sheet (2026-10-23)
 

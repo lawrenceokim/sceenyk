@@ -6,6 +6,7 @@ import { createDatabaseClient } from "@/lib/db/server";
 import { type UgcJobProgress, type UgcJobRow, type UgcProgressEvent } from "./contract";
 import { buildUgcProgress, type UgcProgressEvidence } from "./progress";
 import { characterSheetDocumentSchema } from "@/lib/character-sheet/contract";
+import { productSheetDocumentSchema } from "@/lib/product-sheet/contract";
 import { validateUgcGenerationInput } from "./validation";
 import { ugcInputIssue, type UgcInputIssue, type UgcReadiness } from "./input-contract";
 
@@ -20,7 +21,7 @@ export class UgcJobAuthenticationError extends Error {
 }
 export class UgcProgressReadError extends Error {
   readonly databaseCode: string | undefined;
-  constructor(readonly phase: "identity" | "project" | "job" | "history" | "character" | "analyses", error: { code?: string }) {
+  constructor(readonly phase: "identity" | "project" | "job" | "history" | "character" | "product" | "analyses", error: { code?: string }) {
     super("Generation progress could not be read.");
     this.databaseCode = ["PGRST202", "PGRST204", "PGRST205", "42501", "42883", "42703"].includes(error.code ?? "") ? error.code : undefined;
   }
@@ -93,23 +94,27 @@ export async function getOwnedUgcJobProgress(input: unknown): Promise<UgcJobProg
   if (parsed.data.jobId && !result.data) throw new UgcJobAccessError();
   const job = result.data;
   if (!job) return null;
-  const [history, sheet, analyses] = await Promise.all([
+  const [history, sheet, analyses, productSheet] = await Promise.all([
     db.from("ugc_generation_job_events").select("id,job_id,stage,event_type,safe_message,metadata,created_at")
       .eq("job_id", job.id).order("id", { ascending: false }).limit(160),
     db.from("ugc_character_sheets").select("document,status,character_name").eq("job_id", job.id)
       .eq("owner_user_id", user.id).eq("project_id", job.project_id).maybeSingle(),
     db.from("ugc_reference_analyses").select("analysis_type,state").eq("job_id", job.id)
       .eq("owner_user_id", user.id).eq("project_id", job.project_id).eq("state", "completed"),
+    db.from("ugc_product_sheets").select("document,status,product_name").eq("job_id", job.id)
+      .eq("owner_user_id", user.id).eq("project_id", job.project_id).maybeSingle(),
   ]);
   if (history.error) throw new UgcProgressReadError("history", history.error);
   if (sheet.error) throw new UgcProgressReadError("character", sheet.error);
   if (analyses.error) throw new UgcProgressReadError("analyses", analyses.error);
+  // Before manual 045, preserve the existing Character-complete progress surface.
+  if (productSheet.error && !["PGRST205", "42P01"].includes(productSheet.error.code)) throw new UgcProgressReadError("product", productSheet.error);
   // Never spread event metadata, a checkpoint document or a provider diagnostic
   // into the DTO. Historical events are already constrained to fixed safe copy.
   const events: UgcProgressEvent[] = (history.data ?? []).reverse().map(event => ({
     id: event.id, jobId: job.id, stage: event.stage, type: event.event_type,
     message: event.safe_message, at: event.created_at,
-    ...(["front", "back", "face"].includes(event.metadata.view ?? "") ? { view: event.metadata.view } : {}),
+    ...(["front", "back", "face", "primary", "angle", "detail"].includes(event.metadata.view ?? "") ? { view: event.metadata.view } : {}),
   }));
   const evidence: UgcProgressEvidence = {
     events, analyses: {
@@ -132,6 +137,17 @@ export async function getOwnedUgcJobProgress(input: unknown): Promise<UgcJobProg
       composing: events.some(event => event.type === "character_reference.composing" ||
         event.type === "character_progress" && event.message === "Building character sheet"),
     };
+  }
+  const parsedProduct = productSheetDocumentSchema.safeParse(productSheet.data?.document);
+  if (productSheet.data && parsedProduct.success) {
+    const document = parsedProduct.data;
+    const view = (name: "primary" | "angle" | "detail") => ({
+      started: !!document.operations[name], ready: !!document.assets[name],
+      failed: document.operations[name]?.state === "rejected",
+    });
+    evidence.product = { name: productSheet.data.product_name, complete: productSheet.data.status === "completed",
+      views: { primary: view("primary"), angle: view("angle"), detail: view("detail") },
+      sheetReady: !!document.assets.sheet, composing: events.some(event => event.type === "product_reference.composing") };
   }
   return buildUgcProgress(job, evidence);
 }

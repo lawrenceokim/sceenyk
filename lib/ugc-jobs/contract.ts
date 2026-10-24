@@ -1,9 +1,11 @@
-// Shared UGC progress/state vocabulary. SQL migration 036 mirrors this graph.
+import { productFailureCodes } from "@/lib/product-sheet/contract";
+
+// Shared UGC progress/state vocabulary. SQL migrations mirror this graph.
 export const ugcJobStatuses = ["queued", "running", "awaiting_confirmation", "completed", "failed", "cancelled"] as const;
 export type UgcJobStatus = (typeof ugcJobStatuses)[number];
 export const ugcJobStages = [
   "queued", "validate_inputs", "analyze_references", "character_reference",
-  "product_reference", "build_storyboard", "build_generation_package", "cost_review",
+  "product_reference", "location_reference", "build_storyboard", "build_generation_package", "cost_review",
   "awaiting_confirmation", "video_generation", "finalizing", "complete", "failed", "cancelled",
 ] as const;
 export type UgcJobStage = (typeof ugcJobStages)[number];
@@ -12,7 +14,8 @@ export const ugcNextStage: Partial<Record<UgcJobStage, UgcJobStage>> = {
   validate_inputs: "analyze_references",
   analyze_references: "character_reference",
   character_reference: "product_reference",
-  product_reference: "build_storyboard",
+  product_reference: "location_reference",
+  location_reference: "build_storyboard",
   build_storyboard: "build_generation_package",
   build_generation_package: "cost_review",
   cost_review: "awaiting_confirmation",
@@ -26,6 +29,7 @@ export const ugcStageMessages: Record<UgcJobStage, string> = {
   analyze_references: "Analyzing references.",
   character_reference: "Preparing character.",
   product_reference: "Preparing product.",
+  location_reference: "Location generation has not started yet.",
   build_storyboard: "Building storyboard.",
   build_generation_package: "Preparing generation.",
   cost_review: "Preparing generation cost review.",
@@ -46,6 +50,7 @@ export const ugcJobErrorCodes = [
   "CHARACTER_CONFIG_INVALID", "CHARACTER_AUTH_FAILED", "CHARACTER_RATE_LIMITED",
   "CHARACTER_PROVIDER_FAILED", "CHARACTER_TIMEOUT", "CHARACTER_OUTPUT_INVALID",
   "CHARACTER_STORAGE_FAILED", "CHARACTER_COMPOSITION_FAILED",
+  ...productFailureCodes,
 ] as const;
 export type UgcJobErrorCode = (typeof ugcJobErrorCodes)[number];
 export const ugcAutomaticRetryStages: readonly UgcJobStage[] = ["validate_inputs"];
@@ -73,7 +78,8 @@ export type UgcJobRow = {
   lease_expires_at: string | null; heartbeat_at: string | null; cancellation_requested_at: string | null;
   error_code: UgcJobErrorCode | null; safe_error_message: string | null;
   provider: string | null; provider_job_id: string | null;
-  pause_reason: "REFERENCE_ANALYSIS_NOT_IMPLEMENTED" | "CHARACTER_REFERENCE_NOT_IMPLEMENTED" | "PRODUCT_REFERENCE_NOT_IMPLEMENTED" | null;
+  pause_reason: "REFERENCE_ANALYSIS_NOT_IMPLEMENTED" | "CHARACTER_REFERENCE_NOT_IMPLEMENTED" | "PRODUCT_REFERENCE_NOT_IMPLEMENTED" | "LOCATION_REFERENCE_NOT_IMPLEMENTED" | null;
+  product_attempt_count?: number;
   validation_completed_at: string | null;
   analysis_version: number | null; analysis_model: string | null;
   input_snapshot: Record<string, unknown>; metadata: Record<string, unknown>;
@@ -84,7 +90,7 @@ export type UgcJobRow = {
 };
 export type UgcJobEventRow = {
   id: number; job_id: string; status: UgcJobStatus; stage: UgcJobStage;
-  event_type: string; safe_message: string; metadata: { attempt?: number; resumeStage?: UgcJobStage; view?: "front" | "back" | "face" };
+  event_type: string; safe_message: string; metadata: { attempt?: number; resumeStage?: UgcJobStage; view?: "front" | "back" | "face" | "primary" | "angle" | "detail" };
   created_at: string;
 };
 export type UgcJobProgress = {
@@ -94,7 +100,7 @@ export type UgcJobProgress = {
   paused: boolean;
   failure: { code: UgcJobErrorCode; message: string } | null;
   currentStage: UgcJobStage; stageLabel: string;
-  steps: UgcProgressStep[]; characterSteps: UgcProgressStep[];
+  steps: UgcProgressStep[]; characterSteps: UgcProgressStep[]; productSteps: UgcProgressStep[];
   events: UgcProgressEvent[];
   worker: { heartbeatAt: string | null; leaseExpiresAt: string | null; state: "healthy" | "stalled" | "inactive" };
   serverNow: string;
@@ -103,7 +109,7 @@ export type UgcJobProgress = {
 export type UgcProgressStep = { id: string; label: string; state: "waiting" | "active" | "completed" | "failed" | "paused" };
 export type UgcProgressEvent = {
   id: number; jobId: string; stage: UgcJobStage; type: string; message: string; at: string;
-  view?: "front" | "back" | "face";
+  view?: "front" | "back" | "face" | "primary" | "angle" | "detail";
 };
 export const ugcProgressPollMilliseconds = 2_500;
 export const ugcWorkerStaleMilliseconds = 90_000;

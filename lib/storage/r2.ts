@@ -11,6 +11,9 @@ import { getStorageConfig } from "./config";
 
 const uploadLifetimeSeconds = 5 * 60;
 const readLifetimeSeconds = 15 * 60;
+// Shared immutable private PNG writer; Product callers map storage failures to
+// their own safe diagnostics. Character behavior and existing exports stay intact.
+export { putR2CharacterImage as putR2ReferenceImage };
 // Private UGC images only. Never replace a previously committed generated object.
 export async function putR2CharacterImage(key: string, bytes: Uint8Array, signal: AbortSignal) {
   if (bytes.byteLength > 20 * 1024 * 1024) throw new Error("CHARACTER_STORAGE_FAILED");

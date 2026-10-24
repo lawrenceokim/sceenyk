@@ -8,6 +8,7 @@ const safeStartupReasons = new Set([
   "UGC_CHARACTER_ALREADY_READY", "UGC_CHARACTER_OUTPUT_RESUME_NOT_ELIGIBLE", "UGC_ATTEMPTS_EXHAUSTED",
   "REFERENCE_CONFIG_INVALID", "CHARACTER_CONFIG_INVALID", "HF_SECRET_CONTAINS_COMPLETE_CREDENTIAL",
   "CHARACTER_ENVIRONMENT_INVALID", "PUBLIC_PRIVILEGED_KEY", "MISSING_CONFIGURATION", "INVALID_URL", "INVALID_PRIVILEGED_KEY",
+  "PRODUCT_CONFIG_INVALID", "UGC_PRODUCT_RESUME_UNAVAILABLE",
 ]);
 const safeDatabaseCodes = new Set(["PGRST202", "PGRST204", "PGRST205", "42501", "42883", "23514"]);
 class WorkerStartupError extends Error {
@@ -54,7 +55,13 @@ async function main() {
   startupPhase = "arguments";
   if (args.length) {
     const { z } = await import("zod");
-    if (args.length !== 2 || !["--resume-analysis", "--resume-character", "--resume-character-output", "--retry"].includes(args[0]) || !z.uuid().safeParse(args[1]).success) throw new Error("UGC_WORKER_ARGUMENT_INVALID");
+    if (args.length !== 2 || !["--resume-analysis", "--resume-character", "--resume-character-output", "--resume-product", "--retry"].includes(args[0]) || !z.uuid().safeParse(args[1]).success) throw new Error("UGC_WORKER_ARGUMENT_INVALID");
+  }
+  // Product is separately opt-in; Character-only work keeps its current setup.
+  if (process.env.UGC_PRODUCT_SHEET_ENABLED === "1" || args[0] === "--resume-product") {
+    startupPhase = "product_configuration";
+    const { getProductSheetConfig } = await import("../lib/product-sheet/config");
+    getProductSheetConfig();
   }
   // Resolve the complete worker module graph before any recovery RPC can write.
   startupPhase = "runner_import";
@@ -82,6 +89,9 @@ async function main() {
     } else if (args[0] === "--resume-character") {
       const result = await db.rpc("ugc_resume_character_sheet", { p_job_id: args[1] });
       if (result.error || !result.data) throw databaseFailure("UGC_RESUME_UNAVAILABLE", result.error);
+    } else if (args[0] === "--resume-product") {
+      const result = await db.rpc("ugc_resume_product_sheet", { p_job_id: args[1] });
+      if (result.error || !result.data) throw databaseFailure("UGC_PRODUCT_RESUME_UNAVAILABLE", result.error);
     } else if (args[0] === "--resume-character-output") {
       const result = await db.rpc("ugc_resume_character_output", { p_job_id: args[1] });
       if (result.error || !result.data) throw databaseFailure("UGC_CHARACTER_OUTPUT_RESUME_UNAVAILABLE", result.error);

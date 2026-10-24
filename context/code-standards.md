@@ -1,5 +1,14 @@
 # Code Standards
 
+## Milestone 6 — Product / Prop Reference Sheet (2026-10-24)
+
+**Milestone 5 — Complete. Milestone 5.5 — Complete. Milestone 6 — Complete in source; manual migration/provider/runtime/visual acceptance pending. Milestone 7 — Location Reference generation — Not Started.** This current authorization supersedes older M6-not-started stop points below. See [Product Sheet contract and manual setup](product-sheet.md).
+
+Use centralized ProductSheetProvider/factory/config, Product asset/error/version constants and strict documents. Server-only OpenAI edits use original source bytes, never text-only generation or Higgsfield host validation. Durable intent before dispatch, receipt/usage before storage, successful asset reuse and immutable R2 PUT protect paid work. RPCs enforce owner/frozen-input/claim/lease/cancellation/stage boundaries; safe DTOs project no keys/provider diagnostics.
+
+Pipeline: Input → OpenAI Reference Analysis → Character Reference Sheet → Product / Prop Reference Sheet → Location Reference → Structured ChatGPT Storyboard → Generation Package → Final Video → Studio Preview. Existing cost-review/accounting gates remain. Apply pending 044 and new 045 manually; use OPENAI_PRODUCT_SHEET_MODEL=gpt-image-2.5-sunburst and explicit UGC_PRODUCT_SHEET_ENABLED=1 with the existing private OPENAI_API_KEY. Render/Inngest remain disabled. No providers, workers/jobs, private media operations, remote SQL, browser/screenshot suites, build or deployment were executed. Stop after M6.
+
+
 ## Persistent live workflow feedback — Milestone 5.5 (2026-10-24)
 
 Every long-running Sceenyk generation workflow must provide persistent live progress feedback from real server-side state. The user must never be left staring at an unexplained empty Preview while a background workflow is running. Reuse owned jobs, append-only events and existing provider checkpoints; never create simulated progress, elapsed-driven completions, precise invented percentages/countdowns or a second progress store.

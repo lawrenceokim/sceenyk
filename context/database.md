@@ -1,5 +1,14 @@
 # Development application identity
 
+## Milestone 6 — Product / Prop Reference Sheet (2026-10-24)
+
+**Milestone 5 — Complete. Milestone 5.5 — Complete. Milestone 6 — Complete in source; manual migration/provider/runtime/visual acceptance pending. Milestone 7 — Location Reference generation — Not Started.** This section supersedes earlier M6-not-started stop points below. See [Product Sheet contract and manual setup](product-sheet.md).
+
+Manual 045 adds private ugc_product_sheets, a separate bounded Product claim counter, Product errors/events and a queued-only Location boundary. Immutable global attempts/max, Character data/RLS/checkpoints and accounting remain. Apply pending 044 before 045. Application resumes no job; referenced schema prerequisites are checked transactionally. No remote schema/catalog or SQL operation occurred during implementation.
+
+Pipeline: Input → OpenAI Reference Analysis → Character Reference Sheet → Product / Prop Reference Sheet → Location Reference → Structured ChatGPT Storyboard → Generation Package → Final Video → Studio Preview. Existing cost-review/accounting gates remain; no user credits are deducted. Manual setup: pending 044 then new 045; OPENAI_PRODUCT_SHEET_MODEL=gpt-image-2.5-sunburst and explicit UGC_PRODUCT_SHEET_ENABLED=1 with existing OPENAI_API_KEY. Keep Render/Inngest disabled. No providers, worker/jobs, private media, remote SQL, browser/screenshot suites, build or deployment executed. Stop after M6.
+
+
 ## M5.5 processing-time metadata refinement (2026-10-24)
 
 Manual-only [044](../supabase/migrations/20261024004400_ugc_processing_time.sql), after user-confirmed 043, adds nullable ugc_generation_jobs.processing_elapsed_ms (bigint) and processing_updated_at (timestamptz) plus an internal before-write timing trigger. It checks existing status/pause/lease/identity/progress prerequisites, preserves all named identity/event/recovery/RLS/grant behavior, and has no new table, job UPDATE/backfill or provider/accounting operation. New inserts initialize timing; existing claim/heartbeat/transition writes accumulate only leased running intervals and freeze queued/paused/terminal/confirmation time, capping late recovery at the old lease expiry. Historical rows stay unknown/NULL even on later resume and display Started earlier; original start timestamps remain unchanged. Safe progress reads tolerate unapplied 044 and expose only elapsed/anchor/pause timestamps. No SQL was run. Long-running active workflows may poll, but paused and terminal workflows must not continuously poll. M6 remains Not Started.

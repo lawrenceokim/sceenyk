@@ -1,5 +1,14 @@
 # UGC V1 workflow contract
 
+## Milestone 6 — Product / Prop Reference Sheet (2026-10-24)
+
+**Milestone 5 — Complete. Milestone 5.5 — Complete. Milestone 6 — Complete in source; manual migration/provider/runtime/visual acceptance pending. Milestone 7 — Location Reference generation — Not Started.** This section supersedes earlier M6-not-started stop points below. See [Product Sheet contract and manual setup](product-sheet.md).
+
+The approved OpenAI Product decision resolves the earlier SOUL2 suitability stop. ProductSheetProvider uses Sunburst Image Edit with the original private Product image on every independent primary/angle/detail edit. Saved observations support image authority; hidden geometry stays inferred. Completed Character and both analyses are reused; final Product completion pauses at queued/location_reference/LOCATION_REFERENCE_NOT_IMPLEMENTED.
+
+Pipeline: Input → OpenAI Reference Analysis → Character Reference Sheet → Product / Prop Reference Sheet → Location Reference → Structured ChatGPT Storyboard → Generation Package → Final Video → Studio Preview. Existing cost-review/accounting gates remain; no user credits are deducted. Manual setup: pending 044 then new 045; OPENAI_PRODUCT_SHEET_MODEL=gpt-image-2.5-sunburst and explicit UGC_PRODUCT_SHEET_ENABLED=1 with existing OPENAI_API_KEY. Keep Render/Inngest disabled. No providers, worker/jobs, private media, remote SQL, browser/screenshot suites, build or deployment executed. Stop after M6.
+
+
 ## Milestone 5.5 — persistent live Preview (2026-10-24)
 
 **Milestone 5.5 — Live Generation Progress UI — Complete in source; 043 applied per user; manual 044/new-job-timing/runtime/UI acceptance pending. Milestone 6 remains Not Started.** This section supersedes historical statements deferring all progress UI to Milestone 10. Every long-running Sceenyk generation workflow must provide persistent live progress feedback from real server-side state. The user must never be left staring at an unexplained empty Preview while a background workflow is running.

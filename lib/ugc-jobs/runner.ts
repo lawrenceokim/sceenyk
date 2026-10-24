@@ -4,7 +4,7 @@ import { ugcWorkerService } from "./worker-service";
 import { ugcStageHandlers } from "./stages";
 import type { UgcGenerationSnapshot } from "./input-contract";
 
-export type UgcStageResult = { kind: "advance" } | { kind: "character_ready" } | { kind: "references_analyzed" } | { kind: "validated"; snapshot: UgcGenerationSnapshot } | { kind: "fail"; code: UgcJobErrorCode; retryable?: boolean };
+export type UgcStageResult = { kind: "advance" } | { kind: "product_ready" } | { kind: "character_ready" } | { kind: "references_analyzed" } | { kind: "validated"; snapshot: UgcGenerationSnapshot } | { kind: "fail"; code: UgcJobErrorCode; retryable?: boolean };
 export type UgcStageHandler = (context: { job: Readonly<UgcJobRow>; signal: AbortSignal }) => Promise<UgcStageResult>;
 export type UgcStageHandlers = Partial<Record<UgcJobStage, UgcStageHandler>>;
 
@@ -60,6 +60,7 @@ export class UgcJobRunner {
         if (outcome.kind === "validated") await apply(job => ugcWorkerService.finishValidation(job, outcome.snapshot));
         else if (outcome.kind === "references_analyzed") await apply(ugcWorkerService.finishReferences);
         else if (outcome.kind === "character_ready") { await apply(ugcWorkerService.finishCharacter); return; }
+        else if (outcome.kind === "product_ready") { await apply(ugcWorkerService.finishProduct); return; }
         else if (outcome.kind === "advance") await apply(ugcWorkerService.advance);
         else { await apply(job => ugcWorkerService.fail(job, outcome.code, outcome.retryable)); return; }
       }

@@ -1,5 +1,14 @@
 # Architecture Context
 
+## Milestone 6 — Product / Prop Reference Sheet (2026-10-24)
+
+**Milestone 5 — Complete. Milestone 5.5 — Complete. Milestone 6 — Complete in source; manual migration/provider/runtime/visual acceptance pending. Milestone 7 — Location Reference generation — Not Started.** This current authorization supersedes older M6-not-started stop points below. See [Product Sheet contract and manual setup](product-sheet.md).
+
+Product work runs through ProductSheetProvider → OpenAIProductSheetProvider, with the original private image on every Image Edit request and centralized approved Sunburst configuration. Private versioned Product checkpoints and independent R2 views feed a Sharp-composed sheet. Claim-fenced intent/received/asset writes prevent uncertain paid replay; a separate three-claim Product budget preserves exhausted Character claim history. Product completion atomically pauses at a non-runnable location_reference; Character execution remains unchanged.
+
+Pipeline: Input → OpenAI Reference Analysis → Character Reference Sheet → Product / Prop Reference Sheet → Location Reference → Structured ChatGPT Storyboard → Generation Package → Final Video → Studio Preview. Existing cost-review/accounting gates remain. Apply pending 044 and new 045 manually; use OPENAI_PRODUCT_SHEET_MODEL=gpt-image-2.5-sunburst and explicit UGC_PRODUCT_SHEET_ENABLED=1 with the existing private OPENAI_API_KEY. Render/Inngest remain disabled. No providers, workers/jobs, private media operations, remote SQL, browser/screenshot suites, build or deployment were executed. Stop after M6.
+
+
 ## Milestone 5.5 — persistent live generation progress (2026-10-24)
 
 **Complete in source; 043 applied per user; runtime/UI acceptance pending. Milestone 6 remains Not Started.** Every long-running Sceenyk generation workflow must provide persistent live progress feedback from real server-side state. The user must never be left staring at an unexplained empty Preview while a background workflow is running.
