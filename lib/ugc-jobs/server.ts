@@ -7,6 +7,7 @@ import { type UgcJobProgress, type UgcJobRow, type UgcProgressEvent } from "./co
 import { buildUgcProgress, type UgcProgressEvidence } from "./progress";
 import { characterSheetDocumentSchema } from "@/lib/character-sheet/contract";
 import { productSheetDocumentSchema } from "@/lib/product-sheet/contract";
+import { readReferenceReviewState } from "@/lib/reference-review/state";
 import { validateUgcGenerationInput } from "./validation";
 import { ugcInputIssue, type UgcInputIssue, type UgcReadiness } from "./input-contract";
 
@@ -21,7 +22,7 @@ export class UgcJobAuthenticationError extends Error {
 }
 export class UgcProgressReadError extends Error {
   readonly databaseCode: string | undefined;
-  constructor(readonly phase: "identity" | "project" | "job" | "history" | "character" | "product" | "analyses", error: { code?: string }) {
+  constructor(readonly phase: "identity" | "project" | "job" | "history" | "character" | "product" | "analyses" | "review", error: { code?: string }) {
     super("Generation progress could not be read.");
     this.databaseCode = ["PGRST202", "PGRST204", "PGRST205", "42501", "42883", "42703"].includes(error.code ?? "") ? error.code : undefined;
   }
@@ -97,11 +98,11 @@ export async function getOwnedUgcJobProgress(input: unknown): Promise<UgcJobProg
   const [history, sheet, analyses, productSheet] = await Promise.all([
     db.from("ugc_generation_job_events").select("id,job_id,stage,event_type,safe_message,metadata,created_at")
       .eq("job_id", job.id).order("id", { ascending: false }).limit(160),
-    db.from("ugc_character_sheets").select("document,status,character_name").eq("job_id", job.id)
+    db.from("ugc_character_sheets").select("id,sheet_version,document,status,character_name").eq("job_id", job.id)
       .eq("owner_user_id", user.id).eq("project_id", job.project_id).maybeSingle(),
     db.from("ugc_reference_analyses").select("analysis_type,state").eq("job_id", job.id)
       .eq("owner_user_id", user.id).eq("project_id", job.project_id).eq("state", "completed"),
-    db.from("ugc_product_sheets").select("document,status,product_name").eq("job_id", job.id)
+    db.from("ugc_product_sheets").select("id,sheet_version,document,status,product_name").eq("job_id", job.id)
       .eq("owner_user_id", user.id).eq("project_id", job.project_id).maybeSingle(),
   ]);
   if (history.error) throw new UgcProgressReadError("history", history.error);
@@ -149,6 +150,8 @@ export async function getOwnedUgcJobProgress(input: unknown): Promise<UgcJobProg
       views: { primary: view("primary"), angle: view("angle"), detail: view("detail") },
       sheetReady: !!document.assets.sheet, composing: events.some(event => event.type === "product_reference.composing") };
   }
+  try { evidence.referenceReview = await readReferenceReviewState(job, { character: sheet.data, product: productSheet.data }); }
+  catch { throw new UgcProgressReadError("review", {}); }
   return buildUgcProgress(job, evidence);
 }
 

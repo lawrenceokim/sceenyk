@@ -1,5 +1,14 @@
 # Development application identity
 
+## Milestone 6.5 — Reference Asset Review (2026-10-24)
+
+**Milestone 6 — Complete. Milestone 6.5 — Complete in source; manual 046/runtime/ownership/visual acceptance pending. Milestone 7 — Location Reference generation — Not Started.** This supersedes older stop points below. [Review UI, security, persistence and setup](reference-review.md).
+
+Manual 046 adds private versioned review roots and per-view replacement intent, owner/expected-version RPCs, approval/request events and Product/claim/downstream gates. Historical sheets/jobs/approvals are not backfilled or mutated. RLS/no browser grants and revoked old Product wrapper grants protect the gate. Apply manually after 045; source/empty-schema checks are distinct from live catalog/runtime acceptance.
+
+Input → Reference Analysis → Character Reference generation → Character Review/Approval → Product Reference generation → Product Review/Approval → Location Reference → Storyboard → Generation Package → Final Video → Preview. Existing cost-confirmation/accounting gates remain. Apply 046 manually after 045; no new environment/dependency. Render/Inngest remain disabled. No provider, worker/job, storage request, remote SQL, browser/screenshot, build or deployment executed. Stop after 6.5.
+
+
 ## Milestone 6 — Product / Prop Reference Sheet (2026-10-24)
 
 **Milestone 5 — Complete. Milestone 5.5 — Complete. Milestone 6 — Complete in source; manual migration/provider/runtime/visual acceptance pending. Milestone 7 — Location Reference generation — Not Started.** This section supersedes earlier M6-not-started stop points below. See [Product Sheet contract and manual setup](product-sheet.md).

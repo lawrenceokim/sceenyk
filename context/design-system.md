@@ -1,5 +1,14 @@
 # Sceenyk design system
 
+## Milestone 6.5 — Reference Asset Review (2026-10-24)
+
+**Milestone 6 — Complete. Milestone 6.5 — Complete in source; manual 046/runtime/ownership/visual acceptance pending. Milestone 7 — Location Reference generation — Not Started.** This supersedes older stop points below. [Review UI, security, persistence and setup](reference-review.md).
+
+Reference review reuses Studio Preview, compact theme-aware two/four-column cards and a larger full-row sheet. Small labelled refresh actions confirm requests; compact purple approval Buttons and shared Base UI dialogs retain focus/Escape, responsive containment, native scrolling and reduced-motion behavior. Tailwind only; no stylesheet or Studio layout redesign.
+
+Input → Reference Analysis → Character Reference generation → Character Review/Approval → Product Reference generation → Product Review/Approval → Location Reference → Storyboard → Generation Package → Final Video → Preview. Existing cost-confirmation/accounting gates remain. Apply 046 manually after 045; no new environment/dependency. Render/Inngest remain disabled. No provider, worker/job, storage request, remote SQL, browser/screenshot, build or deployment executed. Stop after 6.5.
+
+
 
 ## Milestone 5 — Character Sheet (2026-10-23)
 

@@ -1,5 +1,11 @@
 # Architecture Context
 
+## Milestone 6.5 — Reference Asset Review (2026-10-24)
+
+**Milestone 6 — Complete. Milestone 6.5 — Complete in source; manual 046/runtime/ownership/visual acceptance pending. Milestone 7 — Not Started.** [Review contract and manual setup](reference-review.md). Owner-only Studio reference inspection, explicit version-bound approval and per-view regeneration requests are implemented, with no provider/worker/job execution or Location implementation. Immutable Character/Product sheet documents remain asset truth; separate review/version and regeneration-request records hold human decisions and pending replacement intent. Historical assets default to ready for review, never approved. Original files/checkpoints remain intact; a requested replacement invalidates the effective final sheet and that group's approval. Future workers consume a versioned replacement plan and preserve unaffected assets; paid replacement/recomposition execution/publication is deferred.
+
+Short-lived signed same-origin previews check session/owner/version/fingerprint at issue and redemption; private R2 keys and storage URLs remain server-only. Existing Preview swaps to review only while generation is paused/failed and assets exist. Existing progress/active-only polling remains for real running work. Database Product admission requires Character approval; a shared two-group gate protects future Location/downstream admission. Approval/request actions never resume a job. Apply 046 manually after 045; no new environment variables/dependencies. Input → Reference Analysis → Character generation → Character Review/Approval → Product generation → Product Review/Approval → Location → Storyboard → Generation Package → Final Video → Preview. No credit changes; Render/Inngest remain disabled. No provider, worker/job, storage request, remote SQL, browser/screenshot suite, build or deployment executed. Stop after 6.5.
+
 ## Milestone 6 — Product / Prop Reference Sheet (2026-10-24)
 
 **Milestone 5 — Complete. Milestone 5.5 — Complete. Milestone 6 — Complete in source; manual migration/provider/runtime/visual acceptance pending. Milestone 7 — Location Reference generation — Not Started.** This current authorization supersedes older M6-not-started stop points below. See [Product Sheet contract and manual setup](product-sheet.md).

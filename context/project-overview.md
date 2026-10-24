@@ -1,5 +1,14 @@
 # Sceenyk project overview
 
+## Milestone 6.5 — Reference Asset Review (2026-10-24)
+
+**Milestone 6 — Complete. Milestone 6.5 — Complete in source; manual 046/runtime/ownership/visual acceptance pending. Milestone 7 — Location Reference generation — Not Started.** This supersedes older stop points below. [Review UI, security, persistence and setup](reference-review.md).
+
+Studio now supports private inspection and explicit Character/Product approval before downstream reference use. Completed historical assets start ready for review. Individual replacement requests preserve successful work and invalidate only their group's effective final sheet/approval. No generation is executed by review actions.
+
+Input → Reference Analysis → Character Reference generation → Character Review/Approval → Product Reference generation → Product Review/Approval → Location Reference → Storyboard → Generation Package → Final Video → Preview. Existing cost-confirmation/accounting gates remain. Apply 046 manually after 045; no new environment/dependency. Render/Inngest remain disabled. No provider, worker/job, storage request, remote SQL, browser/screenshot, build or deployment executed. Stop after 6.5.
+
+
 ## Milestone 6 — Product / Prop Reference Sheet (2026-10-24)
 
 **Milestone 5 — Complete. Milestone 5.5 — Complete. Milestone 6 — Complete in source; manual migration/provider/runtime/visual acceptance pending. Milestone 7 — Location Reference generation — Not Started.** This current authorization supersedes older M6-not-started stop points below. See [Product Sheet contract and manual setup](product-sheet.md).

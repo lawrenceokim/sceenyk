@@ -49,7 +49,7 @@ export function UgcProgressPreview({ progress }: { progress: UgcProgressState })
   if (job?.status === "completed") return null;
   const title = loading ? "Checking generation status" : !job ? "Generation status unavailable" :
     job.status === "failed" ? "Generation stopped" : job.status === "cancelled" ? "Generation cancelled" :
-    productCompletePause ? "Product reference complete" : characterCompletePause ? "Character reference complete" : stalled ? "Generation appears paused" : paused ? "Generation paused" : "Creating your video";
+    job.referenceReview?.regenerating ? "Regenerating reference" : productCompletePause ? "Product reference complete" : characterCompletePause ? "Character reference complete" : stalled ? "Generation appears paused" : paused ? "Generation paused" : "Creating your video";
   const processingMs = job ? ugcProcessingMilliseconds(job, now) : null;
   const expectation = job && !paused && active ? ugcStageExpectation(job.currentStage) : null;
 

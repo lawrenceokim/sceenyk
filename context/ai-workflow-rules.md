@@ -1,5 +1,14 @@
 # AI Workflow Rules
 
+## Milestone 6.5 — Reference Asset Review (2026-10-24)
+
+**Milestone 6 — Complete. Milestone 6.5 — Complete in source; manual 046/runtime/ownership/visual acceptance pending. Milestone 7 — Location Reference generation — Not Started.** This supersedes older stop points below. [Review UI, security, persistence and setup](reference-review.md).
+
+Authorize UI and secure review infrastructure only. No OpenAI/Higgsfield/provider call, worker/job execution/resume/retry/creation, regeneration, remote SQL, browser/screenshot suite, build, deploy or hosted enabling. Approve/request actions persist decisions only; future replacement execution/publication stays deferred. Run only minimal types/lint/schema/static checks; manual acceptance remains with the user.
+
+Input → Reference Analysis → Character Reference generation → Character Review/Approval → Product Reference generation → Product Review/Approval → Location Reference → Storyboard → Generation Package → Final Video → Preview. Existing cost-confirmation/accounting gates remain. Apply 046 manually after 045; no new environment/dependency. Render/Inngest remain disabled. No provider, worker/job, storage request, remote SQL, browser/screenshot, build or deployment executed. Stop after 6.5.
+
+
 ## Milestone 6 — Product / Prop Reference Sheet (2026-10-24)
 
 **Milestone 5 — Complete. Milestone 5.5 — Complete. Milestone 6 — Complete in source; manual migration/provider/runtime/visual acceptance pending. Milestone 7 — Location Reference generation — Not Started.** This current authorization supersedes older M6-not-started stop points below. See [Product Sheet contract and manual setup](product-sheet.md).

@@ -15,6 +15,7 @@ const executionOrder: UgcJobStage[] = ["queued", "validate_inputs", "analyze_ref
 
 // The server projects ONLY these safe checkpoint facts from private documents.
 export type UgcProgressEvidence = {
+  referenceReview?: UgcJobProgress["referenceReview"];
   product?: {
     name: string; complete: boolean; composing: boolean; sheetReady: boolean;
     views: Record<"primary" | "angle" | "detail", { started: boolean; ready: boolean; failed: boolean }>;
@@ -29,17 +30,20 @@ export type UgcProgressEvidence = {
 };
 
 export function buildUgcProgress(row: UgcJobRow, evidence: UgcProgressEvidence = {}, now = Date.now()): UgcJobProgress {
-  const paused = !!row.pause_reason || row.status === "awaiting_confirmation";
-  const characterCompletePause = row.pause_reason === "PRODUCT_REFERENCE_NOT_IMPLEMENTED";
-  const productCompletePause = row.pause_reason === "LOCATION_REFERENCE_NOT_IMPLEMENTED";
-  const currentStage = row.status === "failed" || row.status === "cancelled" ? row.resume_stage : row.stage;
+  const regeneration = ["queued", "running"].includes(row.status) ? evidence.referenceReview?.groups.find(group => group.state === "regenerating") : undefined;
+  const paused = !regeneration && (!!row.pause_reason || row.status === "awaiting_confirmation" ||
+    row.status === "queued" && !!evidence.referenceReview?.blocked);
+  const characterCompletePause = !regeneration && row.pause_reason === "PRODUCT_REFERENCE_NOT_IMPLEMENTED";
+  const productCompletePause = !regeneration && row.pause_reason === "LOCATION_REFERENCE_NOT_IMPLEMENTED";
+  const currentStage = regeneration ? `${regeneration.type}_reference` as UgcJobStage : row.status === "failed" || row.status === "cancelled" ? row.resume_stage : row.stage;
   const index = executionOrder.indexOf(currentStage);
   const stalled = row.status === "running" && (!row.heartbeat_at || !row.lease_expires_at ||
     now - Date.parse(row.heartbeat_at) >= ugcWorkerStaleMilliseconds || Date.parse(row.lease_expires_at) <= now);
   const stateForCurrent: UgcProgressStep["state"] = row.status === "failed" ? "failed" :
-    row.status === "cancelled" || row.pause_reason || stalled || row.status === "awaiting_confirmation" ? "paused" : "active";
+    row.status === "cancelled" || paused || stalled ? "paused" : "active";
   const steps: UgcProgressStep[] = workflow.map(([id, label]) => {
     if (id === "location_reference") return { id, label, state: "waiting" };
+    if (regeneration && id === currentStage) return { id, label, state: stateForCurrent };
     const completed = id === "complete" ? row.status === "completed" :
       id === "validate_inputs" && !!row.validation_completed_at ||
       id === "analyze_references" && !!evidence.analyses?.character && !!evidence.analyses.product ||
@@ -81,7 +85,20 @@ export function buildUgcProgress(row: UgcJobRow, evidence: UgcProgressEvidence =
       productSteps.push({ id, label, state: "waiting" });
     }
   }
-  const stageLabel = productCompletePause ? "Product reference complete" : characterCompletePause ? "Character reference complete" : workflow.find(([id]) => id === currentStage)?.[1] ??
+  if (regeneration) {
+    const substeps = regeneration.type === "character" ? characterSteps : productSteps;
+    for (const step of substeps) {
+      const asset = regeneration.assets.find(item => item.view === step.id);
+      if (!asset) continue;
+      if (asset.view === "sheet" && regeneration.sheetInvalidated) step.state = "waiting";
+      else if (asset.state === "regenerating") step.state = stateForCurrent;
+      else if (asset.state === "regeneration_requested") step.state = "waiting";
+      else if (asset.state === "failed") step.state = "failed";
+    }
+  }
+  const stageLabel = paused && evidence.referenceReview?.available ? evidence.referenceReview.locationEligible ? "References approved" :
+    evidence.referenceReview.groups.some(group => group.sheetInvalidated) ? "Regeneration requested" : "Reference review" :
+    productCompletePause ? "Product reference complete" : characterCompletePause ? "Character reference complete" : workflow.find(([id]) => id === currentStage)?.[1] ??
     (currentStage === "cost_review" || currentStage === "awaiting_confirmation" ? "Review generation cost" : "Waiting for worker");
   let message = productCompletePause ? "Your character and product references are ready. Location generation has not started yet." :
     characterCompletePause ? "Your character reference is ready. Product Reference generation has not started yet." :
@@ -97,6 +114,10 @@ export function buildUgcProgress(row: UgcJobRow, evidence: UgcProgressEvidence =
     `Building the product sheet for ${product.name}` : `Generating the ${productAction.label.toLowerCase()} for ${product.name}`;
   if (row.cancellation_requested_at && row.status === "running") message = "Cancellation requested. Waiting for a safe stopping point.";
   if (row.safe_error_message) message = row.safe_error_message;
+  if (paused && evidence.referenceReview?.available) message = evidence.referenceReview.locationEligible ?
+    "References approved. Location generation has not started yet." :
+    evidence.referenceReview.groups.some(group => group.sheetInvalidated) ? "Regeneration requested. Reference generation remains paused." :
+    "Review your reference assets before continuing.";
   return {
     id: row.id, status: row.status, stage: row.stage, currentStage, stageLabel, message,
     createdAt: row.created_at, updatedAt: row.updated_at, startedAt: row.started_at,
@@ -104,6 +125,7 @@ export function buildUgcProgress(row: UgcJobRow, evidence: UgcProgressEvidence =
     cancellationRequested: !!row.cancellation_requested_at, paused,
     failure: row.error_code && row.safe_error_message ? { code: row.error_code, message: row.safe_error_message } : null,
     steps, characterSteps, productSteps, events: evidence.events ?? [],
+    ...(evidence.referenceReview ? { referenceReview: evidence.referenceReview } : {}),
     worker: { heartbeatAt: row.heartbeat_at, leaseExpiresAt: row.lease_expires_at,
       state: row.status !== "running" ? "inactive" : stalled ? "stalled" : "healthy" },
     serverNow: new Date(now).toISOString(),

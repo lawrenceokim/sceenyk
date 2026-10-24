@@ -1,5 +1,14 @@
 # Product / Prop Reference Sheet — Milestone 6
 
+## Milestone 6.5 — Reference Asset Review (2026-10-24)
+
+**Milestone 6 — Complete. Milestone 6.5 — Complete in source; manual 046/runtime/ownership/visual acceptance pending. Milestone 7 — Location Reference generation — Not Started.** This supersedes older stop points below. [Review UI, security, persistence and setup](reference-review.md).
+
+Product Original/primary/angle/detail/sheet can now be inspected and approved. Sunburst Image Edit generation remains unchanged. Current Character approval gates Product resume/prepare; current approvals for both references gate future downstream eligibility. Individual replacement requests preserve paid views and invalidate Product Sheet/approval; execution/publication stays deferred.
+
+Input → Reference Analysis → Character Reference generation → Character Review/Approval → Product Reference generation → Product Review/Approval → Location Reference → Storyboard → Generation Package → Final Video → Preview. Existing cost-confirmation/accounting gates remain. Apply 046 manually after 045; no new environment/dependency. Render/Inngest remain disabled. No provider, worker/job, storage request, remote SQL, browser/screenshot, build or deployment executed. Stop after 6.5.
+
+
 **Milestone 5 — Complete. Milestone 5.5 — Complete. Milestone 6 — Complete in source; manual migration, provider, runtime, fidelity and UI acceptance pending. Milestone 7 — Location Reference generation — Not Started.** The user's approved OpenAI Product model supersedes the earlier SOUL2 suitability stop. Character remains on its unchanged Higgsfield SOUL2 pipeline. No real provider call, worker, job, private media operation, deployment or remote SQL execution was performed during implementation.
 
 Input → OpenAI Reference Analysis → Character Reference Sheet → Product / Prop Reference Sheet → Location Reference → Structured ChatGPT Storyboard → Generation Package → Final Video → Studio Preview. Cost review/explicit confirmation and existing accounting gates still precede future paid video execution. No credit deduction or accounting mutation is introduced by M6.

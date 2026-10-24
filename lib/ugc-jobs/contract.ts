@@ -1,4 +1,5 @@
 import { productFailureCodes } from "@/lib/product-sheet/contract";
+import type { ReferenceReviewSnapshot } from "@/lib/reference-review/contract";
 
 // Shared UGC progress/state vocabulary. SQL migrations mirror this graph.
 export const ugcJobStatuses = ["queued", "running", "awaiting_confirmation", "completed", "failed", "cancelled"] as const;
@@ -105,6 +106,7 @@ export type UgcJobProgress = {
   worker: { heartbeatAt: string | null; leaseExpiresAt: string | null; state: "healthy" | "stalled" | "inactive" };
   serverNow: string;
   timing: { elapsedMs: number | null; runningSince: string | null; pausedAt: string | null };
+  referenceReview?: ReferenceReviewSnapshot;
 };
 export type UgcProgressStep = { id: string; label: string; state: "waiting" | "active" | "completed" | "failed" | "paused" };
 export type UgcProgressEvent = {
@@ -118,6 +120,6 @@ export function isUgcJobActive(status: UgcJobStatus) {
 }
 // A paused job still occupies its request; it must not enable another enqueue.
 // Polling is a separate decision from that non-terminal admission guard.
-export function shouldPollUgcProgress(job: Pick<UgcJobProgress, "status" | "paused">) {
-  return (job.status === "queued" || job.status === "running") && !job.paused;
+export function shouldPollUgcProgress(job: Pick<UgcJobProgress, "status" | "paused" | "referenceReview">) {
+  return (job.status === "queued" || job.status === "running") && (!!job.referenceReview?.regenerating || !job.paused);
 }
