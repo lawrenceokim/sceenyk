@@ -1,5 +1,21 @@
 # UGC Character Reference Sheet — Milestone 5
 
+## Paused Character-complete progress refinement (2026-10-24)
+
+Long-running active workflows may poll, but paused and terminal workflows must not continuously poll. At the existing Product development pause, show Character reference complete / Generation paused / Your character reference is ready. Product Reference generation has not started yet. Keep identity/front/back/face/sheet checks visible; Product and later stages wait. Check status and visible page/tab return only read once; future explicit server-confirmed resume refreshes the same job and restores polling without deleting checkpoints or making a new job. Historical timing cannot establish active processing, so this job shows Started earlier. Manual 044 records leased active processing only for future new jobs; no historical backfill or current-job retry/mutation. No providers, worker/job, browser suite, deployment or SQL execution during this refinement. M6 remains Not Started.
+
+## M5.5 regression follow-up — current job already Character ready (2026-10-24)
+
+User confirms 043 applied. Fresh read-only inspection of the supplied job now finds `queued / product_reference / PRODUCT_REFERENCE_NOT_IMPLEMENTED`, attempts 3/3, completed Soul identity/front/back/face operations, a completed Character sheet with all four saved asset descriptors and both completed analyses. The older front-failure evidence below is historical. No provider request, bytes download, recovery RPC, job change or worker execution occurred in this inspection.
+
+The Character-output recovery command correctly refuses this already-successful stage; it is intended only for eligible failed Character output with remaining attempts. No Character resume command is appropriate for this job now, and Product remains M6 Not Started. Worker startup now reports UGC_CHARACTER_ALREADY_READY instead of hiding the refusal behind its generic catch, plus safe phase/reason diagnostics for other startup failures. No attempt reset, SQL repair, new migration or recovery bypass is added. Studio polling now reads private JSON independently of its route rendering; [full regression evidence](generation-jobs.md#m55-regression-and-worker-startup-diagnosis-2026-10-24).
+
+## Milestone 5.5 — live Character progress (2026-10-24)
+
+**Live Generation Progress UI Complete in source; manual 043/runtime/visual acceptance pending. Milestone 6 remains Not Started.** Studio now restores the owned Project job and shows real Soul identity/front/back/face/sheet substeps in Preview. Saved operations establish activity; only persisted normalized assets mark views ready. The existing failed job therefore can show identity prepared and front failed when no front asset was saved, even if the provider operation completed. No old checkpoint/event/job is rewritten or retried.
+
+Manual [043](../supabase/migrations/20261024004300_ugc_live_progress.sql), after 041/042, emits semantic append-only progress from the existing checkpoint transaction and a successful real composition checkpoint. It preserves detailed host validation, download/decode, submission/poll metadata, per-view and composition diagnostics in private checkpoints/operator logs. Those technical details are never serialized to normal users; safe fixed messages and view/stage states are enough. [Read model, polling, heartbeat, elapsed-time and setup contract](generation-jobs.md#milestone-55--live-generation-progress-2026-10-24). No provider, worker/job, retry, migration or private storage operation was run by Codex.
+
 2026-10-23: **Milestone 5 — Complete in source. Manual migration/provider/runtime/visual acceptance pending. Exact next: Milestone 6 — Product / Prop Reference Sheet generation. Not started.** No real provider call, private object read/write, worker/job execution, remote migration application, deployment or browser/integration/screenshot suite was run by Codex. Offline in-memory schema validation through 041 and a second 041 DDL pass succeeded without jobs/external calls. Migration 039 is applied according to the user; 040 must also be applied before new named snapshots and 041. Historical M4/name documentation below other context sections remains historical.
 
 ## Front output failure and controlled recovery (2026-10-24)

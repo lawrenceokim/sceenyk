@@ -1,5 +1,15 @@
 # UGC V1 workflow contract
 
+## Milestone 5.5 — persistent live Preview (2026-10-24)
+
+**Milestone 5.5 — Live Generation Progress UI — Complete in source; 043 applied per user; manual 044/new-job-timing/runtime/UI acceptance pending. Milestone 6 remains Not Started.** This section supersedes historical statements deferring all progress UI to Milestone 10. Every long-running Sceenyk generation workflow must provide persistent live progress feedback from real server-side state. The user must never be left staring at an unexplained empty Preview while a background workflow is running.
+
+Studio restores the latest owned active job on Project reopen, polls its persisted progress every 2.5 seconds while unpaused queued/running/provider-waiting, and retains safe terminal failure details. Long-running active workflows may poll, but paused and terminal workflows must not continuously poll. Paused jobs refresh once on Check status or visible page/tab return; future explicit server-confirmed resume calls refreshAfterResume to read the same job and restart polling only after an actual active response. No resumed job loses completed checkpoints. Main presentation: validation → analyses → Character → Product → Location (pending, no internal stage yet) → storyboard → generation package → final video → finalization → Complete. Cost review/awaiting confirmation remain explicit pauses in the existing internal graph; no stage, paid operation or confirmation gate is bypassed. Future unimplemented work stays waiting, never timed into completion.
+
+Character substeps use persisted Soul identity state, per-view operations and saved front/back/face/sheet assets. Detailed fixed-copy events are added transactionally by applied 043; historical checkpoints work without rewriting the job. A Character-complete Product pause shows Character reference complete / Generation paused / Your character reference is ready. Product Reference generation has not started yet. Product/later steps remain waiting. Elapsed processing uses nullable cumulative leased running time from manual 044; it freezes at pause, excludes queued/development downtime and shows Started earlier for old/unreconstructable history. Original started_at is not active time. Worker warnings use heartbeat silence of 90 seconds or lease expiry, not time since provider progress. Failed substeps retain prior completions and expose only the safe existing job error. No retry/new generation is triggered by reads, navigation or refresh. [Read model, event names and manual setup](generation-jobs.md#milestone-55--live-generation-progress-2026-10-24).
+
+Completion removes progress and returns to the existing player/output branch without a page refresh. The existing final-video API accepts legacy accounted jobs only; actual canonical UGC output persistence/player linkage remains the later finalization/playback milestone. Do not falsely present a Character Sheet as a final video or invent a UGC output table here. Render/Inngest remain disabled; only the user's local worker executes, and no worker/provider/job was run by Codex.
+
 Approved 2026-10-23. **Milestones 1–5 — Complete in source; manual provider/runtime/visual acceptance pending. Exact next: Milestone 6 — Product / Prop Reference Sheet generation. Not started.** [Character Sheet contract/setup](character-sheet.md) supersedes older M5-not-started/provider assumptions below. Migration 039 is user-confirmed applied; verify/apply 040 then new 041 manually. Historical evidence remains intact; Freestyle stays separate.
 
 Approved complete flow: Input → validation → OpenAI reference analysis → SOUL2 Character Sheet → Product Sheet → one primary Location → structured ChatGPT storyboard/script + stable voice specification → generation package → cost review/explicit confirmation → final video → finalization → Studio Preview. Only Character generation is newly implemented. Product/Location/storyboard/video, user charging and template publication remain deferred. Render/Inngest disabled; only the manually started local worker executes. No real provider calls or jobs were run by Codex.
@@ -221,12 +231,13 @@ Milestone 3 uses source/document review, minimal TypeScript/focused ESLint and S
 | 3 | UGC input validation + generation readiness, actual Studio enums/supported narration, immutable v2 snapshot and safe validation pause | Complete in source; manual 037/runtime acceptance pending |
 | 4 | OpenAI Responses reference analysis, strict visual schemas, private checkpoints/usage and explicit local-development opt-in | Complete in source; manual 038/039/provider/runtime acceptance pending |
 | 5 | SOUL2 Character Reference Sheet generation, private views/composition and durable local checkpoints | Complete in source; manual 041/provider/runtime/visual acceptance pending |
+| 5.5 | Persistent live Preview progress, Character substeps, safe job observability and refresh/reopen recovery | Complete in source; manual 043/runtime/visual acceptance pending |
 | 6 | Product / Prop Reference Sheet generation | Not Started — exact next milestone |
 | Later preparation | One primary generated Location Reference Sheet/asset, persisted and reused across scenes | Not Started; stage/schema belongs to a later scoped milestone |
 | 7 | Structured ChatGPT storyboard/script, stable voice description and semantic validation | Not Started |
 | 8 | Normalized generation package + existing cost review integration | Not Started |
 | 9 | Approved video-provider integration after explicit cost confirmation | Not Started |
-| 10 | Real Preview progress + final private video playback | Not Started |
+| 10 | Final private UGC video persistence/player linkage; persistent live progress moved to M5.5 | Not Started |
 | 11 | UGC Template snapshot/adoption verification, public-safe slot projection and explicit required counts | Not Started |
 | 12 | Manual local end-to-end acceptance performed by the user | Not Started |
 | Later | Explicitly approved local → Render transition; review whether Inngest is needed | Deferred |

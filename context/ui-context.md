@@ -1,5 +1,19 @@
 # UI Context
 
+## Milestone 5.5 — live Preview progress (2026-10-24)
+
+**Complete in source; manual UI/runtime acceptance pending. Milestone 6 remains Not Started.** Every long-running Sceenyk generation workflow must provide persistent live progress feedback from real server-side state. The user must never be left staring at an unexplained empty Preview while a background workflow is running.
+
+Active UGC jobs replace the empty/source Preview with a centered compact workflow list, current safe action, static human-friendly expectation and persisted-timestamp elapsed time. The ten planned stages include Location as waiting only. Character expands Soul identity, front/back/face and sheet substeps from real checkpoints; a provider-completed image is not ready until its normalized private asset is saved. Completed rows retain checks on failure; failed stage/substep and safe error remain visible. Cancellation, intentional development pause, awaiting confirmation, missing worker and failed status reads are distinct from healthy processing. Check status only reads; no paid-work retry action is added.
+
+Progress refresh is a local JSON fetch/state update, separate from initial Studio loading. Sources, Stage frame, Properties and scroll positions stay mounted; retain last progress while waiting or on error and show only a small Unable to refresh generation status message. Never use the page skeleton, route navigation/refresh or a changed workspace key for a poll. User confirms 043 applied; regression fix needs no new migration, with manual stable-shell acceptance pending.
+
+Paused-state refinement: Long-running active workflows may poll, but paused and terminal workflows must not continuously poll. A paused job retains Check status and refreshes once on visible page/tab return; confirmed resume refreshes the existing job and only a real active response restarts polling. At the intentional Product boundary show **Character reference complete**, **Generation paused**, and **Your character reference is ready. Product Reference generation has not started yet.** Keep all completed Character substeps; Product reference and later rows stay waiting, with no Creating product reference heading/claim. The toolbar shares the completed-Character stage label.
+
+Elapsed means persisted leased processing time, frozen at pause, not wall time since the original start. Historical/unknown timing shows **Started earlier**; do not display hours of stopped development as active generation. New-job timing comes from manual 044, while existing jobs remain unknown without backfill. Local timer ticks run only for unpaused running jobs and never move stages; queued/paused/terminal time is excluded.
+
+Use Tailwind/theme colors, subtle success/error/warning icons, purple active spinner, polite message announcements and reduced-motion-aware fades/color transitions. Timer ticks are outside the live region. Preview remains above Properties on mobile; wrapped text/min-width containment and a native vertical progress scroller fit the existing bounded Stage without horizontal overflow or panel redesign. Completion removes progress and returns control to the existing Preview/player branch; actual UGC final-output linkage remains with future finalization, not M5.5. Manual visual acceptance remains pending; no browser/screenshot suite was run.
+
 
 ## Milestone 5 — Character Sheet (2026-10-23)
 

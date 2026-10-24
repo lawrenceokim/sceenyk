@@ -1,5 +1,9 @@
 # Development application identity
 
+## M5.5 processing-time metadata refinement (2026-10-24)
+
+Manual-only [044](../supabase/migrations/20261024004400_ugc_processing_time.sql), after user-confirmed 043, adds nullable ugc_generation_jobs.processing_elapsed_ms (bigint) and processing_updated_at (timestamptz) plus an internal before-write timing trigger. It checks existing status/pause/lease/identity/progress prerequisites, preserves all named identity/event/recovery/RLS/grant behavior, and has no new table, job UPDATE/backfill or provider/accounting operation. New inserts initialize timing; existing claim/heartbeat/transition writes accumulate only leased running intervals and freeze queued/paused/terminal/confirmation time, capping late recovery at the old lease expiry. Historical rows stay unknown/NULL even on later resume and display Started earlier; original start timestamps remain unchanged. Safe progress reads tolerate unapplied 044 and expose only elapsed/anchor/pause timestamps. No SQL was run. Long-running active workflows may poll, but paused and terminal workflows must not continuously poll. M6 remains Not Started.
+
 
 ## Milestone 5 — Character Sheet (2026-10-23)
 

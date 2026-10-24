@@ -79,10 +79,12 @@ export type UgcJobRow = {
   input_snapshot: Record<string, unknown>; metadata: Record<string, unknown>;
   created_at: string; updated_at: string; started_at: string | null;
   completed_at: string | null; failed_at: string | null; cancelled_at: string | null;
+  // Absent before manual 044; null on historical jobs whose active time is unknown.
+  processing_elapsed_ms?: number | null; processing_updated_at?: string | null;
 };
 export type UgcJobEventRow = {
   id: number; job_id: string; status: UgcJobStatus; stage: UgcJobStage;
-  event_type: string; safe_message: string; metadata: { attempt: number; resumeStage: UgcJobStage };
+  event_type: string; safe_message: string; metadata: { attempt?: number; resumeStage?: UgcJobStage; view?: "front" | "back" | "face" };
   created_at: string;
 };
 export type UgcJobProgress = {
@@ -91,4 +93,25 @@ export type UgcJobProgress = {
   failedAt: string | null; cancelledAt: string | null; cancellationRequested: boolean;
   paused: boolean;
   failure: { code: UgcJobErrorCode; message: string } | null;
+  currentStage: UgcJobStage; stageLabel: string;
+  steps: UgcProgressStep[]; characterSteps: UgcProgressStep[];
+  events: UgcProgressEvent[];
+  worker: { heartbeatAt: string | null; leaseExpiresAt: string | null; state: "healthy" | "stalled" | "inactive" };
+  serverNow: string;
+  timing: { elapsedMs: number | null; runningSince: string | null; pausedAt: string | null };
 };
+export type UgcProgressStep = { id: string; label: string; state: "waiting" | "active" | "completed" | "failed" | "paused" };
+export type UgcProgressEvent = {
+  id: number; jobId: string; stage: UgcJobStage; type: string; message: string; at: string;
+  view?: "front" | "back" | "face";
+};
+export const ugcProgressPollMilliseconds = 2_500;
+export const ugcWorkerStaleMilliseconds = 90_000;
+export function isUgcJobActive(status: UgcJobStatus) {
+  return status === "queued" || status === "running" || status === "awaiting_confirmation";
+}
+// A paused job still occupies its request; it must not enable another enqueue.
+// Polling is a separate decision from that non-terminal admission guard.
+export function shouldPollUgcProgress(job: Pick<UgcJobProgress, "status" | "paused">) {
+  return (job.status === "queued" || job.status === "running") && !job.paused;
+}

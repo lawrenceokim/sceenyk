@@ -14,6 +14,8 @@ import type { ProjectDraft, SavedProject } from "@/lib/projects/types";
 import type { GenerationJob } from "@/lib/generation/types";
 import { ProjectGeneration } from "./project-generation";
 import { UgcGenerationControls } from "./ugc-generation-controls";
+import { useUgcProgress } from "./use-ugc-progress";
+import { UgcProgressPreview } from "./ugc-progress-preview";
 import { CategorySelector } from "./category-selector";
 import { StudioReferenceSources } from "./studio-reference-sources";
 import { collectStudioSources, prepareStudioInputs, studioReferenceImages } from "./studio-inputs";
@@ -160,6 +162,9 @@ function WorkspaceEditor({
     initialProject?.title ?? restoredDraft?.brief.title ?? "Untitled Project",
   );
   const [projectId, setProjectId] = useState(initialProject?.id ?? null);
+  const ugcProgress = useUgcProgress(projectId, signedIn && authReady);
+  const showUgcProgress = creationType === "ugc" && (ugcProgress.loading || ugcProgress.error && !ugcProgress.job ||
+    !!ugcProgress.job && ugcProgress.job.status !== "completed");
   const attemptId = useRef(initialProject?.id ?? null);
   const saveInFlight = useRef<Promise<string | null> | null>(null);
   const persistedId = useRef(initialProject?.id ?? null);
@@ -405,6 +410,7 @@ function WorkspaceEditor({
           hasLocalFiles={freestyle.files.length > 0}
           creationType={creationType}
           ugcControls={studioInputs.creationType === "ugc" ? <UgcGenerationControls
+            progress={ugcProgress}
             projectId={projectId} revision={JSON.stringify([brief, studioInputs.generationValidation, mediaUpload.assets, referenceNameValues])}
             localIssues={studioInputs.generationValidation.issues} dirty={dirty || saveState.status === "saving"}
             hasLocalReferences={selectedFiles.some(file => file.studioRole === "character" || file.studioRole === "product")}
@@ -503,18 +509,18 @@ function WorkspaceEditor({
       studio-toolbar-status [&&]:block [&&]:max-w-[calc(50%_-_70px)] [&&]:min-w-[0] [&&]:overflow-hidden [&&]:text-ellipsis
       [&&]:whitespace-nowrap [&&]:text-[length:12px] [&&]:text-[color:var(--muted-foreground)] max-599:[&&]:hidden
       container-max-530:[&&]:hidden
-    `} role="status">{label}</span>
+    `} role="status">{creationType === "ugc" && ugcProgress.job ? ugcProgress.job.stageLabel : label}</span>
                     {save}
                   </>
                 }
                 stage={
                   <>
-                    {output}
-                    {(!output || activeMedia || activeAsset) && (
+                    {showUgcProgress ? <UgcProgressPreview progress={ugcProgress} /> : output}
+                    {!showUgcProgress && (!output || activeMedia || activeAsset) && (
                       <CreationPreview settings={settings} creationType={creationType} ugcType={ugcType}
                         media={activeMedia} asset={activeAsset} />
                     )}
-                    <div className="hidden md:block">{status}</div>
+                    {creationType !== "ugc" && <div className="hidden md:block">{status}</div>}
                   </>
                 }
                 properties={

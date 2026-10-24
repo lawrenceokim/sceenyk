@@ -1,5 +1,17 @@
 # AI Workflow Rules
 
+## Milestone 5.5 — live progress standard (2026-10-24)
+
+**Milestone 5.5 — Live Generation Progress UI — Complete in source; manual migration/runtime/visual acceptance pending. Milestone 6 remains Not Started. Stop after M5.5.** Every long-running Sceenyk generation workflow must provide persistent live progress feedback from real server-side state. The user must never be left staring at an unexplained empty Preview while a background workflow is running.
+
+Extend existing owned jobs/events/checkpoints and safe reads. All active/completed indicators require persisted evidence; unimplemented Location/future stages stay waiting. Poll moderately only for known active jobs; recovery reads the latest active Project job and never creates/resumes/retries work. Distinguish intentional pause, healthy provider wait, stale heartbeat/lease, read failure and workflow failure. Preserve successful substeps and private diagnostics; no arbitrary animation events, client-authoritative progress, raw provider data or generic paid-work retry.
+
+Long-running active workflows may poll, but paused and terminal workflows must not continuously poll. Intentional pauses/awaiting confirmation stop the timer; Check status and visible page/tab return only observe once. Future explicit resume handlers call the read-only refreshAfterResume after server confirmation; do not invent a Product resume or reset completed checkpoints. New processing time is persisted by manual 044 through existing leased running writes; queued/paused/stopped-development time is excluded and historical jobs stay unknown/Started earlier. Do not backfill/retry/change the existing Character-complete job. Paused Product copy must say Character reference complete / Generation paused and explicitly say Product has not started. This refinement authorizes progress state/timing only, not M6, workers/provider calls or SQL application.
+
+Regression rule: progress polling uses a private authenticated JSON read endpoint, independent of the Studio route action/RSC lifecycle. Keep last successful progress/shell mounted on refresh/errors, use one non-overlapping completion-scheduled loop, abort on cleanup and coalesce manual checks. Do not sync profiles or upsert identity on polling reads. Investigate actual logs/trace before attributing generic Suspense errors; label absent upstream exceptions unconfirmed. Worker startup must retain safe allowlisted phase/reason codes and refuse already-completed/ineligible recovery without changing jobs. A historical resume command is not permission to replay completed work. 043 is user-confirmed applied; no new SQL is required by this regression fix.
+
+Only minimal TypeScript, focused lint and source/static migration checks are authorized here. User performs runtime/mobile/theme/ownership/reopen acceptance. Do not start the worker, create/retry any job (including the supplied existing job), call any provider/private media, apply SQL, enable Render/Inngest, build, deploy or begin M6. [Worker/job setup](generation-jobs.md#milestone-55--live-generation-progress-2026-10-24). Completion hands Preview back to its existing output owner; actual UGC video finalization remains a later scoped milestone.
+
 
 ## Milestone 5 — Character Sheet (2026-10-23)
 
