@@ -15,8 +15,7 @@ import type { GenerationJob } from "@/lib/generation/types";
 import { ProjectGeneration } from "./project-generation";
 import { UgcGenerationControls } from "./ugc-generation-controls";
 import { useUgcProgress } from "./use-ugc-progress";
-import { UgcProgressPreview } from "./ugc-progress-preview";
-import { ReferenceReviewPreview } from "./reference-review-preview";
+import { UgcWorkflowPreview } from "./ugc-workflow-preview";
 import { CategorySelector } from "./category-selector";
 import { StudioReferenceSources } from "./studio-reference-sources";
 import { collectStudioSources, prepareStudioInputs, studioReferenceImages } from "./studio-inputs";
@@ -165,10 +164,7 @@ function WorkspaceEditor({
   const [projectId, setProjectId] = useState(initialProject?.id ?? null);
   const ugcProgress = useUgcProgress(projectId, signedIn && authReady);
   const showUgcProgress = creationType === "ugc" && (ugcProgress.loading || ugcProgress.error && !ugcProgress.job ||
-    !!ugcProgress.job && ugcProgress.job.status !== "completed");
-  const reviewJob = ugcProgress.job;
-  const showReferenceReview = creationType === "ugc" && !!projectId && !!reviewJob?.referenceReview?.available &&
-    !reviewJob.referenceReview.regenerating && (reviewJob.paused || reviewJob.status === "failed") && reviewJob.status !== "running";
+    !!ugcProgress.job);
   const attemptId = useRef(initialProject?.id ?? null);
   const saveInFlight = useRef<Promise<string | null> | null>(null);
   const persistedId = useRef(initialProject?.id ?? null);
@@ -519,10 +515,8 @@ function WorkspaceEditor({
                 }
                 stage={
                   <>
-                    {showReferenceReview && projectId && reviewJob ? <ReferenceReviewPreview key={reviewJob.id} projectId={projectId} job={reviewJob}
-                      onSaved={review => ugcProgress.accept({ ...reviewJob, referenceReview: review })} checkStatus={ugcProgress.checkStatus} /> :
-                      showUgcProgress ? <UgcProgressPreview progress={ugcProgress} /> : output}
-                    {!showReferenceReview && !showUgcProgress && (!output || activeMedia || activeAsset) && (
+                    {showUgcProgress && projectId ? <UgcWorkflowPreview key={projectId} projectId={projectId} progress={ugcProgress} /> : output}
+                    {!showUgcProgress && (!output || activeMedia || activeAsset) && (
                       <CreationPreview settings={settings} creationType={creationType} ugcType={ugcType}
                         media={activeMedia} asset={activeAsset} />
                     )}

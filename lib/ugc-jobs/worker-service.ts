@@ -1,5 +1,6 @@
 import "server-only";
 import { createDatabaseClient } from "@/lib/db/server";
+import { UgcWorkerDatabaseError } from "./database-diagnostics";
 import type { UgcGenerationSnapshot } from "./input-contract";
 import {
   isUgcTransitionAllowed, ugcLeaseSeconds, ugcNextStage,
@@ -8,9 +9,11 @@ import {
 
 // Trusted worker RPCs only; no Server Action or caller-supplied owner identity.
 export async function claimUgcJob(workerId: string): Promise<UgcJobRow | null> {
-  const { data, error } = await createDatabaseClient().rpc("ugc_claim_job", { p_worker_id: workerId });
-  if (error) throw new Error("UGC_CLAIM_UNAVAILABLE");
-  return data;
+  try {
+    const { data, error, status } = await createDatabaseClient().rpc("ugc_claim_job", { p_worker_id: workerId });
+    if (error) throw new UgcWorkerDatabaseError(error, "job_claim", status);
+    return data;
+  } catch (error) { throw error instanceof UgcWorkerDatabaseError ? error : new UgcWorkerDatabaseError(error, "job_claim"); }
 }
 
 export type UgcWorkerOperation = "heartbeat" | "advance" | "fail" | "release" | "cancel";

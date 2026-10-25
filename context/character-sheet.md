@@ -1,5 +1,13 @@
 # UGC Character Reference Sheet — Milestone 5
 
+## Milestone 6.6 — Reference Regeneration + Review UX Correction (2026-10-24)
+
+**Milestone 6.6 — Reference Regeneration + Review UX Correction — Complete in source. Manual migration/provider/runtime/ownership/visual acceptance pending. Milestone 7 — Not Started.** This section supersedes the historical 6.5 request-only execution and exclusive Preview rules below. [Current execution, versioning and manual setup](reference-review.md#milestone-66-execution-and-review-contract).
+
+Current visual contract: Front = ONE headless front-body/outfit image (neck/body down, full outfit/proportions/footwear); Back = ONE rear full-body reference in the same wardrobe/proportions; Face = ONE close-up face/head with original identity/hairstyle. Individual provider prompts explicitly forbid sheets/contact sheets/multiple poses/insets/additional views/text. Sceenyk composes exactly those three inputs on #b8b8b8, three contained 768x1152 panels in a 2400x1216 PNG, no original or text. New documents use schemaVersion 2, character-sheet-v2 and gray-front-back-face-only-v2 provenance, with character-v2 storage. V1 remains readable; in-flight v1 documents retain their identity and paths while any new submission uses corrected prompts. Completed historical sheets are immutable. Recomposition publishes visual version 2 on the review root and never rewrites base documents. Unrequested historical inputs retain their original pixels and may contain old visual defects.
+
+Regeneration reuses the canonical completed Soul ID, saved analysis and wardrobe; it generates only the requested view with a deterministic request seed. Missing identity fails safely without training. Known accepted/completed requests resume status/download; unknown intents and terminal provider failures require reconciliation. No provider call or asset regeneration was executed during implementation.
+
 ## Milestone 6.5 — Reference Asset Review (2026-10-24)
 
 **Milestone 6 — Complete. Milestone 6.5 — Complete in source; manual 046/runtime/ownership/visual acceptance pending. Milestone 7 — Location Reference generation — Not Started.** This supersedes older stop points below. [Review UI, security, persistence and setup](reference-review.md).

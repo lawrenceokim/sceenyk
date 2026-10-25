@@ -1,5 +1,11 @@
 # Sceenyk design system
 
+## Milestone 6.6 — Reference Regeneration + Review UX Correction (2026-10-24)
+
+**Milestone 6.6 — Reference Regeneration + Review UX Correction — Complete in source. Manual migration/provider/runtime/ownership/visual acceptance pending. Milestone 7 — Not Started.** This section supersedes the historical 6.5 request-only execution and exclusive Preview rules below. [Current execution, versioning and manual setup](reference-review.md#milestone-66-execution-and-review-contract).
+
+Preview uses one compact theme-token Progress | References segmented control with real buttons, aria-pressed, keyboard focus and coarse-pointer sizing. Both views fill the existing bounded Preview with native scrolling. Preserve restrained motion/reduced-motion support, light/dark surfaces, responsive reference cards and Base UI dialogs. Tailwind only; no new CSS.
+
 ## Milestone 6.5 — Reference Asset Review (2026-10-24)
 
 **Milestone 6 — Complete. Milestone 6.5 — Complete in source; manual 046/runtime/ownership/visual acceptance pending. Milestone 7 — Location Reference generation — Not Started.** This supersedes older stop points below. [Review UI, security, persistence and setup](reference-review.md).

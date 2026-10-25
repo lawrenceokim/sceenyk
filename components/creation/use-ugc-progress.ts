@@ -33,6 +33,8 @@ export function useUgcProgress(projectId: string | null, authenticated: boolean)
     let requested = false;
     let version = 0;
     let discover = true;
+    let waitingKey = "";
+    let waitingChecks = 0;
     let timer: ReturnType<typeof setTimeout> | undefined;
     let controller: AbortController | undefined;
     const read = async () => {
@@ -70,13 +72,26 @@ export function useUgcProgress(projectId: string | null, authenticated: boolean)
         latest.current = snapshot;
         setState(snapshot);
       }
+      const saved = latest.current?.scope === scope ? latest.current.job : null;
+      const observedNow = saved ? Date.parse(saved.serverNow) + Math.max(0, Date.now() - (latest.current?.receivedAt ?? Date.now())) : Date.now();
+      const liveRegeneration = saved?.referenceReview?.groups.some(group => group.execution?.state === "running" &&
+        !!group.execution.leaseExpiresAt && Date.parse(group.execution.leaseExpiresAt) > observedNow);
+      const waiting = saved && !["completed", "cancelled"].includes(saved.status) && saved.referenceReview?.groups.find(group =>
+        group.execution?.state === "waiting" || group.execution?.state === "stalled" ||
+        group.execution?.state === "running" && !!group.execution.leaseExpiresAt && Date.parse(group.execution.leaseExpiresAt) <= observedNow);
       if (requested) {
         requested = false;
         void read();
-      } else if (latest.current?.scope === scope && latest.current.job && shouldPollUgcProgress(latest.current.job)) {
+      } else if (saved && shouldPollUgcProgress(saved) && (!waiting || liveRegeneration)) {
         // Wait after settlement, including failures. Never use setInterval or
         // change the route/shell loading state during background refresh.
         timer = setTimeout(() => void read(), ugcProgressPollMilliseconds);
+      } else {
+        const key = waiting ? `${saved?.id}:${waiting.type}:${waiting.version}` : "";
+        if (key !== waitingKey) { waitingKey = key; waitingChecks = 0; }
+        // Two minutes of slow discovery, then focus/manual checks only. A queued
+        // request never masquerades as running work or polls every 2.5 seconds.
+        if (waiting && waitingChecks < 8) { waitingChecks += 1; timer = setTimeout(() => void read(), 15_000); }
       }
     };
     refresh.current = () => { version += 1; void read(); };
@@ -84,7 +99,8 @@ export function useUgcProgress(projectId: string | null, authenticated: boolean)
       const saved = latest.current?.scope === scope ? latest.current.job : null;
       // Paused jobs have no timer. Focus/visibility are one-off observations,
       // coalesced with any pending read, never a resume or a second loop.
-      if (document.visibilityState === "visible" && saved?.paused && isUgcJobActive(saved.status) && !inFlight) refresh.current?.();
+      if (document.visibilityState === "visible" && saved?.paused && (isUgcJobActive(saved.status) ||
+        saved.referenceReview?.groups.some(group => group.execution?.state === "waiting" || group.execution?.state === "stalled")) && !inFlight) refresh.current?.();
     };
     window.addEventListener("focus", onActive);
     window.addEventListener("pageshow", onActive);

@@ -28,8 +28,10 @@ function elapsedTime(milliseconds: number) {
 export function UgcProgressPreview({ progress }: { progress: UgcProgressState }) {
   const { job, loading, error, checkStatus, receivedAt } = progress;
   const [clock, setClock] = useState(() => Date.now());
-  const active = !!job && isUgcJobActive(job.status);
-  const ticking = !!job && shouldPollUgcProgress(job) && job.status === "running";
+  const active = !!job && (isUgcJobActive(job.status) || !!job.referenceReview?.regenerating);
+  const regeneration = job && !["completed", "cancelled"].includes(job.status) ?
+    job.referenceReview?.groups.find(group => group.sheetInvalidated && job.currentStage === `${group.type}_reference`) : undefined;
+  const ticking = !!job && shouldPollUgcProgress(job) && (job.status === "running" || !!job.referenceReview?.regenerating);
   useEffect(() => {
     if (!ticking) return;
     const timer = setInterval(() => setClock(Date.now()), 1_000);
@@ -38,7 +40,7 @@ export function UgcProgressPreview({ progress }: { progress: UgcProgressState })
   // Correct local clock skew using the server observation; timestamps remain
   // authoritative. A display tick can never complete or advance any step.
   const now = job ? Date.parse(job.serverNow) + Math.max(0, clock - receivedAt) : clock;
-  const stalled = job?.status === "running" && (job.worker.state === "stalled" ||
+  const stalled = !!job && (job.status === "running" || !!job.referenceReview?.regenerating || regeneration?.execution?.state === "stalled") && (job.worker.state === "stalled" ||
     !job.worker.heartbeatAt || !job.worker.leaseExpiresAt ||
     now - Date.parse(job.worker.heartbeatAt) >= ugcWorkerStaleMilliseconds || Date.parse(job.worker.leaseExpiresAt) <= now);
   const paused = stalled || job?.paused || job?.status === "awaiting_confirmation";
@@ -46,10 +48,11 @@ export function UgcProgressPreview({ progress }: { progress: UgcProgressState })
     job.steps.some(step => step.id === "character_reference" && step.state === "completed");
   const productCompletePause = !!job?.paused && job.stage === "location_reference" &&
     job.steps.some(step => step.id === "product_reference" && step.state === "completed");
-  if (job?.status === "completed") return null;
   const title = loading ? "Checking generation status" : !job ? "Generation status unavailable" :
+    regeneration?.state === "failed" ? "Reference regeneration stopped" : stalled ? "Waiting for generation worker" :
+    job.referenceReview?.regenerating ? "Regenerating reference" : regeneration ? "Waiting for generation worker" :
     job.status === "failed" ? "Generation stopped" : job.status === "cancelled" ? "Generation cancelled" :
-    job.referenceReview?.regenerating ? "Regenerating reference" : productCompletePause ? "Product reference complete" : characterCompletePause ? "Character reference complete" : stalled ? "Generation appears paused" : paused ? "Generation paused" : "Creating your video";
+    job.status === "completed" ? "Generation complete" : productCompletePause ? "Product reference complete" : characterCompletePause ? "Character reference complete" : paused ? "Generation paused" : "Creating your video";
   const processingMs = job ? ugcProcessingMilliseconds(job, now) : null;
   const expectation = job && !paused && active ? ugcStageExpectation(job.currentStage) : null;
 
@@ -64,7 +67,7 @@ export function UgcProgressPreview({ progress }: { progress: UgcProgressState })
           </h2>
           {(characterCompletePause || productCompletePause) && <p className="text-warning-foreground">Generation paused</p>}
           <p key={`${job?.status}:${job?.message}:${stalled}`} className="break-words text-muted-foreground motion-safe:animate-in motion-safe:fade-in motion-safe:duration-200">
-            {loading ? "Reading your saved workflow." : stalled ? "The generation worker may no longer be running." : job?.message ?? "Check status to reconnect to your saved workflow."}
+            {loading ? "Reading your saved workflow." : stalled ? "The generation worker may no longer be running. Start the local UGC worker to resume saved work." : job?.message ?? "Check status to reconnect to your saved workflow."}
           </p>
           {job?.status === "failed" && <p className="text-destructive">Failed at: {job.stageLabel}</p>}
         </div>
@@ -93,11 +96,22 @@ export function UgcProgressPreview({ progress }: { progress: UgcProgressState })
             </li>;
           })}
         </ol>}
+        {job && job.events.some(event => event.type.includes("regeneration") || event.type.includes("recovery_") || event.type.includes("sheet_rebuild") || event.type.endsWith("ready_for_review")) &&
+          <details className="rounded-md border border-border px-2.5 py-2" open={!!regeneration}>
+            <summary className="cursor-pointer text-xs font-medium">Reference regeneration history</summary>
+            <ol className="mt-2 space-y-1.5 text-[11px] text-muted-foreground" aria-label="Saved regeneration events">
+              {job.events.filter(event => event.type === "reference_regeneration_requested" && !job.events.some(item => item.type.endsWith(".regeneration_requested")) || /^(character|product)_reference\./.test(event.type) &&
+                (event.type.includes("regeneration") || event.type.includes("recovery_") || event.type.includes("sheet_rebuild") || event.type.endsWith("ready_for_review") ||
+                  job.events.some(item => item.type.startsWith(event.type.split(".")[0]) && item.type.includes("regeneration")))).map(event =>
+                <li key={event.id} className="break-words"><time dateTime={event.at} className="mr-1.5 tabular-nums">{new Date(event.at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</time>
+                  {event.view ? `${event.view.charAt(0).toUpperCase()}${event.view.slice(1)} · ` : ""}{event.message}</li>)}
+            </ol>
+          </details>}
         {expectation && <p className="break-words text-muted-foreground">{expectation}</p>}
         <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-muted-foreground">
-          {job?.startedAt && <p className="tabular-nums">{processingMs === null ? "Started earlier" : `Elapsed: ${elapsedTime(processingMs)}`}</p>}
+          {job?.startedAt && <p className="tabular-nums">{processingMs === null ? "Started earlier" : `${job.timing.scope === "regeneration" ? "Regeneration elapsed" : "Elapsed"}: ${elapsedTime(processingMs)}`}</p>}
           {job && !job.startedAt && <p>Waiting to start</p>}
-          {(job && active || error) && <Button type="button" size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={checkStatus}>Check status</Button>}
+          {(job && (active || !!regeneration) || error) && <Button type="button" size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={checkStatus}>Check status</Button>}
         </div>
         {error && job && <p role="status" className="break-words text-warning-foreground">Unable to refresh generation status. Showing the last saved progress.</p>}
       </section>

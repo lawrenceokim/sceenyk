@@ -1,6 +1,6 @@
 import { unstable_rethrow } from "next/navigation";
 import { approveReference, requestReferenceRegeneration, ReferenceReviewAccessError } from "@/lib/reference-review/server";
-import { issueReferencePreview } from "@/lib/reference-review/preview";
+import { issueReferencePreview, ReferencePreviewFailure } from "@/lib/reference-review/preview";
 
 const headers = { "Cache-Control": "private, no-store", "CDN-Cache-Control": "no-store", Vary: "Cookie", "X-Content-Type-Options": "nosniff" };
 export async function POST(request: Request) {
@@ -24,6 +24,7 @@ export async function POST(request: Request) {
     throw new ReferenceReviewAccessError(400);
   } catch (error) {
     unstable_rethrow(error);
+    if (error instanceof ReferencePreviewFailure) console.error("UGC_REFERENCE_PREVIEW_UNAVAILABLE", { phase: error.phase, status: error.status });
     return Response.json({ ok: false, message: error instanceof ReferenceReviewAccessError && error.status === 409 ?
       "The reference changed or is not ready. Check status and try again." : "Reference review is unavailable. Please try again." },
     { status: error instanceof ReferenceReviewAccessError ? error.status : 503, headers });

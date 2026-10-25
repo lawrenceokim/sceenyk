@@ -1,5 +1,15 @@
 # UI Context
 
+## Stored Character recovery review (2026-10-25)
+
+Manual-only 049 recovery uses real validation/load/composition/save events in existing Progress. Active-to-settled review resets the local default to References; a user choice remains stable during a work cycle. Successful recovery shows Reference ready for review and enables explicit Character approval; Product approval stays unchanged. Every Original/view/Sheet card offers a small accessible private-preview refresh, separate from regeneration; an expired-image failure has one bounded automatic renewal and modal retry remains available. Capabilities stay private, owner/version/fingerprint-bound and 120 seconds. Historical artifacts remain fallback only; current replacement/composed descriptors determine displayed assets. No shell refresh, stylesheet or layout redesign. [Current contract and manual acceptance limits](reference-review.md#stored-character-recovery-and-authoritative-approval-gate-2026-10-25).
+
+## Milestone 6.6 — Reference Regeneration + Review UX Correction (2026-10-24)
+
+**Milestone 6.6 — Reference Regeneration + Review UX Correction — Complete in source. Manual migration/provider/runtime/ownership/visual acceptance pending. Milestone 7 — Not Started.** This section supersedes the historical 6.5 request-only execution and exclusive Preview rules below. [Current execution, versioning and manual setup](reference-review.md#milestone-66-execution-and-review-contract).
+
+Use the compact Tailwind/theme Progress | References control in existing Preview. Default active work to Progress, paused ready assets to References; manual choice stays local to the mounted job. Switching is display-only. References remain inspectable during active work; Progress retains completed pipeline checks, persisted regeneration history, worker lease health, safe errors and elapsed active processing. Outdated fallback views/sheet are labelled. No route refresh/remount or additional stylesheet.
+
 ## Milestone 6.5 — Reference Asset Review (2026-10-24)
 
 **Milestone 6 — Complete. Milestone 6.5 — Complete in source; manual 046/runtime/ownership/visual acceptance pending. Milestone 7 — Location Reference generation — Not Started.** This supersedes older stop points below. [Review UI, security, persistence and setup](reference-review.md).

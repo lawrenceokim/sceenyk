@@ -1,5 +1,17 @@
 # UGC V1 workflow contract
 
+## Stored Character recovery gate (2026-10-25)
+
+New manual 049, after already-applied 048, makes current Character and Product approvals authoritative for queued Location eligibility. Review mutations reconcile the paused parent position; Character recovery stays at the existing Character pause until explicit approval. With both approvals, only the non-runnable Location-not-implemented pause is reached. The deliberate single-job recovery command uses saved Front/Back/Face and validates/promotes the exact unpublished sheet or composes locally, requiring fresh Character approval and preserving Product approval/history. It never enters provider execution, repeats analysis/training or begins Milestone 7. [Evidence, implemented command and acceptance limits](reference-review.md#stored-character-recovery-and-authoritative-approval-gate-2026-10-25). No recovery/live mutation was executed; Milestone 7 remains Not Started.
+
+## Milestone 6.6 — Reference Regeneration + Review UX Correction (2026-10-24)
+
+**Milestone 6.6 — Reference Regeneration + Review UX Correction — Complete in source. Manual migration/provider/runtime/ownership/visual acceptance pending. Milestone 7 — Not Started.** This section supersedes the historical 6.5 request-only execution and exclusive Preview rules below. [Current execution, versioning and manual setup](reference-review.md#milestone-66-execution-and-review-contract).
+
+Exact UGC V1 visual contract for all newly submitted Character views: Front = ONE headless front-body/outfit image from neck/body area down, complete outfit/proportions/footwear, no head or inset. Back = ONE rear full-body reference with the same proportions/wardrobe/materials/colors/footwear. Face = ONE close-up face/head reference with original identity and hairstyle, no full body. Each provider request explicitly forbids contact sheets, multiple poses, additional views, alternate versions and text. Sceenyk alone composes ONLY Front + Back + Face, in that order, on neutral gray with three separated regions, no original/extra imagery/text. New generation document/prompt and composed visual contract are version 2; old v1 documents/files remain readable and untouched. Recomposition preserves unrequested historical view pixels, so inspect those inputs manually for old prompt artifacts. Decode checks do not prove image semantics.
+
+Every long-running reference regeneration exposes real saved progress through Studio Progress. Progress and References are two local views of one persisted UGC workflow. Character regeneration clears only Character approval; Product approval is preserved. Stored validated replacement views become current individually; a completed Sceenyk composition returns the group to ready_for_review and requires fresh approval. Product remains Original/Primary/Angled/Detail/Product Sheet. No analysis/training repeats, uncertain paid replay, automatic approval or Location admission.
+
 ## Milestone 6.5 — Reference Asset Review (2026-10-24)
 
 **Milestone 6 — Complete. Milestone 6.5 — Complete in source; manual 046/runtime/ownership/visual acceptance pending. Milestone 7 — Location Reference generation — Not Started.** This supersedes older stop points below. [Review UI, security, persistence and setup](reference-review.md).

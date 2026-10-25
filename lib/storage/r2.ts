@@ -23,7 +23,7 @@ export async function putR2CharacterImage(key: string, bytes: Uint8Array, signal
       ContentType: "image/png", IfNoneMatch: "*" }), { abortSignal: AbortSignal.any([signal, AbortSignal.timeout(60_000)]) });
   } catch (error) {
     if (!error || typeof error !== "object" || !("$metadata" in error) || !error.$metadata || typeof error.$metadata !== "object" ||
-      !("httpStatusCode" in error.$metadata) || error.$metadata.httpStatusCode !== 412) throw new Error("CHARACTER_STORAGE_FAILED");
+      !("httpStatusCode" in error.$metadata) || error.$metadata.httpStatusCode !== 412) throw new Error("CHARACTER_STORAGE_FAILED", { cause: error });
   }
 }
 // Provider-only capability, never persisted or returned in any client DTO.

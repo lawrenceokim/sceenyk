@@ -1,5 +1,15 @@
 # AI Workflow Rules
 
+## Stored Character recovery boundary (2026-10-25)
+
+Current authorization permits focused source fixes, read-only persisted-record/private-object inspection and minimal TypeScript/lint/static/empty-schema checks. Do not execute the new recovery command, run any worker, mutate the live job, apply remote SQL, call Higgsfield/OpenAI/other providers, repeat Front/Soul ID/analysis, deploy, run browser/screenshot suites, enable Render/Inngest or start Milestone 7. 048 is already applied; only new 049 is manual setup. The user deliberately runs the implemented single-job provider-free command and performs visual/authenticated runtime acceptance. [Current contract](reference-review.md#stored-character-recovery-and-authoritative-approval-gate-2026-10-25) supersedes older generic resume advice for this recovery.
+
+## Milestone 6.6 — Reference Regeneration + Review UX Correction (2026-10-24)
+
+**Milestone 6.6 — Reference Regeneration + Review UX Correction — Complete in source. Manual migration/provider/runtime/ownership/visual acceptance pending. Milestone 7 — Not Started.** This section supersedes the historical 6.5 request-only execution and exclusive Preview rules below. [Current execution, versioning and manual setup](reference-review.md#milestone-66-execution-and-review-contract).
+
+Only source implementation is authorized. Do not run workers, providers, regeneration/resume/jobs, browser/screenshot suites, builds, deployments, remote SQL, Render or Inngest. Validation is TypeScript, focused lint, static/schema checks; empty in-memory migration/ACL checks contain zero job/request/event fixtures and invoke no execution RPC. The user performs all generation/visual/runtime acceptance. Stop after 6.6; Milestone 7 remains Not Started.
+
 ## Milestone 6.5 — Reference Asset Review (2026-10-24)
 
 **Milestone 6 — Complete. Milestone 6.5 — Complete in source; manual 046/runtime/ownership/visual acceptance pending. Milestone 7 — Location Reference generation — Not Started.** This supersedes older stop points below. [Review UI, security, persistence and setup](reference-review.md).

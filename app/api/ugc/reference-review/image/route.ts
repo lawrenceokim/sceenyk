@@ -1,5 +1,5 @@
 import { unstable_rethrow } from "next/navigation";
-import { readReferencePreview } from "@/lib/reference-review/preview";
+import { readReferencePreview, ReferencePreviewFailure } from "@/lib/reference-review/preview";
 import { ReferenceReviewAccessError } from "@/lib/reference-review/server";
 
 export async function GET(request: Request) {
@@ -10,6 +10,8 @@ export async function GET(request: Request) {
     return new Response(media.body, { headers: { ...headers, "Content-Type": "image/png", "Content-Length": String(media.sizeBytes) } });
   } catch (error) {
     unstable_rethrow(error);
+    console.error("UGC_REFERENCE_PREVIEW_UNAVAILABLE", { phase: error instanceof ReferencePreviewFailure ? error.phase : "unknown",
+      status: error instanceof ReferenceReviewAccessError ? error.status : 503 });
     return Response.json({ ok: false, message: "This private preview is unavailable. Reopen it to try again." },
       { status: error instanceof ReferenceReviewAccessError ? error.status : 503, headers });
   }

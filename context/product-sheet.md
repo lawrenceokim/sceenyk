@@ -1,5 +1,11 @@
 # Product / Prop Reference Sheet — Milestone 6
 
+## Milestone 6.6 — Reference Regeneration + Review UX Correction (2026-10-24)
+
+**Milestone 6.6 — Reference Regeneration + Review UX Correction — Complete in source. Manual migration/provider/runtime/ownership/visual acceptance pending. Milestone 7 — Not Started.** This section supersedes the historical 6.5 request-only execution and exclusive Preview rules below. [Current execution, versioning and manual setup](reference-review.md#milestone-66-execution-and-review-contract).
+
+Product image/model/prompt contract is unchanged. The shared local regeneration executor replaces only the requested Primary/Angled/Detail view using the original private image and frozen instructions, then recomposes Primary + Angled + Detail. Existing Product opt-in configuration remains required. Durable intent/receipt/usage and immutable output recovery prevent synchronous paid replay. Unknown intent/received output without a stored object requires reconciliation. Progress and References share the same workflow; regeneration invalidates only Product approval.
+
 ## Milestone 6.5 — Reference Asset Review (2026-10-24)
 
 **Milestone 6 — Complete. Milestone 6.5 — Complete in source; manual 046/runtime/ownership/visual acceptance pending. Milestone 7 — Location Reference generation — Not Started.** This supersedes older stop points below. [Review UI, security, persistence and setup](reference-review.md).

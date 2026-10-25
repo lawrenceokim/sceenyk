@@ -18,11 +18,17 @@ export const reviewScopeSchema = z.strictObject({ projectId: z.uuid(), jobId: z.
 export const reviewActionSchema = reviewScopeSchema.extend({ type: z.enum(referenceTypes), version: z.number().int().min(1).max(1_000_000) });
 export const regenerationActionSchema = reviewActionSchema.extend({ view: referenceViewSchema, requestId: z.uuid() });
 export const previewActionSchema = reviewActionSchema.extend({ view: referenceViewSchema });
-export type ReferenceReviewAsset = { view: ReferenceView; label: string; available: boolean; state: "ready" | "regeneration_requested" | "regenerating" | "failed"; stale: boolean };
+export type ReferenceReviewAsset = { view: ReferenceView; label: string; available: boolean; state: "ready" | "regeneration_requested" | "regenerating" | "failed"; stale: boolean; publishedVersion?: number };
 export type ReferenceReviewGroup = {
   type: ReferenceType; name: string; version: number; state: ReferenceReviewState; canApprove: boolean;
   approvedAt: string | null; approvedVersion: number | null; sheetInvalidated: boolean;
   assets: ReferenceReviewAsset[];
+  execution?: { state: "waiting" | "running" | "stalled" | "failed" | "idle"; phase: string | null;
+    heartbeatAt: string | null; leaseExpiresAt: string | null; elapsedMs: number; runningSince: string | null;
+    error: "REGENERATION_FAILED" | "RECONCILIATION_REQUIRED" | "IDENTITY_UNAVAILABLE" | "ATTEMPTS_EXHAUSTED" |
+      "CHARACTER_SHEET_RECOVERY_FAILED" | "CHARACTER_SHEET_COMPOSITION_FAILED" | null;
+    canRetry: boolean };
+  sheetVersion?: number;
 };
 export type ReferenceReviewSnapshot = {
   groups: ReferenceReviewGroup[]; available: boolean; actionsAvailable: boolean; locationEligible: boolean;
@@ -33,12 +39,18 @@ export type ReferenceReviewRow = {
   character_sheet_id: string | null; product_sheet_id: string | null; sheet_version: number;
   version: number; composed_version: number; approved_at: string | null; approved_by: string | null; approved_version: number | null;
   composed_asset: unknown | null;
+  execution_state?: "idle" | "running" | "failed"; execution_attempts?: number; execution_token?: string | null;
+  execution_worker_id?: string | null; heartbeat_at?: string | null; lease_expires_at?: string | null;
+  processing_elapsed_ms?: number; processing_updated_at?: string | null; execution_phase?: string | null;
+  execution_error?: NonNullable<ReferenceReviewGroup["execution"]>["error"]; composed_sheet_version?: number;
+  execution_diagnostic?: unknown | null;
   created_at: string; updated_at: string;
 };
 export type ReferenceRegenerationRow = {
   id: string; review_id: string; view: string; requested_version: number; previous_asset_id: string;
   requested_by: string; state: "regeneration_requested" | "regenerating" | "completed" | "failed";
   replacement_asset: unknown | null;
+  checkpoint?: unknown;
   created_at: string; updated_at: string;
 };
 export const referenceViewLabels: Record<ReferenceView, string> = {

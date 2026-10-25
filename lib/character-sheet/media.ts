@@ -24,7 +24,7 @@ export async function normalizeCharacterImage(bytes: Buffer) {
   }
 }
 export function characterStorageKey(row: CharacterSheetRow, view: keyof typeof characterAssetTypes) {
-  return `ugc/${row.owner_user_id}/${row.project_id}/${row.job_id}/character-v1/${row.id}/${characterAssetTypes[view]}.png`;
+  return `ugc/${row.owner_user_id}/${row.project_id}/${row.job_id}/character-v${row.sheet_version}/${row.id}/${characterAssetTypes[view]}.png`;
 }
 // Conditional PUT + deterministic path recovers a crash between R2 and SQL.
 export async function loadStoredCharacterAsset(row: CharacterSheetRow, view: keyof typeof characterAssetTypes, signal: AbortSignal): Promise<{ asset: CharacterAsset; bytes: Buffer } | null> {
@@ -57,7 +57,9 @@ export async function saveCharacterAsset(row: CharacterSheetRow, view: keyof typ
   if (!stored) throw characterStorageError(view);
   return stored;
 }
-export async function composeCharacterSheet(views: Buffer[]) {
+// Sceenyk owns composition. Exactly three regions in Front, Back, Face order;
+// never pass the source upload, labels, alternate poses or provider sheet prompts.
+export async function composeCharacterSheet(views: [Buffer, Buffer, Buffer]) {
   try {
     if (views.length !== 3) throw new Error();
     const panels = await Promise.all(views.map(bytes => sharp(bytes, { limitInputPixels: 20_000_000 })
@@ -72,4 +74,25 @@ function characterStorageError(view: keyof typeof characterAssetTypes) {
   return new CharacterSheetError("CHARACTER_STORAGE_FAILED", true, false, {
     operation: "output_storage", httpStatus: null, category: "invalid_media", reason: "CHARACTER_OUTPUT_STORAGE_FAILED", view,
   });
+}
+
+// Pixel validation binds an unpublished sheet to precisely these three inputs,
+// including the gray gutters. Merely decoding a PNG is insufficient provenance.
+export async function characterSheetMatchesViews(sheet: Buffer, views: [Buffer, Buffer, Buffer]) {
+  const image = sharp(sheet, { limitInputPixels: 20_000_000, failOn: "warning" });
+  let actual: Buffer;
+  try {
+    const meta = await image.metadata();
+    if (meta.format !== "png" || meta.width !== 2400 || meta.height !== 1216 || (meta.pages ?? 1) !== 1) return false;
+    actual = await image.flatten({ background: gray }).removeAlpha().toColourspace("srgb").raw().toBuffer();
+  } catch { return false; }
+  const expected = Buffer.alloc(2400 * 1216 * 3, 0xb8);
+  for (let index = 0; index < views.length; index += 1) {
+    const panel = await sharp(views[index], { limitInputPixels: 20_000_000, failOn: "warning" })
+      .resize(768, 1152, { fit: "contain", background: gray }).flatten({ background: gray })
+      .removeAlpha().toColourspace("srgb").raw().toBuffer();
+    if (panel.length !== 768 * 1152 * 3) return false;
+    for (let row = 0; row < 1152; row += 1) panel.copy(expected, ((row + 32) * 2400 + 32 + index * 784) * 3, row * 768 * 3, (row + 1) * 768 * 3);
+  }
+  return actual.equals(expected);
 }

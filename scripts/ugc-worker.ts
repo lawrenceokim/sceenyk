@@ -8,7 +8,10 @@ const safeStartupReasons = new Set([
   "UGC_CHARACTER_ALREADY_READY", "UGC_CHARACTER_OUTPUT_RESUME_NOT_ELIGIBLE", "UGC_ATTEMPTS_EXHAUSTED",
   "REFERENCE_CONFIG_INVALID", "CHARACTER_CONFIG_INVALID", "HF_SECRET_CONTAINS_COMPLETE_CREDENTIAL",
   "CHARACTER_ENVIRONMENT_INVALID", "PUBLIC_PRIVILEGED_KEY", "MISSING_CONFIGURATION", "INVALID_URL", "INVALID_PRIVILEGED_KEY",
-  "PRODUCT_CONFIG_INVALID", "UGC_PRODUCT_RESUME_UNAVAILABLE",
+  "PRODUCT_CONFIG_INVALID", "UGC_PRODUCT_RESUME_UNAVAILABLE", "UGC_REGENERATION_RESUME_UNAVAILABLE",
+  "UGC_WORKER_CONTRACT_INVALID", "UGC_DATABASE_UNRECOVERABLE",
+  "UGC_INSPECTION_UNAVAILABLE",
+  "CHARACTER_SHEET_RECOVERY_FAILED", "CHARACTER_SHEET_COMPOSITION_FAILED",
 ]);
 const safeDatabaseCodes = new Set(["PGRST202", "PGRST204", "PGRST205", "42501", "42883", "23514"]);
 class WorkerStartupError extends Error {
@@ -34,9 +37,34 @@ async function main() {
   if (!localJobsOnly() || process.env.RENDER === "true" || process.env.VERCEL === "1") {
     throw new Error("UGC_LOCAL_EXECUTION_REQUIRED");
   }
+  const args = process.argv.slice(2);
+  startupPhase = "arguments";
+  if (args.length) {
+    const { z } = await import("zod");
+    if (args.length !== 2 || !["--recover-character-sheet", "--inspect-regeneration", "--resume-analysis", "--resume-character", "--resume-character-output", "--resume-product", "--resume-regeneration", "--retry"].includes(args[0]) || !z.uuid().safeParse(args[1]).success) throw new Error("UGC_WORKER_ARGUMENT_INVALID");
+  }
   startupPhase = "database_configuration";
   const { getDatabaseConfig } = await import("../lib/db/config");
   getDatabaseConfig();
+  if (args[0] === "--recover-character-sheet") {
+    startupPhase = "character_sheet_recovery";
+    const { recoverStoredCharacterSheet } = await import("../lib/reference-review/recover-character-sheet");
+    const shutdown = new AbortController();
+    for (const signal of ["SIGINT", "SIGTERM"] as const) process.once(signal, () => shutdown.abort());
+    console.info("UGC_CHARACTER_SHEET_RECOVERY", JSON.stringify(await recoverStoredCharacterSheet(args[1], shutdown.signal)));
+    return;
+  }
+  if (args[0] === "--inspect-regeneration") {
+    startupPhase = "inspection";
+    const { inspectReferenceRegeneration } = await import("../lib/reference-review/inspection");
+    const { UgcWorkerDatabaseError } = await import("../lib/ugc-jobs/database-diagnostics");
+    try { console.info("UGC_REGENERATION_INSPECTION", JSON.stringify(await inspectReferenceRegeneration(args[1]))); }
+    catch (error) {
+      console.error("UGC_REGENERATION_INSPECTION_UNAVAILABLE", error instanceof UgcWorkerDatabaseError ? error.diagnostic : { category: "inspection_invalid" });
+      throw new Error("UGC_INSPECTION_UNAVAILABLE");
+    }
+    return;
+  }
   startupPhase = "analysis_configuration";
   const { createReferenceAnalysisClient } = await import("../lib/openai/server");
   // Configuration only: constructing the SDK never sends a provider request.
@@ -50,12 +78,6 @@ async function main() {
       environment: characterSheetEnvironmentPresence(),
     });
     throw error;
-  }
-  const args = process.argv.slice(2);
-  startupPhase = "arguments";
-  if (args.length) {
-    const { z } = await import("zod");
-    if (args.length !== 2 || !["--resume-analysis", "--resume-character", "--resume-character-output", "--resume-product", "--retry"].includes(args[0]) || !z.uuid().safeParse(args[1]).success) throw new Error("UGC_WORKER_ARGUMENT_INVALID");
   }
   // Product is separately opt-in; Character-only work keeps its current setup.
   if (process.env.UGC_PRODUCT_SHEET_ENABLED === "1" || args[0] === "--resume-product") {
@@ -89,6 +111,9 @@ async function main() {
     } else if (args[0] === "--resume-character") {
       const result = await db.rpc("ugc_resume_character_sheet", { p_job_id: args[1] });
       if (result.error || !result.data) throw databaseFailure("UGC_RESUME_UNAVAILABLE", result.error);
+    } else if (args[0] === "--resume-regeneration") {
+      const result = await db.rpc("ugc_resume_reference_regeneration", { p_job_id: args[1] });
+      if (result.error || !result.data) throw databaseFailure("UGC_REGENERATION_RESUME_UNAVAILABLE", result.error);
     } else if (args[0] === "--resume-product") {
       const result = await db.rpc("ugc_resume_product_sheet", { p_job_id: args[1] });
       if (result.error || !result.data) throw databaseFailure("UGC_PRODUCT_RESUME_UNAVAILABLE", result.error);

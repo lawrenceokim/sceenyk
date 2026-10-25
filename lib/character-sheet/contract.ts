@@ -1,7 +1,7 @@
 import { z } from "zod";
 
-export const characterSheetVersion = 1;
-export const characterSheetPromptVersion = "character-sheet-v1";
+export const characterSheetVersion = 2;
+export const characterSheetPromptVersion = "character-sheet-v2";
 export const characterAssetTypes = {
   front: "character_front_reference", back: "character_back_reference",
   face: "character_face_reference", sheet: "character_sheet",
@@ -82,7 +82,7 @@ export const characterAssetSchema = z.strictObject({
 });
 export type CharacterAsset = z.infer<typeof characterAssetSchema>;
 export const characterSheetDocumentSchema = z.strictObject({
-  schemaVersion: z.literal(characterSheetVersion), promptVersion: z.literal(characterSheetPromptVersion),
+  schemaVersion: z.union([z.literal(1), z.literal(2)]), promptVersion: z.enum(["character-sheet-v1", "character-sheet-v2"]),
   snapshotSha256: z.string().regex(/^[a-f0-9]{64}$/), analysisId: z.uuid(), analysisVersion: z.literal(1),
   wardrobe: wardrobeSchema, seed: z.number().int().min(1).max(1_000_000),
   operations: z.partialRecord(z.enum(["identity", ...characterViews]), operationSchema),
@@ -91,9 +91,10 @@ export const characterSheetDocumentSchema = z.strictObject({
     identity: z.literal("source-image-via-soul-id-v2"),
     observations: z.literal("saved-analysis-supports-original-image"),
     generated: z.literal("wardrobe-and-unseen-body-rear-footwear-details-are-generated-continuity"),
-    layout: z.literal("gray-three-column-contain-v1"),
+    layout: z.enum(["gray-three-column-contain-v1", "gray-front-back-face-only-v2"]),
   }),
-});
+}).refine(document => document.promptVersion === `character-sheet-v${document.schemaVersion}` &&
+  document.provenance.layout === (document.schemaVersion === 2 ? "gray-front-back-face-only-v2" : "gray-three-column-contain-v1"));
 export type CharacterSheetDocument = z.infer<typeof characterSheetDocumentSchema>;
 export type CharacterSheetRow = {
   id: string; owner_user_id: string; project_id: string; job_id: string;

@@ -30,8 +30,11 @@ export type UgcProgressEvidence = {
 };
 
 export function buildUgcProgress(row: UgcJobRow, evidence: UgcProgressEvidence = {}, now = Date.now()): UgcJobProgress {
-  const regeneration = ["queued", "running"].includes(row.status) ? evidence.referenceReview?.groups.find(group => group.state === "regenerating") : undefined;
-  const paused = !regeneration && (!!row.pause_reason || row.status === "awaiting_confirmation" ||
+  const regenerationGroups = evidence.referenceReview?.groups.filter(group => group.sheetInvalidated) ?? [];
+  const regeneration = !["completed", "cancelled"].includes(row.status) ?
+    regenerationGroups.find(group => group.execution?.state === "running") ?? regenerationGroups[0] : undefined;
+  const executing = regeneration?.execution?.state === "running";
+  const paused = !executing && (!!regeneration || !!row.pause_reason || row.status === "awaiting_confirmation" ||
     row.status === "queued" && !!evidence.referenceReview?.blocked);
   const characterCompletePause = !regeneration && row.pause_reason === "PRODUCT_REFERENCE_NOT_IMPLEMENTED";
   const productCompletePause = !regeneration && row.pause_reason === "LOCATION_REFERENCE_NOT_IMPLEMENTED";
@@ -39,7 +42,7 @@ export function buildUgcProgress(row: UgcJobRow, evidence: UgcProgressEvidence =
   const index = executionOrder.indexOf(currentStage);
   const stalled = row.status === "running" && (!row.heartbeat_at || !row.lease_expires_at ||
     now - Date.parse(row.heartbeat_at) >= ugcWorkerStaleMilliseconds || Date.parse(row.lease_expires_at) <= now);
-  const stateForCurrent: UgcProgressStep["state"] = row.status === "failed" ? "failed" :
+  const stateForCurrent: UgcProgressStep["state"] = regeneration ? regeneration.state === "failed" ? "failed" : executing ? "active" : "paused" : row.status === "failed" ? "failed" :
     row.status === "cancelled" || paused || stalled ? "paused" : "active";
   const steps: UgcProgressStep[] = workflow.map(([id, label]) => {
     if (id === "location_reference") return { id, label, state: "waiting" };
@@ -94,9 +97,21 @@ export function buildUgcProgress(row: UgcJobRow, evidence: UgcProgressEvidence =
       else if (asset.state === "regenerating") step.state = stateForCurrent;
       else if (asset.state === "regeneration_requested") step.state = "waiting";
       else if (asset.state === "failed") step.state = "failed";
+      if (asset.view === "sheet" && regeneration.execution?.phase === "sheet_rebuild_started") step.state = stateForCurrent;
+    }
+    const recoverySteps: Record<string, [string, string]> = {
+      recovery_front_validating: ["front", "Validating replacement Front"], recovery_back_loading: ["back", "Loading existing Back"],
+      recovery_face_loading: ["face", "Loading existing Face"], recovery_sheet_validating: ["sheet", "Validating rebuilt sheet"],
+      recovery_sheet_rebuilding: ["sheet", "Rebuilding Character Sheet"], recovery_sheet_saving: ["sheet", "Saving Character Sheet"],
+    };
+    const recovering = recoverySteps[regeneration.execution?.phase ?? ""];
+    if (recovering) {
+      const step = substeps.find(item => item.id === recovering[0]);
+      if (step) { step.label = recovering[1]; step.state = stateForCurrent; }
     }
   }
-  const stageLabel = paused && evidence.referenceReview?.available ? evidence.referenceReview.locationEligible ? "References approved" :
+  const stageLabel = regeneration ? regeneration.state === "failed" ? "Reference regeneration stopped" : executing ?
+    `Regenerating ${regeneration.type} reference` : "Waiting for generation worker" : paused && evidence.referenceReview?.available ? evidence.referenceReview.locationEligible ? "References approved" :
     evidence.referenceReview.groups.some(group => group.sheetInvalidated) ? "Regeneration requested" : "Reference review" :
     productCompletePause ? "Product reference complete" : characterCompletePause ? "Character reference complete" : workflow.find(([id]) => id === currentStage)?.[1] ??
     (currentStage === "cost_review" || currentStage === "awaiting_confirmation" ? "Review generation cost" : "Waiting for worker");
@@ -118,6 +133,33 @@ export function buildUgcProgress(row: UgcJobRow, evidence: UgcProgressEvidence =
     "References approved. Location generation has not started yet." :
     evidence.referenceReview.groups.some(group => group.sheetInvalidated) ? "Regeneration requested. Reference generation remains paused." :
     "Review your reference assets before continuing.";
+  if (regeneration) {
+    if (regeneration.execution?.state === "failed" || regeneration.state === "failed") message = regeneration.execution?.error === "RECONCILIATION_REQUIRED" ?
+      "Regeneration stopped safely. The existing provider request needs reconciliation before another paid submission. Previous references remain available." :
+      regeneration.execution?.error === "CHARACTER_SHEET_COMPOSITION_FAILED" ? "Character Sheet composition failed. Your saved Front, Back and Face remain available." :
+      regeneration.execution?.error === "CHARACTER_SHEET_RECOVERY_FAILED" ? "Character Sheet recovery stopped safely. Saved views and the previous sheet remain available." :
+      regeneration.execution?.error === "IDENTITY_UNAVAILABLE" ? "The saved character identity is unavailable. Previous references remain available; no identity training was repeated." :
+      "Reference regeneration failed. Previous references remain available. A controlled local retry may resume saved work.";
+    else if (!executing) message = regeneration.execution?.state === "stalled" ?
+      "The regeneration worker is no longer reporting a healthy lease. Start the local UGC worker to resume saved work." :
+      "Regeneration requested. Start the local UGC worker to continue.";
+    else {
+      const phase = regeneration.execution?.phase;
+      const recoveryMessages: Record<string, string> = {
+        recovery_front_validating: "Validating replacement Front.", recovery_back_loading: "Loading existing Back.", recovery_face_loading: "Loading existing Face.",
+        recovery_sheet_validating: "Validating rebuilt sheet.", recovery_sheet_rebuilding: "Rebuilding Character Sheet.", recovery_sheet_saving: "Saving Character Sheet.",
+      };
+      const view = regeneration.assets.find(asset => phase?.startsWith(`${asset.view}_`));
+      message = recoveryMessages[phase ?? ""] ?? (phase === "sheet_rebuild_started" ? "Rebuilding the reference sheet from the three saved views." :
+        phase?.endsWith("_provider_ready") ? `${view?.label ?? "Reference"} provider output is ready.` :
+        phase?.endsWith("_downloading") ? `${regeneration.type === "character" ? "Downloading and validating" : "Validating and storing"} the ${view?.label.toLowerCase() ?? "reference"} view.` :
+        phase?.endsWith("_ready") ? `${view?.label ?? "Reference"} replacement saved.` :
+        phase?.endsWith("_generating") ? regeneration.type === "product" ? `Requesting the ${view?.label.toLowerCase() ?? "reference"} view from the provider.` :
+          `Provider is generating the ${view?.label.toLowerCase() ?? "reference"} view.` : "Reference regeneration started.");
+    }
+  }
+  const execution = regeneration?.execution;
+  const regenElapsed = evidence.referenceReview?.groups.reduce((total, group) => total + (group.execution?.elapsedMs ?? 0), 0) ?? 0;
   return {
     id: row.id, status: row.status, stage: row.stage, currentStage, stageLabel, message,
     createdAt: row.created_at, updatedAt: row.updated_at, startedAt: row.started_at,
@@ -126,14 +168,17 @@ export function buildUgcProgress(row: UgcJobRow, evidence: UgcProgressEvidence =
     failure: row.error_code && row.safe_error_message ? { code: row.error_code, message: row.safe_error_message } : null,
     steps, characterSteps, productSteps, events: evidence.events ?? [],
     ...(evidence.referenceReview ? { referenceReview: evidence.referenceReview } : {}),
-    worker: { heartbeatAt: row.heartbeat_at, leaseExpiresAt: row.lease_expires_at,
-      state: row.status !== "running" ? "inactive" : stalled ? "stalled" : "healthy" },
+    worker: execution ? { heartbeatAt: execution.heartbeatAt, leaseExpiresAt: execution.leaseExpiresAt,
+      state: execution.state === "running" ? "healthy" : execution.state === "stalled" ? "stalled" : "inactive" } :
+      { heartbeatAt: row.heartbeat_at, leaseExpiresAt: row.lease_expires_at,
+        state: row.status !== "running" ? "inactive" : stalled ? "stalled" : "healthy" },
     serverNow: new Date(now).toISOString(),
     timing: {
       elapsedMs: typeof row.processing_elapsed_ms === "number" && Number.isSafeInteger(row.processing_elapsed_ms) && row.processing_elapsed_ms >= 0
-        ? row.processing_elapsed_ms : null,
-      runningSince: row.status === "running" && !paused ? row.processing_updated_at ?? null : null,
+        ? row.processing_elapsed_ms + regenElapsed : regenElapsed || execution ? regenElapsed : null,
+      runningSince: executing ? execution?.runningSince ?? null : row.status === "running" && !paused ? row.processing_updated_at ?? null : null,
       pausedAt: paused ? row.updated_at : null,
+      scope: row.processing_elapsed_ms == null ? "regeneration" : "workflow",
     },
   };
 }
@@ -143,7 +188,7 @@ export function buildUgcProgress(row: UgcJobRow, evidence: UgcProgressEvidence =
 export function ugcProcessingMilliseconds(job: UgcJobProgress, now: number): number | null {
   // Also tolerate a pre-refinement snapshot retained by development Fast Refresh.
   if (!job.timing || job.timing.elapsedMs === null) return null;
-  if (job.paused || job.status !== "running" || !job.timing.runningSince || !job.worker.leaseExpiresAt) return job.timing.elapsedMs;
+  if (job.paused || job.status !== "running" && !job.referenceReview?.regenerating || !job.timing.runningSince || !job.worker.leaseExpiresAt) return job.timing.elapsedMs;
   const increment = Math.max(0, Math.min(now, Date.parse(job.worker.leaseExpiresAt)) - Date.parse(job.timing.runningSince));
   return Number.isFinite(increment) ? job.timing.elapsedMs + increment : null;
 }

@@ -3,7 +3,7 @@ import { referenceViews, type ReferenceReviewRow, type ReferenceRegenerationRow 
 import { effectiveReferenceAssets, type GeneratedReviewAsset } from "./state";
 import type { ReferenceView } from "./contract";
 
-// Read-only contract for a later explicitly authorized regeneration executor.
+// Read-only plan shared with the Milestone 6.6 execution contract.
 // No provider imports, job transitions, writes, claim, retry, or dispatch here.
 export function referenceReplacementPlan(review: ReferenceReviewRow, assets: Record<string, GeneratedReviewAsset | undefined>, requests: ReferenceRegenerationRow[]) {
   const pending = requests.filter(request => request.review_id === review.id && request.state !== "completed");
@@ -13,7 +13,7 @@ export function referenceReplacementPlan(review: ReferenceReviewRow, assets: Rec
     regenerate: pending.map(request => ({ requestId: request.id, view: request.view, previousAssetId: request.previous_asset_id })),
     preserve: Object.fromEntries(referenceViews[review.reference_type].filter(view => !replacing.has(view)).map(view => [view, effective[view]])),
     recompose: review.composed_version !== review.version,
-    // Future replacements must use fresh immutable keys, never overwrite v1.
+    // Replacements use fresh immutable keys, never overwrite base assets.
     storagePrefix: `ugc/${review.owner_user_id}/${review.project_id}/${review.job_id}/reference-review-v1/${review.id}/v${review.version}`,
   };
 }

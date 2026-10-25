@@ -19,7 +19,8 @@ function PrivateReferenceImage({ scope, group, asset, large = false }: { scope: 
   const element = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(large);
   const [attempt, setAttempt] = useState(0);
-  const [preview, setPreview] = useState<{ url?: string; error?: boolean }>({});
+  const [preview, setPreview] = useState<{ url?: string; expiresAt?: string; error?: boolean }>({});
+  const renewed = useRef(false);
   const { projectId, jobId } = scope;
   useEffect(() => {
     if (large || !element.current) return;
@@ -34,7 +35,7 @@ function PrivateReferenceImage({ scope, group, asset, large = false }: { scope: 
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 20_000);
     void reviewRequest({ action: "preview", projectId, jobId, type: group.type, version: group.version, view: asset.view }, controller.signal)
-      .then(result => { if (alive) setPreview({ url: result.preview.url }); })
+      .then(result => { if (alive) setPreview({ url: result.preview.url, expiresAt: result.preview.expiresAt }); })
       .catch(() => { if (alive) setPreview({ error: true }); }).finally(() => clearTimeout(timeout));
     return () => { alive = false; clearTimeout(timeout); controller.abort(); };
   }, [visible, projectId, jobId, group.type, group.version, asset.view, attempt]);
@@ -47,7 +48,11 @@ function PrivateReferenceImage({ scope, group, asset, large = false }: { scope: 
       // never retain or fetch these expiring private capabilities on our behalf.
       // eslint-disable-next-line @next/next/no-img-element
       <img src={preview.url} alt={`${group.type === "character" ? "Character" : "Product"} ${asset.label}`} className="h-full w-full object-contain"
-        referrerPolicy="no-referrer" onError={() => setPreview({ error: true })} /> :
+        referrerPolicy="no-referrer" onError={() => {
+          if (!renewed.current && preview.expiresAt && Date.parse(preview.expiresAt) <= Date.now()) {
+            renewed.current = true; setPreview({}); setAttempt(value => value + 1);
+          } else setPreview({ error: true });
+        }} /> :
       <div className="flex items-center gap-1.5 p-2 text-[11px] text-muted-foreground"><ImageIcon className="size-3.5" aria-hidden="true" /><span>Loading preview…</span></div>}
   </div>;
 }
@@ -65,6 +70,7 @@ export function ReferenceReviewPreview({ projectId, job, onSaved, checkStatus }:
   const [confirmation, setConfirmation] = useState<{ type: ReferenceType; view: ReferenceView; version: number; label: string; requestId: string } | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [previewRetries, setPreviewRetries] = useState<Record<string, number>>({});
   const running = useRef(false);
   const alive = useRef(true);
   const controller = useRef<AbortController | null>(null);
@@ -96,7 +102,7 @@ export function ReferenceReviewPreview({ projectId, job, onSaved, checkStatus }:
     <div className="mx-auto w-full max-w-3xl space-y-4 text-xs">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="space-y-1"><h2 className="text-sm font-medium">Reference review</h2>
-          <p className="text-muted-foreground">Generation paused</p></div>
+          <p className="text-muted-foreground">{job.status === "cancelled" ? "Generation cancelled" : review.regenerating ? "Regeneration in progress" : job.status === "running" ? "Generation in progress" : "Saved reference assets"}</p></div>
         <Button type="button" variant="ghost" size="xs" onClick={checkStatus} disabled={busy}>Check status</Button>
       </div>
       {job.failure && <p role="status" className="break-words text-destructive">{job.failure.message}</p>}
@@ -110,7 +116,7 @@ export function ReferenceReviewPreview({ projectId, job, onSaved, checkStatus }:
             <div className="min-w-0 space-y-1"><h3 className="text-xs font-medium">{title}</h3>
               {hasAssets && <p className="break-words text-[11px] text-muted-foreground">{group.name}</p>}
               <p className={`flex items-center gap-1 text-[11px] ${group.state === "approved" ? "text-success-foreground" : "text-muted-foreground"}`}>
-                {group.state === "approved" && <Check className="size-3" aria-hidden="true" />}{hasAssets ? stateText[group.state] : "Not generated yet"}
+                {group.state === "approved" && <Check className="size-3" aria-hidden="true" />}{hasAssets ? job.status === "cancelled" && group.sheetInvalidated ? "Regeneration cancelled" : stateText[group.state] : "Not generated yet"}
               </p></div>
             {hasAssets && (group.state === "approved" ? <span className="flex h-7 items-center gap-1 text-[11px] text-success-foreground"><Check className="size-3.5" aria-hidden="true" />Approved</span> :
               <Button type="button" size="xs" className="text-[11px]" disabled={busy || !group.canApprove} onClick={() => void act("approve", group)}>
@@ -118,23 +124,31 @@ export function ReferenceReviewPreview({ projectId, job, onSaved, checkStatus }:
               </Button>)}
           </div>
           {hasAssets && <>
-            {group.state === "failed" && !job.failure && <p className="text-[11px] text-destructive">A reference view could not be completed. Your other saved views are still available.</p>}
+            {group.state === "failed" && <p className="text-[11px] text-destructive">Replacement failed. Your previous usable views and outdated sheet remain available. Check Progress for details.</p>}
+            {group.execution?.state === "waiting" && <p className="text-[11px] text-warning-foreground">Waiting for generation worker. Start the local UGC worker to continue.</p>}
             <p className="text-[11px] leading-relaxed text-muted-foreground">{group.type === "character" ?
               "Compare face, body, outfit and overall consistency with the original." : "Compare shape, colors, controls, materials and branding with the original."}</p>
             <div className="grid min-w-0 grid-cols-2 gap-2 sm:grid-cols-4">
               {group.assets.filter(asset => asset.available).map(asset => <div key={asset.view} className={`min-w-0 overflow-hidden rounded-md border border-border bg-background/60 ${asset.view === "sheet" ? "col-span-2 sm:col-span-4" : ""}`}>
                 <button type="button" className={`block w-full cursor-zoom-in overflow-hidden outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring ${asset.view === "sheet" ? "aspect-[2.5/1]" : "aspect-square"}`}
                   aria-label={`Open ${title}: ${asset.label}`} onClick={event => { opener.current = event.currentTarget; setSelected({ type: group.type, view: asset.view }); }}>
-                  <PrivateReferenceImage key={`${group.type}:${group.version}:${asset.view}`} scope={scope} group={group} asset={asset} />
+                  <PrivateReferenceImage key={`${group.type}:${group.version}:${asset.view}:${asset.publishedVersion ?? 1}:${previewRetries[`${group.type}:${asset.view}`] ?? 0}`} scope={scope} group={group} asset={asset} />
                 </button>
                 <div className="flex min-w-0 items-center justify-between gap-1 px-2 py-1.5">
                   <div className="min-w-0"><p className="break-words text-[11px] font-medium">{asset.label}</p>
-                    {asset.stale && <p className="break-words text-[10px] text-warning-foreground">{asset.view === "sheet" ? "Needs rebuilding" : asset.state === "failed" ? "Replacement failed" : "Regeneration requested"}</p>}</div>
+                    {asset.stale && <p className="break-words text-[10px] text-warning-foreground">{asset.view === "sheet" ? "Outdated — needs rebuilding" : asset.state === "failed" ? "Previous view — replacement failed" : "Previous view — replacement pending"}</p>}</div>
+                  <div className="flex shrink-0 items-center gap-0.5">
+                  <button type="button" title="Refresh private preview" aria-label={`Refresh ${asset.label} preview`}
+                    className="flex size-7 cursor-pointer items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring [@media(pointer:coarse)]:size-11"
+                    onClick={() => setPreviewRetries(values => ({ ...values, [`${group.type}:${asset.view}`]: (values[`${group.type}:${asset.view}`] ?? 0) + 1 }))}>
+                    <ImageIcon className="size-3" aria-hidden="true" />
+                  </button>
                   {asset.view !== "original" && asset.view !== "sheet" && <button type="button" title="Regenerate this view" aria-label={`Regenerate ${asset.label} view`}
-                    disabled={busy || !review.actionsAvailable || asset.stale} className="flex size-7 shrink-0 cursor-pointer items-center justify-center rounded text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-40 motion-reduce:transition-none [@media(pointer:coarse)]:size-11"
+                    disabled={busy || !review.actionsAvailable || group.sheetInvalidated || asset.stale} className="flex size-7 shrink-0 cursor-pointer items-center justify-center rounded text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-40 motion-reduce:transition-none [@media(pointer:coarse)]:size-11"
                     onClick={event => { opener.current = event.currentTarget; setError(""); setConfirmation({ type: group.type, view: asset.view, version: group.version, label: asset.label, requestId: crypto.randomUUID() }); }}>
                     <RefreshCw className="size-3" aria-hidden="true" />
                   </button>}
+                  </div>
                 </div>
               </div>)}
             </div>
@@ -150,7 +164,7 @@ export function ReferenceReviewPreview({ projectId, job, onSaved, checkStatus }:
         onKeyDown={event => { if (event.key === "ArrowLeft" || event.key === "ArrowRight") { event.preventDefault(); event.stopPropagation(); navigate(event.key === "ArrowLeft" ? -1 : 1); } }}>
         <div className="min-w-0 space-y-1 pr-9"><DialogTitle className="text-sm">{current?.group.type === "character" ? "Character" : "Product"} · {current?.asset.label}</DialogTitle>
           <DialogDescription className="text-xs">{current?.asset.stale ? "Previous reference — replacement or sheet rebuild required." : "Inspect this private reference image."}</DialogDescription></div>
-        {current && <div className="min-h-0 min-w-0 overflow-hidden rounded-md border border-border"><PrivateReferenceImage key={`${current.group.type}:${current.group.version}:${current.asset.view}`} scope={scope} group={current.group} asset={current.asset} large /></div>}
+        {current && <div className="min-h-0 min-w-0 overflow-hidden rounded-md border border-border"><PrivateReferenceImage key={`${current.group.type}:${current.group.version}:${current.asset.view}:${current.asset.publishedVersion ?? 1}`} scope={scope} group={current.group} asset={current.asset} large /></div>}
         <div className="flex items-center justify-between gap-2"><Button type="button" size="xs" variant="outline" disabled={items.length < 2} onClick={() => navigate(-1)}><ChevronLeft aria-hidden="true" />Previous</Button>
           <span className="text-[11px] text-muted-foreground">{currentIndex + 1} / {items.length}</span>
           <Button type="button" size="xs" variant="outline" disabled={items.length < 2} onClick={() => navigate(1)}>Next<ChevronRight aria-hidden="true" /></Button></div>
@@ -159,7 +173,7 @@ export function ReferenceReviewPreview({ projectId, job, onSaved, checkStatus }:
     <Dialog open={!!confirmation} onOpenChange={open => { if (!open && !running.current) setConfirmation(null); }}>
       <DialogContent finalFocus={returnFocus} showCloseButton={!busy} className="gap-3 rounded-xl p-4 sm:max-w-sm">
         <DialogTitle className="pr-6 text-sm">Regenerate {confirmation?.label} view?</DialogTitle>
-        <DialogDescription className="text-xs leading-relaxed">The current view will be replaced and the {confirmation?.type === "character" ? "Character" : "Product"} Sheet will need to be rebuilt. Your request will be saved; generation remains paused.</DialogDescription>
+          <DialogDescription className="text-xs leading-relaxed">The local worker will regenerate only this view and rebuild the {confirmation?.type === "character" ? "Character" : "Product"} Sheet. Previous references stay available until the replacement is saved. You will need to approve this reference again.</DialogDescription>
         {error && <p role="alert" className="break-words text-xs text-destructive">{error}</p>}
         <div className="flex justify-end gap-2"><DialogClose render={<Button type="button" size="xs" variant="outline" disabled={busy} autoFocus />}>Cancel</DialogClose>
           <Button type="button" size="xs" disabled={busy} onClick={() => { const group = review.groups.find(item => item.type === confirmation?.type); if (group && confirmation) void act("regenerate", group, confirmation); }}>{busy ? "Saving…" : "Regenerate"}</Button></div>

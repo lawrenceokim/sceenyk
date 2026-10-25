@@ -1,5 +1,11 @@
 # Code Standards
 
+## Milestone 6.6 — Reference Regeneration + Review UX Correction (2026-10-24)
+
+**Milestone 6.6 — Reference Regeneration + Review UX Correction — Complete in source. Manual migration/provider/runtime/ownership/visual acceptance pending. Milestone 7 — Not Started.** This section supersedes the historical 6.5 request-only execution and exclusive Preview rules below. [Current execution, versioning and manual setup](reference-review.md#milestone-66-execution-and-review-contract).
+
+Every long-running reference regeneration must expose real persisted progress. Persist intent before dispatch, immutable provider receipts before polling/download, validated private views before publication, and compose only from effective successful assets. Never repeat analysis/training or replay an uncertain paid request. Reuse 046 review requests, job-first locks, fenced leases, canonical private paths and append-only job events. Keep provider details/checkpoints/storage keys server-only. Preserve Tailwind-only styling and session-bound 120-second preview capabilities.
+
 ## Milestone 6.5 — Reference Asset Review (2026-10-24)
 
 **Milestone 6 — Complete. Milestone 6.5 — Complete in source; manual 046/runtime/ownership/visual acceptance pending. Milestone 7 — Location Reference generation — Not Started.** This supersedes older stop points below. [Review UI, security, persistence and setup](reference-review.md).

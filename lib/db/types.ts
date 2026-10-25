@@ -267,6 +267,11 @@ export type Database = {
       ugc_finish_input_validation: { Args: { p_job_id: string; p_claim_token: string; p_input_snapshot: import("@/lib/ugc-jobs/input-contract").UgcGenerationSnapshot }; Returns: import("@/lib/ugc-jobs/contract").UgcJobRow | null };
       ugc_enqueue_job: { Args: { p_owner_user_id: string; p_project_id: string; p_idempotency_key: string }; Returns: import("@/lib/ugc-jobs/contract").UgcJobRow | null };
       ugc_claim_job: { Args: { p_worker_id: string }; Returns: import("@/lib/ugc-jobs/contract").UgcJobRow | null };
+      ugc_claim_reference_regeneration: { Args: { p_worker_id: string; p_product_enabled: boolean }; Returns: import("@/lib/reference-review/contract").ReferenceReviewRow | null };
+      ugc_update_reference_regeneration: { Args: { p_review_id: string; p_token: string; p_action: string;
+        p_request_id?: string | null; p_checkpoint?: unknown; p_asset?: unknown; p_phase?: string | null; p_error?: string | null }; Returns: boolean };
+      ugc_resume_reference_regeneration: { Args: { p_job_id: string }; Returns: boolean };
+      ugc_claim_character_sheet_recovery: { Args: { p_job_id: string; p_worker_id: string }; Returns: import("@/lib/reference-review/contract").ReferenceReviewRow | null };
       ugc_begin_reference_analysis: { Args: { p_job_id: string; p_claim_token: string; p_role: string; p_model: string }; Returns: "SUBMIT" | "REUSE" | "RECONCILE" | "STOP" };
       ugc_finish_reference_analysis: { Args: { p_job_id: string; p_claim_token: string; p_role: string; p_analysis: import("@/lib/reference-analysis/contract").ReferenceAnalysis | null; p_usage: import("@/lib/reference-analysis/contract").ReferenceUsage | null; p_error_code: string | null }; Returns: boolean };
       ugc_finish_references: { Args: { p_job_id: string; p_claim_token: string }; Returns: import("@/lib/ugc-jobs/contract").UgcJobRow | null };

@@ -1,5 +1,21 @@
 # Development application identity
 
+## Milestone 6.6 stored Character recovery (2026-10-25)
+
+048 is already applied (user-confirmed; execution_diagnostic is API-visible). Apply only new manual [049](../supabase/migrations/20261025004900_ugc_character_sheet_recovery.sql); it is required for service-only fenced storage recovery/publication and database-authoritative approval reconciliation. Existing tables/columns, job-first locks, RLS and restricted grants are reused. A private review trigger reconciles current approval/version/composition/execution writes; queued Location is admitted only with both approvals. Existing read predicates become volatile to observe the trigger's current write. The new service-only single-job recovery claim requires completed requests/stored Front and retains the existing three-claim lease budget; the publication RPC accepts exact owned immutable recovery namespaces and real recovery phases/specific errors. Helpers remain inaccessible to browser/service direct calls. No new table, stage or migration-time backfill/job mutation. Definitions are transactional/rerunnable; empty local schema/ACL checks through 049 passed, with no execution RPC/fixtures. Remote application and runtime acceptance remain manual. [Recovery evidence and command](reference-review.md#stored-character-recovery-and-authoritative-approval-gate-2026-10-25).
+
+## Milestone 6.6 regression diagnostics (2026-10-24)
+
+Hosted read-only REST/schema inspection found the 045 Product, 046 review/gate and 047 regeneration columns/RPCs present; there was no observed missing API object or authentication failure. This access cannot inspect hosted indexes/triggers/function bodies or migration-history stamps. Optional manual catalog SELECTs are in `supabase/diagnostics/ugc_regeneration_catalog_readonly.sql`. No direct PostgreSQL URL or management token was configured; app and worker both use the shared HTTPS Supabase client.
+
+New manual-only `20261024004800_ugc_regeneration_diagnostics.sql` follows existing 047. It changes the exposed claim to nullable JSON while preserving/restricting its composite helper, and adds a private bounded allowlisted execution diagnostic on the review root. The existing fenced failure RPC accepts it via the already-existing checkpoint argument. No historical job/request/asset/approval/diagnostic UPDATE or automatic resume. Apply only 048 after existing prerequisites; do not reapply earlier migrations. New 048 is not applied remotely. Milestone 7 remains Not Started.
+
+## Milestone 6.6 — Reference Regeneration + Review UX Correction (2026-10-24)
+
+**Milestone 6.6 — Reference Regeneration + Review UX Correction — Complete in source. Manual migration/provider/runtime/ownership/visual acceptance pending. Milestone 7 — Not Started.** This section supersedes the historical 6.5 request-only execution and exclusive Preview rules below. [Current execution, versioning and manual setup](reference-review.md#milestone-66-execution-and-review-contract).
+
+Manually apply 20261024004700_ugc_reference_regeneration.sql after 046. It is additive, transactional and rerunnable: no historical job/file updates or data fixtures. It extends Character/review version constraints to v2, adds regeneration execution/heartbeat/timing/checkpoint columns and private fenced claim/update/resume functions, and expands safe events. Existing RLS/service-only narrow writes and job gates remain. Version-aware review creation and known-receipt Character output recovery preserve v1 support. No remote schema or SQL application was performed.
+
 ## Milestone 6.5 — Reference Asset Review (2026-10-24)
 
 **Milestone 6 — Complete. Milestone 6.5 — Complete in source; manual 046/runtime/ownership/visual acceptance pending. Milestone 7 — Location Reference generation — Not Started.** This supersedes older stop points below. [Review UI, security, persistence and setup](reference-review.md).

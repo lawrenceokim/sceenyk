@@ -2,6 +2,9 @@ import "server-only";
 import { ugcPollMilliseconds } from "./contract";
 import { UgcJobRunner } from "./runner";
 import { claimUgcJob } from "./worker-service";
+import { runReferenceRegeneration } from "@/lib/reference-review/regeneration";
+import { claimReferenceRegeneration } from "@/lib/reference-review/claim";
+import { UgcWorkerDatabaseError, workerDatabaseBackoff, type WorkerDatabasePhase } from "./database-diagnostics";
 
 function waitForPoll(milliseconds: number, signal: AbortSignal) {
   return new Promise<void>(resolve => {
@@ -17,14 +20,36 @@ export class LocalJobRunner {
   constructor(private readonly workerId: string, private readonly runner = new UgcJobRunner()) {}
 
   async run(signal: AbortSignal) {
+    let failures = 0;
+    let lastLog = 0;
+    let lastSignature = "";
     while (!signal.aborted) {
       let delay = ugcPollMilliseconds;
+      let phase: WorkerDatabasePhase = "regeneration_claim";
       try {
-        const job = await claimUgcJob(this.workerId);
-        if (job) await this.runner.run(job, signal);
-      } catch {
-        console.error("UGC_LOCAL_WORKER_DATABASE_UNAVAILABLE");
-        delay = 15_000;
+        const claim = await claimReferenceRegeneration(this.workerId, process.env.UGC_PRODUCT_SHEET_ENABLED === "1");
+        if (!claim) phase = "job_claim";
+        const job = claim ? null : await claimUgcJob(this.workerId);
+        if (failures) console.info("UGC_LOCAL_WORKER_DATABASE_RECOVERED", { phase });
+        failures = 0; lastSignature = "";
+        if (claim) await runReferenceRegeneration(claim, signal);
+        else if (job) await this.runner.run(job, signal);
+      } catch (error) {
+        if (signal.aborted) break;
+        if (!(error instanceof UgcWorkerDatabaseError)) {
+          console.error("UGC_LOCAL_WORKER_CONTRACT_INVALID", { phase, category: "worker_contract_invalid", retrying: false });
+          throw new Error("UGC_WORKER_CONTRACT_INVALID");
+        }
+        failures += 1;
+        delay = workerDatabaseBackoff(failures);
+        const diagnostic = error.diagnostic;
+        const signature = `${diagnostic.phase}:${diagnostic.category}:${diagnostic.code ?? ""}`;
+        if (signature !== lastSignature || Date.now() - lastLog >= 600_000 || !diagnostic.retrying) {
+          console.error("UGC_LOCAL_WORKER_DATABASE_UNAVAILABLE", { ...diagnostic,
+            ...(diagnostic.retrying ? { retryInMs: delay } : {}) });
+          lastSignature = signature; lastLog = Date.now();
+        }
+        if (!diagnostic.retrying) throw new Error("UGC_DATABASE_UNRECOVERABLE");
       }
       await waitForPoll(delay, signal);
     }

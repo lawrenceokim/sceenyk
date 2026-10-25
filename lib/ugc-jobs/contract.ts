@@ -105,7 +105,7 @@ export type UgcJobProgress = {
   events: UgcProgressEvent[];
   worker: { heartbeatAt: string | null; leaseExpiresAt: string | null; state: "healthy" | "stalled" | "inactive" };
   serverNow: string;
-  timing: { elapsedMs: number | null; runningSince: string | null; pausedAt: string | null };
+  timing: { elapsedMs: number | null; runningSince: string | null; pausedAt: string | null; scope?: "workflow" | "regeneration" };
   referenceReview?: ReferenceReviewSnapshot;
 };
 export type UgcProgressStep = { id: string; label: string; state: "waiting" | "active" | "completed" | "failed" | "paused" };
@@ -121,5 +121,7 @@ export function isUgcJobActive(status: UgcJobStatus) {
 // A paused job still occupies its request; it must not enable another enqueue.
 // Polling is a separate decision from that non-terminal admission guard.
 export function shouldPollUgcProgress(job: Pick<UgcJobProgress, "status" | "paused" | "referenceReview">) {
-  return (job.status === "queued" || job.status === "running") && (!!job.referenceReview?.regenerating || !job.paused);
+  if (job.status === "cancelled" || job.status === "completed") return false;
+  if (job.referenceReview?.regenerating) return true;
+  return (job.status === "queued" || job.status === "running") && !job.paused;
 }

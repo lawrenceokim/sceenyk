@@ -53,11 +53,11 @@ export const generateCharacterSheet: UgcStageHandler = async ({ job, signal }) =
     const provider = createCharacterSheetProvider();
     if (existing.data && existing.data.provider_model !== provider.model) throw new CharacterSheetError("CHARACTER_CONFIG_INVALID", true);
     const initial: CharacterSheetDocument = {
-      schemaVersion: 1, promptVersion: characterSheetPromptVersion, snapshotSha256: fingerprint,
+      schemaVersion: 2, promptVersion: characterSheetPromptVersion, snapshotSha256: fingerprint,
       analysisId: row.id, analysisVersion: 1, wardrobe: buildWardrobe(snapshot, analysis),
       seed: parseInt(fingerprint.slice(0, 8), 16) % 1_000_000 + 1, operations: {}, assets: {},
       provenance: { identity: "source-image-via-soul-id-v2", observations: "saved-analysis-supports-original-image",
-        generated: "wardrobe-and-unseen-body-rear-footwear-details-are-generated-continuity", layout: "gray-three-column-contain-v1" },
+        generated: "wardrobe-and-unseen-body-rear-footwear-details-are-generated-continuity", layout: "gray-front-back-face-only-v2" },
     };
     const prepared = await db.rpc("ugc_prepare_character_sheet", { p_job_id: job.id, p_claim_token: job.claim_token,
       p_model: provider.model, p_document: initial });
@@ -186,7 +186,8 @@ export const generateCharacterSheet: UgcStageHandler = async ({ job, signal }) =
     let final = await loadStoredCharacterAsset(sheet, "sheet", signal);
     if (!final) {
       await checkpoint("Building character sheet");
-      final = await saveCharacterAsset(sheet, "sheet", await composeCharacterSheet(images), signal);
+      if (images.length !== 3) throw new CharacterSheetError("CHARACTER_COMPOSITION_FAILED");
+      final = await saveCharacterAsset(sheet, "sheet", await composeCharacterSheet(images as [Buffer, Buffer, Buffer]), signal);
     }
     document.assets.sheet = final.asset;
     await checkpoint("Saving character reference");
