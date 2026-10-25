@@ -12,6 +12,7 @@ const safeStartupReasons = new Set([
   "UGC_WORKER_CONTRACT_INVALID", "UGC_DATABASE_UNRECOVERABLE",
   "UGC_INSPECTION_UNAVAILABLE",
   "CHARACTER_SHEET_RECOVERY_FAILED", "CHARACTER_SHEET_COMPOSITION_FAILED",
+  "CHARACTER_SLOT_VALIDATION_REQUIRED",
 ]);
 const safeDatabaseCodes = new Set(["PGRST202", "PGRST204", "PGRST205", "42501", "42883", "23514"]);
 class WorkerStartupError extends Error {
@@ -88,6 +89,8 @@ async function main() {
   // Resolve the complete worker module graph before any recovery RPC can write.
   startupPhase = "runner_import";
   const { LocalJobRunner } = await import("../lib/ugc-jobs/local-runner");
+  const { characterV5 } = await import("../lib/character-v5/contract");
+  console.info("UGC_CHARACTER_CONTRACT", characterV5);
   if (args.length) {
     startupPhase = "recovery_read";
     const { createDatabaseClient } = await import("../lib/db/server");

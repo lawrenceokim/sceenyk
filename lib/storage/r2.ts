@@ -2,6 +2,7 @@ import "server-only";
 import { createReadStream } from "node:fs";
 import {
   GetObjectCommand,
+  DeleteObjectCommand,
   HeadObjectCommand,
   PutObjectCommand,
   S3Client,
@@ -11,6 +12,44 @@ import { getStorageConfig } from "./config";
 
 const uploadLifetimeSeconds = 5 * 60;
 const readLifetimeSeconds = 15 * 60;
+// Manual development probe only. This namespace cannot name a real UGC asset.
+export async function deleteR2CharacterProbe(key: string, etag: string, signal: AbortSignal) {
+  if (!/^development-probes\/character-v5\/[a-f0-9-]{36}\.png$/.test(key) || !etag) throw new Error("STORAGE_PROBE_DELETE_DENIED");
+  const object = await headR2CharacterObject(key, signal);
+  if (!object) return;
+  if (object.etag !== etag) throw new Error("STORAGE_PROBE_OBJECT_CHANGED");
+  const { bucket, sdk } = client();
+  await sdk.send(new DeleteObjectCommand({ Bucket: bucket, Key: key }), { abortSignal: signal });
+  if (await headR2CharacterObject(key, signal)) throw new Error("STORAGE_PROBE_DELETE_UNCONFIRMED");
+}
+// V5 uses an ordinary HEAD for metadata, independently from the legacy range
+// probe. A metadata failure must not be confused with decoding or candidate SQL.
+export async function headR2CharacterObject(key: string, signal: AbortSignal) {
+  const { bucket, sdk } = client();
+  try {
+    const result = await sdk.send(new HeadObjectCommand({ Bucket: bucket, Key: key }),
+      { abortSignal: AbortSignal.any([signal, AbortSignal.timeout(30_000)]) });
+    return { etag: result.ETag ?? "", sizeBytes: result.ContentLength ?? 0, mimeType: result.ContentType ?? "" };
+  } catch (error) {
+    if (error && typeof error === "object" && "$metadata" in error &&
+      (error.$metadata as { httpStatusCode?: number })?.httpStatusCode === 404) return null;
+    throw new Error("CHARACTER_STORAGE_METADATA_FAILED", { cause: error });
+  }
+}
+// Callers must first fence a rejected candidate in SQL. R2 documents ordinary
+// DeleteObject, without a conditional-delete guarantee; verify ETag immediately
+// before deletion and rely on immutable, never-reused application object keys.
+export async function deleteR2CharacterCandidate(key: string, etag: string, signal: AbortSignal) {
+  if (!/^ugc\/[a-f0-9-]{36}\/[a-f0-9-]{36}\/[a-f0-9-]{36}\/(character-v[125]|reference-review-v1)\//.test(key) ||
+    !key.includes("/candidates/") || !etag) throw new Error("CHARACTER_CANDIDATE_DELETE_DENIED");
+  const { bucket, sdk } = client();
+  const object = await headR2CharacterObject(key, signal);
+  if (!object) return;
+  if (object.etag !== etag) throw new Error("CHARACTER_CANDIDATE_CHANGED");
+  await sdk.send(new DeleteObjectCommand({ Bucket: bucket, Key: key }),
+    { abortSignal: AbortSignal.any([signal, AbortSignal.timeout(30_000)]) });
+  if (await headR2CharacterObject(key, signal)) throw new Error("CHARACTER_CANDIDATE_DELETE_UNCONFIRMED");
+}
 // Shared immutable private PNG writer; Product callers map storage failures to
 // their own safe diagnostics. Character behavior and existing exports stay intact.
 export { putR2CharacterImage as putR2ReferenceImage };

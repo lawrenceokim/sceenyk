@@ -74,6 +74,11 @@ export type Database = {
       ugc_generation_job_events: { Row: import("@/lib/ugc-jobs/contract").UgcJobEventRow; Insert: never; Update: never; Relationships: [] };
       ugc_reference_analyses: { Row: import("@/lib/reference-analysis/contract").ReferenceAnalysisRow; Insert: never; Update: never; Relationships: [] };
       ugc_character_sheets: { Row: import("@/lib/character-sheet/contract").CharacterSheetRow; Insert: never; Update: never; Relationships: [] };
+      ugc_character_v5_workflows: { Row: import("@/lib/character-v5/contract").V5Workflow; Insert: never; Update: never; Relationships: [] };
+      ugc_character_v5_candidates: { Row: import("@/lib/character-v5/contract").V5Candidate; Insert: never; Update: never; Relationships: [] };
+      ugc_character_asset_purges: { Row: { object_hash: string; job_id: string; owner_user_id: string; project_id: string;
+        storage_key: string | null; etag: string | null; sha256: string | null; size_bytes: number | null;
+        state: "deleting" | "deleted"; created_at: string; deleted_at: string | null }; Insert: never; Update: never; Relationships: [] };
       ugc_product_sheets: { Row: import("@/lib/product-sheet/contract").ProductSheetRow; Insert: never; Update: never; Relationships: [] };
       ugc_reference_reviews: { Row: import("@/lib/reference-review/contract").ReferenceReviewRow; Insert: never; Update: never; Relationships: [] };
       ugc_reference_regeneration_requests: { Row: import("@/lib/reference-review/contract").ReferenceRegenerationRow; Insert: never; Update: never; Relationships: [] };
@@ -281,6 +286,15 @@ export type Database = {
       ugc_resume_character_sheet: { Args: { p_job_id: string }; Returns: boolean };
       ugc_resume_character_output: { Args: { p_job_id: string }; Returns: boolean };
       ugc_prepare_product_sheet: { Args: { p_job_id: string; p_claim_token: string; p_model: string; p_document: import("@/lib/product-sheet/contract").ProductSheetDocument }; Returns: import("@/lib/product-sheet/contract").ProductSheetRow | null };
+      ugc_character_v5_start: { Args: { p_owner: string; p_project: string; p_job: string; p_token?: string; p_soul_id?: string }; Returns: import("@/lib/character-v5/contract").V5Workflow | null };
+      ugc_character_v5_action: { Args: { p_owner: string; p_project: string; p_job: string; p_version: number; p_action: string; p_slot?: string; p_crop_top?: number }; Returns: import("@/lib/character-v5/contract").V5Workflow | null };
+      ugc_character_v5_finish_rejection: { Args: { p_owner: string; p_project: string; p_job: string; p_version: number; p_candidate: string }; Returns: boolean };
+      ugc_character_v5_claim: { Args: { p_worker: string }; Returns: import("@/lib/character-v5/contract").V5Workflow | null };
+      ugc_character_v5_recovery_claim: { Args: { p_owner: string; p_project: string; p_job: string; p_version: number; p_candidate: string }; Returns: import("@/lib/character-v5/contract").V5Workflow | null };
+      ugc_character_v5_preview_failure: { Args: { p_owner: string; p_job: string; p_version: number }; Returns: boolean };
+      ugc_character_cleanup_claim: { Args: { p_owner: string; p_project: string; p_job: string; p_proof: Record<string, unknown>; p_object_hash: string; p_etag: string; p_size: number }; Returns: boolean };
+      ugc_character_cleanup_finish: { Args: { p_hash: string; p_etag: string }; Returns: boolean };
+      ugc_character_v5_checkpoint: { Args: { p_workflow: string; p_token: string; p_candidate: string; p_operation: string; p_payload?: Record<string, unknown> }; Returns: import("@/lib/character-v5/contract").V5Candidate | null };
       ugc_checkpoint_product_sheet: { Args: { p_job_id: string; p_claim_token: string; p_document: import("@/lib/product-sheet/contract").ProductSheetDocument; p_composing: boolean }; Returns: boolean };
       ugc_finish_product_sheet: { Args: { p_job_id: string; p_claim_token: string }; Returns: import("@/lib/ugc-jobs/contract").UgcJobRow | null };
       ugc_resume_product_sheet: { Args: { p_job_id: string }; Returns: boolean };

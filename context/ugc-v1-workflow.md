@@ -1,5 +1,34 @@
 # UGC V1 workflow contract
 
+## Character V5 manual review (2026-10-25)
+
+**Character V5 — Complete in source. V4 is superseded for new Character work. Manual migration 054 and provider/visual/runtime acceptance pending. Milestone 7 remains Not Started.**
+
+Original image → static Soul 2 Face → manual Accept → static Back → manual Accept → static Front source conditioned on accepted Back → manual Accept → local adjustable Sharp headless Front → manual Accept → local FRONT / BACK / FACE sheet → explicit Approve Character Reference. Each paid stage waits for the previous user acceptance. Technical checks only; no automatic semantic rejection or OpenAI prompt/crop validation in V5. Private candidates are separate from accepted canonical pointers; Reject fences the candidate, deletes its R2 file, then clears its image pointer while retaining minimal audit metadata. Historical V1–V4 records remain readable and unchanged. Product generation, views and approval stay the same; only its Character dependency resolver admits approved V5 workflows.
+
+[Authoritative V5 contract, setup, cleanup and verification limits](character-sheet.md#character-v5-manual-review-2026-10-25). Source-only authorization: TypeScript, focused lint and static/schema checks. No provider calls, worker/job execution, live mutation, cleanup runs, R2 deletion, remote SQL, builds, deployment, Render/Inngest or Milestone 7. Older sections below describe historical versions.
+
+## Character V4 — current UGC Character contract (2026-10-25)
+
+**Official Character direction: Complete in source; manual 053/provider/visual/runtime acceptance pending. Milestone 7 — Not Started.** The [full Character V4 contract](character-sheet.md#character-v4-official-workflow-2026-10-25) supersedes all older Character strategy/order/prompt-version/setup recommendations below. V3 is superseded for new Character references because direct Front-first generation remained unreliable. Older source-complete milestones remain historical implementation evidence, not V4 completion or execution permission. Other UGC inputs, privacy, financial and Product / Prop contracts are unchanged.
+
+Required chain: **Original Character image → OpenAI Character analysis → Soul ID → Face → Back → Front source → local headless Front → local Character Sheet → Reference review → approval**. Each dependency must be validated and persisted before the next starts. Higgsfield Soul 2 Image-to-Image generates Face first (one shoulder/upper-chest portrait), Back second (one rear full body with feet), Front source third (one normal front full body with feet). All outputs use neutral gray, one person/pose, no collage, panels, insets, extra views or text. Face becomes identity authority; validated Back becomes the main body/outfit authority for Front, with Face/Soul identity support.
+
+Never ask the provider for a headless person or final sheet. Preserve provider `front_source`; Sharp/local processing derives and separately validates headless canonical `front_reference` at a safe neck/collar/shoulder boundary, retaining outfit/arms/legs/footwear. Compose only validated canonical Front + Back + Face locally, in that display order, on gray with clean spacing and no original/extra figures/text. Rejected provider outputs remain private historical candidates, never canonical references.
+
+Failure retries target the failed step: Face only; Back only preserving Face; Front source only preserving Face + Back; local crop only preserving provider source; composition only preserving all three canonical references. Reuse successful paid work and known receipts; uncertain outcomes require reconciliation. Progress follows the [17 persisted V4 phases](character-sheet.md#persisted-progress-and-references-ui), with no fake activity. References shows Original, Face, Back, canonical headless Front, Character Sheet; private diagnostics may separately inspect the intermediate source. Explicit current-version owner approval remains required before Product admission.
+
+Current versions: **Character prompt 4; generation contract 4; strategy `face-back-front-v1`**. V1/V2/V3 jobs/assets/actual versions remain unchanged and interpretable; no historical rewrite, relabelling, backfill or replay. OpenAI retains Character analysis and later storyboard/script generation; Soul ID remains identity; Product / Prop generation/provider/approval stays unchanged. Source changes and TypeScript/focused lint/isolated schema checks only. No provider calls, workers/jobs, live mutations, remote migrations, browser suites, builds, deployments, Render or Inngest. Apply [053](../supabase/migrations/20261025005300_ugc_character_v4_dependencies.sql) manually after 052; no new environment/dependency.
+
+Implementation refinement: the original may be reused as Face only after the complete V4 portrait contract, including neutral gray, passes; persist its origin. Explicit Face replacement invalidates Back + Front + Sheet/Character approval; Back replacement invalidates Front + Sheet/Character approval; Front replacement preserves Face/Back. Local crop/sheet repairs reuse paid output. See [current setup and acceptance limits](character-sheet.md#manual-setup-and-source-acceptance).
+
+## Character V3 image-to-image pivot (2026-10-25)
+
+**Historical / superseded by the planned V4 contract above; not new-generation guidance.**
+
+Implemented in source; manual 052 and runtime/visual acceptance pending. [Current pipeline, source/Face rules, setup and verification limits](character-sheet.md#character-v3-image-to-image-pivot-2026-10-25) supersedes earlier Standard/V2 dispatch guidance. Character now uses SOUL2 Image-to-Image with private temporary input URLs, existing Soul ID, V3 provenance, retained Front source/local crop, preferred Front-conditioned Back and original Face reuse before fallback. OpenAI analysis/visual validation remains; it does not generate Character images. Product is unchanged. No providers, workers, live mutation, remote SQL, deployment, Render/Inngest or Milestone 7 execution.
+
+
 ## Stored Character recovery gate (2026-10-25)
 
 New manual 049, after already-applied 048, makes current Character and Product approvals authoritative for queued Location eligibility. Review mutations reconcile the paused parent position; Character recovery stays at the existing Character pause until explicit approval. With both approvals, only the non-runnable Location-not-implemented pause is reached. The deliberate single-job recovery command uses saved Front/Back/Face and validates/promotes the exact unpublished sheet or composes locally, requiring fresh Character approval and preserving Product approval/history. It never enters provider execution, repeats analysis/training or begins Milestone 7. [Evidence, implemented command and acceptance limits](reference-review.md#stored-character-recovery-and-authoritative-approval-gate-2026-10-25). No recovery/live mutation was executed; Milestone 7 remains Not Started.
@@ -253,6 +282,8 @@ During current UGC development and manual testing, the user performs workflow ac
 Milestone 3 uses source/document review, minimal TypeScript/focused ESLint and SQL/link/whitespace/scope review only. No browser/screenshot/integration/regression suites, production build, test jobs, worker startup, storage/provider requests, migration application or deployment. Existing Studio geometry is retained. Stop after Milestone 3; the user applies 036/037 and performs manual acceptance.
 
 ## Implementation milestones
+
+**Historical baseline roadmap below.** Its M6/next-step and storyboard numbering predates later reference/review milestones; retain it as history, not current authorization. Current Character V4 is documented/planned with implementation Not Started; Milestone 7 — Location Reference generation remains Not Started, as recorded in the current [progress tracker](progress-tracker.md#character-v4--official-workflow-documentation-2026-10-25).
 
 | Milestone | Bounded outcome | Status |
 | --- | --- | --- |

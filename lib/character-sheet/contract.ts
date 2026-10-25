@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { characterValidationSchema, characterInputHashesSchema } from "./validation-contract";
+import { characterGenerationSchema, characterGenerationRevision, frontCropSchema, characterInputReferenceSchema } from "./generation-contract";
 
 export const characterSheetVersion = 2;
 export const characterSheetPromptVersion = "character-sheet-v2";
@@ -17,7 +19,7 @@ export const wardrobeSchema = z.strictObject({
 });
 export type Wardrobe = z.infer<typeof wardrobeSchema>;
 export const characterProviderOperations = ["identity_create", "identity_status", "view_submit", "view_status", "output_download",
-  "output_decode", "output_storage", "sheet_composition", "checkpoint_validation"] as const;
+  "output_decode", "output_storage", "sheet_composition", "checkpoint_validation", "output_validation"] as const;
 export type CharacterProviderOperation = typeof characterProviderOperations[number];
 export const characterOutputReasons = [
   "CHARACTER_FRONT_OUTPUT_MISSING", "CHARACTER_BACK_OUTPUT_MISSING", "CHARACTER_FACE_OUTPUT_MISSING",
@@ -28,6 +30,10 @@ export const characterOutputReasons = [
   "CHARACTER_PROVIDER_SCHEMA_INVALID", "CHARACTER_PROVIDER_RESPONSE_ID_MISMATCH", "CHARACTER_OUTPUT_STATUS_REGRESSED",
   "CHARACTER_OUTPUT_CHECKPOINT_INVALID", "CHARACTER_UNEXPECTED_OUTPUT_FAILURE",
   "CHARACTER_OUTPUT_URL_EXPIRED", "CHARACTER_PROVIDER_STATUS_NOT_FOUND",
+  "CHARACTER_SLOT_CONTENT_REJECTED", "CHARACTER_SLOT_VALIDATION_UNAVAILABLE", "CHARACTER_SLOT_VALIDATION_REQUIRED",
+  "CHARACTER_PROVIDER_SINGLE_VIEW_UNSATISFIED", "CHARACTER_FRONT_CROP_INVALID", "CHARACTER_PROMPT_CONTRACT_MISMATCH",
+  "CHARACTER_PROMPT_PROVENANCE_REQUIRED",
+  "CHARACTER_FACE_DEPENDENCY_INVALID", "CHARACTER_BACK_DEPENDENCY_INVALID",
 ] as const;
 export type CharacterOutputReason = typeof characterOutputReasons[number];
 const outputHostSchema = z.string().max(253).regex(/^(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,}$/);
@@ -36,6 +42,7 @@ export const characterOutputMetadataSchema = z.strictObject({
   providerRequestId: z.uuid().optional(),
   fields: z.array(z.enum(["id", "request_id", "status", "images", "output", "outputs", "result", "results", "data", "url", "image_url",
     "error", "status_url", "cancel_url", "expires_at", "expires_after"])).max(16),
+  usage: z.partialRecord(z.enum(["input_tokens", "output_tokens", "total_tokens", "image_count", "credits", "cost"]), z.number().finite().nonnegative()).optional(),
   otherFieldCount: z.number().int().min(0).max(10_000),
   imagesArray: z.boolean(), imageCount: z.number().int().min(0).max(1000).nullable(),
   outputsArray: z.boolean(), outputCount: z.number().int().min(0).max(1000).nullable(),
@@ -64,7 +71,9 @@ export const characterDiagnosticSchema = z.strictObject({
   media: characterMediaMetadataSchema.optional(),
 });
 export type CharacterDiagnostic = z.infer<typeof characterDiagnosticSchema>;
-export const operationSchema = z.strictObject({
+const operationCoreSchema = z.strictObject({
+  strategyRevision: z.literal(characterGenerationRevision).optional(), faceOrigin: z.enum(["original", "provider"]).optional(),
+  retryCount: z.number().int().min(0).max(1).optional(),
   key: z.uuid(), state: z.enum(["intent", "accepted", "rejected", "completed", "failed"]),
   providerId: z.uuid().optional(), statusUrl: z.url().max(1000).optional(),
   startedAt: z.iso.datetime(), nextPollAt: z.iso.datetime().optional(), polls: z.number().int().min(0).max(500),
@@ -72,16 +81,28 @@ export const operationSchema = z.strictObject({
   diagnostic: characterDiagnosticSchema.optional(),
   submissionMetadata: characterOutputMetadataSchema.optional(),
   outputMetadata: characterOutputMetadataSchema.optional(), media: characterMediaMetadataSchema.optional(),
+  validation: characterValidationSchema.optional(),
+  originalFaceValidation: characterValidationSchema.optional(), workPhase: z.enum(["preparing_source", "sending_i2i", "validating_source", "cropping_front", "validating_crop", "checking_original_face"]).optional(),
+  sourceValidation: characterValidationSchema.optional(), frontSource: characterInputReferenceSchema.optional(), originalReference: characterInputReferenceSchema.optional(),
+  generation: characterGenerationSchema.optional(), frontCrop: frontCropSchema.optional(),
+  localFrontHistory: z.array(z.strictObject({ crop: frontCropSchema, validation: characterValidationSchema })).max(2).optional(),
+  requestedVersion: z.number().int().positive().optional(), manualRequestId: z.uuid().optional(),
 });
+export const operationSchema = operationCoreSchema.extend({ previousAttempts: z.array(operationCoreSchema).max(5).optional() });
 export type CharacterOperation = z.infer<typeof operationSchema>;
 export const characterAssetSchema = z.strictObject({
+  strategyRevision: z.literal(characterGenerationRevision).optional(), faceOrigin: z.enum(["original", "provider"]).optional(),
   id: z.uuid(), type: z.enum(Object.values(characterAssetTypes)), storageKey: z.string().max(512),
   etag: z.string().min(1).max(512), sizeBytes: z.number().int().positive().max(20 * 1024 * 1024),
   width: z.number().int().positive().max(4096), height: z.number().int().positive().max(4096),
   sha256: z.string().regex(/^[a-f0-9]{64}$/), mimeType: z.literal("image/png"),
+  characterValidation: characterValidationSchema.optional(), characterInputs: characterInputHashesSchema.optional(),
+  frontSource: characterInputReferenceSchema.optional(), originalReference: characterInputReferenceSchema.optional(),
+  generation: characterGenerationSchema.optional(), frontCrop: frontCropSchema.optional(), sourceValidation: characterValidationSchema.optional(),
 });
 export type CharacterAsset = z.infer<typeof characterAssetSchema>;
 export const characterSheetDocumentSchema = z.strictObject({
+  strategyRevision: z.literal(characterGenerationRevision).optional(),
   schemaVersion: z.union([z.literal(1), z.literal(2)]), promptVersion: z.enum(["character-sheet-v1", "character-sheet-v2"]),
   snapshotSha256: z.string().regex(/^[a-f0-9]{64}$/), analysisId: z.uuid(), analysisVersion: z.literal(1),
   wardrobe: wardrobeSchema, seed: z.number().int().min(1).max(1_000_000),

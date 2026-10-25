@@ -1,5 +1,57 @@
 # AI Workflow Rules
 
+## Character V5 R2 persistence (2026-10-25)
+
+**Complete in source; manual migration 056 after 055 and manual runtime acceptance pending. Milestone 7 remains Not Started.** The latest Face is committed in R2 and matches its persisted fingerprint (4,346,748 bytes, PNG, 1536 x 1152). This supersedes the earlier zero-V5-object snapshot. Current persisted failure is candidate_insertion; the 055 ready expression reproduces PostgreSQL 22P02 because JSON extraction was not grouped before subtraction. 056 corrects only that expression, preserving ownership/leases/ACLs and all other RPC definitions. No new metadata field or data backfill. The original r2_write exception was discarded; its exact historical S3/network cause remains unknown.
+
+The Buffer-based V5 writer reuses the same private R2 helper as Product, verifies an existing immutable key before PUT, and checks for commitment after uncertain writes. Safe allowlisted SDK diagnostics retain nested causes without logging credentials, URLs or raw responses. Retry saving verifies the existing candidate object first; if absent, it may GET the saved provider request's completed output, validate the same persisted fingerprint, and save the same candidate/key. It never submits a new generation, enters a worker loop or advances manual acceptance. Confirmed unavailable output disables recovery; unknown network/auth failures remain retryable. Missing/mismatched objects block review and server-side acceptance/approval.
+
+Manual probe: `npm run storage:probe-character-r2 -- --dry-run` checks presence only; `--execute` uses the same writer, verifies a tiny local PNG and immediately attempts cleanup in its isolated development-probes namespace. Neither mode was run. All four required R2 variables are present in the inspection process via .env.local, with no inherited overrides or public copies. Existing running app/worker process environments were not inspected. No credentials changed.
+
+Verification: TypeScript, focused lint, 34 pure/static R2 checks, 8 isolated 056 expression/catalog checks (all 56 migrations, 056 rerun, no execution RPCs/data), retained 25 persistence-schema checks and 17 diagnostic checks. Live inspection used only database GET, R2 HEAD and bounded conditional GET/hash checks. OpenAPI exposes 055 output_proof and recovery RPC; live function bodies/ACLs were not available and are not inferred from API signatures. No providers, worker, live recovery, probe, current-job mutation, deletion, remote migration, build, deployment, Render/Inngest or Milestone 7 execution. Product and Character prompts remain unchanged. [Detailed evidence and manual setup](character-sheet.md#character-v5-r2-persistence-2026-10-25).
+
+
+## Character V5 persistence correction (2026-10-25)
+
+**Persistence correction complete in source; manual migration 055 required after 054. Milestone 7 remains Not Started.** Read-only live inspection confirmed migration 054 API tables/RPC signatures are present, but V5 start/approval SQL references nonexistent `ugc_generation_jobs.retryable` instead of `retry_eligible` (PostgreSQL `42703`). The start transaction rolls back before provider execution. Current job has zero V5 workflows/candidates and zero objects under its private V5 prefix; no new V5 Face is recoverable. This is separate from the reported worker timeout, which recovered.
+
+055 corrects those RPC definitions without rewriting 054, adds a technical output fingerprint before R2 PUT, and supports explicit provider-free publication recovery of the same candidate/object. Logs use fixed safe database diagnostics and distinct persistence/readback/storage phases. No provider, worker, recovery/cleanup execution, live job mutation, accepted-asset deletion, remote migration, deployment, Render/Inngest or Milestone 7 work is authorized. [Current fix and manual setup](character-sheet.md#character-v5-persistence-correction-2026-10-25).
+
+## Character V5 manual review (2026-10-25)
+
+**Character V5 — Complete in source. V4 is superseded for new Character work. Manual migration 054 and provider/visual/runtime acceptance pending. Milestone 7 remains Not Started.**
+
+Original image → static Soul 2 Face → manual Accept → static Back → manual Accept → static Front source conditioned on accepted Back → manual Accept → local adjustable Sharp headless Front → manual Accept → local FRONT / BACK / FACE sheet → explicit Approve Character Reference. Each paid stage waits for the previous user acceptance. Technical checks only; no automatic semantic rejection or OpenAI prompt/crop validation in V5. Private candidates are separate from accepted canonical pointers; Reject fences the candidate, deletes its R2 file, then clears its image pointer while retaining minimal audit metadata. Historical V1–V4 records remain readable and unchanged. Product generation, views and approval stay the same; only its Character dependency resolver admits approved V5 workflows.
+
+[Authoritative V5 contract, setup, cleanup and verification limits](character-sheet.md#character-v5-manual-review-2026-10-25). Source-only authorization: TypeScript, focused lint and static/schema checks. No provider calls, worker/job execution, live mutation, cleanup runs, R2 deletion, remote SQL, builds, deployment, Render/Inngest or Milestone 7. Older sections below describe historical versions.
+
+## Current authorization — Character V4 source implementation (2026-10-25)
+
+**Character V4 is the source-of-truth direction for future Character implementation: Complete in source; manual 053/provider/visual/runtime acceptance pending. Milestone 7 remains Not Started.** Read the [official V4 workflow](character-sheet.md#character-v4-official-workflow-2026-10-25). V3 is superseded for new Character references because direct Front-first generation remained unreliable.
+
+Required chain: **Original Character image → OpenAI Character analysis → Soul ID → Face → Back → Front source → local headless Front → local Character Sheet → Reference review → approval**. Each dependent step waits for validated persisted upstream references. Front source uses validated Back as body/outfit authority and Face/Soul identity support. Generate normal Front at the provider, derive canonical headless `front_reference` locally, and compose only Front / Back / Face locally. Keep Higgsfield Soul 2 Image-to-Image, Soul ID, OpenAI analysis/later storyboard and unchanged Product / Prop flow.
+
+Record future Character prompt **4**, generation contract **4**, strategy **`face-back-front-v1`**. Preserve V1/V2/V3 records/assets/receipts and original versions; do not relabel/backfill/rewrite/replay them. Reuse successful paid upstream work; crop/composition repair must not regenerate provider outputs. Progress must use real persisted events, and canonical references require validation plus explicit review/approval.
+
+**The subsequent implementation request authorizes Character V4 source changes, TypeScript, focused lint and static/schema checks only.** Do not call providers, start workers/jobs, regenerate images, mutate existing live jobs, apply remote migrations, build, deploy, run browser/screenshot suites, enable Render/Inngest or start Milestone 7. The user performs provider/visual/runtime acceptance afterward. Reuse an original Face only if it passes the complete V4 contract, including neutral gray, and persist its origin. Regenerate Face invalidates Back/Front/sheet; regenerate Back invalidates Front/sheet; regenerate Front preserves Face/Back. Historical documentation-only authorization below is superseded by this request; unrelated working-tree changes remain protected.
+
+Implementation refinement: the original may be reused as Face only after the complete V4 portrait contract, including neutral gray, passes; persist its origin. Explicit Face replacement invalidates Back + Front + Sheet/Character approval; Back replacement invalidates Front + Sheet/Character approval; Front replacement preserves Face/Back. Local crop/sheet repairs reuse paid output. See [current setup and acceptance limits](character-sheet.md#manual-setup-and-source-acceptance).
+
+## Character V3 image-to-image pivot (2026-10-25)
+
+**Historical / superseded by the planned V4 direction and documentation-only authorization above.**
+
+Implemented in source; manual 052 and runtime/visual acceptance pending. [Current pipeline, source/Face rules, setup and verification limits](character-sheet.md#character-v3-image-to-image-pivot-2026-10-25) supersedes earlier Standard/V2 dispatch guidance. Character now uses SOUL2 Image-to-Image with private temporary input URLs, existing Soul ID, V3 provenance, retained Front source/local crop, preferred Front-conditioned Back and original Face reuse before fallback. OpenAI analysis/visual validation remains; it does not generate Character images. Product is unchanged. No providers, workers, live mutation, remote SQL, deployment, Render/Inngest or Milestone 7 execution.
+
+
+## Character V2 debug/crop boundary (2026-10-25)
+
+Current authorization: SELECT-only historical/schema inspection and source fixes for shared V2 prompts/provenance, validated local Front cropping, Back/Face singleton rules, rejected-output owner previews and bounded provider suitability failure. Do not call Higgsfield/OpenAI, run workers/recovery/regeneration, mutate live jobs, crop historical files, apply remote SQL, deploy, enable Render/Inngest or start Milestone 7. Only TypeScript, focused lint and static/schema checks; an empty in-memory schema/ACL check has zero job/request/event fixtures and invokes no execution RPC. No paid calls or image/browser generation. The exact old Front/Back semantic failures and prompt version are unrecorded; report unknown instead of guessing. Existing 050 is not edited/reapplied remotely; only new manual 051 is permitted. [Current contract](character-sheet.md#character-v2-source-and-crop-correction-2026-10-25).
+
+## Character single-view correction boundary (2026-10-25)
+
+Implement prompt, semantic validation, bounded per-slot retry, review rendering and three-input Character composition only. No provider calls, worker/recovery execution, live mutations, storage operations, SQL application (including local execution), browser suites, builds, deployment or Milestone 7. Only minimal TypeScript/lint/static checks. New manual 050 follows 049; future explicitly started workers may use existing OpenAI analysis configuration for visual checks, with no new model/env or Product generation change. [Contract and manual acceptance limits](character-sheet.md#single-view-semantic-admission-2026-10-25). Render/Inngest remain disabled.
+
 ## Stored Character recovery boundary (2026-10-25)
 
 Current authorization permits focused source fixes, read-only persisted-record/private-object inspection and minimal TypeScript/lint/static/empty-schema checks. Do not execute the new recovery command, run any worker, mutate the live job, apply remote SQL, call Higgsfield/OpenAI/other providers, repeat Front/Soul ID/analysis, deploy, run browser/screenshot suites, enable Render/Inngest or start Milestone 7. 048 is already applied; only new 049 is manual setup. The user deliberately runs the implemented single-job provider-free command and performs visual/authenticated runtime acceptance. [Current contract](reference-review.md#stored-character-recovery-and-authoritative-approval-gate-2026-10-25) supersedes older generic resume advice for this recovery.

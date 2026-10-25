@@ -11,7 +11,7 @@ export const regenerationPhases = ["claim_validation", "job_read", "snapshot_val
   "request_validation", "replacement_lookup", "identity_reuse", "analysis_read", "analysis_validation", "provider_configuration",
   "checkpoint_validation", "provider_submit", "provider_poll", "output_download", "output_decode", "view_storage", "view_publication",
   "sheet_lookup", "sheet_inputs_read", "sheet_composition", "sheet_storage", "sheet_publication", "database_checkpoint", "heartbeat",
-  "recovery_front_validating", "recovery_back_loading", "recovery_face_loading", "recovery_sheet_validating", "recovery_sheet_rebuilding", "recovery_sheet_saving"] as const;
+  "recovery_front_validating", "recovery_back_loading", "recovery_face_loading", "recovery_sheet_validating", "recovery_sheet_rebuilding", "recovery_sheet_saving", "output_validation"] as const;
 export type RegenerationPhase = typeof regenerationPhases[number];
 export const regenerationFailureCodes = ["CHARACTER_SHEET_RECOVERY_FAILED", "CHARACTER_SHEET_COMPOSITION_FAILED", "REGENERATION_INPUT_INVALID", "REGENERATION_SNAPSHOT_INVALID", "REGENERATION_SHEET_INVALID",
   "REGENERATION_CHECKPOINT_INVALID", "REGENERATION_LEASE_LOST", "REGENERATION_DATABASE_FAILED", "REGENERATION_UNEXPECTED_FAILURE",
@@ -44,7 +44,7 @@ export function regenerationDiagnostic(error: unknown, phase: RegenerationPhase,
     code = error.code; category = code.includes("LEASE") ? "lease" : code.includes("STORAGE") || code.includes("ASSET") ? "storage" : "validation";
   } else if (error instanceof CharacterSheetError) {
     code = error.diagnostic?.reason ?? error.code;
-    category = phase === "sheet_composition" || phase === "recovery_sheet_rebuilding" ? "composition" : phase.includes("storage") ? "storage" : "provider";
+    category = phase === "output_validation" ? "validation" : phase === "sheet_composition" || phase === "recovery_sheet_rebuilding" ? "composition" : phase.includes("storage") ? "storage" : "provider";
     httpStatus = error.diagnostic?.httpStatus ?? undefined;
   } else if (error instanceof ProductSheetError) {
     code = error.code; category = phase === "sheet_composition" ? "composition" : phase.includes("storage") ? "storage" : "provider";

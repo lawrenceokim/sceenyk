@@ -1,5 +1,30 @@
 # Code Standards
 
+## Character V5 manual review (2026-10-25)
+
+**Character V5 — Complete in source. V4 is superseded for new Character work. Manual migration 054 and provider/visual/runtime acceptance pending. Milestone 7 remains Not Started.**
+
+Original image → static Soul 2 Face → manual Accept → static Back → manual Accept → static Front source conditioned on accepted Back → manual Accept → local adjustable Sharp headless Front → manual Accept → local FRONT / BACK / FACE sheet → explicit Approve Character Reference. Each paid stage waits for the previous user acceptance. Technical checks only; no automatic semantic rejection or OpenAI prompt/crop validation in V5. Private candidates are separate from accepted canonical pointers; Reject fences the candidate, deletes its R2 file, then clears its image pointer while retaining minimal audit metadata. Historical V1–V4 records remain readable and unchanged. Product generation, views and approval stay the same; only its Character dependency resolver admits approved V5 workflows.
+
+[Authoritative V5 contract, setup, cleanup and verification limits](character-sheet.md#character-v5-manual-review-2026-10-25). Source-only authorization: TypeScript, focused lint and static/schema checks. No provider calls, worker/job execution, live mutation, cleanup runs, R2 deletion, remote SQL, builds, deployment, Render/Inngest or Milestone 7. Older sections below describe historical versions.
+
+V5 semantic checks must never enter the technical candidate-admission path. Keep static versioned prompts centralized, promote only explicit user acceptance, fence every decision by ownership/version, checkpoint before paid requests, and never interpret an unknown intent as permission to resubmit. Rejected artifact deletion is an explicit durable transition; no background bucket sweep or canonical deletion is permitted.
+
+## Character V4 — future implementation standards (2026-10-25)
+
+**Complete in source; manual 053/provider/visual/runtime acceptance pending.** Follow the [official V4 contract](character-sheet.md#character-v4-official-workflow-2026-10-25), which supersedes older Character strategy/order/version/setup instructions below. Historical source-complete statements are not V4 acceptance. V3's Front-first strategy is superseded for new Character references; preserve V1/V2/V3 records, assets, receipts and actual versions unchanged and interpretable.
+
+- Enforce **analysis → Soul ID → Face → Back → Front source → local headless Front → Character Sheet → review/approval** in the server/worker dependency contract; UI order alone is insufficient. Do not start a dependent step until upstream validation and persistence succeed.
+- Keep Higgsfield Soul 2 Image-to-Image and Soul ID behind the existing provider boundary. OpenAI retains Character analysis and later storyboard/script generation. Front source uses validated Back as its main outfit/body reference and Face/Soul identity support. Never request a headless human or final sheet from the provider.
+- Distinguish provider `front_source` from local canonical `front_reference`, including asset identity, hashes, validation and safe crop provenance. Validate each provider view and local crop independently; compose only validated headless Front + Back + Face locally on gray. Rejected candidates remain private history, never canonical.
+- Preserve successful analysis/identity/views and accepted receipts on failure. Face/Back/Front generation retries target only the failed step; crop and composition retries perform local work only. Unknown paid outcomes require reconciliation, not replay or budget resets.
+- Freeze Character prompt **4**, generation contract **4**, strategy **`face-back-front-v1`** for future V4 operations. Do not confuse these with existing snapshot/document/storage/review versions or invent deployed fields/admission support.
+- Project only safe real persisted events into the exact [V4 progress order](character-sheet.md#persisted-progress-and-references-ui); no fake progress. References uses Original, Face, Back, canonical headless Front, Character Sheet; diagnostics may inspect clearly labelled `front_source` privately. Keep explicit version-bound approval and ownership enforcement.
+
+Product / Prop behavior and standards remain unchanged. Milestone 7 — Not Started. Current authorization permits source changes and TypeScript/focused lint/isolated static/schema checks only; no providers, workers/jobs, live mutations, remote migrations, builds, deployments, Render or Inngest.
+
+Implementation refinement: the original may be reused as Face only after the complete V4 portrait contract, including neutral gray, passes; persist its origin. Explicit Face replacement invalidates Back + Front + Sheet/Character approval; Back replacement invalidates Front + Sheet/Character approval; Front replacement preserves Face/Back. Local crop/sheet repairs reuse paid output. See [current setup and acceptance limits](character-sheet.md#manual-setup-and-source-acceptance).
+
 ## Milestone 6.6 — Reference Regeneration + Review UX Correction (2026-10-24)
 
 **Milestone 6.6 — Reference Regeneration + Review UX Correction — Complete in source. Manual migration/provider/runtime/ownership/visual acceptance pending. Milestone 7 — Not Started.** This section supersedes the historical 6.5 request-only execution and exclusive Preview rules below. [Current execution, versioning and manual setup](reference-review.md#milestone-66-execution-and-review-contract).

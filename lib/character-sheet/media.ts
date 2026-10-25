@@ -5,6 +5,27 @@ import { inspectR2Object, putR2CharacterImage, readR2AnalysisMedia } from "@/lib
 import { characterAssetSchema, characterAssetTypes, type CharacterAsset, type CharacterSheetRow } from "./contract";
 import { CharacterSheetError } from "./provider";
 import { characterOutputError } from "./diagnostics";
+import { frontCropSchema } from "./generation-contract";
+import type { CharacterValidation } from "./validation-contract";
+
+export async function cropFrontReference(source: Buffer, receipt: CharacterValidation) {
+  const sourceSha256 = createHash("sha256").update(source).digest("hex");
+  if (receipt.stage !== "front_source" || receipt.state !== "passed" || receipt.sha256 !== sourceSha256 || !receipt.cropSafe ||
+    receipt.cropTop === undefined || receipt.cropTop < 500 || receipt.cropTop > 3500) throw characterOutputError("CHARACTER_FRONT_CROP_INVALID", "output_validation", { view: "front" });
+  try {
+    const image = sharp(source, { limitInputPixels: 20_000_000, failOn: "warning" });
+    const meta = await image.metadata();
+    if (!meta.width || !meta.height || meta.format !== "png" || (meta.pages ?? 1) !== 1) throw new Error();
+    // The checker locates a safe collar/shoulder boundary in this exact source.
+    // Round downward into the body, preserve full width and every pixel below.
+    const top = Math.ceil(meta.height * receipt.cropTop / 10000);
+    const height = meta.height - top;
+    if (height < 256 || meta.width < 256) throw new Error();
+    const bytes = await image.extract({ left: 0, top, width: meta.width, height }).png().toBuffer();
+    return { bytes, crop: frontCropSchema.parse({ version: 1, sourceSha256, canonicalSha256: createHash("sha256").update(bytes).digest("hex"),
+      sourceWidth: meta.width, sourceHeight: meta.height, top, width: meta.width, height }) };
+  } catch { throw characterOutputError("CHARACTER_FRONT_CROP_INVALID", "output_validation", { view: "front" }); }
+}
 
 const gray = "#b8b8b8";
 export async function normalizeCharacterImage(bytes: Buffer) {

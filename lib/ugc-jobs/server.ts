@@ -115,6 +115,8 @@ export async function getOwnedUgcJobProgress(input: unknown): Promise<UgcJobProg
   const events: UgcProgressEvent[] = (history.data ?? []).reverse().map(event => ({
     id: event.id, jobId: job.id, stage: event.stage, type: event.event_type,
     message: event.safe_message, at: event.created_at,
+    ...(typeof event.metadata.version === "number" && Number.isSafeInteger(event.metadata.version) ? { referenceVersion: event.metadata.version } :
+      typeof event.metadata.version === "string" && /^[1-9]\d{0,6}$/.test(event.metadata.version) ? { referenceVersion: Number(event.metadata.version) } : {}),
     ...(["front", "back", "face", "primary", "angle", "detail"].includes(event.metadata.view ?? "") ? { view: event.metadata.view } : {}),
   }));
   const evidence: UgcProgressEvidence = {
@@ -127,10 +129,12 @@ export async function getOwnedUgcJobProgress(input: unknown): Promise<UgcJobProg
   if (sheet.data && parsedDocument.success) {
     const document = parsedDocument.data;
     const view = (name: "front" | "back" | "face") => ({
-      started: !!document.operations[name], ready: !!document.assets[name],
-      failed: ["failed", "rejected"].includes(document.operations[name]?.state ?? ""),
+      started: !!document.operations[name], ready: !!document.assets[name], phase: document.operations[name]?.workPhase,
+      failed: document.operations[name]?.state === "failed" || document.operations[name]?.state === "rejected" && !!document.operations[name]?.generation ||
+        ["rejected", "unavailable"].includes(document.operations[name]?.validation?.state ?? ""),
     });
     evidence.character = {
+      v4: document.strategyRevision === "face-back-front-v1", faceReused: document.assets.face?.faceOrigin === "original",
       name: sheet.data.character_name, prepared: !!document.operations.identity,
       identityReady: document.operations.identity?.state === "completed",
       views: { front: view("front"), back: view("back"), face: view("face") },

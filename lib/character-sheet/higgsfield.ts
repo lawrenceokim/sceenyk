@@ -1,11 +1,13 @@
 import "server-only";
 import { z } from "zod";
 import { getCharacterSheetConfig } from "./config";
-import { characterViewPrompt } from "./prompts";
+import { characterViewPrompt, characterPromptGeneration } from "./prompts";
 import { CharacterSheetError, type CharacterSheetProvider, type ProviderStatus } from "./provider";
 import type { CharacterProviderOperation, CharacterView } from "./contract";
 import { characterProviderDiagnostic, characterOutputError, characterOutputMetadata } from "./diagnostics";
 import { validateCharacterOutputUrl } from "./output-validation";
+import { currentGenerationSchema } from "./generation-contract";
+import { v5Generation } from "@/lib/character-v5/contract";
 
 const apiOrigin = "https://api.higgsfield.ai";
 const receiptSchema = z.object({ request_id: z.uuid(), status_url: z.url() });
@@ -66,16 +68,34 @@ export class HiggsfieldSoul2CharacterSheetProvider implements CharacterSheetProv
       ...(result.status === "failed" ? { diagnostic: characterProviderDiagnostic("identity_status", response.httpStatus, response.body) } : {}) };
   }
   async submitView(input: Parameters<CharacterSheetProvider["submitView"]>[0], signal: AbortSignal) {
+    const recorded = currentGenerationSchema.safeParse(input.generation);
+    if (!recorded.success) throw characterOutputError("CHARACTER_PROMPT_CONTRACT_MISMATCH", "view_submit", { view: input.view });
+    const generation = characterPromptGeneration(input.view, input.name, input.wardrobe, input.analysis, recorded.data.reference, input.identityId, input.seed, recorded.data.upstream);
+    if (!recorded.success || JSON.stringify(generation) !== JSON.stringify(recorded.data)) throw characterOutputError("CHARACTER_PROMPT_CONTRACT_MISMATCH", "view_submit", { view: input.view });
+    console.info("UGC_CHARACTER_VIEW_DISPATCH", { slot: input.view, promptVersion: generation.promptVersion,
+      contractVersion: generation.contractVersion, revision: generation.revision, batchSize: generation.batchSize });
     const response = await this.request("view_submit", `/${this.model}`, signal, {
       prompt: characterViewPrompt(input.view, input.name, input.wardrobe, input.analysis),
+      image_url: z.url().parse(input.imageUrl),
       custom_reference_id: z.uuid().parse(input.identityId), custom_reference_strength: 1,
-      batch_size: 1, resolution: "1080p", aspect_ratio: input.view === "face" ? "1:1" : "2:3",
-      enhance_prompt: false, seed: input.seed,
+      batch_size: generation.batchSize, resolution: generation.resolution, aspect_ratio: generation.aspectRatio,
+      enhance_prompt: generation.enhancePrompt, seed: input.seed,
     }, input.key);
     const result = parseProviderPayload(receiptSchema, response, "view_submit");
     validateStatusUrl(result.status_url, result.request_id);
     return { id: result.request_id, statusUrl: result.status_url,
       responseMetadata: characterOutputMetadata(response.body, response.httpStatus) };
+  }
+  async submitManualView(input: { slot: "face" | "back" | "front_source"; imageUrl: string; soulId: string | null; key: string }, signal: AbortSignal) {
+    const generation = v5Generation(input.slot, input.soulId);
+    const response = await this.request("view_submit", `/${this.model}`, signal, {
+      prompt: generation.prompt, image_url: z.url().parse(input.imageUrl), batch_size: 1,
+      resolution: "720p", aspect_ratio: "4:3", enhance_prompt: true,
+      ...(input.soulId ? { custom_reference_id: z.uuid().parse(input.soulId), custom_reference_strength: 1 } : {}),
+    }, input.key);
+    const result = parseProviderPayload(receiptSchema, response, "view_submit");
+    validateStatusUrl(result.status_url, result.request_id);
+    return { id: result.request_id, statusUrl: result.status_url, generation };
   }
   async viewStatus(id: string, statusUrl: string, signal: AbortSignal, view: CharacterView): Promise<ProviderStatus> {
     const path = validateStatusUrl(statusUrl, id);

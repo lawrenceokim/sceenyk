@@ -5,7 +5,7 @@ import { ugcGenerationSnapshotSchema } from "@/lib/ugc-jobs/input-contract";
 import type { UgcStageHandler } from "@/lib/ugc-jobs/runner";
 import { productReferenceAnalysisSchema, parseReferenceAnalysis, referencePromptVersion } from "@/lib/reference-analysis/contract";
 import { loadReferenceImage, ReferenceMediaError } from "@/lib/reference-analysis/media";
-import { characterSheetDocumentSchema } from "@/lib/character-sheet/contract";
+import { productCharacterDependency } from "@/lib/character-v5/dependency";
 import { productSheetDocumentSchema, productSheetPromptVersion, productDiagnosticSchema,
   productViews, type ProductSheetDocument, type ProductSheetRow, type ProductView } from "./contract";
 import { ProductSheetError } from "./provider";
@@ -28,13 +28,10 @@ export const generateProductSheet: UgcStageHandler = async ({ job, signal }) => 
     if (result.error || !result.data) throw new ProductSheetError("RECONCILIATION_REQUIRED");
   };
   try {
-    const character = await db.from("ugc_character_sheets").select("id,document,status,source_asset_id,character_name")
-      .eq("job_id", job.id).eq("owner_user_id", job.owner_user_id).eq("project_id", job.project_id).maybeSingle();
-    const parsedCharacter = characterSheetDocumentSchema.safeParse(character.data?.document);
+    const character = { data: await productCharacterDependency(job) };
     const fingerprint = createHash("sha256").update(JSON.stringify(snapshot)).digest("hex");
-    if (character.error || !character.data || character.data.status !== "completed" || !parsedCharacter.success ||
-      !parsedCharacter.data.assets.sheet || parsedCharacter.data.snapshotSha256 !== fingerprint ||
-      character.data.source_asset_id !== snapshot.character.assetId || character.data.character_name !== snapshot.character.name) {
+    if (!character.data || character.data.snapshotSha256 !== fingerprint ||
+      character.data.sourceAssetId !== snapshot.character.assetId || character.data.name !== snapshot.character.name) {
       throw new ProductSheetError("PRODUCT_CHARACTER_NOT_READY");
     }
     const result = await db.from("ugc_reference_analyses").select("*").eq("job_id", job.id)

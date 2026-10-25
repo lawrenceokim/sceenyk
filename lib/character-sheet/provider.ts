@@ -1,5 +1,6 @@
 import type { CharacterDiagnostic, CharacterMediaMetadata, CharacterOutputMetadata, CharacterView, Wardrobe } from "./contract";
 import type { CharacterReferenceAnalysis } from "@/lib/reference-analysis/contract";
+import type { CharacterGeneration } from "./generation-contract";
 
 export type ProviderReceipt = { id: string; statusUrl?: string; responseMetadata?: CharacterOutputMetadata };
 export type ProviderStatus = { state: "pending" | "completed" | "failed"; imageUrl?: string;
@@ -9,7 +10,7 @@ export interface CharacterSheetProvider {
   createIdentity(name: string, sourceUrl: string, signal: AbortSignal): Promise<ProviderReceipt>;
   identityStatus(id: string, signal: AbortSignal): Promise<ProviderStatus>;
   submitView(input: { view: CharacterView; name: string; identityId: string; wardrobe: Wardrobe;
-    analysis: CharacterReferenceAnalysis; seed: number; key: string }, signal: AbortSignal): Promise<ProviderReceipt>;
+    analysis: CharacterReferenceAnalysis; seed: number; key: string; generation: CharacterGeneration; imageUrl: string }, signal: AbortSignal): Promise<ProviderReceipt>;
   viewStatus(id: string, statusUrl: string, signal: AbortSignal, view: CharacterView): Promise<ProviderStatus>;
   downloadImage(url: string, signal: AbortSignal): Promise<{ bytes: Buffer; media: CharacterMediaMetadata }>;
 }

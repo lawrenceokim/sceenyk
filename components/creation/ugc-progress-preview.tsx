@@ -65,6 +65,7 @@ export function UgcProgressPreview({ progress }: { progress: UgcProgressState })
             {job?.status === "failed" && <XCircle className="size-4 shrink-0 text-destructive" aria-hidden="true" />}
             {title}
           </h2>
+          {job?.referenceReview?.characterV5?.errorPhase && <p className="break-words text-destructive">Character technical phase: {job.referenceReview.characterV5.errorPhase} · {job.referenceReview.characterV5.errorCode}</p>}
           {(characterCompletePause || productCompletePause) && <p className="text-warning-foreground">Generation paused</p>}
           <p key={`${job?.status}:${job?.message}:${stalled}`} className="break-words text-muted-foreground motion-safe:animate-in motion-safe:fade-in motion-safe:duration-200">
             {loading ? "Reading your saved workflow." : stalled ? "The generation worker may no longer be running. Start the local UGC worker to resume saved work." : job?.message ?? "Check status to reconnect to your saved workflow."}
@@ -96,12 +97,12 @@ export function UgcProgressPreview({ progress }: { progress: UgcProgressState })
             </li>;
           })}
         </ol>}
-        {job && job.events.some(event => event.type.includes("regeneration") || event.type.includes("recovery_") || event.type.includes("sheet_rebuild") || event.type.endsWith("ready_for_review")) &&
+        {job && job.events.some(event => event.type.includes("slot_validation") || event.type.includes("regeneration") || event.type.includes("recovery_") || event.type.includes("sheet_rebuild") || event.type.endsWith("ready_for_review")) &&
           <details className="rounded-md border border-border px-2.5 py-2" open={!!regeneration}>
             <summary className="cursor-pointer text-xs font-medium">Reference regeneration history</summary>
             <ol className="mt-2 space-y-1.5 text-[11px] text-muted-foreground" aria-label="Saved regeneration events">
               {job.events.filter(event => event.type === "reference_regeneration_requested" && !job.events.some(item => item.type.endsWith(".regeneration_requested")) || /^(character|product)_reference\./.test(event.type) &&
-                (event.type.includes("regeneration") || event.type.includes("recovery_") || event.type.includes("sheet_rebuild") || event.type.endsWith("ready_for_review") ||
+                (event.type.includes("slot_validation") || event.type.includes("regeneration") || event.type.includes("recovery_") || event.type.includes("sheet_rebuild") || event.type.endsWith("ready_for_review") ||
                   job.events.some(item => item.type.startsWith(event.type.split(".")[0]) && item.type.includes("regeneration")))).map(event =>
                 <li key={event.id} className="break-words"><time dateTime={event.at} className="mr-1.5 tabular-nums">{new Date(event.at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</time>
                   {event.view ? `${event.view.charAt(0).toUpperCase()}${event.view.slice(1)} · ` : ""}{event.message}</li>)}

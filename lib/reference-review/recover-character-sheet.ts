@@ -11,6 +11,7 @@ import { parseReferenceRegenerationClaim } from "./claim";
 import { effectiveReferenceAssets, parseReviewSheet } from "./state";
 import { loadReplacement, readReviewAsset, saveRecoveredCharacterSheet } from "./media";
 import { ReferenceRegenerationError, regenerationDiagnostic, type RegenerationPhase } from "./diagnostics";
+import { hasCharacterValidation } from "@/lib/character-sheet/validation-contract";
 
 // Deliberate, one-job local storage recovery. No provider factories, analysis,
 // Soul ID operations, stage handlers, general claims or worker loop are used.
@@ -21,9 +22,17 @@ export async function recoverStoredCharacterSheet(jobId: string, shutdown: Abort
   if (leased.error) throw new UgcWorkerDatabaseError(leased.error, "regeneration_claim", leased.status);
   const review = parseReferenceRegenerationClaim(leased.data);
   if (!review) {
-    const existing = await db.from("ugc_reference_reviews").select("version,composed_version,composed_sheet_version,approved_at")
+    const existing = await db.from("ugc_reference_reviews").select("*")
       .eq("job_id", jobId).eq("reference_type", "character").maybeSingle();
     if (!existing.error && existing.data && existing.data.version > 1 && existing.data.version === existing.data.composed_version && existing.data.composed_sheet_version === 2) {
+      const job = await db.from("ugc_generation_jobs").select("*").eq("id", jobId).eq("owner_user_id", existing.data.owner_user_id).eq("project_id", existing.data.project_id).single();
+      const base = await db.from("ugc_character_sheets").select("*").eq("id", existing.data.character_sheet_id!).eq("job_id", jobId).single();
+      const requests = await db.from("ugc_reference_regeneration_requests").select("*").eq("review_id", existing.data.id);
+      const parsed = !job.error && job.data && !base.error ? parseReviewSheet(job.data, "character", base.data) : null;
+      const assets = parsed && !requests.error ? effectiveReferenceAssets(parsed.assets, existing.data, requests.data ?? []) : null;
+      if (!assets || !(["front", "back", "face"] as const).every(view => hasCharacterValidation(assets[view], view) && assets.sheet?.characterInputs?.[view] === assets[view]?.sha256)) {
+        throw new ReferenceRegenerationError("CHARACTER_SLOT_VALIDATION_REQUIRED");
+      }
       return { jobId, state: existing.data.approved_at ? "approved" : "ready_for_review", characterApproved: !!existing.data.approved_at,
         sheetVersion: 2, alreadyReady: true, providerRequests: 0 };
     }
@@ -75,6 +84,7 @@ export async function recoverStoredCharacterSheet(jobId: string, shutdown: Abort
       await progress(phase);
       const asset = assets[view];
       if (!asset) throw new ReferenceRegenerationError("REFERENCE_ASSET_INVALID");
+      if (!hasCharacterValidation(asset, view)) throw new ReferenceRegenerationError("CHARACTER_SLOT_VALIDATION_REQUIRED");
       const bytes = await readReviewAsset(asset, signal);
       const decoder = sharp(bytes, { limitInputPixels: 20_000_000, failOn: "warning" });
       const metadata = await decoder.metadata();
@@ -99,6 +109,7 @@ export async function recoverStoredCharacterSheet(jobId: string, shutdown: Abort
       // Never overwrite an invalid historical object at the old fixed key.
       sheet = await saveRecoveredCharacterSheet(review, bytes, signal);
     } else await progress("recovery_sheet_saving");
+    sheet.asset.characterInputs = { front: assets.front!.sha256, back: assets.back!.sha256, face: assets.face!.sha256 };
     await update("complete", undefined, sheet.asset);
     return { jobId, state: "ready_for_review", characterApproved: false, sheetVersion: 2, providerRequests: 0 };
   } catch (error) {

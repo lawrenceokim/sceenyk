@@ -4,7 +4,7 @@ import { ugcWorkerService } from "./worker-service";
 import { ugcStageHandlers } from "./stages";
 import type { UgcGenerationSnapshot } from "./input-contract";
 
-export type UgcStageResult = { kind: "advance" } | { kind: "product_ready" } | { kind: "character_ready" } | { kind: "references_analyzed" } | { kind: "validated"; snapshot: UgcGenerationSnapshot } | { kind: "fail"; code: UgcJobErrorCode; retryable?: boolean };
+export type UgcStageResult = { kind: "character_review" } | { kind: "advance" } | { kind: "product_ready" } | { kind: "character_ready" } | { kind: "references_analyzed" } | { kind: "validated"; snapshot: UgcGenerationSnapshot } | { kind: "fail"; code: UgcJobErrorCode; retryable?: boolean };
 export type UgcStageHandler = (context: { job: Readonly<UgcJobRow>; signal: AbortSignal }) => Promise<UgcStageResult>;
 export type UgcStageHandlers = Partial<Record<UgcJobStage, UgcStageHandler>>;
 
@@ -56,6 +56,8 @@ export class UgcJobRunner {
           return;
         }
         const outcome = await handler({ job: current, signal: stageAbort.signal });
+        // V5 atomically relinquishes this job lease into its manual-review pause.
+        if (outcome.kind === "character_review") return;
         if (await stopAtBoundary()) return;
         if (outcome.kind === "validated") await apply(job => ugcWorkerService.finishValidation(job, outcome.snapshot));
         else if (outcome.kind === "references_analyzed") await apply(ugcWorkerService.finishReferences);

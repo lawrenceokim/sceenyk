@@ -1,5 +1,23 @@
 # Sceenyk project overview
 
+## Character V5 manual review (2026-10-25)
+
+**Character V5 — Complete in source. V4 is superseded for new Character work. Manual migration 054 and provider/visual/runtime acceptance pending. Milestone 7 remains Not Started.**
+
+Original image → static Soul 2 Face → manual Accept → static Back → manual Accept → static Front source conditioned on accepted Back → manual Accept → local adjustable Sharp headless Front → manual Accept → local FRONT / BACK / FACE sheet → explicit Approve Character Reference. Each paid stage waits for the previous user acceptance. Technical checks only; no automatic semantic rejection or OpenAI prompt/crop validation in V5. Private candidates are separate from accepted canonical pointers; Reject fences the candidate, deletes its R2 file, then clears its image pointer while retaining minimal audit metadata. Historical V1–V4 records remain readable and unchanged. Product generation, views and approval stay the same; only its Character dependency resolver admits approved V5 workflows.
+
+[Authoritative V5 contract, setup, cleanup and verification limits](character-sheet.md#character-v5-manual-review-2026-10-25). Source-only authorization: TypeScript, focused lint and static/schema checks. No provider calls, worker/job execution, live mutation, cleanup runs, R2 deletion, remote SQL, builds, deployment, Render/Inngest or Milestone 7. Older sections below describe historical versions.
+
+## Character V4 — official direction (2026-10-25)
+
+**Character V4 — Complete in source; manual 053/provider/visual/runtime acceptance pending. Milestone 7 remains Not Started.** See the canonical [product overview](overview.md#character-v4--official-product-direction-2026-10-25) and [full V4 workflow](character-sheet.md#character-v4-official-workflow-2026-10-25). V3 is superseded for new Character references because direct Front-first generation remained unreliable.
+
+**Original Character image → OpenAI Character analysis → Soul ID → Face → Back → Front source → local headless Front → local Character Sheet → Reference review → approval.** Validate and persist each required upstream reference before continuing. Higgsfield Soul 2 Image-to-Image remains the image provider; Soul ID remains identity. Front source uses validated Back plus Face/Soul support. Sceenyk alone crops canonical `front_reference` and composes Front / Back / Face. OpenAI keeps analysis and later storyboard/script work. Product / Prop flow is unchanged.
+
+Current Character prompt version **4**, generation contract version **4**, strategy **`face-back-front-v1`**. Preserve V1/V2/V3 assets/jobs/versions unchanged and interpretable. Older Character strategy, setup and source-complete wording below is historical, not V4 completion or permission to execute. Source changes only; no providers, workers/jobs, live mutations, remote migrations, builds, deployments, Render or Inngest. Manual 053 follows 052; no new environment/dependency.
+
+Implementation refinement: the original may be reused as Face only after the complete V4 portrait contract, including neutral gray, passes; persist its origin. Explicit Face replacement invalidates Back + Front + Sheet/Character approval; Back replacement invalidates Front + Sheet/Character approval; Front replacement preserves Face/Back. Local crop/sheet repairs reuse paid output. See [current setup and acceptance limits](character-sheet.md#manual-setup-and-source-acceptance).
+
 ## Milestone 6.5 — Reference Asset Review (2026-10-24)
 
 **Milestone 6 — Complete. Milestone 6.5 — Complete in source; manual 046/runtime/ownership/visual acceptance pending. Milestone 7 — Location Reference generation — Not Started.** This supersedes older stop points below. [Review UI, security, persistence and setup](reference-review.md).

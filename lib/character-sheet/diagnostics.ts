@@ -24,7 +24,9 @@ export function characterOutputMetadata(body: unknown, httpStatus?: number): Cha
   const expiresAt = characterOutputMetadataSchema.shape.expiresAt.unwrap().safeParse(record.expires_at);
   const providerStatus = characterOutputMetadataSchema.shape.providerStatus.unwrap().safeParse(record.status);
   const providerRequestId = z.uuid().safeParse(record.request_id ?? record.id);
-  return characterOutputMetadataSchema.parse({ fields, ...(httpStatus === undefined ? {} : { httpStatus }),
+  const rawUsage = asRecord(record.usage);
+  const usage = Object.fromEntries(["input_tokens", "output_tokens", "total_tokens", "image_count", "credits", "cost"].flatMap(key => typeof rawUsage[key] === "number" && Number.isFinite(rawUsage[key]) && rawUsage[key] >= 0 ? [[key, rawUsage[key]]] : []));
+  return characterOutputMetadataSchema.parse({ fields, ...(Object.keys(usage).length ? { usage } : {}), ...(httpStatus === undefined ? {} : { httpStatus }),
     ...(providerRequestId.success ? { providerRequestId: providerRequestId.data } : {}),
     otherFieldCount: Math.min(10_000, keys.length - fields.length),
     imagesArray: Array.isArray(record.images), imageCount: Array.isArray(record.images) ? Math.min(1000, record.images.length) : null,

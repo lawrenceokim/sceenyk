@@ -91,7 +91,7 @@ export type UgcJobRow = {
 };
 export type UgcJobEventRow = {
   id: number; job_id: string; status: UgcJobStatus; stage: UgcJobStage;
-  event_type: string; safe_message: string; metadata: { attempt?: number; resumeStage?: UgcJobStage; view?: "front" | "back" | "face" | "primary" | "angle" | "detail" };
+  event_type: string; safe_message: string; metadata: { attempt?: number; resumeStage?: UgcJobStage; view?: "front" | "back" | "face" | "primary" | "angle" | "detail"; version?: number | string };
   created_at: string;
 };
 export type UgcJobProgress = {
@@ -112,6 +112,7 @@ export type UgcProgressStep = { id: string; label: string; state: "waiting" | "a
 export type UgcProgressEvent = {
   id: number; jobId: string; stage: UgcJobStage; type: string; message: string; at: string;
   view?: "front" | "back" | "face" | "primary" | "angle" | "detail";
+  referenceVersion?: number;
 };
 export const ugcProgressPollMilliseconds = 2_500;
 export const ugcWorkerStaleMilliseconds = 90_000;

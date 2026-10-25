@@ -1,5 +1,57 @@
 # UI Context
 
+## Character V5 manual review (2026-10-25)
+
+**Character V5 — Complete in source. V4 is superseded for new Character work. Manual migration 054 and provider/visual/runtime acceptance pending. Milestone 7 remains Not Started.**
+
+Original image → static Soul 2 Face → manual Accept → static Back → manual Accept → static Front source conditioned on accepted Back → manual Accept → local adjustable Sharp headless Front → manual Accept → local FRONT / BACK / FACE sheet → explicit Approve Character Reference. Each paid stage waits for the previous user acceptance. Technical checks only; no automatic semantic rejection or OpenAI prompt/crop validation in V5. Private candidates are separate from accepted canonical pointers; Reject fences the candidate, deletes its R2 file, then clears its image pointer while retaining minimal audit metadata. Historical V1–V4 records remain readable and unchanged. Product generation, views and approval stay the same; only its Character dependency resolver admits approved V5 workflows.
+
+[Authoritative V5 contract, setup, cleanup and verification limits](character-sheet.md#character-v5-manual-review-2026-10-25). Source-only authorization: TypeScript, focused lint and static/schema checks. No provider calls, worker/job execution, live mutation, cleanup runs, R2 deletion, remote SQL, builds, deployment, Render/Inngest or Milestone 7. Older sections below describe historical versions.
+
+V5 References presents one current candidate with Accept/Reject, accepted-view checks, an adjustable Front crop boundary, a separate headless Front review, then explicit Character Sheet approval. Prior Character references are collapsed read-only history. Technical phases stay in Progress. Private previews use session-authenticated, version-bound no-store media; native controls/dialogs and Tailwind utilities reuse the existing design system. No stylesheet was added.
+
+## Character V4 — planned Progress and References contract (2026-10-25)
+
+**Complete in source; manual 053/provider/visual/runtime acceptance pending. Milestone 7 remains Not Started.** Follow the [official V4 workflow](character-sheet.md#character-v4-official-workflow-2026-10-25). V3 is superseded for new Character references because direct Front-first generation remained unreliable. Older Character ordering/version/setup/source-complete wording below is historical and does not override this contract. Keep existing Progress | References composition, private owner-scoped previews, theme tokens, native scrolling, Base UI accessibility and Tailwind styling conventions.
+
+Full chain: Original Character image → OpenAI Character analysis → Soul ID → **Face → Back → Front source → local headless Front → Character Sheet → Review/Approval**. A dependent step waits for validated persisted upstream references. Generation order is Face / Back / Front; final sheet display order is Front / Back / Face.
+
+After analysis/Soul identity preparation, show this Character progress order from **real persisted workflow events only**:
+
+1. Preparing Face reference
+2. Generating Face
+3. Validating Face
+4. Face ready
+5. Preparing Back reference
+6. Generating Back
+7. Validating Back
+8. Back ready
+9. Preparing Front reference
+10. Generating Front
+11. Validating Front source
+12. Creating headless Front
+13. Validating canonical Front
+14. Front ready
+15. Building Character Sheet
+16. Validating Character Sheet
+17. Ready for review
+
+No fake progress, simulated timers, optimistic completion or new enum/event claim. Saved successful steps stay visible on failure. Crop repair displays local work without pretending to regenerate Front; composition repair preserves all three references. Existing paused/review/terminal polling rules remain; review-ready does not mean approved.
+
+References order: **Original Character image, Face, Back, Front, Character Sheet**. Face is a validated original or generated clean shoulder/upper-chest portrait; Back is validated rear full-body; Front is always the validated local **headless `front_reference`**, with outfit/arms/legs/footwear retained. Provider `front_source` is a normal full-body intermediate and may be inspected separately for private diagnostics/development, clearly labelled; it is never the canonical Front card or a sheet input. Rejected outputs stay labelled private history, never canonical thumbnails. The locally composed gray sheet contains only Front / Back / Face, clean spacing, no original/text/extra figures, and requires explicit owner review and version-bound approval.
+
+Current Character prompt **4**, generation contract **4**, strategy **`face-back-front-v1`**. Preserve historical V1/V2/V3 assets/jobs/versions unchanged and interpretable. Product / Prop UI/flow remains unchanged. Source changes only; manual 053/provider/visual/runtime acceptance pending. No provider calls, workers/jobs, live mutations, remote SQL, deployments, Render or Inngest.
+
+Implementation refinement: the original may be reused as Face only after the complete V4 portrait contract, including neutral gray, passes; persist its origin. Explicit Face replacement invalidates Back + Front + Sheet/Character approval; Back replacement invalidates Front + Sheet/Character approval; Front replacement preserves Face/Back. Local crop/sheet repairs reuse paid output. See [current setup and acceptance limits](character-sheet.md#manual-setup-and-source-acceptance).
+
+## Character rejected-output inspection (2026-10-25)
+
+Keep Progress | References. A small View rejected output action opens the existing private dialog with an explicit Rejected output label and safe reasons, including source/crop distinction. Candidate inspection has the same owner/version/expiry checks as canonical previews; no public URL/key/Template exposure. Failed historical attempts without receipts are not assigned fabricated reasons. Passed Face/other slots stay current; a repeated provider-contract violation blocks further retry and gives compact provider-decision copy. Product layout/behavior is preserved. [Current contract](character-sheet.md#character-v2-source-and-crop-correction-2026-10-25).
+
+## Character validation rendering (2026-10-25)
+
+Only passed Character views and a sheet bound to those three inputs render as current card thumbnails. Character Front/Back use portrait 2:3 framing; Face remains square, with contain rendering preserving the complete validated image. Historical unvalidated files have placeholders, a clear validation-required label and owner-only historical fallback inspection in the existing dialog; Original is unchanged. Rejecting a new output preserves prior usable cards. Per-slot fixed reasons/retry/preservation history and targeted failed-slot requests stay in the existing Progress/References flow. No Product layout, new stylesheet, page refresh or automatic approval. [Current contract](character-sheet.md#single-view-semantic-admission-2026-10-25).
+
 ## Stored Character recovery review (2026-10-25)
 
 Manual-only 049 recovery uses real validation/load/composition/save events in existing Progress. Active-to-settled review resets the local default to References; a user choice remains stable during a work cycle. Successful recovery shows Reference ready for review and enables explicit Character approval; Product approval stays unchanged. Every Original/view/Sheet card offers a small accessible private-preview refresh, separate from regeneration; an expired-image failure has one bounded automatic renewal and modal retry remains available. Capabilities stay private, owner/version/fingerprint-bound and 120 seconds. Historical artifacts remain fallback only; current replacement/composed descriptors determine displayed assets. No shell refresh, stylesheet or layout redesign. [Current contract and manual acceptance limits](reference-review.md#stored-character-recovery-and-authoritative-approval-gate-2026-10-25).

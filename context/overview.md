@@ -1,5 +1,23 @@
 # Sceenyk
 
+## Character V5 manual review (2026-10-25)
+
+**Character V5 — Complete in source. V4 is superseded for new Character work. Manual migration 054 and provider/visual/runtime acceptance pending. Milestone 7 remains Not Started.**
+
+Original image → static Soul 2 Face → manual Accept → static Back → manual Accept → static Front source conditioned on accepted Back → manual Accept → local adjustable Sharp headless Front → manual Accept → local FRONT / BACK / FACE sheet → explicit Approve Character Reference. Each paid stage waits for the previous user acceptance. Technical checks only; no automatic semantic rejection or OpenAI prompt/crop validation in V5. Private candidates are separate from accepted canonical pointers; Reject fences the candidate, deletes its R2 file, then clears its image pointer while retaining minimal audit metadata. Historical V1–V4 records remain readable and unchanged. Product generation, views and approval stay the same; only its Character dependency resolver admits approved V5 workflows.
+
+[Authoritative V5 contract, setup, cleanup and verification limits](character-sheet.md#character-v5-manual-review-2026-10-25). Source-only authorization: TypeScript, focused lint and static/schema checks. No provider calls, worker/job execution, live mutation, cleanup runs, R2 deletion, remote SQL, builds, deployment, Render/Inngest or Milestone 7. Older sections below describe historical versions.
+
+## Character V4 — official product direction (2026-10-25)
+
+**Complete in source; manual 053/provider/visual/runtime acceptance pending. Milestone 7 — Not Started.** The [Character V4 contract](character-sheet.md#character-v4-official-workflow-2026-10-25) supersedes older Character strategy/order/version/setup recommendations below. V3 is superseded for new Character reference generation because direct Front-first generation remained unreliable; existing source implementation/history is retained.
+
+Official chain: **Original Character image → OpenAI Character analysis → Soul ID → Face → Back → Front source → local headless Front → local Character Sheet → Reference review → approval**. Each dependency must be validated before the next begins. Higgsfield Soul 2 Image-to-Image generates a clean Face, rear full-body Back and normal full-body Front source; Sceenyk derives canonical headless Front locally and composes only Front / Back / Face on gray. Front uses validated Back as body/outfit authority and Face/Soul identity support. References shows Original, Face, Back, canonical Front and Character Sheet; progress uses persisted events only.
+
+Record Character prompt **4**, generation contract **4**, strategy **`face-back-front-v1`** for future implementation. V1/V2/V3 assets/jobs remain unchanged and interpretable; no historical rewrite or replay. OpenAI keeps analysis and later storyboard/script generation, Soul ID keeps identity, and Product / Prop generation remains unchanged. Implementation acceptance is source-only, with TypeScript, focused lint and isolated schema checks. No provider calls, workers/jobs, live mutations, remote migrations, deployment, Render or Inngest; Milestone 7 remains Not Started.
+
+Implementation refinement: the original may be reused as Face only after the complete V4 portrait contract, including neutral gray, passes; persist its origin. Explicit Face replacement invalidates Back + Front + Sheet/Character approval; Back replacement invalidates Front + Sheet/Character approval; Front replacement preserves Face/Back. Local crop/sheet repairs reuse paid output. See [current setup and acceptance limits](character-sheet.md#manual-setup-and-source-acceptance).
+
 ## Milestone 6.6 — Reference Regeneration + Review UX Correction (2026-10-24)
 
 **Milestone 6.6 — Reference Regeneration + Review UX Correction — Complete in source. Manual migration/provider/runtime/ownership/visual acceptance pending. Milestone 7 — Not Started.** This section supersedes the historical 6.5 request-only execution and exclusive Preview rules below. [Current execution, versioning and manual setup](reference-review.md#milestone-66-execution-and-review-contract).

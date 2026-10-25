@@ -3,6 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "storage:probe-character-r2": "node --conditions=react-server --import=tsx scripts/probe-character-r2.ts",
+    "recover:character-v5-candidate": "node --conditions=react-server --import=tsx scripts/recover-character-v5-candidate.ts",
+    "cleanup:rejected-character-assets": "node --conditions=react-server --import=tsx scripts/cleanup-rejected-character-assets.ts",
     "test:creator-profiles": "node scripts/check-creator-profiles.mjs",
     "test:creator-profile-ui": "node scripts/check-creator-profile-ui.mjs",
     "test:creator-profile-concurrency": "node scripts/check-creator-profiles.mjs --native-postgres",

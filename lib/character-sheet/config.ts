@@ -1,4 +1,5 @@
 import "server-only";
+import { characterImageModel } from "./generation-contract";
 import { z } from "zod";
 import { CharacterSheetError } from "./provider";
 
@@ -6,7 +7,7 @@ import { CharacterSheetError } from "./provider";
 const configSchema = z.strictObject({
   enabled: z.literal("1"), keyId: z.uuid(), secret: z.string().min(1).max(1024).regex(/^[\x21-\x7e]+$/)
     .refine(value => !/[:'"]/.test(value)),
-  model: z.literal("higgsfield-ai/soul/v2/standard"),
+  model: z.literal(characterImageModel),
   outputHosts: z.array(z.string().regex(/^(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,}$/)).min(1).max(10),
 });
 export class CharacterSheetConfigurationError extends CharacterSheetError {
@@ -15,10 +16,13 @@ export class CharacterSheetConfigurationError extends CharacterSheetError {
   }
 }
 export function characterSheetEnvironmentPresence() {
-  return Object.fromEntries(["HF_API_KEY_ID", "HF_API_KEY_SECRET", "HIGGSFIELD_SOUL2_MODEL", "UGC_CHARACTER_SHEET_ENABLED",
+  return Object.fromEntries(["HF_API_KEY_ID", "HF_API_KEY_SECRET", "HIGGSFIELD_SOUL2_CHARACTER_MODEL", "UGC_CHARACTER_SHEET_ENABLED",
     "HIGGSFIELD_OUTPUT_HOSTS"].map(name => [name, process.env[name] ? "PRESENT" : "MISSING"]));
 }
 export function getCharacterSheetConfig() {
+  if (process.env.UGC_CHARACTER_V5_SOUL_ID_MODE && !["off", "reuse"].includes(process.env.UGC_CHARACTER_V5_SOUL_ID_MODE)) {
+    throw new CharacterSheetConfigurationError("CHARACTER_ENVIRONMENT_INVALID");
+  }
   const keyId = process.env.HF_API_KEY_ID;
   const secret = process.env.HF_API_KEY_SECRET;
   // The Console may copy KEY_ID:SECRET as one credential. This adapter accepts
@@ -28,7 +32,7 @@ export function getCharacterSheetConfig() {
   }
   const config = configSchema.safeParse({
     enabled: process.env.UGC_CHARACTER_SHEET_ENABLED, keyId,
-    secret, model: process.env.HIGGSFIELD_SOUL2_MODEL,
+    secret, model: process.env.HIGGSFIELD_SOUL2_CHARACTER_MODEL ?? characterImageModel,
     outputHosts: (process.env.HIGGSFIELD_OUTPUT_HOSTS ?? "").split(",").map(x => x.trim()).filter(Boolean),
   });
   if (!config.success) throw new CharacterSheetConfigurationError("CHARACTER_ENVIRONMENT_INVALID");

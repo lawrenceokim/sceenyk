@@ -35,6 +35,7 @@ export async function approveReference(input: unknown) {
   const parsed = reviewActionSchema.safeParse(input);
   if (!parsed.success) throw new ReferenceReviewAccessError();
   const { type, version, projectId, jobId } = parsed.data;
+  if (type === "character") throw new ReferenceReviewAccessError(409); // V5 owns new Character approval.
   const context = await ownedReferenceReview({ projectId, jobId });
   const sheet = parseReviewSheet(context.job, type, context.sheets[type]);
   if (!sheet || !context.review.actionsAvailable) throw new ReferenceReviewAccessError(409);
@@ -48,6 +49,7 @@ export async function requestReferenceRegeneration(input: unknown) {
   const parsed = regenerationActionSchema.safeParse(input);
   if (!parsed.success) throw new ReferenceReviewAccessError();
   const { type, view, version, requestId, projectId, jobId } = parsed.data;
+  if (type === "character") throw new ReferenceReviewAccessError(409); // Historical work cannot enqueue new V1-V4 requests.
   if (!(referenceViews[type] as readonly string[]).includes(view)) throw new ReferenceReviewAccessError();
   const context = await ownedReferenceReview({ projectId, jobId });
   const sheet = parseReviewSheet(context.job, type, context.sheets[type]);

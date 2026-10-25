@@ -5,6 +5,8 @@ import { claimUgcJob } from "./worker-service";
 import { runReferenceRegeneration } from "@/lib/reference-review/regeneration";
 import { claimReferenceRegeneration } from "@/lib/reference-review/claim";
 import { UgcWorkerDatabaseError, workerDatabaseBackoff, type WorkerDatabasePhase } from "./database-diagnostics";
+import { createDatabaseClient } from "@/lib/db/server";
+import { runCharacterV5 } from "@/lib/character-v5/worker";
 
 function waitForPoll(milliseconds: number, signal: AbortSignal) {
   return new Promise<void>(resolve => {
@@ -27,6 +29,14 @@ export class LocalJobRunner {
       let delay = ugcPollMilliseconds;
       let phase: WorkerDatabasePhase = "regeneration_claim";
       try {
+        const manual = await createDatabaseClient().rpc("ugc_character_v5_claim", { p_worker: this.workerId });
+        if (manual.error) throw new UgcWorkerDatabaseError(manual.error, "regeneration_claim");
+        if (manual.data) {
+          await runCharacterV5(manual.data, signal);
+          failures = 0; lastSignature = "";
+          await waitForPoll(delay, signal);
+          continue;
+        }
         const claim = await claimReferenceRegeneration(this.workerId, process.env.UGC_PRODUCT_SHEET_ENABLED === "1");
         if (!claim) phase = "job_claim";
         const job = claim ? null : await claimUgcJob(this.workerId);

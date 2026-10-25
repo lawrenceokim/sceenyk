@@ -1,5 +1,152 @@
 # Progress Tracker
 
+## Character V5 R2 persistence (2026-10-25)
+
+**Complete in source; manual migration 056 after 055 and manual runtime acceptance pending. Milestone 7 remains Not Started.** The latest Face is committed in R2 and matches its persisted fingerprint (4,346,748 bytes, PNG, 1536 x 1152). This supersedes the earlier zero-V5-object snapshot. Current persisted failure is candidate_insertion; the 055 ready expression reproduces PostgreSQL 22P02 because JSON extraction was not grouped before subtraction. 056 corrects only that expression, preserving ownership/leases/ACLs and all other RPC definitions. No new metadata field or data backfill. The original r2_write exception was discarded; its exact historical S3/network cause remains unknown.
+
+The Buffer-based V5 writer reuses the same private R2 helper as Product, verifies an existing immutable key before PUT, and checks for commitment after uncertain writes. Safe allowlisted SDK diagnostics retain nested causes without logging credentials, URLs or raw responses. Retry saving verifies the existing candidate object first; if absent, it may GET the saved provider request's completed output, validate the same persisted fingerprint, and save the same candidate/key. It never submits a new generation, enters a worker loop or advances manual acceptance. Confirmed unavailable output disables recovery; unknown network/auth failures remain retryable. Missing/mismatched objects block review and server-side acceptance/approval.
+
+Manual probe: `npm run storage:probe-character-r2 -- --dry-run` checks presence only; `--execute` uses the same writer, verifies a tiny local PNG and immediately attempts cleanup in its isolated development-probes namespace. Neither mode was run. All four required R2 variables are present in the inspection process via .env.local, with no inherited overrides or public copies. Existing running app/worker process environments were not inspected. No credentials changed.
+
+Verification: TypeScript, focused lint, 34 pure/static R2 checks, 8 isolated 056 expression/catalog checks (all 56 migrations, 056 rerun, no execution RPCs/data), retained 25 persistence-schema checks and 17 diagnostic checks. Live inspection used only database GET, R2 HEAD and bounded conditional GET/hash checks. OpenAPI exposes 055 output_proof and recovery RPC; live function bodies/ACLs were not available and are not inferred from API signatures. No providers, worker, live recovery, probe, current-job mutation, deletion, remote migration, build, deployment, Render/Inngest or Milestone 7 execution. Product and Character prompts remain unchanged. [Detailed evidence and manual setup](character-sheet.md#character-v5-r2-persistence-2026-10-25).
+
+Task-specific preservation: **67 comparisons passed**: all eight Product module files, migrations 001–055, V5 prompt strings, the shared PNG writer, existing rejection deletion helper, and worker backoff file are unchanged against the start-of-task snapshot. New probe cleanup is separate and namespace-restricted.
+
+Files changed in this task (28; earlier worktree changes are preserved):
+
+- `lib/character-v5/contract.ts`
+- `lib/character-v5/database-diagnostics.ts`
+- `lib/character-v5/storage-diagnostics.ts`
+- `lib/character-v5/storage.ts`
+- `lib/character-v5/worker.ts`
+- `lib/character-v5/recovery.ts`
+- `lib/character-v5/output-retrieval.ts`
+- `lib/character-v5/recovery-state.ts`
+- `lib/character-v5/server.ts`
+- `lib/storage/r2.ts`
+- `lib/reference-review/state.ts`
+- `components/creation/character-v5-review.tsx`
+- `app/api/ugc/character-v5/route.ts`
+- `scripts/probe-character-r2.ts`
+- `scripts/recover-character-v5-candidate.ts`
+- `scripts/check-character-v5-r2.ts`
+- `scripts/check-character-v5-publication-schema.mjs`
+- `scripts/check-character-v5-persistence-schema.mjs`
+- `scripts/check-character-v5-diagnostics.ts`
+- `supabase/migrations/20261025005600_ugc_character_v5_publication.sql`
+- `package.json`
+- `context/architecture.md`
+- `context/character-sheet.md`
+- `context/progress-tracker.md`
+- `context/database.md`
+- `context/generation-jobs.md`
+- `context/reference-review.md`
+- `context/ai-workflow-rules.md`
+
+
+## Character V5 persistence correction (2026-10-25)
+
+**Persistence correction complete in source; manual migration 055 required after 054. Milestone 7 remains Not Started.** Read-only live inspection confirmed migration 054 API tables/RPC signatures are present, but V5 start/approval SQL references nonexistent `ugc_generation_jobs.retryable` instead of `retry_eligible` (PostgreSQL `42703`). The start transaction rolls back before provider execution. Current job has zero V5 workflows/candidates and zero objects under its private V5 prefix; no new V5 Face is recoverable. This is separate from the reported worker timeout, which recovered.
+
+055 corrects those RPC definitions without rewriting 054, adds a technical output fingerprint before R2 PUT, and supports explicit provider-free publication recovery of the same candidate/object. Logs use fixed safe database diagnostics and distinct persistence/readback/storage phases. No provider, worker, recovery/cleanup execution, live job mutation, accepted-asset deletion, remote migration, deployment, Render/Inngest or Milestone 7 work is authorized. [Current fix and manual setup](character-sheet.md#character-v5-persistence-correction-2026-10-25).
+
+Verified persistence fix: **PostgreSQL `42703`**, `ugc_generation_jobs.retryable` does not exist; the existing column is `retry_eligible`. Source 054 start/approval referenced the wrong name. A live zero-row SELECT verified the mismatch and an offline PREPARE reproduced it without executing UPDATE. The initial start transaction rolled back before provider work: current job had zero V5 workflows, zero V5 candidates, zero V5 R2 prefix objects. The earlier failed Face is explicitly V4, and HEAD confirmed its existing 10,449,257-byte PNG; it remains untouched and is not represented as a generated V5 candidate.
+
+055 corrects start/approval definitions, records an immutable output fingerprint before R2 PUT, binds publication/read-back to the same candidate, adds duplicate-provider-request protection and supports deliberate provider-free saving recovery. Development logs retain only safe operation/category/code/identifiers/slot/version and fixed reason text. References offers Retry saving for fingerprint-backed failed/stalled saves. Successful publication cannot be regressed by a failed read-back. The transient worker timeout/backoff remains unchanged; its exact latency origin is unrecorded and not equated with deterministic 42703.
+
+Validation: TypeScript and focused lint; **25 isolated schema/parse/ACL/RLS/idempotency/static checks** plus **16 pure diagnostics/redaction checks**; 055 rerun in memory, zero job/event/candidate fixtures and zero execution RPCs. All eight Product files, full regeneration source, cleanup command, R2 deletion helper, worker claim/backoff source and all 54 prior migrations match this task's baseline (66 preservation comparisons). Live OpenAPI verified table columns/defaults/FKs and required RPC signatures; full live CHECK/index/ACL/RLS definitions require the supplied SELECT-only catalog SQL, not inference from OpenAPI.
+
+Only new manual setup: `supabase/migrations/20261025005500_ugc_character_v5_persistence.sql` after 054. No environment change. Optional catalog verification: `supabase/diagnostics/character_v5_catalog_readonly.sql`. No migration, worker, provider, recovery command, cleanup execution, current-job mutation, R2 deletion or deployment was run. Product is unchanged; Render/Inngest remain unenabled; Milestone 7 remains Not Started.
+
+Provider-free command (implemented, never executed here): `npm run recover:character-v5-candidate -- --job <JOB_UUID> --candidate <CANDIDATE_UUID>`. It requires an existing V5 candidate and committed fingerprint-bound object, stops at manual review, and never substitutes a V4 request ID. **No applicable V5 candidate exists for the current failed start.** The old V4 PNG is preserved; cross-version import is outside this persistence fix.
+
+Files changed relative to the persistence-fix baseline:
+
+- New: `lib/character-v5/{database-diagnostics,persistence,recovery}.ts`, `scripts/{check-character-v5-diagnostics.ts,check-character-v5-persistence-schema.mjs,recover-character-v5-candidate.ts}`, `supabase/diagnostics/character_v5_catalog_readonly.sql`, migration `20261025005500_ugc_character_v5_persistence.sql`.
+- Updated: `lib/character-v5/{contract,server,storage,worker}.ts`, `lib/reference-review/state.ts`, `lib/db/types.ts`, `app/api/ugc/character-v5/route.ts`, `components/creation/character-v5-review.tsx`, `package.json`, and `context/{ai-workflow-rules,architecture,character-sheet,database,generation-jobs,progress-tracker,reference-review}.md`.
+
+## Character V5 manual review (2026-10-25)
+
+**Character V5 — Complete in source. V4 is superseded for new Character work. Manual migration 054 and provider/visual/runtime acceptance pending. Milestone 7 remains Not Started.**
+
+Original image → static Soul 2 Face → manual Accept → static Back → manual Accept → static Front source conditioned on accepted Back → manual Accept → local adjustable Sharp headless Front → manual Accept → local FRONT / BACK / FACE sheet → explicit Approve Character Reference. Each paid stage waits for the previous user acceptance. Technical checks only; no automatic semantic rejection or OpenAI prompt/crop validation in V5. Private candidates are separate from accepted canonical pointers; Reject fences the candidate, deletes its R2 file, then clears its image pointer while retaining minimal audit metadata. Historical V1–V4 records remain readable and unchanged. Product generation, views and approval stay the same; only its Character dependency resolver admits approved V5 workflows.
+
+[Authoritative V5 contract, setup, cleanup and verification limits](character-sheet.md#character-v5-manual-review-2026-10-25). Source-only authorization: TypeScript, focused lint and static/schema checks. No provider calls, worker/job execution, live mutation, cleanup runs, R2 deletion, remote SQL, builds, deployment, Render/Inngest or Milestone 7. Older sections below describe historical versions.
+
+Implemented V5 source: static 720p/4:3/batch-1 provider requests, optional existing Soul ID, private technical-only candidate storage, owner/version-fenced manual decisions, per-stage review pauses, retained accepted Front source, adjustable local crop plus separate crop acceptance, exact FRONT/BACK/FACE composition and final approval gate. Unknown provider intents cannot be replayed; submitted requests/committed R2 writes recover without another paid POST. Progress records real preparation/generation/review/acceptance/rejection/local-work states and fixed safe technical failure phases. Historical Character records are retained behind a collapsed read-only history section. Product's Character prerequisite adapter accepts approved V5 while preserving already-created Product provenance; Product generation and regeneration implementations remain otherwise unchanged.
+
+Cleanup CLI is implemented with explicit dry-run/execute modes, rejection/version/owner/reference proof, current/canonical/approved/Product/original protection, ETag/SHA checks and private tombstones. **Neither mode was run.** Historical Face storage failure cause remains **unknown / Needs confirmation**; old diagnostics collapse storage phases and read-only hosted metadata inspection was unavailable. New V5 phase diagnostics/metadata verification/recovery do not establish the old root cause.
+
+V5 file manifest (relative to this task's preserved starting tree):
+
+- New: `lib/character-v5/{contract,dependency,server,storage,worker}.ts`, `app/api/ugc/character-v5/route.ts`, `components/creation/character-v5-review.tsx`, `scripts/cleanup-rejected-character-assets.ts`, `scripts/check-character-v5-schema.mjs`, `supabase/migrations/20261025005400_ugc_character_v5_manual_review.sql`.
+- Integration: `lib/character-sheet/{config,higgsfield}.ts`, `lib/storage/r2.ts`, `lib/db/types.ts`, `lib/reference-review/{contract,preview,server,state}.ts`, `lib/ugc-jobs/{local-runner,progress,runner,stages}.ts`, `lib/product-sheet/service.ts` (Character prerequisite resolver only), `scripts/ugc-worker.ts`, `components/creation/{reference-review-preview,ugc-progress-preview}.tsx`, `.env.example`, `package.json`.
+- Context: `context/{overview,architecture,ui-context,code-standards,ai-workflow-rules,progress-tracker,character-sheet,database,generation-jobs,project-overview,reference-review,ugc-v1-workflow}.md`.
+
+Only **054** is new migration work in this request. Apply it manually after 053 and prerequisites; no old migration was changed. Optional environment: `UGC_CHARACTER_V5_SOUL_ID_MODE=reuse|off` (default reuse; fresh image-only if no completed identity). Existing private R2 token must permit candidate deletion. Verification passed: TypeScript, focused ESLint, 31 isolated schema/static/ACL/RLS/rerun checks, 42 current-section documentation links/anchors, whitespace review, and preservation checks for all 53 prior migrations, seven unchanged Product modules and the unchanged full regeneration source. The Product service diff is confined to its Character prerequisite. The schema run contains zero jobs/events/candidates and invokes no execution RPCs; provider, private-storage deletion, manual visual/ownership/concurrency and complete runtime acceptance remain pending for the user. No worker or cleanup command is authorized as an implementation check.
+
+## Character V4 — source implementation (2026-10-25)
+
+**Character V4 — Complete in source; manual 053/provider/visual/runtime acceptance pending. Milestone 7 — Not Started.** The [official V4 contract and manual setup](character-sheet.md#character-v4-official-workflow-2026-10-25) supersedes the earlier documentation-only status below; V3 remains superseded for new Character generation.
+
+New source orchestration: **Original → saved OpenAI analysis → existing Soul ID → valid Face → valid Back → Front source → local validated headless Front → local validated Character Sheet → ready_for_review → explicit approval.** Face first audits the original against the complete neutral-gray portrait contract and records original/provider origin. Back waits for Face; Front waits for Back and uses that exact private ETag/hash-checked Back as the main image input, with Face/Soul identity support. The existing provider abstraction/model/credentials/signing infrastructure remains. Prompt **4**, generation contract **4**, revision **`face-back-front-v1`**; actual per-operation fingerprints, upstream IDs/hashes, provider metadata/receipts and retry counts remain private. Named snapshot v3 and sheet document/storage v2 remain distinct from these operation versions.
+
+Provider source is retained as `character_front_source`; only local `character_front_reference` enters the sheet. Source/canonical validation and crop receipts stay separate. A local crop failure reloads the saved provider source without another Higgsfield request; a sheet retry uses saved canonical Front/Back/Face only. A changed local repair retains its previous rejected crop receipt. Exact rejection reasons persist, unknown outcomes stop for reconciliation, and no failed slot can exceed two provider submissions or stricter existing claim/history limits.
+
+Explicit Face regeneration atomically requests Face + Back + Front and invalidates the Character Sheet/approval. Back requests Back + Front and preserves Face; Front preserves Face/Back. Previous assets and provider receipts remain immutable history. Current pending V4 requests resume checkpoints rather than resetting their paid budget. Separate local sheet rebuild requests contain no provider path. Product approval/Primary/Angled/Detail/Sheet behavior is preserved; Location remains a non-runnable gate requiring both approvals.
+
+Progress uses real persisted, version-scoped Face → Back → Front → composition/validation/review events, without fake percentages or a fictitious generation event when the original Face is reused. References orders Original / Face / Back / canonical headless Front / Character Sheet. A separate owner/version/expiry/ETag/hash-bound Front source inspection uses existing private previews; rejected candidates remain privately inspectable. No new stylesheet/layout system.
+
+Manual migration: **[053](../supabase/migrations/20261025005300_ugc_character_v4_dependencies.sql), after 052 and its prerequisites.** Definitions/triggers only, transactional/rerun-safe, no new table/column, no backfill/history rewrite/resume/automatic job conversion. Existing RLS/private RPC grants and Product SQL definitions remain. Stop old workers, apply only the pending migration manually, restart the app and later use a fresh local `npm run worker:ugc` when ready for manual acceptance. No new environment variable/dependency; existing Character/analysis/private R2/local-only configuration is reused. Render/Inngest remain disabled.
+
+Changed source files: `lib/character-sheet/{generation-contract,contract,prompts,higgsfield,input-reference,dependencies,content-validation,validation-contract,service}.ts`; `lib/reference-review/{contract,state,server,preview,regeneration}.ts`; `lib/ugc-jobs/{contract,server,progress}.ts`; `components/creation/reference-review-preview.tsx`; migration 053; `scripts/check-character-v4-schema.mjs`. Updated the same 12 context entry points listed in the documentation checkpoint below. Existing `media.ts` Sharp crop/composition, provider abstraction/configuration and local worker startup are reused. Pre-existing unrelated worktree changes remain preserved.
+
+Verification passed: TypeScript, focused ESLint, **23 isolated schema/predicate/ACL/RLS/rerun checks**, 29 current-section documentation links/anchors and whitespace review. The schema check applies all 53 definitions plus 053 again to empty in-memory PostgreSQL, evaluates pure JSON validation/dependency predicates and compares Product SQL definitions; it invokes no execution RPC and creates no jobs/requests/events. All eight Product source files and the Product provider-regeneration branch match the start-of-task baseline. Manual real-provider/visual/crop/URL/interruption/authenticated ownership/live schema/runtime acceptance remains pending. No Higgsfield/OpenAI calls, worker/job/asset regeneration, current-job mutation, remote SQL, browser/screenshot suites, build, deployment, Render or Inngest execution. **Stop after Character V4; Milestone 7 remains Not Started.**
+
+## Character V4 — official workflow documentation (2026-10-25)
+
+**Historical documentation-only checkpoint.** Its implementation-not-started status and verification counts describe the preceding task, superseded by the source implementation above.
+
+| Item | Current status |
+| --- | --- |
+| Character V3 | **Superseded for new Character reference generation because direct Front-first generation remained unreliable.** Prior source implementation and original acceptance limits remain historical evidence. |
+| Character V4 documentation | **Complete** for this documentation-only unit; [official workflow](character-sheet.md#character-v4-official-workflow-2026-10-25) is the source of truth for future Character implementation. |
+| Character V4 implementation | **Documented / planned implementation direction — Not Started.** No V4 application code or runtime acceptance in this unit. |
+| Milestone 7 — Location Reference generation | **Not Started.** |
+
+Current Character V4 dependency chain: **Face → Back → Front source → local headless Front → Character Sheet → Review/Approval**. Full chain begins with Original Character image → OpenAI Character analysis → Soul ID. Each dependent step waits for validated saved upstream references. Front source uses validated Back as main outfit/body reference and Face/Soul identity support; canonical `front_reference` is cropped/validated locally, separate from provider `front_source`. Local sheet contains only canonical Front / Back / Face on neutral gray.
+
+Recorded future versions: **Character prompt 4; Character generation contract 4; Character strategy revision `face-back-front-v1`.** These are planned operation versions, not claims of changed runtime constants or schema migrations. V1/V2/V3 assets/jobs/requests/receipts retain their original versions, remain interpretable and are never rewritten/relabelled/replayed by this documentation decision.
+
+Updated documentation: `character-sheet.md`, `ugc-v1-workflow.md`, `architecture.md`, `overview.md`, `project-overview.md`, `ui-context.md`, `ai-workflow-rules.md`, `code-standards.md`, `generation-jobs.md`, `reference-review.md`, `database.md` and this tracker. The contract covers exact view validation, local crop/composition, failure-only retries with successful paid-work reuse, persisted progress and References/approval behavior. OpenAI retains analysis/later storyboard/script; Higgsfield Soul 2 Image-to-Image and Soul ID remain. Product / Prop generation/provider/prompts/composition/review/approval are unchanged.
+
+Documentation review: all 12 V4 sections contain planned status/version guidance; all 15 local links/anchors in those sections resolve, with no review issues. Documentation whitespace/diff review passed. SHA256 comparison confirms all 29 pre-existing changed/untracked non-documentation files remain unchanged. No application code changes, provider calls, workers/jobs, migrations (including local/in-memory application), tests, builds, deployments, Render or Inngest execution. No environment/dependency/schema change. No V4 runtime/provider/visual acceptance is claimed.
+
+Next bounded unit, only when separately requested: implement the documented V4 dependency/checkpoint, validation, retry and UI contract against verified existing structures. **Stop after documentation.** All older Character strategy/version/setup/authorization and source-complete statements below are historical, not the direction or execution permission for new V4 work.
+
+## Character V3 image-to-image pivot (2026-10-25)
+
+**Historical / superseded for new Character reference generation by V4 above.** Verification below belongs to the earlier V3 source work, not this documentation-only unit.
+
+Verification: TypeScript, focused ESLint, static source/ownership/Face-fallback/crop/retry/progress checks, exact Product provider-branch comparison and whitespace checks passed. All 52 migrations plus a 052 rerun passed in an empty in-memory database, including RPC ACL checks and zero jobs/requests/events. No execution RPC, provider/storage request, worker, generation, live mutation, hosted SQL, browser suite, build or deployment was run. Provider-quality, visual and authenticated runtime acceptance remain manual.
+
+Implemented in source; manual 052 and runtime/visual acceptance pending. [Current pipeline, source/Face rules, setup and verification limits](character-sheet.md#character-v3-image-to-image-pivot-2026-10-25) supersedes earlier Standard/V2 dispatch guidance. Character now uses SOUL2 Image-to-Image with private temporary input URLs, existing Soul ID, V3 provenance, retained Front source/local crop, preferred Front-conditioned Back and original Face reuse before fallback. OpenAI analysis/visual validation remains; it does not generate Character images. Product is unchanged. No providers, workers, live mutation, remote SQL, deployment, Render/Inngest or Milestone 7 execution.
+
+
+## Character V2 source/crop, provenance and rejection inspection (2026-10-25)
+
+**Implemented in source; manual 051 and provider/runtime/visual acceptance pending. No generation/retry/live mutation. Milestone 7 — Not Started.** SELECT-only inspection of the existing job confirms Character review v5/composed v4, three exhausted claims, root `ATTEMPTS_EXHAUSTED` and null execution diagnostic. Latest Front/Back operations completed, returned one file each and downloaded/decoded PNG successfully, but have no semantic receipt, per-view diagnostic, prompt version or contract provenance. Face v4 was stored after successful download/decode, also without a semantic receipt. The exact old Front/Back semantic reason and actual dispatched prompt cannot be recovered from these records; the user has no terminal details. Current source routes normal/replacement generation through the same current builder and does not consume V1 base prompt text. No stale-worker/configuration claim is proven.
+
+Implemented current shared prompt/contract V2 fingerprinting before dispatch, normal full-body `front_source` followed by checked local collar crop and independent canonical validation, retained direct Back/Face strategies, private rejected provider/crop preview selectors, safe stage/rule/version/retry logs and a strict two-submission strategy limit. 051 is manual-only after 050: server admission rejects stale fresh intents without V2 provenance, canonical Front admission binds both source/crop proofs, and explicit user requests may archive/supersede the observed completed/unpublished historical requests into a fresh review version. No migration-time data update, Product change, worker/provider call or current-job recovery. [Evidence, setup and validation limits](character-sheet.md#character-v2-source-and-crop-correction-2026-10-25).
+
+TypeScript, focused ESLint, static contract/publication/preview checks and exact Product provider-branch comparison passed. All 51 migrations plus a 051 rerun passed in an empty in-memory schema with private helper/public RPC ACL checks and zero jobs/requests/events; no execution RPC was invoked. Hosted SQL, real images/crop/validator behavior, authenticated previews and concurrency acceptance remain manual. No browser suite, build or deployment was run; Render/Inngest remain disabled.
+
+## Character singleton output enforcement (2026-10-25)
+
+**Implemented in source; manual 050 and provider/runtime/visual acceptance pending. Milestone 7 — Not Started.** Tightened Front/Back/Face prompts and added semantic image validation before base/replacement publication. The earlier one-file/PNG/dimension checks could accept many poses inside one image; sheet composition preserved those pixels. New strict structured visual observations are evaluated by deterministic slot rules; hash-bound receipts and three-input sheet bindings are enforced in application and private database writes. Only a known content rejection permits one automatic retry for that slot, with prior provider receipts and candidate bytes retained. Unknown visual-check outcomes stop without replay. Explicit failed-slot retry remains within the existing three review-claim bound; Product assets/approval are untouched. Historical unvalidated images are fallback inspection only and are not rendered as current card thumbnails or approvable output. The existing provider-free recovery command refuses missing receipts without calling a provider.
+
+Manual-only [050](../supabase/migrations/20261025005000_ugc_character_slot_validation.sql), after 049, adds private review validation receipts, admission/approval checks, bounded checkpoint rotation and safe slot validation history; no historical data backfill or migration execution. No new environment variable/model/dependency: the checker reuses the frozen existing OpenAI analysis model and configuration, while SOUL2 still generates Character images. Future manual worker runs incur visual-check calls; none occurred here. TypeScript, focused ESLint, static publication/intent/ACL/reason/transaction checks and whitespace checks passed. Static comparison confirmed the Product provider-generation branch and Product files unchanged. [Detailed contract and limitations](character-sheet.md#single-view-semantic-admission-2026-10-25). No worker, recovery, live job mutation, storage/provider call, remote SQL, browser suite, build or deployment. Render/Inngest remain disabled.
+
 ## Milestone 6.6 stored Character recovery and approval reconciliation (2026-10-25)
 
 **Source fix complete; manual 049, deliberate single-job recovery and authenticated/visual acceptance pending. Live job remains unchanged. Milestone 7 — Not Started.** [Evidence, recovery contract and exact command](reference-review.md#stored-character-recovery-and-authoritative-approval-gate-2026-10-25).
