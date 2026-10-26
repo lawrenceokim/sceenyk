@@ -1,5 +1,91 @@
 # UGC Character Reference Sheet — Milestone 5
 
+## Character V5 Back straight-rear wording (2026-10-26)
+
+**Implemented in source; manual visual/provider acceptance pending.** This fine-tunes the revision 4 prompt wording below without changing the accepted-Face recipe or admission contract. The exact new prompt is:
+
+> Regenerate this character as one full-body back view on a plain neutral gray background. Show only one character. The camera must be directly behind the character. The character must face completely away from the camera in a perfectly straight rear view. Do not show any part of the face or side profile. Show the back of the head, back of the neck, full outfit, full body, arms, legs, and shoes. Keep the same outfit, hairstyle silhouette, body shape, and proportions. No shadow.
+
+Back still uses only the existing accepted/generated Face: `workflow.accepted.face` is read with private namespace/ETag/size/SHA256 verification and its exact key is signed. Missing/corrupt Face stops; Original is never substituted. Prompt enhancement=false, batch size=1, no Soul ID/custom reference, other provider settings, reviewer flags, manual Accept/Reject/delete, Product and V5 step order remain unchanged. No new AI review call.
+
+Back-only reviewer hint is now exactly: **Reject if the character is turned sideways or if any part of the face is visible.** Other slots keep their existing guidance.
+
+No new migration/environment setup. Existing migration 059 after prerequisites is still required for revision 4. Exact prompt text is already frozen in new intent JSON, so this wording adjustment stays under revision 4 without rewriting historical intents or adding another database revision guard. Restart the local app/worker with updated source; test only through explicit rejection/regeneration or a fresh Back stage. Existing submitted results retain their old prompt/output. No provider/worker/job/retry/migration/build/deployment was executed here.
+
+Manual check: preserve an accepted Face; explicitly generate a new Back; confirm input diagnostics still match Accepted Face, enhancement Disabled and batch 1. Verify one straight rear full-body figure, centered head/body with back of head/neck visible, no cheek/jaw/nose/eye/mouth/side profile and plain gray without shadow. Card and lightbox must show that same saved Back. Confirm the exact rejection hint is visible; manually reject any sideways/face-visible result. Prompt compliance remains a provider/visual acceptance check, not an automated guarantee.
+
+## Character V5 Back accepted-Face correction (2026-10-26)
+
+**Implemented in source; manual migration 059 and visual/provider/runtime acceptance pending.** This supersedes the Original-upload Back recipe below. The new prompt revision **4** is exactly:
+
+> Regenerate this character as one full-body back view on a plain neutral gray background. Show only one character. The camera must be directly behind the character so the character faces completely away from the camera. Do not show any part of the face. Show the full body from head to shoes. Preserve the same outfit, hairstyle silhouette, body shape, and proportions. The gray background must be flat and clean with no visible shadow.
+
+No rewriting/expansion; enhancement=false, batch=1, 720p/4:3, no Soul ID/custom-reference fields and no seed. After Face acceptance, Back now uses that exact `accepted.face` asset. Its bytes must pass the established private namespace/ETag/size/SHA256 read verification before the key is signed. Persisted `input_asset.kind=accepted_face` and ID/key/hash/ETag prove which source was selected; provider request ID and saved Back key/hash remain in the existing candidate row. Accepted Face and all existing storage behavior remain unchanged.
+
+No unreadable/corrupt Face may trigger an Original fallback. The current Face-first gate also stops when accepted Face is absent; there is no new path to generate Back before acceptance. Historical `kind=original` remains readable and is displayed as `original_upload` / Original Upload, never fabricated as accepted Face. The `original_upload` label is reserved for actual Original provenance; valid new V5 Back requests use accepted Face.
+
+**Reviewer warnings:** the owner explicitly selected reviewer-marked flags with no extra provider call. Development Back diagnostics now provide four independent Not checked / No issue seen / Issue visible controls: partial face visible, sideways pose, background shadow, multiple characters. They are candidate-scoped local review notes, not automatic image detection or persisted server decisions. New candidate resets them; closing/unmounting the review also clears them. Unchecked flags do not claim a clean result. The marked warning list and pending-check count appear in diagnostics and development console logs. They never call an action or change Accept/Reject/delete behavior.
+
+The same small section reports Actual source: Accepted Face / Original Upload / Unknown, actual saved prompt revision, enhancement status, batch size, candidate/request IDs, selected input key/hash and saved Back object key/hash. Existing private card/lightbox previews, exact served-key/hash development headers and production omission remain. Product/Prop and Front/Headless Front/Sheet behavior are unchanged.
+
+**Migration/setup:** in the Supabase SQL editor, run the entire `supabase/migrations/20261026005900_ugc_character_v5_back_accepted_face.sql` file **after 058 and prerequisites**, before starting new Back work. It only adds revision 4 to the checkpoint's enhancement=false guard; no data rewrite/backfill/table/column/environment change. Keep the already-prepared 058 intact. Restart the development app and manually managed local worker with current source. No migration, worker or provider call was run here.
+
+**Exact manual test:**
+
+1. Open a single current Character V5 workflow that already has Face accepted. Confirm the accepted Face remains present; do not regenerate it. If an old Back is in review, explicitly Reject and delete it before choosing Try Back again → Continue.
+2. Generate Back through the existing local worker/manual flow. In `UGC_CHARACTER_V5_BACK_PAYLOAD`, confirm `resolvedSource.kind=accepted_face`, and that its ID/key/hash match the accepted Face. Confirm the exact prompt above, revision 4, enhancement disabled, batch 1 and no custom reference. The input key must differ from the Original-upload key.
+3. In References, open Back development diagnostics. Confirm Actual source: Accepted Face, revision 4, Enhancement: Disabled and Batch size: 1, plus candidate/request ID and saved object key/hash. Inspect card and lightbox: plain neutral gray, no floor/cast/studio shadow, one complete head-to-shoes character, straight rear view, no part of the face, consistent outfit/body/hair silhouette.
+4. For each of the four reviewer checks, select No issue seen or Issue visible based on the image. Confirm warnings/pending count update without accepting, deleting or regenerating anything. Accept and Reject remain your decisions.
+5. Reject and delete image, then explicitly regenerate once. Confirm the accepted Face remains unchanged, the new candidate/request/key is different, source still matches that same accepted Face, prompt/settings stay the same, and reviewer flags reset to Not checked. Inspect the same visual criteria again.
+6. Accept a satisfactory Back. Confirm Front was blocked until Back acceptance and only then advances. No Product generation is needed for this test. If accepted Face storage is unavailable, generation must stop with an input error instead of submitting from Original.
+
+Remaining limits: prompt wording cannot guarantee a model's visual output. A Face crop may omit outfit/body details the provider must reconstruct. Reviewer flags are manual/local; they are not automated detection. Provider/visual acceptance remains manual. No historical jobs were mutated/retried; no deployment or Milestone 7 work.
+
+## Character V5 Back Playground parity (2026-10-26)
+
+**Implemented in source; manual migration 058 and provider/visual/runtime acceptance pending. Milestone 7 remains Not Started.** This supersedes the earlier Back prompt recipe below. The owner proved that Soul 2 Image-to-Image produces the correct rear view from the same Original image with no Soul ID/custom reference. Source inspection confirms Sceenyk still reused a workflow Soul ID for Back and sent `custom_reference_id` plus `custom_reference_strength=1` when present; the prompt also differed from the now-supplied successful wording. These are confirmed configuration mismatches, not proof that a particular parameter alone caused historical visual output. No new live payload/image inspection was performed.
+
+| Setting | Sceenyk before this change | New Back request / Playground evidence |
+| --- | --- | --- |
+| Model | `higgsfield-ai/soul/v2/image-to-image` | Same, matches supplied evidence |
+| Input | Frozen Original Character upload, not Face | Same Original; explicit persisted source kind/ID/key/hash/ETag |
+| Prompt | Earlier rear-view/no-face/outfit-preservation wording | Exact owner-supplied text below, without suffix/expansion |
+| Soul ID/custom reference | Reused workflow ID + strength 1 when available | Omitted from wire payload, even when workflow has a Soul ID |
+| Batch/resolution | 1 / 720p | Same, matches supplied evidence |
+| Enhancement | false after prior correction | false; no provider prompt expansion |
+| Aspect ratio | 4:3 | Retained; supplied Back Playground aspect ratio is **Needs confirmation** |
+| Seed | Omitted | Retained; supplied Back Playground seed is **Needs confirmation** |
+
+Exact next-test Back prompt (`promptRevision=3`, Character prompt/contract version remains 5):
+
+> regenerate this image but place the character in a gray background with the character showing it's back. display the character in full body outfit. display from the head to the shoes but facing their back to the camera. there should be no shadow in the gray background
+
+The single payload builder freezes `soulId=null`, `soulIdUsed=false`, `referenceStrength=null`, enhancement=false and batch 1 for Back. It sends neither `custom_reference_id` nor `custom_reference_strength` and sends no seed. Original selection remains owner/project/ETag/hash checked; accepted Face only gates generation. No original/Face output is copied into Back. Source JSON, provider request ID, planned candidate key, output proof and saved artifact SHA256 remain persisted through the established checkpoint. Historical intents are not rewritten or resubmitted; Front may still use the workflow's saved Soul ID.
+
+Temporary development diagnostics:
+
+- `UGC_CHARACTER_V5_BACK_PAYLOAD` logs the actual adapter payload/model/candidate ID immediately before the request, including prompt, image path, resolution/aspect/batch/enhancement and resolved source fingerprint. Signing query credentials are redacted, never logged; the real request retains the full signed URL. `payloadFieldNames` distinguishes omitted wire fields from diagnostic null values.
+- Existing submitted/saved/preview logs correlate candidate/request/source/key/hash, now with the exact `previewSourceKey`. An owner-authorized **Back development diagnostics** disclosure shows the saved metadata/settings. Historical missing fields remain null, never fabricated.
+- Card and lightbox use the same candidate URL and component. Browser load logs/data attributes identify expected key/hash and actual rendered URL with `surface=card|lightbox` and fallback=false. Development response headers `X-Sceenyk-Back-Candidate`, `X-Sceenyk-Back-Object-Key`, `X-Sceenyk-Back-SHA256`, `X-Sceenyk-Back-Request-Id`, `X-Sceenyk-Back-Fallback` identify exactly what the server served after candidate and byte-hash verification. They remain private/no-store and owner/version bound.
+- Production omits the private debug DTO, disclosure, data attributes and debug headers/logs. No credentials, raw provider responses or signed query tokens enter diagnostics.
+
+Missing saved candidate shows **No back candidate available**. An existing saved candidate is never replaced with Original/Face/accepted/history: a load failure shows an explicit Back preview error. Storage verification still controls Accept independently of inspection; all existing manual decision/deletion and Face → Back → Front gates remain.
+
+**Manual setup:** apply `supabase/migrations/20261026005800_ugc_character_v5_back_playground.sql` after 057 (and prerequisites). It changes only the checkpoint enhancement admission to include Back prompt revision 3; legacy revisions and every other function remain unchanged. No table/column/environment change. Restart development app and manually managed local worker with updated code. No migration/provider/worker/deployment was executed here.
+
+**Precise manual acceptance:**
+
+1. Open one intended test workflow. Before Face acceptance, confirm Back cannot generate. Accept the desired Face, or preserve the already accepted Face. If an old Back is in review, explicitly **Reject and delete image**, wait for deletion, then **Try Back again → Continue**; do not retry historical jobs in bulk.
+2. For the new Back submission, inspect `UGC_CHARACTER_V5_BACK_PAYLOAD` in local worker logs: exact prompt above, correct model, original input ID/key/hash/ETag, batch 1, 720p, enhancement=false, no custom-reference fields in `payloadFieldNames`. Inspect retained 4:3/no-seed settings; compare against Playground if those values become available.
+3. While there is no saved Back, References shows the placeholder. After save, open **Back development diagnostics** and record candidate ID, provider request ID, object key and hash. Source kind must be Original; the Back key must differ from the Original and accepted Face keys.
+4. Inspect the Back card: one full-body character, head through shoes, rear facing, gray without shadow, correct outfit/body/hair silhouette. In DevTools Network, inspect its candidate GET and the five `X-Sceenyk-Back-*` headers. They must match the saved diagnostics exactly. No Original/Face/stale request replaces a failed candidate request.
+5. Click the Back card. The lightbox must show the same image with the same `candidateId` URL, response object key and SHA256. Compare card/lightbox browser logs: same URL/key/hash/request, distinct surface labels, fallback=false. The endpoint checks actual returned bytes against the persisted hash.
+6. Block that exact image URL in DevTools, close the lightbox and reopen it. Expect **Back candidate preview unavailable**, with no substitute image. Unblock, close and reopen; expect the same saved Back. A missing candidate, rather than a failed load of an existing candidate, uses the missing-candidate placeholder.
+7. **Reject and delete image**. Confirm it is no longer reviewable, the placeholder returns and Face stays accepted. Explicitly regenerate once: new candidate/request/key, same intended Original input and exact recipe. Do not assume different hashes when a provider returns identical bytes.
+8. **Accept Back** only when satisfied. Confirm Front was blocked until acceptance and now uses this accepted Back. Preserve Product behavior; no Product generation is necessary for this test.
+
+Offline test evidence and file manifest are in the tracker. Source/fixture checks do not establish live visual quality or authenticated browser acceptance. No provider call, historical retry, live DB/R2 mutation, worker execution, deployment, build or Milestone 7 work was performed.
+
 ## Character V5 Back request correction (2026-10-26)
 
 **Implemented in source; manual 057/provider/visual/runtime acceptance pending.** Code inspection found an incomplete Back prompt and enabled provider prompt enhancement. No Original-image fallback or cross-slot object-key reuse was found in the V5 path. This identifies request defects, not proof of the exact cause of any historical provider image; no live provider/database/storage inspection or generation was performed in this task.

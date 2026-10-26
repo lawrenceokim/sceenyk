@@ -8,6 +8,8 @@ import { characterProviderDiagnostic, characterOutputError, characterOutputMetad
 import { validateCharacterOutputUrl } from "./output-validation";
 import { currentGenerationSchema } from "./generation-contract";
 import { v5Generation, v5ProviderPayload } from "@/lib/character-v5/contract";
+import { logV5BackPayload } from "@/lib/character-v5/back-diagnostics";
+import type { V5Candidate } from "@/lib/character-v5/contract";
 
 const apiOrigin = "https://api.higgsfield.ai";
 const receiptSchema = z.object({ request_id: z.uuid(), status_url: z.url() });
@@ -86,11 +88,13 @@ export class HiggsfieldSoul2CharacterSheetProvider implements CharacterSheetProv
     return { id: result.request_id, statusUrl: result.status_url,
       responseMetadata: characterOutputMetadata(response.body, response.httpStatus) };
   }
-  async submitManualView(input: { slot: "face" | "back" | "front_source"; imageUrl: string; soulId: string | null; key: string }, signal: AbortSignal) {
+  async submitManualView(input: { slot: "face" | "back" | "front_source"; imageUrl: string; soulId: string | null; key: string;
+    source?: V5Candidate["input_asset"] }, signal: AbortSignal) {
     const generation = v5Generation(input.slot, input.soulId);
     if (generation.soulId) z.uuid().parse(generation.soulId);
-    const response = await this.request("view_submit", `/${this.model}`, signal,
-      v5ProviderPayload(generation, z.url().parse(input.imageUrl)), input.key);
+    const payload = v5ProviderPayload(generation, z.url().parse(input.imageUrl));
+    if (input.slot === "back") logV5BackPayload(this.model, input.key, payload, input.source);
+    const response = await this.request("view_submit", `/${this.model}`, signal, payload, input.key);
     const result = parseProviderPayload(receiptSchema, response, "view_submit");
     validateStatusUrl(result.status_url, result.request_id);
     return { id: result.request_id, statusUrl: result.status_url, generation };

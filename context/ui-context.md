@@ -1,5 +1,19 @@
 # UI Context
 
+## Character V5 Back straight-rear review hint (2026-10-26)
+
+Only the Back candidate review replaces generic review guidance with: **Reject if the character is turned sideways or if any part of the face is visible.** Manual decisions, warning flags, private preview/lightbox and all other slots remain unchanged. [Exact current prompt and manual check](character-sheet.md#character-v5-back-straight-rear-wording-2026-10-26).
+
+## Character V5 Back source and reviewer flags (2026-10-26)
+
+The small development Back diagnostics section now summarizes actual persisted source (Accepted Face / Original Upload / Unknown), prompt revision, enhancement and batch, alongside candidate/request/key/hash JSON. New Back input is the exact accepted Face; historical Original records stay labeled Original Upload. Reviewer checks use native select controls with explicit labels and Not checked / No issue seen / Issue visible states for partial face visible, sideways pose, background shadow and multiple characters. Marked warnings and pending count are shown honestly; there is no automatic image detector or new provider call. Notes are local to the mounted candidate and reset for a new candidate. They never change manual Accept/Reject/delete. Existing Tailwind tokens, private card/lightbox, production debug omission and Product UI remain unchanged. [Current recipe and manual tests](character-sheet.md#character-v5-back-accepted-face-correction-2026-10-26).
+
+## Character V5 Back development inspection (2026-10-26)
+
+Back review and its lightbox share the same candidate-bound preview URL/component. Only absence of a saved/reviewable Back candidate shows **No back candidate available**; an existing candidate that fails loading shows **Back candidate preview unavailable. Close and reopen to retry.** Never substitute Original, Face, accepted Back or historical output. A stored candidate can be inspected while availability verification needs attention; Accept remains disabled until persistence is ready.
+
+In development only, a compact Back development diagnostics disclosure shows persisted candidate/request ID, key/hash, Original input ID/key/fingerprint and actual saved generation settings. Browser load logs distinguish card/lightbox and identify candidate URL/key/hash. Authenticated preview response headers report the exact key/hash actually served. Production omits the disclosure, private debug DTO, image data attributes and debug headers. Existing native dialogs, theme tokens, Tailwind, Accept/Reject/delete and Product flow remain unchanged. [Current Back recipe and manual steps](character-sheet.md#character-v5-back-playground-parity-2026-10-26).
+
 ## Character V5 Face Playground alignment (2026-10-26)
 
 **Complete in source; TypeScript, focused lint and 24 offline checks passed. Manual visual/provider acceptance pending. Milestone 7 remains Not Started.** Read-only inspection confirms current Face candidate is a distinct generated R2 image, not the original accidentally shown in References. The completed request used the older simple V5 prompt plus a reused Soul ID and no seed. The user's successful Playground run used no Soul ID and seed 362102; model, 4:3, 720p, enhance_prompt=true, batch size 1 and the original source match. These are proven request differences, not proof that one parameter alone caused the retained purple background.

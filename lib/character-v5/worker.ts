@@ -132,25 +132,31 @@ export async function runCharacterV5(workflow: V5Workflow, shutdown: AbortSignal
         const jobResult = await db.from("ugc_generation_jobs").select("*").eq("id", workflow.job_id)
           .eq("owner_user_id", workflow.owner_user_id).eq("project_id", workflow.project_id).single();
         if (jobResult.error || !jobResult.data) throw new CharacterV5Error(phase);
-        let input: { key: string; id: string; etag: string; sha256: string };
+        let input: { key: string; id: string; etag: string; sha256: string; kind?: "accepted_face" | "original_upload" };
         if (workflow.slot === "front_source") {
           const back = workflow.accepted.back;
           if (!back || !workflow.accepted.face) throw new CharacterV5Error(phase);
           await readV5Artifact(workflow, back, signal);
           input = { key: back.storageKey, id: back.id, etag: back.etag, sha256: back.sha256 };
+        } else if (workflow.slot === "back") {
+          // Preserve Face-first admission. An unavailable/corrupt accepted Face
+          // must never silently switch the request to the Original upload.
+          const face = workflow.accepted.face;
+          if (!face) throw new CharacterV5Error(phase, "CHARACTER_ACCEPTED_FACE_REQUIRED");
+          await readV5Artifact(workflow, face, signal);
+          input = { key: face.storageKey, id: face.id, etag: face.etag, sha256: face.sha256, kind: "accepted_face" };
         } else {
-          if (workflow.slot === "back" && !workflow.accepted.face) throw new CharacterV5Error(phase);
-          // Back needs the full outfit/body source, not the cropped Face output.
           input = await originalInput(jobResult.data, signal);
         }
         phase = "input_sign";
         const imageUrl = await signR2CharacterSource(input.key, input.etag);
         candidate = await checkpoint("intent", { plannedKey: `${v5Prefix(workflow)}${candidate.id}.png`,
           generation: v5Generation(workflow.slot, workflow.soul_id), inputAsset: { id: input.id, etag: input.etag, sha256: input.sha256,
-            ...(workflow.slot === "back" ? { storageKey: input.key } : {}) } });
+            ...(workflow.slot === "back" ? { storageKey: input.key, kind: input.kind } : {}) } });
         logV5Back("intent", candidate);
         phase = "provider_submit";
-        const receipt = await provider.submitManualView({ slot: workflow.slot, imageUrl, soulId: workflow.soul_id, key: candidate.id }, signal);
+        const receipt = await provider.submitManualView({ slot: workflow.slot, imageUrl, soulId: workflow.soul_id, key: candidate.id,
+          ...(workflow.slot === "back" ? { source: candidate.input_asset! } : {}) }, signal);
         candidate = await checkpoint("submitted", { requestId: receipt.id, statusUrl: receipt.statusUrl });
         logV5Back("submitted", candidate);
       }

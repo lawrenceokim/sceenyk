@@ -40,7 +40,15 @@ export async function POST(request: Request) {
 export async function GET(request: Request) {
   try {
     const input = Object.fromEntries(new URL(request.url).searchParams);
-    const bytes = await characterV5Preview(input);
-    return new Response(new Uint8Array(bytes), { headers: { ...headers, "Content-Type": "image/png", "Content-Length": String(bytes.length) } });
+    const responseHeaders = new Headers({ ...headers, "Content-Type": "image/png" });
+    const bytes = await characterV5Preview(input, candidate => {
+      responseHeaders.set("X-Sceenyk-Back-Candidate", candidate.id);
+      responseHeaders.set("X-Sceenyk-Back-Object-Key", candidate.artifact!.storageKey);
+      responseHeaders.set("X-Sceenyk-Back-SHA256", candidate.artifact!.sha256);
+      responseHeaders.set("X-Sceenyk-Back-Request-Id", candidate.request_id ?? "none");
+      responseHeaders.set("X-Sceenyk-Back-Fallback", "false");
+    });
+    responseHeaders.set("Content-Length", String(bytes.length));
+    return new Response(new Uint8Array(bytes), { headers: responseHeaders });
   } catch (error) { return failure(error); }
 }

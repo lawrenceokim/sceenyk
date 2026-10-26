@@ -26,8 +26,8 @@ for (const slot of ["back", "front_source"] as const) {
     assert.deepEqual(payload, { prompt: slot === "back" ? v5Prompts.back :
       "Regenerate this character as one full-body front view on a neutral gray background. Show only one character.",
     image_url: input, batch_size: 1, resolution: "720p", aspect_ratio: "4:3", enhance_prompt: slot !== "back",
-    ...(identity ? { custom_reference_id: identity, custom_reference_strength: 1 } : {}) }); checks++;
-    check(saved.seed === null && saved.soulIdUsed === !!identity, "other views preserve identity and seed omission");
+    ...(slot === "front_source" && identity ? { custom_reference_id: identity, custom_reference_strength: 1 } : {}) }); checks++;
+    check(saved.seed === null && saved.soulIdUsed === (slot === "front_source" && !!identity), "Front preserves identity while Back is image-only; both omit seed");
   }
 }
 const manual: V5Review = { id: soulId, candidateId: soulId, version: 4, slot: "face", state: "review", accepted: [], approvedAt: null,

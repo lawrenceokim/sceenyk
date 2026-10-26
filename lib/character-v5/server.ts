@@ -89,7 +89,7 @@ export async function characterV5Action(input: unknown) {
 }
 const previewSchema = z.strictObject({ projectId: z.uuid(), jobId: z.uuid(), version: z.coerce.number().int().positive(),
   slot: z.enum(v5Slots), candidateId: z.uuid().optional() });
-export async function characterV5Preview(input: unknown) {
+export async function characterV5Preview(input: unknown, onBackPreview?: (candidate: V5Candidate) => void) {
   const parsed = previewSchema.safeParse(input);
   if (!parsed.success) throw new ReferenceReviewAccessError(404);
   const { projectId, jobId, version, slot, candidateId } = parsed.data;
@@ -121,6 +121,7 @@ export async function characterV5Preview(input: unknown) {
   try {
     const bytes = await readV5Artifact(workflow, artifact, AbortSignal.timeout(30_000));
     if (previewCandidate) logV5Back("preview", previewCandidate, { source: "back_candidate", served: true });
+    if (previewCandidate && process.env.NODE_ENV !== "production") onBackPreview?.(previewCandidate);
     return bytes;
   }
   catch {

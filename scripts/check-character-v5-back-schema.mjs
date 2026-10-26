@@ -29,9 +29,33 @@ try {
     const result = await pg.query(`select ${guard.replaceAll("p_payload", "$1::jsonb").replaceAll("w.slot", "$2::text")} rejected`, [JSON.stringify(payload), slot]);
     assert.equal(result.rows[0].rejected, rejected, `${slot}/${revision}/${enhance}`); checks++;
   }
+  const playground = fs.readFileSync("supabase/migrations/20261026005800_ugc_character_v5_back_playground.sql", "utf8");
+  await pg.exec(playground); await pg.exec(playground);
+  const playgroundGuard = fixed.replace("w.slot='back' and p_payload->'generation'->>'promptRevision'='2'",
+    "w.slot='back' and p_payload->'generation'->>'promptRevision' in ('2','3')");
+  assert.equal(await checkpoint(), playgroundGuard); checks++;
+  assert.deepEqual(await preserved(), before); checks++;
+  const nextGuard = guard.replace("p_payload->'generation'->>'promptRevision'='2'", "p_payload->'generation'->>'promptRevision' in ('2','3')");
+  for (const [slot, revision, enhance, rejected] of [ ["back", 3, false, false], ["back", 3, true, true],
+    ["back", 2, false, false], ["back", 1, true, false], ["face", 2, true, false], ["front_source", 1, true, false] ]) {
+    const result = await pg.query(`select ${nextGuard.replaceAll("p_payload", "$1::jsonb").replaceAll("w.slot", "$2::text")} rejected`,
+      [JSON.stringify({ generation: { enhancePrompt: enhance, promptRevision: revision } }), slot]);
+    assert.equal(result.rows[0].rejected, rejected); checks++;
+  }
+  const acceptedFaceSql = fs.readFileSync("supabase/migrations/20261026005900_ugc_character_v5_back_accepted_face.sql", "utf8");
+  await pg.exec(acceptedFaceSql); await pg.exec(acceptedFaceSql);
+  assert.equal(await checkpoint(), playgroundGuard.replace("in ('2','3')", "in ('2','3','4')")); checks++;
+  assert.deepEqual(await preserved(), before); checks++;
+  const acceptedFaceGuard = nextGuard.replace("in ('2','3')", "in ('2','3','4')");
+  for (const [slot, revision, enhance, rejected] of [ ["back", 4, false, false], ["back", 4, true, true],
+    ["back", 3, false, false], ["face", 2, true, false], ["front_source", 1, true, false] ]) {
+    const result = await pg.query(`select ${acceptedFaceGuard.replaceAll("p_payload", "$1::jsonb").replaceAll("w.slot", "$2::text")} rejected`,
+      [JSON.stringify({ generation: { enhancePrompt: enhance, promptRevision: revision } }), slot]);
+    assert.equal(result.rows[0].rejected, rejected); checks++;
+  }
   const acl = (await pg.query("select has_function_privilege('service_role','public.ugc_character_v5_checkpoint(uuid,uuid,uuid,text,jsonb)','EXECUTE') and not has_function_privilege('authenticated','public.ugc_character_v5_checkpoint(uuid,uuid,uuid,text,jsonb)','EXECUTE') and not has_function_privilege('anon','public.ugc_character_v5_checkpoint(uuid,uuid,uuid,text,jsonb)','EXECUTE') value")).rows[0].value;
   assert.equal(acl, true); checks++;
   const counts = (await pg.query("select (select count(*)::int from ugc_generation_jobs) jobs,(select count(*)::int from ugc_generation_job_events) events,(select count(*)::int from ugc_character_v5_candidates) candidates")).rows[0];
   assert.deepEqual(counts, { jobs: 0, events: 0, candidates: 0 }); checks++;
-  console.info(JSON.stringify({ checks, migrations: files.length + 1, rerun057: true, executionRPCs: 0, counts }));
+  console.info(JSON.stringify({ checks, migrations: files.length + 3, rerun057: true, rerun058: true, rerun059: true, executionRPCs: 0, counts }));
 } finally { await pg.close(); }

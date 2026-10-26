@@ -1,5 +1,6 @@
 import "server-only";
-import { v5Review } from "@/lib/character-v5/contract";
+import { v5Review, type V5BackReviewDiagnostic } from "@/lib/character-v5/contract";
+import { backReviewDiagnostic } from "@/lib/character-v5/back-diagnostics";
 import { v5RecoveryState, type V5RecoveryState } from "@/lib/character-v5/recovery-state";
 import { createDatabaseClient } from "@/lib/db/server";
 import { characterSheetDocumentSchema, characterAssetTypes, operationSchema } from "@/lib/character-sheet/contract";
@@ -81,10 +82,16 @@ export async function readReferenceReviewState(job: UgcJobRow, sheets: ReviewShe
   let canRetrySaving = false;
   let savingIncomplete = false;
   let recoveryState: V5RecoveryState = "not_needed";
-  let soulIdUsed = manual.data?.slot === "face" ? false : !!manual.data?.soul_id;
+  let soulIdUsed = ["face", "back"].includes(manual.data?.slot ?? "") ? false : !!manual.data?.soul_id;
+  let backCandidateAvailable = false;
+  let backDiagnostics: V5BackReviewDiagnostic | undefined;
   if (manual.data?.candidate_id && (!["queued", "running"].includes(manual.data.state) || manual.data.state === "running" && Date.parse(manual.data.lease_expires_at ?? "") <= Date.now())) {
     const candidate = await db.from("ugc_character_v5_candidates").select("*").eq("id", manual.data.candidate_id).eq("workflow_id", manual.data.id).single();
     if (candidate.error || !candidate.data) throw new Error("REFERENCE_REVIEW_UNAVAILABLE");
+    if (candidate.data.slot === "back") {
+      backCandidateAvailable = !!candidate.data.artifact && candidate.data.state === "review";
+      backDiagnostics = backReviewDiagnostic(candidate.data);
+    }
     if (candidate.data.generation && "soulIdUsed" in candidate.data.generation) soulIdUsed = candidate.data.generation.soulIdUsed;
     reconciliationRequired = candidate.data.state === "intent";
     recoveryState = await v5RecoveryState(manual.data, candidate.data);
@@ -119,7 +126,8 @@ export async function readReferenceReviewState(job: UgcJobRow, sheets: ReviewShe
   if (historicalCharacter?.rejectedOutputs) historicalCharacter.rejectedOutputs = historicalCharacter.rejectedOutputs.filter(output => !purged.has(output.id));
   const approved = (type: ReferenceType) => groups.some(group => group.type === type && group.state === "approved");
   const regeneration = groups.some(group => group.sheetInvalidated);
-  return { groups, ...(manual.data ? { characterV5: v5Review(manual.data, reconciliationRequired, canRetrySaving, savingIncomplete, recoveryState, soulIdUsed) } : {}),
+  return { groups, ...(manual.data ? { characterV5: { ...v5Review(manual.data, reconciliationRequired, canRetrySaving, savingIncomplete, recoveryState, soulIdUsed),
+    ...(manual.data.slot === "back" ? { backCandidateAvailable, ...(backDiagnostics ? { backDiagnostics } : {}) } : {}) } } : {}),
     ...(historicalCharacter ? { historicalCharacter } : {}),
     actionsAvailable: mutable, available: !!manual.data || groups.some(group => group.assets.some(asset => asset.view !== "original" && asset.available)) ||
       job.resume_stage === "character_reference" && job.status === "failed",
