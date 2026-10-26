@@ -1,12 +1,14 @@
 import { unstable_rethrow } from "next/navigation";
 import { locationAction, locationPreview } from "@/lib/location-reference/server";
 import { ReferenceReviewAccessError } from "@/lib/reference-review/server";
+import { LocationError } from "@/lib/location-reference/errors";
+import { locationErrorMessage } from "@/lib/location-reference/contract";
 
 const headers = { "Cache-Control": "private, no-store", "CDN-Cache-Control": "no-store", Vary: "Cookie",
   "X-Content-Type-Options": "nosniff", "Referrer-Policy": "no-referrer" };
 function failure(error: unknown) {
   unstable_rethrow(error);
-  return Response.json({ ok: false, message: error instanceof ReferenceReviewAccessError && error.status === 409 ?
+  return Response.json({ ok: false, ...(error instanceof LocationError ? { code: error.code } : {}), message: error instanceof LocationError ? locationErrorMessage(error.code) : error instanceof ReferenceReviewAccessError && error.status === 409 ?
     "Location changed or is not ready. Check status and try again." : "Location is unavailable. Check setup and refresh status." },
   { status: error instanceof ReferenceReviewAccessError ? error.status : 503, headers });
 }

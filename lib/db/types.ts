@@ -289,9 +289,13 @@ export type Database = {
       ugc_resume_character_output: { Args: { p_job_id: string }; Returns: boolean };
       ugc_prepare_product_sheet: { Args: { p_job_id: string; p_claim_token: string; p_model: string; p_document: import("@/lib/product-sheet/contract").ProductSheetDocument }; Returns: import("@/lib/product-sheet/contract").ProductSheetRow | null };
       ugc_location_dependencies: { Args: { p_job: string }; Returns: Record<string, unknown> | null };
+      ugc_location_scene: { Args: { p_job: string }; Returns: Record<string, unknown> | null };
+      ugc_location_scene_matches: { Args: { p_saved: Record<string, unknown>; p_current: Record<string, unknown> }; Returns: boolean };
       ugc_location_claim: { Args: { p_worker: string }; Returns: import("@/lib/location-reference/contract").LocationRow | null };
       ugc_location_action: { Args: { p_owner: string; p_project: string; p_job: string; p_version: number; p_action: string; p_payload?: Record<string, unknown> }; Returns: import("@/lib/location-reference/contract").LocationRow | null };
       ugc_location_checkpoint: { Args: { p_location: string; p_token: string; p_operation: string; p_payload?: Record<string, unknown> }; Returns: import("@/lib/location-reference/contract").LocationRow | null };
+      ugc_location_recovery_claim: { Args: { p_owner: string; p_project: string; p_job: string; p_location: string; p_version: number }; Returns: import("@/lib/location-reference/contract").LocationRow | null };
+      ugc_location_cleanup_claim: { Args: { p_owner: string; p_project: string; p_job: string; p_location: string; p_version: number }; Returns: import("@/lib/location-reference/contract").LocationRow | null };
       ugc_character_v5_start: { Args: { p_owner: string; p_project: string; p_job: string; p_token?: string; p_soul_id?: string }; Returns: import("@/lib/character-v5/contract").V5Workflow | null };
       ugc_character_v5_action: { Args: { p_owner: string; p_project: string; p_job: string; p_version: number; p_action: string; p_slot?: string; p_crop_top?: number }; Returns: import("@/lib/character-v5/contract").V5Workflow | null };
       ugc_character_v5_finish_rejection: { Args: { p_owner: string; p_project: string; p_job: string; p_version: number; p_candidate: string }; Returns: boolean };

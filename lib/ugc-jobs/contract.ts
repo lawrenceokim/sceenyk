@@ -126,8 +126,8 @@ export function isUgcJobActive(status: UgcJobStatus) {
 // Polling is a separate decision from that non-terminal admission guard.
 export function shouldPollUgcProgress(job: Pick<UgcJobProgress, "status" | "paused" | "referenceReview" | "location" | "locationEnabled">) {
   if (job.status === "cancelled" || job.status === "completed") return false;
-  if (job.location && ["queued_plan", "running_plan", "queued_image", "running_image", "rejecting"].includes(job.location.state)) return true;
-  if (job.locationEnabled && job.referenceReview?.locationEligible && !job.location) return true;
   if (job.referenceReview?.regenerating) return true;
+  if (job.location?.canRetryDelete) return false;
+  if (job.location?.requested && ["queued_plan", "running_plan", "queued_image", "running_image", "rejecting"].includes(job.location.state)) return true;
   return (job.status === "queued" || job.status === "running") && !job.paused;
 }

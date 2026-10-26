@@ -2,7 +2,7 @@
 
 ## Milestone 7 — Location Reference (2026-10-26)
 
-UGC now continues from approved Character + Product references into one reviewed filming environment: structured location plan → owner edits → one location image → manual Accept Location or Reject and Regenerate → safe pause before storyboard. [Current Location contract/setup](location-reference.md) supersedes older dated Milestone 7 Not Started boundaries below. Existing Character/Product work, private storage, local execution and credit accounting are preserved. Source verification and manual acceptance status are tracked separately.
+UGC continues from approved Character + Product references into Generate Location → automatic private planning → one location image → Accept Location or Reject and Delete. Acceptance preserves the image and pauses before storyboard. Deletion clears only the rejected candidate and returns to a separate Generate Location action; it never generates a replacement automatically. No plan form/approval. Storage-only Retry saving reuses existing output, with clear unavailable-output messages. [Current Location contract/setup](location-reference.md) supersedes older behavior below. Existing Character/Product work, private storage, local execution and accounting remain unchanged; manual acceptance is pending.
 
 ## Character V5 final Front direction (2026-10-26)
 

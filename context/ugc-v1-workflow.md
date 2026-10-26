@@ -2,7 +2,7 @@
 
 ## Milestone 7 — Location (2026-10-26)
 
-The current implemented pipeline extends both reference approvals into OpenAI structured location planning → manual plan editing → one empty-environment image → manual Location approval → safe pause before storyboard. [Location contract](location-reference.md) is authoritative over earlier dated Location Not Started statements below. The local worker owns durable planning/image intents, recovery and rejection cleanup; each explicit regeneration creates one isolated candidate. No new credit operation, hosted execution, storyboard or video stage. Current source/static status is recorded in the tracker; manual acceptance remains pending.
+Both reference approvals lead to Generate Location → automatic private plan → one empty-environment image → manual approval → safe pause before storyboard. No pre-image form. Reject and Delete only removes that candidate and returns to idle; a separate Generate Location click reuses the plan or replans changed saved context. Recovery/cleanup cannot submit provider work. Planning/generation remain on the existing local worker; direct owner storage-only claims can recover/delete without starting it. [Current contract](location-reference.md) supersedes earlier behavior. No accounting, hosted, storyboard or video change; manual acceptance remains pending.
 
 ## Character V5 manual review (2026-10-25)
 

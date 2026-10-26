@@ -2,7 +2,7 @@
 
 ## Milestone 7 — Location review added (2026-10-26)
 
-References now adds one Location after both current Character/Product approvals. Its editable structured plan, generated candidate, Accept Location and Reject and Regenerate use a separate durable service-only workflow; existing Character/Product assets and approval behavior remain unchanged. Rejected Location candidates are fenced before safe private-object deletion and one explicitly requested replacement. Accepted locations stay private and pause before storyboard. [Current contract/setup/manual checks](location-reference.md) supersedes historical Location Not Started statements below.
+References adds Location after current Character/Product approvals. Generate Location runs automatic private planning/image generation; only the image is reviewed. **Accept Location / Reject and Delete** replaces Reject and Regenerate. Deletion is fenced, candidate-only and never queues generation; it clears active review state and exposes a separate Generate Location action. Retry deletion and Retry saving use provider-free storage-only claims, retain error diagnostics and preserve upstream/approved assets. Rejected images cannot be previewed/accepted. Plans remain private; the next explicit generation reuses a matching plan or creates a new revision for changed context. [Current contract/setup/checks](location-reference.md); storyboard remains paused.
 
 ## Character V5 Face Playground alignment (2026-10-26)
 

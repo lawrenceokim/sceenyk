@@ -1,5 +1,19 @@
 # Architecture Context
 
+## Migration 065 SQL Editor compatibility (2026-10-26)
+
+The owner-provided read-only catalog confirms a complete rollback of failed 065 and the correct 064 Location definitions/ACLs. The failure was an asymmetric CRLF/LF comparison in the cleanup patch guard, not schema/version drift. The corrected 065 normalizes both comparison operands and retains the exact-content guard; architecture, grants, ownership, storage and 065 runtime behavior are unchanged. Reapply the whole corrected 065 after the existing 064; no manual helper edits or data repair. [Evidence and application instructions](location-reference.md#migration-065-sql-editor-line-ending-correction-2026-10-26). No remote migration/provider/worker execution; Milestone 8 remains Not Started.
+
+## Location saving/recovery and delete-only review correction (2026-10-26)
+
+Current authorization supersedes Location Reject and Regenerate below: rejection only fences/deletes the explicitly rejected candidate and returns to an idle Generate Location action. No rejection/cleanup/recovery transition may submit or queue paid generation. Automatic private planning remains behind explicit Generate Location. Add migration 065 without remote application. Preserve prior 063/064 and upstream work.
+
+Read-only live inspection found the current plan and image receipt persisted, followed by a saving failure after approximately 60 seconds; subsequent Retry saving attempts found no R2 object and replaced the useful storage failure with generic reconciliation. Both older image candidates have explicit rejection/deletion audit and no surviving objects; the job's Location prefix is empty. The original storage exception was discarded, so the precise transport cause is unverified. Source now provides durable private local output spooling before R2 persistence, immutable output proofs, storage-only direct Retry saving, phase-specific diagnostics/history and explicit unavailable-output handling. No live restoration/mutation/deletion was performed because no surviving output was found. Paid calls, worker startup, live asset deletion and remote migration remain prohibited in this unit. [Current contract/evidence](location-reference.md).
+
+## Automatic Location planning correction (2026-10-26)
+
+This supersedes the manual Location plan gate below. Generate Location explicitly queues the entire private plan → image workflow; worker enablement alone starts no new planning. Database-owned current saved scene/settings/names and existing reference observations supply the plan, including short descriptions. The detailed plan remains private in SQL and absent from Studio DTOs/forms. Additive migration **064 after 063** preserves historical roots/assets and records successive Location revisions: reuse a saved plan for unchanged context; changed context creates a fresh revision after explicit generation/regeneration. Root ID plus version fences stale tabs; job/project locks and durable intents prevent duplicate requests. Plan completion atomically queues its image. A changed-context replacement waits for rejected-candidate cleanup before any paid work. Review remains image-only; unknown paid outcomes remain fenced. No Milestone 8, hosted or accounting change. [Current contract/setup](location-reference.md).
+
 ## Milestone 7 — UGC Location generation (2026-10-26)
 
 Location is implemented through `lib/location-reference/`, service-only migration **063**, `/api/ugc/location` and the existing local UGC worker. [Location contract, setup and acceptance](location-reference.md) supersedes earlier dated Location-not-implemented statements. Current Character and Product approval versions are frozen as dependencies; no upstream assets, approval functions or providers are changed.

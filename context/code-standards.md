@@ -1,8 +1,12 @@
 # Code Standards
 
+### Location correction — deletion and recovery
+
+Reject/cleanup and Retry saving are separate provider-free storage services (`cleanup.ts`, `recovery.ts`). Neither may import an image provider, submit a paid request or enqueue a replacement. Check owner/project/job/root ID/version/lease and accepted pointers before touching a candidate. Fsync candidate-bound private local bytes before R2 persistence, retain immutable output proof and safe phase/DB/HTTP/cause codes, and reconcile uncertain PUT against the same key. Never replace a useful saving error with generic provider reconciliation. Local recovery files stay outside public directories and SQL; explicit rejection removes only its own file. No upstream reference/accounting changes.
+
 ## Milestone 7 — Location standards (2026-10-26)
 
-Location provider requests belong only in `lib/location-reference/provider.ts` via a narrow provider interface; long work belongs in the existing local UGC worker. Routes only authenticate, validate bounded same-origin input, enqueue transitions or serve hash-checked private images. Never trust client owner IDs, storage keys, provider settings, approvals or scene snapshots. Service-only SQL enforces scope, current upstream approval versions, optimistic review versions, lease tokens and fenced rejection. Persist intent before a paid call; do not automatically retry unknown outcomes. Technical image checks only; semantic quality remains manual. Existing Character/Product contracts and accounting remain unchanged. [Location specification](location-reference.md).
+Location provider requests belong only in `lib/location-reference/provider.ts` via a narrow provider interface; long work belongs in the existing local UGC worker. Routes only authenticate, validate bounded same-origin input, enqueue transitions or serve hash-checked private images. Never accept a client-authored plan, owner ID, storage key, provider settings, approvals or scene snapshot. Plan content/scene/provider intent remain server-only; Studio receives status and image-review metadata. Service-only SQL derives saved inputs and enforces scope, current upstream approval versions, root ID plus review version, immutable revision context, lease tokens and fenced rejection. Persist intent before a paid call; do not automatically retry unknown outcomes. Technical image checks only; semantic quality remains manual. Existing Character/Product contracts and accounting remain unchanged. [Location specification](location-reference.md).
 
 ## Character V5 manual review (2026-10-25)
 

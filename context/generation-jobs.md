@@ -1,8 +1,16 @@
 # Persistent generation jobs
 
+## 065 line-ending compatibility (2026-10-26)
+
+Failed 065 rolled back completely; read-only catalog comparison confirms the installed helpers are the correct CRLF 064 definitions. Its cleanup safety guard normalized only the installed body, leaving the expected multiline literal in CRLF. Corrected 065 normalizes both while preserving exact-content validation and all recovery/lease/grant behavior. Apply the entire corrected file once after 064, with no manual function/data changes. LF/CRLF application/rerun/rollback checks are isolated and execute no jobs/RPCs. [Current evidence/setup](location-reference.md#migration-065-sql-editor-line-ending-correction-2026-10-26).
+
+## Location save recovery and delete-only transitions — 065 (2026-10-26)
+
+Manual migration 065 after 064 adds idle/recovering states, immutable output proofs, safe diagnostics and explicit storage-only recovery/cleanup leases. Reject and Delete fences the candidate, deletes only its R2/local file, then returns to idle; no cleanup transition queues an image. Failed cleanup stops automatic claiming until Retry deletion. Retry saving can run a bounded provider-free owner action without launching a worker and never clears submission intent; existing worker restart recovery shares that service. Returned bytes are fsynced privately before R2 writes, so an interrupted upload can reuse the same candidate. Missing bytes after a known completed receipt are reported as unavailable, not an invitation to repay. Automatic private planning and the storyboard stop remain. Prior Location sections below are historical; [current evidence/setup](location-reference.md).
+
 ## Milestone 7 — durable Location work (2026-10-26)
 
-Migration **063**, manually applied after 062/prerequisites, adds `ugc_locations`, `ugc_location_candidates` and `ugc_location_events` plus service-only claim/action/checkpoint helpers. The existing local worker polls this new work only with `UGC_LOCATION_ENABLED=1`; no extra worker, Render or Inngest adapter is added. The parent remains at its existing Location pause. Durable state distinguishes plan review from image review and approval; Progress/References restore it on refresh/reopen. Heartbeats/90-second leases fence stale workers; image recovery checks a unique saved R2 object before any provider submission. Unknown paid outcomes fail closed; Retry saving never clears intent or submits a replacement. Explicit Reject and Regenerate authorizes one new candidate only after fenced deletion. Approval leaves storyboard unimplemented. [Setup/recovery/manual checks](location-reference.md).
+Migrations **063 then 064**, manually applied after prerequisites, provide private Location roots/candidates/events and service-only transitions. Generate Location explicitly creates/queues work; the enabled existing local worker no longer discovers or starts new plans automatically. Planning completion commits its private plan and image queue atomically. Existing legacy plan-review records remain stored and can continue through Generate Location without a form. Revision roots freeze each saved scene/reference context; changed-context regeneration waits for rejection cleanup. Root ID + version, heartbeats/90-second leases and persisted intents fence stale/duplicate work; stored output recovery never resubmits an uncertain paid request. The parent retains its existing Location pause and approval leaves storyboard unimplemented. [Setup/recovery/manual checks](location-reference.md).
 
 ## Character V5 R2 persistence (2026-10-25)
 

@@ -2,7 +2,7 @@
 
 ## Milestone 7 — Location review (2026-10-26)
 
-The Location section reuses the existing bounded References surface, shared Button and field tokens, native scrolling and large contained private image preview. Plan fields have associated labels; asynchronous state uses status text; failed image loading blocks Accept. No new palette, stylesheet, typography or layout system. [Current Location contract](location-reference.md) supersedes earlier dated Milestone 7 Not Started status below; manual visual acceptance remains pending.
+Location reuses References, shared Button tokens, native scrolling and a large contained private preview. Generate Location is the only initial/post-deletion generation action; plan fields/text are absent. Image review uses Accept Location / Reject and Delete. Rejection hides the image immediately, deletion failure offers Retry deletion, and recovery announces storage-only work. Failed previews block Accept. Existing theme/focus/reduced-motion behavior remains; no new stylesheet or design system. [Current contract](location-reference.md); manual visual acceptance pending.
 
 ## Milestone 6.6 — Reference Regeneration + Review UX Correction (2026-10-24)
 

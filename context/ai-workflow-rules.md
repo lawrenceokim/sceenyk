@@ -1,8 +1,12 @@
 # AI Workflow Rules
 
+## Current Location blocker/review correction (2026-10-26)
+
+Supersedes automatic replacement after rejection: implement Reject and Delete only, followed by separate explicit Generate Location. Investigate owned Location records/provider receipts/R2 read-only first; restore only verified surviving output if available. This inspection found none, so no live restoration/mutation occurred. Do not delete live assets, call paid providers, start workers or apply migrations. Keep one-click private planning, unchanged-context plan reuse, output recovery and manual image approval. Record proven stop points separately from discarded/unknown historical causes. Add 065 after 064 without rewriting prior migrations. Only focused TypeScript/lint/static checks; Milestone 8 remains Not Started.
+
 ## Current unit — Milestone 7 Location (2026-10-26)
 
-The user authorizes Location source implementation after approved Character and Product references, superseding historical Milestone 7 Not Started stop points below. Implement only one durable, manually reviewed location with editable structured plan, configurable verified provider, private R2 persistence and the existing local worker. Stop after Location approval, before storyboard. Preserve Character/Product assets, approvals, accounting and local-only Render/Inngest guards. Verification is restricted to TypeScript, focused lint and necessary static/schema checks; no provider calls, image generation, worker/jobs, browser tests, deployments or remote migrations. [Implementation/setup/acceptance](location-reference.md).
+The user authorizes automatic private Location planning after approved Character and Product references, superseding editable-plan and historical Milestone 7 Not Started stop points below. Generate Location must start the complete private plan/image workflow; expose no planning form or plan approval. Preserve saved plans, generated/approved Location revisions, upstream references, accounting and local-only execution. Reuse the plan unless saved inputs or approvals changed, then replan explicitly without duplicate requests. Stop after image approval, before storyboard. Verification remains TypeScript, focused lint and necessary static/schema checks; no provider calls, image generation, worker/jobs, browser tests, deployments or remote migrations. [Implementation/setup/acceptance](location-reference.md).
 
 ## Character V5 R2 persistence (2026-10-25)
 

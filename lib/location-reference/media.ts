@@ -2,7 +2,8 @@ import "server-only";
 import sharp from "sharp";
 import { createHash } from "node:crypto";
 import { headR2CharacterObject, putR2ReferenceImage, readR2AnalysisMedia } from "@/lib/storage/r2";
-import { locationArtifactSchema, type LocationRow, type LocationCandidate } from "./contract";
+import { locationArtifactSchema, locationOutputProofSchema, type LocationRow, type LocationCandidate } from "./contract";
+import { LocationError, locationFailure } from "./errors";
 
 export function locationKey(row: LocationRow, candidate: Pick<LocationCandidate, "id">) {
   return `ugc/${row.owner_user_id}/${row.project_id}/${row.job_id}/location-v1/${row.id}/candidates/${candidate.id}.png`;
@@ -16,7 +17,7 @@ export async function normalizeLocation(bytes: Buffer) {
   // Decode and re-encode only. No semantic scoring, cropping or visual rejection.
   return image.rotate().flatten({ background: "#ffffff" }).png().toBuffer();
 }
-export async function loadLocation(row: LocationRow, candidate: Pick<LocationCandidate, "id" | "artifact" | "settings">, signal: AbortSignal) {
+export async function loadLocation(row: LocationRow, candidate: Pick<LocationCandidate, "id" | "artifact" | "settings" | "output_proof">, signal: AbortSignal) {
   const key = locationKey(row, candidate);
   const object = await headR2CharacterObject(key, signal);
   if (!object) return null;
@@ -38,10 +39,27 @@ export async function loadLocation(row: LocationRow, candidate: Pick<LocationCan
     sha256: createHash("sha256").update(bytes).digest("hex") });
   if (candidate.artifact && (candidate.artifact.storageKey !== key || candidate.artifact.etag !== artifact.etag ||
     candidate.artifact.sha256 !== artifact.sha256 || candidate.artifact.sizeBytes !== size)) throw new Error("LOCATION_STORAGE_CHANGED");
+  if (candidate.output_proof && (candidate.output_proof.id !== candidate.id || candidate.output_proof.sha256 !== artifact.sha256 ||
+    candidate.output_proof.sizeBytes !== artifact.sizeBytes || candidate.output_proof.width !== artifact.width || candidate.output_proof.height !== artifact.height)) {
+    throw new LocationError("LOCATION_STORAGE_CHANGED", "storage_readback");
+  }
   return { bytes, artifact };
 }
+export async function locationOutputProof(candidate: LocationCandidate, bytes: Buffer) {
+  const meta = await sharp(bytes, { limitInputPixels: 20_000_000, failOn: "warning" }).metadata();
+  const [width, height] = String(candidate.settings.size).split("x").map(Number);
+  if (meta.format !== "png" || meta.width !== width || meta.height !== height || (meta.pages ?? 1) !== 1) throw new LocationError("LOCATION_DIMENSIONS_INVALID", "technical_validation");
+  return locationOutputProofSchema.parse({ id: candidate.id, sizeBytes: bytes.length, width, height, mimeType: "image/png", sha256: createHash("sha256").update(bytes).digest("hex") });
+}
 export async function saveLocation(row: LocationRow, candidate: LocationCandidate, bytes: Buffer, signal: AbortSignal) {
-  await putR2ReferenceImage(locationKey(row, candidate), bytes, signal);
+  try { await putR2ReferenceImage(locationKey(row, candidate), bytes, signal); }
+  catch (error) {
+    // A lost PUT response does not imply an absent object. Reconcile this exact
+    // immutable key before reporting failure; never submit another provider call.
+    const committed = await loadLocation(row, candidate, AbortSignal.any([signal, AbortSignal.timeout(30_000)])).catch(() => null);
+    if (committed?.artifact.sha256 === createHash("sha256").update(bytes).digest("hex")) return committed.artifact;
+    throw locationFailure(error, "r2_write", "LOCATION_R2_WRITE_FAILED");
+  }
   const stored = await loadLocation(row, candidate, signal);
   if (!stored || stored.artifact.sha256 !== createHash("sha256").update(bytes).digest("hex")) throw new Error("LOCATION_STORAGE_CHANGED");
   return stored.artifact;
