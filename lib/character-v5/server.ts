@@ -3,18 +3,19 @@ import { z } from "zod";
 import { ownedReferenceReview, ReferenceReviewAccessError } from "@/lib/reference-review/server";
 import { readReferenceReviewState } from "@/lib/reference-review/state";
 import { deleteR2CharacterCandidate, headR2CharacterObject } from "@/lib/storage/r2";
-import { v5ActionSchema, v5Slots, CharacterV5Error, type V5Workflow, type V5Candidate } from "./contract";
+import { v5ActionSchema, v5Slots, v5HasFrontMask, v5IsFinalFront, CharacterV5Error, type V5Workflow, type V5Candidate } from "./contract";
 import { readV5Artifact, v5Prefix } from "./storage";
 import { existingV5SoulId } from "./worker";
 import { logV5Failure, v5DatabaseError } from "./database-diagnostics";
 import { recoverCharacterV5Candidate } from "./recovery";
 import { readbackV5Candidate } from "./persistence";
 import { logV5Back } from "./back-diagnostics";
+import { logV5Front, maskV5Front } from "./front-concealment";
 
 export async function characterV5Action(input: unknown) {
   const parsed = v5ActionSchema.safeParse(input);
   if (!parsed.success) throw new ReferenceReviewAccessError(400);
-  const { projectId, jobId, version, action, slot, cropTop } = parsed.data;
+  const { projectId, jobId, version, action, slot } = parsed.data;
   const context = await ownedReferenceReview({ projectId, jobId });
   if (action === "retry_saving") {
     const current = context.review.characterV5;
@@ -47,6 +48,7 @@ export async function characterV5Action(input: unknown) {
         const candidate = await context.db.from("ugc_character_v5_candidates").select("*").eq("id", saved.data.candidate_id!).eq("workflow_id", saved.data.id).single();
         if (candidate.error) throw v5DatabaseError(candidate.error, { operation: "read_candidate", phase: "candidate_readback" });
         if (!candidate.data?.artifact || candidate.data.state !== "review") throw new ReferenceReviewAccessError(409);
+        if (candidate.data.slot === "front_source" && !v5IsFinalFront(candidate.data.generation)) throw new ReferenceReviewAccessError(409);
         await readV5Artifact(saved.data, candidate.data.artifact, AbortSignal.timeout(30_000));
       } else {
         if (!saved.data.sheet) throw new ReferenceReviewAccessError(409);
@@ -56,7 +58,7 @@ export async function characterV5Action(input: unknown) {
       }
     }
     const result = await context.db.rpc("ugc_character_v5_action", { p_owner: context.ownerId, p_project: projectId, p_job: jobId,
-      p_version: version, p_action: action, p_slot: slot, p_crop_top: cropTop });
+      p_version: version, p_action: action, p_slot: slot });
     if (result.error) throw v5DatabaseError(result.error, { operation: "manual_decision", phase: "candidate_insertion", slot, version });
     if (!result.data) throw new ReferenceReviewAccessError(409);
     workflow = result.data;
@@ -101,25 +103,42 @@ export async function characterV5Preview(input: unknown, onBackPreview?: (candid
   if (!workflow || workflow.version !== version) throw new ReferenceReviewAccessError(404);
   let artifact = slot === "sheet" ? workflow.sheet : workflow.accepted[slot];
   let previewCandidate: V5Candidate | undefined;
+  let frontSourceCandidate: V5Candidate | undefined;
   if (candidateId) {
     if (candidateId !== workflow.candidate_id || workflow.state !== "review" || workflow.slot !== slot) throw new ReferenceReviewAccessError(404);
-    if (slot === "back") {
-      // Never substitute accepted Back, Face or Original for a missing candidate.
+    if (slot === "back" || slot === "front_source") {
+      // Never substitute an accepted view or Original for a missing candidate.
       // Verify slot, candidate ID, exact candidate key and saved output hash.
       const candidate = await readbackV5Candidate(workflow, candidateId);
       if (candidate.state !== "review") throw new ReferenceReviewAccessError(404);
-      previewCandidate = candidate;
+      if (slot === "back") previewCandidate = candidate;
+      else frontSourceCandidate = candidate;
       artifact = candidate.artifact;
     } else {
       const candidate = await context.db.from("ugc_character_v5_candidates").select("*").eq("id", candidateId).eq("workflow_id", workflow.id).single();
       if (candidate.error) throw v5DatabaseError(candidate.error, { operation: "read_candidate", phase: "candidate_readback", slot, version });
       if (candidate.data?.state !== "review") throw new ReferenceReviewAccessError(404);
+      if (candidate.data.slot !== slot) throw new ReferenceReviewAccessError(404);
       artifact = candidate.data.artifact;
     }
   }
   if (!artifact) throw new ReferenceReviewAccessError(404);
+  if (slot === "front_source" && !frontSourceCandidate) {
+    const source = await context.db.from("ugc_character_v5_candidates").select("*").eq("id", artifact.id)
+      .eq("workflow_id", workflow.id).eq("slot", "front_source").single();
+    if (source.error || source.data?.state !== "accepted" || source.data.artifact?.storageKey !== artifact.storageKey ||
+      source.data.artifact.sha256 !== artifact.sha256) throw new ReferenceReviewAccessError(404);
+    frontSourceCandidate = source.data;
+  }
   try {
     const bytes = await readV5Artifact(workflow, artifact, AbortSignal.timeout(30_000));
+    if (frontSourceCandidate && v5HasFrontMask(frontSourceCandidate.generation)) {
+      const boundary = workflow.crop_top;
+      const masked = await maskV5Front(bytes, boundary);
+      logV5Front("preview", frontSourceCandidate, true, boundary);
+      return masked;
+    }
+    if (frontSourceCandidate) logV5Front("preview", frontSourceCandidate, false);
     if (previewCandidate) logV5Back("preview", previewCandidate, { source: "back_candidate", served: true });
     if (previewCandidate && process.env.NODE_ENV !== "production") onBackPreview?.(previewCandidate);
     return bytes;

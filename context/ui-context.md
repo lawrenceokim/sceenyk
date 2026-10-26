@@ -1,5 +1,17 @@
 # UI Context
 
+## Character V5 Front portrait review (2026-10-26)
+
+Front revision 4 requests 2:3 portrait and uses a portrait review card with object-contain; the lightbox preserves the full saved canvas. No crop/mask UI. Manual Accept/Reject remains unchanged. Helper text explicitly rejects cropped shoulders, legs or footwear, tight zoom, visible head/face and any shadow, and requires one front-facing character, full torso/outfit and gray margin. Development diagnostics show the exact saved prompt/reference/settings/dimensions/framing contract; browser preview diagnostics also record natural dimensions. Contract expectations are not visual verification. Product UI is unchanged. [Current Front contract/setup](character-sheet.md#character-v5-front-full-framing-2026-10-26).
+
+## Character V5 final Front review without preparation tools (2026-10-26)
+
+Front review now has only inspection and manual Accept / Reject and delete. All range inputs, Mask from top/Crop from top instructions, crop state/actions and adjustable preview query parameters are removed. New Front is displayed exactly as saved by the provider, with shoulders-to-shoes/no-head/front-facing/no-shadow/outfit-consistency rejection guidance. Missing/unreadable images stay errors, never a tool/fallback. Accepted final Front appears once in the grid; its `front_source`/`front` pointers share one artifact. New progress no longer invents a separate headless/crop stage or says Front waits for Back. A settled Back failure/rejection can expose Generate Front source from Face; Sheet still waits for Back. Old unfinished Front candidates are labelled for explicit rejection/regeneration with Accept disabled; historical fixed-mask previews remain readable without tools. Tailwind/native dialogs, manual decisions and Product presentation remain unchanged. [Current prompt/setup/manual check](character-sheet.md#character-v5-final-front-from-face-2026-10-26).
+
+## Character V5 Front local mask review (2026-10-26)
+
+New Front-source revision 2 uses accepted Back, with local face masking before candidate/accepted card and lightbox display. The existing boundary slider becomes **Mask from top** and updates the local private preview; move it to the shoulders, retaining torso/outfit/legs/shoes and full canvas framing. The following Front stage stores that same mask instead of tight cropping and still requires manual acceptance. Older unmarked sources retain their crop control/behavior. All new Front review hints say to reject back/side/not-clearly-front poses, tight crops and Original-upload substitution. Native controls, Tailwind tokens, private previews and manual Accept/Reject/delete remain; Product/Back/Face presentation is unchanged. [Current prompt, storage distinction and manual steps](character-sheet.md#character-v5-front-source-and-local-concealment-2026-10-26).
+
 ## Character V5 Back straight-rear review hint (2026-10-26)
 
 Only the Back candidate review replaces generic review guidance with: **Reject if the character is turned sideways or if any part of the face is visible.** Manual decisions, warning flags, private preview/lightbox and all other slots remain unchanged. [Exact current prompt and manual check](character-sheet.md#character-v5-back-straight-rear-wording-2026-10-26).

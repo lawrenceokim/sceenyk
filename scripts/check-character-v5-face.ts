@@ -24,10 +24,10 @@ for (const slot of ["back", "front_source"] as const) {
   for (const identity of [soulId, null]) {
     const saved = v5Generation(slot, identity); const payload = v5ProviderPayload(saved, input);
     assert.deepEqual(payload, { prompt: slot === "back" ? v5Prompts.back :
-      "Regenerate this character as one full-body front view on a neutral gray background. Show only one character.",
-    image_url: input, batch_size: 1, resolution: "720p", aspect_ratio: "4:3", enhance_prompt: slot !== "back",
-    ...(slot === "front_source" && identity ? { custom_reference_id: identity, custom_reference_strength: 1 } : {}) }); checks++;
-    check(saved.seed === null && saved.soulIdUsed === (slot === "front_source" && !!identity), "Front preserves identity while Back is image-only; both omit seed");
+      v5Prompts.front_source,
+    image_url: input, batch_size: 1, resolution: "720p", aspect_ratio: slot === "front_source" ? "2:3" : "4:3", enhance_prompt: false,
+    }); checks++;
+    check(saved.seed === null && !saved.soulIdUsed, "Front and Back are image-only and omit seed");
   }
 }
 const manual: V5Review = { id: soulId, candidateId: soulId, version: 4, slot: "face", state: "review", accepted: [], approvedAt: null,
@@ -49,7 +49,7 @@ const group: ReferenceReviewGroup = { type: "character", name: "Character", vers
     heartbeatAt: null, leaseExpiresAt: null, elapsedMs: 100, runningSince: null, error: null, canRetry: false } };
 const progress = buildUgcProgress(row, { referenceReview: { characterV5: manual, groups: [group], available: true, actionsAvailable: true,
   locationEligible: false, blocked: true, regenerating: false } }, Date.parse(stamp));
-check(progress.stageLabel === "Waiting for Face review" && progress.message.includes("Back starts only after Face acceptance"), "saved review state owns progress DTO");
+check(progress.stageLabel === "Waiting for Face review" && progress.message.includes("Front source starts only after Face acceptance"), "saved review state owns progress DTO");
 check(progress.characterSteps.find(step => step.id === "face")?.state === "paused" && progress.worker.state === "inactive", "review is paused, not stalled work");
 check(!shouldPollUgcProgress(progress), "manual review does not restart worker polling");
 const ui = readFileSync("components/creation/ugc-progress-preview.tsx", "utf8");

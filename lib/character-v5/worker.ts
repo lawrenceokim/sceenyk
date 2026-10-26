@@ -9,11 +9,12 @@ import { readR2AnalysisMedia, signR2CharacterSource } from "@/lib/storage/r2";
 import { ugcGenerationSnapshotSchema } from "@/lib/ugc-jobs/input-contract";
 import type { UgcStageHandler } from "@/lib/ugc-jobs/runner";
 import type { UgcJobRow } from "@/lib/ugc-jobs/contract";
-import { CharacterV5Error, v5Generation, type V5Candidate, type V5Phase, type V5Workflow } from "./contract";
+import { CharacterV5Error, v5Generation, v5HasFrontMask, type V5Candidate, type V5Phase, type V5Workflow } from "./contract";
 import { cropV5Front, readV5Artifact, recoverV5Artifact, saveV5Artifact, technicalPng, v5Prefix, v5OutputProof } from "./storage";
 import { logV5Failure, v5DatabaseError, type V5DatabaseOperation } from "./database-diagnostics";
 import { readbackV5Candidate } from "./persistence";
 import { logV5Back } from "./back-diagnostics";
+import { logV5Front, maskV5Front } from "./front-concealment";
 
 function soulIdMode() {
   const value = process.env.UGC_CHARACTER_V5_SOUL_ID_MODE ?? "reuse";
@@ -105,6 +106,13 @@ export async function runCharacterV5(workflow: V5Workflow, shutdown: AbortSignal
     let bytes: Buffer;
     if (workflow.slot === "front" || workflow.slot === "sheet") {
       if (candidate.state === "queued") {
+        let concealment: "gray-mask-v1" | undefined;
+        if (workflow.slot === "front" && workflow.accepted.front_source) {
+          const source = await db.from("ugc_character_v5_candidates").select("*").eq("id", workflow.accepted.front_source.id)
+            .eq("workflow_id", workflow.id).eq("slot", "front_source").single();
+          if (source.error || source.data?.state !== "accepted") throw new CharacterV5Error("local_crop");
+          if (v5HasFrontMask(source.data.generation)) concealment = "gray-mask-v1";
+        }
         const slots = workflow.slot === "front" ? ["front_source"] as const : ["front", "back", "face"] as const;
         const inputs = Object.fromEntries(slots.map(slot => {
           const asset = workflow.accepted[slot]; if (!asset) throw new CharacterV5Error(workflow.slot === "front" ? "local_crop" : "sheet_composition");
@@ -112,13 +120,15 @@ export async function runCharacterV5(workflow: V5Workflow, shutdown: AbortSignal
         }));
         candidate = await checkpoint("intent", { plannedKey: `${v5Prefix(workflow)}${candidate.id}.png`,
           generation: { promptVersion: 5, contractVersion: 5, revision: "simple-manual-review-v1", model: "sharp", slot: workflow.slot,
-            inputs, ...(workflow.slot === "front" ? { cropTop: workflow.crop_top } : {}) }, inputAsset: inputs.front_source ?? null });
+            inputs, ...(workflow.slot === "front" ? { cropTop: workflow.crop_top, ...(concealment ? { concealment } : {}) } : {}) }, inputAsset: inputs.front_source ?? null });
       }
       if (candidate.state !== "intent") throw new CharacterV5Error("other", "RECONCILIATION_REQUIRED");
       if (workflow.slot === "front") {
         phase = "local_crop";
         if (!workflow.accepted.front_source) throw new CharacterV5Error(phase);
-        bytes = await cropV5Front(await readV5Artifact(workflow, workflow.accepted.front_source, signal), workflow.crop_top);
+        const source = await readV5Artifact(workflow, workflow.accepted.front_source, signal);
+        bytes = v5HasFrontMask(candidate.generation) ? await maskV5Front(source, workflow.crop_top) : await cropV5Front(source, workflow.crop_top);
+        logV5Front("concealed", candidate, v5HasFrontMask(candidate.generation), workflow.crop_top);
       } else {
         phase = "sheet_composition";
         const { front, back, face } = workflow.accepted;
@@ -132,12 +142,12 @@ export async function runCharacterV5(workflow: V5Workflow, shutdown: AbortSignal
         const jobResult = await db.from("ugc_generation_jobs").select("*").eq("id", workflow.job_id)
           .eq("owner_user_id", workflow.owner_user_id).eq("project_id", workflow.project_id).single();
         if (jobResult.error || !jobResult.data) throw new CharacterV5Error(phase);
-        let input: { key: string; id: string; etag: string; sha256: string; kind?: "accepted_face" | "original_upload" };
+        let input: { key: string; id: string; etag: string; sha256: string; kind?: "accepted_face" | "accepted_back" | "original_upload" };
         if (workflow.slot === "front_source") {
-          const back = workflow.accepted.back;
-          if (!back || !workflow.accepted.face) throw new CharacterV5Error(phase);
-          await readV5Artifact(workflow, back, signal);
-          input = { key: back.storageKey, id: back.id, etag: back.etag, sha256: back.sha256 };
+          const face = workflow.accepted.face;
+          if (!face) throw new CharacterV5Error(phase, "CHARACTER_ACCEPTED_FACE_REQUIRED");
+          await readV5Artifact(workflow, face, signal);
+          input = { key: face.storageKey, id: face.id, etag: face.etag, sha256: face.sha256, kind: "accepted_face" };
         } else if (workflow.slot === "back") {
           // Preserve Face-first admission. An unavailable/corrupt accepted Face
           // must never silently switch the request to the Original upload.
@@ -152,13 +162,15 @@ export async function runCharacterV5(workflow: V5Workflow, shutdown: AbortSignal
         const imageUrl = await signR2CharacterSource(input.key, input.etag);
         candidate = await checkpoint("intent", { plannedKey: `${v5Prefix(workflow)}${candidate.id}.png`,
           generation: v5Generation(workflow.slot, workflow.soul_id), inputAsset: { id: input.id, etag: input.etag, sha256: input.sha256,
-            ...(workflow.slot === "back" ? { storageKey: input.key, kind: input.kind } : {}) } });
+            ...(["back", "front_source"].includes(workflow.slot) ? { storageKey: input.key, kind: input.kind } : {}) } });
         logV5Back("intent", candidate);
+        logV5Front("intent", candidate, false);
         phase = "provider_submit";
         const receipt = await provider.submitManualView({ slot: workflow.slot, imageUrl, soulId: workflow.soul_id, key: candidate.id,
-          ...(workflow.slot === "back" ? { source: candidate.input_asset! } : {}) }, signal);
+          ...(["back", "front_source"].includes(workflow.slot) ? { source: candidate.input_asset! } : {}) }, signal);
         candidate = await checkpoint("submitted", { requestId: receipt.id, statusUrl: receipt.statusUrl });
         logV5Back("submitted", candidate);
+        logV5Front("submitted", candidate, false);
       }
       // A crash after an intent is uncertain. It never authorizes another POST.
       if (candidate.state !== "submitted" || !candidate.request_id || !candidate.status_url) throw new CharacterV5Error("provider_submit", "RECONCILIATION_REQUIRED");
@@ -187,7 +199,8 @@ export async function runCharacterV5(workflow: V5Workflow, shutdown: AbortSignal
     await checkpoint("ready", { artifact });
     published = true;
     phase = "candidate_readback";
-    await readbackV5Candidate(workflow, candidate.id);
+    const savedCandidate = await readbackV5Candidate(workflow, candidate.id);
+    logV5Front("saved", savedCandidate, workflow.slot === "front" && v5HasFrontMask(savedCandidate.generation));
   } catch (error) {
     if (!lost && !shutdown.aborted) {
       const safe = error instanceof CharacterV5Error ? error : new CharacterV5Error(phase,

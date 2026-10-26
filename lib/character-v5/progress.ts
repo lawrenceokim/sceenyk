@@ -1,6 +1,6 @@
 import type { V5Review } from "./contract";
 
-const labels = { face: "Face", back: "Back", front_source: "Front source", front: "Headless Front", sheet: "Character Sheet" } as const;
+const labels = { face: "Face", back: "Back", front_source: "Front source", front: "Front", sheet: "Character Sheet" } as const;
 
 // A review pause is a user decision, even while the final sheet is invalidated.
 // Both the server DTO and client heading use this rule before legacy worker copy.
@@ -16,5 +16,5 @@ export function v5ManualReviewProgress(workflow?: Pick<V5Review, "state" | "slot
     message: "Open References to inspect and approve the Character Sheet.",
   };
   return { title: `Waiting for ${label} review`,
-    message: `Open References to accept or reject the ${label}.${workflow.slot === "face" ? " Back starts only after Face acceptance." : " The next step waits for acceptance."}` };
+    message: `Open References to accept or reject the ${label}.${workflow.slot === "face" ? " Front source starts only after Face acceptance." : " The next step waits for acceptance."}` };
 }

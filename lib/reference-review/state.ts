@@ -1,5 +1,6 @@
 import "server-only";
-import { v5Review, type V5BackReviewDiagnostic } from "@/lib/character-v5/contract";
+import { v5Review, v5IsFinalFront, type V5BackReviewDiagnostic, type V5FrontReviewDiagnostic } from "@/lib/character-v5/contract";
+import { frontReviewDiagnostic } from "@/lib/character-v5/front-concealment";
 import { backReviewDiagnostic } from "@/lib/character-v5/back-diagnostics";
 import { v5RecoveryState, type V5RecoveryState } from "@/lib/character-v5/recovery-state";
 import { createDatabaseClient } from "@/lib/db/server";
@@ -82,12 +83,20 @@ export async function readReferenceReviewState(job: UgcJobRow, sheets: ReviewShe
   let canRetrySaving = false;
   let savingIncomplete = false;
   let recoveryState: V5RecoveryState = "not_needed";
-  let soulIdUsed = ["face", "back"].includes(manual.data?.slot ?? "") ? false : !!manual.data?.soul_id;
+  let soulIdUsed = false; // Saved legacy generation metadata below retains its actual historical setting.
   let backCandidateAvailable = false;
   let backDiagnostics: V5BackReviewDiagnostic | undefined;
+  let frontDiagnostics: V5FrontReviewDiagnostic | undefined;
+  let frontReady = !!manual.data?.accepted.front && manual.data.accepted.front.id === manual.data.accepted.front_source?.id;
+  let legacyFront = false;
   if (manual.data?.candidate_id && (!["queued", "running"].includes(manual.data.state) || manual.data.state === "running" && Date.parse(manual.data.lease_expires_at ?? "") <= Date.now())) {
     const candidate = await db.from("ugc_character_v5_candidates").select("*").eq("id", manual.data.candidate_id).eq("workflow_id", manual.data.id).single();
     if (candidate.error || !candidate.data) throw new Error("REFERENCE_REVIEW_UNAVAILABLE");
+    if (candidate.data.slot === "front_source") {
+      frontDiagnostics = frontReviewDiagnostic(candidate.data);
+      frontReady = v5IsFinalFront(candidate.data.generation);
+      legacyFront = !frontReady && !!candidate.data.artifact;
+    }
     if (candidate.data.slot === "back") {
       backCandidateAvailable = !!candidate.data.artifact && candidate.data.state === "review";
       backDiagnostics = backReviewDiagnostic(candidate.data);
@@ -127,6 +136,8 @@ export async function readReferenceReviewState(job: UgcJobRow, sheets: ReviewShe
   const approved = (type: ReferenceType) => groups.some(group => group.type === type && group.state === "approved");
   const regeneration = groups.some(group => group.sheetInvalidated);
   return { groups, ...(manual.data ? { characterV5: { ...v5Review(manual.data, reconciliationRequired, canRetrySaving, savingIncomplete, recoveryState, soulIdUsed),
+    ...(frontReady ? { frontReady: true } : {}), ...(legacyFront ? { legacyFront: true } : {}),
+    ...(frontDiagnostics ? { frontDiagnostics } : {}),
     ...(manual.data.slot === "back" ? { backCandidateAvailable, ...(backDiagnostics ? { backDiagnostics } : {}) } : {}) } } : {}),
     ...(historicalCharacter ? { historicalCharacter } : {}),
     actionsAvailable: mutable, available: !!manual.data || groups.some(group => group.assets.some(asset => asset.view !== "original" && asset.available)) ||

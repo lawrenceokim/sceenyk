@@ -19,8 +19,18 @@ export const v5Prompts = {
   face: "regenerate this image but place the character in a gray background with only the character face in it",
   back: "Regenerate this character as one full-body back view on a plain neutral gray background. Show only one character. The camera must be directly behind the character. The character must face completely away from the camera in a perfectly straight rear view. Do not show any part of the face or side profile. Show the back of the head, back of the neck, full outfit, full body, arms, legs, and shoes. Keep the same outfit, hairstyle silhouette, body shape, and proportions. There should be No shadow on the gray background.",
   front_source:
-    "Regenerate this character as one full-body front view on a neutral gray background. Show only one character. The camera must be directly in front of the character. The character must face completely toward the camera in a perfectly straight front view. The character should have no head, the head should be removed or erased. Show full outfit, full body, arms, legs, and shoes. Keep the same outfit, hairstyle silhouette, body shape, and proportions. There should be No shadow on the gray background.",
+    "Regenerate this image but place the character on a plain neutral gray background with no shadow on the background or floor. Show only one character facing directly forward. Show the character from the shoulders down to the shoes, with the full outfit, full torso, full legs, and full footwear completely visible inside the frame. Do not show the head or face. Do not crop the shoulders. Do not crop the legs. Do not crop the shoes. Keep some empty gray space around the body so the shoulders and shoes are fully inside the image. NEVER REVEAL THE HEAD AND FACE.",
 } as const;
+export const v5FrontFraming = {
+  shouldersExpectedInFrame: true,
+  shoesExpectedInFrame: true,
+  torsoAndLegsExpectedInFrame: true,
+  emptyGrayMarginRequired: true,
+  headAndFaceAllowed: false,
+  backgroundOrFloorShadowAllowed: false,
+} as const;
+export const v5FrontReviewHelp =
+  "Inspect the final Front source and Accept or Reject it. Reject if shoulders are cropped. Reject if legs are cropped. Reject if shoes/footwear are cropped. Reject if the figure is tightly zoomed. Reject if the head/face is visible. Reject if there is any shadow on the background or floor. Require one front-facing character, the full torso and outfit, and empty neutral gray space around the shoulders and shoes. Reject if the outfit/body consistency is wrong.";
 export const v5ArtifactSchema = z.strictObject({
   id: z.uuid(),
   storageKey: z.string().min(1).max(512),
@@ -86,6 +96,7 @@ export type V5Candidate = {
         model: "sharp";
         slot: "front" | "sheet";
         cropTop?: number;
+        concealment?: "gray-mask-v1";
         inputs: Record<string, { id: string; sha256: string; etag: string }>;
       }
     | null;
@@ -94,7 +105,7 @@ export type V5Candidate = {
     sha256: string;
     etag: string;
     storageKey?: string;
-    kind?: "original" | "accepted_face" | "original_upload";
+    kind?: "original" | "accepted_face" | "accepted_back" | "original_upload";
   } | null;
   provider_terminal: boolean;
   output_proof: V5OutputProof | null;
@@ -144,35 +155,54 @@ export function v5Generation(
   slot: "face" | "back" | "front_source",
   soulId: string | null,
 ) {
-  // Face and Back match the owner's image-only Playground recipes. Preserve
-  // the workflow's Soul ID for Front, but never send it for these two slots.
-  if (slot === "face" || slot === "back") soulId = null;
+  // All new V5 views use their single explicit image input, without Soul ID.
+  soulId = null;
   return {
     ...characterV5,
     slot,
     prompt: v5Prompts[slot],
     resolution: "720p" as const,
-    aspectRatio: "4:3" as const,
+    aspectRatio: slot === "front_source" ? ("2:3" as const) : ("4:3" as const),
     batchSize: 1 as const,
-    enhancePrompt: slot !== "back",
+    enhancePrompt: slot === "face",
     soulId,
     soulIdUsed: !!soulId,
-    promptRevision: slot === "back" ? 4 : slot === "face" ? 2 : 1,
+    promptRevision: slot === "back" ? 4 : slot === "front_source" ? 4 : 2,
     referenceStrength: slot === "face" || soulId ? 1 : null,
     seed: slot === "face" ? 362102 : null,
+    ...(slot === "front_source"
+      ? {
+          frontPreparation: "provider-final-v1" as const,
+          frontFraming: v5FrontFraming,
+        }
+      : {}),
   };
+}
+export function v5HasFrontMask(generation: V5Candidate["generation"]) {
+  return (
+    !!generation &&
+    "concealment" in generation &&
+    generation.concealment === "gray-mask-v1"
+  );
+}
+export function v5IsFinalFront(generation: V5Candidate["generation"]) {
+  return (
+    !!generation &&
+    "frontPreparation" in generation &&
+    generation.frontPreparation === "provider-final-v1"
+  );
 }
 // Older saved V5 intents predate these extra provenance fields.
 type V5ProviderGeneration = Omit<
   ReturnType<typeof v5Generation>,
-  "promptRevision" | "referenceStrength" | "seed"
+  "promptRevision" | "referenceStrength" | "seed" | "frontFraming"
 > &
   Partial<
     Pick<
       ReturnType<typeof v5Generation>,
-      "promptRevision" | "referenceStrength" | "seed"
+      "promptRevision" | "referenceStrength" | "seed" | "frontFraming"
     >
-  >;
+  > & { concealment?: "gray-mask-v1" };
 // The saved intent and wire payload share one static configuration. Null seed
 // records deliberate omission, not a claim about the provider's chosen seed.
 export function v5ProviderPayload(
@@ -229,6 +259,9 @@ export type V5Review = {
   runningSince: string | null;
   backCandidateAvailable?: boolean;
   backDiagnostics?: V5BackReviewDiagnostic;
+  frontDiagnostics?: V5FrontReviewDiagnostic;
+  frontReady?: boolean;
+  legacyFront?: boolean;
 };
 export type V5BackReviewDiagnostic = {
   candidateId: string;
@@ -237,6 +270,10 @@ export type V5BackReviewDiagnostic = {
   providerRequestId: string | null;
   inputSource: V5Candidate["input_asset"];
   generation: V5Candidate["generation"];
+};
+export type V5FrontReviewDiagnostic = V5BackReviewDiagnostic & {
+  candidateDimensions: { width: number; height: number } | null;
+  framingContract: typeof v5FrontFraming | null;
 };
 export const v5BackReviewWarnings = [
   "partial face visible",
@@ -253,12 +290,10 @@ export const v5ActionSchema = z.strictObject({
     "accept",
     "reject",
     "regenerate",
-    "crop",
     "approve",
     "retry_saving",
   ]),
   slot: z.enum(v5Slots).optional(),
-  cropTop: z.number().int().min(500).max(6000).optional(),
 });
 export function v5Review(
   workflow: V5Workflow,

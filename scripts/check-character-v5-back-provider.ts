@@ -43,6 +43,11 @@ async function main() {
     const candidate = { id, slot: "back", request_id: requestId, artifact: { storageKey: "private/back.png", sha256: "b".repeat(64) },
       input_asset: source, generation: result.generation } as V5Candidate;
     assert.equal(backReviewDiagnostic(candidate)?.providerRequestId, requestId); checks++;
+    const front = await provider.submitManualView({ slot: "front_source", imageUrl, soulId: id, key: id, source }, new AbortController().signal);
+    assert.deepEqual(submissions[1].payload, v5ProviderPayload(v5Generation("front_source", null), imageUrl)); checks++;
+    const frontPayload = submissions[1].payload as Record<string, unknown>;
+    assert.equal(frontPayload.enhance_prompt, false); assert.equal(frontPayload.batch_size, 1); checks++;
+    assert.equal(front.generation.frontPreparation, "provider-final-v1"); assert(!("custom_reference_id" in frontPayload)); checks++;
     Object.assign(process.env, { NODE_ENV: "production" });
     await provider.submitManualView({ slot: "back", imageUrl, soulId: id, key: id, source }, new AbortController().signal);
     assert.equal(logs.length, 1); assert.equal(backReviewDiagnostic(candidate), undefined); checks++;

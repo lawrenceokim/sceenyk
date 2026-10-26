@@ -152,17 +152,17 @@ export function buildUgcProgress(row: UgcJobRow, evidence: UgcProgressEvidence =
     characterSteps.splice(0, characterSteps.length, ...phaseSteps);
   }
   if (manual) {
-    const labels = { face: "Face", back: "Back", front_source: "Front source", front: "Headless Front", sheet: "Character Sheet" } as const;
-    const order = ["face", "back", "front_source", "front", "sheet"] as const;
+    const labels = { face: "Face", back: "Back", front_source: "Front source", front: "Front", sheet: "Character Sheet" } as const;
+    const order = manual.slot === "front" ? ["face", "back", "front_source", "front", "sheet"] as const : ["face", "front_source", "back", "sheet"] as const;
     characterSteps.splice(0, characterSteps.length, ...order.map(slot => {
       const current = manual.slot === slot;
       const accepted = manual.accepted.includes(slot) && !(current && !["ready", "approved"].includes(manual.state)) || slot === "sheet" && ["ready", "approved"].includes(manual.state);
       const label = accepted ? `${labels[slot]} ${slot === "sheet" ? "ready" : "accepted"}` : current ?
         manual.state === "review" ? v5ManualReviewProgress(manual)!.title : manual.state === "running" ?
-          slot === "front" ? "Creating headless Front" : slot === "sheet" ? "Building Character Sheet" : `${manual.workPhase === "generating" ? "Generating" : "Preparing"} ${labels[slot]}` :
+          slot === "front" ? "Preparing Front" : slot === "sheet" ? "Building Character Sheet" : `${manual.workPhase === "generating" ? "Generating" : "Preparing"} ${labels[slot]}` :
           manual.state === "failed" ? `${labels[slot]} ${manual.errorCode === "CHARACTER_CANDIDATE_REJECTED" ? "rejected" : "needs attention"}` : `Preparing ${labels[slot]}` :
-            slot === "back" ? "Back waiting for Face acceptance" : slot === "front_source" ? "Front waiting for Back acceptance" :
-              slot === "front" ? "Headless Front waiting for source acceptance" : "Sheet waiting for accepted references";
+            slot === "back" ? "Back waiting for Face acceptance" : slot === "front_source" ? "Front waiting for Face acceptance" :
+              slot === "front" ? "Front waiting for source acceptance" : "Sheet waiting for accepted references";
       const state: UgcProgressStep["state"] = accepted ? "completed" : !current ? "waiting" : manual.state === "running" ? "active" : manual.state === "failed" ? "failed" : "paused";
       return { id: slot, label, state };
     }));
