@@ -8,12 +8,17 @@ import type { V5Review, V5Slot } from "@/lib/character-v5/contract";
 import type { ReferenceReviewSnapshot } from "@/lib/reference-review/contract";
 
 const titles: Record<V5Slot, string> = { face: "Face", back: "Back", front_source: "Front source", front: "Headless Front", sheet: "Character Sheet" };
-function PrivateV5Image({ src, alt, large }: { src: string; alt: string; large: boolean }) {
+function PrivateV5Image({ src, alt, large, backCandidate }: { src: string; alt: string; large: boolean; backCandidate: boolean }) {
   const [failed, setFailed] = useState(false);
-  return failed ? <span className="block p-3 text-[11px] text-muted-foreground">Preview unavailable. Close and reopen to retry.</span> :
+  const backPreview = (rendered: boolean) => {
+    if (backCandidate && process.env.NODE_ENV !== "production") console.info("UGC_CHARACTER_V5_BACK_PREVIEW", {
+      renderedPreviewSource: rendered ? src : "none", requestedPreviewSource: src, rendered, fallbackUsed: false,
+    });
+  };
+  return failed ? <span className="block p-3 text-[11px] text-muted-foreground">{backCandidate ? "No back candidate available" : "Preview unavailable. Close and reopen to retry."}</span> :
     // Session-authenticated, owner/version-bound private no-store media.
     // eslint-disable-next-line @next/next/no-img-element
-    <img src={src} alt={alt} referrerPolicy="no-referrer" onError={() => setFailed(true)}
+    <img src={src} alt={alt} referrerPolicy="no-referrer" onLoad={() => backPreview(true)} onError={() => { backPreview(false); setFailed(true); }}
       className={large ? "max-h-[75dvh] w-full object-contain" : "h-full w-full object-contain"} />;
 }
 export function CharacterV5Review({ projectId, jobId, workflow, enabled, onSaved, checkStatus }: {
@@ -25,7 +30,7 @@ export function CharacterV5Review({ projectId, jobId, workflow, enabled, onSaved
   const [selected, setSelected] = useState<{ slot: V5Slot; candidate: boolean } | null>(null);
   const [confirm, setConfirm] = useState<V5Slot | null>(null);
   const locked = busy || !enabled || workflow?.state === "running" || workflow?.state === "queued";
-  const reviewing = workflow?.state === "review" && workflow.persistenceState === "ready";
+  const reviewing = workflow?.state === "review" && workflow.persistenceState === "ready" && !!workflow.candidateId;
   const preview = (slot: V5Slot, candidate = false) => `/api/ugc/character-v5?${new URLSearchParams({ projectId, jobId,
     version: String(workflow!.version), slot, ...(candidate ? { candidateId: workflow!.candidateId! } : {}) })}`;
   async function act(action: "start" | "accept" | "reject" | "regenerate" | "crop" | "approve" | "retry_saving", slot?: V5Slot) {
@@ -41,8 +46,9 @@ export function CharacterV5Review({ projectId, jobId, workflow, enabled, onSaved
     finally { setBusy(false); }
   }
   const image = (slot: V5Slot, candidate = false, large = false) =>
-    <PrivateV5Image key={`${workflow?.version}-${slot}-${candidate}`} src={preview(slot, candidate)}
-      alt={`${titles[slot]}${candidate ? " candidate" : " accepted reference"}`} large={large} />;
+    candidate && !workflow?.candidateId ? <span className="block p-3 text-[11px] text-muted-foreground">{slot === "back" ? "No back candidate available" : "No candidate available"}</span> :
+    <PrivateV5Image key={`${workflow?.version}-${slot}-${candidate ? workflow?.candidateId : "accepted"}`} src={preview(slot, candidate)}
+      alt={`${titles[slot]}${candidate ? " candidate" : " accepted reference"}`} large={large} backCandidate={slot === "back" && candidate} />;
   return <section aria-label="Character V5 review" className="space-y-3 rounded-lg border border-border bg-card/60 p-3">
     <div className="flex flex-wrap items-center justify-between gap-2"><h3 className="text-xs font-medium">Character Reference</h3>
       {workflow?.state === "approved" && workflow.persistenceState === "ready" && <span className="flex items-center gap-1 text-success-foreground"><Check className="size-3.5" />Approved</span>}</div>
@@ -50,6 +56,7 @@ export function CharacterV5Review({ projectId, jobId, workflow, enabled, onSaved
       <Button type="button" size="xs" disabled={locked} onClick={() => void act("start")}>{busy ? "Saving…" : "Start Character V5"}</Button></> : <>
       {workflow.state === "queued" && <p role="status" className="text-muted-foreground">{titles[workflow.slot]} is waiting for the local worker.</p>}
       {workflow.state === "running" && <p role="status" className="text-muted-foreground">{workflow.slot === "front" ? "Creating headless Front…" : workflow.slot === "sheet" ? "Building Character Sheet…" : `${workflow.workPhase === "generating" ? "Generating" : "Preparing"} ${titles[workflow.slot]}…`}</p>}
+      {workflow.slot === "back" && !reviewing && <p className="text-muted-foreground">No back candidate available</p>}
       {workflow.savingIncomplete && workflow.recoveryState !== "unrecoverable" && <p className="text-muted-foreground">{workflow.recoveryState === "stored" ?
         "The image is stored. Its review record still needs to be saved." : workflow.recoveryState === "provider_result" ?
         "The generated image is not stored yet. Retry saving will retrieve the existing result and save it." :

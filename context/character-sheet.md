@@ -1,5 +1,32 @@
 # UGC Character Reference Sheet — Milestone 5
 
+## Character V5 Back request correction (2026-10-26)
+
+**Implemented in source; manual 057/provider/visual/runtime acceptance pending.** Code inspection found an incomplete Back prompt and enabled provider prompt enhancement. No Original-image fallback or cross-slot object-key reuse was found in the V5 path. This identifies request defects, not proof of the exact cause of any historical provider image; no live provider/database/storage inspection or generation was performed in this task.
+
+New Back intents persist `promptRevision=2`, `enhancePrompt=false`, batch size 1 and this exact static prompt, without expansion:
+
+> Regenerate this character as one full-body back view on a neutral gray background. Show only one character. The camera must face the character’s back. Do not show the face. Keep the same outfit, hairstyle silhouette, body shape, and proportions.
+
+Back uses the owner/ETag/hash-checked original Character image to retain full outfit/body information, gated by Face acceptance. It never uses the Face portrait as its body source or stores Original/Face in the Back output slot. Existing candidate UUID keys, persisted provider request ID and output SHA256 remain authoritative; accepting promotes that candidate under `accepted.back`. Private `input_asset.storageKey` now records the input key for new Back intents. Older JSON without this diagnostic field remains readable.
+
+Back preview reads the current candidate only, verifies its slot/ID/exact immutable key/output proof, then serves hash-checked bytes. Missing candidate or failed image load shows **No back candidate available**. No Original/accepted-image fallback is introduced. Temporary non-production `UGC_CHARACTER_V5_BACK` server logs retain request ID, source ID/key, actual saved prompt and candidate key/hash; browser `UGC_CHARACTER_V5_BACK_PREVIEW` records the authenticated app preview path, actual load success and `fallbackUsed=false`. No signed URLs, raw responses or credentials are logged. Face/Front prompts/settings and Product flow remain unchanged.
+
+Apply `supabase/migrations/20261026005700_ugc_character_v5_back_prompt.sql` manually **after 056, before new Back execution**. It changes only checkpoint admission for new Back revision 2 enhancement=false; all legacy intents, leases, ownership, ACLs, fingerprints and manual gates remain intact. It changes no records or columns and does not submit/retry anything. Historical submitted requests retain their existing output/settings.
+
+Manual acceptance:
+
+1. Apply 057 after prerequisites, restart the development app and the manually managed local UGC worker with updated source. Use an explicit current test workflow, never batch retry historical jobs.
+2. Before accepting Face, confirm Back cannot generate and Front cannot generate. Accept the Face you approve. Confirm Back becomes the only queued view; Front stays blocked.
+3. While Back is queued/running or has no saved candidate, References shows **No back candidate available**, never the original thumbnail inside its candidate area.
+4. After the local worker saves Back, open References. Check one full-body rear view, one character, neutral gray, no visible face, and matching outfit/hair silhouette/body/proportions. The browser image URL must have `slot=back&candidateId=<current Back UUID>`.
+5. Compare development server submitted/saved/preview diagnostics: same Back candidate/request, original full-body input ID/key, exact prompt above, new candidate key (different from Original/Face), saved SHA256 and `fallbackUsed=false`. Browser load diagnostic must identify that same Back app preview source. Preview GET hash verification binds the displayed bytes to the saved candidate.
+6. Choose **Reject and delete image**. Confirm deletion completes, old candidate URL no longer works, placeholder appears and accepted Face remains. Explicitly choose **Try Back again → Continue**; run only the intended local work. Confirm new request ID/candidate key, no stale preview or automatic Front generation. A new hash is observed rather than assumed (identical provider bytes may legitimately hash identically).
+7. Accept a satisfactory Back. Confirm it is shown as Back accepted and only then Front source queues using that accepted Back. Product behavior is unchanged; do not start Product as part of this focused test.
+8. With browser developer tools, block the exact Back image request and reopen References to remount the image. Confirm the missing-candidate placeholder appears and no Original/Face request replaces it; unblock and reopen to inspect the actual Back again.
+
+Offline evidence is recorded in the tracker. No provider call, worker/job run, historical retry, live mutation, migration application, browser suite, build or deployment was performed. Milestone 7 remains Not Started.
+
 ## Character V5 Face Playground alignment (2026-10-26)
 
 **Complete in source; TypeScript, focused lint and 24 offline checks passed. Manual visual/provider acceptance pending. Milestone 7 remains Not Started.** Read-only inspection confirms current Face candidate is a distinct generated R2 image, not the original accidentally shown in References. The completed request used the older simple V5 prompt plus a reused Soul ID and no seed. The user's successful Playground run used no Soul ID and seed 362102; model, 4:3, 720p, enhance_prompt=true, batch size 1 and the original source match. These are proven request differences, not proof that one parameter alone caused the retained purple background.

@@ -3,6 +3,7 @@ import { createDatabaseClient } from "@/lib/db/server";
 import { v5ArtifactSchema, v5OutputProofSchema, CharacterV5Error, type V5Candidate, type V5Workflow } from "./contract";
 import { v5DatabaseError } from "./database-diagnostics";
 import { v5Prefix } from "./storage";
+import { logV5Back } from "./back-diagnostics";
 
 // A candidate is preallocated before spending. Publication updates that same
 // row; a lost reply never authorizes a new row, object key or provider request.
@@ -19,5 +20,6 @@ export async function readbackV5Candidate(workflow: V5Workflow, id: string) {
     asset.data.storageKey !== `${v5Prefix(workflow)}${id}.png`) throw new CharacterV5Error("candidate_readback", "CHARACTER_CANDIDATE_READBACK_INVALID",
       { operation: "candidate_readback", category: "database_failure", table: "ugc_character_v5_candidates", slot: workflow.slot,
         version: workflow.version, safeReason: "Saved candidate state or artifact metadata does not match the expected candidate." });
+  logV5Back("saved", candidate as V5Candidate);
   return candidate as V5Candidate;
 }

@@ -3,11 +3,13 @@ import { z } from "zod";
 import { ownedReferenceReview, ReferenceReviewAccessError } from "@/lib/reference-review/server";
 import { readReferenceReviewState } from "@/lib/reference-review/state";
 import { deleteR2CharacterCandidate, headR2CharacterObject } from "@/lib/storage/r2";
-import { v5ActionSchema, v5Slots, CharacterV5Error, type V5Workflow } from "./contract";
+import { v5ActionSchema, v5Slots, CharacterV5Error, type V5Workflow, type V5Candidate } from "./contract";
 import { readV5Artifact, v5Prefix } from "./storage";
 import { existingV5SoulId } from "./worker";
 import { logV5Failure, v5DatabaseError } from "./database-diagnostics";
 import { recoverCharacterV5Candidate } from "./recovery";
+import { readbackV5Candidate } from "./persistence";
+import { logV5Back } from "./back-diagnostics";
 
 export async function characterV5Action(input: unknown) {
   const parsed = v5ActionSchema.safeParse(input);
@@ -98,16 +100,31 @@ export async function characterV5Preview(input: unknown) {
   if (result.error) throw v5DatabaseError(result.error, { operation: "read_workflow", phase: "candidate_readback", version });
   if (!workflow || workflow.version !== version) throw new ReferenceReviewAccessError(404);
   let artifact = slot === "sheet" ? workflow.sheet : workflow.accepted[slot];
+  let previewCandidate: V5Candidate | undefined;
   if (candidateId) {
     if (candidateId !== workflow.candidate_id || workflow.state !== "review" || workflow.slot !== slot) throw new ReferenceReviewAccessError(404);
-    const candidate = await context.db.from("ugc_character_v5_candidates").select("*").eq("id", candidateId).eq("workflow_id", workflow.id).single();
-    if (candidate.error) throw v5DatabaseError(candidate.error, { operation: "read_candidate", phase: "candidate_readback", slot, version });
-    if (candidate.data?.state !== "review") throw new ReferenceReviewAccessError(404);
-    artifact = candidate.data.artifact;
+    if (slot === "back") {
+      // Never substitute accepted Back, Face or Original for a missing candidate.
+      // Verify slot, candidate ID, exact candidate key and saved output hash.
+      const candidate = await readbackV5Candidate(workflow, candidateId);
+      if (candidate.state !== "review") throw new ReferenceReviewAccessError(404);
+      previewCandidate = candidate;
+      artifact = candidate.artifact;
+    } else {
+      const candidate = await context.db.from("ugc_character_v5_candidates").select("*").eq("id", candidateId).eq("workflow_id", workflow.id).single();
+      if (candidate.error) throw v5DatabaseError(candidate.error, { operation: "read_candidate", phase: "candidate_readback", slot, version });
+      if (candidate.data?.state !== "review") throw new ReferenceReviewAccessError(404);
+      artifact = candidate.data.artifact;
+    }
   }
   if (!artifact) throw new ReferenceReviewAccessError(404);
-  try { return await readV5Artifact(workflow, artifact, AbortSignal.timeout(30_000)); }
+  try {
+    const bytes = await readV5Artifact(workflow, artifact, AbortSignal.timeout(30_000));
+    if (previewCandidate) logV5Back("preview", previewCandidate, { source: "back_candidate", served: true });
+    return bytes;
+  }
   catch {
+    if (previewCandidate) logV5Back("preview", previewCandidate, { source: "none", served: false });
     const noted = await context.db.rpc("ugc_character_v5_preview_failure", { p_owner: context.ownerId, p_job: jobId, p_version: version });
     if (noted.error) logV5Failure(v5DatabaseError(noted.error, { operation: "preview_failure", phase: "candidate_insertion", slot, version }));
     throw new CharacterV5Error("preview_read", "CHARACTER_PREVIEW_READ_FAILED");

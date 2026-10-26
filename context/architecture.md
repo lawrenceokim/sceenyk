@@ -1,5 +1,11 @@
 # Architecture Context
 
+## Character V5 Back request correction (2026-10-26)
+
+Fresh Back intents use prompt revision 2 with the exact direct rear-view/no-face/outfit-preservation prompt and `enhance_prompt=false`. Face and Front request settings remain unchanged. Manual migration **057 after 056** updates only the checkpoint enhancement guard; old saved intents stay compatible and are never rewritten or replayed. Back retains the original full-body Character as image input (the accepted Face is a cropped portrait and an enforced prerequisite); its private `input_asset` JSON now also retains the original storage key for diagnostics. No new table/column/environment variable.
+
+Back candidate previews additionally reuse strict candidate readback validation: slot, ID, candidate-specific immutable key and output proof must match before hash-checked bytes are served. Missing Back candidates show an explicit placeholder, never Original/Face/accepted-view substitution. Temporary development-only Back diagnostics correlate provider request, source ID/key, exact prompt, saved key/hash, server preview selection and browser image load source/fallback=false. Private keys stay server-side; no signed provider/storage URL is logged. Accept/Reject/delete, Face → Back → Front gates and Product behavior remain unchanged. Manual provider/visual/runtime acceptance is pending; no historical retry is performed.
+
 ## Character V5 Face Playground alignment (2026-10-26)
 
 **Complete in source; TypeScript, focused lint and 24 offline checks passed. Manual visual/provider acceptance pending. Milestone 7 remains Not Started.** Read-only inspection confirms current Face candidate is a distinct generated R2 image, not the original accidentally shown in References. The completed request used the older simple V5 prompt plus a reused Soul ID and no seed. The user's successful Playground run used no Soul ID and seed 362102; model, 4:3, 720p, enhance_prompt=true, batch size 1 and the original source match. These are proven request differences, not proof that one parameter alone caused the retained purple background.

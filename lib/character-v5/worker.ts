@@ -13,6 +13,7 @@ import { CharacterV5Error, v5Generation, type V5Candidate, type V5Phase, type V5
 import { cropV5Front, readV5Artifact, recoverV5Artifact, saveV5Artifact, technicalPng, v5Prefix, v5OutputProof } from "./storage";
 import { logV5Failure, v5DatabaseError, type V5DatabaseOperation } from "./database-diagnostics";
 import { readbackV5Candidate } from "./persistence";
+import { logV5Back } from "./back-diagnostics";
 
 function soulIdMode() {
   const value = process.env.UGC_CHARACTER_V5_SOUL_ID_MODE ?? "reuse";
@@ -139,15 +140,19 @@ export async function runCharacterV5(workflow: V5Workflow, shutdown: AbortSignal
           input = { key: back.storageKey, id: back.id, etag: back.etag, sha256: back.sha256 };
         } else {
           if (workflow.slot === "back" && !workflow.accepted.face) throw new CharacterV5Error(phase);
+          // Back needs the full outfit/body source, not the cropped Face output.
           input = await originalInput(jobResult.data, signal);
         }
         phase = "input_sign";
         const imageUrl = await signR2CharacterSource(input.key, input.etag);
         candidate = await checkpoint("intent", { plannedKey: `${v5Prefix(workflow)}${candidate.id}.png`,
-          generation: v5Generation(workflow.slot, workflow.soul_id), inputAsset: { id: input.id, etag: input.etag, sha256: input.sha256 } });
+          generation: v5Generation(workflow.slot, workflow.soul_id), inputAsset: { id: input.id, etag: input.etag, sha256: input.sha256,
+            ...(workflow.slot === "back" ? { storageKey: input.key } : {}) } });
+        logV5Back("intent", candidate);
         phase = "provider_submit";
         const receipt = await provider.submitManualView({ slot: workflow.slot, imageUrl, soulId: workflow.soul_id, key: candidate.id }, signal);
         candidate = await checkpoint("submitted", { requestId: receipt.id, statusUrl: receipt.statusUrl });
+        logV5Back("submitted", candidate);
       }
       // A crash after an intent is uncertain. It never authorizes another POST.
       if (candidate.state !== "submitted" || !candidate.request_id || !candidate.status_url) throw new CharacterV5Error("provider_submit", "RECONCILIATION_REQUIRED");

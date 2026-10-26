@@ -2,7 +2,7 @@
 // database, worker, storage, generation or existing-candidate mutation.
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { v5Generation, v5ProviderPayload, type V5Review } from "../lib/character-v5/contract";
+import { v5Generation, v5ProviderPayload, v5Prompts, type V5Review } from "../lib/character-v5/contract";
 import { v5ManualReviewProgress } from "../lib/character-v5/progress";
 import { buildUgcProgress } from "../lib/ugc-jobs/progress";
 import { shouldPollUgcProgress, type UgcJobRow } from "../lib/ugc-jobs/contract";
@@ -23,9 +23,9 @@ assert.deepEqual(v5Generation("face", null), face); checks++;
 for (const slot of ["back", "front_source"] as const) {
   for (const identity of [soulId, null]) {
     const saved = v5Generation(slot, identity); const payload = v5ProviderPayload(saved, input);
-    assert.deepEqual(payload, { prompt: slot === "back" ? "Regenerate this character as one full-body back view on a neutral gray background. Show only one character." :
+    assert.deepEqual(payload, { prompt: slot === "back" ? v5Prompts.back :
       "Regenerate this character as one full-body front view on a neutral gray background. Show only one character.",
-    image_url: input, batch_size: 1, resolution: "720p", aspect_ratio: "4:3", enhance_prompt: true,
+    image_url: input, batch_size: 1, resolution: "720p", aspect_ratio: "4:3", enhance_prompt: slot !== "back",
     ...(identity ? { custom_reference_id: identity, custom_reference_strength: 1 } : {}) }); checks++;
     check(saved.seed === null && saved.soulIdUsed === !!identity, "other views preserve identity and seed omission");
   }

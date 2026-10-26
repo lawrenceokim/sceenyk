@@ -6,7 +6,7 @@ export const v5Slots = ["face", "back", "front_source", "front", "sheet"] as con
 export type V5Slot = typeof v5Slots[number];
 export const v5Prompts = {
   face: "regenerate this image but place the character in a gray background with only the character face in it",
-  back: "Regenerate this character as one full-body back view on a neutral gray background. Show only one character.",
+  back: "Regenerate this character as one full-body back view on a neutral gray background. Show only one character. The camera must face the character’s back. Do not show the face. Keep the same outfit, hairstyle silhouette, body shape, and proportions.",
   front_source: "Regenerate this character as one full-body front view on a neutral gray background. Show only one character.",
 } as const;
 export const v5ArtifactSchema = z.strictObject({ id: z.uuid(), storageKey: z.string().min(1).max(512), etag: z.string().min(1).max(512),
@@ -27,7 +27,7 @@ export type V5Candidate = {
   request_id: string | null; status_url: string | null; artifact: V5Artifact | null; planned_key: string | null;
   generation: V5ProviderGeneration | { promptVersion: 5; contractVersion: 5; revision: "simple-manual-review-v1";
     model: "sharp"; slot: "front" | "sheet"; cropTop?: number; inputs: Record<string, { id: string; sha256: string; etag: string }> } | null;
-  input_asset: { id: string; sha256: string; etag: string } | null;
+  input_asset: { id: string; sha256: string; etag: string; storageKey?: string } | null;
   provider_terminal: boolean;
   output_proof: V5OutputProof | null;
   created_at: string; updated_at: string;
@@ -48,8 +48,8 @@ export function v5Generation(slot: "face" | "back" | "front_source", soulId: str
   // the identity input; a workflow's historical Soul ID is not sent for Face.
   if (slot === "face") soulId = null;
   return { ...characterV5, slot, prompt: v5Prompts[slot], resolution: "720p" as const, aspectRatio: "4:3" as const,
-    batchSize: 1 as const, enhancePrompt: true as const, soulId, soulIdUsed: !!soulId,
-    promptRevision: slot === "face" ? 2 : 1, referenceStrength: slot === "face" || soulId ? 1 : null,
+    batchSize: 1 as const, enhancePrompt: slot !== "back", soulId, soulIdUsed: !!soulId,
+    promptRevision: slot === "front_source" ? 1 : 2, referenceStrength: slot === "face" || soulId ? 1 : null,
     seed: slot === "face" ? 362102 : null };
 }
 // Older saved V5 intents predate these extra provenance fields.

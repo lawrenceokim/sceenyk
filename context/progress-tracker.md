@@ -1,5 +1,17 @@
 # Progress Tracker
 
+## Character V5 Back request and candidate preview correction (2026-10-26)
+
+**Implemented in source; manual migration 057/provider/visual/runtime acceptance pending. Milestone 7 remains Not Started.** Code-backed request defects: Back omitted explicit camera/no-face/outfit-preservation instructions and enabled provider prompt enhancement. No V5 Original fallback/cross-slot persistence error was found. Historical image causation remains unverified; no live/provider inspection or automatic retry was performed.
+
+Fresh Back uses the exact user-supplied prompt, `enhance_prompt=false`, batch size 1 and prompt revision 2. Original full-body input is preserved for outfit/body information; accepted Face remains mandatory. Existing candidate-specific keys, request ID, saved SHA256 and canonical `accepted.back` promotion remain authoritative. Candidate preview now validates slot/ID/key/proof with the existing strict readback before hash-checked serving. Missing/failed Back preview says **No back candidate available**. Back-only temporary development diagnostics record request/source/prompt/saved fingerprint and actual browser preview source/fallback=false; keys remain server-only.
+
+New manual setup: `supabase/migrations/20261026005700_ugc_character_v5_back_prompt.sql` after 056, before new Back execution. Only the enhancement guard changes; legacy intents/other slots remain compatible. No new column/environment or historical data change. Face settings, Product modules, Accept/Reject/delete and Face → Back → Front gates are preserved. [Exact manual test steps](character-sheet.md#character-v5-back-request-correction-2026-10-26).
+
+Validation: TypeScript, focused ESLint and whitespace/diff review passed; 21 offline Back payload/actual component-markup/static checks, 24 retained Face/progress checks and 12 isolated schema/guard/ACL/preservation checks passed. All 57 migrations parse in memory; 057 rerun succeeds, all other public function bodies/ACLs remain unchanged, zero job/event/candidate fixtures or execution RPCs. Product modules, the regeneration source, provider adapter, private R2 helper, worker CLI and prior migrations 054–056 match HEAD. No provider/worker/storage mutation, historical retry, remote SQL, browser suite, build, deployment, Render/Inngest or Product execution.
+
+Changed files: `lib/character-v5/{contract,worker,persistence,server,back-diagnostics}.ts`, `components/creation/character-v5-review.tsx`, `scripts/check-character-v5-{back.ts,back-schema.mjs,face.ts}`, migration 057, and `context/{architecture,character-sheet,progress-tracker}.md`.
+
 ## Character V5 Face Playground alignment (2026-10-26)
 
 **Complete in source; TypeScript, focused lint and 24 offline checks passed. Manual visual/provider acceptance pending. Milestone 7 remains Not Started.** Read-only inspection confirms current Face candidate is a distinct generated R2 image, not the original accidentally shown in References. The completed request used the older simple V5 prompt plus a reused Soul ID and no seed. The user's successful Playground run used no Soul ID and seed 362102; model, 4:3, 720p, enhance_prompt=true, batch size 1 and the original source match. These are proven request differences, not proof that one parameter alone caused the retained purple background.
