@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { isUgcJobActive, shouldPollUgcProgress, ugcWorkerStaleMilliseconds, type UgcProgressStep } from "@/lib/ugc-jobs/contract";
 import { ugcProcessingMilliseconds, ugcStageExpectation } from "@/lib/ugc-jobs/progress";
 import type { useUgcProgress } from "./use-ugc-progress";
+import { v5ManualReviewProgress } from "@/lib/character-v5/progress";
 
 export type UgcProgressState = ReturnType<typeof useUgcProgress>;
 
@@ -29,6 +30,8 @@ export function UgcProgressPreview({ progress }: { progress: UgcProgressState })
   const { job, loading, error, checkStatus, receivedAt } = progress;
   const [clock, setClock] = useState(() => Date.now());
   const active = !!job && (isUgcJobActive(job.status) || !!job.referenceReview?.regenerating);
+  const manualReview = job?.currentStage === "character_reference" && !["failed", "cancelled", "completed"].includes(job.status) ?
+    v5ManualReviewProgress(job.referenceReview?.characterV5) : null;
   const regeneration = job && !["completed", "cancelled"].includes(job.status) ?
     job.referenceReview?.groups.find(group => group.sheetInvalidated && job.currentStage === `${group.type}_reference`) : undefined;
   const ticking = !!job && shouldPollUgcProgress(job) && (job.status === "running" || !!job.referenceReview?.regenerating);
@@ -40,7 +43,7 @@ export function UgcProgressPreview({ progress }: { progress: UgcProgressState })
   // Correct local clock skew using the server observation; timestamps remain
   // authoritative. A display tick can never complete or advance any step.
   const now = job ? Date.parse(job.serverNow) + Math.max(0, clock - receivedAt) : clock;
-  const stalled = !!job && (job.status === "running" || !!job.referenceReview?.regenerating || regeneration?.execution?.state === "stalled") && (job.worker.state === "stalled" ||
+  const stalled = !manualReview && !!job && (job.status === "running" || !!job.referenceReview?.regenerating || regeneration?.execution?.state === "stalled") && (job.worker.state === "stalled" ||
     !job.worker.heartbeatAt || !job.worker.leaseExpiresAt ||
     now - Date.parse(job.worker.heartbeatAt) >= ugcWorkerStaleMilliseconds || Date.parse(job.worker.leaseExpiresAt) <= now);
   const paused = stalled || job?.paused || job?.status === "awaiting_confirmation";
@@ -49,7 +52,7 @@ export function UgcProgressPreview({ progress }: { progress: UgcProgressState })
   const productCompletePause = !!job?.paused && job.stage === "location_reference" &&
     job.steps.some(step => step.id === "product_reference" && step.state === "completed");
   const title = loading ? "Checking generation status" : !job ? "Generation status unavailable" :
-    regeneration?.state === "failed" ? "Reference regeneration stopped" : stalled ? "Waiting for generation worker" :
+    manualReview ? manualReview.title : regeneration?.state === "failed" ? "Reference regeneration stopped" : stalled ? "Waiting for generation worker" :
     job.referenceReview?.regenerating ? "Regenerating reference" : regeneration ? "Waiting for generation worker" :
     job.status === "failed" ? "Generation stopped" : job.status === "cancelled" ? "Generation cancelled" :
     job.status === "completed" ? "Generation complete" : productCompletePause ? "Product reference complete" : characterCompletePause ? "Character reference complete" : paused ? "Generation paused" : "Creating your video";
@@ -68,7 +71,7 @@ export function UgcProgressPreview({ progress }: { progress: UgcProgressState })
           {job?.referenceReview?.characterV5?.errorPhase && <p className="break-words text-destructive">Character technical phase: {job.referenceReview.characterV5.errorPhase} · {job.referenceReview.characterV5.errorCode}</p>}
           {(characterCompletePause || productCompletePause) && <p className="text-warning-foreground">Generation paused</p>}
           <p key={`${job?.status}:${job?.message}:${stalled}`} className="break-words text-muted-foreground motion-safe:animate-in motion-safe:fade-in motion-safe:duration-200">
-            {loading ? "Reading your saved workflow." : stalled ? "The generation worker may no longer be running. Start the local UGC worker to resume saved work." : job?.message ?? "Check status to reconnect to your saved workflow."}
+            {loading ? "Reading your saved workflow." : manualReview ? manualReview.message : stalled ? "The generation worker may no longer be running. Start the local UGC worker to resume saved work." : job?.message ?? "Check status to reconnect to your saved workflow."}
           </p>
           {job?.status === "failed" && <p className="text-destructive">Failed at: {job.stageLabel}</p>}
         </div>

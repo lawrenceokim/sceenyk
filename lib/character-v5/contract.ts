@@ -5,7 +5,7 @@ export const characterV5 = { promptVersion: 5, contractVersion: 5, revision: "si
 export const v5Slots = ["face", "back", "front_source", "front", "sheet"] as const;
 export type V5Slot = typeof v5Slots[number];
 export const v5Prompts = {
-  face: "Regenerate this image on a neutral gray background. Show only this character from the shoulders up, facing forward.",
+  face: "regenerate this image but place the character in a gray background with only the character face in it",
   back: "Regenerate this character as one full-body back view on a neutral gray background. Show only one character.",
   front_source: "Regenerate this character as one full-body front view on a neutral gray background. Show only one character.",
 } as const;
@@ -25,7 +25,7 @@ export type V5Workflow = {
 export type V5Candidate = {
   id: string; workflow_id: string; slot: V5Slot; state: "queued" | "intent" | "submitted" | "review" | "accepted" | "rejecting" | "rejected" | "failed";
   request_id: string | null; status_url: string | null; artifact: V5Artifact | null; planned_key: string | null;
-  generation: ReturnType<typeof v5Generation> | { promptVersion: 5; contractVersion: 5; revision: "simple-manual-review-v1";
+  generation: V5ProviderGeneration | { promptVersion: 5; contractVersion: 5; revision: "simple-manual-review-v1";
     model: "sharp"; slot: "front" | "sheet"; cropTop?: number; inputs: Record<string, { id: string; sha256: string; etag: string }> } | null;
   input_asset: { id: string; sha256: string; etag: string } | null;
   provider_terminal: boolean;
@@ -44,8 +44,25 @@ export class CharacterV5Error extends Error {
     readonly storage?: import("./storage-diagnostics").V5StorageDiagnostic) { super(code); }
 }
 export function v5Generation(slot: "face" | "back" | "front_source", soulId: string | null) {
+  // Face matches the owner's successful Playground run. The original image is
+  // the identity input; a workflow's historical Soul ID is not sent for Face.
+  if (slot === "face") soulId = null;
   return { ...characterV5, slot, prompt: v5Prompts[slot], resolution: "720p" as const, aspectRatio: "4:3" as const,
-    batchSize: 1 as const, enhancePrompt: true as const, soulId, soulIdUsed: !!soulId };
+    batchSize: 1 as const, enhancePrompt: true as const, soulId, soulIdUsed: !!soulId,
+    promptRevision: slot === "face" ? 2 : 1, referenceStrength: slot === "face" || soulId ? 1 : null,
+    seed: slot === "face" ? 362102 : null };
+}
+// Older saved V5 intents predate these extra provenance fields.
+type V5ProviderGeneration = Omit<ReturnType<typeof v5Generation>, "promptRevision" | "referenceStrength" | "seed"> &
+  Partial<Pick<ReturnType<typeof v5Generation>, "promptRevision" | "referenceStrength" | "seed">>;
+// The saved intent and wire payload share one static configuration. Null seed
+// records deliberate omission, not a claim about the provider's chosen seed.
+export function v5ProviderPayload(generation: ReturnType<typeof v5Generation>, imageUrl: string) {
+  return { prompt: generation.prompt, image_url: imageUrl, batch_size: generation.batchSize,
+    resolution: generation.resolution, aspect_ratio: generation.aspectRatio, enhance_prompt: generation.enhancePrompt,
+    ...(generation.slot === "face" ? { custom_reference_id: null, custom_reference_strength: generation.referenceStrength } :
+      generation.soulId ? { custom_reference_id: generation.soulId, custom_reference_strength: generation.referenceStrength } : {}),
+    ...(generation.seed !== null ? { seed: generation.seed } : {}) };
 }
 export type V5Review = {
   id: string; version: number; slot: V5Slot; state: V5Workflow["state"]; candidateId: string | null;
@@ -63,11 +80,11 @@ export const v5ActionSchema = z.strictObject({ projectId: z.uuid(), jobId: z.uui
   action: z.enum(["start", "accept", "reject", "regenerate", "crop", "approve", "retry_saving"]), slot: z.enum(v5Slots).optional(),
   cropTop: z.number().int().min(500).max(6000).optional() });
 export function v5Review(workflow: V5Workflow, reconciliationRequired = false, canRetrySaving = false, savingIncomplete = false,
-  recoveryState: V5Review["recoveryState"] = "not_needed"): V5Review {
+  recoveryState: V5Review["recoveryState"] = "not_needed", soulIdUsed = !!workflow.soul_id): V5Review {
   return { id: workflow.id, version: workflow.version, slot: workflow.slot, state: workflow.state,
     candidateId: workflow.candidate_id, accepted: v5Slots.filter(slot => !!workflow.accepted[slot]),
     approvedAt: workflow.approved_at, errorPhase: workflow.error_phase, errorCode: workflow.error_code,
-    cropTop: workflow.crop_top, soulIdUsed: !!workflow.soul_id, workPhase: workflow.work_phase,
+    cropTop: workflow.crop_top, soulIdUsed, workPhase: workflow.work_phase,
     heartbeatAt: workflow.state === "running" ? workflow.updated_at : null, leaseExpiresAt: workflow.lease_expires_at, reconciliationRequired,
     elapsedMs: workflow.processing_elapsed_ms, runningSince: workflow.processing_updated_at, canRetrySaving, savingIncomplete, recoveryState,
     persistenceState: recoveryState === "storage_missing" ? "storage_missing" : savingIncomplete ?

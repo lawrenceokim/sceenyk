@@ -1,5 +1,53 @@
 # UGC Character Reference Sheet — Milestone 5
 
+## Character V5 Face Playground alignment (2026-10-26)
+
+**Complete in source; TypeScript, focused lint and 24 offline checks passed. Manual visual/provider acceptance pending. Milestone 7 remains Not Started.** Read-only inspection confirms current Face candidate is a distinct generated R2 image, not the original accidentally shown in References. The completed request used the older simple V5 prompt plus a reused Soul ID and no seed. The user's successful Playground run used no Soul ID and seed 362102; model, 4:3, 720p, enhance_prompt=true, batch size 1 and the original source match. These are proven request differences, not proof that one parameter alone caused the retained purple background.
+
+New Face requests now use the exact successful Playground prompt supplied in the follow-up: `regenerate this image but place the character in a gray background with only the character face in it`, custom_reference_id=null, custom_reference_strength=1 and seed=362102. This supersedes the earlier proposed shoulder-up wording for this parity test. One static payload builder keeps saved intent and submitted settings aligned; new intent records promptRevision=2, actual Soul ID use, strength and seed. Existing V5 prompt/contract version 5 and workflow revision remain compatible; historical intents are never rewritten. Back/Front prompts and settings are unchanged. No separate Playground style parameter was provided; no style suffix, project-style override or AI prompt expansion is added.
+
+Manual Accept/Reject remains authoritative, with no semantic background rejection. After explicit Reject finishes, the existing Generate-again action creates a new Face candidate using corrected settings; only Face acceptance admits Back. The current candidate remains untouched. Progress now prioritizes V5 manual review over the final sheet's legacy invalidated flag and says Waiting for Face review, with instructions to open References. It does not suggest starting a worker or restart polling during review.
+
+No new migration or environment setup. No Higgsfield/OpenAI call, worker, regeneration/recovery execution, current-candidate mutation, R2 write/delete, deployment, Render/Inngest or Milestone 7 work. Product assets/approval and historical records are preserved.
+
+
+### Completed Face evidence and Playground comparison
+
+Read-only Supabase and bounded conditional R2 GET inspection on 2026-10-26 found workflow dfd2a2fd-7b89-4855-897f-d8d08f10cba9, version 4, slot face, state review, with no accepted Character slots. The completed output retained the older request; recovery did not rerun a prompt.
+
+| Evidence | Original upload | Generated Face candidate |
+| --- | --- | --- |
+| Asset/candidate ID | 8fc00177-e766-48c5-a10e-35d8ba9fac9e | 8028ab3f-98c2-4380-921c-25744ec64442 |
+| Provider request ID | Not applicable: user upload | 96cf2fdd-3b05-4ec1-99c9-8ebd5ada88c9 |
+| Format/dimensions | JPEG, 1024 x 1024 | PNG, 1536 x 1152 |
+| Stored bytes | 181336 | 4346748 |
+| Actual SHA-256 | b54bd404fb073059cf71e7595b45c381be9b4948b2e7a65b8b652032b37a7157 | 8c07e610df8dd575a395a59db9aedeeffb190a959213da65946f3a4ca74e20fc |
+
+Both byte hashes were calculated from the actual stored objects, not merely copied from metadata. Original hash matches candidate.input_asset.sha256; generated hash matches artifact.sha256 and output_proof.sha256. Decoded pixel hashes also differ; different dimensions alone make pixel-hash inequality insufficient to assess similarity, so both images were visually inspected. The generated output is visibly a distinct rendering but retains the purple starry background. No image was regenerated or edited during inspection.
+
+References source renders the current review through image(workflow.slot,true), which includes candidateId in the owner/version-bound preview request. characterV5Preview resolves that exact candidate's artifact; readV5Artifact verifies its private bytes/hash. This branch has no fallback to the original upload. The source-to-live-record trace confirms candidate provenance; an authenticated browser or preview-route request was not run (the preview route can record failure metadata).
+
+| Setting | Completed Sceenyk Face | Successful Playground, supplied by user | New Face submission |
+| --- | --- | --- | --- |
+| Model | higgsfield-ai/soul/v2/image-to-image | Same | Same |
+| image_url | Temporary private URL for original asset above | Same original image, per user | Temporary private URL for the same owner-verified original |
+| Aspect ratio / resolution | 4:3 / 720p | 4:3 / 720p | 4:3 / 720p |
+| enhance_prompt / batch_size | true / 1 | true / 1 | true / 1 |
+| custom_reference_id | fc86e38d-ac27-4f7c-b5c9-1cb2930d0fa0 | null | null |
+| custom_reference_strength | 1, reconstructed from submission source | 1 | 1 |
+| seed | Omitted, reconstructed from submission source | 362102 | 362102 |
+| Prompt | Regenerate this image on a neutral gray background. Show only this character from the shoulders up, facing forward. | regenerate this image but place the character in a gray background with only the character face in it | Exact Playground text |
+| Style | No separate style field or project visual-style text was submitted | No separate style field supplied in the user's configuration | No invented style field, suffix or AI-expanded prompt |
+
+The successful Playground result/request ID and its binary image were not supplied, so those hashes/IDs cannot be independently compared. The original signed image_url is intentionally not persisted and has expired; its source asset/hash/ETag are preserved. The saved generation manifest records the old prompt/model/ratio/resolution/enhancement/batch/Soul ID. Strength and seed were not recorded by that older version; source reconstructs strength=1 and seed omission, not the provider's internally chosen seed or enhanced prompt. No provider status endpoint was queried.
+
+The extra Soul ID, missing fixed seed, and different prompt are concrete parity differences. Their individual effect on background retention cannot be isolated without a new manual generation; do not claim Soul strength or enhancement alone caused it. The source now matches every supplied Playground request field. Enhancement remains true because it was true in the successful run. Character identity remains conditioned on the original image; Face bypasses the workflow's historical Soul ID, while later Back/Front identity behavior stays unchanged.
+
+### Manual acceptance and setup
+
+No migration, credential or environment change is required. Use updated application/worker source for the next manually authorized test. This change never alters the existing Face: inspect it, explicitly Reject if desired, then choose Try Face again and confirm. The existing rejection/deletion flow completes before a fresh candidate UUID can be queued; a rejected candidate cannot be recovered as the new attempt. Only explicit Face acceptance creates the Back stage. Incorrect backgrounds remain a human decision, with no semantic rejection/provider retry loop added.
+
+
 ## Character V5 R2 persistence (2026-10-25)
 
 **Complete in source; manual migration 056 after 055 and manual runtime acceptance pending. Milestone 7 remains Not Started.** The latest Face is committed in R2 and matches its persisted fingerprint (4,346,748 bytes, PNG, 1536 x 1152). This supersedes the earlier zero-V5-object snapshot. Current persisted failure is candidate_insertion; the 055 ready expression reproduces PostgreSQL 22P02 because JSON extraction was not grouped before subtraction. 056 corrects only that expression, preserving ownership/leases/ACLs and all other RPC definitions. No new metadata field or data backfill. The original r2_write exception was discarded; its exact historical S3/network cause remains unknown.

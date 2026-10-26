@@ -1,5 +1,16 @@
 # Reference Asset Review — Milestone 6.5
 
+## Character V5 Face Playground alignment (2026-10-26)
+
+**Complete in source; TypeScript, focused lint and 24 offline checks passed. Manual visual/provider acceptance pending. Milestone 7 remains Not Started.** Read-only inspection confirms current Face candidate is a distinct generated R2 image, not the original accidentally shown in References. The completed request used the older simple V5 prompt plus a reused Soul ID and no seed. The user's successful Playground run used no Soul ID and seed 362102; model, 4:3, 720p, enhance_prompt=true, batch size 1 and the original source match. These are proven request differences, not proof that one parameter alone caused the retained purple background.
+
+New Face requests now use the exact successful Playground prompt supplied in the follow-up: `regenerate this image but place the character in a gray background with only the character face in it`, custom_reference_id=null, custom_reference_strength=1 and seed=362102. This supersedes the earlier proposed shoulder-up wording for this parity test. One static payload builder keeps saved intent and submitted settings aligned; new intent records promptRevision=2, actual Soul ID use, strength and seed. Existing V5 prompt/contract version 5 and workflow revision remain compatible; historical intents are never rewritten. Back/Front prompts and settings are unchanged. No separate Playground style parameter was provided; no style suffix, project-style override or AI prompt expansion is added.
+
+Manual Accept/Reject remains authoritative, with no semantic background rejection. After explicit Reject finishes, the existing Generate-again action creates a new Face candidate using corrected settings; only Face acceptance admits Back. The current candidate remains untouched. Progress now prioritizes V5 manual review over the final sheet's legacy invalidated flag and says Waiting for Face review, with instructions to open References. It does not suggest starting a worker or restart polling during review.
+
+No new migration or environment setup. No Higgsfield/OpenAI call, worker, regeneration/recovery execution, current-candidate mutation, R2 write/delete, deployment, Render/Inngest or Milestone 7 work. Product assets/approval and historical records are preserved.
+
+
 ## Character V5 R2 persistence (2026-10-25)
 
 **Complete in source; manual migration 056 after 055 and manual runtime acceptance pending. Milestone 7 remains Not Started.** The latest Face is committed in R2 and matches its persisted fingerprint (4,346,748 bytes, PNG, 1536 x 1152). This supersedes the earlier zero-V5-object snapshot. Current persisted failure is candidate_insertion; the 055 ready expression reproduces PostgreSQL 22P02 because JSON extraction was not grouped before subtraction. 056 corrects only that expression, preserving ownership/leases/ACLs and all other RPC definitions. No new metadata field or data backfill. The original r2_write exception was discarded; its exact historical S3/network cause remains unknown.

@@ -81,9 +81,11 @@ export async function readReferenceReviewState(job: UgcJobRow, sheets: ReviewShe
   let canRetrySaving = false;
   let savingIncomplete = false;
   let recoveryState: V5RecoveryState = "not_needed";
+  let soulIdUsed = manual.data?.slot === "face" ? false : !!manual.data?.soul_id;
   if (manual.data?.candidate_id && (!["queued", "running"].includes(manual.data.state) || manual.data.state === "running" && Date.parse(manual.data.lease_expires_at ?? "") <= Date.now())) {
     const candidate = await db.from("ugc_character_v5_candidates").select("*").eq("id", manual.data.candidate_id).eq("workflow_id", manual.data.id).single();
     if (candidate.error || !candidate.data) throw new Error("REFERENCE_REVIEW_UNAVAILABLE");
+    if (candidate.data.generation && "soulIdUsed" in candidate.data.generation) soulIdUsed = candidate.data.generation.soulIdUsed;
     reconciliationRequired = candidate.data.state === "intent";
     recoveryState = await v5RecoveryState(manual.data, candidate.data);
     canRetrySaving = ["intent", "submitted", "failed"].includes(candidate.data.state) && ["stored", "provider_result", "unknown"].includes(recoveryState);
@@ -117,7 +119,7 @@ export async function readReferenceReviewState(job: UgcJobRow, sheets: ReviewShe
   if (historicalCharacter?.rejectedOutputs) historicalCharacter.rejectedOutputs = historicalCharacter.rejectedOutputs.filter(output => !purged.has(output.id));
   const approved = (type: ReferenceType) => groups.some(group => group.type === type && group.state === "approved");
   const regeneration = groups.some(group => group.sheetInvalidated);
-  return { groups, ...(manual.data ? { characterV5: v5Review(manual.data, reconciliationRequired, canRetrySaving, savingIncomplete, recoveryState) } : {}),
+  return { groups, ...(manual.data ? { characterV5: v5Review(manual.data, reconciliationRequired, canRetrySaving, savingIncomplete, recoveryState, soulIdUsed) } : {}),
     ...(historicalCharacter ? { historicalCharacter } : {}),
     actionsAvailable: mutable, available: !!manual.data || groups.some(group => group.assets.some(asset => asset.view !== "original" && asset.available)) ||
       job.resume_stage === "character_reference" && job.status === "failed",

@@ -7,7 +7,7 @@ import type { CharacterProviderOperation, CharacterView } from "./contract";
 import { characterProviderDiagnostic, characterOutputError, characterOutputMetadata } from "./diagnostics";
 import { validateCharacterOutputUrl } from "./output-validation";
 import { currentGenerationSchema } from "./generation-contract";
-import { v5Generation } from "@/lib/character-v5/contract";
+import { v5Generation, v5ProviderPayload } from "@/lib/character-v5/contract";
 
 const apiOrigin = "https://api.higgsfield.ai";
 const receiptSchema = z.object({ request_id: z.uuid(), status_url: z.url() });
@@ -88,11 +88,9 @@ export class HiggsfieldSoul2CharacterSheetProvider implements CharacterSheetProv
   }
   async submitManualView(input: { slot: "face" | "back" | "front_source"; imageUrl: string; soulId: string | null; key: string }, signal: AbortSignal) {
     const generation = v5Generation(input.slot, input.soulId);
-    const response = await this.request("view_submit", `/${this.model}`, signal, {
-      prompt: generation.prompt, image_url: z.url().parse(input.imageUrl), batch_size: 1,
-      resolution: "720p", aspect_ratio: "4:3", enhance_prompt: true,
-      ...(input.soulId ? { custom_reference_id: z.uuid().parse(input.soulId), custom_reference_strength: 1 } : {}),
-    }, input.key);
+    if (generation.soulId) z.uuid().parse(generation.soulId);
+    const response = await this.request("view_submit", `/${this.model}`, signal,
+      v5ProviderPayload(generation, z.url().parse(input.imageUrl)), input.key);
     const result = parseProviderPayload(receiptSchema, response, "view_submit");
     validateStatusUrl(result.status_url, result.request_id);
     return { id: result.request_id, statusUrl: result.status_url, generation };

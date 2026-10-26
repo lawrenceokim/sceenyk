@@ -1,5 +1,16 @@
 # UI Context
 
+## Character V5 Face Playground alignment (2026-10-26)
+
+**Complete in source; TypeScript, focused lint and 24 offline checks passed. Manual visual/provider acceptance pending. Milestone 7 remains Not Started.** Read-only inspection confirms current Face candidate is a distinct generated R2 image, not the original accidentally shown in References. The completed request used the older simple V5 prompt plus a reused Soul ID and no seed. The user's successful Playground run used no Soul ID and seed 362102; model, 4:3, 720p, enhance_prompt=true, batch size 1 and the original source match. These are proven request differences, not proof that one parameter alone caused the retained purple background.
+
+New Face requests now use the exact successful Playground prompt supplied in the follow-up: `regenerate this image but place the character in a gray background with only the character face in it`, custom_reference_id=null, custom_reference_strength=1 and seed=362102. This supersedes the earlier proposed shoulder-up wording for this parity test. One static payload builder keeps saved intent and submitted settings aligned; new intent records promptRevision=2, actual Soul ID use, strength and seed. Existing V5 prompt/contract version 5 and workflow revision remain compatible; historical intents are never rewritten. Back/Front prompts and settings are unchanged. No separate Playground style parameter was provided; no style suffix, project-style override or AI prompt expansion is added.
+
+Manual Accept/Reject remains authoritative, with no semantic background rejection. After explicit Reject finishes, the existing Generate-again action creates a new Face candidate using corrected settings; only Face acceptance admits Back. The current candidate remains untouched. Progress now prioritizes V5 manual review over the final sheet's legacy invalidated flag and says Waiting for Face review, with instructions to open References. It does not suggest starting a worker or restart polling during review.
+
+No new migration or environment setup. No Higgsfield/OpenAI call, worker, regeneration/recovery execution, current-candidate mutation, R2 write/delete, deployment, Render/Inngest or Milestone 7 work. Product assets/approval and historical records are preserved.
+
+
 ## Character V5 manual review (2026-10-25)
 
 **Character V5 — Complete in source. V4 is superseded for new Character work. Manual migration 054 and provider/visual/runtime acceptance pending. Milestone 7 remains Not Started.**

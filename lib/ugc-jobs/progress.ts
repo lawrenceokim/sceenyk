@@ -1,5 +1,6 @@
 import { ugcStageMessages, ugcWorkerStaleMilliseconds, type UgcJobRow, type UgcJobStage,
   type UgcJobProgress, type UgcProgressStep, type UgcProgressEvent } from "./contract";
+import { v5ManualReviewProgress } from "@/lib/character-v5/progress";
 
 // Presentation only. Location is an intentional non-runnable boundary.
 const workflow = [
@@ -157,7 +158,7 @@ export function buildUgcProgress(row: UgcJobRow, evidence: UgcProgressEvidence =
       const current = manual.slot === slot;
       const accepted = manual.accepted.includes(slot) && !(current && !["ready", "approved"].includes(manual.state)) || slot === "sheet" && ["ready", "approved"].includes(manual.state);
       const label = accepted ? `${labels[slot]} ${slot === "sheet" ? "ready" : "accepted"}` : current ?
-        manual.state === "review" ? `Review ${labels[slot]}` : manual.state === "running" ?
+        manual.state === "review" ? v5ManualReviewProgress(manual)!.title : manual.state === "running" ?
           slot === "front" ? "Creating headless Front" : slot === "sheet" ? "Building Character Sheet" : `${manual.workPhase === "generating" ? "Generating" : "Preparing"} ${labels[slot]}` :
           manual.state === "failed" ? `${labels[slot]} ${manual.errorCode === "CHARACTER_CANDIDATE_REJECTED" ? "rejected" : "needs attention"}` : `Preparing ${labels[slot]}` :
             slot === "back" ? "Back waiting for Face acceptance" : slot === "front_source" ? "Front waiting for Back acceptance" :
@@ -166,11 +167,12 @@ export function buildUgcProgress(row: UgcJobRow, evidence: UgcProgressEvidence =
       return { id: slot, label, state };
     }));
   }
-  const stageLabel = manual && currentStage === "character_reference" ? "Character manual review" : regeneration ? regeneration.state === "failed" ? "Reference regeneration stopped" : executing ?
+  const manualReview = currentStage === "character_reference" && !["failed", "cancelled", "completed"].includes(row.status) ? v5ManualReviewProgress(manual) : null;
+  const stageLabel = manualReview?.title ?? (manual && currentStage === "character_reference" ? "Character manual review" : regeneration ? regeneration.state === "failed" ? "Reference regeneration stopped" : executing ?
     `Regenerating ${regeneration.type} reference` : "Waiting for generation worker" : paused && evidence.referenceReview?.available ? evidence.referenceReview.locationEligible ? "References approved" :
     evidence.referenceReview.groups.some(group => group.sheetInvalidated) ? "Regeneration requested" : "Reference review" :
     productCompletePause ? "Product reference complete" : characterCompletePause ? "Character reference complete" : workflow.find(([id]) => id === currentStage)?.[1] ??
-    (currentStage === "cost_review" || currentStage === "awaiting_confirmation" ? "Review generation cost" : "Waiting for worker");
+    (currentStage === "cost_review" || currentStage === "awaiting_confirmation" ? "Review generation cost" : "Waiting for worker"));
   let message = productCompletePause ? "Your character and product references are ready. Location generation has not started yet." :
     characterCompletePause ? "Your character reference is ready. Product Reference generation has not started yet." :
     row.pause_reason === "CHARACTER_REFERENCE_NOT_IMPLEMENTED" ? "References analyzed. Character generation is paused for local enablement." :
@@ -235,7 +237,7 @@ export function buildUgcProgress(row: UgcJobRow, evidence: UgcProgressEvidence =
     if (current) message = current.label;
   }
   const regenElapsed = evidence.referenceReview?.groups.reduce((total, group) => total + (group.execution?.elapsedMs ?? 0), 0) ?? 0;
-  if (manual && currentStage === "character_reference") message = characterSteps.find(step => step.id === manual.slot)?.label ?? "Character manual review";
+  if (manual && currentStage === "character_reference") message = manualReview?.message ?? characterSteps.find(step => step.id === manual.slot)?.label ?? "Character manual review";
   return {
     id: row.id, status: row.status, stage: row.stage, currentStage, stageLabel, message,
     createdAt: row.created_at, updatedAt: row.updated_at, startedAt: row.started_at,
