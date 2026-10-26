@@ -1,5 +1,9 @@
 # AI Workflow Rules
 
+## Current unit — Milestone 7 Location (2026-10-26)
+
+The user authorizes Location source implementation after approved Character and Product references, superseding historical Milestone 7 Not Started stop points below. Implement only one durable, manually reviewed location with editable structured plan, configurable verified provider, private R2 persistence and the existing local worker. Stop after Location approval, before storyboard. Preserve Character/Product assets, approvals, accounting and local-only Render/Inngest guards. Verification is restricted to TypeScript, focused lint and necessary static/schema checks; no provider calls, image generation, worker/jobs, browser tests, deployments or remote migrations. [Implementation/setup/acceptance](location-reference.md).
+
 ## Character V5 R2 persistence (2026-10-25)
 
 **Complete in source; manual migration 056 after 055 and manual runtime acceptance pending. Milestone 7 remains Not Started.** The latest Face is committed in R2 and matches its persisted fingerprint (4,346,748 bytes, PNG, 1536 x 1152). This supersedes the earlier zero-V5-object snapshot. Current persisted failure is candidate_insertion; the 055 ready expression reproduces PostgreSQL 22P02 because JSON extraction was not grouped before subtraction. 056 corrects only that expression, preserving ownership/leases/ACLs and all other RPC definitions. No new metadata field or data backfill. The original r2_write exception was discarded; its exact historical S3/network cause remains unknown.

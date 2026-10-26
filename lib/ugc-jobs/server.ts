@@ -8,6 +8,8 @@ import { buildUgcProgress, type UgcProgressEvidence } from "./progress";
 import { characterSheetDocumentSchema } from "@/lib/character-sheet/contract";
 import { productSheetDocumentSchema } from "@/lib/product-sheet/contract";
 import { readReferenceReviewState } from "@/lib/reference-review/state";
+import { readLocationReview } from "@/lib/location-reference/server";
+import { withLocationProgress } from "@/lib/location-reference/progress";
 import { validateUgcGenerationInput } from "./validation";
 import { ugcInputIssue, type UgcInputIssue, type UgcReadiness } from "./input-contract";
 
@@ -156,7 +158,8 @@ export async function getOwnedUgcJobProgress(input: unknown): Promise<UgcJobProg
   }
   try { evidence.referenceReview = await readReferenceReviewState(job, { character: sheet.data, product: productSheet.data }); }
   catch { throw new UgcProgressReadError("review", {}); }
-  return buildUgcProgress(job, evidence);
+  const location = await readLocationReview(job);
+  return withLocationProgress({ ...buildUgcProgress(job, evidence), locationEnabled: process.env.UGC_LOCATION_ENABLED === "1" }, location);
 }
 
 export async function requestOwnedUgcJobCancellation(input: unknown): Promise<UgcJobProgress> {

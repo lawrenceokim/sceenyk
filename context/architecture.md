@@ -1,5 +1,11 @@
 # Architecture Context
 
+## Milestone 7 — UGC Location generation (2026-10-26)
+
+Location is implemented through `lib/location-reference/`, service-only migration **063**, `/api/ugc/location` and the existing local UGC worker. [Location contract, setup and acceptance](location-reference.md) supersedes earlier dated Location-not-implemented statements. Current Character and Product approval versions are frozen as dependencies; no upstream assets, approval functions or providers are changed.
+
+The parent remains at its existing queued `location_reference` pause. An opted-in local worker discovers both approvals and creates one location root, prepares a strict OpenAI plan and waits for edits/explicit image generation. Candidate submission intent precedes one OpenAI Images request; immutable private R2 output is technically verified before review. Approval promotes the candidate without starting storyboard. Rejection fences preview/approval/writes before ETag-checked cleanup and exactly one explicitly requested replacement. Lease recovery reuses stored output; unknown paid outcomes require reconciliation. No accounting/Render/Inngest changes. See the tracker for source/static evidence versus pending manual acceptance.
+
 ## Character V5 Front framing correction (2026-10-26)
 
 Supersedes Front revision 3 framing below. New Front revision **4** retains accepted Face as its only verified private image input and provider-final-v1 direct promotion. Its simple static prompt requires exactly one front-facing character, complete shoulders/torso/legs/footwear, gray margin, no head/face and no background/floor shadow. Front alone changes from 4:3 to **2:3 portrait**, 720p, enhancement=false, batch=1; Face/Back settings and Product are unchanged. No OpenAI prompt expansion or semantic auto-review. Saved intent adds frontFraming expectations; these describe the contract, never a visual detection result.

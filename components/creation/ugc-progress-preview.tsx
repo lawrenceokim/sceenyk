@@ -30,11 +30,13 @@ export function UgcProgressPreview({ progress }: { progress: UgcProgressState })
   const { job, loading, error, checkStatus, receivedAt } = progress;
   const [clock, setClock] = useState(() => Date.now());
   const active = !!job && (isUgcJobActive(job.status) || !!job.referenceReview?.regenerating);
+  const location = job?.currentStage === "location_reference" ? job.location : undefined;
+  const locationRunning = !!location && ["running_plan", "running_image", "rejecting"].includes(location.state) && !!location.leaseExpiresAt;
   const manualReview = job?.currentStage === "character_reference" && !["failed", "cancelled", "completed"].includes(job.status) ?
     v5ManualReviewProgress(job.referenceReview?.characterV5) : null;
   const regeneration = job && !["completed", "cancelled"].includes(job.status) ?
     job.referenceReview?.groups.find(group => group.sheetInvalidated && job.currentStage === `${group.type}_reference`) : undefined;
-  const ticking = !!job && shouldPollUgcProgress(job) && (job.status === "running" || !!job.referenceReview?.regenerating);
+  const ticking = !!job && shouldPollUgcProgress(job) && (locationRunning || job.status === "running" || !!job.referenceReview?.regenerating);
   useEffect(() => {
     if (!ticking) return;
     const timer = setInterval(() => setClock(Date.now()), 1_000);
@@ -43,7 +45,7 @@ export function UgcProgressPreview({ progress }: { progress: UgcProgressState })
   // Correct local clock skew using the server observation; timestamps remain
   // authoritative. A display tick can never complete or advance any step.
   const now = job ? Date.parse(job.serverNow) + Math.max(0, clock - receivedAt) : clock;
-  const stalled = !manualReview && !!job && (job.status === "running" || !!job.referenceReview?.regenerating || regeneration?.execution?.state === "stalled") && (job.worker.state === "stalled" ||
+  const stalled = !manualReview && !!job && (locationRunning || job.status === "running" || !!job.referenceReview?.regenerating || regeneration?.execution?.state === "stalled") && (job.worker.state === "stalled" ||
     !job.worker.heartbeatAt || !job.worker.leaseExpiresAt ||
     now - Date.parse(job.worker.heartbeatAt) >= ugcWorkerStaleMilliseconds || Date.parse(job.worker.leaseExpiresAt) <= now);
   const paused = stalled || job?.paused || job?.status === "awaiting_confirmation";
@@ -52,6 +54,8 @@ export function UgcProgressPreview({ progress }: { progress: UgcProgressState })
   const productCompletePause = !!job?.paused && job.stage === "location_reference" &&
     job.steps.some(step => step.id === "product_reference" && step.state === "completed");
   const title = loading ? "Checking generation status" : !job ? "Generation status unavailable" :
+    location ? location.state === "approved" ? "Location approved" : location.state === "failed" ? "Location stopped safely" :
+      stalled ? "Waiting for generation worker" : job.message.split(".")[0] :
     manualReview ? manualReview.title : regeneration?.state === "failed" ? "Reference regeneration stopped" : stalled ? "Waiting for generation worker" :
     job.referenceReview?.regenerating ? "Regenerating reference" : regeneration ? "Waiting for generation worker" :
     job.status === "failed" ? "Generation stopped" : job.status === "cancelled" ? "Generation cancelled" :
@@ -83,6 +87,11 @@ export function UgcProgressPreview({ progress }: { progress: UgcProgressState })
                 className={`flex min-w-0 items-center gap-2 leading-5 transition-colors duration-200 motion-reduce:transition-none ${state === "waiting" ? "text-muted-foreground" : "text-foreground"}`}>
                 <StepIcon state={state} /><span className="min-w-0 break-words">{step.label}<span className="sr-only"> — {state}</span></span>
               </div>
+              {step.id === "location_reference" && !!job.locationSteps?.length && <ol className="my-1 ml-1.5 space-y-1 border-l border-border pl-4" aria-label="Location reference steps">
+                {job.locationSteps.map(item => <li key={item.id} aria-current={item.state === "active" ? "step" : undefined} className="flex items-center gap-2 text-muted-foreground">
+                  <StepIcon state={item.state} /><span>{item.label}<span className="sr-only"> — {item.state}</span></span>
+                </li>)}
+              </ol>}
               {((step.id === "character_reference" && job.characterSteps.length > 0 &&
                 (job.currentStage === "character_reference" || job.currentStage === "product_reference" || productCompletePause)) ||
                 (step.id === "product_reference" && (job.productSteps?.length ?? 0) > 0 &&

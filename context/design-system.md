@@ -1,5 +1,9 @@
 # Sceenyk design system
 
+## Milestone 7 — Location review (2026-10-26)
+
+The Location section reuses the existing bounded References surface, shared Button and field tokens, native scrolling and large contained private image preview. Plan fields have associated labels; asynchronous state uses status text; failed image loading blocks Accept. No new palette, stylesheet, typography or layout system. [Current Location contract](location-reference.md) supersedes earlier dated Milestone 7 Not Started status below; manual visual acceptance remains pending.
+
 ## Milestone 6.6 — Reference Regeneration + Review UX Correction (2026-10-24)
 
 **Milestone 6.6 — Reference Regeneration + Review UX Correction — Complete in source. Manual migration/provider/runtime/ownership/visual acceptance pending. Milestone 7 — Not Started.** This section supersedes the historical 6.5 request-only execution and exclusive Preview rules below. [Current execution, versioning and manual setup](reference-review.md#milestone-66-execution-and-review-contract).

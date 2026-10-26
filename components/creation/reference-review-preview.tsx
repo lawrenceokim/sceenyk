@@ -7,6 +7,7 @@ import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle } fr
 import type { ReferenceReviewAsset, ReferenceReviewGroup, ReferenceReviewSnapshot, ReferenceType, ReferenceView } from "@/lib/reference-review/contract";
 import type { UgcJobProgress } from "@/lib/ugc-jobs/contract";
 import { CharacterV5Review } from "./character-v5-review";
+import { LocationReferenceReview } from "./location-reference-review";
 
 type Scope = { projectId: string; jobId: string };
 async function reviewRequest(body: Record<string, unknown>, signal?: AbortSignal) {
@@ -185,8 +186,8 @@ export function ReferenceReviewPreview({ projectId, job, onSaved, checkStatus }:
           <summary className="cursor-pointer text-[11px] text-muted-foreground focus-visible:outline-2 focus-visible:outline-ring">Historical Character references (V1–V4)</summary>{content}
         </details> : content;
       })}
-      <p className="text-[11px] leading-relaxed text-muted-foreground">{review.locationEligible ?
-        "Character and product references approved. Location generation has not started yet." : "Approval saves your review. Generation remains paused."}</p>
+      <LocationReferenceReview projectId={projectId} jobId={job.id} location={job.location} eligible={review.locationEligible}
+        enabled={review.actionsAvailable && !["cancelled", "completed"].includes(job.status)} checkStatus={checkStatus} />
     </div>
     <Dialog open={!!current} onOpenChange={open => { if (!open) setSelected(null); }}>
       <DialogContent finalFocus={returnFocus} className="h-[calc(100dvh-2rem)] grid-rows-[auto_minmax(0,1fr)_auto] gap-3 overflow-hidden rounded-xl p-3 sm:max-w-[calc(100%-2rem)] sm:p-4"

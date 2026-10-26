@@ -50,6 +50,19 @@ export async function deleteR2CharacterCandidate(key: string, etag: string, sign
     { abortSignal: AbortSignal.any([signal, AbortSignal.timeout(30_000)]) });
   if (await headR2CharacterObject(key, signal)) throw new Error("CHARACTER_CANDIDATE_DELETE_UNCONFIRMED");
 }
+// Location callers must fence rejection in SQL before deleting. Only a unique
+// Location candidate key is permitted; accepted assets never enter this path.
+export async function deleteR2LocationCandidate(key: string, etag: string, signal: AbortSignal) {
+  if (!/^ugc\/[a-f0-9-]{36}\/[a-f0-9-]{36}\/[a-f0-9-]{36}\/location-v1\/[a-f0-9-]{36}\/candidates\/[a-f0-9-]{36}\.png$/.test(key) || !etag) {
+    throw new Error("LOCATION_DELETE_DENIED");
+  }
+  const { bucket, sdk } = client();
+  const object = await headR2CharacterObject(key, signal);
+  if (!object) return;
+  if (object.etag !== etag) throw new Error("LOCATION_CANDIDATE_CHANGED");
+  await sdk.send(new DeleteObjectCommand({ Bucket: bucket, Key: key }), { abortSignal: signal });
+  if (await headR2CharacterObject(key, signal)) throw new Error("LOCATION_DELETE_UNCONFIRMED");
+}
 // Shared immutable private PNG writer; Product callers map storage failures to
 // their own safe diagnostics. Character behavior and existing exports stay intact.
 export { putR2CharacterImage as putR2ReferenceImage };

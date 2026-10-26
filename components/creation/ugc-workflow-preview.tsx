@@ -8,7 +8,7 @@ export function UgcWorkflowPreview({ projectId, progress }: { projectId: string;
   const [selection, setSelection] = useState<{ context: string; view: "progress" | "references" } | null>(null);
   const job = progress.job;
   const references = !!job?.referenceReview?.available;
-  const active = !!job && (!job.paused && job.status === "running" || job.referenceReview?.regenerating);
+  const active = !!job && (!job.paused && (job.status === "running" || !!job.location) || job.referenceReview?.regenerating);
   const context = `${job?.id}:${active ? "active" : "settled"}:${job?.referenceReview?.groups.map(group => `${group.type}:${group.version}`).join(",")}`;
   const view = selection?.context === context ? selection.view : references && !active ? "references" : "progress";
   return <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-2">

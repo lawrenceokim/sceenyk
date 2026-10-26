@@ -1,5 +1,9 @@
 # Private project media
 
+## Milestone 7 — private Location assets (2026-10-26)
+
+Location candidates use immutable private `ugc/{owner}/{project}/{job}/location-v1/{location}/candidates/{candidate}.png` keys and metadata-only SQL descriptors (ETag/SHA256/size/exact dimensions). Authenticated no-store previews re-resolve owner/project/job/candidate and verify stored bytes; raw keys/provider URLs never enter the browser DTO. Approval promotes the saved private pointer without copying into Templates. Explicit rejection fences preview/Accept/writes before candidate-only ETag-checked deletion and confirmed absence; minimal hash/size audit remains. Existing Character/Product media and storage helpers retain their behavior. [Current setup, cleanup/recovery and manual checks](location-reference.md) supersedes earlier dated Location Not Started statements below. No connected R2 operation was performed during implementation.
+
 ## Milestone 6.5 — Reference Asset Review (2026-10-24)
 
 **Milestone 6 — Complete. Milestone 6.5 — Complete in source; manual 046/runtime/ownership/visual acceptance pending. Milestone 7 — Location Reference generation — Not Started.** This supersedes older stop points below. [Review UI, security, persistence and setup](reference-review.md).

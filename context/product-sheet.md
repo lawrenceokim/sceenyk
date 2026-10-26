@@ -1,5 +1,9 @@
 # Product / Prop Reference Sheet — Milestone 6
 
+## Milestone 7 continuation (2026-10-26)
+
+After current Character and Product approvals, [Location planning/generation/review](location-reference.md) is implemented in source as the next local-worker unit, superseding earlier Milestone 7 Not Started boundaries below. Product provider, prompts, views, assets and approval functions remain unchanged. Location approval pauses before storyboard; manual Location acceptance is pending.
+
 ## Milestone 6.6 — Reference Regeneration + Review UX Correction (2026-10-24)
 
 **Milestone 6.6 — Reference Regeneration + Review UX Correction — Complete in source. Manual migration/provider/runtime/ownership/visual acceptance pending. Milestone 7 — Not Started.** This section supersedes the historical 6.5 request-only execution and exclusive Preview rules below. [Current execution, versioning and manual setup](reference-review.md#milestone-66-execution-and-review-contract).

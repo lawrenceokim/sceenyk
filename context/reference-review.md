@@ -1,5 +1,9 @@
 # Reference Asset Review — Milestone 6.5
 
+## Milestone 7 — Location review added (2026-10-26)
+
+References now adds one Location after both current Character/Product approvals. Its editable structured plan, generated candidate, Accept Location and Reject and Regenerate use a separate durable service-only workflow; existing Character/Product assets and approval behavior remain unchanged. Rejected Location candidates are fenced before safe private-object deletion and one explicitly requested replacement. Accepted locations stay private and pause before storyboard. [Current contract/setup/manual checks](location-reference.md) supersedes historical Location Not Started statements below.
+
 ## Character V5 Face Playground alignment (2026-10-26)
 
 **Complete in source; TypeScript, focused lint and 24 offline checks passed. Manual visual/provider acceptance pending. Milestone 7 remains Not Started.** Read-only inspection confirms current Face candidate is a distinct generated R2 image, not the original accidentally shown in References. The completed request used the older simple V5 prompt plus a reused Soul ID and no seed. The user's successful Playground run used no Soul ID and seed 362102; model, 4:3, 720p, enhance_prompt=true, batch size 1 and the original source match. These are proven request differences, not proof that one parameter alone caused the retained purple background.

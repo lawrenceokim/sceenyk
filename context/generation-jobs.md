@@ -1,5 +1,9 @@
 # Persistent generation jobs
 
+## Milestone 7 — durable Location work (2026-10-26)
+
+Migration **063**, manually applied after 062/prerequisites, adds `ugc_locations`, `ugc_location_candidates` and `ugc_location_events` plus service-only claim/action/checkpoint helpers. The existing local worker polls this new work only with `UGC_LOCATION_ENABLED=1`; no extra worker, Render or Inngest adapter is added. The parent remains at its existing Location pause. Durable state distinguishes plan review from image review and approval; Progress/References restore it on refresh/reopen. Heartbeats/90-second leases fence stale workers; image recovery checks a unique saved R2 object before any provider submission. Unknown paid outcomes fail closed; Retry saving never clears intent or submits a replacement. Explicit Reject and Regenerate authorizes one new candidate only after fenced deletion. Approval leaves storyboard unimplemented. [Setup/recovery/manual checks](location-reference.md).
+
 ## Character V5 R2 persistence (2026-10-25)
 
 **Complete in source; manual migration 056 after 055 and manual runtime acceptance pending. Milestone 7 remains Not Started.** The latest Face is committed in R2 and matches its persisted fingerprint (4,346,748 bytes, PNG, 1536 x 1152). This supersedes the earlier zero-V5-object snapshot. Current persisted failure is candidate_insertion; the 055 ready expression reproduces PostgreSQL 22P02 because JSON extraction was not grouped before subtraction. 056 corrects only that expression, preserving ownership/leases/ACLs and all other RPC definitions. No new metadata field or data backfill. The original r2_write exception was discarded; its exact historical S3/network cause remains unknown.

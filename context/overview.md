@@ -1,5 +1,9 @@
 # Sceenyk
 
+## Milestone 7 — Location Reference (2026-10-26)
+
+UGC now continues from approved Character + Product references into one reviewed filming environment: structured location plan → owner edits → one location image → manual Accept Location or Reject and Regenerate → safe pause before storyboard. [Current Location contract/setup](location-reference.md) supersedes older dated Milestone 7 Not Started boundaries below. Existing Character/Product work, private storage, local execution and credit accounting are preserved. Source verification and manual acceptance status are tracked separately.
+
 ## Character V5 final Front direction (2026-10-26)
 
 Front revision 4 requests 2:3 portrait with complete shoulders/torso/legs/shoes, empty gray margin and explicit rejection of cropped/tightly zoomed/head-visible/shadowed results. Enhancement=false and batch=1 remain. Current new-work flow: Original → generated Face → manual Accept → final shoulders-to-shoes Front generated from accepted Face → manual Accept → Back generated from accepted Face → manual Accept → local Sheet → explicit Character approval. Front has no Back dependency, crop/mask tool, local head-removal stage or second Front review. Existing completed views can be preserved; older unfinished Front candidates require explicit rejection/regeneration rather than automatic migration/retry. Visual acceptance remains manual; only technical failures are automatic. Product workflow is unchanged. [Current recipe/setup/acceptance](character-sheet.md#character-v5-front-full-framing-2026-10-26) supersedes older Front order/source/preparation below. Migration 062 after 061/prerequisites is manual and unapplied; no provider/worker/deployment/Milestone 7 execution occurred.

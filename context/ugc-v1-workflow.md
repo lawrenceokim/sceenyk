@@ -1,5 +1,9 @@
 # UGC V1 workflow contract
 
+## Milestone 7 — Location (2026-10-26)
+
+The current implemented pipeline extends both reference approvals into OpenAI structured location planning → manual plan editing → one empty-environment image → manual Location approval → safe pause before storyboard. [Location contract](location-reference.md) is authoritative over earlier dated Location Not Started statements below. The local worker owns durable planning/image intents, recovery and rejection cleanup; each explicit regeneration creates one isolated candidate. No new credit operation, hosted execution, storyboard or video stage. Current source/static status is recorded in the tracker; manual acceptance remains pending.
+
 ## Character V5 manual review (2026-10-25)
 
 **Character V5 — Complete in source. V4 is superseded for new Character work. Manual migration 054 and provider/visual/runtime acceptance pending. Milestone 7 remains Not Started.**

@@ -1,5 +1,9 @@
 # UI Context
 
+## Milestone 7 — Location review (2026-10-26)
+
+Studio's existing References view includes a full-width Location Reference section. Review/edit the location name, description, lighting/atmosphere, visual style, camera framing and image prompt before Generate Location. A large private `object-contain` preview shows the exact candidate; a failed preview prevents Accept. Accept Location records approval; Reject and Regenerate fences/deletes the candidate then requests one replacement using the reviewed plan. No automatic visual rejection. Progress presents Preparing location, Generating location, Saving location, Waiting for review and Location approved from persisted state. Approval explicitly pauses before storyboard. Native scroll, shared Button/focus/theme tokens and Tailwind-only styling are retained. [Details and manual review](location-reference.md).
+
 ## Character V5 Front portrait review (2026-10-26)
 
 Front revision 4 requests 2:3 portrait and uses a portrait review card with object-contain; the lightbox preserves the full saved canvas. No crop/mask UI. Manual Accept/Reject remains unchanged. Helper text explicitly rejects cropped shoulders, legs or footwear, tight zoom, visible head/face and any shadow, and requires one front-facing character, full torso/outfit and gray margin. Development diagnostics show the exact saved prompt/reference/settings/dimensions/framing contract; browser preview diagnostics also record natural dimensions. Contract expectations are not visual verification. Product UI is unchanged. [Current Front contract/setup](character-sheet.md#character-v5-front-full-framing-2026-10-26).

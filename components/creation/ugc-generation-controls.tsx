@@ -39,7 +39,8 @@ export function UgcGenerationControls({ projectId, revision, localIssues, dirty,
   const current = submission?.key === revisionKey ? submission : undefined;
   const job = progress.job;
   const busyJob = !!job && isUgcJobActive(job.status);
-  const pauseLabel = job?.stage === "product_reference" ? "Character ready" : job?.stage === "character_reference" ? "References analyzed" : "Inputs validated";
+  const pauseLabel = job?.location?.state === "approved" ? "Location approved" : job?.location ? "Location review" :
+    job?.stage === "location_reference" ? "Product ready" : job?.stage === "product_reference" ? "Character ready" : job?.stage === "character_reference" ? "References analyzed" : "Inputs validated";
   const checking = eligible && !readiness || progress.loading;
   const issues = uniqueUgcIssues([
     ...(!signedIn ? [ugcInputIssue("AUTHENTICATION_REQUIRED")] : []),

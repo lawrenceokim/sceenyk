@@ -1,5 +1,9 @@
 # Code Standards
 
+## Milestone 7 — Location standards (2026-10-26)
+
+Location provider requests belong only in `lib/location-reference/provider.ts` via a narrow provider interface; long work belongs in the existing local UGC worker. Routes only authenticate, validate bounded same-origin input, enqueue transitions or serve hash-checked private images. Never trust client owner IDs, storage keys, provider settings, approvals or scene snapshots. Service-only SQL enforces scope, current upstream approval versions, optimistic review versions, lease tokens and fenced rejection. Persist intent before a paid call; do not automatically retry unknown outcomes. Technical image checks only; semantic quality remains manual. Existing Character/Product contracts and accounting remain unchanged. [Location specification](location-reference.md).
+
 ## Character V5 manual review (2026-10-25)
 
 **Character V5 — Complete in source. V4 is superseded for new Character work. Manual migration 054 and provider/visual/runtime acceptance pending. Milestone 7 remains Not Started.**
