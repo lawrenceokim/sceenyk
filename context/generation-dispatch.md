@@ -1,5 +1,9 @@
 # Durable generation dispatch
 
+## M9 dispatch boundary (2026-10-27)
+
+**Milestone 8 Complete; Milestone 9 Planned / Not Started; Milestone 10 Not Started.** Later package building must use existing persisted owner/project-scoped UGC work and the local worker, with the [M9 immutable/idempotent recovery contract](video-generation-package.md#persistence-idempotency-and-restart-recovery). Package approval is an explicit persisted pause, never an Inngest event, Render request, provider submission or financial admission. No new dispatch code/queue is implemented here. [Current restrictions](ai-workflow-rules.md#milestone-9-preparation-scope-2026-10-27) keep all Inngest/Render execution disabled and workers unstarted; the older milestone/coordinator/setup sections below are historical, not current execution instructions.
+
 ## Milestone 4 - same local UGC executor (2026-10-23)
 
 **Milestone 4 — Complete in source; manual migration/provider/runtime acceptance pending. Exact next: Milestone 5 — Character Reference Sheet generation. Not Started.** No second queue/HTTP/background path is introduced. worker:ugc uses the existing portable runner and local polling adapter, with validation → analysis → character_reference development pause. Explicit local resume/retry flags modify only eligible persisted jobs before starting that same consumer; they do not call providers directly. Durable per-role submission intent/checkpoint/reuse is described in the [provider/schema/privacy/setup contract](reference-analysis.md). Legacy outbox, financial dispatch and Inngest/Render guards remain unchanged. No process/jobs/hosted calls or deployment was run.

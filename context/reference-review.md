@@ -1,5 +1,9 @@
 # Reference Asset Review — Milestone 6.5
 
+## Planned downstream package dependencies (2026-10-27)
+
+The [M9 package specification](video-generation-package.md#fingerprinting-immutable-versions-and-staleness) plans immutable references to the exact approved Character/Product sheet, selected view and review/approval versions, including supported historical provenance. Replacement, rejection/deletion, recomposition or changed approval versions must stale downstream packages; never silently update their bindings to a newer view/sheet. Existing review/replacement/approval behavior is unchanged. No package dependency enforcement is implemented here: **M8 Complete; M9 Planned / Not Started; M10 Not Started**. [Current task restrictions](ai-workflow-rules.md#milestone-9-preparation-scope-2026-10-27) apply; older next-milestone statements below are historical.
+
 ## Milestone 7 — Location review added (2026-10-26)
 
 References adds Location after current Character/Product approvals. Generate Location runs automatic private planning/image generation; only the image is reviewed. **Accept Location / Reject and Delete** replaces Reject and Regenerate. Deletion is fenced, candidate-only and never queues generation; it clears active review state and exposes a separate Generate Location action. Retry deletion and Retry saving use provider-free storage-only claims, retain error diagnostics and preserve upstream/approved assets. Rejected images cannot be previewed/accepted. Plans remain private; the next explicit generation reuses a matching plan or creates a new revision for changed context. [Current contract/setup/checks](location-reference.md); storyboard remains paused.

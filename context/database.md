@@ -1,5 +1,11 @@
 # Development application identity
 
+## Planned M9 package persistence (2026-10-27)
+
+M9 is **Planned / Not Started**. Its [canonical persistence/reliability contract](video-generation-package.md#persistence-idempotency-and-restart-recovery) requires private immutable package JSON, package/schema/compiler versions, exact approved asset/Storyboard/input provenance, input fingerprint/content hash, successful validation receipts and separate build/approval/lifecycle audit metadata. Future provider execution/quote bindings stay separate. Store no binaries/base64, expiring media URLs or provider payloads in canonical package content.
+
+This is a requirements map, not an approved table/column/RPC design. Source contains UGC jobs, reference workflows and migration 066 Storyboards; source files do not establish the deployed catalog. Before later schema design, verify every reused table/column/function/grant and compatible manual prerequisites. Enforce owner/project/job scope, uniqueness for duplicate builds, immutable content, atomic current-input/version checks and fenced worker commits at the server/database boundary. M9 approval cannot admit paid work or change accounting. No schema/migration/backfill/live inspection or application is performed here; [current restrictions](ai-workflow-rules.md#milestone-9-preparation-scope-2026-10-27) apply. Older setup/status notes below remain dated evidence.
+
 ## Character V5 R2 persistence (2026-10-25)
 
 **Complete in source; manual migration 056 after 055 and manual runtime acceptance pending. Milestone 7 remains Not Started.** The latest Face is committed in R2 and matches its persisted fingerprint (4,346,748 bytes, PNG, 1536 x 1152). This supersedes the earlier zero-V5-object snapshot. Current persisted failure is candidate_insertion; the 055 ready expression reproduces PostgreSQL 22P02 because JSON extraction was not grouped before subtraction. 056 corrects only that expression, preserving ownership/leases/ACLs and all other RPC definitions. No new metadata field or data backfill. The original r2_write exception was discarded; its exact historical S3/network cause remains unknown.

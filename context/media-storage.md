@@ -1,5 +1,11 @@
 # Private project media
 
+## Planned M9 approved-media snapshot (2026-10-27)
+
+M9 is **Planned / Not Started**. The [canonical package](video-generation-package.md#canonical-internal-contract) will bind the exact approved Character/Product sheets and selected views plus accepted Location by immutable asset/candidate IDs, source/review/approval versions and verified content metadata. Reuse existing private R2 objects; never copy binaries into PostgreSQL, store expiring URLs as asset identity, choose a newer candidate silently or expose the privileged manifest in client/public/template DTOs. Provider access links are resolved privately only at later authorized execution and are excluded from package fingerprints.
+
+Missing/deleted/hash-mismatched objects block package eligibility; changed asset/approval versions require rebuilding/reapproval. Historical package references must not authorize upstream deletion or alter existing rejection behavior. Coordinate future retention/pinning/erasure explicitly before dependent implementation; no new retention policy, bucket or cleanup is introduced. [Current restrictions](ai-workflow-rules.md#milestone-9-preparation-scope-2026-10-27) prohibit storage/provider operations in this task. The package specification owns dependency staleness and integrity rules.
+
 ## Milestone 7 — private Location assets (2026-10-26)
 
 Location candidates keep immutable private job/root/candidate R2 keys and metadata-only descriptors. Automatic plans remain private. New returned PNG bytes are fsynced into an owner/project/job/root/candidate-bound private local recovery file before upload/checkpoint; optional `UGC_LOCATION_RECOVERY_DIR` is shared by app/worker. Retry saving verifies R2 first, then existing local bytes/proof, and reuses the same key without a provider. An uncertain PUT gets readback before failure. Reject and Delete fences preview/Accept, checks ETag and removes only that rejected R2/local candidate; confirmed cleanup clears its active pointer and never generates a replacement. Approved and upstream assets are protected. Live investigation used HEAD/LIST only and found no surviving Location object for the inspected job; no restoration/write/delete was executed. [Evidence/setup](location-reference.md).

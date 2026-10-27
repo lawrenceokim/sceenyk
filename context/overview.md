@@ -1,5 +1,11 @@
 # Sceenyk
 
+## Current UGC milestone boundary (2026-10-27)
+
+**Milestone 8 — Complete. Milestone 9 — Video Generation Package Preparation — Planned / Not Started. Milestone 10 — Actual video generation — Not Started.** These owner-directed statuses supersede older roadmap numbering and next-step recommendations; dated source/setup/acceptance notes below remain evidence, not fresh runtime verification.
+
+M9 will compile all current approved Character/Product references and sheets, Location, Storyboard, exact scene timing, dialogue/voice, action/reactions, camera, lighting, style, tone, video type and technical settings into one immutable versioned `VideoGenerationPackage`. Explicit build → validate → persist → summary → approve ends at a pause. The [canonical package specification](video-generation-package.md) owns fields, fingerprint/staleness, reliability and provider capability rules. fal.ai is the planned first adapter behind `VideoGenerationProvider`; core UGC stays provider-neutral. Its legacy integration is separate. This task prepares context only; current [execution/testing restrictions](ai-workflow-rules.md#milestone-9-preparation-scope-2026-10-27) apply.
+
 ## Storyboard timing margins and saved-dialogue repair (2026-10-27)
 
 Storyboard generation now receives separate preferred speech targets and absolute limits, 900ms action targets above the unchanged 700ms minimum, exact action/speech timing correction and a final deterministic pre-save gate. Eligible saved speech-budget failures can be explicitly edited by their owner and saved to review without OpenAI or a worker; original responses and attempts remain unchanged. Saving that repair requires new manual migration 067 after 066; prompt changes need no migration/configuration. Current records/approved assets remain untouched; Render/Inngest disabled and Milestone 9 Not Started. [Current contract and manual steps](storyboard.md#timing-targets-and-manual-dialogue-repair-2026-10-27).

@@ -1,5 +1,9 @@
 # UGC Location Reference — Milestone 7
 
+## Planned generation-package handoff (2026-10-27)
+
+The [canonical M9 contract](video-generation-package.md#canonical-internal-contract) will freeze this Location's exact accepted image descriptor/content proof, root/candidate/plan revision and approval version with the approved Storyboard. Replacements, rejection/deletion, changed context or approval versions stale derived packages and require rebuilding/reapproval; packages cannot resolve “latest Location” silently. Existing Location generation/review/recovery/deletion stays unchanged. **M8 Complete; M9 Planned / Not Started; M10 Not Started.** This task adds documentation only, without a package implementation or fresh runtime acceptance. [Current restrictions](ai-workflow-rules.md#milestone-9-preparation-scope-2026-10-27) supersede historical next-step/testing recommendations below.
+
 ## Empty claim diagnostic correction (2026-10-26)
 
 Current approved Location is intact, not being reprocessed. A no-work composite RPC result was treated as a truthy claim: null phase and candidate IDs produced UUID `22P02`, then an overly broad catch called it LOCATION_STORAGE_FAILED before any R2 request. Shared composite normalization/runnable-lease guards now stop that path, preserve real database errors, reject approved records before I/O and validate checkpoint results. The fair local queue prevents Location lane failures starving Storyboard; bounded lane backoff does not change SQL job states or paid intents. No migration/live mutation is needed. [Exact read-only evidence and safe existing-Storyboard resume](storyboard.md#location-empty-claim-starvation-correction-2026-10-26).

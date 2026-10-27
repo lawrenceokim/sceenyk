@@ -1,5 +1,15 @@
 # AI Workflow Rules
 
+## Milestone 9 preparation scope (2026-10-27)
+
+**Current task: documentation/context only. Milestone 8 — Complete; Milestone 9 — Video Generation Package Preparation — Planned / Not Started; Milestone 10 — Actual video generation — Not Started.** These statuses and restrictions supersede older current-unit/next-step/testing permissions below. Preserve dated implementation/migration/acceptance evidence without claiming a fresh runtime check or changed deployment state.
+
+Document the [canonical M9 package/provider contract](video-generation-package.md); do not implement it. No application code, migrations, provider adapters, credentials/configuration or SDK changes. fal.ai is the planned first UGC video provider; the existing legacy fal integration does not satisfy the new package contract. Provider-neutral building/validation/review/approval must end at a pause, with no video, audio/image generation, financial admission or silent provider fallback.
+
+**Render remains disabled. All Inngest execution remains disabled. The existing local UGC worker remains the development execution path, but do not start workers or execute jobs. Testing remains manual by the owner unless the owner explicitly instructs Codex to run tests.** For this documentation-only task, review source, local links, whitespace and changed-file scope only; do not run tests, lint/type/build commands, provider calls (including retrieval/capability probes), paid generation, live database/storage operations, migrations or deployments. Do not enable hosted services. Documentation commands and future acceptance checklists are not execution permission.
+
+The next implementation unit requires a separate request for M9. Even when implemented later, its builder/retry/recovery/approval paths may not invoke video providers or automatically enter M10. Package approval remains separate from existing future cost review, explicit confirmation and server/database accounting authority. Definitions, capabilities, states and persistence concerns in the package specification are planned contracts, not installed/deployed schema.
+
 ## Current correction — timing margins and explicit manual dialogue recovery (2026-10-27)
 
 Preserve validators, provider budgets, approved references and current raw responses. Add preferred-versus-absolute speech limits, >=900ms action targets, exact bounded timing correction and final deterministic validation. Provide explicit dialogue-only owner repair without automatic creative rewriting or paid/worker work. Migration 067 may be created and checked in memory only; never apply remotely. No current DB/provider/recovery-file inspection or mutation in this task, OpenAI calls, workers, live retries, deployments or Milestone 9. Run focused prompt/timing/correction/validator/TypeScript/static checks. [Source/setup/manual steps](storyboard.md#timing-targets-and-manual-dialogue-repair-2026-10-27); Render/Inngest disabled.

@@ -1,5 +1,9 @@
 # Milestone 8 — AI Storyboard and Scene-by-Scene Script Generation
 
+## Current milestone status and package handoff (2026-10-27)
+
+**Milestone 8 — Complete**, as directed by the owner for M9 preparation. Dated investigation, unapplied-migration and acceptance notes below retain their original evidence; this documentation task does not establish new runtime or deployment verification. **Milestone 9 — Planned / Not Started; Milestone 10 — Not Started.** The [canonical M9 contract](video-generation-package.md) consumes only the current explicitly approved Storyboard document/revision/version/digest plus its exact approved Character/Product/Location versions and saved settings. It preserves all scene timing, dialogue/voice, actions/reactions, camera, lighting and neutral prompt provenance without AI rewriting. Later edits or approval/version changes stale any derived package and require explicit rebuild/reapproval. Storyboard approval itself remains paused; no package builder or video execution is connected here.
+
 ## Timing targets and manual dialogue repair (2026-10-27)
 
 **Complete in source; focused verification passed, owner runtime/visual acceptance pending.** Current evidence is the owner's report: saved response 2 has 4 spoken words where the actual interval allows 2; response 1 has 4 where 3 fit and a 600ms action where >=700ms is required. No new inspection of current DB rows, recovery files or provider output is performed here. No OpenAI request, worker, live retry/mutation, remote migration or deployment. Current responses and approved assets remain preserved.

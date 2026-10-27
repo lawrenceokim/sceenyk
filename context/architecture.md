@@ -1,5 +1,13 @@
 # Architecture Context
 
+## Planned M9 package and provider boundary (2026-10-27)
+
+**Milestone 8 — Complete; Milestone 9 — Planned / Not Started; Milestone 10 — Not Started.** The [canonical M9 specification](video-generation-package.md) owns the planned `VideoGenerationPackage`, exact approved-version manifest, deterministic input fingerprint/content hash, stale-input rules, capability matrix and immutable review/approval lifecycle. This section supersedes historical UGC package/video milestone numbering and unselected-provider statements; dated implementation evidence remains intact.
+
+Planned boundary: approved owned Storyboard/assets/settings → deterministic builder and validator → private immutable package/version → owner summary/approval → pause. Long work will use existing local UGC job/lease services. Future execution selects a `VideoGenerationProvider` adapter that checks neutral requirements and translates the package into its own API fields. fal.ai is planned first; Higgsfield, Kling, Runway, Luma or other adapters must not require changing Storyboard or package business logic. Model IDs, limits, capabilities and provider settings stay in adapter/configuration code. Unsupported/unverified required capabilities block a paid request; no silent fallback. Future execution/quote/provider configuration stays separate from canonical creative content.
+
+The inspected legacy `lib/video-ai/provider.ts` directly exports fal operations; it is not the planned UGC package adapter. Existing legacy fal/Gemini/voice/financial behavior is preserved. No package handler/schema/interface implementation exists from this task. [Current restrictions](ai-workflow-rules.md#milestone-9-preparation-scope-2026-10-27) keep Render/Inngest disabled, local execution manual and M10 unstarted; older hosted-coordinator recipes below do not authorize execution.
+
 ## Storyboard timing targets and explicit manual recovery (2026-10-27)
 
 Planning version 2 separates 75%-of-absolute-limit preferred speech targets from unchanged validator ceilings, including per-line pause clipping and aggregate targets/maxima. Actions target 900ms, retain the 700ms minimum, and consume reserved time before dialogue. The one correction now covers speech/action/scene timing with numeric original intervals/counts, targets, minima and available slack. `finalizeStoryboard` explicitly revalidates canonical generated/recovered output immediately before ready persistence; no invalid output or preferred-target bypass is admitted.
@@ -1011,6 +1019,8 @@ Protected server operations derive the user from verified Clerk sessions. `ensur
 
 ### Planned production pipeline
 
+This numbered pipeline is the legacy/Freestyle architecture reference. The current UGC preparation flow and M8–M10 numbering are defined by the [M9 contract](video-generation-package.md#workflow-and-failure-states); its package approval pauses before later cost-confirmed video execution.
+
 1. Accept the user's prompt, supported creation type/options, and optional ready media references.
 2. Verify Clerk authentication; validate inputs and project ownership/access.
 3. Calculate server-authoritative free-generation eligibility or credit entitlement/cost and reserve capacity according to the approved policy.
@@ -1048,9 +1058,9 @@ Retry recoverable stages without rerunning completed paid work. Bound retries, c
 
 Application → Sceenyk generation service → provider interface → provider adapter.
 
-For example, a future `generateVideo()` contract delegates to `lib/video-ai/providers/runway.ts`; pages and shared UI do not depend on that provider's payloads. Apply the same principle to language/multimodal models, voice, storage, and payments. Validate adapter outputs into shared Sceenyk contracts, keep keys server-side, and record external job references.
+For UGC, use the planned [VideoGenerationProvider boundary](video-generation-package.md#provider-interface-and-configuration) over one canonical `VideoGenerationPackage`, with fal.ai as the first future adapter. Pages, Storyboard and package business logic must not depend on a provider's payloads. Apply the same principle to language/multimodal models, voice, storage, and payments. Validate adapter outputs into shared Sceenyk contracts, keep keys server-side, and record external job references separately from immutable package content.
 
-Inngest is the implemented workflow coordinator. Render/Docker packaging and HMAC-authenticated HTTP preparation are implemented for manual hosting above; deployed acceptance remains separate. Existing durable steps call the same private-source processor and resume from persisted cache/lease state. Final rendering-service contracts/callbacks remain future decisions. Do not run heavy FFmpeg/Remotion work in lightweight web requests.
+Inngest and Render/Docker/HMAC media execution remain legacy implemented boundaries with dated acceptance evidence above. Current UGC uses the local worker path, with Render and all Inngest execution disabled under the [current policy](ai-workflow-rules.md#milestone-9-preparation-scope-2026-10-27). Moving hosting later must preserve shared domain services and requires separate authorization. Do not run heavy FFmpeg/Remotion work in lightweight web requests.
 
 ## Payments and Credits
 

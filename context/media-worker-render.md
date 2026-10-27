@@ -1,5 +1,11 @@
 # Render media-preparation worker
 
+## Current M9 worker boundary (2026-10-27)
+
+M9 package preparation is **Planned / Not Started**, with [one canonical provider-neutral contract](video-generation-package.md) and no video/rendering step. M8 is Complete; M10 actual video generation is Not Started. Later authorized package work belongs in the existing local UGC worker/shared business services; package building must not use Render media endpoints, Inngest, FFmpeg/Remotion, voice synthesis or a video provider. fal.ai is the first planned video adapter for later execution, separate from the legacy fal/media path. Hosting must remain replaceable without moving package business logic into an execution adapter.
+
+[Current restrictions](ai-workflow-rules.md#milestone-9-preparation-scope-2026-10-27) keep Render/Inngest disabled and runtime testing manual. This task starts no worker/job, makes no provider call and changes no deployment/configuration. Commands and historical acceptance below remain reference material only.
+
 
 ## Milestone 5 — Character Sheet (2026-10-23)
 

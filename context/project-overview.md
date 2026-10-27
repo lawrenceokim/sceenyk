@@ -1,5 +1,9 @@
 # Sceenyk project overview
 
+## Current preparation roadmap (2026-10-27)
+
+**Milestone 8 — Complete; Milestone 9 — Planned / Not Started; Milestone 10 — Not Started.** Current product direction is in [overview.md](overview.md#current-ugc-milestone-boundary-2026-10-27); older milestone/next-step statements below are historical. M9 prepares a canonical approved-asset/scene generation package, requires explicit package approval and pauses before any video execution. fal.ai is the planned first UGC video adapter, with future providers replaceable through `VideoGenerationProvider`. The [package specification](video-generation-package.md) is the single contract for this plan; [current restrictions](ai-workflow-rules.md#milestone-9-preparation-scope-2026-10-27) preserve documentation-only scope, manual testing and local execution with Render/Inngest disabled. No implementation or fresh runtime acceptance is claimed.
+
 ## Character V5 manual review (2026-10-25)
 
 **Character V5 — Complete in source. V4 is superseded for new Character work. Manual migration 054 and provider/visual/runtime acceptance pending. Milestone 7 remains Not Started.**

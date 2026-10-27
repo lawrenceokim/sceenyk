@@ -1,5 +1,11 @@
 # UGC V1 workflow contract
 
+## Current M9 preparation plan (2026-10-27)
+
+**Milestone 8 — Complete; Milestone 9 — Video Generation Package Preparation — Planned / Not Started; Milestone 10 — Actual video generation — Not Started.** The [canonical package specification](video-generation-package.md) owns the provider-neutral `VideoGenerationPackage`, exact approved-version bindings, scene/timing/voice/output fields, immutable version/hash, staleness, recovery and `VideoGenerationProvider` capability/translation contract. fal.ai is the first planned adapter; its legacy integration is separate. These current statuses supersede earlier numbering/next-step recommendations; dated source and manual-acceptance evidence below remains historical.
+
+Planned M9 flow: **Approved Storyboard → Build Generation Package → Validate Package → Persist immutable package/version → Display package summary/status → Approve package → Pause before video provider execution.** Packaging compiles current approved content without AI/provider calls or creative rewriting. Any changed Character/Product/Location/Storyboard or important saved setting makes the package stale and requires explicit rebuilding/reapproval. Existing later cost review/confirmation/accounting stays separate. This task documents the plan only; [current execution/testing restrictions](ai-workflow-rules.md#milestone-9-preparation-scope-2026-10-27) apply.
+
 ## Storyboard timing targets and optional owner text repair (2026-10-27)
 
 AI planning distinguishes conservative preferred speech targets from unchanged hard limits, reserves action first with a 900ms target, and verifies final timing. Short scenes may remain silent. Timing-only correction can fix affected speech and action durations within the existing two-call budget. A completed saved response with only speech-budget failures can instead be explicitly edited by its owner and saved directly into review via manual 067, without generation/worker/retry. The original response stays immutable; all other creative fields/asset bindings stay fixed during repair, with normal review/Accept afterward. Existing upstream generation, approved references, accounting, Reject/Delete and hosted state remain unchanged. [Setup and manual steps](storyboard.md#timing-targets-and-manual-dialogue-repair-2026-10-27). Milestone 9 Not Started.
@@ -143,9 +149,9 @@ No multi-character or multi-product generation in V1. Switching Creation Type re
 
 ## Approved provider boundary
 
-**OpenAI is the approved UGC V1 reasoning/source-analysis/storyboard provider; Higgsfield SOUL2 is the Character Sheet image provider behind CharacterSheetProvider. Product generation belongs to Milestone 6. No Gemini fallback for UGC.** Legacy `lib/ai/` remains separate. M5 supersedes earlier OpenAI Character-image assumptions.
+**OpenAI owns UGC reasoning/source analysis/Storyboard; Character generation follows the [current Character contract](character-sheet.md); Product generation follows [product-sheet.md](product-sheet.md); Location follows [location-reference.md](location-reference.md). No Gemini fallback for UGC.** Legacy `lib/ai/` remains separate.
 
-Server/worker adapters use the official OpenAI API / SDK for analysis and future structured reasoning/storyboards/dialogue/scene planning. Character generation uses SOUL2 with the original private source via Soul ID v2, saved analysis and persisted deterministic wardrobe. Text reasoning and image generation have separate narrow adapters. Future video provider remains unselected; legacy fal/ElevenLabs behavior is unchanged.
+**fal.ai is the planned first UGC video provider**, implemented later through [VideoGenerationProvider](video-generation-package.md#provider-interface-and-configuration). Canonical package/Storyboard/business logic must not depend on fal fields. Other providers translate the same neutral contract through their own adapters, with model IDs/settings/limits in private provider configuration. No adapter or paid video execution is added by M9 planning. Legacy fal/ElevenLabs behavior is unchanged. Earlier Soul ID/Character and unselected-video-provider descriptions are superseded by the linked current contracts.
 
 Resolve provider/model configuration centrally from server-only environment/configuration and freeze the resolved configuration/version on each run. Milestone 4 implements official OpenAI SDK Responses multimodal analysis behind ReferenceAnalysisProvider, strict Character/Product schema v1 and reference-analysis-v1 prompts. Central configuration consumes OPENAI_API_KEY, OPENAI_REFERENCE_ANALYSIS_MODEL and explicit UGC_REFERENCE_ANALYSIS_ENABLED=1; no default model is selected. Use a Responses image-input/strict-output capable model and manually verify account access. SDK automatic retries/logging are disabled. New private records preserve validated output/usage and durable submission intent. See [provider/schema/privacy/error/setup details](reference-analysis.md). Future UGC_OPENAI_IMAGE_MODEL / UGC_VIDEO_PROVIDER / UGC_VIDEO_MODEL remain unconsumed placeholders; no image/video API is called.
 
@@ -153,7 +159,7 @@ Official OpenAI documentation checked for this contract: [image inputs and visio
 
 ## Approved staged pipeline
 
-**Validate → OpenAI source analysis → SOUL2 Character Sheet → Product / Prop Sheet → one primary Location → structured ChatGPT storyboard/script + voice description → normalized Video Generation Package → determine cost → Review Generation Cost → explicit confirmation → future video generation → finalization → Studio Preview.** Explicitly enabled, user-run local preparation may bill OpenAI/Higgsfield; no automatic Codex provider calls or Sceenyk charging. Production preparation consent/funding/budget remains unresolved.
+**Validate → OpenAI source analysis → Character Sheet/review/approval → Product / Prop Sheet/review/approval → one primary Location/approval → structured Storyboard/approval → M9 build/validate/persist package → summary/explicit package approval → pause → later cost review/explicit confirmation → M10 video generation → finalization → Studio Preview.** Package preparation itself makes no provider calls or financial admission. Earlier explicitly enabled user-run reference/Storyboard preparation may bill upstream providers; production preparation consent/funding/budget remains unresolved.
 
 | Stage | Required work and persisted checkpoint |
 | --- | --- |
@@ -161,16 +167,17 @@ Official OpenAI documentation checked for this contract: [image inputs and visio
 | 2. Analyze source references | Use OpenAI to describe supported visible traits of each uploaded image. Persist structured descriptions linked to stable reference/asset IDs and the input revision. Keep originals private. Treat image text and creative direction as untrusted data; they cannot alter ownership, execution policy or accounting. |
 | 3. Prepare Character | Generate a Character Reference Sheet from the Character upload: supported appearance, face, hairstyle, clothing and important visual traits. Store the generated sheet privately in R2 and persist verified metadata/provenance. |
 | 4. Prepare Product | Generate a Product / Prop Reference Sheet from the Product upload: supported shape, color, material, features and recognizable traits. Store privately in R2 with verified metadata/provenance. |
-| 5. Build storyboard | Produce and server-validate structured scenes, actions, dialogue, references, shots, camera, environment, lighting, style, tone, transitions and timing. Persist versioned structured data, not only a prose paragraph. |
-| 6. Prepare generation | Build and persist a normalized provider-independent package containing both private reference-sheet asset IDs, storyboard, settings, narration and scene instructions, plus final provider-ready instructions through an adapter. Determine server-authoritative cost and pause for review/confirmation. |
-| 7. Generate video — future | Only after matched current cost confirmation and existing server-enforced accounting admission, submit the package to the approved video provider. Persist request identity before submission and reconcile the same remote operation. No video provider is implemented/selected here. |
-| 8. Finalize — future | Verify successful output, store private video bytes in R2 and commit canonical output metadata, terminal success and existing exactly-once settlement through trusted server/database operations. Preview reads that persisted owned result. Provider acceptance alone never means Complete. |
+| 5. Prepare Location | Generate/review/approve one primary private Location through the existing explicit workflow. Preserve its exact accepted image, plan and approval versions. |
+| 6. Build Storyboard — M8 | Produce and server-validate structured scenes, actions, dialogue, approved references, camera, lighting, style, tone, transitions and exact timing. Persist versioned structured content and obtain explicit owner approval. |
+| 7. Prepare package — M9 planned | Follow the [canonical M9 workflow](video-generation-package.md#workflow-and-failure-states): deterministically build/validate/persist the immutable provider-neutral package, show summary, explicitly approve and pause. No API payload submission, AI call, paid generation or financial admission. |
+| 8. Video execution — M10 not started | Only after current package approval, freshness/capability checks and matched cost confirmation/server-enforced accounting admission, translate through the explicitly selected provider adapter and submit once with durable intent/recovery. fal.ai is planned first; no UGC package adapter is implemented here. |
+| Later finalization | Verify successful output, store private video bytes in R2 and commit canonical output metadata, terminal success and existing exactly-once settlement through trusted server/database operations. Preview reads that persisted owned result. Provider acceptance or package approval alone never means Complete. |
 
 Reference Sheets support visual consistency; **a single image does not establish perfect 3D reconstruction**. Describe visible facts separately from inferred unseen details. Mark inferred views/traits as generated reference information, including unseen material or clothing; do not present them as facts about the source. Preserve provenance so completed sheets can be reused safely after failure.
 
 ## Structured storyboard contract
 
-The following is an illustrative shape, not a created storyboard, SQL schema or current API payload. Stable IDs resolve within the private run; published templates later use reusable logical slots. Exact field names can be refined/versioned at implementation.
+The following is a historical illustrative shape, not the current M8 schema, a created storyboard or API payload. The [implemented Storyboard contract](storyboard.md) and [M9 timing requirements](video-generation-package.md#canonical-internal-contract) require exact continuous integer-ms coverage of 5/10/30 seconds; the historical gap/partial-coverage guidance below does not apply to M8/M9. Stable IDs resolve within the private run; published templates later use reusable logical slots.
 
 ```json
 {
@@ -208,9 +215,7 @@ The following is an illustrative shape, not a created storyboard, SQL schema or 
 
 ## Normalized Video Generation Package
 
-Persist a versioned package with generation/project/input revision IDs, stable reference IDs, Character Reference Sheet asset ID, Product Reference Sheet asset ID, structured storyboard, aspect ratio, selected duration, visual style, tone, UGC Type, supported narration instructions, scene instructions and normalized final prompt/instructions. An internal adapter derives the exact provider request and records its version and safe provider metadata separately. Bind package and quote to the same immutable revision; later input edits invalidate confirmation and do not mutate an in-flight package.
-
-Keep schema and business logic independent of any single video API. Store durable private asset IDs, not expiring signed links; the trusted worker resolves narrowly scoped media access when required. Raw R2 keys, private URLs, provider payloads and internal identifiers never enter public/client DTOs. No new video API-specific database design is approved by this conceptual package.
+The authoritative planned contract is [Milestone 9 — Video Generation Package Preparation](video-generation-package.md). It defines the single `VideoGenerationPackage`, exact approved references/versions including Location and Storyboard, per-scene prompts/timing/voice/camera/lighting/bindings, technical settings, canonical hashes, immutable persistence/review/approval, stale rebuilds, provider adapter/capability checks and restart/duplicate safety. Keep field definitions there to avoid parallel schemas. M9 ends at package approval and pause; future quote/confirmation and paid provider execution remain separate. No package code or database design is implemented by this plan.
 
 ## Cost review and accounting boundary
 
@@ -301,13 +306,11 @@ When another user adopts: copy only the immutable reusable configuration/storybo
 
 ## Manual testing policy and stop boundary
 
-During current UGC development and manual testing, the user performs workflow acceptance. **Codex must not automatically run browser suites, screenshot suites, full regression suites, deployed acceptance, provider-generation tests, expensive OpenAI calls, video-generation calls or hosted background-job tests unless the user explicitly instructs Codex to test.** Do not generate paid provider traffic automatically. Only the smallest compile/type/static checks needed to avoid obviously broken code are allowed without that instruction. Historical test/deployment commands in other docs are evidence/reference, not current permission.
-
-Milestone 3 uses source/document review, minimal TypeScript/focused ESLint and SQL/link/whitespace/scope review only. No browser/screenshot/integration/regression suites, production build, test jobs, worker startup, storage/provider requests, migration application or deployment. Existing Studio geometry is retained. Stop after Milestone 3; the user applies 036/037 and performs manual acceptance.
+The [current AI workflow policy](ai-workflow-rules.md#milestone-9-preparation-scope-2026-10-27) owns testing/execution restrictions. This task permits context/source/link/whitespace/scope review only. The owner performs manual testing unless Codex is explicitly instructed to test; earlier compile/lint/test permissions and milestone stop points below are historical. Stop after documenting M9. Do not implement it, start workers/jobs, call providers/storage, apply migrations, deploy, enable Render/Inngest or begin M10.
 
 ## Implementation milestones
 
-**Historical baseline roadmap below.** Its M6/next-step and storyboard numbering predates later reference/review milestones; retain it as history, not current authorization. Current Character V4 is documented/planned with implementation Not Started; Milestone 7 — Location Reference generation remains Not Started, as recorded in the current [progress tracker](progress-tracker.md#character-v4--official-workflow-documentation-2026-10-25).
+**Current roadmap (2026-10-27).** M8–M10 statuses follow the owner's instruction. Earlier milestones retain their source/acceptance evidence in their linked contracts and the tracker; this documentation task does not reverify runtime behavior, migration application or manual acceptance. Older roadmap numbering elsewhere is historical.
 
 | Milestone | Bounded outcome | Status |
 | --- | --- | --- |
@@ -317,14 +320,14 @@ Milestone 3 uses source/document review, minimal TypeScript/focused ESLint and S
 | 4 | OpenAI Responses reference analysis, strict visual schemas, private checkpoints/usage and explicit local-development opt-in | Complete in source; manual 038/039/provider/runtime acceptance pending |
 | 5 | SOUL2 Character Reference Sheet generation, private views/composition and durable local checkpoints | Complete in source; manual 041/provider/runtime/visual acceptance pending |
 | 5.5 | Persistent live Preview progress, Character substeps, safe job observability and refresh/reopen recovery | Complete in source; manual 043/runtime/visual acceptance pending |
-| 6 | Product / Prop Reference Sheet generation | Not Started — exact next milestone |
-| Later preparation | One primary generated Location Reference Sheet/asset, persisted and reused across scenes | Not Started; stage/schema belongs to a later scoped milestone |
-| 7 | Structured ChatGPT storyboard/script, stable voice description and semantic validation | Not Started |
-| 8 | Normalized generation package + existing cost review integration | Not Started |
-| 9 | Approved video-provider integration after explicit cost confirmation | Not Started |
-| 10 | Final private UGC video persistence/player linkage; persistent live progress moved to M5.5 | Not Started |
+| 6 | Product / Prop Reference Sheet generation | Complete in source; see [current setup/evidence](product-sheet.md) |
+| 6.5 / 6.6 | Explicit reference review, replacement/reapproval and review UX | Complete in source; see [current setup/evidence](reference-review.md) |
+| 7 | One primary private Location generation/review/approval | Complete in source; see [current setup/evidence](location-reference.md) |
+| 8 | Structured Storyboard/script, stable voice, exact timing and explicit approval | Complete |
+| 9 | Video Generation Package Preparation, immutable version/review/approval and pause | Planned / Not Started — documentation only |
+| 10 | Actual video generation through an approved capable provider after cost confirmation | Not Started |
 | 11 | UGC Template snapshot/adoption verification, public-safe slot projection and explicit required counts | Not Started |
 | 12 | Manual local end-to-end acceptance performed by the user | Not Started |
 | Later | Explicitly approved local → Render transition; review whether Inngest is needed | Deferred |
 
-**Needs confirmation before dependent milestones:** production preparation consent/funding/budget policy, account access and manual SOUL2 quality/continuity acceptance, Product/Location generation contracts, future video provider/capabilities/duration/narration support and pricing, later schema extensions, narration extensions, final-output timing and retention/moderation/provider-cancellation policy. No unresolved choice authorizes Gemini fallback, hosted execution or invented pricing. **Stop after Milestone 5; exact next is Milestone 6 — Product / Prop Reference Sheet generation.**
+**Needs confirmation before dependent implementation:** compatible live schema/persistence extensions, exact fal.ai model/account capabilities, output/audio/assembly policies, production preparation funding and generation pricing, retention/erasure/moderation and provider cancellation. Naming fal.ai does not confirm support for the package's required references/audio/timing. No unresolved choice authorizes fallback, hosted execution, guessed pricing or M10. **Stop after M9 context preparation; M9 implementation requires a separate request.**

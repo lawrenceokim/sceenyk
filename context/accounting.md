@@ -1,5 +1,9 @@
 # Generation accounting contract
 
+## M9 preparation has no financial admission (2026-10-27)
+
+The planned [M9 package workflow](video-generation-package.md#workflow-and-failure-states) builds/validates/persists/reviews an immutable package and pauses after explicit approval. Build/rebuild/retry/recovery/approval must not reserve, consume or restore credits/free allowance, trigger a provider request, or complete/settle the UGC run. M9 is Planned / Not Started; M10 is Not Started. Later video execution still requires current capabilities, a matched [server quote/explicit confirmation](pricing.md#planned-m9-package-versus-later-quote-2026-10-27) and existing server/database admission/idempotency/settlement authority. No accounting schema, balances, ledger rules or financial behavior change in this documentation task.
+
 ## Approved Settings accounting presentation (2026-10-16)
 
 **Documentation only; relocation Not Started.** Settings → Credits & Billing becomes the main private view of authoritative paid AI-credit balance, reserved credits where useful, remaining two-generation lifetime free allowance and existing safe credit activity/purchase history. Remove persistent/general paid-credit balances from normal dashboard/header/navbar/landing chrome. Retain contextual quote cost, required/available credits, insufficient-credit warnings, top-up and payment-completion information. Moving the main view changes no server admission, reservation/consumption/restoration, purchase grant, credit expiry or ledger rule.
