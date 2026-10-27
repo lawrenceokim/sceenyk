@@ -2,9 +2,11 @@
 
 ## Planned M10 delivery boundary (2026-10-27)
 
-M10 is Planned / Not Started; M9 Complete/approved. Later explicit cost-authorized execution should use persisted owner/project/package-scoped scene operations on the existing local worker, with atomic paid intent and idempotent claims/checkpoints. Provider callbacks/polling normalize observations through adapters; verified persisted state alone drives progress/review/completion. No Inngest outbox/event, Render request or new transport is introduced by this plan. [M10 recovery and state contract](final-video-generation.md#failure-and-restart-recovery); package-only mode must remain package-only. No dispatch/worker/provider/test operation is run now.
+The [automatic M10 plan](final-video-generation.md#automatic-scene-processing-and-lipsyncprovider) runs on the existing local worker after one admitted Generate Final Video action. Persist scoped operation identifiers for independent video, voice, lip-sync and storage/composition checkpoints; workers reload exact owner/project/package/scene/profile/version/authority rather than trust client payloads. No provider management or intermediate scene/voice/alignment/stitch request is needed from the user.
 
-The selected [dedicated voice plan](voice-generation.md) adds future local profile design/identity and independent dialogue-segment work behind VoiceGenerationProvider, with ElevenLabs first. Synchronous synthesis does not imply an asynchronous provider job. Dispatch only persisted scoped operation identifiers; reload authoritative package/profile/text/window/authorization in the worker. Provider request IDs/results are observations, not client completion claims. Preserve video and other successful audio on failure; neither retry/deletion nor uncertain callbacks may enqueue another paid request. Current [documentation scope](ai-workflow-rules.md#elevenlabs-voice-strategy-documentation-scope-2026-10-27) enables no transport/worker/provider work; Render/Inngest remain disabled.
+Callbacks/polling normalize observations through adapters and fenced private state; they do not authorize billing/final completion. Reuse known request/results and private outputs on restart, never resubmit an uncertain paid intent. Required stage capabilities and finite stage/execution cost authority gate every new paid request. M9 package-only mode remains isolated.
+
+No Inngest event/outbox, Render request, transport or worker is introduced/run by this documentation. Render/Inngest remain disabled, the existing local path is retained, and all implementations/runtime/provider/manual acceptance remain pending under [current scope](ai-workflow-rules.md#automated-m10-documentation-scope-2026-10-27).
 
 ## M9 dispatch boundary (2026-10-27)
 

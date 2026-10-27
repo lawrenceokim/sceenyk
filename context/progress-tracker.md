@@ -1,6 +1,20 @@
 # Progress Tracker
 
+## Milestone 10 automatic execution architecture (2026-10-27)
+
+**Documentation architecture finalization — Complete. M9 — Complete and approved. M10 — Planned / Not Started.** Video provider strategy resolved — fal.ai. Voice strategy resolved — ElevenLabs. Lip-sync strategy resolved — automatic internal stage behind LipSyncProvider with a fal.ai-compatible adapter/model planned. Final composition strategy resolved — FFmpeg. All adapters/stages/source execution remain unimplemented; runtime/provider/manual acceptance Pending. Exact model/account support is not established by selecting these strategies.
+
+[Canonical M10](final-video-generation.md#automatic-scene-processing-and-lipsyncprovider) now defines **Approved Generation Package → Generate Final Video → automatic visual/speech/lip-sync/private scene processing → automatic FFmpeg final composition/validation → Final Video review**. Internal VideoGenerationProvider, VoiceGenerationProvider and LipSyncProvider isolate vendor fields/configuration. One automatically committed CharacterVoiceProfile is reused across scenes. Truly silent scenes skip voice/sync; required narration is retained without invented mouth performance. Normal V1 has no provider selection, manual voice-preview/profile approval, per-scene review/acceptance, alignment/lip-sync or stitch action. Final Approve or Reject and Delete is the review boundary; rejection never triggers generation.
+
+The [voice contract](voice-generation.md) and relevant product/architecture/workflow/package/Storyboard/jobs/worker/storage/database/cost/security/standards/UI docs are synchronized. Independent video/voice/lip-sync/storage/readiness states, fingerprints/attempt budgets/paid intents and exact private source/result lineage preserve upstream and other-scene work. Unknown paid outcomes recover existing IDs/results without automatic resubmission. Internal technical readiness replaces the earlier accepted-scene requirement; exact final manifests, required speech/sync/audio and current final approval remain completion gates.
+
+Changes are documentation only. No app code, migrations, provider/API/live database/storage requests, workers/jobs/media processing, tests/lint/type/build/browser suites, environment/dependency/credential changes, deployment or hosted setting change. Render/Inngest remain disabled; existing local worker retained and not started. Documentation review passed: **20 existing context documents only, all 61 added local references/anchors resolve, no pre-existing heading removed, no new table-format gaps/conflict markers and clean `git diff --check`**. Historical records below retain dated evidence and do not reintroduce old manual M10 gates.
+
+Files updated: `context/{final-video-generation,voice-generation,overview,project-overview,architecture,ugc-v1-workflow,video-generation-package,storyboard,generation-jobs,generation-dispatch,media-worker-render,database,media-storage,pricing,accounting,ai-workflow-rules,code-standards,ui-context,design-system,progress-tracker}.md`. No new document, `.gitignore`, application/configuration or migration file changed.
+
 ## Milestone 10 ElevenLabs voice strategy preparation (2026-10-27)
+
+Historical strategy-preparation snapshot. The newer automatic execution decision above supersedes its scene/voice-selection review proposals; the historical checks/file counts below remain dated evidence, not current manual V1 gates.
 
 **Documentation preparation — Complete. M9 — Complete and approved. M10 — Planned / Not Started; previously blocked by voice strategy. Voice strategy — Resolved: ElevenLabs selected. ElevenLabs UGC implementation, fal.ai UGC video adapter and final composition — Planned / Not Started. Runtime/provider/manual acceptance — Pending.** This supersedes the historical strategy block below without claiming source implementation or new live acceptance.
 
@@ -2211,7 +2225,7 @@ This table describes the dashboard unit. Existing landing and creation page cont
 
 ## Next Up
 
-**Next eligible work: separately authorized M10 implementation**, following the [canonical plan](final-video-generation.md) and resolving provider/model/account capabilities, neutral output/timing/transition/audio profiles, scene review/cleanup/attempt budgets, cost/accounting mapping and actual catalog-compatible persistence before dependent execution. M9 is Complete/approved; M10 remains Planned / Not Started. This recommendation authorizes no application work, migration, providers, workers/live jobs, tests, deployments or hosted enabling.
+**Next eligible work: separately authorized automated M10 implementation**, following [the canonical automatic pipeline](final-video-generation.md#automatic-scene-processing-and-lipsyncprovider). All strategies are resolved; verify exact video/voice/lip-sync models/accounts, output/timing/guide/mix policies, finite budgets/accounting and actual catalog-compatible persistence. No routine per-scene or voice/alignment/stitch gate. M9 Complete/approved; M10 Planned / Not Started; runtime/provider/manual acceptance Pending. This recommendation authorizes no code/schema/provider/worker/test/deployment or hosted enabling.
 
 **Historical redesign recommendation:** Phase 1 — shared public/workspace shells and navigation architecture. Earlier roadmap/recommendations below retain historical evidence and do not replace the current M9 boundary.
 
