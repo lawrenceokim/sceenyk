@@ -1,16 +1,20 @@
 # AI Workflow Rules
 
+## Milestone 10 documentation scope (2026-10-27)
+
+**Current task: documentation/context only. M9 Complete and approved per owner confirmation; M10 Final Video Generation Planned / Not Started.** [Canonical M10 plan](final-video-generation.md) owns future execution/review/recovery/cost/assembly rules; M9's immutable package and current pause remain unchanged. Earlier M9 implementation/test permissions below are historical, not authorization for this task.
+
+Do not implement M10, create/change/apply migrations, call providers (including retrieval/capability probes), generate video/audio/images, start workers/live jobs, inspect/mutate live database/storage, run tests/lint/type/build/browser/provider checks, deploy, change credentials/runtime environment/dependencies, or enable hosted services. **Render remains disabled; all local/hosted Inngest execution remains disabled; the existing local UGC worker remains the future development execution path.** Only repository/source/context/link/whitespace/diff review and documentation edits are permitted. A one-line `.gitignore` allowlist for the new document is source-control housekeeping, not runtime configuration.
+
+Future implementation and any paid test need separate explicit authorization. fal.ai is the first planned replaceable adapter; no silent fallback. Required capabilities/audio/output and financial admission must be resolved before paid submission. Scene/final rejection cannot queue replacement generation. Setup and acceptance commands in historical docs remain reference only; no current acceptance or specific approved package ID is inferred from source.
+
 ## Current authorization — M9 implementation (2026-10-27)
 
-The owner authorized M9 implementation through immutable package build/validation/save/review/explicit approval and pause. **M8 Complete; M9 Complete in source with manual 068/runtime acceptance pending; M10 Not Started.** [Current contract, files and manual acceptance](video-generation-package.md) supersede the earlier documentation-only scope and older milestone stop points below. Stop after M9 source delivery; no dependent M10 work is authorized.
+Historical authorization/evidence for the completed M9 implementation. The owner now confirms M9 Complete and approved; current work is [M10 documentation only](#milestone-10-documentation-scope-2026-10-27). Keep M9 source behavior intact and do not reuse its earlier implementation/check permissions to begin M10.
 
 ## Milestone 9 preparation scope (2026-10-27)
 
-M9 canonical generation logic is provider-independent. `VideoGenerationProvider` and neutral requirements are implemented as contracts only; provider capability matching, concrete adapters, payload/model selection and all paid/network provider execution belong to M10. fal.ai remains planned first. No silent fallback, creative rewriting, upstream regeneration, financial admission or parent video-stage advancement may occur from package prepare/retry/recovery/approval/deletion.
-
-**Render remains disabled. All Inngest execution remains disabled. The existing local UGC worker remains the development path; do not start a worker or live job automatically.** The owner performs manual runtime/visual/provider acceptance. This implementation explicitly authorizes only focused TypeScript, lint, isolated in-memory schema/package validation and static/source/link/whitespace checks; synthetic rolled-back SQL transition fixtures are not live workflow acceptance. Do not call providers (including retrieval/capability probes), access live media/database, run browser/build/deployed suites, apply migrations remotely, deploy, change credentials or enable hosted services. Setup/checklist commands are documentation, not execution permission.
-
-Manual 068 and `UGC_PACKAGE_ENABLED=1` in app/worker are required for runtime acceptance. Prefer the existing worker's `--packages-only` mode to isolate M9 from upstream paid queues. No current private job/asset/Storyboard was inspected or mutated by Codex. Future M10 requires separate authorization plus current package approval, capability validation and existing matched cost confirmation/server financial authority.
+M9's implemented provider-neutral prepare/retry/recovery/review/approval/deletion contract remains [documented here](video-generation-package.md). Package approval is not cost consent and cannot advance the parent into video execution. Its generic provider interface has no UGC adapter/matching implementation. Earlier M9 focused source/schema checks and package-only setup are historical evidence/reference. The active [M10 documentation restriction](#milestone-10-documentation-scope-2026-10-27) authorizes no code, migrations, tests, providers, worker or deployment.
 
 ## Current correction — timing margins and explicit manual dialogue recovery (2026-10-27)
 

@@ -5,12 +5,12 @@
 | Milestone | Status | Acceptance boundary |
 | --- | --- | --- |
 | 8 — AI Storyboard | Complete | Preserve dated Storyboard setup and acceptance evidence. |
-| 9 — Video Generation Package Preparation | Complete in source | Manual migration 068 and owner runtime/visual/concurrency/ownership acceptance pending. No live package was built by Codex. |
-| 10 — Actual video generation | Not Started | No provider adapter implementation, capability matching, submission or paid generation. |
+| 9 — Video Generation Package Preparation | Complete | Owner confirms M9 completion and package approval; this documentation task performs no fresh live verification. |
+| 10 — Final Video Generation | Planned / Not Started | [M10 plan](final-video-generation.md) only; no implementation, matching, submission or paid generation. |
 
-This is the current M9 source contract and supersedes the earlier documentation-only plan, older milestone numbering and old unselected-provider statements. fal.ai remains the planned first M10 adapter. Existing legacy `lib/video-ai/` execution is separate and unchanged. Future Higgsfield, Kling, Runway, Luma or other adapters must consume the same canonical package without changing Storyboard or preparation logic. Naming a provider establishes no actual capabilities.
+This is the current implemented M9 contract; the owner confirms M9 Complete and approved. Dated source/setup/check evidence remains historical. This supersedes the earlier documentation-only plan, older milestone numbering and old unselected-provider statements. fal.ai remains the planned first M10 adapter. Existing legacy `lib/video-ai/` execution is separate and unchanged. Future Higgsfield, Kling, Runway, Luma or other adapters must consume the same canonical package without changing Storyboard or preparation logic. Naming a provider establishes no actual capabilities.
 
-Current execution/testing restrictions live in [AI workflow rules](ai-workflow-rules.md#milestone-9-preparation-scope-2026-10-27). Render and all Inngest execution remain disabled. The existing local UGC worker remains the development path. No provider, worker process, live database/storage operation, remote migration, browser/build or deployment was run for this implementation. Focused offline source/schema/package checks are separate from the owner's manual runtime acceptance.
+Current [M10 preparation restrictions](ai-workflow-rules.md#milestone-10-documentation-scope-2026-10-27) allow documentation only: no code, migrations, provider calls, workers, tests or deployments. Render/Inngest stay disabled and the existing local worker remains the future execution path. M9 source and its approval pause remain unchanged; no specific approved package ID or deployed schema state is inferred without an authoritative read at later execution.
 
 ## Source baseline and implemented boundaries
 
@@ -63,17 +63,13 @@ Recipe v1 recursively sorts object keys by UTF-8 byte order, preserves array ord
 
 ## Provider interface and configuration
 
-`VideoGenerationProvider<Payload, Result>` defines `id`, `adapterVersion`, `getCapabilities`, `validatePackage`, `translatePackage`, future `submit` and `getStatus`. Translation uses the canonical package plus an execution-time media map. Raw payload/result generics, concrete endpoint/model IDs, limits, reference formatting, SDKs, job submission and settings belong to provider adapters/configuration. Core M9 never imports those adapters or invokes this interface.
+The implemented `VideoGenerationProvider<Payload, Result>` declares identity/version, getCapabilities, validatePackage, translatePackage, future submit and getStatus. Translation accepts the neutral package plus an execution-time media map. There is no UGC adapter/registry/matching/network implementation, and M9 never invokes the interface. Model IDs, request fields, limits, reference formatting, settings and submission remain outside canonical creative content.
 
-**Capability matching is not implemented in M9**, including offline fal matching. M9 records neutral requirements and validates canonical completeness only. fal.ai is the planned first M10 implementation; future adapters translate the same package without rewriting Storyboard/package logic. Exact model/account capabilities and any proposed adaptation remain Needs confirmation. No silent provider/model fallback.
+[The authoritative M10 provider plan](final-video-generation.md#provider-independent-architecture) owns future compatible capability/result/recovery extensions and adapter implementation. fal.ai is planned first; other adapters must not require changing Storyboard/package business logic. Current capability types do not yet explicitly implement all future mode/frame-rate/retention/polling/webhook obligations. No code changes occur in this documentation task.
 
 ## Capability checks and paid-request safety
 
-The capability types distinguish supported, unsupported and unverified reference modes/counts, Character/Product/Location support, audio/dialogue/narration/voice consistency, scene generation, duration limits/increments, ratios, resolution/format, seeds and asynchronous jobs/recovery. Concrete values remain outside the canonical package and unverified until M10.
-
-Future M10 must check required features against the selected model/mode/account, including maximum reference count, per-scene and total timing, audio/lip-sync/external-audio strategy, output cross-constraints and durable async job recovery. Unsupported/unverified required features must stop before a paid request. Never silently drop a reference, crop, retime, pad, speed speech, synthesize extra audio or substitute a provider. Required creative adaptation needs an explicit new package version and approval.
-
-Future execution must independently revalidate current ownership, exact approvals, fingerprint/hash, package approval, provider/configuration/capability version and translated payload, then existing matched quote/explicit confirmation and server/database financial admission. Persist durable submission intent before any request and reconcile the same remote operation after uncertainty. Package approval is not cost consent or proof of provider compatibility. None of this execution is connected by M9.
+M9 records neutral requirements and validates canonical completeness, not concrete provider compatibility. M10 is Planned / Not Started. Its single [capability preflight](final-video-generation.md#capability-matching-before-any-paid-submission) and [paid-request/financial gate](final-video-generation.md#paid-request-and-accounting-gates) define all future model/account/audio/output/recovery checks, unknown-outcome prevention and no-fallback policy. Package approval alone never authorizes spending or establishes supported dialogue/reference/timing/output behavior. Do not duplicate or hard-code concrete limits here or alter the approved package to fit them.
 
 ## Workflow and failure states
 
@@ -99,6 +95,8 @@ Migration 068 adds `ugc_generation_packages` and `ugc_generation_package_events`
 
 ## Manual setup and acceptance
 
+Historical/repeatable M9 setup reference for other environments. The owner now confirms M9 Complete and approved; these commands do not authorize running setup, workers or tests during M10 documentation.
+
 1. Review/apply the entire **`supabase/migrations/20261027006800_ugc_video_generation_packages.sql`** manually after **067 and its prerequisites**. The migration is transactional/rerunnable and verifies referenced source columns/functions before installing triggers. Existing migration files are not proof of the deployed catalog. No data backfill is required.
 2. Set **`UGC_PACKAGE_ENABLED=1`** in the local app and worker environment, then restart the app so it loads the flag. `.env.example` defaults to 0; ignored credentials/configuration were not edited. Keep **`SCEENYK_LOCAL_JOBS_ONLY=1`**, Render disabled and Inngest disabled.
 3. Retain existing Clerk/application identity, private Supabase server and R2 credentials. Package-only execution needs those existing database/storage services, not OpenAI, image-generation or video-provider credentials/model setup. Keep the current approved Character/Product/Location/Storyboard data.
@@ -117,6 +115,6 @@ Migration 068 adds `ugc_generation_packages` and `ugc_generation_package_events`
 
 ## Focused source verification
 
-Authorized checks: TypeScript without emission/incremental output, focused ESLint, `npx tsx scripts/check-video-generation-package.ts`, and local whitespace/source/link/scope review. The package script disables fetch, checks pure compilation/hashing/invalid inputs/safe DTOs/progress/claims, loads all 68 migrations into ephemeral in-memory PostgreSQL, verifies reruns/ACLs and unchanged upstream functions, and uses rolled-back synthetic SQL transition fixtures with a stubbed approved-input resolver. It does not execute a worker, access real jobs/media/providers, or prove live provider/visual/concurrency behavior. Final measured results are recorded in [progress tracker](progress-tracker.md#milestone-9-implementation-2026-10-27).
+Historical M9 implementation checks, not permission for the current documentation task: TypeScript without emission/incremental output, focused ESLint, `npx tsx scripts/check-video-generation-package.ts`, and local whitespace/source/link/scope review. The package script disables fetch, checks pure compilation/hashing/invalid inputs/safe DTOs/progress/claims, loads all 68 migrations into ephemeral in-memory PostgreSQL, verifies reruns/ACLs and unchanged upstream functions, and uses rolled-back synthetic SQL transition fixtures with a stubbed approved-input resolver. It does not execute a worker, access real jobs/media/providers, or prove live provider/visual/concurrency behavior. Final measured results are recorded in [progress tracker](progress-tracker.md#milestone-9-implementation-2026-10-27).
 
-Manual migration/runtime/ownership/concurrency/visual acceptance remains pending. Provider model/account profiles, capability matching, output/audio/assembly strategies, production pricing/consent and retention/erasure remain M10/later decisions. Do not start them automatically.
+The owner confirms M9 Complete and approved. Prior source-check/setup evidence remains historical rather than a fresh live audit. [M10](final-video-generation.md) is Planned / Not Started; its provider/account capabilities, output/audio/assembly profiles, cost/financial mapping and retention/erasure decisions remain unresolved before dependent implementation. Do not start them automatically.

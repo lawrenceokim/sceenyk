@@ -1,10 +1,14 @@
 # UI Context
 
+## Planned M10 Final Video review (2026-10-27)
+
+M9 Complete/approved; M10 Planned / Not Started. The [M10 review/state plan](final-video-generation.md#final-validation-review-and-completion) adds a future Final Video view beside Progress, References, Storyboard and Package. It should show independently stored scene previews/ready-versus-accepted state, precise recovery/stale/failure guidance, final player with measured duration/resolution/ratio/scene count and safe provider/model/status summary. No raw JSON, secrets or permanent private/result URLs. Only accepted current scene versions may stitch; rejected scenes never automatically regenerate.
+
+Planned controls: explicit scene acceptance, separately cost-authorized Regenerate individual scene where supported, Approve Final Video, and Reject and Delete Final Video. Final rejection targets the composed candidate and preserves reusable scenes; it never regenerates all scenes. Final approval/version/validation/financial checks precede Complete. Audio/compatibility gaps must display honestly, not fake support or progress. Reuse existing Studio regions/accessibility/native scroll/Tailwind/shared controls; no UI is implemented or tested by this documentation task.
+
 ## M9 package review (2026-10-27)
 
-M9 is Complete in source with manual visual/runtime acceptance pending. Studio adds Package after current Storyboard approval. Prepare Generation Package queues explicit local work; persisted checking/building/validating/saving/review state drives progress. The summary shows package/reference approval/Storyboard versions, names, total duration/scene count, style/tone, ratio/video type and native expandable scene timing/dialogue/voice/action/reaction/Product/camera/light/audio/bindings/prompt details. No raw JSON or provider controls. Approve Package persists a paused approval; the final message is Generation package approved and final video stays Not Started. Reject and Delete removes active review, retains private immutable history, and returns to a separate Prepare action without automatic rebuilding. Stale/failed/stalled/disabled/setup states have safe guidance. [Current workflow/setup/manual tests](video-generation-package.md#manual-setup-and-acceptance).
-
-Reuse existing Studio regions, shared Buttons/status tokens, native scrolling/focus, responsive wrapping and Tailwind utilities plus the sole existing globals stylesheet. No layout redesign or browser/build/deployment acceptance was run. M8 Complete; M10 Not Started. [Current execution/testing restrictions](ai-workflow-rules.md#milestone-9-preparation-scope-2026-10-27).
+M9 is Complete and approved per the owner. Existing Package navigation, structured source-version/scene summary, persisted progress, explicit approval/pause and tombstone-only rejection remain unchanged. [M9 UI contract](video-generation-package.md#workflow-and-failure-states) stays authoritative. The source still stops at Generation package approved; the future M10 plan does not add a player/control or enable execution now. Earlier implementation/visual acceptance notes remain historical; this task runs no browser/visual test.
 
 ## Storyboard manual dialogue repair and live counts (2026-10-27)
 

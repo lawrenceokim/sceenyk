@@ -1,8 +1,14 @@
 # Commercial cost contract
 
+## Planned M10 scene cost authorization (2026-10-27)
+
+M9 Complete/approved; M10 Planned / Not Started. [M10 paid-request controls](final-video-generation.md#paid-request-and-accounting-gates) own per-scene/whole-execution capability and attempt/spend admission, exact package/scene/provider/profile/request fingerprints, duplicate-success/unknown-intent prevention, explicit incremental regeneration consent and estimated/reported cost tracking. A quote/confirmation must bind the current approved package and selected execution/pricing versions; changed inputs/profile or expired consent require renewed checks. Unknown actual cost stays null and reported usage is distinguished from verified billing; no fal rate or production tariff is invented here.
+
+Accounting-enabled execution must use existing server-authoritative credit/free-allowance/reservation owners. Any separately authorized operator-funded development run still needs a finite explicit budget; disabled accounting is not unlimited spending permission. Package/scene approval is not payment consent. No pricing code, environment values, paid call or accounting behavior changes in this task.
+
 ## M9 package versus later quote (2026-10-27)
 
-M9 is Complete in source and ends at immutable package review/approval and pause, as specified in the [canonical contract](video-generation-package.md). Package approval is not cost consent and calculates no tariff or paid admission. M10 remains Not Started. A later server-authoritative quote/confirmation must bind the exact current approved package ID/version/hash and selected adapter/model/configuration/capability/pricing versions. Stale inputs, rebuilt content, changed execution configuration or expired quotes require fresh checks and matched confirmation. Existing pricing/financial rules remain unchanged; no pricing code/configuration or provider call is introduced by M9.
+M9 is Complete and approved per the owner and still stops at the approved-package pause. It computes no video tariff or paid admission. [M10's future quote/request gates](final-video-generation.md#paid-request-and-accounting-gates) are planned only; they cannot be bypassed by M9 approval or legacy provider pricing defaults. Existing financial rules and all source/runtime settings remain unchanged.
 
 ## Approved production Marketplace fee and withdrawal terms (2026-10-14)
 

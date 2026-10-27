@@ -1,8 +1,12 @@
 # Sceenyk design system
 
+## Planned M10 review presentation (2026-10-27)
+
+M10 Planned / Not Started; M9 Complete/approved. [Planned scene/final review](final-video-generation.md#final-validation-review-and-completion) reuses Studio segmented navigation, shared Buttons/status/warning/error surfaces, accessible private video controls, native expandable scene details and bounded native scrolling. Clearly distinguish generated/private-ready/accepted, uncertain/recovering/failed, stitching/validating/review and approved/Complete; no fake percentages or unsupported actions. Final Video joins the existing views without redesigning Studio. Preserve Tailwind utilities, the sole existing `app/globals.css`, focus/keyboard behavior, responsive containment and reduced motion. Documentation only: no components/styles/player or tests are added here.
+
 ## M9 summary presentation (2026-10-27)
 
-Package review is Complete in source; manual visual/accessibility/runtime acceptance remains pending. It reuses Studio segmented navigation, shared Buttons/status/warning/error tokens and native details/summary disclosures for structured scene review, explicit approval and rejection. Tab controls wrap; content uses bounded native scrolling and existing responsive text containment. No new stylesheet, palette, animation system or Studio layout redesign. Preserve Tailwind utilities plus the sole `app/globals.css`. [Canonical behavior/manual inspection](video-generation-package.md#manual-setup-and-acceptance); [execution/testing policy](ai-workflow-rules.md#milestone-9-preparation-scope-2026-10-27).
+M9 is Complete and approved per the owner. Its shared controls/status tokens, native scene disclosures, wrapping tabs, bounded scrolling and existing responsive/Tailwind presentation remain unchanged. [M9 review behavior](video-generation-package.md#workflow-and-failure-states) is current; dated manual/visual notes below retain their historical evidence. Current [M10 preparation](final-video-generation.md) changes no UI or styling and runs no visual test.
 
 ## Storyboard dialogue-only repair controls (2026-10-27)
 

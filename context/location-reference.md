@@ -2,7 +2,7 @@
 
 ## Generation-package handoff (2026-10-27)
 
-[M9](video-generation-package.md#canonical-internal-contract) is Complete in source and freezes this Location's exact accepted image/proof, root/candidate/plan revision and approval version with the current approved Storyboard. Changed context, replacement/rejection/deletion or approval versions stale packages and block approval/retry until explicit rebuilding from current approvals. No latest-Location substitution or change to existing Location generation/review/recovery/deletion is introduced. M8 Complete; M10 Not Started. Manual 068/runtime acceptance remains pending; no live provider/worker/storage operation was run. Earlier next-step notes below are historical.
+M9 Complete/approved per the owner; M10 Planned / Not Started. The exact accepted Location image/root/candidate/plan/approval versions frozen by [M9](video-generation-package.md#canonical-internal-contract) remain future scene dependencies. [M10](final-video-generation.md#scene-generation-identity-and-versioning) must preserve that environment binding and stale prior execution after approved input changes, not substitute latest Location or regenerate it to repair a video scene. Scene/final cleanup cannot delete this accepted upstream media. Existing Location generation/review/recovery/deletion is unchanged; this task runs no live media/provider/worker/test operation.
 
 ## Empty claim diagnostic correction (2026-10-26)
 

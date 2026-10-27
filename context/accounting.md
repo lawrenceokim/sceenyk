@@ -1,8 +1,14 @@
 # Generation accounting contract
 
+## Planned M10 financial handoff (2026-10-27)
+
+M9 Complete/approved; M10 Planned / Not Started. [M10 cost controls](final-video-generation.md#paid-request-and-accounting-gates) require current package approval and exact scene provenance, capability/attempt/budget validation, matched cost confirmation and existing accounting admission when enabled, with immutable paid intent before each new paid scene attempt. A single failed scene must not repurchase successful scenes or automatically settle/restore an uncertain run. Preserve per-attempt provider cost evidence and existing exactly-once ledger/reservation rules; package/scene/provider readiness is not Complete.
+
+Future final approval must bind the exact validated private final receipt/assembly/scene/package versions and connect to the existing trusted completion/settlement owner without a browser or callback override. Partial/unknown failures, review-hold/expiry/abandonment and cancellation/refund mapping need explicit commercial decisions; no new policy is invented. Existing accounting code, tables, triggers, balances and Marketplace/payment behavior remain unchanged. No financial operation/test/migration runs now.
+
 ## M9 preparation has no financial admission (2026-10-27)
 
-M9 is Complete in source; M10 is Not Started. The [package workflow](video-generation-package.md#workflow-and-failure-states) builds/validates/persists/reviews immutable metadata, then pauses after explicit approval without changing the parent UGC job. Prepare/rebuild/retry/recovery/approval/rejection cannot reserve, consume or restore credits/free allowance, call a provider or settle/complete the run. Later video execution still needs current capability checks, a matched server quote/explicit confirmation and existing database financial admission/idempotency/settlement authority. No accounting code/schema, balances, ledger rules or financial behavior changed. Manual 068/runtime acceptance remains pending.
+M9 is Complete and approved per the owner. Its [package workflow](video-generation-package.md#workflow-and-failure-states) remains metadata-only and pauses without changing the parent UGC job or reserving/consuming/restoring credits/free allowance. Prepare/rebuild/retry/recovery/approval/rejection cannot invoke a paid provider or settle the run. Future M10 admission/financial mapping is a separate planned boundary; this documentation changes no existing financial rule or source.
 
 ## Approved Settings accounting presentation (2026-10-16)
 

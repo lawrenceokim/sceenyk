@@ -2,9 +2,9 @@
 
 ## Current UGC milestone boundary (2026-10-27)
 
-**Milestone 8 — Complete. Milestone 9 — Video Generation Package Preparation — Complete in source; manual 068/runtime/ownership/concurrency/visual acceptance pending. Milestone 10 — Actual video generation — Not Started.** These statuses supersede older roadmap/next-step notes below, without asserting fresh live acceptance.
+**Milestone 9 — Complete and approved, per owner confirmation. Milestone 10 — Final Video Generation — Planned / Not Started.** M8 remains Complete. This status supersedes earlier source-only/pending-acceptance milestone notes; no fresh live package/catalog/deployment audit is asserted.
 
-After current Storyboard/upstream approval, Studio exposes Prepare Generation Package and a structured Package review. The local UGC worker freezes exact approved versions, validates private media/timing/bindings and saves one immutable provider-neutral `VideoGenerationPackage` with deterministic hashes. Explicit approval ends at **Generation package approved**; Reject and Delete removes active review without rebuilding. [Canonical source/setup/manual acceptance](video-generation-package.md). `VideoGenerationProvider` is a generic interface only; fal.ai remains planned for M10, with no capability matching or provider execution in M9. Existing accounting/upstream/hosted guards remain unchanged. [Current restrictions](ai-workflow-rules.md#milestone-9-preparation-scope-2026-10-27).
+M9's [immutable package contract](video-generation-package.md) remains the input. The [canonical M10 plan](final-video-generation.md) covers provider-neutral capability/cost admission, independent scene generation/private storage/recovery, explicit scene acceptance, deterministic local stitching, final validation/review/approval and trusted completion. fal.ai is the first planned adapter behind `VideoGenerationProvider`, not a core dependency. Required audio/output profiles remain unresolved gates; no silent fallback or fake support. This task is documentation only under [current restrictions](ai-workflow-rules.md#milestone-10-documentation-scope-2026-10-27). Existing app behavior and the M9 approval pause remain unchanged.
 
 ## Storyboard timing margins and saved-dialogue repair (2026-10-27)
 

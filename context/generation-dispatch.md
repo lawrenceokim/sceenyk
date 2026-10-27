@@ -1,8 +1,12 @@
 # Durable generation dispatch
 
+## Planned M10 delivery boundary (2026-10-27)
+
+M10 is Planned / Not Started; M9 Complete/approved. Later explicit cost-authorized execution should use persisted owner/project/package-scoped scene operations on the existing local worker, with atomic paid intent and idempotent claims/checkpoints. Provider callbacks/polling normalize observations through adapters; verified persisted state alone drives progress/review/completion. No Inngest outbox/event, Render request or new transport is introduced by this plan. [M10 recovery and state contract](final-video-generation.md#failure-and-restart-recovery); package-only mode must remain package-only. No dispatch/worker/provider/test operation is run now.
+
 ## M9 dispatch boundary (2026-10-27)
 
-**M8 Complete; M9 Complete in source; M10 Not Started.** Package commands persist owned versioned work for the existing local UGC consumer; no Inngest event, Render request, provider submission or financial admission is dispatched. Package approval ends at the persisted pause. [Idempotent build/claim/checkpoint recovery](video-generation-package.md#persistence-idempotency-and-restart-recovery) and [manual 068/package-only setup](video-generation-package.md#manual-setup-and-acceptance) are authoritative. Current guards keep all Inngest/Render execution disabled; no worker process was started. Earlier milestone/coordinator/setup notes below are historical.
+M9 is Complete and approved per the owner. Existing package commands persist scoped local work and end at explicit package approval/pause, without hosted dispatch, video provider or financial admission. [Implemented M9 recovery](video-generation-package.md#persistence-idempotency-and-restart-recovery) remains unchanged. Older coordinator/setup/acceptance notes below are historical; the active scope is [M10 documentation only](ai-workflow-rules.md#milestone-10-documentation-scope-2026-10-27).
 
 ## Milestone 4 - same local UGC executor (2026-10-23)
 

@@ -1,10 +1,14 @@
 # Development application identity
 
+## Planned M10 persistence concerns (2026-10-27)
+
+M9 Complete/approved; M10 Planned / Not Started. [M10 persistence requirements](final-video-generation.md#private-scene-output-and-persistence-concerns) describe scoped execution/package/profile identity, scene/paid-attempt intents and request IDs/status, private output/proofs/technical metadata, estimate/reported usage, exact scene review versions, assembly manifest and final validation/approval/completion. These are conceptual concerns, not new table/column/RPC names or schema. Before later implementation inspect actual catalog/functions/grants and reuse compatible existing owners; do not infer deployment from migrations.
+
+Plan server/database ownership, scoped uniqueness, immutable input/receipt/history, append-only events, atomic admission/claim/checkpoint/approval and lease/version fences. Temporary provider URLs/credentials and binaries/base64 cannot become canonical metadata. Scene/final readiness must not bypass the existing financial completion owner. [Recovery/idempotency rules](final-video-generation.md#failure-and-restart-recovery) remain centralized; this task creates/applies no migration and makes no live database call.
+
 ## M9 package persistence (2026-10-27)
 
-M9 is Complete in source; manual **068 after 067/prerequisites** remains unapplied by Codex. New private `ugc_generation_packages` freezes scoped request/input/fingerprint/build revision and immutable successful canonical payload/hash/validation receipt; separate lifecycle version, approval evidence, sticky staleness, errors and leases fence commands/recovery. `ugc_generation_package_events` is append-only. RLS is enabled, browser privileges are revoked, service access is SELECT plus scoped SECURITY DEFINER RPCs with empty search_path. No direct service writes or public package projection. [Exact schema/security/recovery](video-generation-package.md#persistence-idempotency-and-restart-recovery).
-
-`ugc_package_input/action/claim/checkpoint` reuse existing job/project/reference/Location/Storyboard relationships and locks without replacing upstream functions. A scoped partial unique index plus request identity prevents duplicate current inputs; project-setting changes add sticky staleness via an additive trigger. Immutable snapshots/approval evidence survive explicit active-package deletion. No binaries/base64, signed links or provider payloads enter canonical content. Future execution/quotes remain separate. Source/schema checks are isolated, not proof of the deployed catalog; no live inspection, migration/backfill or financial operation was run. [Manual setup](video-generation-package.md#manual-setup-and-acceptance).
+M9 is Complete and approved per the owner. Existing source migration 068 defines private `ugc_generation_packages`/`ugc_generation_package_events`, service-only input/action/claim/checkpoint RPCs, immutable content/validation/approval, scoped duplicates, sticky staleness and append-only history. [M9 schema/security](video-generation-package.md#persistence-idempotency-and-restart-recovery) remains unchanged. Owner confirmation is not a fresh deployed-catalog audit; prior manual/source acceptance notes are retained as history and no database operation/migration occurs in this task.
 
 ## Character V5 R2 persistence (2026-10-25)
 

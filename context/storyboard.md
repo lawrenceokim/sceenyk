@@ -2,7 +2,7 @@
 
 ## Current milestone status and package handoff (2026-10-27)
 
-**M8 Complete; M9 Complete in source with manual 068/runtime acceptance pending; M10 Not Started.** Dated Storyboard investigation/setup/acceptance notes below retain their original evidence. [M9 implementation](video-generation-package.md) now consumes only the current approved Storyboard ID/revision/version/document plus exact approved Character/Product/Location and saved settings. It preserves scene timing/voice/dialogue/actions/reactions/camera/light/audio/continuity without AI rewriting. Changes stale the derived package and require current approvals plus explicit rebuild/reapproval. Storyboard approval makes Prepare Generation Package available; it does not automatically queue preparation or video execution. Existing Storyboard generation/edit/recovery/deletion is unchanged.
+M8 remains Complete; M9 Complete and approved per the owner; M10 Planned / Not Started. [M9](video-generation-package.md) still freezes this exact approved Storyboard document/revision/version plus approved asset/settings provenance. [M10's scene/assembly plan](final-video-generation.md#scene-generation-identity-and-versioning) consumes those exact scenes/timestamps/voice/actions/reactions/camera/light/audio/neutral prompts without creative rewriting or latest-pointer substitution. Package/Storyboard changes make derived execution/scene/final artifacts historical/stale and require explicit current approval/rebuild/admission; scene-specific regeneration does not rewrite Storyboard. No Storyboard/app code, provider request, record or worker is changed/run here. Dated investigation/setup evidence below is historical.
 
 ## Timing targets and manual dialogue repair (2026-10-27)
 

@@ -2,7 +2,7 @@
 
 ## Downstream package dependencies (2026-10-27)
 
-[M9](video-generation-package.md#fingerprinting-immutable-versions-and-staleness) is Complete in source and freezes exact approved Character/Product sheet descriptors and workflow/review/approval versions, including supported historical provenance. Current-input checks stale packages after replacement, rejection/deletion, recomposition or changed approval versions; immutable bindings never resolve a newer view/sheet silently. Existing reference review/replacement/approval behavior is unchanged. M8 Complete; M10 Not Started. Manual 068/runtime acceptance remains pending, with no live provider/media/worker execution by Codex. Earlier next-step notes below are historical.
+M9 Complete/approved per owner confirmation; M10 Planned / Not Started. Existing [M9 approval-version bindings](video-generation-package.md#fingerprinting-immutable-versions-and-staleness) remain immutable. [Future scene execution](final-video-generation.md#scene-generation-identity-and-versioning) must bind these exact approved Character/Product sheets and versions/hashes and recheck current approvals before new paid admission. Replacement/rejection/recomposition cannot silently retarget prior packages/scenes; generated scene rejection must not remove accepted/shared/upstream references. Core review/provider/storage behavior remains unchanged; no live media, provider, worker or tests run now.
 
 ## Milestone 7 — Location review added (2026-10-26)
 

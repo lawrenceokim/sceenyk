@@ -1,10 +1,12 @@
 # Persistent generation jobs
 
+## Planned M10 scene jobs and checkpoints (2026-10-27)
+
+M9 Complete/approved; M10 Planned / Not Started. The [single M10 state/recovery plan](final-video-generation.md#planned-persisted-states-and-checkpoints) defines execution, per-scene attempt/reconciliation/storage/review and independent assembly/final-review checkpoints. These are conceptual labels, not installed enums/RPCs or an enabled parent transition. Extend the existing local claim/heartbeat/version model later, with independent worker/read-only recovery/paid-attempt budgets and exact package/scene/provider-profile fingerprints. Restore known requests and verified private artifacts after restart; do not regenerate completed scenes or repay uncertain submissions. Scene/final acceptance binds exact versions; rejection never queues replacement. [Paid-request gates](final-video-generation.md#paid-request-and-accounting-gates) remain mandatory before future new paid work. No job/worker/test/migration is executed now.
+
 ## M9 build jobs (2026-10-27)
 
-**M8 Complete; M9 Complete in source; M10 Not Started.** M9 is a separate package side workflow on the existing local consumer, not a newly registered parent `build_generation_package` handler. The parent remains paused at Location while the safe progress projection displays package work. Manual 068 adds scoped immutable-input package rows, append-only events and service-only input/action/claim/checkpoint RPCs. [Canonical lifecycle/recovery/manual setup](video-generation-package.md#persistence-idempotency-and-restart-recovery).
-
-Only explicit Prepare queues a build. Worker phase checkpoints report checking/building/validating/saving/review. Claims use 90-second leases, 20-second heartbeats, three claims maximum and existing transport backoff. Duplicate input/request recovery returns the same version; restart recompiles deterministic metadata only if no ready package was committed. Ready/approval recheck current exact dependencies under locks. Review/approved/deleted/stale/failed work pauses; explicit retry/rebuild/deletion preserves approved upstream work and never submits a provider or changes accounting. `UGC_PACKAGE_ENABLED=1` opts in; `npm run worker:ugc -- --packages-only` isolates M9 from upstream paid queues. Neither command nor live SQL/media was executed here. Manual migration/runtime acceptance pending.
+M9 is Complete and approved per the owner. Its existing local side workflow, immutable-input rows, package/event records, 90-second leases/20-second heartbeats/three claims, scoped duplicate recovery and package-only mode remain unchanged. The parent stays paused while package progress is projected independently; there is still no M10 handler invoked by approval. [M9 lifecycle/recovery reference](video-generation-package.md#persistence-idempotency-and-restart-recovery). Prior source migration/runtime acceptance notes are historical; this task verifies no live setup and starts no work.
 
 ## Storyboard timing targets and direct manual review save (2026-10-27)
 

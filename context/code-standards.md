@@ -1,10 +1,16 @@
 # Code Standards
 
+## Planned M10 execution standards (2026-10-27)
+
+M9 Complete/approved; M10 Planned / Not Started. The [M10 contract](final-video-generation.md) owns planned neutral types/state/fingerprints and gates. Extend the existing provider boundary compatibly rather than introducing vendor branches in core logic. Concrete request/model/reference/limit/observation/result/error/pricing translation belongs to adapters. Persist paid intent before submission, isolate scene attempts and preserve successful outputs; unknown outcomes reconcile without SDK/transport repurchase. Private verified bytes, exact version/hash manifests, scoped commands/leases and explicit scene/final approval precede completion.
+
+Keep composition/audio independent of video adapters, preserve existing strict timing/financial rules, and version any future output/audio/capability extension instead of claiming current support. V1 output/audio profiles remain Needs confirmation. No code is implemented by this plan and no tests are authorized during this documentation task; [current workflow restrictions](ai-workflow-rules.md#milestone-10-documentation-scope-2026-10-27) override older recipes below.
+
 ## Generation-package standards (2026-10-27)
 
-M9 is Complete in source; [the canonical contract](video-generation-package.md) owns actual fields, deliberate cross-language hash recipe, immutable versions, state/recovery and private DTO rules. Reuse its strict schemas and deterministic builder rather than creating parallel package types. Preserve exact approved source versions and integer-ms scene content. Rebuild/reapprove stale content; never mutate a saved payload, validation receipt or approval evidence.
+M9 is Complete and approved per the owner; [the canonical contract](video-generation-package.md) owns actual fields, deliberate cross-language hash recipe, immutable versions, state/recovery and private DTO rules. Reuse its strict schemas and deterministic builder rather than creating parallel package types. Preserve exact approved source versions and integer-ms scene content. Rebuild/reapprove stale content; never mutate a saved payload, validation receipt or approval evidence.
 
-Core UGC/Storyboard/package logic must not import provider SDK/request types, model IDs or vendor payload fields. `VideoGenerationProvider` is an interface only; capability matching and adapters are M10. Unsupported/unverified required features must later block before paid execution, without fallback. Database ownership/current-input/unique/version/lease fences remain authoritative. [Current testing/execution restrictions](ai-workflow-rules.md#milestone-9-preparation-scope-2026-10-27) override historical recipes below; manual runtime acceptance remains pending.
+Core UGC/Storyboard/package logic must not import provider SDK/request types, model IDs or vendor payload fields. `VideoGenerationProvider` is an interface only; capability matching and adapters are M10. Unsupported/unverified required features must later block before paid execution, without fallback. Database ownership/current-input/unique/version/lease fences remain authoritative. [Current testing/execution restrictions](ai-workflow-rules.md#milestone-9-preparation-scope-2026-10-27) override historical recipes below; M9 completion/approval is owner-confirmed; no acceptance is rerun in this documentation task.
 
 ## Storyboard target margins and manual text repair (2026-10-27)
 

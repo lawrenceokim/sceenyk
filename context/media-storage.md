@@ -1,10 +1,14 @@
 # Private project media
 
+## Planned M10 scene and final artifacts (2026-10-27)
+
+M10 is Planned / Not Started; M9 Complete/approved. A successful provider response becomes scene_ready only after bounded verified bytes are copied into Sceenyk-controlled private storage and a durable metadata/hash receipt is committed. Persist exact package/scene/attempt/provider/request associations, immutable asset key server-side, SHA-256/ETag/size, measured duration/dimensions/frame rate/streams and recovery status. Reconcile the same object after uncertain PUT and retry storage before generation. Never depend on permanent provider result/signed URLs. [Canonical durability/recovery contract](final-video-generation.md#private-scene-output-and-persistence-concerns).
+
+Use short-lived owner-authenticated scene/final previews and safe DTOs; provider URLs/secrets/private keys stay server-only. Scene rejection deletes only its fenced unreferenced candidate under exact identity/proof checks, preserving accepted/shared/upstream assets and minimal audit. Final rejection targets the composed candidate and preserves reusable accepted scenes; neither queues replacement. [Review/deletion plan](final-video-generation.md#scene-review-and-safe-deletion) owns retention/pinning unknowns. No private storage operation is run now.
+
 ## M9 approved-media snapshot (2026-10-27)
 
-M9 is Complete in source. It freezes the exact approved Character/Product composed sheets and accepted Location descriptors, source/approval versions and SHA-256/dimensions/length. The worker and explicit approval reuse `readReviewAsset` for bounded conditional ETag/length/hash verification of those three existing private R2 images. No provider signing, generated file, new bucket, derivative, upload or deletion occurs. The private frozen input retains keys/ETags; canonical payload and explicit owner summary omit storage descriptors/URLs. [Canonical manifest/privacy contract](video-generation-package.md#canonical-internal-contract).
-
-Changed approvals/settings stale packages; unavailable/mismatched bytes block saving/approval and require restoration of the exact asset before explicit retry. Reject and Delete tombstones package review only and never touches upstream media. Retention/pinning/erasure needs separate confirmation; immutable history cannot be retargeted to latest assets. Codex made no live storage/provider request. [Manual 068/runtime acceptance](video-generation-package.md#manual-setup-and-acceptance) remains pending.
+M9 is Complete and approved per the owner. Existing package input freezes the two approved sheets and accepted Location with exact versions/proofs; canonical package/client summary omit storage descriptors and access URLs. Its bounded private verification and tombstone-only package rejection remain unchanged. [M9 manifest/privacy](video-generation-package.md#canonical-internal-contract) is authoritative; future M10 storage planning does not authorize media deletion, retargeting or a new retention policy. No live object was read/written/deleted in this documentation task.
 
 ## Milestone 7 — private Location assets (2026-10-26)
 

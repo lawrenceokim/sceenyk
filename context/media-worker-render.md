@@ -1,10 +1,14 @@
 # Render media-preparation worker
 
+## Planned M10 local generation and assembly (2026-10-27)
+
+M9 Complete/approved; M10 Planned / Not Started. The [M10 plan](final-video-generation.md) keeps scene orchestration/provider observation/private storage and deterministic FFmpeg/FFprobe composition on the existing local development execution path. Composition is separate from provider adapters, using exact owner-accepted scene/audio versions and bounded fixed-argument media processing outside Next.js requests. Storage/stitch/finalization recovery reuses accepted media without new generation. Current package-only mode does not execute M10.
+
+Render and all Inngest execution stay disabled. Existing legacy Remotion/Render deployment, 24fps/codec configuration, renderer verification allowance and hosted evidence are not an approved M10 profile or permission to run. Exact output/timing/audio/transition/resource contracts remain Needs confirmation before implementation. [Stitching plan](final-video-generation.md#provider-independent-stitching-and-exact-timing); no worker, FFmpeg/FFprobe process, provider, test, migration or deployment is run now.
+
 ## Current M9 worker boundary (2026-10-27)
 
-M9 is Complete in source with manual 068/runtime acceptance pending; M8 Complete and M10 Not Started. The existing local UGC worker has an opt-in package lane and **`npm run worker:ugc -- --packages-only`**, which bypasses upstream provider configuration and filters every nonpackage queue before claiming. It still uses the same shared runner/execution guards; no second worker service is introduced. M9 checks existing private images and compiles/validates/persists metadata only. It never uses Render media endpoints, Inngest, FFmpeg/Remotion, voice synthesis or a video provider.
-
-[Exact setup/manual recovery](video-generation-package.md#manual-setup-and-acceptance) and [current restrictions](ai-workflow-rules.md#milestone-9-preparation-scope-2026-10-27) preserve local-only execution and disabled Render/Inngest. Codex started no worker or live job and changed no hosted configuration/deployment. Historical worker acceptance below remains reference material.
+M9 is Complete and approved per the owner. Existing local package lane and `npm run worker:ugc -- --packages-only` remain implemented and unchanged; the mode filters all upstream queues and requires no paid upstream configuration. It validates existing private images and package metadata only, never video/audio generation, Render/Inngest or assembly. [M9 setup reference](video-generation-package.md#manual-setup-and-acceptance) is not permission to start a worker during current M10 documentation. Historical worker acceptance below remains evidence only.
 
 ## Milestone 5 — Character Sheet (2026-10-23)
 
