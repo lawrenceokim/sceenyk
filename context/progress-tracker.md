@@ -1,5 +1,15 @@
 # Progress Tracker
 
+## Milestone 10 implementation capability gate (2026-10-27)
+
+**Milestone 9 — Complete and approved. Milestone 10 — Blocked before paid-submission implementation; not Complete in source. Runtime/provider/manual acceptance — Pending.** The owner's implementation request supersedes prior documentation-only restrictions and explicitly requires stopping for an unverified required capability. [Provider suitability evidence and exact next steps](final-video-generation.md#provider-suitability-assessment-2026-10-27).
+
+Official fal schemas were reviewed for Kling O3 Pro, Seedance 2.5/2.0, Vidu Q4 and Veo 3.1 plus voice creation, queue/reliability and media retention. A successful GET-only database read found an approved package with two 5s scenes, 16:9, required dialogue and consistent voice, with no stored staleness marker. Its duration fits several candidates; timing is **not** the observed package blocker. M9 supplies a voice description/pace but no approved voice recording/identity. Kling's documented voice binding requires a voice ID created from a clean 5–30s recording; other reviewed reference-audio paths also need an additional approved audio input. A text description alone is not verified cross-request voice identity. Full current-upstream/media/hash validation and provider-account acceptance were not performed.
+
+Stopped at that unresolved audio/input strategy under the owner's capability-gap rule, without selecting a production model or implementing a paid adapter. No scene/final generation records/UI, stitching, financial/completion path or M10 migration/configuration was introduced. M9 code, packages, references, Storyboards and the approval pause remain intact. Required audio stays unresolved and cannot be dropped. Native-audio capability itself is documented; the issue is a compatible approved consistent-voice path, not an assertion that the models are silent or universally unsuitable.
+
+Changed only `context/{final-video-generation,progress-tracker,overview,architecture,ai-workflow-rules,video-generation-package}.md`. Recorded official citations, current safe package requirements, transport no-retry/no-fallback obligations, recovery/retention limits and manual resolution/acceptance sequence. Passed documentation review: all 11 added local references/anchors resolve, six-file scope confirmed, and `git diff --check` is clean. No paid/authenticated provider requests, worker/job execution, storage operations, live writes, migration creation/application, tests/builds or deployment; Render/Inngest guards unchanged. Documentation link/whitespace/diff review is the only local validation for these Markdown changes.
+
 ## Milestone 10 context preparation (2026-10-27)
 
 **Documentation preparation — Complete. Milestone 9 — Complete and approved per owner confirmation. Milestone 10 — Final Video Generation — Planned / Not Started.** Owner confirmation supersedes the earlier M9 source-only/pending-acceptance milestone status; prior implementation/check/setup records below remain historical evidence. No current package ID, deployed catalog state or fresh live acceptance is inferred by this task.

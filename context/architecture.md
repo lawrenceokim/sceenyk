@@ -1,5 +1,11 @@
 # Architecture Context
 
+## M10 capability assessment boundary (2026-10-27)
+
+**M9 Complete/approved; M10 Blocked before implementation of paid submission; runtime/provider/manual acceptance Pending.** The implementation request supersedes prior documentation-only authorization but requires a capability-gap stop. The [official-provider assessment](final-video-generation.md#provider-suitability-assessment-2026-10-27) found native-reference/audio candidates and compatible 5s timing for the approved package, but no verified cross-scene voice path from its existing description-only voice input. A native voice ID/reference recording needs approved provenance in a neutral execution/audio profile; core must not invent a voice or silently substitute conditioning images. This is a recorded unresolved input/capability boundary, not an architecture redesign or a claim that all fal models lack audio.
+
+No adapter, execution schema, worker integration, scene/final UI, storage/composition/accounting/completion change or migration was made. M9 still pauses at package approval. One GET-only read established safe package requirements/stored approval only, not current upstream/media validation or deployed schema acceptance. The planned architecture below remains authoritative; historical documentation-only authorization is superseded by the new implementation request and its explicit stop condition.
+
 ## M10 final video architecture plan (2026-10-27)
 
 **M9 Complete and approved per owner confirmation; M10 Planned / Not Started.** [final-video-generation.md](final-video-generation.md) is authoritative for all planned execution contracts, capabilities, scene/attempt state, private durability, paid-intent recovery, audio, local composition, review and completion. Core services consume neutral package/scene/result/asset/audio/composition contracts through the existing `VideoGenerationProvider` boundary. Concrete model/payload/reference formatting/submission/polling/webhook/result/error/request-ID/pricing details stay in adapters/configuration; fal.ai is planned first. No fallback or package/Storyboard coupling to vendor fields.

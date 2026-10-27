@@ -6,11 +6,11 @@
 | --- | --- | --- |
 | 8 — AI Storyboard | Complete | Preserve dated Storyboard setup and acceptance evidence. |
 | 9 — Video Generation Package Preparation | Complete | Owner confirms M9 completion and package approval; this documentation task performs no fresh live verification. |
-| 10 — Final Video Generation | Planned / Not Started | [M10 plan](final-video-generation.md) only; no implementation, matching, submission or paid generation. |
+| 10 — Final Video Generation | Blocked at audio capability gate; implementation not started | [Provider assessment](final-video-generation.md#provider-suitability-assessment-2026-10-27); required consistent-voice source/profile unresolved. Runtime/provider/manual acceptance Pending. |
 
 This is the current implemented M9 contract; the owner confirms M9 Complete and approved. Dated source/setup/check evidence remains historical. This supersedes the earlier documentation-only plan, older milestone numbering and old unselected-provider statements. fal.ai remains the planned first M10 adapter. Existing legacy `lib/video-ai/` execution is separate and unchanged. Future Higgsfield, Kling, Runway, Luma or other adapters must consume the same canonical package without changing Storyboard or preparation logic. Naming a provider establishes no actual capabilities.
 
-Current [M10 preparation restrictions](ai-workflow-rules.md#milestone-10-documentation-scope-2026-10-27) allow documentation only: no code, migrations, provider calls, workers, tests or deployments. Render/Inngest stay disabled and the existing local worker remains the future execution path. M9 source and its approval pause remain unchanged; no specific approved package ID or deployed schema state is inferred without an authoritative read at later execution.
+The subsequent [M10 implementation authorization](ai-workflow-rules.md#milestone-10-implementation-authorization-and-capability-stop-2026-10-27) supersedes earlier documentation-only restrictions. Its explicit capability-gap stop applies: the observed approved package requires consistent-voice dialogue, while M9 binds only a voice description/pace and Character image. No approved reusable voice recording/identity is supplied by this contract. The assessment records an unresolved neutral audio/execution input rather than mutating M9 or adding a provider dependency. Render/Inngest stay disabled. M9 source and its approval pause remain unchanged; the GET-only requirements read does not establish current upstream/media/catalog acceptance.
 
 ## Source baseline and implemented boundaries
 

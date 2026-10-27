@@ -1,5 +1,11 @@
 # AI Workflow Rules
 
+## Milestone 10 implementation authorization and capability stop (2026-10-27)
+
+The subsequent owner request authorizes M10 source implementation and focused mocked/fixture checks, superseding the documentation-only restrictions below. It also explicitly says to stop and report a capability gap before implementing paid submission if no verified model meets required capabilities. [The current assessment](final-video-generation.md#provider-suitability-assessment-2026-10-27) stops at the approved package's unresolved consistent-voice input/audio strategy; M10 is not Complete in source. This stop follows the owner's instruction, not an inferred approval requirement from these rules.
+
+Preserve the architecture and approved creative package. Native speech alone does not resolve a required stable voice across independent scenes. Resolve an approved audio source/identity and compatible execution profile before dependent paid-submission work; no silent voice default, reference substitution, fallback, timing alteration or missing dialogue. Runtime/provider/manual acceptance remains Pending. Keep local execution, Render/Inngest disabled, no deployment/remote migration and no paid provider calls during implementation/testing. The prior M10 documentation entry is historical authorization, not a prohibition on the newly requested implementation or offline checks.
+
 ## Milestone 10 documentation scope (2026-10-27)
 
 **Current task: documentation/context only. M9 Complete and approved per owner confirmation; M10 Final Video Generation Planned / Not Started.** [Canonical M10 plan](final-video-generation.md) owns future execution/review/recovery/cost/assembly rules; M9's immutable package and current pause remain unchanged. Earlier M9 implementation/test permissions below are historical, not authorization for this task.
