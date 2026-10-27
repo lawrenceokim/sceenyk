@@ -2,7 +2,7 @@
 
 ## M9 preparation has no financial admission (2026-10-27)
 
-The planned [M9 package workflow](video-generation-package.md#workflow-and-failure-states) builds/validates/persists/reviews an immutable package and pauses after explicit approval. Build/rebuild/retry/recovery/approval must not reserve, consume or restore credits/free allowance, trigger a provider request, or complete/settle the UGC run. M9 is Planned / Not Started; M10 is Not Started. Later video execution still requires current capabilities, a matched [server quote/explicit confirmation](pricing.md#planned-m9-package-versus-later-quote-2026-10-27) and existing server/database admission/idempotency/settlement authority. No accounting schema, balances, ledger rules or financial behavior change in this documentation task.
+M9 is Complete in source; M10 is Not Started. The [package workflow](video-generation-package.md#workflow-and-failure-states) builds/validates/persists/reviews immutable metadata, then pauses after explicit approval without changing the parent UGC job. Prepare/rebuild/retry/recovery/approval/rejection cannot reserve, consume or restore credits/free allowance, call a provider or settle/complete the run. Later video execution still needs current capability checks, a matched server quote/explicit confirmation and existing database financial admission/idempotency/settlement authority. No accounting code/schema, balances, ledger rules or financial behavior changed. Manual 068/runtime acceptance remains pending.
 
 ## Approved Settings accounting presentation (2026-10-16)
 

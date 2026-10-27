@@ -1,4 +1,4 @@
-export const localQueues = ["character", "location", "storyboard", "regeneration", "generation"] as const;
+export const localQueues = ["character", "location", "storyboard", "package", "regeneration", "generation"] as const;
 export type LocalQueue = typeof localQueues[number];
 export type QueueRetry = { failures: number; retryAt: number | null; paused: boolean };
 

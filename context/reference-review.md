@@ -1,8 +1,8 @@
 # Reference Asset Review — Milestone 6.5
 
-## Planned downstream package dependencies (2026-10-27)
+## Downstream package dependencies (2026-10-27)
 
-The [M9 package specification](video-generation-package.md#fingerprinting-immutable-versions-and-staleness) plans immutable references to the exact approved Character/Product sheet, selected view and review/approval versions, including supported historical provenance. Replacement, rejection/deletion, recomposition or changed approval versions must stale downstream packages; never silently update their bindings to a newer view/sheet. Existing review/replacement/approval behavior is unchanged. No package dependency enforcement is implemented here: **M8 Complete; M9 Planned / Not Started; M10 Not Started**. [Current task restrictions](ai-workflow-rules.md#milestone-9-preparation-scope-2026-10-27) apply; older next-milestone statements below are historical.
+[M9](video-generation-package.md#fingerprinting-immutable-versions-and-staleness) is Complete in source and freezes exact approved Character/Product sheet descriptors and workflow/review/approval versions, including supported historical provenance. Current-input checks stale packages after replacement, rejection/deletion, recomposition or changed approval versions; immutable bindings never resolve a newer view/sheet silently. Existing reference review/replacement/approval behavior is unchanged. M8 Complete; M10 Not Started. Manual 068/runtime acceptance remains pending, with no live provider/media/worker execution by Codex. Earlier next-step notes below are historical.
 
 ## Milestone 7 — Location review added (2026-10-26)
 

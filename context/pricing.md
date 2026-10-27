@@ -1,8 +1,8 @@
 # Commercial cost contract
 
-## Planned M9 package versus later quote (2026-10-27)
+## M9 package versus later quote (2026-10-27)
 
-M9 is **Planned / Not Started** and ends at immutable package review/approval and pause, as specified in the [canonical contract](video-generation-package.md). Package approval is not cost consent and does not calculate an invented tariff or admit paid video work. A later server-authoritative quote/confirmation must bind the exact current approved package ID/version/hash and selected adapter/model/configuration/capability/pricing versions. Stale inputs, rebuilt content, changed execution configuration or an expired quote require fresh checks and matched confirmation before execution. M10 actual video generation remains Not Started. Existing pricing/financial rules stay unchanged; no pricing code/configuration, provider call or paid request occurs here.
+M9 is Complete in source and ends at immutable package review/approval and pause, as specified in the [canonical contract](video-generation-package.md). Package approval is not cost consent and calculates no tariff or paid admission. M10 remains Not Started. A later server-authoritative quote/confirmation must bind the exact current approved package ID/version/hash and selected adapter/model/configuration/capability/pricing versions. Stale inputs, rebuilt content, changed execution configuration or expired quotes require fresh checks and matched confirmation. Existing pricing/financial rules remain unchanged; no pricing code/configuration or provider call is introduced by M9.
 
 ## Approved production Marketplace fee and withdrawal terms (2026-10-14)
 

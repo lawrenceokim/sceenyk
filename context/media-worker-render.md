@@ -2,10 +2,9 @@
 
 ## Current M9 worker boundary (2026-10-27)
 
-M9 package preparation is **Planned / Not Started**, with [one canonical provider-neutral contract](video-generation-package.md) and no video/rendering step. M8 is Complete; M10 actual video generation is Not Started. Later authorized package work belongs in the existing local UGC worker/shared business services; package building must not use Render media endpoints, Inngest, FFmpeg/Remotion, voice synthesis or a video provider. fal.ai is the first planned video adapter for later execution, separate from the legacy fal/media path. Hosting must remain replaceable without moving package business logic into an execution adapter.
+M9 is Complete in source with manual 068/runtime acceptance pending; M8 Complete and M10 Not Started. The existing local UGC worker has an opt-in package lane and **`npm run worker:ugc -- --packages-only`**, which bypasses upstream provider configuration and filters every nonpackage queue before claiming. It still uses the same shared runner/execution guards; no second worker service is introduced. M9 checks existing private images and compiles/validates/persists metadata only. It never uses Render media endpoints, Inngest, FFmpeg/Remotion, voice synthesis or a video provider.
 
-[Current restrictions](ai-workflow-rules.md#milestone-9-preparation-scope-2026-10-27) keep Render/Inngest disabled and runtime testing manual. This task starts no worker/job, makes no provider call and changes no deployment/configuration. Commands and historical acceptance below remain reference material only.
-
+[Exact setup/manual recovery](video-generation-package.md#manual-setup-and-acceptance) and [current restrictions](ai-workflow-rules.md#milestone-9-preparation-scope-2026-10-27) preserve local-only execution and disabled Render/Inngest. Codex started no worker or live job and changed no hosted configuration/deployment. Historical worker acceptance below remains reference material.
 
 ## Milestone 5 — Character Sheet (2026-10-23)
 

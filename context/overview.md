@@ -2,9 +2,9 @@
 
 ## Current UGC milestone boundary (2026-10-27)
 
-**Milestone 8 — Complete. Milestone 9 — Video Generation Package Preparation — Planned / Not Started. Milestone 10 — Actual video generation — Not Started.** These owner-directed statuses supersede older roadmap numbering and next-step recommendations; dated source/setup/acceptance notes below remain evidence, not fresh runtime verification.
+**Milestone 8 — Complete. Milestone 9 — Video Generation Package Preparation — Complete in source; manual 068/runtime/ownership/concurrency/visual acceptance pending. Milestone 10 — Actual video generation — Not Started.** These statuses supersede older roadmap/next-step notes below, without asserting fresh live acceptance.
 
-M9 will compile all current approved Character/Product references and sheets, Location, Storyboard, exact scene timing, dialogue/voice, action/reactions, camera, lighting, style, tone, video type and technical settings into one immutable versioned `VideoGenerationPackage`. Explicit build → validate → persist → summary → approve ends at a pause. The [canonical package specification](video-generation-package.md) owns fields, fingerprint/staleness, reliability and provider capability rules. fal.ai is the planned first adapter behind `VideoGenerationProvider`; core UGC stays provider-neutral. Its legacy integration is separate. This task prepares context only; current [execution/testing restrictions](ai-workflow-rules.md#milestone-9-preparation-scope-2026-10-27) apply.
+After current Storyboard/upstream approval, Studio exposes Prepare Generation Package and a structured Package review. The local UGC worker freezes exact approved versions, validates private media/timing/bindings and saves one immutable provider-neutral `VideoGenerationPackage` with deterministic hashes. Explicit approval ends at **Generation package approved**; Reject and Delete removes active review without rebuilding. [Canonical source/setup/manual acceptance](video-generation-package.md). `VideoGenerationProvider` is a generic interface only; fal.ai remains planned for M10, with no capability matching or provider execution in M9. Existing accounting/upstream/hosted guards remain unchanged. [Current restrictions](ai-workflow-rules.md#milestone-9-preparation-scope-2026-10-27).
 
 ## Storyboard timing margins and saved-dialogue repair (2026-10-27)
 

@@ -1,10 +1,10 @@
 # UGC V1 workflow contract
 
-## Current M9 preparation plan (2026-10-27)
+## Current M9 preparation implementation (2026-10-27)
 
-**Milestone 8 — Complete; Milestone 9 — Video Generation Package Preparation — Planned / Not Started; Milestone 10 — Actual video generation — Not Started.** The [canonical package specification](video-generation-package.md) owns the provider-neutral `VideoGenerationPackage`, exact approved-version bindings, scene/timing/voice/output fields, immutable version/hash, staleness, recovery and `VideoGenerationProvider` capability/translation contract. fal.ai is the first planned adapter; its legacy integration is separate. These current statuses supersede earlier numbering/next-step recommendations; dated source and manual-acceptance evidence below remains historical.
+**M8 Complete; M9 Video Generation Package Preparation Complete in source; M10 Actual video generation Not Started.** Manual 068/runtime/ownership/concurrency/visual acceptance remains pending. [The canonical source contract](video-generation-package.md) owns the strict `VideoGenerationPackage`, exact approved reference/Storyboard versions, per-scene timing/voice/action/reaction/camera/light/audio/bindings/prompts, technical requirements, deterministic hashes, immutable persistence, staleness and restart/duplicate safety. `VideoGenerationProvider` is an interface only; fal.ai remains planned for M10 without matching/submission in M9.
 
-Planned M9 flow: **Approved Storyboard → Build Generation Package → Validate Package → Persist immutable package/version → Display package summary/status → Approve package → Pause before video provider execution.** Packaging compiles current approved content without AI/provider calls or creative rewriting. Any changed Character/Product/Location/Storyboard or important saved setting makes the package stale and requires explicit rebuilding/reapproval. Existing later cost review/confirmation/accounting stays separate. This task documents the plan only; [current execution/testing restrictions](ai-workflow-rules.md#milestone-9-preparation-scope-2026-10-27) apply.
+Implemented flow: **Approved Storyboard → Prepare Generation Package → check assets/build scenes/validate/save → structured summary → Approve Package → Generation package approved → pause**. Reject and Delete removes active review, preserves private immutable version history and returns to a separate Prepare action without rebuilding. Existing parent/upstream/accounting behavior and Render/Inngest guards are unchanged. [Exact manual setup/package-only command](video-generation-package.md#manual-setup-and-acceptance); [current execution/testing restrictions](ai-workflow-rules.md#milestone-9-preparation-scope-2026-10-27). Older roadmap/next-step evidence below is historical.
 
 ## Storyboard timing targets and optional owner text repair (2026-10-27)
 
@@ -169,7 +169,7 @@ Official OpenAI documentation checked for this contract: [image inputs and visio
 | 4. Prepare Product | Generate a Product / Prop Reference Sheet from the Product upload: supported shape, color, material, features and recognizable traits. Store privately in R2 with verified metadata/provenance. |
 | 5. Prepare Location | Generate/review/approve one primary private Location through the existing explicit workflow. Preserve its exact accepted image, plan and approval versions. |
 | 6. Build Storyboard — M8 | Produce and server-validate structured scenes, actions, dialogue, approved references, camera, lighting, style, tone, transitions and exact timing. Persist versioned structured content and obtain explicit owner approval. |
-| 7. Prepare package — M9 planned | Follow the [canonical M9 workflow](video-generation-package.md#workflow-and-failure-states): deterministically build/validate/persist the immutable provider-neutral package, show summary, explicitly approve and pause. No API payload submission, AI call, paid generation or financial admission. |
+| 7. Prepare package — M9 source complete | Follow the [canonical M9 workflow](video-generation-package.md#workflow-and-failure-states): deterministically build/validate/persist the immutable provider-neutral package, show summary, explicitly approve and pause. No API payload submission, AI call, paid generation or financial admission. |
 | 8. Video execution — M10 not started | Only after current package approval, freshness/capability checks and matched cost confirmation/server-enforced accounting admission, translate through the explicitly selected provider adapter and submit once with durable intent/recovery. fal.ai is planned first; no UGC package adapter is implemented here. |
 | Later finalization | Verify successful output, store private video bytes in R2 and commit canonical output metadata, terminal success and existing exactly-once settlement through trusted server/database operations. Preview reads that persisted owned result. Provider acceptance or package approval alone never means Complete. |
 
@@ -215,7 +215,7 @@ The following is a historical illustrative shape, not the current M8 schema, a c
 
 ## Normalized Video Generation Package
 
-The authoritative planned contract is [Milestone 9 — Video Generation Package Preparation](video-generation-package.md). It defines the single `VideoGenerationPackage`, exact approved references/versions including Location and Storyboard, per-scene prompts/timing/voice/camera/lighting/bindings, technical settings, canonical hashes, immutable persistence/review/approval, stale rebuilds, provider adapter/capability checks and restart/duplicate safety. Keep field definitions there to avoid parallel schemas. M9 ends at package approval and pause; future quote/confirmation and paid provider execution remain separate. No package code or database design is implemented by this plan.
+[Milestone 9 source contract](video-generation-package.md) defines the single implemented neutral package/input/requirements schema, deterministic builder/full-content validator, exact approved manifests and scene fields, hashes/versions/staleness, private database/worker/review/approval lifecycle and provider interface. Keep exact field definitions there and in its strict runtime contract. Package approval pauses; capability matching, quote/confirmation and provider execution remain M10. Manual 068 and runtime acceptance remain pending.
 
 ## Cost review and accounting boundary
 
@@ -306,11 +306,11 @@ When another user adopts: copy only the immutable reusable configuration/storybo
 
 ## Manual testing policy and stop boundary
 
-The [current AI workflow policy](ai-workflow-rules.md#milestone-9-preparation-scope-2026-10-27) owns testing/execution restrictions. This task permits context/source/link/whitespace/scope review only. The owner performs manual testing unless Codex is explicitly instructed to test; earlier compile/lint/test permissions and milestone stop points below are historical. Stop after documenting M9. Do not implement it, start workers/jobs, call providers/storage, apply migrations, deploy, enable Render/Inngest or begin M10.
+[Current AI workflow policy](ai-workflow-rules.md#milestone-9-preparation-scope-2026-10-27) owns restrictions. The owner explicitly authorized focused TypeScript/lint/isolated schema/package/static checks for M9 implementation. Runtime/visual/ownership/concurrency testing remains manual; do not start workers/live jobs, call providers/storage, apply remote migrations, run browser/build/deployment suites or enable Render/Inngest. Stop after M9 source delivery. M10 is Not Started and requires a separate request.
 
 ## Implementation milestones
 
-**Current roadmap (2026-10-27).** M8–M10 statuses follow the owner's instruction. Earlier milestones retain their source/acceptance evidence in their linked contracts and the tracker; this documentation task does not reverify runtime behavior, migration application or manual acceptance. Older roadmap numbering elsewhere is historical.
+**Current roadmap (2026-10-27).** M8–M10 statuses follow the owner's instruction. Earlier milestones retain their source/acceptance evidence in their linked contracts and the tracker; this source delivery does not establish live runtime acceptance or remote migration application. Older roadmap numbering elsewhere is historical.
 
 | Milestone | Bounded outcome | Status |
 | --- | --- | --- |
@@ -324,10 +324,10 @@ The [current AI workflow policy](ai-workflow-rules.md#milestone-9-preparation-sc
 | 6.5 / 6.6 | Explicit reference review, replacement/reapproval and review UX | Complete in source; see [current setup/evidence](reference-review.md) |
 | 7 | One primary private Location generation/review/approval | Complete in source; see [current setup/evidence](location-reference.md) |
 | 8 | Structured Storyboard/script, stable voice, exact timing and explicit approval | Complete |
-| 9 | Video Generation Package Preparation, immutable version/review/approval and pause | Planned / Not Started — documentation only |
+| 9 | Video Generation Package Preparation, immutable version/review/approval and pause | Complete in source; manual 068/runtime acceptance pending |
 | 10 | Actual video generation through an approved capable provider after cost confirmation | Not Started |
 | 11 | UGC Template snapshot/adoption verification, public-safe slot projection and explicit required counts | Not Started |
 | 12 | Manual local end-to-end acceptance performed by the user | Not Started |
 | Later | Explicitly approved local → Render transition; review whether Inngest is needed | Deferred |
 
-**Needs confirmation before dependent implementation:** compatible live schema/persistence extensions, exact fal.ai model/account capabilities, output/audio/assembly policies, production preparation funding and generation pricing, retention/erasure/moderation and provider cancellation. Naming fal.ai does not confirm support for the package's required references/audio/timing. No unresolved choice authorizes fallback, hosted execution, guessed pricing or M10. **Stop after M9 context preparation; M9 implementation requires a separate request.**
+**Needs confirmation before dependent implementation:** compatible live schema/persistence extensions, exact fal.ai model/account capabilities, output/audio/assembly policies, production preparation funding and generation pricing, retention/erasure/moderation and provider cancellation. Naming fal.ai does not confirm support for the package's required references/audio/timing. No unresolved choice authorizes fallback, hosted execution, guessed pricing or M10. **Stop after M9 source delivery; M10 requires a separate request.**

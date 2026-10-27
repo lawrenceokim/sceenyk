@@ -1,8 +1,8 @@
 # UGC Location Reference — Milestone 7
 
-## Planned generation-package handoff (2026-10-27)
+## Generation-package handoff (2026-10-27)
 
-The [canonical M9 contract](video-generation-package.md#canonical-internal-contract) will freeze this Location's exact accepted image descriptor/content proof, root/candidate/plan revision and approval version with the approved Storyboard. Replacements, rejection/deletion, changed context or approval versions stale derived packages and require rebuilding/reapproval; packages cannot resolve “latest Location” silently. Existing Location generation/review/recovery/deletion stays unchanged. **M8 Complete; M9 Planned / Not Started; M10 Not Started.** This task adds documentation only, without a package implementation or fresh runtime acceptance. [Current restrictions](ai-workflow-rules.md#milestone-9-preparation-scope-2026-10-27) supersede historical next-step/testing recommendations below.
+[M9](video-generation-package.md#canonical-internal-contract) is Complete in source and freezes this Location's exact accepted image/proof, root/candidate/plan revision and approval version with the current approved Storyboard. Changed context, replacement/rejection/deletion or approval versions stale packages and block approval/retry until explicit rebuilding from current approvals. No latest-Location substitution or change to existing Location generation/review/recovery/deletion is introduced. M8 Complete; M10 Not Started. Manual 068/runtime acceptance remains pending; no live provider/worker/storage operation was run. Earlier next-step notes below are historical.
 
 ## Empty claim diagnostic correction (2026-10-26)
 

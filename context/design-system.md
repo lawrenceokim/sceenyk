@@ -1,8 +1,8 @@
 # Sceenyk design system
 
-## Planned M9 summary presentation (2026-10-27)
+## M9 summary presentation (2026-10-27)
 
-M9 package review is Planned / Not Started. Later authorized UI should reuse existing Studio regions, shared controls and status/warning/error tokens for the [package summary/approval pause](video-generation-package.md#workflow-and-failure-states), clearly distinguishing validation, stale inputs, provider readiness and approval. No new visual system, layout, component or stylesheet is introduced here. Keep Tailwind utilities plus the sole existing `app/globals.css`, native scrolling/accessibility and manual owner inspection. The canonical package specification owns behavior; [AI workflow rules](ai-workflow-rules.md#milestone-9-preparation-scope-2026-10-27) own execution/testing restrictions.
+Package review is Complete in source; manual visual/accessibility/runtime acceptance remains pending. It reuses Studio segmented navigation, shared Buttons/status/warning/error tokens and native details/summary disclosures for structured scene review, explicit approval and rejection. Tab controls wrap; content uses bounded native scrolling and existing responsive text containment. No new stylesheet, palette, animation system or Studio layout redesign. Preserve Tailwind utilities plus the sole `app/globals.css`. [Canonical behavior/manual inspection](video-generation-package.md#manual-setup-and-acceptance); [execution/testing policy](ai-workflow-rules.md#milestone-9-preparation-scope-2026-10-27).
 
 ## Storyboard dialogue-only repair controls (2026-10-27)
 

@@ -2,7 +2,7 @@
 
 ## Current preparation roadmap (2026-10-27)
 
-**Milestone 8 — Complete; Milestone 9 — Planned / Not Started; Milestone 10 — Not Started.** Current product direction is in [overview.md](overview.md#current-ugc-milestone-boundary-2026-10-27); older milestone/next-step statements below are historical. M9 prepares a canonical approved-asset/scene generation package, requires explicit package approval and pauses before any video execution. fal.ai is the planned first UGC video adapter, with future providers replaceable through `VideoGenerationProvider`. The [package specification](video-generation-package.md) is the single contract for this plan; [current restrictions](ai-workflow-rules.md#milestone-9-preparation-scope-2026-10-27) preserve documentation-only scope, manual testing and local execution with Render/Inngest disabled. No implementation or fresh runtime acceptance is claimed.
+**M8 Complete; M9 Complete in source with manual 068/runtime acceptance pending; M10 Not Started.** Current product direction is in [overview.md](overview.md#current-ugc-milestone-boundary-2026-10-27); older next-step notes below are historical. [M9 source contract and manual steps](video-generation-package.md) define exact approved-reference/Storyboard snapshots, neutral per-scene packages, validation/hash/versioning, explicit review/approval and the pause before video execution. fal.ai is the future first `VideoGenerationProvider` adapter, not implemented or matched in M9. Local execution remains manual; Render/Inngest remain disabled. No provider, worker process, live migration or deployment was run by Codex.
 
 ## Character V5 manual review (2026-10-25)
 

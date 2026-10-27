@@ -1,8 +1,10 @@
 # UI Context
 
-## Planned M9 package review boundary (2026-10-27)
+## M9 package review (2026-10-27)
 
-M9 is **Planned / Not Started**; no UI is implemented by this task. The future owner-only summary follows the [canonical workflow](video-generation-package.md#workflow-and-failure-states): show exact approved input/package versions, scene count/timing, settings/voice/output intent, validation, freshness and separate provider-readiness state; offer explicit package approval and stale rebuild guidance, then show an approved pause before video execution. Package approval never implies cost consent or a generated video. Use existing Studio regions, accessible status/errors/native scrolling and the [approved design system](design-system.md); preserve current layout and private DTO boundaries. M8 is Complete; M10 actual video generation is Not Started. [Current execution/manual-testing rules](ai-workflow-rules.md#milestone-9-preparation-scope-2026-10-27) apply.
+M9 is Complete in source with manual visual/runtime acceptance pending. Studio adds Package after current Storyboard approval. Prepare Generation Package queues explicit local work; persisted checking/building/validating/saving/review state drives progress. The summary shows package/reference approval/Storyboard versions, names, total duration/scene count, style/tone, ratio/video type and native expandable scene timing/dialogue/voice/action/reaction/Product/camera/light/audio/bindings/prompt details. No raw JSON or provider controls. Approve Package persists a paused approval; the final message is Generation package approved and final video stays Not Started. Reject and Delete removes active review, retains private immutable history, and returns to a separate Prepare action without automatic rebuilding. Stale/failed/stalled/disabled/setup states have safe guidance. [Current workflow/setup/manual tests](video-generation-package.md#manual-setup-and-acceptance).
+
+Reuse existing Studio regions, shared Buttons/status tokens, native scrolling/focus, responsive wrapping and Tailwind utilities plus the sole existing globals stylesheet. No layout redesign or browser/build/deployment acceptance was run. M8 Complete; M10 Not Started. [Current execution/testing restrictions](ai-workflow-rules.md#milestone-9-preparation-scope-2026-10-27).
 
 ## Storyboard manual dialogue repair and live counts (2026-10-27)
 

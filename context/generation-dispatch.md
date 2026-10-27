@@ -2,7 +2,7 @@
 
 ## M9 dispatch boundary (2026-10-27)
 
-**Milestone 8 Complete; Milestone 9 Planned / Not Started; Milestone 10 Not Started.** Later package building must use existing persisted owner/project-scoped UGC work and the local worker, with the [M9 immutable/idempotent recovery contract](video-generation-package.md#persistence-idempotency-and-restart-recovery). Package approval is an explicit persisted pause, never an Inngest event, Render request, provider submission or financial admission. No new dispatch code/queue is implemented here. [Current restrictions](ai-workflow-rules.md#milestone-9-preparation-scope-2026-10-27) keep all Inngest/Render execution disabled and workers unstarted; the older milestone/coordinator/setup sections below are historical, not current execution instructions.
+**M8 Complete; M9 Complete in source; M10 Not Started.** Package commands persist owned versioned work for the existing local UGC consumer; no Inngest event, Render request, provider submission or financial admission is dispatched. Package approval ends at the persisted pause. [Idempotent build/claim/checkpoint recovery](video-generation-package.md#persistence-idempotency-and-restart-recovery) and [manual 068/package-only setup](video-generation-package.md#manual-setup-and-acceptance) are authoritative. Current guards keep all Inngest/Render execution disabled; no worker process was started. Earlier milestone/coordinator/setup notes below are historical.
 
 ## Milestone 4 - same local UGC executor (2026-10-23)
 

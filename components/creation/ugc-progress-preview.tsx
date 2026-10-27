@@ -8,6 +8,7 @@ import { ugcProcessingMilliseconds, ugcStageExpectation } from "@/lib/ugc-jobs/p
 import type { useUgcProgress } from "./use-ugc-progress";
 import { v5ManualReviewProgress } from "@/lib/character-v5/progress";
 import { storyboardStatusLabel } from "@/lib/storyboard/contract";
+import { packageStatusLabel } from "@/lib/video-generation-package/contract";
 
 export type UgcProgressState = ReturnType<typeof useUgcProgress>;
 
@@ -35,11 +36,13 @@ export function UgcProgressPreview({ progress }: { progress: UgcProgressState })
   const locationRunning = !!location && ["running_plan", "running_image", "rejecting"].includes(location.state) && !!location.leaseExpiresAt;
   const storyboard = job?.currentStage === "build_storyboard" ? job.storyboard : undefined;
   const storyboardRunning = !!storyboard && ["running", "deleting"].includes(storyboard.state) && !!storyboard.leaseExpiresAt;
+  const generationPackage = job?.currentStage === "build_generation_package" ? job.generationPackage : undefined;
+  const packageRunning = generationPackage?.state === "running" && !!generationPackage.leaseExpiresAt;
   const manualReview = job?.currentStage === "character_reference" && !["failed", "cancelled", "completed"].includes(job.status) ?
     v5ManualReviewProgress(job.referenceReview?.characterV5) : null;
   const regeneration = job && !["completed", "cancelled"].includes(job.status) ?
     job.referenceReview?.groups.find(group => group.sheetInvalidated && job.currentStage === `${group.type}_reference`) : undefined;
-  const ticking = !!job && shouldPollUgcProgress(job) && (storyboardRunning || locationRunning || job.status === "running" || !!job.referenceReview?.regenerating);
+  const ticking = !!job && shouldPollUgcProgress(job) && (packageRunning || storyboardRunning || locationRunning || job.status === "running" || !!job.referenceReview?.regenerating);
   useEffect(() => {
     if (!ticking) return;
     const timer = setInterval(() => setClock(Date.now()), 1_000);
@@ -48,15 +51,16 @@ export function UgcProgressPreview({ progress }: { progress: UgcProgressState })
   // Correct local clock skew using the server observation; timestamps remain
   // authoritative. A display tick can never complete or advance any step.
   const now = job ? Date.parse(job.serverNow) + Math.max(0, clock - receivedAt) : clock;
-  const stalled = !manualReview && !!job && (storyboardRunning || locationRunning || job.status === "running" || !!job.referenceReview?.regenerating || regeneration?.execution?.state === "stalled") && (job.worker.state === "stalled" ||
+  const stalled = !manualReview && !!job && (packageRunning || storyboardRunning || locationRunning || job.status === "running" || !!job.referenceReview?.regenerating || regeneration?.execution?.state === "stalled") && (job.worker.state === "stalled" ||
     !job.worker.heartbeatAt || !job.worker.leaseExpiresAt ||
     now - Date.parse(job.worker.heartbeatAt) >= ugcWorkerStaleMilliseconds || Date.parse(job.worker.leaseExpiresAt) <= now);
   const paused = stalled || job?.paused || job?.status === "awaiting_confirmation";
   const characterCompletePause = !!job?.paused && job.stage === "product_reference" &&
     job.steps.some(step => step.id === "character_reference" && step.state === "completed");
-  const productCompletePause = !storyboard && !!job?.paused && job.stage === "location_reference" &&
+  const productCompletePause = !storyboard && !generationPackage && !!job?.paused && job.stage === "location_reference" &&
     job.steps.some(step => step.id === "product_reference" && step.state === "completed");
   const title = loading ? "Checking generation status" : !job ? "Generation status unavailable" :
+    generationPackage ? stalled ? "Waiting for package worker" : packageStatusLabel(generationPackage) :
     storyboard ? !storyboard.current && !["deleting", "deleted"].includes(storyboard.state) ? "Storyboard needs regeneration" : stalled ? "Waiting for storyboard worker" : storyboardStatusLabel(storyboard) :
     location ? location.state === "approved" ? "Location approved" : location.state === "failed" ? "Location stopped safely" :
       stalled ? "Waiting for generation worker" : job.message.split(".")[0] :
@@ -64,7 +68,7 @@ export function UgcProgressPreview({ progress }: { progress: UgcProgressState })
     job.referenceReview?.regenerating ? "Regenerating reference" : regeneration ? "Waiting for generation worker" :
     job.status === "failed" ? "Generation stopped" : job.status === "cancelled" ? "Generation cancelled" :
     job.status === "completed" ? "Generation complete" : productCompletePause ? "Product reference complete" : characterCompletePause ? "Character reference complete" : paused ? "Generation paused" : "Creating your video";
-  const processingMs = job && !storyboard ? ugcProcessingMilliseconds(job, now) : null;
+  const processingMs = job && !storyboard && !generationPackage ? ugcProcessingMilliseconds(job, now) : null;
   const expectation = job && !paused && active ? ugcStageExpectation(job.currentStage) : null;
 
   return <div aria-label="Creation preview" className="min-h-0 min-w-0 flex-1 overflow-hidden rounded-lg border border-border bg-muted/20">
@@ -73,7 +77,7 @@ export function UgcProgressPreview({ progress }: { progress: UgcProgressState })
         <div role="status" aria-live="polite" className="space-y-1">
           <h2 className="flex items-center gap-2 text-sm font-medium">
             {(stalled || paused) && <TriangleAlert className="size-4 shrink-0 text-warning-foreground" aria-hidden="true" />}
-            {job?.status === "failed" && <XCircle className="size-4 shrink-0 text-destructive" aria-hidden="true" />}
+            {(generationPackage ? generationPackage.state === "failed" : job?.status === "failed") && <XCircle className="size-4 shrink-0 text-destructive" aria-hidden="true" />}
             {title}
           </h2>
           {job?.referenceReview?.characterV5?.errorPhase && <p className="break-words text-destructive">Character technical phase: {job.referenceReview.characterV5.errorPhase} · {job.referenceReview.characterV5.errorCode}</p>}
@@ -81,7 +85,7 @@ export function UgcProgressPreview({ progress }: { progress: UgcProgressState })
           <p key={`${job?.status}:${job?.message}:${stalled}`} className="break-words text-muted-foreground motion-safe:animate-in motion-safe:fade-in motion-safe:duration-200">
             {loading ? "Reading your saved workflow." : manualReview ? manualReview.message : stalled ? "The generation worker may no longer be running. Start the local UGC worker to resume saved work." : job?.message ?? "Check status to reconnect to your saved workflow."}
           </p>
-          {job?.status === "failed" && <p className="text-destructive">Failed at: {job.stageLabel}</p>}
+          {(generationPackage ? generationPackage.state === "failed" : job?.status === "failed") && <p className="text-destructive">Failed at: {job?.stageLabel}</p>}
         </div>
         {job && <ol className="space-y-1" aria-label="Video workflow">
           {job.steps.map(step => {
@@ -126,7 +130,7 @@ export function UgcProgressPreview({ progress }: { progress: UgcProgressState })
           </details>}
         {expectation && <p className="break-words text-muted-foreground">{expectation}</p>}
         <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-muted-foreground">
-          {job?.startedAt && !storyboard && <p className="tabular-nums">{processingMs === null ? "Started earlier" : `${job.timing.scope === "regeneration" ? "Regeneration elapsed" : "Elapsed"}: ${elapsedTime(processingMs)}`}</p>}
+          {job?.startedAt && !storyboard && !generationPackage && <p className="tabular-nums">{processingMs === null ? "Started earlier" : `${job.timing.scope === "regeneration" ? "Regeneration elapsed" : "Elapsed"}: ${elapsedTime(processingMs)}`}</p>}
           {job && !job.startedAt && <p>Waiting to start</p>}
           {(job && (active || !!regeneration) || error) && <Button type="button" size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={checkStatus}>Check status</Button>}
         </div>

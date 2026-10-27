@@ -13,6 +13,7 @@ const safeStartupReasons = new Set([
   "UGC_INSPECTION_UNAVAILABLE",
   "CHARACTER_SHEET_RECOVERY_FAILED", "CHARACTER_SHEET_COMPOSITION_FAILED",
   "CHARACTER_SLOT_VALIDATION_REQUIRED",
+  "UGC_PACKAGE_DISABLED",
 ]);
 const safeDatabaseCodes = new Set(["PGRST202", "PGRST204", "PGRST205", "42501", "42883", "23514"]);
 class WorkerStartupError extends Error {
@@ -39,14 +40,29 @@ async function main() {
     throw new Error("UGC_LOCAL_EXECUTION_REQUIRED");
   }
   const args = process.argv.slice(2);
+  const packagesOnly = args.length === 1 && args[0] === "--packages-only";
   startupPhase = "arguments";
-  if (args.length) {
+  if (args.length && !packagesOnly) {
     const { z } = await import("zod");
     if (args.length !== 2 || !["--recover-character-sheet", "--inspect-regeneration", "--resume-analysis", "--resume-character", "--resume-character-output", "--resume-product", "--resume-regeneration", "--retry"].includes(args[0]) || !z.uuid().safeParse(args[1]).success) throw new Error("UGC_WORKER_ARGUMENT_INVALID");
   }
   startupPhase = "database_configuration";
   const { getDatabaseConfig } = await import("../lib/db/config");
   getDatabaseConfig();
+  // The M9-only consumer cannot claim upstream paid preparation. It needs no
+  // OpenAI/Character provider configuration and uses this same local runner.
+  if (packagesOnly) {
+    if (process.env.UGC_PACKAGE_ENABLED !== "1") throw new Error("UGC_PACKAGE_DISABLED");
+    startupPhase = "runner_import";
+    const { LocalJobRunner } = await import("../lib/ugc-jobs/local-runner");
+    const shutdown = new AbortController();
+    for (const signal of ["SIGINT", "SIGTERM"] as const) process.once(signal, () => shutdown.abort());
+    console.info("UGC_LOCAL_PACKAGE_WORKER_READY");
+    startupPhase = "running";
+    await new LocalJobRunner(randomUUID(), undefined, true).run(shutdown.signal);
+    console.info("UGC_LOCAL_WORKER_STOPPED");
+    return;
+  }
   if (args[0] === "--recover-character-sheet") {
     startupPhase = "character_sheet_recovery";
     const { recoverStoredCharacterSheet } = await import("../lib/reference-review/recover-character-sheet");

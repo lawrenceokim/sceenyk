@@ -1,10 +1,10 @@
 # Code Standards
 
-## Planned generation-package standards (2026-10-27)
+## Generation-package standards (2026-10-27)
 
-M9 is **Planned / Not Started**; this task writes no application code. For later authorized implementation, the [canonical package specification](video-generation-package.md) owns fields, hash recipe, provider capabilities, state/recovery and versioning rules. Keep one strict runtime-validated `VideoGenerationPackage`; compile only approved saved content through deterministic provider-neutral helpers. Preserve exact integer-ms timing, immutable asset/approval versions and source digests; separate immutable payloads from lifecycle/approval/lease metadata and provider execution records. Rebuild and reapprove stale content rather than mutating it.
+M9 is Complete in source; [the canonical contract](video-generation-package.md) owns actual fields, deliberate cross-language hash recipe, immutable versions, state/recovery and private DTO rules. Reuse its strict schemas and deterministic builder rather than creating parallel package types. Preserve exact approved source versions and integer-ms scene content. Rebuild/reapprove stale content; never mutate a saved payload, validation receipt or approval evidence.
 
-Core UGC/Storyboard/package modules must not import fal SDK/request types or branch on vendor request fields. A generic `VideoGenerationProvider` exposes neutral capabilities/validation and owns translation; provider-specific model IDs, limits and settings belong to server-only configuration/adapters. fal.ai is planned first; unsupported/unverified required features block execution before a paid call, without fallback. Use owner/project-authorized commands, atomic idempotency/version/lease fences, private metadata-only persistence and safe DTOs. Do not invent schema or treat hashes as authorization. [Current task/testing restrictions](ai-workflow-rules.md#milestone-9-preparation-scope-2026-10-27) override historical verification recipes below.
+Core UGC/Storyboard/package logic must not import provider SDK/request types, model IDs or vendor payload fields. `VideoGenerationProvider` is an interface only; capability matching and adapters are M10. Unsupported/unverified required features must later block before paid execution, without fallback. Database ownership/current-input/unique/version/lease fences remain authoritative. [Current testing/execution restrictions](ai-workflow-rules.md#milestone-9-preparation-scope-2026-10-27) override historical recipes below; manual runtime acceptance remains pending.
 
 ## Storyboard target margins and manual text repair (2026-10-27)
 

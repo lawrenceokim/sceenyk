@@ -1,8 +1,22 @@
 # Progress Tracker
 
+## Milestone 9 implementation (2026-10-27)
+
+**Milestone 8 Complete; Milestone 9 Complete in source; Milestone 10 Not Started. Manual migration 068/runtime/ownership/concurrency/visual acceptance pending.** Implemented a strict provider-neutral package/input/requirements contract, deterministic scene compilation and cross-language SHA-256 recipe, exact approved source versions, immutable content/validation/approval, sticky project-setting staleness plus dynamic upstream checks, scoped idempotent build/claim/checkpoint recovery and safe owner summaries. Studio adds Package review with Prepare, native expandable scene summaries, Approve Package and Reject and Delete. Approval stops at **Generation package approved**; final video stays Not Started. Rejection removes active review, preserves immutable private history/media and queues no replacement.
+
+Manual **`20261027006800_ugc_video_generation_packages.sql` after 067/prerequisites** adds private package/event tables, RLS/service-only reads and scoped RPCs, immutable/append-only guards, a partial fingerprint uniqueness index, consistent locks and an additive project-setting staleness trigger. Existing upstream functions/data/accounting remain unchanged. The existing local consumer has a package lane with 90-second leases/20-second heartbeats/three claims, and **`npm run worker:ugc -- --packages-only`** bypasses upstream paid configuration/claiming. **`UGC_PACKAGE_ENABLED=1`** is required in app/worker; `.env.example` defaults to 0 and ignored configuration was not edited. `VideoGenerationProvider` is an interface only; fal.ai capability matching/adapters/execution remain M10.
+
+Passed final **TypeScript**, focused **ESLint**, **177 focused package/schema/SQL checks**, and **91 existing local queue checks**. All **68 migrations** parse in ephemeral PostgreSQL; 068 reruns with LF/CRLF, all **292 existing function bodies/grants** remain unchanged. Package checks prove deliberate SQL/TS hash parity, invalid timing/bindings/media metadata rejection, safe DTOs, approval pause, lease parsing, duplicate command recovery, expiry/reclaim fencing, atomic save rollback, idempotent approval/deletion, immutable history, sticky staleness and bounded retry. SQL transition fixtures use a stubbed approved-input resolver, roll back entirely and never execute a worker or contact live services; they do not establish live upstream/ownership/concurrency/visual acceptance. The initial SQL JSON-subtraction precedence issue was found and fixed by these checks.
+
+Final documentation/source review passed: **49 added local links/anchors resolve**, no removed heading breaks incoming context links, and tracked/new-file whitespace is clean. Reviewed scope: **43 files, including 12 new source/schema/check files and 20 context documents**; no dependency, ignored environment, hosted configuration or unrelated application files changed.
+
+Files: new `lib/video-generation-package/{contract,builder,provider,media,projection,server,worker,progress}.ts`, `app/api/ugc/package/route.ts`, `components/creation/generation-package-review.tsx`, migration 068 and `scripts/check-video-generation-package.ts`; integrations in `lib/ugc-jobs/{contract,claim-contract,queue-policy,database-diagnostics,local-runner,server}.ts`, `lib/db/types.ts`, `components/creation/{ugc-workflow-preview,ugc-progress-preview}.tsx`, `scripts/ugc-worker.ts` and `.env.example`; 20 relevant context documents synchronized. [Canonical actual fields, source map, exact setup and manual acceptance checklist](video-generation-package.md).
+
+No provider/video/audio/image generation, worker process/live job execution, current private record/media inspection or mutation, remote migration application, browser/build, deployment or hosted configuration change. Render/Inngest remain disabled. No financial code or M10 integration is introduced. The owner's manual acceptance is next; stop after this source delivery.
+
 ## Milestone 9 context preparation (2026-10-27)
 
-**Documentation preparation — Complete. Milestone 8 — Complete. Milestone 9 — Video Generation Package Preparation — Planned / Not Started. Milestone 10 — Actual video generation — Not Started.** M8 status follows the owner's instruction; prior migration/runtime/visual-acceptance notes retain their dated evidence, without a new claim of live verification. Current statuses/next-step scope here supersede older roadmap numbering and recommendations below.
+**Historical documentation-only snapshot, superseded by M9 source delivery above.** Documentation preparation was Complete; M8 was Complete, M9 Planned / Not Started and M10 Not Started at that boundary. The following paragraphs preserve that task's original scope/evidence, not current M9 implementation status or testing permissions.
 
 Added [video-generation-package.md](video-generation-package.md) as the authoritative planned `VideoGenerationPackage` / `VideoGenerationProvider` contract: exact approved asset/Storyboard/input revisions, complete per-scene millisecond timing/dialogue/voice/action/reaction/camera/light/style/role bindings and neutral prompts, explicit technical settings, immutable versions, deterministic input fingerprint/content hash, stale rebuild/reapproval, scoped deduplication/leases/restart recovery, safe failure states and pre-paid capability/financial checks. Planned flow ends at persisted package summary/explicit approval and pause. fal.ai is the first planned adapter; provider model IDs/settings/limits/payload translation remain isolated and no silent fallback is allowed. Existing legacy fal code is separate, not a completed UGC adapter.
 
@@ -1952,7 +1966,7 @@ Project implementation exists: explicit Save draft/title/status controls; one Zo
 
 ## Current Goal
 
-The current goal is M9 documentation/context preparation, completed as recorded [at the top](#milestone-9-context-preparation-2026-10-27). M8 is Complete; M9 is Planned / Not Started; M10 is Not Started. Do not begin implementation or runtime testing automatically.
+The current source goal is delivered as recorded [at the top](#milestone-9-implementation-2026-10-27): M8 Complete; M9 Complete in source with manual 068/runtime acceptance pending; M10 Not Started. Stop after source delivery; the owner performs manual acceptance. Do not start workers, providers, remote migrations, deployments or M10 automatically.
 
 **Historical redesign goal:** record the approved full UI/UX redesign before implementation. Its original recommendation was Phase 1 — shared public/workspace shells and navigation architecture. Preserve dated evidence below; it is not the current next step.
 
@@ -2163,7 +2177,7 @@ This table describes the dashboard unit. Existing landing and creation page cont
 
 ## Next Up
 
-**Next eligible bounded implementation: Milestone 9 — Video Generation Package Preparation, Planned / Not Started, only after a separate owner request.** Follow the [canonical contract](video-generation-package.md); stop at explicit package approval/pause. M10 actual video generation remains Not Started. Current documentation scope is complete; no application work, tests, providers, workers, migrations, deployments or hosted enabling is authorized by this recommendation.
+**Next: owner manual Milestone 9 acceptance** after manual 068 and the [documented package-only setup/checklist](video-generation-package.md#manual-setup-and-acceptance). M9 is Complete in source; M10 actual video generation is Not Started and requires a separate request. Do not automatically execute providers, workers, live jobs, remote migrations, deployments or hosted enabling.
 
 **Historical redesign recommendation:** Phase 1 — shared public/workspace shells and navigation architecture. Earlier roadmap/recommendations below retain historical evidence and do not replace the current M9 boundary.
 

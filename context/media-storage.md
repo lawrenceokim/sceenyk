@@ -1,10 +1,10 @@
 # Private project media
 
-## Planned M9 approved-media snapshot (2026-10-27)
+## M9 approved-media snapshot (2026-10-27)
 
-M9 is **Planned / Not Started**. The [canonical package](video-generation-package.md#canonical-internal-contract) will bind the exact approved Character/Product sheets and selected views plus accepted Location by immutable asset/candidate IDs, source/review/approval versions and verified content metadata. Reuse existing private R2 objects; never copy binaries into PostgreSQL, store expiring URLs as asset identity, choose a newer candidate silently or expose the privileged manifest in client/public/template DTOs. Provider access links are resolved privately only at later authorized execution and are excluded from package fingerprints.
+M9 is Complete in source. It freezes the exact approved Character/Product composed sheets and accepted Location descriptors, source/approval versions and SHA-256/dimensions/length. The worker and explicit approval reuse `readReviewAsset` for bounded conditional ETag/length/hash verification of those three existing private R2 images. No provider signing, generated file, new bucket, derivative, upload or deletion occurs. The private frozen input retains keys/ETags; canonical payload and explicit owner summary omit storage descriptors/URLs. [Canonical manifest/privacy contract](video-generation-package.md#canonical-internal-contract).
 
-Missing/deleted/hash-mismatched objects block package eligibility; changed asset/approval versions require rebuilding/reapproval. Historical package references must not authorize upstream deletion or alter existing rejection behavior. Coordinate future retention/pinning/erasure explicitly before dependent implementation; no new retention policy, bucket or cleanup is introduced. [Current restrictions](ai-workflow-rules.md#milestone-9-preparation-scope-2026-10-27) prohibit storage/provider operations in this task. The package specification owns dependency staleness and integrity rules.
+Changed approvals/settings stale packages; unavailable/mismatched bytes block saving/approval and require restoration of the exact asset before explicit retry. Reject and Delete tombstones package review only and never touches upstream media. Retention/pinning/erasure needs separate confirmation; immutable history cannot be retargeted to latest assets. Codex made no live storage/provider request. [Manual 068/runtime acceptance](video-generation-package.md#manual-setup-and-acceptance) remains pending.
 
 ## Milestone 7 — private Location assets (2026-10-26)
 
