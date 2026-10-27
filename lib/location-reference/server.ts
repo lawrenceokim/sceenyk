@@ -6,6 +6,7 @@ import { locationImageSettings } from "./provider";
 import { loadLocation } from "./media";
 import { runLocationStorageClaim } from "./recovery";
 import { locationFailure } from "./errors";
+import { compositeRecord, parseWorkerClaim } from "@/lib/ugc-jobs/claim-contract";
 
 export async function readLocationReview(job: { id: string; owner_user_id: string; project_id: string }): Promise<LocationReview | undefined> {
   const db = createDatabaseClient();
@@ -59,8 +60,9 @@ export async function locationAction(input: unknown) {
     const claim = await context.db.rpc("ugc_location_recovery_claim", { p_owner: context.ownerId, p_project: context.job.project_id,
       p_job: context.job.id, p_location: locationId!, p_version: version });
     if (claim.error) throw locationFailure(claim.error, "recovery_claim", "LOCATION_DATABASE_FAILED");
-    if (!claim.data) throw new ReferenceReviewAccessError(409);
-    await runLocationStorageClaim(claim.data);
+    const valid = parseWorkerClaim("location", claim.data);
+    if (!valid) throw new ReferenceReviewAccessError(409);
+    await runLocationStorageClaim(valid);
     return readLocationReview(context.job);
   }
   const scene = ["generate", "resume"].includes(action) ? await context.db.rpc("ugc_location_scene", { p_job: context.job.id }) : null;
@@ -80,12 +82,13 @@ export async function locationAction(input: unknown) {
     p_job: context.job.id, p_version: version, p_action: action,
     p_payload: { ...(locationId ? { locationId } : {}), ...(scene?.data ? { settings: locationImageSettings(settings?.aspectRatio) } : {}) } });
   if (result.error) throw locationFailure(result.error, "manual_action", "LOCATION_DATABASE_FAILED");
-  if (!result.data) throw new ReferenceReviewAccessError(409);
+  if (!result.data || !compositeRecord(result.data)?.id) throw new ReferenceReviewAccessError(409);
   if (action === "reject" || action === "retry_delete") {
     const claim = await context.db.rpc("ugc_location_cleanup_claim", { p_owner: context.ownerId, p_project: context.job.project_id,
       p_job: context.job.id, p_location: result.data.id, p_version: result.data.version });
     if (claim.error) throw locationFailure(claim.error, "cleanup_claim", "LOCATION_DATABASE_FAILED");
-    if (claim.data) await runLocationStorageClaim(claim.data);
+    const valid = parseWorkerClaim("location", claim.data);
+    if (valid) await runLocationStorageClaim(valid);
   }
   return readLocationReview(context.job);
 }

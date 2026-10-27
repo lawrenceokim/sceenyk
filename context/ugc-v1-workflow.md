@@ -1,5 +1,25 @@
 # UGC V1 workflow contract
 
+## Storyboard timing targets and optional owner text repair (2026-10-27)
+
+AI planning distinguishes conservative preferred speech targets from unchanged hard limits, reserves action first with a 900ms target, and verifies final timing. Short scenes may remain silent. Timing-only correction can fix affected speech and action durations within the existing two-call budget. A completed saved response with only speech-budget failures can instead be explicitly edited by its owner and saved directly into review via manual 067, without generation/worker/retry. The original response stays immutable; all other creative fields/asset bindings stay fixed during repair, with normal review/Accept afterward. Existing upstream generation, approved references, accounting, Reject/Delete and hosted state remain unchanged. [Setup and manual steps](storyboard.md#timing-targets-and-manual-dialogue-repair-2026-10-27). Milestone 9 Not Started.
+
+## Storyboard time-first dialogue planning (2026-10-27)
+
+New explicit Generate requests supply calculated 5/10/30s scene, action/camera, speech, reaction and transition budgets before dialogue. Dialogue/narration share pause-aware per-interval/whole-video ceilings; concise 5/10s phrases, natural pace and realistic simple movement are required. Existing strict validators remain authoritative. The one existing correction gets exact line timing/count feedback and preserves otherwise-valid structure; failed saved work is not regenerated or rewritten. Review/edit/save/accept/delete, references, accounting and local/hosted state are unchanged. [Exact calculations and owner-run manual steps](storyboard.md#speech-budget-planning-before-dialogue-2026-10-27). No migration/configuration or Milestone 9 work.
+
+## Storyboard validation review correction (2026-10-27)
+
+Completed provider responses remain private and immutable when scene business validation fails. Studio shows all safe field-level errors and format corrections before explicit rejection; valid equivalent formats normalize locally without creative rewriting. Retry only queues a saved completed response that passes current validation and never contacts OpenAI, including retrieval. Current 10s output has excessive spoken words, so Retry is unavailable and its two paid responses stay preserved for investigation. Reject/Delete and any future Generate remain separate explicit choices. Approved references, parent job and limits are unchanged. No migration/configuration or Milestone 9 work. [Exact findings and safe choices](storyboard.md#saved-output-validation-investigation-2026-10-27) supersedes historical recovery instructions below.
+
+## Storyboard provider recovery correction (2026-10-26)
+
+Milestone 8 now streams and durably captures responses before parsing/persistence; explicit saved-work recovery cannot create a new paid request or correction. Missing output stays fenced with honest unknown-completion diagnostics and separate manual deletion/new generation. Default provider retention remains disabled; optional retention is a deliberate future-request setting. Approved references, accounting, local-only execution and the Milestone 9 stop are unchanged. [Current evidence, configuration and manual choices](storyboard.md#provider-timeout-evidence-and-recovery-only-correction-2026-10-26).
+
+## Milestone 8 — AI Storyboard implemented in source (2026-10-26)
+
+Current approval chain: Character → Product → Location → explicit Generate Storyboard → automatic detailed scene/script planning → editable review → Accept Storyboard → safe pause before generation package. Exactly one Character voice (also used for optional off-camera narration), one Product and one approved Location. Scene coverage is **exactly** 5/10/30 seconds with continuous non-overlapping integer-ms intervals; the historical illustrative partial-coverage allowance below does not apply to M8. Use all saved inputs and exact approved images; never invent unsupported claims. Native Studio timeline, private persistence/versioning/staleness, bounded correction/recovery and deletion are implemented. No final-video provider/package/credit work. [Current schema/setup/acceptance](storyboard.md); manual 066/runtime/provider/visual/ownership acceptance pending.
+
 ## Milestone 7 — Location (2026-10-26)
 
 Both reference approvals lead to Generate Location → automatic private plan → one empty-environment image → manual approval → safe pause before storyboard. No pre-image form. Reject and Delete only removes that candidate and returns to idle; a separate Generate Location click reuses the plan or replans changed saved context. Recovery/cleanup cannot submit provider work. Planning/generation remain on the existing local worker; direct owner storage-only claims can recover/delete without starting it. [Current contract](location-reference.md) supersedes earlier behavior. No accounting, hosted, storyboard or video change; manual acceptance remains pending.

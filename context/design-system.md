@@ -1,5 +1,21 @@
 # Sceenyk design system
 
+## Storyboard dialogue-only repair controls (2026-10-27)
+
+Use existing native scene disclosures, labelled textareas, shared Buttons and warning/status tokens for explicit saved-response dialogue editing. Other fields remain readable and fixed. Per-line counts distinguish preferred target from absolute maximum; local checking and explicit saving are separate actions. Original response reports are labelled independently from the saved review document. Preserve native scroll/focus, responsive wrapping and the sole existing global stylesheet. [Behavior/setup](storyboard.md#timing-targets-and-manual-dialogue-repair-2026-10-27); no browser/visual tests executed.
+
+## Storyboard provider/recovery details (2026-10-26)
+
+Use the existing warning/status surfaces and a native details disclosure for safe provider/recovery metadata; IDs wrap and missing values read Not retained. Recovery actions reflect real availability, never imply resubmission or an unverified provider result. No new CSS, palette, layout or animation system. [Current recovery correction](storyboard.md#provider-timeout-evidence-and-recovery-only-correction-2026-10-26); manual visual acceptance pending.
+
+## Storyboard queue state refinement (2026-10-26)
+
+Use plain queued/processing/paused/failed labels and existing warning tokens for an unclaimed queue older than 90s or an expired heartbeat/lease. Required recovery information includes attempts/request counts and Check status; never imply video generation has begun or offer a duplicate Generate for an existing queued request. Reuse existing Studio regions/Tailwind tokens, with no layout, stylesheet or animation-system change. [Queue correction](storyboard.md#location-empty-claim-starvation-correction-2026-10-26); manual visual acceptance remains pending.
+
+## Milestone 8 — Storyboard review (2026-10-26)
+
+Reuse Preview segmented buttons with a Storyboard option, shared Buttons, existing theme tokens, native details/summary timeline cards and bounded native scroll. Scene headers show number/start/end/purpose. Labelled text/number/select controls expose edits; timestamps display seconds to three decimals and persist integer milliseconds. Required instructions remain readable, generation prompts wrap, and speech is optional. Explicit save/status/error feedback and disabled dirty/stale approval retain accessibility and coarse-pointer behavior. No new palette, CSS file, animation system or Studio layout redesign. [Contract/setup](storyboard.md); manual visual/accessibility acceptance pending.
+
 ## Milestone 7 — Location review (2026-10-26)
 
 Location reuses References, shared Button tokens, native scrolling and a large contained private preview. Generate Location is the only initial/post-deletion generation action; plan fields/text are absent. Image review uses Accept Location / Reject and Delete. Rejection hides the image immediately, deletion failure offers Retry deletion, and recovery announces storage-only work. Failed previews block Accept. Existing theme/focus/reduced-motion behavior remains; no new stylesheet or design system. [Current contract](location-reference.md); manual visual acceptance pending.

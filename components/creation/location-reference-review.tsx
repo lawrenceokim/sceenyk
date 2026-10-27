@@ -54,7 +54,7 @@ function LocationCard({ projectId, jobId, location, eligible, enabled, checkStat
       </> : <p role="alert" className="p-3 text-xs text-destructive">Location preview could not load. Check status and storage before accepting.</p>}
     </div>}
     {location?.state === "image_review" && <p className="text-xs leading-relaxed text-muted-foreground">Check the scene, visual style, lighting, surroundings and framing. Reject and Delete removes only this candidate. Generate Location is a separate action after deletion.</p>}
-    {location?.state === "approved" && <p className="text-xs text-muted-foreground">Location saved privately. Generation paused before storyboard.</p>}
+    {location?.state === "approved" && <p className="text-xs text-muted-foreground">Location saved privately. Continue in Storyboard to plan your scenes.</p>}
     {location?.error && <p role="status" className="text-xs text-warning-foreground">{locationErrorMessage(location.error, location.providerCompleted)}</p>}
     {location?.diagnostic && <details className="text-xs text-muted-foreground"><summary className="cursor-pointer">Operation details</summary>
       <p className="mt-1 break-words">{location.diagnostic.phase} · {location.diagnostic.code}{location.diagnostic.databaseCode ? ` · ${location.diagnostic.databaseCode}` : ""}{location.diagnostic.causeCode ? ` · ${location.diagnostic.causeCode}` : ""}{location.diagnostic.httpStatus ? ` · HTTP ${location.diagnostic.httpStatus}` : ""}</p>

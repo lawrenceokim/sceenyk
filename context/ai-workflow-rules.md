@@ -1,5 +1,29 @@
 # AI Workflow Rules
 
+## Current correction — timing margins and explicit manual dialogue recovery (2026-10-27)
+
+Preserve validators, provider budgets, approved references and current raw responses. Add preferred-versus-absolute speech limits, >=900ms action targets, exact bounded timing correction and final deterministic validation. Provide explicit dialogue-only owner repair without automatic creative rewriting or paid/worker work. Migration 067 may be created and checked in memory only; never apply remotely. No current DB/provider/recovery-file inspection or mutation in this task, OpenAI calls, workers, live retries, deployments or Milestone 9. Run focused prompt/timing/correction/validator/TypeScript/static checks. [Source/setup/manual steps](storyboard.md#timing-targets-and-manual-dialogue-repair-2026-10-27); Render/Inngest disabled.
+
+## Current correction — Storyboard time-first speech planning (2026-10-27)
+
+Implement pure prompt budgeting and exact feedback for the existing bounded correction. Preserve all validators and paid-request limits; no extra AI planning call, schema change or local creative rewriting. Do not inspect/retry/mutate the existing failed Storyboard or assets: the owner will explicitly reject/delete and generate later. Only focused TypeScript/prompt/schema/timing/static checks; no providers, worker/job execution, deployment or remote migration. Preserve manual review/edit/delete, accounting, approved references and disabled Render/Inngest. Milestone 9 Not Started. [Current calculations and manual steps](storyboard.md#speech-budget-planning-before-dialogue-2026-10-27).
+
+## Current correction — saved Storyboard validation (2026-10-27)
+
+No OpenAI/provider requests, including retrieval; no worker, live retries/writes/deletions, parent reset, migration application or deployment. Read saved DB/local responses, compare strict schema and all business rules, and preserve original bytes. Normalize only equivalent representations/derived noncreative metadata; never invent, shorten or omit creative content or weaken timing/asset checks. Retry must be local-only and only queue a saved response that now validates; report exact failures before explicit rejection when content cannot fit. Focused TypeScript/schema/parser/validator/static checks only. Render/Inngest disabled; Milestone 9 Not Started. [Confirmed seven speech errors and exact safe choices](storyboard.md#saved-output-validation-investigation-2026-10-27) supersedes earlier provider-outcome instructions below.
+
+## Current correction — Storyboard provider outcome (2026-10-26)
+
+Inspect existing DB rows, files and available logs read-only; do not retry, start workers, call paid providers, delete assets, deploy or apply migrations. Retrieve only an existing known retained response if supported; current revision has no ID and store:false, so no provider lookup is possible. Preserve original records and distinguish inferred timeout timing from a proven original exception/completion. Implement streamed durable capture, safe diagnostics and strict recovery-only retry in source. No new migration, increased budgets, model substitution, hosted enabling or Milestone 9. [Current evidence and exact manual options](storyboard.md#provider-timeout-evidence-and-recovery-only-correction-2026-10-26).
+
+## Current correction — local queue starvation (2026-10-26)
+
+Read-only queue/schema inspection and offline source/schema/SDK checks only. Do not start workers, execute live claims/retries, call paid providers, mutate/delete assets/job records or apply remote SQL. Preserve the existing queued Storyboard and all approved references. Fix empty composite handling, queue fairness/backoff, diagnostic attribution and queued/stalled/paused/failed Studio copy in source. No new generation package/Milestone 9, financial change or hosted enabling. [Confirmed root cause and exact owner-run resume](storyboard.md#location-empty-claim-starvation-correction-2026-10-26).
+
+## Current unit — Milestone 8 AI Storyboard (2026-10-26)
+
+Authorized through storyboard approval only. Generate automatically from approved Character/Product/Location images and saved project inputs; users need not author a script. Persist scene-by-scene details, exact timing, stable voice, approved versions, safe retries/recovery and duplicate-request fences. Editing/approval/deletion are explicit; stale inputs never silently replace scenes. Use the existing local UGC worker; keep Render/Inngest disabled and preserve accounting/upstream generation. Stop before generation-package preparation/video. Verification is focused TypeScript, lint and offline schema/contract/static checks only. No paid providers, worker/job execution, browser, build, deployment, remote SQL or manual testing. Migration 066 and user-run runtime acceptance are pending. [Current contract/manual setup](storyboard.md) supersedes prior Milestone 8 Not Started stop points.
+
 ## Current Location blocker/review correction (2026-10-26)
 
 Supersedes automatic replacement after rejection: implement Reject and Delete only, followed by separate explicit Generate Location. Investigate owned Location records/provider receipts/R2 read-only first; restore only verified surviving output if available. This inspection found none, so no live restoration/mutation occurred. Do not delete live assets, call paid providers, start workers or apply migrations. Keep one-click private planning, unchanged-context plan reuse, output recovery and manual image approval. Record proven stop points separately from discarded/unknown historical causes. Add 065 after 064 without rewriting prior migrations. Only focused TypeScript/lint/static checks; Milestone 8 remains Not Started.

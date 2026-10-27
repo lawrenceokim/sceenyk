@@ -7,6 +7,7 @@ import { isUgcJobActive, shouldPollUgcProgress, ugcWorkerStaleMilliseconds, type
 import { ugcProcessingMilliseconds, ugcStageExpectation } from "@/lib/ugc-jobs/progress";
 import type { useUgcProgress } from "./use-ugc-progress";
 import { v5ManualReviewProgress } from "@/lib/character-v5/progress";
+import { storyboardStatusLabel } from "@/lib/storyboard/contract";
 
 export type UgcProgressState = ReturnType<typeof useUgcProgress>;
 
@@ -32,11 +33,13 @@ export function UgcProgressPreview({ progress }: { progress: UgcProgressState })
   const active = !!job && (isUgcJobActive(job.status) || !!job.referenceReview?.regenerating);
   const location = job?.currentStage === "location_reference" ? job.location : undefined;
   const locationRunning = !!location && ["running_plan", "running_image", "rejecting"].includes(location.state) && !!location.leaseExpiresAt;
+  const storyboard = job?.currentStage === "build_storyboard" ? job.storyboard : undefined;
+  const storyboardRunning = !!storyboard && ["running", "deleting"].includes(storyboard.state) && !!storyboard.leaseExpiresAt;
   const manualReview = job?.currentStage === "character_reference" && !["failed", "cancelled", "completed"].includes(job.status) ?
     v5ManualReviewProgress(job.referenceReview?.characterV5) : null;
   const regeneration = job && !["completed", "cancelled"].includes(job.status) ?
     job.referenceReview?.groups.find(group => group.sheetInvalidated && job.currentStage === `${group.type}_reference`) : undefined;
-  const ticking = !!job && shouldPollUgcProgress(job) && (locationRunning || job.status === "running" || !!job.referenceReview?.regenerating);
+  const ticking = !!job && shouldPollUgcProgress(job) && (storyboardRunning || locationRunning || job.status === "running" || !!job.referenceReview?.regenerating);
   useEffect(() => {
     if (!ticking) return;
     const timer = setInterval(() => setClock(Date.now()), 1_000);
@@ -45,22 +48,23 @@ export function UgcProgressPreview({ progress }: { progress: UgcProgressState })
   // Correct local clock skew using the server observation; timestamps remain
   // authoritative. A display tick can never complete or advance any step.
   const now = job ? Date.parse(job.serverNow) + Math.max(0, clock - receivedAt) : clock;
-  const stalled = !manualReview && !!job && (locationRunning || job.status === "running" || !!job.referenceReview?.regenerating || regeneration?.execution?.state === "stalled") && (job.worker.state === "stalled" ||
+  const stalled = !manualReview && !!job && (storyboardRunning || locationRunning || job.status === "running" || !!job.referenceReview?.regenerating || regeneration?.execution?.state === "stalled") && (job.worker.state === "stalled" ||
     !job.worker.heartbeatAt || !job.worker.leaseExpiresAt ||
     now - Date.parse(job.worker.heartbeatAt) >= ugcWorkerStaleMilliseconds || Date.parse(job.worker.leaseExpiresAt) <= now);
   const paused = stalled || job?.paused || job?.status === "awaiting_confirmation";
   const characterCompletePause = !!job?.paused && job.stage === "product_reference" &&
     job.steps.some(step => step.id === "character_reference" && step.state === "completed");
-  const productCompletePause = !!job?.paused && job.stage === "location_reference" &&
+  const productCompletePause = !storyboard && !!job?.paused && job.stage === "location_reference" &&
     job.steps.some(step => step.id === "product_reference" && step.state === "completed");
   const title = loading ? "Checking generation status" : !job ? "Generation status unavailable" :
+    storyboard ? !storyboard.current && !["deleting", "deleted"].includes(storyboard.state) ? "Storyboard needs regeneration" : stalled ? "Waiting for storyboard worker" : storyboardStatusLabel(storyboard) :
     location ? location.state === "approved" ? "Location approved" : location.state === "failed" ? "Location stopped safely" :
       stalled ? "Waiting for generation worker" : job.message.split(".")[0] :
     manualReview ? manualReview.title : regeneration?.state === "failed" ? "Reference regeneration stopped" : stalled ? "Waiting for generation worker" :
     job.referenceReview?.regenerating ? "Regenerating reference" : regeneration ? "Waiting for generation worker" :
     job.status === "failed" ? "Generation stopped" : job.status === "cancelled" ? "Generation cancelled" :
     job.status === "completed" ? "Generation complete" : productCompletePause ? "Product reference complete" : characterCompletePause ? "Character reference complete" : paused ? "Generation paused" : "Creating your video";
-  const processingMs = job ? ugcProcessingMilliseconds(job, now) : null;
+  const processingMs = job && !storyboard ? ugcProcessingMilliseconds(job, now) : null;
   const expectation = job && !paused && active ? ugcStageExpectation(job.currentStage) : null;
 
   return <div aria-label="Creation preview" className="min-h-0 min-w-0 flex-1 overflow-hidden rounded-lg border border-border bg-muted/20">
@@ -122,7 +126,7 @@ export function UgcProgressPreview({ progress }: { progress: UgcProgressState })
           </details>}
         {expectation && <p className="break-words text-muted-foreground">{expectation}</p>}
         <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-muted-foreground">
-          {job?.startedAt && <p className="tabular-nums">{processingMs === null ? "Started earlier" : `${job.timing.scope === "regeneration" ? "Regeneration elapsed" : "Elapsed"}: ${elapsedTime(processingMs)}`}</p>}
+          {job?.startedAt && !storyboard && <p className="tabular-nums">{processingMs === null ? "Started earlier" : `${job.timing.scope === "regeneration" ? "Regeneration elapsed" : "Elapsed"}: ${elapsedTime(processingMs)}`}</p>}
           {job && !job.startedAt && <p>Waiting to start</p>}
           {(job && (active || !!regeneration) || error) && <Button type="button" size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={checkStatus}>Check status</Button>}
         </div>

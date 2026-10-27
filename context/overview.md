@@ -1,5 +1,29 @@
 # Sceenyk
 
+## Storyboard timing margins and saved-dialogue repair (2026-10-27)
+
+Storyboard generation now receives separate preferred speech targets and absolute limits, 900ms action targets above the unchanged 700ms minimum, exact action/speech timing correction and a final deterministic pre-save gate. Eligible saved speech-budget failures can be explicitly edited by their owner and saved to review without OpenAI or a worker; original responses and attempts remain unchanged. Saving that repair requires new manual migration 067 after 066; prompt changes need no migration/configuration. Current records/approved assets remain untouched; Render/Inngest disabled and Milestone 9 Not Started. [Current contract and manual steps](storyboard.md#timing-targets-and-manual-dialogue-repair-2026-10-27).
+
+## Storyboard dialogue planned within time (2026-10-27)
+
+New Storyboard requests now receive calculated duration-specific scene, action/camera, speaking, reaction and transition windows before writing dialogue, with shared video/scene ceilings and breath allowance. The single existing correction receives exact speech-line timing/count feedback while preserving valid scene structure. Existing validators, two-request budget, saved-work recovery, approved assets, editing/review/delete, accounting and hosted state are unchanged. The current failed Storyboard remains preserved for the owner's later explicit rejection/new generation. No migration/configuration; Milestone 9 Not Started. [Formulas and manual testing](storyboard.md#speech-budget-planning-before-dialogue-2026-10-27).
+
+## Storyboard saved validation correction (2026-10-27)
+
+Current revision 4 has two successful saved responses; strict JSON and scene timing pass, but seven speech budget checks fail in each. The 35 words require more than the selected 10s at the saved pace. Original outputs and approved references remain untouched. Studio shows precise field-level errors; safe equivalent-format normalization and local-only Retry recover valid saved outputs without contacting OpenAI. This content cannot be repaired automatically without creative changes. No migration/configuration/limit changes; Milestone 9 Not Started. [Current evidence and safe recovery choices](storyboard.md#saved-output-validation-investigation-2026-10-27) supersedes the historical provider failure below.
+
+## Storyboard response preservation correction (2026-10-26)
+
+Current revision 2 failed at the provider boundary after about 181s with no retained response, IDs or recovery file. Completion/billing cannot be confirmed; the exact original exception was discarded. Source now streams OpenAI responses, durably saves raw terminal output before processing, retains safe IDs/diagnostics and makes retries recovery-only. Missing output cannot cause another paid call. No migration is needed; optional explicit provider retention applies only to future requests. [Current evidence and safe action](storyboard.md#provider-timeout-evidence-and-recovery-only-correction-2026-10-26) supersedes the older zero-request resume snapshot below. Live records/approved assets remain untouched, and Milestone 9 is Not Started.
+
+## Local Storyboard queue correction (2026-10-26)
+
+The current queued Storyboard has not submitted an OpenAI request. Location's empty claim response was incorrectly executed as a record, causing a misleading LOCATION_STORAGE_FAILED loop before Storyboard discovery. Source now validates empty/runnable claims, rotates queues fairly, bounds failed transport recovery and reports queued delays/worker health. Approved media and live records are unchanged. 066 objects are confirmed present by read-only inspection; no new migration is required. [Exact evidence and existing-job restart instructions](storyboard.md#location-empty-claim-starvation-correction-2026-10-26). No providers, workers, live retries/mutations or Milestone 9 were executed.
+
+## Milestone 8 — AI Storyboard (2026-10-26)
+
+After current Character, Product and Location approval, Generate Storyboard queues automatic OpenAI scene/script planning on the existing local UGC worker. Studio adds a readable expandable timeline, scene editing/saving, Accept Storyboard and Reject and Delete. Deletion returns to a separate Generate action; changed saved inputs require regeneration without overwriting scenes. Approval pauses before the generation package. [Current contract/setup](storyboard.md) supersedes earlier storyboard-not-started statements; provider/runtime/manual acceptance and migration 066 remain pending. Upstream generation, approved media, accounting and hosted guards are preserved.
+
 ## Milestone 7 — Location Reference (2026-10-26)
 
 UGC continues from approved Character + Product references into Generate Location → automatic private planning → one location image → Accept Location or Reject and Delete. Acceptance preserves the image and pauses before storyboard. Deletion clears only the rejected candidate and returns to a separate Generate Location action; it never generates a replacement automatically. No plan form/approval. Storage-only Retry saving reuses existing output, with clear unavailable-output messages. [Current Location contract/setup](location-reference.md) supersedes older behavior below. Existing Character/Product work, private storage, local execution and accounting remain unchanged; manual acceptance is pending.

@@ -75,6 +75,7 @@ export type Database = {
       ugc_reference_analyses: { Row: import("@/lib/reference-analysis/contract").ReferenceAnalysisRow; Insert: never; Update: never; Relationships: [] };
       ugc_character_sheets: { Row: import("@/lib/character-sheet/contract").CharacterSheetRow; Insert: never; Update: never; Relationships: [] };
       ugc_locations: { Row: import("@/lib/location-reference/contract").LocationRow; Insert: never; Update: never; Relationships: [] };
+      ugc_storyboards: { Row: import("@/lib/storyboard/contract").StoryboardRow; Insert: never; Update: never; Relationships: [] };
       ugc_location_candidates: { Row: import("@/lib/location-reference/contract").LocationCandidate; Insert: never; Update: never; Relationships: [] };
       ugc_character_v5_workflows: { Row: import("@/lib/character-v5/contract").V5Workflow; Insert: never; Update: never; Relationships: [] };
       ugc_character_v5_candidates: { Row: import("@/lib/character-v5/contract").V5Candidate; Insert: never; Update: never; Relationships: [] };
@@ -292,6 +293,11 @@ export type Database = {
       ugc_location_scene: { Args: { p_job: string }; Returns: Record<string, unknown> | null };
       ugc_location_scene_matches: { Args: { p_saved: Record<string, unknown>; p_current: Record<string, unknown> }; Returns: boolean };
       ugc_location_claim: { Args: { p_worker: string }; Returns: import("@/lib/location-reference/contract").LocationRow | null };
+      ugc_storyboard_input: { Args: { p_job: string }; Returns: import("@/lib/storyboard/contract").StoryboardInput | null };
+      ugc_storyboard_recover_dialogue: { Args: { p_owner: string; p_project: string; p_job: string; p_storyboard: string; p_version: number; p_request_index: number; p_document: import("@/lib/storyboard/contract").Storyboard }; Returns: import("@/lib/storyboard/contract").StoryboardRow | null };
+      ugc_storyboard_action: { Args: { p_owner: string; p_project: string; p_job: string; p_version: number; p_action: string; p_payload?: Record<string, unknown> }; Returns: import("@/lib/storyboard/contract").StoryboardRow | null };
+      ugc_storyboard_claim: { Args: { p_worker: string }; Returns: import("@/lib/storyboard/contract").StoryboardRow | null };
+      ugc_storyboard_checkpoint: { Args: { p_storyboard: string; p_token: string; p_operation: string; p_payload?: Record<string, unknown> }; Returns: import("@/lib/storyboard/contract").StoryboardRow | null };
       ugc_location_action: { Args: { p_owner: string; p_project: string; p_job: string; p_version: number; p_action: string; p_payload?: Record<string, unknown> }; Returns: import("@/lib/location-reference/contract").LocationRow | null };
       ugc_location_checkpoint: { Args: { p_location: string; p_token: string; p_operation: string; p_payload?: Record<string, unknown> }; Returns: import("@/lib/location-reference/contract").LocationRow | null };
       ugc_location_recovery_claim: { Args: { p_owner: string; p_project: string; p_job: string; p_location: string; p_version: number }; Returns: import("@/lib/location-reference/contract").LocationRow | null };

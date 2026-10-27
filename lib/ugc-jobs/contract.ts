@@ -110,6 +110,9 @@ export type UgcJobProgress = {
   location?: import("@/lib/location-reference/contract").LocationReview;
   locationSteps?: UgcProgressStep[];
   locationEnabled?: boolean;
+  storyboard?: import("@/lib/storyboard/contract").StoryboardReview;
+  storyboardEligible?: boolean;
+  storyboardEnabled?: boolean;
 };
 export type UgcProgressStep = { id: string; label: string; state: "waiting" | "active" | "completed" | "failed" | "paused" };
 export type UgcProgressEvent = {
@@ -124,10 +127,12 @@ export function isUgcJobActive(status: UgcJobStatus) {
 }
 // A paused job still occupies its request; it must not enable another enqueue.
 // Polling is a separate decision from that non-terminal admission guard.
-export function shouldPollUgcProgress(job: Pick<UgcJobProgress, "status" | "paused" | "referenceReview" | "location" | "locationEnabled">) {
+export function shouldPollUgcProgress(job: Pick<UgcJobProgress, "status" | "paused" | "referenceReview" | "location" | "locationEnabled" | "storyboard">) {
   if (job.status === "cancelled" || job.status === "completed") return false;
   if (job.referenceReview?.regenerating) return true;
+  if (job.storyboard && ["queued", "running", "deleting"].includes(job.storyboard.state) && !job.storyboard.error && job.storyboard.execution !== "paused") return true;
   if (job.location?.canRetryDelete) return false;
   if (job.location?.requested && ["queued_plan", "running_plan", "queued_image", "running_image", "rejecting"].includes(job.location.state)) return true;
+  if (job.storyboard?.execution === "paused") return false;
   return (job.status === "queued" || job.status === "running") && !job.paused;
 }

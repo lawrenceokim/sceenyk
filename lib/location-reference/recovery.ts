@@ -5,6 +5,7 @@ import { LocationError, locationFailure } from "./errors";
 import { loadLocation, locationOutputProof, saveLocation } from "./media";
 import { readLocationBytes } from "./spool";
 import { deleteLocationOutput } from "./cleanup";
+import { compositeRecord, parseWorkerClaim } from "@/lib/ugc-jobs/claim-contract";
 
 export type LocationCheckpoint = (operation: string, payload?: Record<string, unknown>) => Promise<LocationRow>;
 // Deliberately imports no provider module. This path can only reuse R2/local bytes.
@@ -26,6 +27,7 @@ export async function recoverLocationOutput(row: LocationRow, signal: AbortSigna
 // Bounded storage-only execution for the owner's Retry saving action. A separate
 // fenced lease makes repeated clicks/worker overlap safe without launching a worker.
 export async function runLocationStorageClaim(claim: LocationRow) {
+  if (!parseWorkerClaim("location", claim)) throw new LocationError("LOCATION_CLAIM_INVALID", "claim_validation");
   const db = createDatabaseClient();
   const abort = new AbortController(); let lost = false; let row = claim;
   const signal = AbortSignal.any([abort.signal, AbortSignal.timeout(150_000)]);
@@ -33,9 +35,12 @@ export async function runLocationStorageClaim(claim: LocationRow) {
   const checkpoint: LocationCheckpoint = (operation, payload = {}) => {
     const task = pending.then(async () => {
       if (lost) throw new LocationError("LOCATION_LEASE_LOST", operation);
-      const result = await db.rpc("ugc_location_checkpoint", { p_location: row.id, p_token: claim.claim_token!, p_operation: operation, p_payload: payload });
-      if (result.error || !result.data) { lost = true; abort.abort(); throw locationFailure(result.error, operation, "LOCATION_DATABASE_FAILED"); }
-      row = result.data; return row;
+      let result;
+      try { result = await db.rpc("ugc_location_checkpoint", { p_location: row.id, p_token: claim.claim_token!, p_operation: operation, p_payload: payload }); }
+      catch (error) { lost = true; abort.abort(); throw locationFailure(error, `checkpoint_${operation}`, "LOCATION_DATABASE_FAILED"); }
+      const committed = compositeRecord(result.data);
+      if (result.error || committed?.id !== row.id || committed?.job_id !== row.job_id) { lost = true; abort.abort(); throw locationFailure(result.error, operation, result.error ? "LOCATION_DATABASE_FAILED" : "LOCATION_LEASE_LOST"); }
+      row = committed as unknown as LocationRow; return row;
     });
     pending = task.catch(() => {}); return task;
   };
@@ -46,8 +51,10 @@ export async function runLocationStorageClaim(claim: LocationRow) {
   }
   catch (error) {
     const failure = locationFailure(error, claim.state === "rejecting" ? "deleting" : "recovering", claim.state === "rejecting" ? "LOCATION_DELETE_FAILED" : "LOCATION_RECOVERY_FAILED");
-    console.error("UGC_LOCATION_TECHNICAL_FAILURE", JSON.stringify(failure.diagnostic));
-    if (!lost) await checkpoint("fail", { code: failure.code, diagnostic: failure.diagnostic }).catch(() => {});
+    let failureSaved = false;
+    if (!lost) { try { await checkpoint("fail", { code: failure.code, diagnostic: failure.diagnostic }); failureSaved = true; } catch {} }
+    console.error("UGC_LOCATION_TECHNICAL_FAILURE", JSON.stringify({ ...failure.diagnostic, projectId: claim.project_id, jobId: claim.job_id,
+      locationId: claim.id, retryState: failureSaved ? "manual_retry_required" : "lease_recovery_fenced", failureSaved }));
     throw failure;
   } finally { clearInterval(heartbeat); abort.abort(); await pending; }
 }

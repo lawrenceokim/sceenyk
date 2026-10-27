@@ -1,5 +1,13 @@
 # UGC Location Reference — Milestone 7
 
+## Empty claim diagnostic correction (2026-10-26)
+
+Current approved Location is intact, not being reprocessed. A no-work composite RPC result was treated as a truthy claim: null phase and candidate IDs produced UUID `22P02`, then an overly broad catch called it LOCATION_STORAGE_FAILED before any R2 request. Shared composite normalization/runnable-lease guards now stop that path, preserve real database errors, reject approved records before I/O and validate checkpoint results. The fair local queue prevents Location lane failures starving Storyboard; bounded lane backoff does not change SQL job states or paid intents. No migration/live mutation is needed. [Exact read-only evidence and safe existing-Storyboard resume](storyboard.md#location-empty-claim-starvation-correction-2026-10-26).
+
+## Milestone 8 continuation (2026-10-26)
+
+Location generation, approval, recovery and deletion remain unchanged. A current approved Location now enables explicit **Generate Storyboard**; Location approval itself never submits or queues storyboard work. Storyboard binds to the exact approved Location root/version/candidate plus both upstream approvals and all saved inputs. Changes require fresh review/regeneration, preserving all approved media. Storyboard acceptance pauses before the generation package. [Current Storyboard contract/setup](storyboard.md) supersedes older references to Milestone 8 Not Started.
+
 ## Migration 065 SQL Editor line-ending correction (2026-10-26)
 
 The original 065 guard normalized the installed `ugc_location_checkpoint_pre_auto(uuid,uuid,text,jsonb)` body to LF, but compared it to an unnormalized multiline `old_fragment`. Pasting/running the migration with Windows CRLF leaves CRLF inside that SQL literal and produces `P0001: Unexpected Location cleanup implementation.` even with an otherwise identical correct 064 function. Isolated PostgreSQL reproduces this exact failure and confirms that explicit ROLLBACK restores all function bodies/ACLs, columns, constraints and triggers.
