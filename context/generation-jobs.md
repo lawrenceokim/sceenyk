@@ -1,5 +1,12 @@
 # Persistent generation jobs
 
+## M10 implemented source boundary (2026-10-27)
+
+**M9: Complete. M10: Complete in source for the configured local V1 profile. Runtime/provider/manual acceptance: Pending.** Migration 069 adds private ugc_final_executions, ugc_final_scenes, ugc_final_operations, ugc_character_voice_profiles and append-only ugc_final_events. Service-only RPCs admit, claim and checkpoint exact scoped runs. Independent stage operations retain one paid attempt each, fingerprints, provider/model/request IDs, estimates, opaque receipts and private proofs. UGC parent completion is atomic with current final approval and preserves existing reference approval guards.
+
+[Actual source, verified API limits, required setup, checks and manual acceptance](final-video-generation.md#implemented-local-v1-source-and-profile). This current source entry supersedes implementation-status and task-permission statements in the older dated planning/history below. Unsupported capabilities fail closed; no real providers, worker processes, remote migrations, deployment or credit spending ran during implementation.
+
+
 ## Planned M10 scene jobs and checkpoints (2026-10-27)
 
 [M10 stage/state authority](final-video-generation.md#planned-persisted-states-and-checkpoints) defines automatic independent video, voice, lip-sync, per-artifact storage and final scene readiness checkpoints, then automatic FFmpeg composition/final validation/review. These are planned labels, not installed enums/RPCs/consumers. Generate Final Video is the one initial user action with required authorization; no intermediate successful-stage manual trigger or review.

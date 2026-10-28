@@ -14,6 +14,8 @@ import { readStoryboard } from "@/lib/storyboard/server";
 import { withStoryboardProgress } from "@/lib/storyboard/progress";
 import { readGenerationPackage } from "@/lib/video-generation-package/server";
 import { withPackageProgress } from "@/lib/video-generation-package/progress";
+import { readFinalVideo } from "@/lib/final-video-generation/server";
+import { withFinalVideoProgress } from "@/lib/final-video-generation/progress";
 import { validateUgcGenerationInput } from "./validation";
 import { ugcInputIssue, type UgcInputIssue, type UgcReadiness } from "./input-contract";
 
@@ -163,9 +165,9 @@ export async function getOwnedUgcJobProgress(input: unknown): Promise<UgcJobProg
   try { evidence.referenceReview = await readReferenceReviewState(job, { character: sheet.data, product: productSheet.data }); }
   catch { throw new UgcProgressReadError("review", {}); }
   const location = await readLocationReview(job);
-  const [storyboard, generationPackage] = await Promise.all([readStoryboard(job), readGenerationPackage(job)]);
-  return withPackageProgress(withStoryboardProgress(withLocationProgress({ ...buildUgcProgress(job, evidence), locationEnabled: process.env.UGC_LOCATION_ENABLED === "1" }, location), storyboard.review, storyboard.eligible),
-    generationPackage.review, generationPackage.eligible, generationPackage.available);
+  const [storyboard, generationPackage, finalVideo] = await Promise.all([readStoryboard(job), readGenerationPackage(job), readFinalVideo(job)]);
+  return withFinalVideoProgress(withPackageProgress(withStoryboardProgress(withLocationProgress({ ...buildUgcProgress(job, evidence), locationEnabled: process.env.UGC_LOCATION_ENABLED === "1" }, location), storyboard.review, storyboard.eligible),
+    generationPackage.review, generationPackage.eligible, generationPackage.available), finalVideo);
 }
 
 export async function requestOwnedUgcJobCancellation(input: unknown): Promise<UgcJobProgress> {

@@ -1,5 +1,12 @@
 # Durable generation dispatch
 
+## M10 implemented source boundary (2026-10-27)
+
+**M9: Complete. M10: Complete in source for the configured local V1 profile. Runtime/provider/manual acceptance: Pending.** The existing fair local queue adds a separately gated final lane. npm run worker:ugc -- --final-video-only isolates M10 from upstream paid preparation, with 90-second leases and 20-second fenced heartbeats. No hosted dispatcher/callback/tunnel is added; Render and Inngest remain disabled. Existing package-only mode remains isolated.
+
+[Actual source, verified API limits, required setup, checks and manual acceptance](final-video-generation.md#implemented-local-v1-source-and-profile). This current source entry supersedes implementation-status and task-permission statements in the older dated planning/history below. Unsupported capabilities fail closed; no real providers, worker processes, remote migrations, deployment or credit spending ran during implementation.
+
+
 ## Planned M10 delivery boundary (2026-10-27)
 
 The [automatic M10 plan](final-video-generation.md#automatic-scene-processing-and-lipsyncprovider) runs on the existing local worker after one admitted Generate Final Video action. Persist scoped operation identifiers for independent video, voice, lip-sync and storage/composition checkpoints; workers reload exact owner/project/package/scene/profile/version/authority rather than trust client payloads. No provider management or intermediate scene/voice/alignment/stitch request is needed from the user.

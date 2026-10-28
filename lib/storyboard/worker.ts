@@ -70,7 +70,7 @@ export async function runStoryboard(claim: StoryboardRow, shutdown: AbortSignal)
       await checkpoint("deleted"); return { ok: true };
     }
     let repair: StoryboardCorrection | undefined;
-    if (row.requests.some(request => request.promptVersion !== storyboardPromptVersion || request.contractVersion !== 1)) {
+    if (row.requests.some(request => !(request.promptVersion === storyboardPromptVersion && request.contractVersion === 2 || request.promptVersion === "ugc-storyboard-v1" && request.contractVersion === 1))) {
       return await stop("STORYBOARD_CONFIG_INVALID");
     }
     // Retry/restart is a separate local-only path, before configuration, asset
@@ -118,6 +118,7 @@ export async function runStoryboard(claim: StoryboardRow, shutdown: AbortSignal)
         await checkpoint("response", { ...stored, index }); request = row.requests[index];
       }
       if (!request) {
+        if (row.requests.some(existing => existing.contractVersion !== 2)) return await stop("STORYBOARD_CONFIG_INVALID");
         // Explicit saved-work retries and lease recoveries have attempts >1.
         // They can neither create an initial request nor pay for a repair.
         if (!canCreateStoryboardRequest(row.attempts, recovering, !!row.requests[index])) return await stop("STORYBOARD_RECONCILIATION_REQUIRED");
@@ -134,7 +135,7 @@ export async function runStoryboard(claim: StoryboardRow, shutdown: AbortSignal)
         signal.throwIfAborted();
         await stageStoryboardMetadata(row, index, "intent", metadata);
         await checkpoint("intent", { provider: "openai", model: config.model, promptVersion: storyboardPromptVersion,
-          contractVersion: 1, maxOutputTokens: config.maxOutputTokens });
+          contractVersion: 2, maxOutputTokens: config.maxOutputTokens });
         failureCode = "STORYBOARD_RECONCILIATION_REQUIRED";
         phase = "provider";
         const result = await requestStoryboard(row.input, config.model, images, signal, {

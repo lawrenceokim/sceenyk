@@ -1,5 +1,16 @@
 # UI Context
 
+## Storyboard execution repair controls (2026-10-28)
+
+Studio provides finite transition/duration and VoiceDelivery controls and separates optional descriptive audio cues from required sound. Legacy approved documents are read-only until **Review local V1 execution repair** clones a proposal locally and displays every before/after/reason. Save creates a new review revision, then Accept remains explicit; no AI call, old approval rewrite or automatic package replacement. Use existing shared controls/static Tailwind; no stylesheet is added. [Canonical contract and safe recovery](final-video-generation.md#canonical-v1-execution-recovery-2026-10-28). Runtime/manual visual acceptance remains Pending.
+
+## M10 implemented source boundary (2026-10-27)
+
+**M9: Complete. M10: Complete in source for the configured local V1 profile. Runtime/provider/manual acceptance: Pending.** The Final Video tab shows simplified automatic progress, a private final player, measured duration, ratio/resolution and final Approve / Reject and Delete. No normal per-scene/voice/provider/sync/stitch management is introduced. Recovery appears only after failure. The explicit local operator funding authorization is shown before Generate.
+
+[Source, supported limits, setup and manual acceptance](final-video-generation.md#implemented-local-v1-source-and-profile). This entry supersedes implementation-status and task-permission statements in older dated planning below. No real providers, worker process, remote migration, spending or deployment ran.
+
+
 ## Planned M10 Final Video review (2026-10-27)
 
 **Normal V1: approved package → Generate Final Video → automatic progress → final completed video review.** [M10](final-video-generation.md#automatic-scene-processing-and-lipsyncprovider) owns internal video/voice/lip-sync/alignment/storage/composition; none requires a successful-stage user trigger or approval. Do not expose provider selection, voice preview/profile approval, routine per-scene previews/Accept Scene/Regenerate Scene, lip-sync controls or Stitch. Internal/advanced scene debugging may be separately scoped later.

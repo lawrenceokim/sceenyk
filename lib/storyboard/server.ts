@@ -7,10 +7,12 @@ import { compositeRecord } from "@/lib/ugc-jobs/claim-contract";
 import { storyboardRecoveryInfo } from "./recovery";
 import { StoryboardValidationError } from "./validation-diagnostics";
 import { manualStoryboardCandidates, prepareManualStoryboard, StoryboardManualRecoveryError } from "./manual-recovery";
+import { validateExecutableStoryboard } from "./validation";
 
 export class StoryboardRecoveryUnavailableError extends ReferenceReviewAccessError {
   constructor() { super(409); }
 }
+export class StoryboardExecutionSetupError extends ReferenceReviewAccessError { constructor() { super(503); } }
 
 export async function readStoryboard(job: { id: string; project_id: string; owner_user_id: string }) {
   const db = createDatabaseClient();
@@ -66,15 +68,26 @@ export async function storyboardAction(input: unknown) {
       throw new StoryboardRecoveryUnavailableError();
   }
   let document;
-  if (["save", "accept"].includes(data.action)) {
+  let commandAction = data.action;
+  if (["save", "accept", "repair_execution"].includes(data.action)) {
     const read = await context.db.from("ugc_storyboards").select("*").eq("id", data.storyboardId!)
       .eq("job_id", context.job.id).eq("project_id", data.projectId).eq("owner_user_id", context.ownerId).maybeSingle();
     if (read.error || !read.data || read.data.version !== data.version) throw new ReferenceReviewAccessError(409);
-    try { document = data.action === "save" ? prepareStoryboard(data.document, read.data.input) : validateStoryboard(read.data.document, storyboardBinding(read.data.input)); }
+    try { document = data.action !== "accept" ? prepareStoryboard(data.document, read.data.input) : validateStoryboard(read.data.document, storyboardBinding(read.data.input));
+      document = validateExecutableStoryboard(document, storyboardBinding(read.data.input)); }
     catch (error) { if (error instanceof StoryboardValidationError) throw error; throw new ReferenceReviewAccessError(422); }
+    if ((data.action === "repair_execution" || data.action === "save") && read.data.state === "approved") {
+      if (!data.requestId) throw new ReferenceReviewAccessError(400);
+      const repaired = await context.db.rpc("ugc_storyboard_repair_execution", { p_owner: context.ownerId, p_project: data.projectId,
+        p_job: data.jobId, p_storyboard: data.storyboardId!, p_version: data.version, p_request: data.requestId, p_document: document });
+      if (repaired.error) { if (["PGRST202", "42883"].includes(repaired.error.code)) throw new StoryboardExecutionSetupError(); throw new ReferenceReviewAccessError(409); }
+      if (!compositeRecord(repaired.data)?.id) throw new ReferenceReviewAccessError(409);
+      return (await readStoryboard(context.job)).review;
+    }
+    if (data.action === "repair_execution") commandAction = "save";
   }
   const result = await context.db.rpc("ugc_storyboard_action", { p_owner: context.ownerId, p_project: data.projectId,
-    p_job: data.jobId, p_version: data.version, p_action: data.action,
+    p_job: data.jobId, p_version: data.version, p_action: commandAction,
     p_payload: { ...(data.storyboardId ? { storyboardId: data.storyboardId } : {}), ...(document ? { document } : {}) } });
   if (result.error) throw new ReferenceReviewAccessError(503);
   if (!compositeRecord(result.data)?.id) throw new ReferenceReviewAccessError(409);

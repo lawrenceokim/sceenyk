@@ -27,7 +27,7 @@ export function storyboardCorrection(output: string, input: StoryboardInput, err
         const fieldPath = `$.scenes[${speechMatch[1]}].speech[${speechMatch[2]}]`; const prior = speechFailures.get(fieldPath);
         if (prior) prior.rules.push(item.code);
         else speechFailures.set(fieldPath, { sceneNumber: scene.number, lineNumber: lineIndex + 1, fieldPath, rules: [item.code],
-          ...speechIntervalBudget(speech.startMs, Math.max(speech.startMs, speech.endMs), doc.voice.pace), endMs: speech.endMs, durationMs: speech.endMs - speech.startMs,
+          ...speechIntervalBudget(speech.startMs, Math.max(speech.startMs, speech.endMs), typeof speech.delivery === "string" ? doc.voice.pace : speech.delivery.pace), endMs: speech.endMs, durationMs: speech.endMs - speech.startMs,
           currentWordCount: speech.text ? speech.text.split(/\s+/u).length : 0, currentNonspaceCharacters: [...speech.text.replace(/\s/gu, "")].length });
       } else if (actionMatch) {
         const scene = doc.scenes[Number(actionMatch[1])]; const index = Number(actionMatch[2]); const action = scene?.actions[index];

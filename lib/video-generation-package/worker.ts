@@ -5,6 +5,7 @@ import { workerDatabaseDiagnostic } from "@/lib/ugc-jobs/database-diagnostics";
 import { buildVideoGenerationPackage, validateVideoGenerationPackage, packageInputFingerprint, PackageValidationError } from "./builder";
 import { verifyPackageMedia } from "./media";
 import type { PackageRow } from "./contract";
+import { assertPackageExecutable } from "./execution";
 
 // Only the existing local UGC consumer calls this executor. It has no provider
 // dependency and cannot advance the parent or make a financial transition.
@@ -33,6 +34,7 @@ export async function runGenerationPackage(claim: PackageRow, shutdown: AbortSig
   const heartbeat = setInterval(() => { void checkpoint("heartbeat").catch(() => {}); }, 20_000);
   try {
     if (packageInputFingerprint(row.input) !== row.input_fingerprint) throw new PackageValidationError();
+    assertPackageExecutable(row.input, row.revision);
     await verifyPackageMedia(row.input, signal);
     await checkpoint("phase", { phase: "building" });
     const document = buildVideoGenerationPackage(row.input, row.revision);

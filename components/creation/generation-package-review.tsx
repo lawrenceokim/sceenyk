@@ -5,6 +5,13 @@ import { Button } from "@/components/ui/button";
 import { packageErrorMessage, packageMessages, packageStatusLabel, type PackageReview, type PackageSummary } from "@/lib/video-generation-package/contract";
 
 const stamp = (ms: number) => `${(ms / 1000).toFixed(3)}s`;
+const describe = (value: unknown): string => {
+  if (typeof value === "string") return value;
+  const item = value as Record<string, unknown>;
+  if ("requirement" in item) return `${item.requirement} cue: ${item.description}${item.requirement === "optional" ? " (not generated or mixed)" : ""}`;
+  if ("durationMs" in item) return `${String(item.type).replaceAll("_", " ")} · ${item.durationMs}ms`;
+  return `${item.pace} pace · ${item.energy} energy · ${item.tone} tone · ${item.style} · ${item.emphasis} emphasis`;
+};
 function Detail({ label, children }: { label: string; children: React.ReactNode }) {
   return <div className="min-w-0 space-y-1"><dt className="text-muted-foreground">{label}</dt><dd className="whitespace-pre-wrap break-words">{children}</dd></div>;
 }
@@ -21,13 +28,13 @@ function SceneSummary({ scene, summary }: { scene: PackageSummary["scenes"][numb
         {stamp(action.startMs)}–{stamp(action.endMs)}: {action.movement} · {action.gesture} · {action.expression}</p>)}</Detail>
       <Detail label="Product interaction">{scene.productInteraction} · {scene.productPosition}</Detail>
       <Detail label="Dialogue / narration">{scene.speech.length ? scene.speech.map((line, index) => <p key={index}>
-        {line.speaker === "character" ? summary.character : "Narration"} · {stamp(line.startMs)}–{stamp(line.endMs)}: {line.text}<br />{line.delivery}</p>) : "No speech in this scene."}</Detail>
+        {line.speaker === "character" ? summary.character : "Narration"} · {stamp(line.startMs)}–{stamp(line.endMs)}: {line.text}<br />{describe(line.delivery)}{line.deliveryNote ? ` · Note: ${line.deliveryNote}` : ""}</p>) : "No speech in this scene."}</Detail>
       <Detail label="Voice">{scene.voice.description} · {scene.voice.pace} · same Character voice</Detail>
       <Detail label="Camera">Shot: {scene.camera.shot} · Angle: {scene.camera.angle} · Framing: {scene.camera.framing}<br />
         Movement: {scene.camera.movement} · Zoom: {scene.camera.zoom} · Focus: {scene.camera.focus}</Detail>
       <Detail label="Lighting and atmosphere">{scene.lighting.direction} · {scene.lighting.intensity} · {scene.lighting.colors} · {scene.lighting.atmosphere}</Detail>
-      <Detail label="Sound and music">Background: {scene.audio.background} · Effects: {scene.audio.effects} · Music: {scene.audio.music}</Detail>
-      <Detail label="Transition">{scene.transition}</Detail>
+      <Detail label="Sound and music">Background: {describe(scene.audio.background)} · Effects: {describe(scene.audio.effects)} · Music: {describe(scene.audio.music)}</Detail>
+      <Detail label="Transition">{describe(scene.transition)}{scene.transitionNote ? ` · Note: ${scene.transitionNote}` : ""}</Detail>
       {scene.generationNotes && <Detail label="Additional directions">{scene.generationNotes}</Detail>}
       <Detail label="Video-generation prompt">{scene.generationPrompt}</Detail>
     </dl>

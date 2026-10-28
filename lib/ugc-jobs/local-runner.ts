@@ -10,6 +10,7 @@ import { runCharacterV5 } from "@/lib/character-v5/worker";
 import { runLocation } from "@/lib/location-reference/worker";
 import { runStoryboard } from "@/lib/storyboard/worker";
 import { runGenerationPackage } from "@/lib/video-generation-package/worker";
+import { runFinalVideo } from "@/lib/final-video-generation/worker";
 import { parseWorkerClaim, UgcClaimContractError, type LocalExecutionResult } from "./claim-contract";
 import { LocalQueuePolicy, type LocalQueue } from "./queue-policy";
 
@@ -22,11 +23,11 @@ function waitForPoll(milliseconds: number, signal: AbortSignal) {
   });
 }
 const phases: Record<LocalQueue, WorkerDatabasePhase> = { character: "character_claim", location: "location_claim",
-  storyboard: "storyboard_claim", package: "package_claim", regeneration: "regeneration_claim", generation: "job_claim" };
+  storyboard: "storyboard_claim", package: "package_claim", regeneration: "regeneration_claim", generation: "job_claim", final: "final_claim" };
 
 // Fair independent lanes. Empty/invalid Location results cannot skip Storyboard.
 export class LocalJobRunner {
-  constructor(private readonly workerId: string, private readonly runner = new UgcJobRunner(), private readonly packagesOnly = false) {}
+  constructor(private readonly workerId: string, private readonly runner = new UgcJobRunner(), private readonly packagesOnly = false, private readonly finalOnly = false) {}
 
   async run(signal: AbortSignal) {
     const policy = new LocalQueuePolicy();
@@ -34,6 +35,8 @@ export class LocalJobRunner {
       for (const queue of policy.order(Date.now())) {
         if (signal.aborted) break;
         if (this.packagesOnly && queue !== "package") continue;
+        if (this.finalOnly && queue !== "final") continue;
+        if (queue === "final" && process.env.UGC_FINAL_VIDEO_ENABLED !== "1") continue;
         if (queue === "location" && process.env.UGC_LOCATION_ENABLED !== "1" ||
           queue === "storyboard" && process.env.UGC_STORYBOARD_ENABLED !== "1" ||
           queue === "package" && process.env.UGC_PACKAGE_ENABLED !== "1") continue;
@@ -68,6 +71,12 @@ export class LocalJobRunner {
             const claim = parseWorkerClaim("package", result.data);
             if (claim) { scope = { projectId: claim.project_id, jobId: claim.job_id, recordId: claim.id };
               worked = true; execution = await runGenerationPackage(claim, signal); }
+          } else if (queue === "final") {
+            const result = await createDatabaseClient().rpc("ugc_final_claim", { p_worker: this.workerId });
+            if (result.error) throw new UgcWorkerDatabaseError(result.error, phases[queue], result.status);
+            const claim = parseWorkerClaim("final", result.data);
+            if (claim) { scope = { projectId: claim.project_id, jobId: claim.job_id, recordId: claim.id };
+              worked = true; execution = await runFinalVideo(claim, signal); }
           } else {
             const job = await claimUgcJob(this.workerId);
             if (job) { scope = { projectId: job.project_id, jobId: job.id, recordId: job.id };

@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import { PGlite } from "@electric-sql/pglite";
 import { zodTextFormat } from "openai/helpers/zod";
+import { executableStoryboardSchema } from "../lib/storyboard/schema";
 import { storyboardSchema, validateStoryboard, prepareStoryboard, inspectPreparedStoryboard, storyboardBinding, type Storyboard, type StoryboardInput } from "../lib/storyboard/contract";
 import { StoryboardValidationError, validationReportSchema } from "../lib/storyboard/validation-diagnostics";
 import { shouldPollUgcProgress } from "../lib/ugc-jobs/contract";
@@ -61,9 +62,10 @@ const incomplete = structuredClone(doc) as unknown as { scenes: Record<string, u
 const missingCamera = inspectPreparedStoryboard(incomplete, input);
 ok(!missingCamera.document); equal(missingCamera.report.issues[0].fieldPath, "$.scenes[0].camera");
 equal(missingCamera.report.issues[0].expectedType, "object");
-const unsupportedVersion = inspectPreparedStoryboard({ ...doc, schemaVersion: 2 }, input);
+const unsupportedVersion = inspectPreparedStoryboard({ ...doc, schemaVersion: 3 }, input);
 equal(unsupportedVersion.report.issues[0].code, "SCHEMA_INVALID_VALUE");
-equal(unsupportedVersion.report.issues[0].expected, "one of [1]");
+equal(unsupportedVersion.report.issues[0].expected, "one of [1,2]");
+ok(!inspectPreparedStoryboard({ ...doc, schemaVersion: 2 }, input).document); // No legacy execution fields under a v2 header.
 const ambiguousTime = structuredClone(doc) as unknown as { scenes: Record<string, unknown>[] };
 ambiguousTime.scenes[0].startMs = "0.5";
 equal(inspectPreparedStoryboard(ambiguousTime, input).report.issues[0].fieldPath, "$.scenes[0].startMs");
@@ -115,7 +117,7 @@ invalid(d => { d.durationMs = 15_000; });
 invalid(d => { d.scenes.push(structuredClone(d.scenes[0])); });
 invalid(d => { d.tone = "Funny"; });
 ok(!storyboardSchema.safeParse({ ...doc, extra: true }).success);
-const format = zodTextFormat(storyboardSchema, "ugc_storyboard_v1");
+const format = zodTextFormat(executableStoryboardSchema, "ugc_storyboard_v2");
 ok(format.type === "json_schema" && format.strict);
 const pollBase = { status: "queued" as const, paused: true };
 for (const state of ["queued", "running", "deleting", "review", "approved", "failed", "deleted"] as const) {

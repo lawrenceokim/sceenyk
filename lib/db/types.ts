@@ -70,12 +70,19 @@ export type AssetRow = {
 export type Database = {
   public: {
     Tables: {
+      ugc_final_executions: { Row: import("@/lib/final-video-generation/contract").FinalExecution; Insert: never; Update: never; Relationships: [] };
+      ugc_final_scenes: { Row: import("@/lib/final-video-generation/contract").FinalScene; Insert: never; Update: never; Relationships: [] };
+      ugc_final_operations: { Row: import("@/lib/final-video-generation/contract").Operation; Insert: never; Update: never; Relationships: [] };
+      ugc_character_voice_profiles: { Row: { id: string; owner_user_id: string; project_id: string; profile: import("@/lib/final-video-generation/contract").CharacterVoiceProfile;
+        provider_binding: import("@/lib/final-video-generation/contract").ProviderReceipt; created_at: string }; Insert: never; Update: never; Relationships: [] };
       ugc_generation_jobs: { Row: import("@/lib/ugc-jobs/contract").UgcJobRow; Insert: never; Update: never; Relationships: [] };
       ugc_generation_job_events: { Row: import("@/lib/ugc-jobs/contract").UgcJobEventRow; Insert: never; Update: never; Relationships: [] };
       ugc_reference_analyses: { Row: import("@/lib/reference-analysis/contract").ReferenceAnalysisRow; Insert: never; Update: never; Relationships: [] };
       ugc_character_sheets: { Row: import("@/lib/character-sheet/contract").CharacterSheetRow; Insert: never; Update: never; Relationships: [] };
       ugc_locations: { Row: import("@/lib/location-reference/contract").LocationRow; Insert: never; Update: never; Relationships: [] };
       ugc_storyboards: { Row: import("@/lib/storyboard/contract").StoryboardRow; Insert: never; Update: never; Relationships: [] };
+      ugc_storyboard_versions: { Row: { storyboard_id: string; version: number; owner_user_id: string; project_id: string; job_id: string;
+        document: import("@/lib/storyboard/schema").Storyboard; state: string; approved_at: string | null; captured_at: string }; Insert: never; Update: never; Relationships: [] };
       ugc_generation_packages: { Row: import("@/lib/video-generation-package/contract").PackageRow; Insert: never; Update: never; Relationships: [] };
       ugc_location_candidates: { Row: import("@/lib/location-reference/contract").LocationCandidate; Insert: never; Update: never; Relationships: [] };
       ugc_character_v5_workflows: { Row: import("@/lib/character-v5/contract").V5Workflow; Insert: never; Update: never; Relationships: [] };
@@ -271,6 +278,11 @@ export type Database = {
     };
     Views: Record<string, never>;
     Functions: {
+      ugc_final_current: { Args: { p_execution: string }; Returns: boolean };
+      ugc_final_action: { Args: { p_owner: string; p_project: string; p_job: string; p_action: string; p_payload: Record<string, unknown> }; Returns: import("@/lib/final-video-generation/contract").FinalExecution | null };
+      ugc_final_claim: { Args: { p_worker: string }; Returns: import("@/lib/final-video-generation/contract").FinalExecution | null };
+      ugc_final_checkpoint: { Args: { p_execution: string; p_token: string; p_operation: string; p_payload?: Record<string, unknown> }; Returns: { execution: import("@/lib/final-video-generation/contract").FinalExecution;
+        operation: import("@/lib/final-video-generation/contract").Operation | null; created: boolean; blocked?: string } | null };
       ugc_save_reference_names: { Args: { p_owner_user_id: string; p_project_id: string; p_names: { assetId: string; name: string }[] }; Returns: boolean };
       ugc_enqueue_validated_job: { Args: { p_owner_user_id: string; p_project_id: string; p_idempotency_key: string; p_input_snapshot: import("@/lib/ugc-jobs/input-contract").UgcGenerationSnapshot }; Returns: { code: "ACCEPTED"; job: import("@/lib/ugc-jobs/contract").UgcJobRow } | { code: "PROJECT_UNAVAILABLE" | "INPUT_CHANGED" } };
       ugc_finish_input_validation: { Args: { p_job_id: string; p_claim_token: string; p_input_snapshot: import("@/lib/ugc-jobs/input-contract").UgcGenerationSnapshot }; Returns: import("@/lib/ugc-jobs/contract").UgcJobRow | null };
@@ -300,6 +312,7 @@ export type Database = {
       ugc_package_claim: { Args: { p_worker: string }; Returns: import("@/lib/video-generation-package/contract").PackageRow | null };
       ugc_package_checkpoint: { Args: { p_package: string; p_token: string; p_operation: string; p_payload?: Record<string, unknown> }; Returns: import("@/lib/video-generation-package/contract").PackageRow | null };
       ugc_storyboard_recover_dialogue: { Args: { p_owner: string; p_project: string; p_job: string; p_storyboard: string; p_version: number; p_request_index: number; p_document: import("@/lib/storyboard/contract").Storyboard }; Returns: import("@/lib/storyboard/contract").StoryboardRow | null };
+      ugc_storyboard_repair_execution: { Args: { p_owner: string; p_project: string; p_job: string; p_storyboard: string; p_version: number; p_request: string; p_document: import("@/lib/storyboard/contract").Storyboard }; Returns: import("@/lib/storyboard/contract").StoryboardRow | null };
       ugc_storyboard_action: { Args: { p_owner: string; p_project: string; p_job: string; p_version: number; p_action: string; p_payload?: Record<string, unknown> }; Returns: import("@/lib/storyboard/contract").StoryboardRow | null };
       ugc_storyboard_claim: { Args: { p_worker: string }; Returns: import("@/lib/storyboard/contract").StoryboardRow | null };
       ugc_storyboard_checkpoint: { Args: { p_storyboard: string; p_token: string; p_operation: string; p_payload?: Record<string, unknown> }; Returns: import("@/lib/storyboard/contract").StoryboardRow | null };

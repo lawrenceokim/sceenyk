@@ -1,5 +1,18 @@
 # Development application identity
 
+## Canonical execution migration 070 (2026-10-28)
+
+`20261028007000_ugc_execution_contract_v1.sql` is a manual transactional migration after 069; **not applied remotely**. It validates existing columns/function prerequisites, snapshots installed schema-1 readers once, adds strict schema-2 execution/timing validation, and updates only five existing functions (Storyboard/package validators, package action compiler fingerprint, Storyboard checkpoint prompt envelope, final currentness). Existing RPC grants remain unchanged. New helpers are private; only the scoped local repair RPC is service-executable.
+
+It adds nullable `ugc_storyboards.repair_source_id`/`repair_request_id`, idempotent owner/request uniqueness, a pending-revision index allowing approved history plus a new review revision, and private RLS-protected immutable `ugc_storyboard_versions` snapshots (service SELECT only). Existing documents are copied to snapshots without updating their approved rows. Guards forbid editing/demoting an approved Storyboard in place and require canonical execution for new package/Storyboard approvals/final admissions. `ugc_storyboard_repair_execution` locks existing owners, checks exact scope/current input/version, and creates a new review revision without provider requests or rewriting source approvals/packages. Old already-lost intermediate document versions are not reconstructed; existing history is retained and future document versions are captured. Ephemeral migrations 1..70, LF/CRLF reruns, original approved-row equality and preserved unrelated functions/grants pass focused fixtures; this is not a live catalog/runtime claim.
+
+## M10 implemented source boundary (2026-10-27)
+
+**M9: Complete. M10: Complete in source for the configured local V1 profile. Runtime/provider/manual acceptance: Pending.** New manual migration 20261027006900_ugc_final_video.sql follows 068. It validates source prerequisites, creates five private relations and service-only RPCs, preserves existing functions/grants, and reruns idempotently. Browser roles receive no table/RPC access; service role receives SELECT and guarded RPC execution only. Approval checks exact package/current input, all required scenes/voice/sync/composition proofs, ordered hashes and final duration/shape/audio. No deployed schema claim or remote application is made.
+
+[Actual source, verified API limits, required setup, checks and manual acceptance](final-video-generation.md#implemented-local-v1-source-and-profile). This current source entry supersedes implementation-status and task-permission statements in the older dated planning/history below. Unsupported capabilities fail closed; no real providers, worker processes, remote migrations, deployment or credit spending ran during implementation.
+
+
 ## Planned M10 persistence concerns (2026-10-27)
 
 [M10 persistence](final-video-generation.md#private-scene-output-and-persistence-concerns) is conceptual, not installed tables/columns/RPCs or a migration design. Plan exact owner/project/package/scene/profile/version/hash scope, separate video/voice/lip-sync operations and fingerprints, immutable paid intents/attempt budgets/provider/model/request IDs, reconciliation/failure states, timestamps/claims/version fences and private stage-output/hash/technical verification receipts. Source visual, speech and synchronized result retain distinct immutable lineage.

@@ -1,5 +1,22 @@
 # Milestone 9 — Video Generation Package Preparation
 
+## Schema-2 execution eligibility (2026-10-28)
+
+New packages freeze the approved schema-2 Storyboard exactly, with schema/compiler/prompt version 2 and `executionVersion=ugc-execution-v1`. The compiler version participates in the input fingerprint; all package/Storyboard/reference hashes, exact speech and approval/version bindings remain enforced. Schema-1 compilation/validation remains available only for unchanged historical reads. No old package is rewritten.
+
+Prepare, local package worker and Approve run a pure capability preflight covering video, voice, lip-sync and deterministic composition. Approval rejects legacy/unstructured or unsupported required transitions/delivery/audio, invalid overlap/total duration, or actual generation-capability mismatches. Finite operator configuration resolves the selected profile, but insufficient spending authority is excluded from M9 creative eligibility and still blocks M10. Approval performs no provider request or financial admission. Database migration 070 adds canonical approval/new-package/final-admission fences; existing approved rows remain intact. A local reviewed legacy Storyboard repair requires a new package revision, not reuse of the old approval/hash. [Canonical contract/recovery](final-video-generation.md#canonical-v1-execution-recovery-2026-10-28) supersedes the older contiguous-only compatibility note below.
+
+## Composition-owned transition compatibility (2026-10-28)
+
+M9 continues to freeze the approved Storyboard transition strings and contiguous timeline exactly. [M10 composition capabilities](final-video-generation.md#composition-owned-transitions-and-preflight-2026-10-28) interpret supported explicit cut/fade/crossfade plans separately from video/voice/lip-sync. A compatible existing package remains reusable without rebuilding; no M9 prompt/hash/content is rewritten. The inspected current dissolve/fade strings lack durations, and contiguous two-5s timing cannot accommodate positive crossfade overlap at 10s. Owner changes require Storyboard Save/reapproval and a newly prepared/approved package, while approved history stays intact. Overlap/handle-capable input would require a separately approved schema extension; this fix changes no M9 schema, migration or timeline validation.
+
+## M10 implemented source boundary (2026-10-27)
+
+**M9: Complete. M10: Complete in source for the configured local V1 profile. Runtime/provider/manual acceptance: Pending.** The deterministic M9 package remains immutable and provider-neutral. Approval still pauses without spending. M10 is a separate explicit Generate Final Video action, with full package/current-input/capability/funding checks; no M9 package is rewritten to satisfy provider limits.
+
+[Actual source, verified API limits, required setup, checks and manual acceptance](final-video-generation.md#implemented-local-v1-source-and-profile). This current source entry supersedes implementation-status and task-permission statements in the older dated planning/history below. Unsupported capabilities fail closed; no real providers, worker processes, remote migrations, deployment or credit spending ran during implementation.
+
+
 ## Status and authority (2026-10-27)
 
 | Milestone | Status | Acceptance boundary |

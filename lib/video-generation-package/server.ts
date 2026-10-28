@@ -1,4 +1,5 @@
 import "server-only";
+import { assertPackageExecutable } from "./execution";
 import { isDeepStrictEqual } from "node:util";
 import { createDatabaseClient } from "@/lib/db/server";
 import { ownedReferenceReview, ReferenceReviewAccessError } from "@/lib/reference-review/server";
@@ -48,6 +49,7 @@ export async function generationPackageAction(input: unknown) {
     if (source.error) { if (setupError(source.error.code)) throw new PackageSetupError(); throw new ReferenceReviewAccessError(503); }
     if (!source.data) throw new PackageValidationError("PACKAGE_INPUT_CHANGED");
     const value = validatePackageInput(source.data);
+    assertPackageExecutable(value, 1);
     if (value.ownerId !== context.ownerId || value.projectId !== data.projectId || value.jobId !== data.jobId) throw new ReferenceReviewAccessError(409);
     payload = { ...payload, input: value, fingerprint: packageInputFingerprint(value), requestId: data.requestId };
   }
@@ -60,6 +62,7 @@ export async function generationPackageAction(input: unknown) {
     if (current.error) throw new ReferenceReviewAccessError(503);
     if (!current.data || !isDeepStrictEqual(current.data, saved.data.input)) throw new PackageValidationError("PACKAGE_INPUT_CHANGED");
     validateVideoGenerationPackage(saved.data.document, saved.data.input, saved.data.revision);
+    assertPackageExecutable(saved.data.input, saved.data.revision);
     await verifyPackageMedia(saved.data.input, AbortSignal.timeout(45_000));
     // The RPC rechecks ownership, expected version and all current approvals
     // under locks after these private reads, including concurrent source edits.

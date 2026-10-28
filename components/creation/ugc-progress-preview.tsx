@@ -38,11 +38,13 @@ export function UgcProgressPreview({ progress }: { progress: UgcProgressState })
   const storyboardRunning = !!storyboard && ["running", "deleting"].includes(storyboard.state) && !!storyboard.leaseExpiresAt;
   const generationPackage = job?.currentStage === "build_generation_package" ? job.generationPackage : undefined;
   const packageRunning = generationPackage?.state === "running" && !!generationPackage.leaseExpiresAt;
+  const finalVideo = job && ["video_generation", "finalizing", "complete"].includes(job.currentStage) ? job.finalVideo?.review : undefined;
+  const finalRunning = finalVideo?.state === "running" && !!finalVideo.leaseExpiresAt;
   const manualReview = job?.currentStage === "character_reference" && !["failed", "cancelled", "completed"].includes(job.status) ?
     v5ManualReviewProgress(job.referenceReview?.characterV5) : null;
   const regeneration = job && !["completed", "cancelled"].includes(job.status) ?
     job.referenceReview?.groups.find(group => group.sheetInvalidated && job.currentStage === `${group.type}_reference`) : undefined;
-  const ticking = !!job && shouldPollUgcProgress(job) && (packageRunning || storyboardRunning || locationRunning || job.status === "running" || !!job.referenceReview?.regenerating);
+  const ticking = !!job && shouldPollUgcProgress(job) && (finalRunning || packageRunning || storyboardRunning || locationRunning || job.status === "running" || !!job.referenceReview?.regenerating);
   useEffect(() => {
     if (!ticking) return;
     const timer = setInterval(() => setClock(Date.now()), 1_000);
@@ -51,15 +53,16 @@ export function UgcProgressPreview({ progress }: { progress: UgcProgressState })
   // Correct local clock skew using the server observation; timestamps remain
   // authoritative. A display tick can never complete or advance any step.
   const now = job ? Date.parse(job.serverNow) + Math.max(0, clock - receivedAt) : clock;
-  const stalled = !manualReview && !!job && (packageRunning || storyboardRunning || locationRunning || job.status === "running" || !!job.referenceReview?.regenerating || regeneration?.execution?.state === "stalled") && (job.worker.state === "stalled" ||
+  const stalled = !manualReview && !!job && (finalRunning || packageRunning || storyboardRunning || locationRunning || job.status === "running" || !!job.referenceReview?.regenerating || regeneration?.execution?.state === "stalled") && (job.worker.state === "stalled" ||
     !job.worker.heartbeatAt || !job.worker.leaseExpiresAt ||
     now - Date.parse(job.worker.heartbeatAt) >= ugcWorkerStaleMilliseconds || Date.parse(job.worker.leaseExpiresAt) <= now);
   const paused = stalled || job?.paused || job?.status === "awaiting_confirmation";
-  const characterCompletePause = !!job?.paused && job.stage === "product_reference" &&
+  const characterCompletePause = !finalVideo && !!job?.paused && job.stage === "product_reference" &&
     job.steps.some(step => step.id === "character_reference" && step.state === "completed");
-  const productCompletePause = !storyboard && !generationPackage && !!job?.paused && job.stage === "location_reference" &&
+  const productCompletePause = !finalVideo && !storyboard && !generationPackage && !!job?.paused && job.stage === "location_reference" &&
     job.steps.some(step => step.id === "product_reference" && step.state === "completed");
   const title = loading ? "Checking generation status" : !job ? "Generation status unavailable" :
+    finalVideo ? stalled ? "Waiting for final video worker" : finalVideo.label :
     generationPackage ? stalled ? "Waiting for package worker" : packageStatusLabel(generationPackage) :
     storyboard ? !storyboard.current && !["deleting", "deleted"].includes(storyboard.state) ? "Storyboard needs regeneration" : stalled ? "Waiting for storyboard worker" : storyboardStatusLabel(storyboard) :
     location ? location.state === "approved" ? "Location approved" : location.state === "failed" ? "Location stopped safely" :
@@ -68,7 +71,7 @@ export function UgcProgressPreview({ progress }: { progress: UgcProgressState })
     job.referenceReview?.regenerating ? "Regenerating reference" : regeneration ? "Waiting for generation worker" :
     job.status === "failed" ? "Generation stopped" : job.status === "cancelled" ? "Generation cancelled" :
     job.status === "completed" ? "Generation complete" : productCompletePause ? "Product reference complete" : characterCompletePause ? "Character reference complete" : paused ? "Generation paused" : "Creating your video";
-  const processingMs = job && !storyboard && !generationPackage ? ugcProcessingMilliseconds(job, now) : null;
+  const processingMs = job && !finalVideo && !storyboard && !generationPackage ? ugcProcessingMilliseconds(job, now) : null;
   const expectation = job && !paused && active ? ugcStageExpectation(job.currentStage) : null;
 
   return <div aria-label="Creation preview" className="min-h-0 min-w-0 flex-1 overflow-hidden rounded-lg border border-border bg-muted/20">

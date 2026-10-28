@@ -46,7 +46,7 @@ export function normalizeStoryboardOutput(input: unknown, binding: StoryboardBin
   value = strip(value, storyboardSchema, []);
   if (object(value)) {
     if (value.durationMs === undefined && [5000, 10000, 30000].includes(binding.durationMs)) { value.durationMs = binding.durationMs; note("SELECTED_DURATION_DERIVED", ["durationMs"], undefined, binding.durationMs); }
-    if (value.schemaVersion === "1") { value.schemaVersion = 1; note("SCHEMA_VERSION_NUMBER_NORMALIZED", ["schemaVersion"], "1", 1); }
+    if (value.schemaVersion === "1" || value.schemaVersion === "2") { const version = Number(value.schemaVersion); value.schemaVersion = version; note("SCHEMA_VERSION_NUMBER_NORMALIZED", ["schemaVersion"], "string", version); }
     const normalizeTime = (node: Record<string, unknown>, key: string, path: (string | number)[]) => {
       const before = node[key]; const after = milliseconds(before);
       if (after !== before) { node[key] = after; note("TIMESTAMP_TO_MILLISECONDS", [...path, key], before, after as number); }

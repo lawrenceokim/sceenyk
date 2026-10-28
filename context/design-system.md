@@ -1,5 +1,12 @@
 # Sceenyk design system
 
+## M10 implemented source boundary (2026-10-27)
+
+**M9: Complete. M10: Complete in source for the configured local V1 profile. Runtime/provider/manual acceptance: Pending.** Final Video reuses shared theme tokens, Tailwind utilities and Button controls, native video playback, responsive containment, status announcements and error alerts. No stylesheet or design asset is added. Manual visual, keyboard and responsive acceptance remains Pending.
+
+[Source, supported limits, setup and manual acceptance](final-video-generation.md#implemented-local-v1-source-and-profile). This entry supersedes implementation-status and task-permission statements in older dated planning below. No real providers, worker process, remote migration, spending or deployment ran.
+
+
 ## Planned M10 review presentation (2026-10-27)
 
 [The automated M10 plan](final-video-generation.md#final-validation-review-and-completion) reuses existing Studio regions, shared status/error surfaces, accessible private final video player and ordinary Approve / Reject and Delete controls. Normal V1 shows simple persisted generation progress and the final completed video only. Per-scene review, voice preview selection, provider/model management, lip-sync/alignment controls and manual Stitch are not normal user steps; advanced diagnostics are internal/future. Do not display fake percentages or label raw scene/provider readiness as final readiness.

@@ -42,13 +42,14 @@ export const packageRequirementsSchema = z.strictObject({ referenceImages: z.lit
   audioInstructions: z.array(storyboardSceneSchema.shape.audio.extend({ sceneNumber: version.max(10) })).min(1).max(10),
 });
 export const videoGenerationPackageSchema = z.strictObject({
-  schemaVersion: z.literal(1), compilerVersion: z.literal(1), promptVersion: z.literal(1), fingerprintVersion: z.literal(1),
+  schemaVersion: z.union([z.literal(1), z.literal(2)]), compilerVersion: z.union([z.literal(1), z.literal(2)]), promptVersion: z.union([z.literal(1), z.literal(2)]), fingerprintVersion: z.literal(1),
+  executionVersion: z.literal("ugc-execution-v1").optional(),
   packageVersion: version, inputFingerprint: hash, packageHash: hash,
   project: z.strictObject({ id: z.uuid(), ownerId: z.uuid(), jobId: z.uuid(), title: z.string().min(1).max(120),
     creativeDirection: z.string().min(1), creationType: z.literal("ugc"), videoType: z.string().min(1),
     visualStyle: z.string().min(1), tone: z.string().min(1), narration: ugcNarrationSchema }),
   approvedReferences: z.strictObject({ character: reference, product: reference, location: reference.extend({ revision: version, candidateId: z.uuid() }) }),
-  storyboard: approval.extend({ revision: version, schemaVersion: z.literal(1), documentHash: hash }),
+  storyboard: approval.extend({ revision: version, schemaVersion: z.union([z.literal(1), z.literal(2)]), documentHash: hash }),
   timeline: z.strictObject({ totalDurationMs: version.max(30_000), unit: z.literal("milliseconds") }),
   output: z.strictObject({ kind: z.literal("video"), aspectRatio: z.enum(["9:16", "16:9", "1:1"]), durationMs: version.max(30_000),
     resolution: z.null(), frameRate: z.null(), format: z.null(), seed: z.null() }),

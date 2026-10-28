@@ -1,5 +1,16 @@
 # Commercial cost contract
 
+## Canonical execution cost diagnostics (2026-10-28)
+
+`finalPreflight` and the GET-only final-video inspector itemize the existing per-request operator ceilings as conservative estimates, including distinct Voice Design and voice-identity save requests. Current inspected project: 2×$6.25 video + $0.20 design + $0.01 save + 2×$0.10 speech + 2×$0.20 lip-sync = **$13.31**, 8 requests. Total authorization is unchanged at $7/8 requests: creative repair does not make funding sufficient. These are configured admission ceilings, not newly sourced tariffs or verified actual bills. M9 creative compatibility excludes the insufficient-budget issue; M10 still rejects it before spending. No prices, private authorization or customer-credit mapping is changed. [Exact breakdown/recovery](final-video-generation.md#exact-configured-cost-diagnostics).
+
+## M10 implemented source boundary (2026-10-27)
+
+**M9: Complete. M10: Complete in source for the configured local V1 profile. Runtime/provider/manual acceptance: Pending.** The implemented V1 requires explicit operator-funded local development, a versioned authorization UUID, supported language, finite maxRequests/maxEstimatedCostMicrousd and positive per-kind conservative estimates. Whole-package worst-case admission happens before work; SQL accounts one paid intent per stage and enforces totals before each new POST. No provider price defaults or customer tariff are invented. ElevenLabs character-cost is retained as reported units, never converted to unverified USD/customer credits. Actual unavailable dollar cost remains null.
+
+[Actual source, verified API limits, required setup, checks and manual acceptance](final-video-generation.md#implemented-local-v1-source-and-profile). This current source entry supersedes implementation-status and task-permission statements in the older dated planning/history below. Unsupported capabilities fail closed; no real providers, worker processes, remote migrations, deployment or credit spending ran during implementation.
+
+
 ## Planned M10 scene cost authorization (2026-10-27)
 
 [M10 admission](final-video-generation.md#paid-request-and-accounting-gates) freezes **separate video, voice and lip-sync fingerprints/attempt budgets** plus a finite whole-execution spend authority with the initial Generate Final Video quote/confirmation. Current exact package/scene/profile/source versions and model/configuration/pricing capability match are rechecked before every paid call. No scene review, provider chooser or extra routine voice trigger is a commercial step.

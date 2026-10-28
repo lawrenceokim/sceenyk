@@ -35,7 +35,8 @@ export function validatePackageInput(value: unknown): PackageInput {
   catch { throw new PackageValidationError(); }
   return input;
 }
-export const packageInputFingerprint = (value: unknown) => packageDigest("sceenyk-package-input", { compilerVersion: 1, input: validatePackageInput(value) });
+export const packageInputFingerprint = (value: unknown) => { const input = validatePackageInput(value);
+  return packageDigest("sceenyk-package-input", { compilerVersion: input.storyboard.document.schemaVersion, input }); };
 
 function content(input: PackageInput, packageVersion: number) {
   const storyboard = input.storyboard.document;
@@ -65,7 +66,8 @@ function content(input: PackageInput, packageVersion: number) {
       `Continuity: ${canonicalJson(storyboard.continuity)}. Exact instructions: ${canonicalJson(promptInstructions)}. ` +
       "Preserve all speech text, delivery and timing. Silent intervals require no speech. Do not retime, crop or invent instructions." };
   });
-  return { schemaVersion: 1 as const, compilerVersion: 1 as const, promptVersion: 1 as const, fingerprintVersion: 1 as const,
+  return { schemaVersion: storyboard.schemaVersion, compilerVersion: storyboard.schemaVersion, promptVersion: storyboard.schemaVersion, fingerprintVersion: 1 as const,
+    ...(storyboard.schemaVersion === 2 ? { executionVersion: "ugc-execution-v1" as const } : {}),
     packageVersion, inputFingerprint: packageInputFingerprint(input),
     project: { id: input.projectId, ownerId: input.ownerId, jobId: input.jobId, title: scene.projectTitle,
       creativeDirection: scene.sceneDescription, creationType: "ugc" as const, videoType: scene.ugcType,

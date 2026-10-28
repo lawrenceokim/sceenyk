@@ -1,5 +1,12 @@
 # Internal authorization
 
+## M10 implemented source boundary (2026-10-27)
+
+**M9: Complete. M10: Complete in source for the configured local V1 profile. Runtime/provider/manual acceptance: Pending.** M10 uses existing owned draft-project/job authorization, strict action/version checks, same-origin bounded POST and private service-only RPCs. Browser DTOs omit provider identities, private object keys and intermediate media. Final preview requires the same owner and an exact private object proof. No administrative/customer financial entitlement is added.
+
+[Source, supported limits, setup and manual acceptance](final-video-generation.md#implemented-local-v1-source-and-profile). This entry supersedes implementation-status and task-permission statements in older dated planning below. No real providers, worker process, remote migration, spending or deployment ran.
+
+
 ## Deployed acceptance boundary and operator revocation
 
 The initial deployed prerequisite contained an unused server helper; missing routes returning404 did not verify role decisions. The subsequently deployed `GET /api/internal/authorization` calls the central guard, returns only `{ authorized: true }` for support/admin, safe403 for ordinary/missing roles, and safe503 on lookup failure. Every response is private/no-store. No role/identity information, POST/mutation handler, role setter or payout capability is exposed. Its real admin/ordinary/missing-role, privacy and trusted live revocation/restoration checks now pass.

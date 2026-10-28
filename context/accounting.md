@@ -1,5 +1,12 @@
 # Generation accounting contract
 
+## M10 implemented source boundary (2026-10-27)
+
+**M9: Complete. M10: Complete in source for the configured local V1 profile. Runtime/provider/manual acceptance: Pending.** M10 supports explicit finite operator-funded local development only. There is no enabled customer-credit/free-reservation M10 mode: the unresolved commercial quote/review-hold mapping stays fail-closed. No legacy ledger, entitlement, free allowance, customer debit/refund or settlement code is changed. The operator authorization is frozen with the run, and Generate Final Video confirms that exact scope; package approval alone is not spend consent.
+
+[Actual source, verified API limits, required setup, checks and manual acceptance](final-video-generation.md#implemented-local-v1-source-and-profile). This current source entry supersedes implementation-status and task-permission statements in the older dated planning/history below. Unsupported capabilities fail closed; no real providers, worker processes, remote migrations, deployment or credit spending ran during implementation.
+
+
 ## Planned M10 financial handoff (2026-10-27)
 
 [M10 cost controls](final-video-generation.md#paid-request-and-accounting-gates) apply before every video, ElevenLabs design/create/synthesis, lip-sync and chargeable recovery request: exact approved package/scene/profile/inputs, distinct request fingerprint/paid intent, known-outcome reuse, finite per-stage/execution attempts/spend and existing matched cost/credit/free-reservation authority. The user authorizes the bounded run through Generate Final Video, not routine per-scene provider actions. Unknown paid outcomes never auto-resubmit.

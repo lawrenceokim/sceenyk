@@ -16,8 +16,9 @@ export class StoryboardValidationError extends Error {
   constructor(readonly report: StoryboardValidationReport) { super(report.issues[0]?.code ?? "STORYBOARD_OUTPUT_INVALID"); }
 }
 const knownFields = new Set(["schemaVersion", "title", "concept", "durationMs", "aspectRatio", "visualStyle", "tone", "voice", "characterAssetId", "description", "pace", "continuity", "identity", "appearance", "outfit", "product", "location", "scenes", "number", "startMs", "endMs", "purpose", "productAssetId", "locationAssetId", "actions", "movement", "gesture", "expression", "productInteraction", "productPosition", "camera", "angle", "shot", "framing", "zoom", "focus", "lighting", "direction", "intensity", "colors", "atmosphere", "speech", "speaker", "text", "delivery", "audio", "background", "effects", "music", "transition", "generationNotes", "generationPrompt", "wordCount", "characterCount", "totalWordCount"]);
+const executionFields = new Set(["transitionNote", "type", "durationMs", "requirement", "assetId", "energy", "tone", "emphasis", "style", "deliveryNote"]);
 export function validationPath(path: PropertyKey[]) {
-  return path.reduce<string>((out, part) => typeof part === "number" ? `${out}[${part}]` : `${out}.${knownFields.has(String(part)) ? String(part) : "<unexpected-field>"}`, "$");
+  return path.reduce<string>((out, part) => typeof part === "number" ? `${out}[${part}]` : `${out}.${knownFields.has(String(part)) || executionFields.has(String(part)) ? String(part) : "<unexpected-field>"}`, "$");
 }
 export function validationValue(value: unknown): Pick<StoryboardValidationIssue, "received" | "receivedType"> {
   const receivedType = value === null ? "null" : Array.isArray(value) ? "array" : typeof value;

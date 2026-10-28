@@ -1,5 +1,12 @@
 # Code Standards
 
+## M10 implemented source boundary (2026-10-27)
+
+**M9: Complete. M10: Complete in source for the configured local V1 profile. Runtime/provider/manual acceptance: Pending.** M10 adapters alone translate vendor fields and opaque receipts. Core owns exact immutable scope, finite budgets/intents, leases, recovery and private final validation. No automatic uncertain POST replay or provider fallback. Existing Tailwind/shared controls remain the styling default; FFmpeg stays outside Next.js.
+
+[Source, supported limits, setup and manual acceptance](final-video-generation.md#implemented-local-v1-source-and-profile). This entry supersedes implementation-status and task-permission statements in older dated planning below. No real providers, worker process, remote migration, spending or deployment ran.
+
+
 ## Planned M10 execution standards (2026-10-27)
 
 [M10](final-video-generation.md#automatic-scene-processing-and-lipsyncprovider) owns the planned automated orchestration/scene/sync/manifest/final-only review rules; [voice-generation.md](voice-generation.md) owns voice/profile identity and exact speech/timing. Use internal VideoGenerationProvider, VoiceGenerationProvider and LipSyncProvider interfaces; fal.ai visual, ElevenLabs speech and fal.ai-compatible lip-sync are planned adapters. Vendor payloads/model/voice/request IDs/formats/limits/settings/pricing remain adapter/configuration-private; core consumes neutral versioned commands/results/capabilities. Legacy wrappers are not already these UGC integrations.

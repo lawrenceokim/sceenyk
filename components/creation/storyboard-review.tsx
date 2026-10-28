@@ -7,6 +7,8 @@ import { storyboardRecoveryMessage } from "@/lib/storyboard/recovery-contract";
 import type { StoryboardValidationReport } from "@/lib/storyboard/validation-diagnostics";
 import { speechIntervalBudget } from "@/lib/storyboard/speech-budget";
 import { inspectStoryboard } from "@/lib/storyboard/validation";
+import { proposeExecutionRepair, type RepairChange } from "@/lib/storyboard/execution-repair";
+import { defaultDelivery, type VoiceDelivery, type Transition } from "@/lib/execution-v1/contract";
 
 function ValidationDetails({ report }: { report: StoryboardValidationReport }) {
   return <details open={!report.valid} className="rounded-md border border-border p-2 text-xs">
@@ -22,6 +24,16 @@ function ValidationDetails({ report }: { report: StoryboardValidationReport }) {
 }
 
 const fieldClass = "w-full min-w-0 rounded-md border border-input bg-background px-2 py-1.5 text-xs text-foreground focus-visible:outline-2 focus-visible:outline-ring disabled:opacity-60";
+function Choice({ label, value, choices, onChange }: { label: string; value: string; choices: readonly string[]; onChange?: (value: string) => void }) {
+  return <label className="block space-y-1 text-xs text-muted-foreground"><span>{label}</span><select className={fieldClass} value={value} disabled={!onChange} onChange={e => onChange?.(e.target.value)}>
+    {!choices.includes(value) && <option value={value}>Choose a supported value</option>}{choices.map(v => <option key={v} value={v}>{v}</option>)}
+  </select></label>;
+}
+function Delivery({ value, onChange }: { value: VoiceDelivery; onChange?: (value: VoiceDelivery) => void }) {
+  const choices = { pace: ["slow", "natural", "energetic"], energy: ["calm", "balanced", "lively"], tone: ["neutral", "warm", "confident"], emphasis: ["none", "light"], style: ["natural", "conversational", "expressive"] };
+  return <div className="grid grid-cols-2 gap-2">{(Object.keys(choices) as (keyof VoiceDelivery)[]).map(key => <Choice key={key} label={key} value={value[key]} choices={choices[key]}
+    onChange={onChange ? next => onChange({ ...value, [key]: next }) : undefined} />)}</div>;
+}
 function Field({ label, value, onChange, multiline = true }: { label: string; value: string; onChange?: (value: string) => void; multiline?: boolean }) {
   return <label className="block min-w-0 space-y-1 text-xs text-muted-foreground"><span>{label}</span>
     {onChange ? multiline ? <textarea className={fieldClass} rows={3} value={value} maxLength={label === "Generation prompt" ? 8000 : 2000}
@@ -29,20 +41,20 @@ function Field({ label, value, onChange, multiline = true }: { label: string; va
       <span className="block whitespace-pre-wrap break-words text-foreground">{value}</span>}
   </label>;
 }
-function Time({ label, value, onChange }: { label: string; value: number; onChange: (value: number) => void }) {
+function Time({ label, value, onChange }: { label: string; value: number; onChange?: (value: number) => void }) {
   return <label className="space-y-1 text-xs text-muted-foreground"><span>{label} (seconds)</span><input type="number" min={0} max={30} step={0.001}
-    className={fieldClass} value={value / 1000} onChange={event => onChange(Math.round(Number(event.target.value) * 1000))} /></label>;
+    className={fieldClass} value={value / 1000} disabled={!onChange} onChange={event => onChange?.(Math.round(Number(event.target.value) * 1000))} /></label>;
 }
 const stamp = (ms: number) => `${(ms / 1000).toFixed(3)}s`;
 
 function SpeechTiming({ speech, pace }: { speech: StoryboardScene["speech"][number]; pace: Storyboard["voice"]["pace"] }) {
   if (!Number.isSafeInteger(speech.startMs) || !Number.isSafeInteger(speech.endMs) || speech.startMs < 0 || speech.endMs <= speech.startMs) return <p className="text-xs text-warning-foreground">Enter a valid positive speech interval before checking its budget.</p>;
-  const budget = speechIntervalBudget(speech.startMs, speech.endMs, pace);
+  const budget = speechIntervalBudget(speech.startMs, speech.endMs, typeof speech.delivery === "string" ? pace : speech.delivery.pace);
   return <p className="text-xs text-muted-foreground">{speech.text.trim() ? speech.text.trim().split(/\s+/u).length : 0} words · preferred {budget.preferredTargetWords}, absolute maximum {budget.maximumWords} · {[...speech.text.replace(/\s/gu, "")].length} characters · preferred {budget.preferredTargetNonspaceCharacters}, absolute maximum {budget.maximumNonspaceCharacters}</p>;
 }
 function Scene({ scene, onChange, onSpeechTextChange, pace }: { scene: StoryboardScene; onChange?: (scene: StoryboardScene) => void;
   onSpeechTextChange?: (index: number, text: string) => void; pace: Storyboard["voice"]["pace"] }) {
-  const strings = ["purpose", "description", "productInteraction", "productPosition", "transition", "generationNotes", "generationPrompt"] as const;
+  const strings = ["purpose", "description", "productInteraction", "productPosition", "generationNotes", "generationPrompt"] as const;
   const labels = { purpose: "Purpose", description: "Description", productInteraction: "Product interaction", productPosition: "Product positioning", transition: "Transition", generationNotes: "Additional generation directions", generationPrompt: "Generation prompt" };
   return <details className="rounded-lg border border-border bg-card/60 p-3" open={onChange || onSpeechTextChange ? true : undefined}>
     <summary className="cursor-pointer text-sm font-medium focus-visible:outline-2 focus-visible:outline-ring">
@@ -61,9 +73,16 @@ function Scene({ scene, onChange, onSpeechTextChange, pace }: { scene: Storyboar
             onChange({ ...scene, actions: scene.actions.map((item, i) => i === index ? { ...item, [key]: value } : item) }))} />)}
         </div>)}
       </div>
-      {(["camera", "lighting", "audio"] as const).map(group => <div key={group} className="space-y-2"><h4 className="text-xs font-medium capitalize">{group}</h4>
+      {(["camera", "lighting"] as const).map(group => <div key={group} className="space-y-2"><h4 className="text-xs font-medium capitalize">{group}</h4>
         {Object.entries(scene[group]).map(([key, value]) => <Field key={key} label={key} value={value} onChange={onChange && (next => onChange({ ...scene, [group]: { ...scene[group], [key]: next } }))} />)}
       </div>)}
+      <div className="space-y-2"><h4 className="text-xs font-medium">Audio cues</h4>{(["background", "effects", "music"] as const).map(role => {
+        const cue = scene.audio[role];
+        return typeof cue === "string" ? <Field key={role} label={role} value={cue} /> : <div key={role} className="space-y-2 rounded border border-border p-2">
+          <Choice label={`${role} requirement`} value={cue.requirement} choices={["none", "optional"]} onChange={onChange ? next => onChange({ ...scene, audio: { ...scene.audio, [role]: { ...cue, requirement: next, assetId: null } } }) : undefined} />
+          <Field label={`${role} description (optional cue only)`} value={cue.description} onChange={onChange ? next => onChange({ ...scene, audio: { ...scene.audio, [role]: { ...cue, description: next } } }) : undefined} />
+          <p className="text-xs text-muted-foreground">Optional cues are not generated or mixed. V1 has no owned music/SFX binding.</p></div>;
+      })}</div>
       <div className="space-y-2"><h4 className="text-xs font-medium">Dialogue and narration</h4>
         {!scene.speech.length && <p className="text-xs text-muted-foreground">No speech in this scene.</p>}
         {scene.speech.map((speech, index) => <div key={index} className="space-y-2 rounded-md border border-border p-2">
@@ -74,13 +93,20 @@ function Scene({ scene, onChange, onSpeechTextChange, pace }: { scene: Storyboar
             <option value="character">Character dialogue</option><option value="narration">Narration in Character voice</option></select></label>
             <div className="grid grid-cols-2 gap-2">{(["startMs", "endMs"] as const).map(key => <Time key={key} label={key === "startMs" ? "Speech start" : "Speech end"} value={speech[key]}
               onChange={value => onChange({ ...scene, speech: scene.speech.map((item, i) => i === index ? { ...item, [key]: value } : item) })} />)}</div></>}
-          {(["text", "delivery"] as const).map(key => <Field key={key} label={key === "text" ? "Spoken words" : "Voice delivery"} value={speech[key]} onChange={onChange ? value =>
-            onChange({ ...scene, speech: scene.speech.map((item, i) => i === index ? { ...item, [key]: value } : item) }) :
-            key === "text" && onSpeechTextChange ? value => onSpeechTextChange(index, value) : undefined} />)}
+          <Field label="Spoken words" value={speech.text} onChange={onChange ? value => onChange({ ...scene, speech: scene.speech.map((item, i) => i === index ? { ...item, text: value } : item) }) : onSpeechTextChange ? value => onSpeechTextChange(index, value) : undefined} />
+          {typeof speech.delivery === "string" ? <Field label="Legacy voice delivery" value={speech.delivery} /> : <>
+            <Delivery value={speech.delivery} onChange={onChange ? value => onChange({ ...scene, speech: scene.speech.map((item, i) => i === index ? { ...item, delivery: value } : item) }) : undefined} />
+            <Field label="Descriptive performance note (not an execution requirement)" value={speech.deliveryNote ?? ""} onChange={onChange ? value => onChange({ ...scene, speech: scene.speech.map((item, i) => i === index ? { ...item, deliveryNote: value } : item) }) : undefined} />
+          </>}
           {onChange && <Button type="button" variant="outline" size="sm" onClick={() => onChange({ ...scene, speech: scene.speech.filter((_, i) => i !== index) })}>Remove speech</Button>}
         </div>)}
         {onChange && scene.speech.length < 8 && <Button type="button" variant="outline" size="sm" onClick={() => onChange({ ...scene, speech: [...scene.speech,
-          { startMs: scene.startMs, endMs: scene.endMs, speaker: "character", characterAssetId: scene.characterAssetId, text: "", delivery: "Natural, with a short breath before speaking." }] })}>Add speech</Button>}
+          { startMs: scene.startMs, endMs: scene.endMs, speaker: "character", characterAssetId: scene.characterAssetId, text: "", delivery: defaultDelivery(pace), deliveryNote: "" }] })}>Add speech</Button>}
+      </div>
+      <div className="space-y-2"><Choice label="Executable transition" value={typeof scene.transition === "string" ? "legacy" : scene.transition.type} choices={["none", "cut", "fade_in", "fade_out", "crossfade"]}
+        onChange={onChange ? next => onChange({ ...scene, transition: { type: next as Transition["type"], durationMs: next === "none" || next === "cut" ? 0 : 400 } }) : undefined} />
+        {typeof scene.transition !== "string" && <Time label="Transition duration" value={scene.transition.durationMs} onChange={onChange ? value => { if (typeof scene.transition !== "string") onChange({ ...scene, transition: { ...scene.transition, durationMs: value } }); } : undefined} />}
+        <Field label="Transition description (not execution data)" value={scene.transitionNote ?? (typeof scene.transition === "string" ? scene.transition : "")} onChange={onChange ? value => onChange({ ...scene, transitionNote: value }) : undefined} />
       </div>
       {strings.slice(4).map(key => <Field key={key} label={labels[key]} value={scene[key]} onChange={key !== "generationPrompt" && onChange ? value => onChange({ ...scene, [key]: value }) : undefined} />)}
     </div>
@@ -100,14 +126,18 @@ function StoryboardCard({ projectId, jobId, storyboard, eligible, enabled, check
   const [busy, setBusy] = useState(""); const [error, setError] = useState(""); const [confirmDelete, setConfirmDelete] = useState(false);
   const [validation, setValidation] = useState<StoryboardValidationReport | null>(null);
   const [manualIndex, setManualIndex] = useState<number | null>(null);
+  const [repairChanges, setRepairChanges] = useState<RepairChange[] | null>(null);
+  const saveRequestId = useRef<string | null>(null);
   const normalEditing = editing && manualIndex === null;
   const running = useRef(false);
   const active = !!storyboard && ["queued", "running", "deleting"].includes(storyboard.state) && !storyboard.error;
   async function act(action: "generate" | "save" | "accept" | "reject" | "retry" | "recover") {
     if (running.current) return; running.current = true; setBusy(action); setError(""); setValidation(null);
     try {
+      if (action === "save") saveRequestId.current ??= crypto.randomUUID();
       const response = await fetch("/api/ugc/storyboard", { method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ projectId, jobId, version: storyboard?.version ?? 0, action,
+        body: JSON.stringify({ projectId, jobId, version: storyboard?.version ?? 0, action: action === "save" && repairChanges ? "repair_execution" : action,
+          ...(action === "save" ? { requestId: saveRequestId.current } : {}),
           ...(storyboard ? { storyboardId: storyboard.id } : {}), ...(["save", "recover"].includes(action) ? { document: draft } : {}),
           ...(action === "recover" ? { requestIndex: manualIndex } : {}) }), signal: AbortSignal.timeout(30_000) });
       const result = await response.json();
@@ -118,7 +148,7 @@ function StoryboardCard({ projectId, jobId, storyboard, eligible, enabled, check
     } catch (failure) { setError(failure instanceof Error ? failure.message : "Storyboard could not be saved."); checkStatus(); }
     finally { running.current = false; setBusy(""); }
   }
-  const canEdit = !!draft && !active && storyboard?.current;
+  const canEdit = !!draft && draft.schemaVersion === 2 && !active && storyboard?.current;
   function checkLocalTiming() {
     if (!draft) return;
     const first = draft.scenes[0];
@@ -137,6 +167,12 @@ function StoryboardCard({ projectId, jobId, storyboard, eligible, enabled, check
     {storyboard?.document && !storyboard.error && storyboard.recovery?.validations?.some(report => !report.valid) && <p className="text-xs text-muted-foreground">Your saved storyboard passed validation. Reports for the unchanged original provider responses are retained below for inspection.</p>}
     {storyboard?.recovery?.validations?.map(report => <ValidationDetails key={report.requestIndex} report={report} />)}
     {validation && <ValidationDetails report={validation} />}
+    {draft?.schemaVersion === 1 && storyboard?.current && !active && <Button size="sm" variant="outline" disabled={!!busy} onClick={() => {
+      const repair = proposeExecutionRepair(draft); setDraft(repair.document); setRepairChanges(repair.changes); setEditing(true); setDirty(true);
+    }}>Review local V1 execution repair</Button>}
+    {repairChanges && <details open className="rounded border border-border p-3 text-xs"><summary className="cursor-pointer font-medium">Review proposed execution changes</summary>
+      <p className="mt-2">Nothing is saved or approved yet. Save creates a new review revision; the prior approval and package remain in history. No AI request is made.</p>
+      <ol className="mt-2 space-y-2">{repairChanges.map((c, i) => <li key={i}>Scene {c.scene} · {c.field}: {c.before} → {c.after}. {c.reason}</li>)}</ol></details>}
     {!!storyboard?.manualRecoveries?.length && <div className="space-y-2 rounded-md border border-border p-3">
       <p className="text-xs text-muted-foreground">You can shorten the saved dialogue yourself, check timing locally and save it for review without OpenAI or a worker. Original responses stay preserved. Timestamps, actions, voice and approved assets stay fixed.</p>
       {storyboard.manualRecoveries.map(candidate => <Button key={candidate.requestIndex} type="button" size="sm" variant="outline" disabled={!!busy || manualIndex !== null}
@@ -179,15 +215,15 @@ function StoryboardCard({ projectId, jobId, storyboard, eligible, enabled, check
           setDraft({ ...draft, scenes: draft.scenes.map((item, i) => index === i ? next : item) }); setDirty(true);
         } : undefined} /></li>)}</ol>
       </fieldset>
-      {editing && <p className="text-xs text-muted-foreground">Keep scene timing continuous and speech short enough for its interval. Generation prompts update from your saved scene details and additional directions. Save before accepting.</p>}
+      {editing && <p className="text-xs text-muted-foreground">Keep the exact selected duration, whole-second scenes and explicit transition timing. Crossfades need matching scene overlap. Keep speech within its interval. Save before accepting.</p>}
       <div className="flex flex-wrap gap-2">
         {!editing && canEdit && <Button type="button" size="sm" variant="outline" disabled={!!busy} onClick={() => setEditing(true)}>Edit storyboard</Button>}
         {editing && <>{manualIndex !== null && <Button type="button" size="sm" variant="outline" disabled={!!busy} onClick={checkLocalTiming}>Check dialogue timing</Button>}
           <Button type="button" size="sm" disabled={!!busy || !dirty || !storyboard?.current} onClick={() => void act(manualIndex !== null ? "recover" : "save")}>{busy === "save" || busy === "recover" ? "Saving…" : manualIndex !== null ? "Save repaired storyboard" : "Save storyboard"}</Button>
-          <Button type="button" size="sm" variant="outline" disabled={!!busy} onClick={() => { setDraft(storyboard?.document ?? null); setDirty(false); setEditing(false); setManualIndex(null); setValidation(null); }}>Cancel edits</Button></>}
-        {storyboard?.state === "review" && <Button type="button" size="sm" disabled={!!busy || dirty || !storyboard.current} onClick={() => void act("accept")}>Accept Storyboard</Button>}
+          <Button type="button" size="sm" variant="outline" disabled={!!busy} onClick={() => { setDraft(storyboard?.document ?? null); setDirty(false); setEditing(false); setManualIndex(null); setRepairChanges(null); setValidation(null); }}>Cancel edits</Button></>}
+        {storyboard?.state === "review" && <Button type="button" size="sm" disabled={!!busy || dirty || !storyboard.current || draft?.schemaVersion !== 2} onClick={() => void act("accept")}>Accept Storyboard</Button>}
       </div>
-      {storyboard?.state === "approved" && storyboard.current && <p className="text-xs text-success-foreground">Storyboard saved and approved. Paused before preparing the video-generation package.</p>}
+      {storyboard?.state === "approved" && storyboard.current && !dirty && !repairChanges && <p className="text-xs text-success-foreground">Storyboard saved and approved. Paused before preparing the video-generation package.</p>}
     </>}
     {storyboard?.canRetry && <Button type="button" size="sm" variant="outline" disabled={!enabled || !!busy} onClick={() => void act("retry")}>{storyboard.state === "deleting" ? "Retry deletion" : "Retry saved storyboard work"}</Button>}
     {storyboard?.canDelete && !confirmDelete && <Button type="button" size="sm" variant="outline" disabled={!!busy} onClick={() => setConfirmDelete(true)}>Reject and Delete</Button>}

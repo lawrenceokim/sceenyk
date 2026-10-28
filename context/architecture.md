@@ -1,5 +1,24 @@
 # Architecture Context
 
+## Canonical V1 execution contract / schema 2 (2026-10-28)
+
+The current implementation task versions Storyboard/package documents to schema 2 with shared provider-neutral structured transitions, required-versus-optional audio cues and finite VoiceDelivery. Schema-1 documents remain byte-equivalent readable history; new approval/admission requires schema 2 and matching executable capabilities. Generation planning uses whole-second provider-compatible scenes and conservative cuts by default, explicit fades, and only exactly allocated crossfade overlap preserving selected total duration. No audio provider or owned music/SFX manifest exists, so generation may emit optional descriptive cues but cannot claim required bound sound. Legacy local repair creates an explicitly reviewed new revision and private immutable version snapshots; old approvals/packages/requests/media remain unchanged. Manual migration 070 supplies database validation/history/admission fences; it will not be applied remotely. Operator funding is unchanged and independent of creative eligibility; diagnostics itemize existing configured estimate ceilings without inventing prices.
+
+## M10 composition-owned transition correction (2026-10-28)
+
+Composition owns approved scene ordering, transition normalization/duration, overlap/final timing and audio mixing; video, voice and lip-sync capabilities remain independent preflight layers. A provider-neutral versioned composition profile/plan is frozen in final configuration and bound by its existing hash. The FFmpeg implementation may render explicit cut/fade/crossfade plans only when approved source intervals account for all overlap and preserve total duration. Missing transition duration, undeclared overlap, unsupported creative instructions or required sound without owned assets fail before any paid intent. No creative padding, frozen frames, automatic retiming or sound omission is allowed. Composition-only transition metadata is removed only from deterministic adapter payload translation; the immutable approved package/Storyboard/hash remain unchanged. Current M9 contiguous scene timelines cannot express positive crossfade overlap; supporting that future input schema is a separate change, not an implicit reinterpretation.
+
+## M10 implemented source boundary (2026-10-27)
+
+**M9: Complete. M10: Complete in source for the configured local V1 profile. Runtime/provider/manual acceptance: Pending.** Source boundaries live in lib/final-video-generation/{providers,contract,planning,preflight,worker,media,storage,server,progress}.ts and adapters/. VideoGenerationProvider extends the M9 abstraction; VoiceGenerationProvider and LipSyncProvider keep vendor payloads and opaque identities inside adapters. Next.js routes perform owned admission/review; only the external local worker imports FFmpeg.
+
+[Actual source, verified API limits, required setup, checks and manual acceptance](final-video-generation.md#implemented-local-v1-source-and-profile). This current source entry supersedes implementation-status and task-permission statements in the older dated planning/history below. Unsupported capabilities fail closed; no real providers, worker processes, remote migrations, deployment or credit spending ran during implementation.
+
+
+## M10 source implementation refinement (2026-10-27)
+
+Source work now implements the existing automatic architecture, with no deployment/provider/runtime acceptance. Adapters select Seedance 2.5 reference-to-video through fal, dedicated ElevenLabs designed voice/timestamped speech and Kling audio-to-video lip-sync through fal. Reference inputs remain the same three approved images. Unsupported scene durations, missing declared audio assets or transitions fail preflight. The local output profile is 720p/25fps/H.264/AAC with a predeclared 50ms technical tolerance, not permission to change creative timing. Current development admission requires explicit finite operator-funded authorization/configuration and matched user consent; customer-credit mode is disabled rather than guessing a UGC tariff/review-hold/settlement policy. Existing financial owners remain unchanged.
+
 ## Dedicated UGC voice and media composition (2026-10-27)
 
 **M9 Complete/approved; M10 Planned / Not Started.** All four strategies are resolved: fal.ai visual generation, ElevenLabs Character voice, automatic internal lip-sync through a fal.ai-compatible adapter/model and deterministic FFmpeg final composition. Exact model/account support and source/runtime/provider/manual acceptance are not claimed. [M10](final-video-generation.md#automatic-scene-processing-and-lipsyncprovider) is authoritative for automatic orchestration and LipSyncProvider; [voice-generation.md](voice-generation.md) owns CharacterVoiceProfile/VoiceGenerationProvider.

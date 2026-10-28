@@ -1,4 +1,5 @@
-import { storyboardSchema, type Storyboard } from "./schema";
+import { storyboardSchema, executableStoryboardSchema, legacyStoryboardSchema, type Storyboard } from "./schema";
+import { executionIssues } from "@/lib/execution-v1/contract";
 import type { StoryboardBinding } from "./contract";
 import { StoryboardValidationError, schemaValidationIssues, validationPath, validationValue, type StoryboardValidationIssue } from "./validation-diagnostics";
 
@@ -6,6 +7,8 @@ export function inspectStoryboard(value: unknown, binding: StoryboardBinding) {
   const parsed = storyboardSchema.safeParse(value);
   if (!parsed.success) return { document: null, issues: schemaValidationIssues(parsed.error, value) };
   const doc = parsed.data; const issues: StoryboardValidationIssue[] = [];
+  const versioned = (doc.schemaVersion === 2 ? executableStoryboardSchema : legacyStoryboardSchema).safeParse(value);
+  if (!versioned.success) return { document: null, issues: schemaValidationIssues(versioned.error, value) };
   const add = (code: string, path: (string | number)[], expected: string | number, received: unknown, sceneNumber?: number) => {
     issues.push({ code, fieldPath: validationPath(path), expected, expectedType: typeof expected === "number" ? "number" : "constraint",
       ...validationValue(received), ...(sceneNumber === undefined ? {} : { sceneNumber }) });
@@ -17,7 +20,9 @@ export function inspectStoryboard(value: unknown, binding: StoryboardBinding) {
   for (const [index, scene] of doc.scenes.entries()) {
     const p = ["scenes", index]; const number = index + 1;
     if (scene.number !== number) add("SCENE_NUMBER_INVALID", [...p, "number"], number, scene.number, number);
-    if (scene.startMs !== end) add(scene.startMs < end ? "SCENE_OVERLAP" : "SCENE_GAP", [...p, "startMs"], end, scene.startMs, number);
+    const previousTransition = doc.scenes[index - 1]?.transition;
+    const overlap = doc.schemaVersion === 2 && previousTransition && typeof previousTransition !== "string" && previousTransition.type === "crossfade" ? previousTransition.durationMs : 0;
+    if (scene.startMs !== end - overlap) add(scene.startMs < end - overlap ? "SCENE_OVERLAP" : "SCENE_GAP", [...p, "startMs"], end - overlap, scene.startMs, number);
     if (scene.endMs <= scene.startMs || scene.endMs > doc.durationMs) add("SCENE_INTERVAL_INVALID", [...p, "endMs"], `>${scene.startMs} and <=${doc.durationMs} milliseconds`, scene.endMs, number);
     for (const [key, expected] of [["characterAssetId", binding.character], ["productAssetId", binding.product], ["locationAssetId", binding.location]] as const) if (scene[key] !== expected) add("ASSET_BINDING_MISMATCH", [...p, key], "exact approved asset UUID for this role", scene[key], number);
     if (![binding.character, binding.product, binding.location].every(id => scene.generationPrompt.includes(`asset:${id}`))) add("PROMPT_ASSET_REFERENCE_MISSING", [...p, "generationPrompt"], "all three approved asset references", scene.generationPrompt, number);
@@ -30,9 +35,10 @@ export function inspectStoryboard(value: unknown, binding: StoryboardBinding) {
       actionEnd = action.endMs;
     }
     let speechEnd = scene.startMs;
-    const rate = doc.voice.pace === "slow" ? 1.8 : doc.voice.pace === "natural" ? 2.3 : 2.7;
     for (const [i, speech] of scene.speech.entries()) {
       const s = [...p, "speech", i]; const seconds = (speech.endMs - speech.startMs) / 1000;
+      const pace = typeof speech.delivery === "string" ? doc.voice.pace : speech.delivery.pace;
+      const rate = pace === "slow" ? 1.8 : pace === "natural" ? 2.3 : 2.7;
       if (!speech.text) add("SPEECH_TEXT_EMPTY", [...s, "text"], "nonempty spoken text", speech.text, number);
       if (speech.characterAssetId !== binding.character) add("SPEAKER_BINDING_MISMATCH", [...s, "characterAssetId"], "approved Character sheet UUID", speech.characterAssetId, number);
       if (speech.startMs < speechEnd) add("SPEECH_OVERLAP", [...s, "startMs"], `>=${speechEnd} milliseconds`, speech.startMs, number);
@@ -48,7 +54,15 @@ export function inspectStoryboard(value: unknown, binding: StoryboardBinding) {
     end = scene.endMs;
   }
   if (end !== doc.durationMs) add("TOTAL_DURATION_MISMATCH", ["durationMs"], doc.durationMs, end);
+  if (doc.schemaVersion === 2) for (const issue of executionIssues(versioned.data as import("./schema").ExecutableStoryboard))
+    issues.push({ code: issue.code, fieldPath: `$.${issue.field}`, expected: issue.expected, expectedType: "execution constraint", received: "invalid execution requirement", receivedType: "contract", sceneNumber: issue.sceneNumber });
   return { document: doc, issues };
+}
+export function validateExecutableStoryboard(value: unknown, binding: StoryboardBinding) {
+  const document = validateStoryboard(value, binding);
+  if (document.schemaVersion !== 2) throw new StoryboardValidationError({ validatorVersion: 2, valid: false, normalizations: [],
+    issues: [{ code: "EXECUTION_CONTRACT_REQUIRED", fieldPath: "$.schemaVersion", expected: "schema 2: use local V1 repair and review", expectedType: "execution contract", received: document.schemaVersion, receivedType: "number" }] });
+  return executableStoryboardSchema.parse(document);
 }
 export function validateStoryboard(value: unknown, binding: StoryboardBinding): Storyboard {
   const result = inspectStoryboard(value, binding);

@@ -1,5 +1,12 @@
 # Sceenyk project overview
 
+## M10 implemented source boundary (2026-10-27)
+
+**M9: Complete. M10: Complete in source for the configured local V1 profile. Runtime/provider/manual acceptance: Pending.** The Studio Final Video tab and local execution path are implemented. Normal users review only the final candidate; upstream reference, Storyboard and Package approvals are preserved.
+
+[Actual source, verified API limits, required setup, checks and manual acceptance](final-video-generation.md#implemented-local-v1-source-and-profile). This current source entry supersedes implementation-status and task-permission statements in the older dated planning/history below. Unsupported capabilities fail closed; no real providers, worker processes, remote migrations, deployment or credit spending ran during implementation.
+
+
 ## Current preparation roadmap (2026-10-27)
 
 **M9 Complete/approved; M10 Planned / Not Started; runtime/provider/manual acceptance Pending.** Video/fal.ai, voice/ElevenLabs, automatic internal lip-sync/fal.ai-compatible adapter and final FFmpeg strategies are resolved; exact model/account capabilities and implementations remain to verify/build. [Product state](overview.md#current-ugc-milestone-boundary-2026-10-27), [M10 automatic pipeline](final-video-generation.md#automatic-scene-processing-and-lipsyncprovider) and [voice/profile contract](voice-generation.md) supersede older manual scene/voice gates.

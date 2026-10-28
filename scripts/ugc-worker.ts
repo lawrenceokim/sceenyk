@@ -1,5 +1,6 @@
 import { loadEnvConfig } from "@next/env";
 import { randomUUID } from "node:crypto";
+import { finalConfigurationDiagnostic } from "../lib/final-video-generation/configuration-diagnostics";
 
 let startupPhase = "environment";
 const safeStartupReasons = new Set([
@@ -14,6 +15,7 @@ const safeStartupReasons = new Set([
   "CHARACTER_SHEET_RECOVERY_FAILED", "CHARACTER_SHEET_COMPOSITION_FAILED",
   "CHARACTER_SLOT_VALIDATION_REQUIRED",
   "UGC_PACKAGE_DISABLED",
+  "FINAL_SETUP_REQUIRED", "FINAL_FUNDING_REQUIRED", "FINAL_PROVIDER_CONFIGURATION",
 ]);
 const safeDatabaseCodes = new Set(["PGRST202", "PGRST204", "PGRST205", "42501", "42883", "23514"]);
 class WorkerStartupError extends Error {
@@ -23,6 +25,8 @@ function databaseFailure(reason: string, error: { code?: string } | null) {
   return new WorkerStartupError(reason, error?.code && safeDatabaseCodes.has(error.code) ? error.code : undefined);
 }
 function startupDiagnostic(error: unknown) {
+  const funding = finalConfigurationDiagnostic(error);
+  if (funding) return { phase: startupPhase, ...funding };
   const fields = error && typeof error === "object" ? error as { code?: unknown; issue?: unknown; message?: unknown } : {};
   const reason = [fields.issue, fields.code, fields.message].find(value => typeof value === "string" && safeStartupReasons.has(value));
   const moduleCode = fields.code === "ERR_MODULE_NOT_FOUND" || fields.code === "MODULE_NOT_FOUND" ? "UGC_MODULE_UNAVAILABLE" : null;
@@ -41,8 +45,9 @@ async function main() {
   }
   const args = process.argv.slice(2);
   const packagesOnly = args.length === 1 && args[0] === "--packages-only";
+  const finalOnly = args.length === 1 && args[0] === "--final-video-only";
   startupPhase = "arguments";
-  if (args.length && !packagesOnly) {
+  if (args.length && !packagesOnly && !finalOnly) {
     const { z } = await import("zod");
     if (args.length !== 2 || !["--recover-character-sheet", "--inspect-regeneration", "--resume-analysis", "--resume-character", "--resume-character-output", "--resume-product", "--resume-regeneration", "--retry"].includes(args[0]) || !z.uuid().safeParse(args[1]).success) throw new Error("UGC_WORKER_ARGUMENT_INVALID");
   }
@@ -51,15 +56,19 @@ async function main() {
   getDatabaseConfig();
   // The M9-only consumer cannot claim upstream paid preparation. It needs no
   // OpenAI/Character provider configuration and uses this same local runner.
-  if (packagesOnly) {
-    if (process.env.UGC_PACKAGE_ENABLED !== "1") throw new Error("UGC_PACKAGE_DISABLED");
+  if (packagesOnly || finalOnly) {
+    if (packagesOnly && process.env.UGC_PACKAGE_ENABLED !== "1") throw new Error("UGC_PACKAGE_DISABLED");
+    if (finalOnly) {
+      startupPhase = "final_video_configuration";
+      const { finalConfiguration } = await import("../lib/final-video-generation/config"); finalConfiguration();
+    }
     startupPhase = "runner_import";
     const { LocalJobRunner } = await import("../lib/ugc-jobs/local-runner");
     const shutdown = new AbortController();
     for (const signal of ["SIGINT", "SIGTERM"] as const) process.once(signal, () => shutdown.abort());
-    console.info("UGC_LOCAL_PACKAGE_WORKER_READY");
+    console.info(finalOnly ? "UGC_LOCAL_FINAL_VIDEO_WORKER_READY" : "UGC_LOCAL_PACKAGE_WORKER_READY");
     startupPhase = "running";
-    await new LocalJobRunner(randomUUID(), undefined, true).run(shutdown.signal);
+    await new LocalJobRunner(randomUUID(), undefined, packagesOnly, finalOnly).run(shutdown.signal);
     console.info("UGC_LOCAL_WORKER_STOPPED");
     return;
   }

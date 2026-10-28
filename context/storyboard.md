@@ -1,5 +1,20 @@
 # Milestone 8 — AI Storyboard and Scene-by-Scene Script Generation
 
+## Canonical execution and reviewed local repair (2026-10-28)
+
+Current source emits strict schema 2 (`ugc-storyboard-v2-execution`) using `lib/execution-v1/contract.ts`. This supersedes schema-1 execution descriptions below; schema 1 remains readable history. Transitions are `{type: none|cut|crossfade|fade_in|fade_out, durationMs}` with separate descriptive `transitionNote`. Scene sources are whole-second 4..30s; Character dialogue limits the source to 10s. Default plans are 1×5s, 2×5s or 5×6s for the selected 5/10/30s duration, with cuts between contiguous scenes. Positive crossfade overlap must be explicitly allocated in scene intervals; total source durations minus overlaps must equal selected duration. Fades occur within their source, use positive 40ms-grid durations <=2000ms, and do not shorten the timeline. No padding/freezing/stretching.
+
+Music/effects/background use `{requirement: none|optional|required, description, assetId}`. Current V1 has no owned sound manifest/asset integration, so only none/optional cues with null bindings can pass; optional descriptions are not generated or mixed. Required sound fails even if an arbitrary UUID is supplied. Required spoken text remains mandatory. `VoiceDelivery` is finite pace/energy/tone/emphasis/style; `deliveryNote` is descriptive, never a provider direction. Voice description is 20..700 characters. Per-line speech budgets use that line's normalized pace. Client diagnostics and server/SQL approval enforce timing, settings, asset bindings and these execution rules.
+
+For the current approved legacy Storyboard, choose **Review local V1 execution repair**. This clones locally and displays every proposed change without I/O: dissolve -> proposed cut (explicit creative change), final fade -> proposed 400ms fade-out, existing sound text -> optional cues, delivery prose -> finite settings with original prose retained as notes. Unknown transitions remain unresolved for owner selection. Review/edit, Save to fork a new review revision, then Accept Storyboard. Existing approved document/requests/assets/package stay unchanged; new private version snapshots retain subsequent saves and approvals. No new AI request is needed. Requires manual migration 070 after 069; it has not been applied remotely. A new immutable M9 package must then be prepared/approved. [Recovery, cost diagnostics and exact setup](final-video-generation.md#canonical-v1-execution-recovery-2026-10-28).
+
+## M10 implemented source boundary (2026-10-27)
+
+**M9: Complete. M10: Complete in source for the configured local V1 profile. Runtime/provider/manual acceptance: Pending.** The exact approved M9 text, timing, Character binding, description/pace, actions, camera/light/style and audio instructions feed M10. Unsupported timing, delivery, transitions or unbound background/music/SFX stop capability admission before paid requests; adapters cannot rewrite the Storyboard.
+
+[Actual source, verified API limits, required setup, checks and manual acceptance](final-video-generation.md#implemented-local-v1-source-and-profile). This current source entry supersedes implementation-status and task-permission statements in the older dated planning/history below. Unsupported capabilities fail closed; no real providers, worker processes, remote migrations, deployment or credit spending ran during implementation.
+
+
 ## Current milestone status and package handoff (2026-10-27)
 
 M8 remains Complete and M9 Complete/approved; M10 is Planned / Not Started with all strategies resolved. [M9](video-generation-package.md) still freezes exact approved Storyboard/reference/settings versions, content and hashes. [Automatic M10 scene processing](final-video-generation.md#automatic-scene-processing-and-lipsyncprovider) preserves those exact scenes/windows/dialogue/performance/camera/actions/ratio/order through separate visual, voice and synchronization operations; no creative rewriting or latest-pointer substitution.

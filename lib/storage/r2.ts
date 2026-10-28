@@ -149,6 +149,22 @@ function client() {
     }),
   };
 }
+// M10 trusted worker only. Keys are immutable and confined to one execution.
+export async function putR2UgcFinalObject(key: string, bytes: Buffer, mimeType: string, signal: AbortSignal) {
+  if (!/^ugc\/[a-f0-9-]{36}\/[a-f0-9-]{36}\/[a-f0-9-]{36}\/final-video-v1\/[a-f0-9-]{36}\/[a-f0-9-]{36}\.(mp4|mp3|wav|json)$/.test(key) ||
+    bytes.length > 256 * 1024 * 1024 || !["video/mp4", "audio/mpeg", "audio/wav", "application/json"].includes(mimeType)) throw new Error("FINAL_STORAGE_SCOPE");
+  const { bucket, sdk } = client();
+  try { await sdk.send(new PutObjectCommand({ Bucket: bucket, Key: key, Body: bytes, ContentLength: bytes.length,
+    ContentType: mimeType, IfNoneMatch: "*" }), { abortSignal: signal }); }
+  catch (error) { if ((error as { $metadata?: { httpStatusCode?: number } })?.$metadata?.httpStatusCode !== 412) throw new Error("FINAL_STORAGE_UNAVAILABLE"); }
+}
+export async function deleteR2UgcFinalObject(key: string, etag: string, signal: AbortSignal) {
+  if (!/^ugc\/[a-f0-9-]{36}\/[a-f0-9-]{36}\/[a-f0-9-]{36}\/final-video-v1\/[a-f0-9-]{36}\/[a-f0-9-]{36}\.mp4$/.test(key)) throw new Error("FINAL_STORAGE_SCOPE");
+  const object = await headR2CharacterObject(key, signal); if (!object) return;
+  if (object.etag !== etag) throw new Error("FINAL_OBJECT_CHANGED");
+  const { bucket, sdk } = client(); await sdk.send(new DeleteObjectCommand({ Bucket: bucket, Key: key, IfMatch: etag }), { abortSignal: signal });
+  if (await headR2CharacterObject(key, signal)) throw new Error("FINAL_DELETE_UNCONFIRMED");
+}
 export async function signR2Upload(
   key: string,
   mimeType: string,

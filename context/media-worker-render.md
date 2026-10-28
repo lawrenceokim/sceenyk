@@ -1,5 +1,16 @@
 # Render media-preparation worker
 
+## M10 deterministic composition transitions (2026-10-28)
+
+The local M10 compositor now owns explicit cut/fade/crossfade/dissolve plans, matching frame rates/time bases, exact approved total duration and absolute dedicated-speech placement. It probes required FFmpeg filters/encoders/FFprobe before any paid intent and validates plan/source count/timing/streams before final review. Composition-only transitions are not video-provider requirements or video-payload instructions. No default transition duration, padding/frozen frames, retiming or audio omission is allowed. [Exact supported profile, current package blockers and safe retry](final-video-generation.md#composition-owned-transitions-and-preflight-2026-10-28). Native synthetic fixtures passed; no generation worker/provider ran.
+
+## M10 implemented source boundary (2026-10-27)
+
+**M9: Complete. M10: Complete in source for the configured local V1 profile. Runtime/provider/manual acceptance: Pending.** The local final-video lane automatically normalizes visual MP4 to 720p-shape H.264/yuv420p at 25fps, places exact speech in approved windows, synchronizes Character speech only, muxes authoritative voice and concatenates scenes in order. FFmpeg runs through existing fixed execFile/no-shell bounded helpers with a secret-free child environment. No FFmpeg subprocess runs in Next.js routes. Technical tolerance is 50ms; unsupported creative changes stop preflight.
+
+[Actual source, verified API limits, required setup, checks and manual acceptance](final-video-generation.md#implemented-local-v1-source-and-profile). This current source entry supersedes implementation-status and task-permission statements in the older dated planning/history below. Unsupported capabilities fail closed; no real providers, worker processes, remote migrations, deployment or credit spending ran during implementation.
+
+
 ## Planned M10 local generation and assembly (2026-10-27)
 
 [M10](final-video-generation.md#automatic-scene-processing-and-lipsyncprovider) automatically schedules visual generation, reusable-profile ElevenLabs speech, conditional Character-dialogue lip-sync, private completed-scene verification and FFmpeg final assembly/validation on the existing local worker. VideoGenerationProvider, VoiceGenerationProvider and LipSyncProvider are separate internal adapters; no successful stage waits for voice/scene approval or a manual stitch trigger.

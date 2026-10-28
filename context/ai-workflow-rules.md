@@ -1,8 +1,12 @@
 # AI Workflow Rules
 
+## M10 source implementation authorization (2026-10-27)
+
+The owner's subsequent implementation request supersedes the documentation-only restrictions below. Implement the automated M10/provider/profile/private media/FFmpeg/final-review path; use focused offline fixtures, isolated schema checks, TypeScript and lint. No real fal/ElevenLabs calls, credit spending, workers/live jobs, remote migration, build/browser suite, deployment or hosted enabling. Render/Inngest stay disabled. Preserve existing source/package/financial authority. The selected local development funding path is explicitly configured finite operator funding; customer-credit admission remains fail-closed until its unresolved commercial quote/review-hold mapping is specified, without changing the existing ledger/free allowance.
+
 ## Automated M10 documentation scope (2026-10-27)
 
-**Current request: documentation/context only. M9 Complete/approved; M10 Planned / Not Started.** Video/fal.ai, voice/ElevenLabs, automatic internal lip-sync/fal.ai-compatible adapter and final composition/FFmpeg strategies are resolved. Exact model/account verification, source implementation and runtime/provider/manual acceptance remain Pending. [M10 canonical pipeline](final-video-generation.md#automatic-scene-processing-and-lipsyncprovider); [voice contract](voice-generation.md).
+**Historical documentation-only request, superseded by the implementation authorization above.** Video/fal.ai, voice/ElevenLabs, automatic internal lip-sync/fal.ai-compatible adapter and final composition/FFmpeg strategies are resolved. Exact model/account verification, source implementation and runtime/provider/manual acceptance remain Pending. [M10 canonical pipeline](final-video-generation.md#automatic-scene-processing-and-lipsyncprovider); [voice contract](voice-generation.md).
 
 Normal V1 is approved package → Generate Final Video with required finite cost authorization → automatic processing → completed final video review. Do not add manual voice/profile/scene approval, user provider selection, lip-sync/alignment/stitching triggers or routine per-scene debugging. Existing upstream reference/Storyboard/package approvals stay unchanged. Internal stage readiness replaces prior M10 scene-acceptance proposals; final Approve or Reject and Delete never automatically regenerates.
 

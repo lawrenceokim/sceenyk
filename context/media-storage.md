@@ -1,5 +1,12 @@
 # Private project media
 
+## M10 implemented source boundary (2026-10-27)
+
+**M9: Complete. M10: Complete in source for the configured local V1 profile. Runtime/provider/manual acceptance: Pending.** M10 assets use private ugc/{owner}/{project}/{job}/final-video-v1/{execution}/ UUID keys. Immutable conditional PUTs, conditional GETs, readback SHA-256/ETag/length/MIME and measured media proofs gate readiness. Raw provider JSON is also saved privately for ambiguous-response replay, never resent as HTTP POST. Stable source/output recovery bytes are separate; per-claim scratch is cleaned. Final rejection deletes only its final R2 object and local final copy; scene/voice/profile history is retained. Owner-authorized preview uses a 15-minute signed URL, never a permanent asset URL.
+
+[Actual source, verified API limits, required setup, checks and manual acceptance](final-video-generation.md#implemented-local-v1-source-and-profile). This current source entry supersedes implementation-status and task-permission statements in the older dated planning/history below. Unsupported capabilities fail closed; no real providers, worker processes, remote migrations, deployment or credit spending ran during implementation.
+
+
 ## Planned M10 scene and final artifacts (2026-10-27)
 
 [M10 durability](final-video-generation.md#private-scene-output-and-persistence-concerns) requires immediate private persistence of every successful visual, exact voice/guide and synchronized output, with separate immutable stage/attempt identity, original source lineage, SHA-256/ETag/size/MIME and measured technical proof. Store completed scenes only after required voice/sync/timing checks; internal scene readiness is automatic, not user acceptance.

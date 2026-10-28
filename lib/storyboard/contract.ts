@@ -7,7 +7,7 @@ import { StoryboardValidationError, type StoryboardValidationReport } from "./va
 export { storyboardSchema, storyboardSceneSchema } from "./schema";
 export type { Storyboard, StoryboardScene } from "./schema";
 export { validateStoryboard } from "./validation";
-export const storyboardPromptVersion = "ugc-storyboard-v1";
+export const storyboardPromptVersion = "ugc-storyboard-v2-execution";
 export const storyboardMaxRequests = 2;
 
 export type StoryboardBinding = { character: string; product: string; location: string;
@@ -18,6 +18,7 @@ export type StoryboardRow = {
   id: string; job_id: string; project_id: string; owner_user_id: string; revision: number; version: number;
   state: StoryboardState; phase: "preparing" | "generating" | "repairing" | "saving" | "review" | "approved" | "failed" | "deleting" | "deleted";
   input: StoryboardInput; document: Storyboard | null; model: string | null;
+  repair_source_id?: string | null; repair_request_id?: string | null;
   requests: { model: string; promptVersion: string; contractVersion: number; maxOutputTokens: number; output?: string; receipt?: Record<string, unknown> }[];
   error_code: string | null; approved_at: string | null; claim_token: string | null; lease_expires_at: string | null;
   heartbeat_at: string | null; attempts: number; created_at: string; updated_at: string;
@@ -111,7 +112,8 @@ export function storyboardQueueMessage(review: StoryboardReview) {
 export const storyboardScopeSchema = z.strictObject({ projectId: z.uuid(), jobId: z.uuid() });
 export const storyboardActionSchema = storyboardScopeSchema.extend({
   storyboardId: z.uuid().optional(), version: z.number().int().nonnegative(),
-  action: z.enum(["generate", "save", "accept", "reject", "retry", "recover"]), document: z.unknown().optional(),
+  action: z.enum(["generate", "save", "accept", "reject", "retry", "recover", "repair_execution"]), document: z.unknown().optional(),
+  requestId: z.uuid().optional(),
   requestIndex: z.number().int().min(0).max(1).optional(),
 }).refine(value => value.version === 0 ? value.action === "generate" && !value.storyboardId : !!value.storyboardId);
 export const storyboardMessages: Record<StoryboardRow["phase"], string> = {

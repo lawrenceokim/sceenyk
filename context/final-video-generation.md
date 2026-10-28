@@ -1,10 +1,177 @@
 # Milestone 10 — Final Video Generation
 
+## Canonical V1 execution recovery (2026-10-28)
+
+Current source supersedes the older schema-1/contiguous-only compatibility descriptions below. Storyboard schema 2 and package schema/compiler/prompt 2 share `lib/execution-v1/contract.ts`, with `executionVersion=ugc-execution-v1` in packages. Historical schema-1 hashes/content remain readable and unchanged; new approval/admission requires the canonical contract. Composition remains responsible for transitions, not the video or lip-sync provider.
+
+* Transition: `{type: none|cut|crossfade|fade_in|fade_out, durationMs}` plus descriptive `transitionNote`. Cut/none require zero; other transitions require 40ms-aligned positive duration <=2000ms, strictly inside involved source scenes. Source durations are whole-second 4..30s; Character dialogue scenes <=10s. Default planning uses 1×5s / 2×5s / 5×6s and cuts. Explicit overlaps are valid only when source intervals account for them and source-duration sum minus overlap equals selected 5/10/30s. 6s + 5s minus 1s overlap = 10s; two contiguous 5s clips with 400ms crossfade fail. Fades occur within scenes. No pad/freeze/stretch or guessed transition timing.
+* Sound: `{requirement: none|optional|required, description, assetId}` separates creative cues from executable requirements. V1 has no music/SFX provider or owned-audio manifest integration. Only none/optional with null asset binding pass, and these descriptions are explicitly not generated/mixed. A required missing/fake binding fails, never masquerades as supplied audio. Speech/narration remain required exactly as approved.
+* Delivery: finite pace/energy/tone/emphasis/style, validated before approval and mapped inside the ElevenLabs adapter. Performance prose is retained separately in `deliveryNote`, without becoming a provider command. Speech words/windows/Character bindings stay exact.
+* M9 Prepare/worker/Approve run pure video/voice/lip-sync/composition capability checks. Insufficient budget is a separate M10 funding issue. No paid request precedes the full final preflight, scoped SQL admission, operation fingerprint and finite attempt/spend gate.
+
+### Inspected project and proposed recovery
+
+The approved schema-1 Storyboard/package remain unchanged: Scene 1 **`Dissolve into the next shot.`**, Scene 2 **`Fade out cleanly.`**, two contiguous 5000ms intervals. A GET-only local repair preview now passes all creative layers at exactly 10000ms; its sole remaining issue is `EXECUTION_BUDGET_INSUFFICIENT`. This is a preview, not a saved/reapproved project.
+
+**Review local V1 execution repair** clones the existing document in Studio and displays proposals before saving: Scene 1 cut/0ms (explicitly changes the dissolve intent to preserve current timing), Scene 2 fade_out/400ms, six optional audio cues with original wording, normalized delivery plus original performance notes. Owner may edit these values. Unknown creative transitions remain unresolved. Save forks a new review revision through the service-only scoped/idempotent repair RPC; Accept is separate. Original approved Storyboard, requests, package and assets remain intact. Future saves/approvals are privately snapshotted. A **new immutable Generation Package is required** because executable requirements/version/hash change. No OpenAI/provider call is needed for this repair or package compilation.
+
+### Exact configured cost diagnostics
+
+GET-only inspector results from the unchanged configuration:
+
+| Operation | Configured per-request ceiling / estimate |
+| --- | ---: |
+| Scene 1 video | $6.25 |
+| Scene 2 video | $6.25 |
+| Voice Design | $0.20 |
+| Voice identity save | $0.01 |
+| Scene 1 speech | $0.10 |
+| Scene 2 speech | $0.10 |
+| Scene 1 lip-sync | $0.20 |
+| Scene 2 lip-sync | $0.20 |
+| Total | **$13.31 (13310000 micro-USD)** |
+
+Total authorization remains **$7.00 (7000000 micro-USD)**; requests **8/8**. These are the existing configured operator ceilings used conservatively as estimates (`source=configured_operator_ceiling`), not independently verified provider tariffs or actual bills. No price, authorization, account funding or customer-credit behavior is changed. Inspector emits each provider/model, stage ceiling, estimate, attempts, aggregate authorization and optional unsaved repair preview; no secrets.
+
+### Manual safe recovery
+
+1. Keep the final-video worker stopped. Review and manually apply **070 after 069/prerequisites** using the normal database migration process. This task does not apply remote SQL. Restart the local app with the updated source and the same private configuration.
+2. Open the existing approved Storyboard. Choose **Review local V1 execution repair**. Review every displayed creative change and finite setting, including proposed cut/0ms, final fade/400ms and optional sound. Save; this creates a new review revision. Review and **Accept Storyboard**. Do not use Generate Storyboard, retry paid generation, delete/reset assets or edit old database JSON.
+3. With `UGC_PACKAGE_ENABLED=1`, start only the package consumer: `node --env-file=.env.local --conditions=react-server --import=tsx scripts/ugc-worker.ts --packages-only`. Choose **Prepare Generation Package**, inspect the new immutable result and **Approve Package**. This consumer performs deterministic compilation/private input verification, not provider generation. Stop that consumer when done.
+4. Run `node --env-file=.env.local --conditions=react-server --import=tsx scripts/check-final-video-config.ts`, then `node --env-file=.env.local --conditions=react-server --import=tsx scripts/inspect-final-video-preflight.ts <NEW_PACKAGE_UUID>`. If no UUID is supplied and history includes multiple approvals, the inspector lists IDs/revisions for selection. `--repair-preview` is optional, never saves, and is primarily for legacy diagnosis.
+5. Review creative-layer results and the full cost breakdown. With unchanged $7 authority, **do not start generation**: budget failure is expected. Any decision to authorize a larger finite whole-package budget is the operator's separate manual decision; this task changes no limits. Preserve all per-stage ceilings/request limits/funding mode and rerun the configuration/inspection commands after any independently approved configuration change.
+6. Only after the new package is current/approved and every preflight layer passes, restart app/worker for matching configuration hashes and refresh the UI/cost consent. Manually start `node --env-file=.env.local --conditions=react-server --import=tsx scripts/ugc-worker.ts --final-video-only`, then choose **Generate Final Video** when ready to authorize paid work. That is outside this task's verification; no generation is started here.
+
+### Focused evidence and limitations
+
+Offline checks cover canonical transitions/delivery/audio, 5/10/30s exact timing and approved overlap, M9 creative eligibility independent of funding, exact configured-cost summation, immutable old Storyboard/package rows through migration/fork/reapproval/new-package approval, scoped idempotence, RLS/grants and LF/CRLF migration reruns. Native FFmpeg fixtures verify fades/crossfades/mixed cuts, duration and absolute voice offsets. Migration 070 remains unapplied remotely; source/runtime/browser/provider/auditory acceptance is not implied by synthetic fixtures. Existing operation fingerprints, one-attempt/uncertain-response recovery and operator-only funding gates remain enforced; customer-credit billing remains disabled.
+
+### Source files in this contract correction
+
+* New canonical contract: `lib/execution-v1/contract.ts`.
+* Storyboard: `lib/storyboard/{schema,validation,validation-diagnostics,contract,normalization,prompt,provider,worker,server,correction,execution-repair}.ts`.
+* Package: `lib/video-generation-package/{contract,builder,execution,server,worker}.ts`.
+* Final execution: `lib/final-video-generation/{providers,preflight,planning,composition,worker}.ts`, `adapters/{elevenlabs,fal}.ts`.
+* Review/API: `components/creation/{storyboard-review,generation-package-review}.tsx`, `app/api/ugc/{storyboard,package}/route.ts`.
+* Persistence: `lib/db/types.ts`, `supabase/migrations/20261028007000_ugc_execution_contract_v1.sql`.
+* Offline fixtures/diagnostics: `scripts/{check-execution-v1,check-storyboard,check-final-video,check-final-video-funding,check-final-video-transitions,final-video-fixture,inspect-final-video-preflight}.ts`; `package.json` adds `test:ugc-execution-v1`.
+* Current context: `architecture`, `overview`, `storyboard`, `video-generation-package`, `voice-generation`, `database`, `pricing`, `ui-context`, `final-video-generation`, `progress-tracker` Markdown files. Existing unrelated working-tree changes are retained.
+
 ## Status and authority (2026-10-27)
 
-**Milestone 9 — Complete and approved. Milestone 10 — Planned / Not Started.** Video provider strategy — Resolved: fal.ai. Voice strategy — Resolved: ElevenLabs. Lip-sync strategy — Resolved: an automatic internal stage behind `LipSyncProvider`, with a fal.ai-compatible adapter/model planned. Final composition strategy — Resolved: FFmpeg. Exact models/account capabilities remain to verify; no adapter, lip-sync, composition or M10 UI implementation is claimed. Runtime/provider/manual acceptance — Pending.
+**Milestone 9 — Complete and approved. Milestone 10 — Complete in source for the configured local V1 profile. Runtime/provider/manual acceptance — Pending.** Implemented fal.ai video, ElevenLabs reusable Voice Design/timestamped speech, automatic fal.ai lip-sync, private independent stage recovery and FFmpeg composition with final-only Studio review. Public official API contracts were checked before adapters; real account access, runtime output quality and manual acceptance remain unverified.
 
-This is documentation/context only under the [current scope](ai-workflow-rules.md#automated-m10-documentation-scope-2026-10-27). No application code, migrations, provider requests, workers, tests/builds, deployment or live database/storage operation. Render/Inngest remain disabled; the existing local worker remains the development execution path.
+The subsequent [implementation authorization](ai-workflow-rules.md#m10-source-implementation-authorization-2026-10-27) supersedes the previous documentation-only task. The source/setup/limits below supersede implementation-status statements in dated planning/assessment sections, while their architectural invariants remain binding. Migration 069 is unapplied remotely; features default disabled. No real paid/provider requests, live database/storage operation, worker process, build/browser suite or deployment ran. Render/Inngest remain disabled.
+
+## Implemented local V1 source and profile
+
+### Composition-owned transitions and preflight (2026-10-28)
+
+Exact approved package revision 1 / command version 6: Scene 1 **`Dissolve into the next shot.`**, Scene 2 **`Fade out cleanly.`**, both strings matching frozen/live approved Storyboard revision 5/version 8. Two contiguous 5000ms scenes fill 10000ms. The old rejection was the global cut/none-only composition policy in `planning.ts`, not Seedance or lip-sync support.
+
+`composition.ts` now defines neutral capabilities, requirements and the normalized composition plan; `capabilities.ts` defines structured scene/layer/code/message diagnostics. Preflight separately validates real video duration/ratio/reference/resolution/format requirements, voice, lip-sync, composition order/type/duration/final timing/audio, and finite funding. HTTP 422 includes all layer issues and a precise first-failure message; no paid admission happens on failure.
+
+| Transition | Supported deterministic interpretation |
+| --- | --- |
+| Cut | Cut/none/hard cut/straight cut and known cut-to-next-shot wording, zero overlap/duration. |
+| Fade | Fade/fade out/fade in and known cleanly/to-black/from-black wording, with explicit duration: e.g. `Fade out cleanly over 400ms.` or `Fade in 0.4 seconds`. Plain fade means visual fade-out. It stays inside its source scene and does not change total duration or dedicated audio gain/offset. |
+| Crossfade/dissolve | Equivalent known names, e.g. `Dissolve into the next shot over 1s`, with explicit duration and exactly that approved source overlap. |
+| Other creative transition | Precise unsupported scene/requested transition/supported types/composition-layer error; never substituted. |
+
+Non-cut durations must be positive integer milliseconds on the 25fps (40ms) grid, shorter than the source scene(s). **No implicit duration.** Sum of scene durations minus approved overlaps must equal approved final duration: 6000ms + 5000ms with 1000ms approved overlap is 10000ms. Two complete contiguous 5000ms clips crossfaded for 400ms yield 9600ms and must fail; no padding, duplicated/frozen frames, stretching or speech shifting is allowed. Current M9/Storyboard validation requires contiguous intervals, so overlap/handle-capable input is a separate future contract change. Native renderer capability alone cannot authorize a different M9 timeline.
+
+`media.ts` implements FFmpeg fade/xfade and mixed cut composition, normalizes filter time bases, preserves exact speech at absolute timeline offsets and checks plan/count/media/final duration. Needed filters/encoders/FFprobe are verified by the local worker before any paid intent. No FFmpeg subprocess runs in Next.js. Visual transitions do not fade or truncate dedicated speech; declared sound still requires owned assets.
+
+Frozen neutral composition profile: `composition-transitions-v2`; fal visual adapter: `seedance-reference-v2-composition-owned`. The adapter removes only the canonical top-level composition `transition` field from its translated prompt, preserving the immutable original prompt/package/hash and every other visual field. Composition plans persist in final-operation input JSON; existing package/configuration/ordered-scene hashes bind final fingerprints. Existing JSON storage/guards suffice: no migration or private environment edit. Restart app/worker and refresh consent for the new configuration hash; existing runs are not silently upgraded.
+
+Current read-only preflight passes video/lip-sync but remains **ineligible**, because:
+
+- Neither transition supplies a duration, and the dissolve has no approved overlap.
+- Both scenes declare music, effects and ambience without owned audio bindings.
+- Existing voice mapping rejects `Calm, concise, slight pause before the final word.` and `Natural, confident, with a brief pause between words.`; no rewriting was performed.
+- Estimated **$13.31 / 8 requests** exceeds authorized **$7 / 8 requests**. Estimates/caps are unchanged; no funding increase was performed.
+
+Safe retry:
+
+1. Restart the local app and manually restart the final-only worker to load new source/profile; refresh Studio status/consent. No worker is started by this correction.
+2. Run `node --env-file=.env.local --conditions=react-server --import=tsx scripts/inspect-final-video-preflight.ts`. It performs one GET of an approved package and pure capability checks, printing exact layer failures and cost bounds. When approved history contains multiple records, it prints available package UUIDs/revisions and requires the exact current package UUID as its only argument; it never guesses which history is active. Studio Check status/Generate still authoritatively recheck current upstream input/version. Current result is `eligible: false`.
+3. Decide owner-approved content corrections. For the existing contiguous 10s contract, Cut between scenes and an explicitly timed final fade are compatible. Retaining the dissolve needs separately authorized overlap/handle-capable input support. Preserving required sounds needs an owned-audio integration; otherwise only an explicit owner-approved change to none can remove those requirements. Unsupported delivery needs a supported approved direction or separately implemented mapping.
+4. Use Storyboard **Edit → Save → Accept Storyboard**, then prepare/approve a **new Generation Package**. If only the final-only consumer is running, manually use the existing `npm run worker:ugc -- --packages-only` consumer for this deterministic M9 build, with its existing `UGC_PACKAGE_ENABLED=1`; final-only mode cannot claim package builds. Existing approved content is never rewritten automatically. Review any new full-plan estimate and revise funding only by explicit operator authorization; app/worker settings and refreshed consent must match.
+5. Repeat inspection. Click **Generate Final Video once only when `eligible: true`** and current cost is authorized. Existing paid-intent/fingerprint/attempt/current-package/version gates remain mandatory.
+
+`npm run test:ugc-final-transitions` exercises pure capabilities and native synthetic FFmpeg pixel/audio/order/duration checks. Existing funding and silent/spoken media fixtures also pass. No provider calls, paid jobs, remote migration, deployment or approved content mutation occurred; real provider/runtime/manual acceptance remains Pending.
+
+### Funding startup diagnostics (2026-10-28)
+
+The reported `FINAL_FUNDING_REQUIRED` startup was a strict authorization-field mismatch: the local JSON contained numeric `ceilings.lipsync`, while the canonical schema/SQL operation kind requires `ceilings.lip_sync`. JSON loading/parsing, funding flags, UUID and finite limits were valid. Configuration now accepts this one unambiguous spelling alias and normalizes it **before** strict validation and configuration hashing; both spellings together are rejected, amounts are never coerced/defaulted and arbitrary unknown fields still fail. Existing canonical authorizations produce unchanged configuration hashes and budgets. No private configuration or approved record is rewritten.
+
+Safe diagnostics distinguish `final_video_disabled`, `local_execution_required`, `operator_funding_disabled`, `authorization_missing`, `authorization_invalid_json` and `authorization_invalid`, with only allowlisted field names and validation rule codes. Existing provider-credential and configuration-hash failures map to `provider_funding_unavailable` and `authorization_stale` respectively. There is no expiry field or customer-credit prerequisite in the current authorization contract; do not infer either from the original generic code. Unknown fields remain strict errors rather than silently ignored expiry/cost instructions.
+
+The final-only worker now labels this local validation phase `final_video_configuration`. Its preceding `getDatabaseConfig()` only validates local connection settings/key class, not database reachability or RPC installation. Migration 069's action/checkpoint functions enforce operator funding and canonical stage ceilings later, after explicit generation admission; they do not produce this startup exception. Read-only live REST metadata confirmed five tables/columns and the four expected RPC signatures on 2026-10-28. Function bodies/policies were not exposed by that inspection, so no full deployed-body/permission/runtime audit is claimed. No corrective migration is required for the spelling/diagnostics fix.
+
+Configuration-only verification (does not start or import a worker, perform an RPC or contact providers):
+
+```powershell
+node --env-file=.env.local --conditions=react-server --import=tsx scripts/check-final-video-config.ts
+```
+
+This check disables network access and validates full video/voice credential **presence**, not remote account access. Expected: `UGC_FINAL_VIDEO_CONFIGURATION_READY`, operator funding, validated limits/canonical ceilings and `workerStarted: false`. It passed with the actual private environment unchanged. Prefer canonical `lip_sync` for new configuration; retain the same authorized amounts/ID/limits. After the check, restart the local app and manually restart the existing final-only worker when ready. Do not reset/reapprove the package or reapply 069 to fix this error. Regression checks: `npm run test:ugc-final-funding`; these are offline configuration/preflight checks only, with no SQL/media/worker/provider execution.
+
+Normal flow is **approved Package → Generate Final Video → automatic processing → final-only review**. One frozen neutral CharacterVoiceProfile/provider binding serves all speech. Completed scenes are internal readiness checkpoints. Final approval atomically records the exact version and completes the parent UGC job; final rejection queues deletion of only that final object/local copy and never regeneration. A later explicit Generate action after deletion can restitch preserved scenes under the same authorized run without repurchasing them.
+
+| Boundary | Source and actual behavior |
+| --- | --- |
+| Contracts/providers | `lib/final-video-generation/{contract,providers,planning,preflight}.ts`: neutral configuration/profile/capabilities/asset proof; extends existing M9 VideoGenerationProvider; independent VoiceGenerationProvider and LipSyncProvider. Vendor fields remain adapter-private. |
+| Adapters | `adapters/{fal,elevenlabs,http,registry}.ts`: reviewed fixed models, exact text/prompts, explicit no remote retry/fallback, bounded private responses, request/result reconciliation and safe media-host downloads. No model fallback. |
+| Persistence | Manual `supabase/migrations/20261027006900_ugc_final_video.sql`: executions, scenes, operations, reusable private profiles and append-only events; RLS, service-only RPCs, immutable identity/configuration, version/lease fencing, approved/current package and finite paid-intent budgets. Existing upstream functions/grants and ledger remain intact. |
+| Worker/media | `worker.ts`, `media.ts`, `storage.ts`: 90-second local lease, 20-second serialized heartbeats; independent video/design/create/voice/sync/composition operations, private raw response/source/output recovery, technical validation and ordered FFmpeg composition. Existing fair local runner gains a gated final lane; package-only lane remains isolated. |
+| Owned app/UI | `server.ts`, `progress.ts`, `app/api/ugc/final-video/{route,preview/route}.ts`, `components/creation/final-video-review.tsx`, existing UGC workflow/progress integration: explicit bounded funding consent, safe simplified status, short-lived private final preview, duration/ratio/resolution, final approval/deletion and failure-only recovery. No intermediate review. |
+
+### Verified API selection and supported limits
+
+Verified against public official API documentation on 2026-10-27, without authenticated capability or generation calls:
+
+- **Visual:** [fal.ai Seedance 2.5 reference-to-video](https://fal.ai/models/bytedance/seedance-2.5/reference-to-video/api), endpoint `bytedance/seedance-2.5/reference-to-video`. Explicit `task: reference`; three approved Character/Product/Location images via `@Image1/2/3`; complete immutable M9 generation prompt and deterministic absolute-to-local timestamp instruction. Documented whole-second 4–30s, up to 30 reference images, 30MB/image, 16:9/9:16/1:1, 480p/720p/1080p and selectable H264. V1 freezes 720p/H264 with native audio disabled. No stock/native video voice substitutes for dedicated speech.
+- **Voice identity:** [ElevenLabs Voice Design](https://elevenlabs.io/docs/api-reference/text-to-voice/design) with `eleven_multilingual_ttv_v2`, approved description/tone/pace/language/delivery, automatically generated preview text, no description enhancement; [save designed voice](https://elevenlabs.io/docs/api-reference/text-to-voice/create) once. Versioned first-technically-valid-preview policy; no user preview-selection gate. Original approved voice description plus provenance stays in the neutral profile; vendor preview/voice IDs stay in its private opaque binding. Compatible profile identity is reused within owner/project/Character version.
+- **Speech:** [timestamped TTS](https://elevenlabs.io/docs/api-reference/text-to-speech/convert-with-timestamps) with `eleven_multilingual_v2`, exact approved text, MP3/44.1kHz/128kbps, normalization off; original/normalized alignment when supplied and measured independent duration. [Supported model languages](https://elevenlabs.io/docs/overview/models) are validated; this v2 model does not enforce `language_code`, so no unsupported language override is sent. Language/pronunciation require manual auditory acceptance. Continuity uses up to three known recent same-model request IDs. Pace mapping: slow 0.9, natural 1.0, energetic 1.1. Versioned delivery mappings currently support Natural, Neutral, Conversational, Warm, Friendly, Cheerful, Enthusiastic, Dramatic, Expressive and Excited; other free-form delivery stops full preflight. These descriptive settings do not guarantee auditory fidelity; acceptance remains Pending. Text is never padded, rewritten or tagged to simulate delivery.
+- **Lip-sync:** [fal.ai Kling audio-to-video](https://fal.ai/models/fal-ai/kling-video/lipsync/audio-to-video/api), endpoint `fal-ai/kling-video/lipsync/audio-to-video`. Documented MP4/MOV video 2–10s/100MB with dimensions 720–1920 and 720p/1080p; audio 2–60s/5MB. V1 uses normalized 720p-shaped, 25fps silent video plus full-scene 48kHz MP3 guide containing only exact Character speech at approved offsets. Character-dialogue scenes therefore need 4–10s whole-second duration. Narration-only scenes skip mouth synchronization and retain exact narration in composition; silence skips voice/design/sync entirely.
+
+Full-package preflight blocks unsupported durations, oversized references, unsupported delivery/language, overlap, unsupported transitions and required background/music/SFX without an owned asset manifest **before any paid stage**. M9 has no owned audio asset manifest; V1 supports explicit none/silence only for these three sound fields and cut/none transitions. It cannot silently omit a declared sound or invent a dissolve. No general M9 timing/content limit is changed to fit this profile. Account availability, voice-slot limits, safety refusals, preview lifetime and generated-media accessibility still require manual verification before paid acceptance.
+
+### Durability, recovery and completion proofs
+
+Every stage has its own exact package/scene/profile/configuration input fingerprint and immutable paid intent. V1 grants **one paid attempt per operation**, not indefinite automatic retry. New work rechecks approved/current package and finite request/estimate authorization in SQL; successful upstream/other-scene operations are reused. Definitive rejected attempts remain stopped; recovery does not buy a replacement. Failed storage, decoding, download or local composition can recover the existing result without a new provider POST. Unknown POST outcomes enter reconciliation; known IDs use GET only. Missing IDs/expired remote output stop safely for operator investigation.
+
+Raw POST responses are fsynced and copied into private R2 before interpretation, including all Voice Design previews; replay re-parses those bytes and never issues HTTP POST. Header request IDs are checkpointed as soon as available. Local `source.bytes` preserves downloaded paid media separately from normalized `bytes`, so storage retry cannot accidentally transcode an already normalized replacement and change its immutable hash. Stable receipts and response proofs survive worker restart; deterministic private response keys support recovery after a lost SQL acknowledgement. ElevenLabs history recovery matches exact request IDs within one bounded 100-item page; absent/unretained results require reconciliation, never a new synthesis. Design/create identities with lost acknowledgement and no recoverable response cannot be guessed or recreated automatically.
+
+Private objects use `ugc/{owner}/{project}/{job}/final-video-v1/{execution}/{operation}.ext`; conditional immutable PUT, HEAD/conditional readback, SHA-256/ETag/size/MIME and measured full decode proof precede readiness. Provider CDN URLs are temporary recovery locators. Stable local recovery defaults to ignored `.ugc-final-recovery/` or configured private durable storage; keep it across restarts. Claim-scoped scratch is cleaned on exit; abrupt process termination may leave private scratch for manual cleanup after confirming no worker uses it. There is no automatic deletion of paid intermediates/profile history.
+
+FFmpeg performs technical 720p-shape/H264/yuv420p/25fps normalization, exact offset placement with silence, canonical dedicated voice muxing and ordered composition; AAC/48kHz/mono in the final. Silent parts receive silent audio only when needed for compatible concatenation. No automatic speech truncation/tempo repair or creative transition is allowed; measured utterance must fit its approved window within the frozen 50ms technical tolerance. Complete final validation checks every scene, exact package/configuration/revision, video/voice/sync/completed-scene manifest, ordered scene hashes, final operation/fingerprint, full decode, total duration/ratio/dimensions/audio, private bytes and SHA-256. SQL repeats manifest/shape/duration/fingerprint checks before review and approval. Missing required dialogue or sync cannot complete UGC. Existing upstream reference-approval triggers remain active.
+
+### Required manual setup
+
+1. Review and apply **069 after 068 and prerequisites**, using the trusted manual SQL workflow. It is not applied remotely by this task. Confirm deployed columns/functions satisfy its fail-closed preflight. Offline all-migration parsing is not a live catalog or concurrency audit.
+2. In private local app/worker configuration, retain `SCEENYK_LOCAL_JOBS_ONLY=1`; set `UGC_FINAL_VIDEO_ENABLED=1`, `UGC_FINAL_OPERATOR_FUNDED=1`, private `FAL_KEY`, private `ELEVENLABS_API_KEY`, existing Supabase/R2/Clerk configuration and stable `UGC_FINAL_RECOVERY_DIR` if desired. No `NEXT_PUBLIC_` provider key. `.env.example` defaults disabled; actual ignored environment was not edited. Existing FFmpeg/FFprobe binaries or configured private `FFMPEG_PATH`/`FFPROBE_PATH` are required.
+3. Set `UGC_FINAL_AUTHORIZATION` to a single-line JSON object with a fresh authorization UUID, supported language, maxRequests (1–64), maxEstimatedCostMicrousd (1–1,000,000,000), and positive reviewed conservative micro-USD ceilings for **video, voice, design, binding, lip_sync**. Example **shape only, replace every placeholder**: `{"authorizationId":"<UUID>","language":"en","maxRequests":<integer>,"maxEstimatedCostMicrousd":<integer>,"ceilings":{"video":<integer>,"voice":<integer>,"design":<integer>,"binding":<integer>,"lip_sync":<integer>}}`. Whole-run worst-case counts include design/create once even if a compatible voice may be cached. No prices are invented; the operator must review actual account rates/limits and choose adequate conservative caps. Freeze the same JSON/configuration in app and worker; changed configuration safely stops an existing run.
+4. Restart the local app to read configuration. Only when separately ready for funded acceptance, manually run **`npm run worker:ugc -- --final-video-only`**. This command was not executed during implementation. No OpenAI/Character configuration or upstream lane claiming is needed in this mode. Render/Inngest remain disabled.
+
+This is **operator-funded development only**. No customer credits, free allowance, holds, markup, refunds or commercial settlement policy is invented or enabled. Production customer-credit admission remains blocked until its quote/review-hold mapping is explicitly defined and implemented. The UI states the funding authority and bound; Generate confirms the exact owner/package/configuration authorization. Provider-reported usage is retained, with unavailable actual dollar cost null; estimate ceilings are conservative admission bounds, not a provider-side guaranteed billing cap.
+
+### Exact manual acceptance checklist
+
+1. Use an owned current approved M9 package matching the profile: three readable approved images, supported whole-second scenes, cut/none transitions, explicit none/silence for unbound background/effects/music, supported exact delivery. Include one silent scene and one 4–10s Character-dialogue scene whose approved words fit the assigned window. Do not edit or reinterpret the package after approval.
+2. Open **Final Video**, inspect the operator funding bound, click **Generate Final Video once**. Verify persisted simplified progress through automatic visual/voice/sync/composition with no manual voice/scene review or stitch trigger. Reload the app and check status; duplicate requests must return the same run.
+3. Inspect trusted private operation receipts: one video per required scene, one design/create only when no compatible saved profile exists, same profile/binding for every utterance, no voice/sync for silence, no mouth-sync for a separate narration-only package. Verify exact text, pronunciation/language/tone/pace/delivery, Character/Product/Location consistency, timing and lip performance by listening/viewing. Source fixtures do not establish semantic/visual/provider acceptance.
+4. Exercise controlled local interruption after known provider IDs/output, media download and storage acknowledgement, then restart the same local worker/configuration. Confirm saved Scene 1/video/audio/sync stay unchanged and no uncertain paid POST or successful upstream stage is repeated. Simulate these with mocks first; do not induce paid failure/repurchase without separate funding authorization. Test missing/expired response and unknown outcome stop safely.
+5. Confirm final order, duration within 50ms, expected ratio/resolution, every required utterance, intact audio/video streams and private hash/ETag/size. Verify another owner cannot invoke review/actions or obtain preview URLs, and stale package/version/lease cannot approve.
+6. Choose **Reject and Delete Final Video**: local worker deletes only final private/local media, leaves paid upstream artifacts/profile intact, and does not regenerate/restitch. An explicit subsequent Generate may restitch those saved scenes, with no new paid operation.
+7. On a current valid final, **Approve Final Video**: exact approval/version persists, Finalizing and workflow Complete display; duplicate approval is idempotent. Confirm existing accounting/credits/free allowance remain unchanged under operator-funded mode. Test required missing dialogue/sync/scene rejection using fixtures, not paid deletion of valid artifacts.
+
+### Offline source validation and remaining acceptance
+
+`node --conditions=react-server --import=tsx scripts/check-final-video.ts` exercises synthetic package preflight, mocked adapter requests/replay/no fallback, all 69 migrations/reruns and unchanged upstream functions/grants, scoped SQL admission/intents/cost/staleness/leases, required speech/sync, final ordered proofs, rejection/reuse and completion with explicitly stubbed upstream approval resolvers. `scripts/check-final-video-media.ts` generates only synthetic local color/tone fixtures and exercises the actual FFmpeg normalization, timing rejection, mux, silent/spoken ordered composition, measured validation and claim-scratch cleanup. Neither starts a worker process or touches live data/storage/providers. Existing M9/package and queue checks, TypeScript and focused ESLint are included in final verification. No build/browser/provider suite ran.
+
+Real account capabilities/pricing, remote migration/catalog/concurrency, signed-R2/provider access, visual/speech/lip-sync quality, live interruption/recovery, browser preview/accessibility/responsiveness and final acceptance remain **Pending**. Source-complete never means runtime-accepted or production customer-credit-ready.
 
 ## Selected video and voice architecture (2026-10-27)
 
@@ -64,7 +231,7 @@ Scene readiness is automatic internal validation, not owner acceptance. The fina
 | --- | --- |
 | [`lib/video-generation-package/contract.ts`](../lib/video-generation-package/contract.ts), [`builder.ts`](../lib/video-generation-package/builder.ts) | M9 freezes exact approved references/Storyboard/settings and structured neutral scene prompts, timing, voice and audio instructions. Current conditioning uses two composed sheets plus one Location image. Output resolution/frame rate/format/seed remain unspecified. Do not mutate the approved package to fit an API. |
 | [`lib/video-generation-package/provider.ts`](../lib/video-generation-package/provider.ts) | `VideoGenerationProvider<Payload, Result>` already declares identity/version, capabilities, validation, translation, submit and status operations. It has no concrete UGC adapter, registry, matching or network implementation. |
-| [`lib/ugc-jobs/local-runner.ts`](../lib/ugc-jobs/local-runner.ts), [`scripts/ugc-worker.ts`](../scripts/ugc-worker.ts) | Existing local claims/leases/heartbeats/queues and package-only mode are implemented. Package approval still pauses; there is no M10 consumer path from it. Package-only mode must remain package-only. |
+| [`lib/ugc-jobs/local-runner.ts`](../lib/ugc-jobs/local-runner.ts), [`scripts/ugc-worker.ts`](../scripts/ugc-worker.ts) | Existing local claims/leases/heartbeats/queues and package-only mode remain. M10 adds a gated final lane and isolated final-only command. Package approval still pauses; only explicit Generate Final Video admits M10. Package-only mode stays package-only. |
 | [`lib/video-ai/provider.ts`](../lib/video-ai/provider.ts), [`providers/fal.ts`](../lib/video-ai/providers/fal.ts), [`config.ts`](../lib/video-ai/config.ts) | Legacy execution directly selects fal with its own endpoint/model/scene configuration. Evaluate narrow reuse later; do not wire this hardwired API into canonical UGC logic or assume its historical limits/pricing prove M10 compatibility. |
 | [`lib/composition/contract.ts`](../lib/composition/contract.ts) | Legacy composition uses integer-ms timing, zero technical timeline tolerance and only none/cut transitions. Preserve those existing contracts; broader M10 audio/transitions require an explicitly versioned integration decision. |
 | [`lib/final-render/contract.ts`](../lib/final-render/contract.ts), [`workers/final-render/composition.tsx`](../workers/final-render/composition.tsx) | Legacy rendering has fixed 24fps/H.264/AAC settings and an 85ms output verification allowance. These source settings are not an approved M10 execution profile. Existing Remotion/Render packaging does not authorize hosted execution. |
@@ -289,3 +456,62 @@ Credentials/configuration remain server/worker-only. Restrict provider request/v
 Later separately authorized implementation must verify exact video/Voice Design/TTS/lip-sync model/account capabilities and retention; automatic identity selection/commit policy; approved conditioning; output/quantization/controlled audio fitting; guide/mix/transition contracts; finite per-stage/execution attempts/cost authorization; current financial review/terminal mapping; catalog-compatible persistence and local tool/resource bounds. These are technical details under resolved strategies, not new provider choices for the user or permission to invent support.
 
 Later authorized acceptance must cover dialogue/silent/narration routes, one profile across scenes, no normal intermediate review gates, known-result/unknown-intent reconciliation, duplicate starts/restart/lease fencing, storage-first recovery, independent lip-sync failure, partial scenes, deterministic order/audio placement and final-only approve/reject without regeneration. No such tests or operations run in this documentation task.
+
+## Changed files in this source delivery
+
+- [.env.example](../.env.example)
+- [.gitignore](../.gitignore)
+- [app/api/ugc/final-video/preview/route.ts](../app/api/ugc/final-video/preview/route.ts)
+- [app/api/ugc/final-video/route.ts](../app/api/ugc/final-video/route.ts)
+- [components/creation/final-video-review.tsx](../components/creation/final-video-review.tsx)
+- [components/creation/ugc-progress-preview.tsx](../components/creation/ugc-progress-preview.tsx)
+- [components/creation/ugc-workflow-preview.tsx](../components/creation/ugc-workflow-preview.tsx)
+- [context/accounting.md](accounting.md)
+- [context/ai-workflow-rules.md](ai-workflow-rules.md)
+- [context/architecture.md](architecture.md)
+- [context/code-standards.md](code-standards.md)
+- [context/database.md](database.md)
+- [context/design-system.md](design-system.md)
+- [context/final-video-generation.md](final-video-generation.md)
+- [context/generation-dispatch.md](generation-dispatch.md)
+- [context/generation-jobs.md](generation-jobs.md)
+- [context/internal-authorization.md](internal-authorization.md)
+- [context/media-storage.md](media-storage.md)
+- [context/media-worker-render.md](media-worker-render.md)
+- [context/overview.md](overview.md)
+- [context/pricing.md](pricing.md)
+- [context/progress-tracker.md](progress-tracker.md)
+- [context/project-overview.md](project-overview.md)
+- [context/storyboard.md](storyboard.md)
+- [context/ugc-v1-workflow.md](ugc-v1-workflow.md)
+- [context/ui-context.md](ui-context.md)
+- [context/video-generation-package.md](video-generation-package.md)
+- [context/voice-generation.md](voice-generation.md)
+- [lib/db/types.ts](../lib/db/types.ts)
+- [lib/final-video-generation/adapters/elevenlabs.ts](../lib/final-video-generation/adapters/elevenlabs.ts)
+- [lib/final-video-generation/adapters/fal.ts](../lib/final-video-generation/adapters/fal.ts)
+- [lib/final-video-generation/adapters/http.ts](../lib/final-video-generation/adapters/http.ts)
+- [lib/final-video-generation/adapters/registry.ts](../lib/final-video-generation/adapters/registry.ts)
+- [lib/final-video-generation/config.ts](../lib/final-video-generation/config.ts)
+- [lib/final-video-generation/contract.ts](../lib/final-video-generation/contract.ts)
+- [lib/final-video-generation/media.ts](../lib/final-video-generation/media.ts)
+- [lib/final-video-generation/planning.ts](../lib/final-video-generation/planning.ts)
+- [lib/final-video-generation/preflight.ts](../lib/final-video-generation/preflight.ts)
+- [lib/final-video-generation/progress.ts](../lib/final-video-generation/progress.ts)
+- [lib/final-video-generation/providers.ts](../lib/final-video-generation/providers.ts)
+- [lib/final-video-generation/server.ts](../lib/final-video-generation/server.ts)
+- [lib/final-video-generation/storage.ts](../lib/final-video-generation/storage.ts)
+- [lib/final-video-generation/worker.ts](../lib/final-video-generation/worker.ts)
+- [lib/storage/r2.ts](../lib/storage/r2.ts)
+- [lib/ugc-jobs/claim-contract.ts](../lib/ugc-jobs/claim-contract.ts)
+- [lib/ugc-jobs/contract.ts](../lib/ugc-jobs/contract.ts)
+- [lib/ugc-jobs/database-diagnostics.ts](../lib/ugc-jobs/database-diagnostics.ts)
+- [lib/ugc-jobs/local-runner.ts](../lib/ugc-jobs/local-runner.ts)
+- [lib/ugc-jobs/queue-policy.ts](../lib/ugc-jobs/queue-policy.ts)
+- [lib/ugc-jobs/server.ts](../lib/ugc-jobs/server.ts)
+- [package.json](../package.json)
+- [scripts/check-final-video-media.ts](../scripts/check-final-video-media.ts)
+- [scripts/check-final-video.ts](../scripts/check-final-video.ts)
+- [scripts/final-video-fixture.ts](../scripts/final-video-fixture.ts)
+- [scripts/ugc-worker.ts](../scripts/ugc-worker.ts)
+- [supabase/migrations/20261027006900_ugc_final_video.sql](../supabase/migrations/20261027006900_ugc_final_video.sql)

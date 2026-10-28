@@ -1,6 +1,6 @@
 import "server-only";
 
-export type WorkerDatabasePhase = "regeneration_claim" | "job_claim" | "regeneration_read" | "regeneration_checkpoint" | "character_claim" | "location_claim" | "storyboard_claim" | "storyboard_checkpoint" | "package_claim" | "package_checkpoint";
+export type WorkerDatabasePhase = "regeneration_claim" | "job_claim" | "regeneration_read" | "regeneration_checkpoint" | "character_claim" | "location_claim" | "storyboard_claim" | "storyboard_checkpoint" | "package_claim" | "package_checkpoint" | "final_claim" | "final_checkpoint";
 export type WorkerDatabaseDiagnostic = {
   phase: WorkerDatabasePhase;
   category: "connection_refused" | "timeout" | "dns_network" | "authentication_failure" | "pool_exhaustion" |

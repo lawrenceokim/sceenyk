@@ -3,6 +3,7 @@ import type { V5Workflow } from "@/lib/character-v5/contract";
 import type { LocationRow } from "@/lib/location-reference/contract";
 import type { StoryboardRow } from "@/lib/storyboard/contract";
 import type { PackageRow } from "@/lib/video-generation-package/contract";
+import { finalPhases, type FinalExecution } from "@/lib/final-video-generation/contract";
 
 export function compositeRecord(input: unknown): Record<string, unknown> | null {
   if (input === null || input === undefined || Array.isArray(input) && input.length === 0) return null;
@@ -21,6 +22,7 @@ const base = z.object({
   heartbeat_at: z.iso.datetime({ offset: true }), lease_expires_at: z.iso.datetime({ offset: true }),
 });
 const schemas = {
+  final: base.extend({ state: z.literal("running"), phase: z.enum(finalPhases), package_id: z.uuid(), configuration: z.object({}), package_hash: z.string().regex(/^[a-f0-9]{64}$/) }),
   package: base.extend({ state: z.literal("running"), phase: z.enum(["checking", "building", "validating", "saving"]),
     revision: z.number().int().positive(), input: z.object({}), input_fingerprint: z.string().regex(/^[a-f0-9]{64}$/),
     attempts: z.number().int().min(1).max(3), document: z.null(), approved_at: z.null(), stale_at: z.null() }),
@@ -34,7 +36,7 @@ const schemas = {
     attempts: z.number().int().min(0).max(3), requests: z.array(z.object({ model: z.string().min(1) })).max(2), input: z.object({}),
   }),
 };
-type Claims = { character: V5Workflow; location: LocationRow; storyboard: StoryboardRow; package: PackageRow };
+type Claims = { character: V5Workflow; location: LocationRow; storyboard: StoryboardRow; package: PackageRow; final: FinalExecution };
 export class UgcClaimContractError extends Error {
   constructor(readonly queue: keyof Claims, readonly reason: "malformed" | "expired") { super("UGC_CLAIM_CONTRACT_INVALID"); }
 }

@@ -1,5 +1,12 @@
 # UGC V1 workflow contract
 
+## M10 implemented source boundary (2026-10-27)
+
+**M9: Complete. M10: Complete in source for the configured local V1 profile. Runtime/provider/manual acceptance: Pending.** An approved current M9 package enables Generate Final Video with explicit bounded operator-funding authorization. Independent private stages run automatically. Character speech uses reusable ElevenLabs identity and automatic lip-sync; narration is composed without mouth synchronization; silent scenes skip both. Review has final Approve and Reject and Delete only.
+
+[Actual source, verified API limits, required setup, checks and manual acceptance](final-video-generation.md#implemented-local-v1-source-and-profile). This current source entry supersedes implementation-status and task-permission statements in the older dated planning/history below. Unsupported capabilities fail closed; no real providers, worker processes, remote migrations, deployment or credit spending ran during implementation.
+
+
 ## Planned M10 final video workflow (2026-10-27)
 
 **M9 Complete/approved; M10 Planned / Not Started.** Video strategy resolved: fal.ai; voice: ElevenLabs; lip-sync: automatic internal fal.ai-compatible adapter/model; composition: FFmpeg. Runtime/provider/manual acceptance Pending; exact model/account capabilities and implementations remain unverified/unbuilt.
@@ -178,8 +185,8 @@ Official OpenAI documentation checked for this contract: [image inputs and visio
 | 5. Prepare Location | Generate/review/approve one primary private Location through the existing explicit workflow. Preserve its exact accepted image, plan and approval versions. |
 | 6. Build Storyboard — M8 | Produce and server-validate structured scenes, actions, dialogue, approved references, camera, lighting, style, tone, transitions and exact timing. Persist versioned structured content and obtain explicit owner approval. |
 | 7. Prepare package — M9 Complete/approved | Follow the [canonical M9 workflow](video-generation-package.md#workflow-and-failure-states): deterministically build/validate/persist the immutable provider-neutral package, show summary, explicitly approve and pause. No API payload submission, AI call, paid generation or financial admission. |
-| 8. Final video — M10 Planned / Not Started | Follow [automatic M10](final-video-generation.md#automatic-scene-processing-and-lipsyncprovider): one admitted user action; internal video, exact ElevenLabs speech, conditional lip-sync, private completed-scene recovery, FFmpeg ordered composition/validation and final-only Approve or Reject and Delete. No manual scene/voice/alignment/stitch gate. |
-| M10 completion boundary — planned | Verify internally completed scene/audio/sync/profile/composition/private final manifest and explicit final approval, then trusted result/accounting Complete. No per-scene owner acceptance or provider callback can substitute for final validation/approval. |
+| 8. Final video — M10 Complete in source | Implemented [local V1](final-video-generation.md#implemented-local-v1-source-and-profile): one admitted operator-funded action; independent visual, exact reusable ElevenLabs speech, conditional lip-sync, private scene recovery and FFmpeg final-only review. Runtime/provider/manual acceptance Pending. |
+| M10 completion boundary — implemented | Exact current package/scene/audio/sync/profile/composition/private-final proofs and explicit final approval precede trusted UGC Complete. Customer-credit mode remains blocked pending commercial policy; operator funding changes no legacy ledger. |
 
 Reference Sheets support visual consistency; **a single image does not establish perfect 3D reconstruction**. Describe visible facts separately from inferred unseen details. Mark inferred views/traits as generated reference information, including unseen material or clothing; do not present them as facts about the source. Preserve provenance so completed sheets can be reused safely after failure.
 
@@ -333,9 +340,9 @@ When another user adopts: copy only the immutable reusable configuration/storybo
 | 7 | One primary private Location generation/review/approval | Complete in source; see [current setup/evidence](location-reference.md) |
 | 8 | Structured Storyboard/script, stable voice, exact timing and explicit approval | Complete |
 | 9 | Video Generation Package Preparation, immutable version/review/approval and pause | Complete and approved per owner confirmation |
-| 10 | Final Video Generation: automatic internal visual/voice/lip-sync/private scene recovery, FFmpeg final composition and final-only validation/review/approval | Planned / Not Started |
+| 10 | Final Video Generation: automatic internal visual/voice/lip-sync/private scene recovery, FFmpeg final composition and final-only validation/review/approval | Complete in source for configured local V1; manual 069/runtime/provider/manual acceptance Pending |
 | 11 | UGC Template snapshot/adoption verification, public-safe slot projection and explicit required counts | Not Started |
 | 12 | Manual local end-to-end acceptance performed by the user | Not Started |
 | Later | Explicitly approved local → Render transition; review whether Inngest is needed | Deferred |
 
-**Resolved strategies:** fal.ai visual, ElevenLabs reusable designed Character voice, automatic internal lip-sync through a fal.ai-compatible adapter/model and FFmpeg final composition. **Needs implementation-time verification:** exact model/account/schema/permissions, automatic identity selection, timing/guide/output/mix/transition/retention/cost/financial/resource contracts. These details do not require user provider management or intermediate scene approval. No guessed capabilities/fallback, hosting, paid work or implementation is authorized by this documentation request.
+**Implemented strategies:** Seedance 2.5 reference visual, ElevenLabs reusable designed Character voice/timestamped speech, Kling audio-to-video lip-sync and FFmpeg final composition. [Supported profile, source/setup and exact manual checklist](final-video-generation.md#implemented-local-v1-source-and-profile). Real account access/pricing, remote catalog/concurrency, runtime/provider/browser/visual/audio/recovery acceptance remain Pending. No paid work, remote migration or hosting is authorized by source completion; customer-credit mode remains blocked pending commercial policy. Milestones 11/12 are not begun.

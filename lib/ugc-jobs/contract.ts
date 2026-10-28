@@ -117,6 +117,7 @@ export type UgcJobProgress = {
   packageEligible?: boolean;
   packageEnabled?: boolean;
   packageAvailable?: boolean;
+  finalVideo?: import("@/lib/final-video-generation/contract").FinalAvailability;
 };
 export type UgcProgressStep = { id: string; label: string; state: "waiting" | "active" | "completed" | "failed" | "paused" };
 export type UgcProgressEvent = {
@@ -131,8 +132,9 @@ export function isUgcJobActive(status: UgcJobStatus) {
 }
 // A paused job still occupies its request; it must not enable another enqueue.
 // Polling is a separate decision from that non-terminal admission guard.
-export function shouldPollUgcProgress(job: Pick<UgcJobProgress, "status" | "paused" | "referenceReview" | "location" | "locationEnabled" | "storyboard" | "generationPackage" | "packageEnabled">) {
+export function shouldPollUgcProgress(job: Pick<UgcJobProgress, "status" | "paused" | "referenceReview" | "location" | "locationEnabled" | "storyboard" | "generationPackage" | "packageEnabled" | "finalVideo">) {
   if (job.status === "cancelled" || job.status === "completed") return false;
+  if (job.finalVideo?.enabled && job.finalVideo.review && ["queued", "running", "deleting"].includes(job.finalVideo.review.state)) return true;
   if (job.referenceReview?.regenerating) return true;
   if (job.generationPackage?.current && !job.generationPackage.error && job.packageEnabled &&
     ["queued", "running"].includes(job.generationPackage.state)) return true;

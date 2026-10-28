@@ -1,7 +1,8 @@
 import "server-only";
 import OpenAI from "openai";
 import { zodTextFormat } from "openai/helpers/zod";
-import { storyboardSchema, type StoryboardInput } from "./contract";
+import type { StoryboardInput } from "./contract";
+import { executableStoryboardSchema } from "./schema";
 import { providerMetaSchema, safeRequestId, type StoryboardProviderMeta, type StoryboardDiagnostic } from "./recovery-contract";
 import { captureStoryboardResponse } from "./response-capture";
 import { storyboardProviderDiagnostic, StoryboardProviderFailure } from "./diagnostics";
@@ -39,7 +40,7 @@ export async function requestStoryboard(input: StoryboardInput, model: string, i
         { type: "input_image" as const, image_url: `data:image/png;base64,${bytes.toString("base64")}`, detail: "high" as const },
       ]),
       ...(prompt.correction ? [{ type: "input_text" as const, text: JSON.stringify(prompt.correction) }] : []),
-    ] }], text: { format: zodTextFormat(storyboardSchema, "ugc_storyboard_v1") },
+    ] }], text: { format: zodTextFormat(executableStoryboardSchema, "ugc_storyboard_v2") },
   }, { signal, headers: { "X-Client-Request-Id": metadata.clientRequestId } }).withResponse();
   const requestId = safeRequestId.safeParse(stream.request_id);
   metadata = { ...metadata, requestId: requestId.success ? requestId.data : null, httpStatus: stream.response.status };

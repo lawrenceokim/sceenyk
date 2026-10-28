@@ -1,5 +1,16 @@
 # Sceenyk
 
+## Canonical Storyboard-to-video execution (2026-10-28)
+
+Current source now uses one schema-2 V1 execution contract across Storyboard planning, immutable Package approval and final-video preflight. Structured timed composition transitions, optional sound cues and finite VoiceDelivery are validated before approval. Existing legacy approvals require an owner-reviewed local repair/new revision and a new approved package; no AI regeneration is needed for the inspected project. Manual migration 070 is unapplied. Automatic final processing/funding gates remain unchanged; runtime/manual acceptance is Pending. [Contract and safe recovery](final-video-generation.md#canonical-v1-execution-recovery-2026-10-28).
+
+## M10 implemented source boundary (2026-10-27)
+
+**M9: Complete. M10: Complete in source for the configured local V1 profile. Runtime/provider/manual acceptance: Pending.** The implemented local V1 runs approved Package → Generate Final Video → automatic scene/video, reusable designed speech, conditional lip-sync and FFmpeg → final-only review. Final approval completes UGC; rejection deletes only the final candidate and queues no replacement.
+
+[Actual source, verified API limits, required setup, checks and manual acceptance](final-video-generation.md#implemented-local-v1-source-and-profile). This current source entry supersedes implementation-status and task-permission statements in the older dated planning/history below. Unsupported capabilities fail closed; no real providers, worker processes, remote migrations, deployment or credit spending ran during implementation.
+
+
 ## Current UGC milestone boundary (2026-10-27)
 
 **M9 — Complete and approved. M10 — Planned / Not Started.** Video strategy resolved: fal.ai; voice resolved: ElevenLabs; lip-sync resolved: automatic internal stage with a fal.ai-compatible adapter/model planned; composition resolved: FFmpeg. All UGC implementations and runtime/provider/manual acceptance remain Pending. Exact model/account verification is still required; the earlier voice-strategy block is historical.
