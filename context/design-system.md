@@ -1,5 +1,9 @@
 # Sceenyk design system
 
+## Planned V2 Final Video design boundary (2026-10-29)
+
+[V2 pipeline](final-video-generation-v2.md#canonical-v2-pipeline), **Planned / Not Started**, preserves Storyboard scene presentation and final-only review/approval. Continuous Generation Segments, master-audio construction and native synchronization are internal execution concepts, not new provider-management or per-scene approval UI. Reuse existing Tailwind/tokens/shared controls and real persisted status; no visual redesign or runtime change is part of this documentation task. Dated per-scene M10 status/presentation below belongs to V1 history/current source.
+
 ## M10 implemented source boundary (2026-10-27)
 
 **M9: Complete. M10: Complete in source for the configured local V1 profile. Runtime/provider/manual acceptance: Pending.** Final Video reuses shared theme tokens, Tailwind utilities and Button controls, native video playback, responsive containment, status announcements and error alerts. No stylesheet or design asset is added. Manual visual, keyboard and responsive acceptance remains Pending.

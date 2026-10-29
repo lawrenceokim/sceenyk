@@ -1,5 +1,11 @@
 # UI Context
 
+## Planned V2 Final Video presentation boundary (2026-10-29)
+
+[Final Video V2](final-video-generation-v2.md#canonical-v2-pipeline), **Planned / Not Started**, retains creative Storyboard scenes and all upstream approvals while internal execution groups them into continuous Generation Segments. Normal users still choose Generate Final Video with required finite cost consent, see real persisted progress and review only the validated final → approval → Complete. Master-audio building, native synchronization and segment composition are internal stages; no normal Kling/voice/scene approval or manual stitching step is introduced.
+
+Scene count must not imply paid video-request count. Recovery disclosure must distinguish provider-free local/master/composition work from reviewed failed-segment requests and preserve successful assets. Existing tokens/Tailwind/shared controls and all current UI/runtime behavior remain unchanged. The dated per-scene/Kling UI states below describe V1 history/current source, not implemented V2. This task is documentation only.
+
 ## Final Video approval status (2026-10-29)
 
 Complete requires a current approved final execution and persisted parent completion/time. A generated unapproved candidate remains Final video ready; a historical approved execution whose currentness fails shows Final approval needs review and a waiting completion step. Validation failures preserve the playable candidate and diagnostics, with no automatic recovery/regeneration/deletion. The inspected false-staleness case needs manual075 plus its exact guarded review-state repair before another review decision. [Evidence, limits and steps](final-video-generation.md#final-approval-false-staleness-and-saved-media-investigation-2026-10-29). Existing Tailwind/player/control styling is unchanged.

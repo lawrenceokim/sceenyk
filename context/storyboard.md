@@ -1,5 +1,11 @@
 # Milestone 8 — AI Storyboard and Scene-by-Scene Script Generation
 
+## Scenes remain creative units in planned Final Video V2 (2026-10-29)
+
+Do not remove Storyboard scenes. They still define timestamps, dialogue, actions, facial reactions, camera angles/movements, shot changes, lighting, Product interactions, transitions and pacing. [Final Video V2](final-video-generation-v2.md#generation-segment-planner), **Planned / Not Started**, compiles multiple scenes into one complete prompt/timeline for each capability-planned Generation Segment. **0–5s Scene 1 + 5–10s Scene 2 becomes one 10s request with an explicit shot change at 5s**, not two requests. The immutable master audio preserves those same dialogue timestamps and silence.
+
+Scene count is neither video-request count nor a requirement for separate Kling processing. Retain exact approved content and scene review/editing; internal shot transitions and inter-segment composition transitions have distinct owners and apply once. Dated schema-2/per-scene M10 execution and compatibility rules below belong to V1 history/current source; this documentation changes no Storyboard schema, validation, approval or saved execution. V2 must version any later execution-contract changes explicitly.
+
 ## Canonical execution and reviewed local repair (2026-10-28)
 
 Current source emits strict schema 2 (`ugc-storyboard-v2-execution`) using `lib/execution-v1/contract.ts`. This supersedes schema-1 execution descriptions below; schema 1 remains readable history. Transitions are `{type: none|cut|crossfade|fade_in|fade_out, durationMs}` with separate descriptive `transitionNote`. Scene sources are whole-second 4..30s; Character dialogue limits the source to 10s. Default plans are 1×5s, 2×5s or 5×6s for the selected 5/10/30s duration, with cuts between contiguous scenes. Positive crossfade overlap must be explicitly allocated in scene intervals; total source durations minus overlaps must equal selected duration. Fades occur within their source, use positive 40ms-grid durations <=2000ms, and do not shorten the timeline. No padding/freezing/stretching.

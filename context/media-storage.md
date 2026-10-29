@@ -1,5 +1,11 @@
 # Private project media
 
+## Planned V2 master audio and segment artifacts (2026-10-29)
+
+[V2 private artifacts and recovery](final-video-generation-v2.md#private-artifacts-persistence-and-recovery), **Planned / Not Started**, adds conceptual master-audio/segment manifests to the existing private media boundary. Preserve one immutable exact-duration master with version/hash, dialogue timing and exact source speech bindings; longer projects derive traceable segment audio slices. Store continuous segment video, optional sync derivatives and final output separately with immutable lineage and verified private bytes/technical proofs.
+
+Recover publication/composition from those same assets without new Seedance/ElevenLabs work. Final rejection must not remove reusable master/segment/profile/history assets. Stable object identities, owner checks, short-lived access, private recovery and no Marketplace leakage remain. These are planned requirements, not installed keys/tables or a storage migration. The per-scene final-video-v1 paths/artifacts and dated M10 notes below remain V1 history; existing assets are not relabeled, moved or changed.
+
 ## M10 implemented source boundary (2026-10-27)
 
 **M9: Complete. M10: Complete in source for the configured local V1 profile. Runtime/provider/manual acceptance: Pending.** M10 assets use private ugc/{owner}/{project}/{job}/final-video-v1/{execution}/ UUID keys. Immutable conditional PUTs, conditional GETs, readback SHA-256/ETag/length/MIME and measured media proofs gate readiness. Raw provider JSON is also saved privately for ambiguous-response replay, never resent as HTTP POST. Stable source/output recovery bytes are separate; per-claim scratch is cleaned. Final rejection deletes only its final R2 object and local final copy; scene/voice/profile history is retained. Owner-authorized preview uses a 15-minute signed URL, never a permanent asset URL.

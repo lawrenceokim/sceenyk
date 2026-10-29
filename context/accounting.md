@@ -1,5 +1,11 @@
 # Generation accounting contract
 
+## Planned V2 segment and stage accounting (2026-10-29)
+
+[V2 cost/recovery rules](final-video-generation-v2.md#costs-request-authorization-and-immutable-identity), **Planned / Not Started**, account for continuous video by Generation Segment rather than Storyboard scene. Normal Seedance native-sync has no separately billed Kling stage. Voice work still has its actual independent design/binding/speech/observation request authority; one video segment is not one total provider operation. Keep provider credits, immediate USD and Sceenyk customer credits distinct.
+
+Preserve finite authorization, estimator provenance, immutable paid intents/receipts/fingerprints, reviewed stage/segment retries and amendments, and unknown-outcome reconciliation before repurchase. Local master/composition recovery reuses paid assets. Successful stage/segment readiness never settles the whole run; exact current final manifest validation and explicit approval remain prerequisites for trusted Complete. Partial failure cannot silently reset, refund or repurchase the run. Existing ledger/free-allowance/review-hold/commercial gates remain unchanged and unresolved mapping stays closed. Dated scene/Kling accounting notes below are V1 history; no financial code/schema/balance or existing execution changes here.
+
 ## M10 implemented source boundary (2026-10-27)
 
 **M9: Complete. M10: Complete in source for the configured local V1 profile. Runtime/provider/manual acceptance: Pending.** M10 supports explicit finite operator-funded local development only. There is no enabled customer-credit/free-reservation M10 mode: the unresolved commercial quote/review-hold mapping stays fail-closed. No legacy ledger, entitlement, free allowance, customer debit/refund or settlement code is changed. The operator authorization is frozen with the run, and Generate Final Video confirms that exact scope; package approval alone is not spend consent.

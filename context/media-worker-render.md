@@ -1,5 +1,11 @@
 # Render media-preparation worker
 
+## Planned V2 local master timeline and composition (2026-10-29)
+
+[Final Video V2](final-video-generation-v2.md#canonical-master-audio-timeline), **Planned / Not Started**, runs local speech validation/permitted correction and exact-duration master-audio construction **before** continuous video generation. FFmpeg places dialogue and silence at immutable Storyboard timestamps; that versioned/hash-bound master conditions video and is authoritative in final output. Multi-segment projects derive exact slices and compose generated intervals against the same project timeline; one-segment projects need only final formatting/audio handling and validation.
+
+Internal shot changes belong to the continuous provider prompt/timeline; inter-segment transitions alone use the local compositor's supported timing/overlap rules. Do not reuse V1 transition filtering to erase internal shots or apply transitions twice. Separate Kling is absent from normal Seedance V2. Final local failure reuses master/video and reruns only local processing, without video or TTS generation. Existing bounded subprocess/private proof rules remain. Dated per-scene M10 and older hosted-worker material below is historical evidence, not V2 implementation/setup authority; no FFmpeg/worker/provider process or deployment runs here.
+
 ## M10 deterministic composition transitions (2026-10-28)
 
 The local M10 compositor now owns explicit cut/fade/crossfade/dissolve plans, matching frame rates/time bases, exact approved total duration and absolute dedicated-speech placement. It probes required FFmpeg filters/encoders/FFprobe before any paid intent and validates plan/source count/timing/streams before final review. Composition-only transitions are not video-provider requirements or video-payload instructions. No default transition duration, padding/frozen frames, retiming or audio omission is allowed. [Exact supported profile, current package blockers and safe retry](final-video-generation.md#composition-owned-transitions-and-preflight-2026-10-28). Native synthetic fixtures passed; no generation worker/provider ran.

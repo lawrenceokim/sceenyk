@@ -1,5 +1,20 @@
 # Progress Tracker
 
+## Milestone 10 version boundary — continuous multi-scene V2 documentation (2026-10-29)
+
+| Milestone | Current status | Evidence / boundary |
+| --- | --- | --- |
+| Milestone 10 V1 | **Implemented and proven end-to-end** | Owner-reported milestone baseline for this request; retained per-scene Seedance + ElevenLabs + Kling + FFmpeg execution/approval history below. This is not a fresh all-cases/provider/deployment audit; dated unresolved repairs and narrower checks keep their original limits. |
+| Milestone 10 V2 continuous multi-scene generation | **Planned / Not Started** | [Canonical V2 architecture](final-video-generation-v2.md) documented; no runtime/schema/provider/configuration implementation or acceptance performed. |
+
+**Documentation unit complete.** Scenes remain the creative timeline; the new provider-neutral planner groups them into the fewest compatible continuous Generation Segments. Compatible Seedance 5/10/30s projects normally use one video; the future 60s/30s-capability example prefers two segments without expanding current project options. Exact ElevenLabs speech → local timing validation/correction → immutable exact-duration master audio precedes continuous native-sync video. Local formatting/composition → final review → approval → Complete follows. Separate Kling is absent from normal Seedance V2; a generic optional LipSyncProvider remains for explicitly planned workflows that need it.
+
+Documented capability extensions: max continuous/allowed durations, external audio reference, multiple images, multi-shot prompting, native lip synchronization, aspect ratios/resolutions, estimator and adapter-owned limits. Combined Seedance master-audio/native-sync support remains **Needs confirmation before implementation/spend**, not a capability claim established by V1 or this update. Video estimates/intents/reviewed retries target Generation Segments; actual ElevenLabs requests remain independent. Finite authorization, immutable fingerprints, reviewed amendments, preserved successes and unknown-outcome reconciliation stay mandatory. Failed continuous generation preserves master/references and retries only the reviewed failed segment; local composition recovery reuses all video/audio without provider generation.
+
+Files: new `context/final-video-generation-v2.md`; linked/updated `overview.md`, `project-overview.md`, `architecture.md`, `ugc-v1-workflow.md`, `storyboard.md`, `video-generation-package.md`, `final-video-generation.md`, `voice-generation.md`, `generation-jobs.md`, `generation-dispatch.md`, `media-storage.md`, `media-worker-render.md`, `database.md`, `pricing.md`, `accounting.md`, `code-standards.md`, `ai-workflow-rules.md`, `ui-context.md`, `design-system.md`, `m10-first-provider-failure.md` and this tracker. `.gitignore` adds only the documentation tracking exception for the new canonical file, following the existing context allowlist.
+
+Verification passed: 31 added local links/anchors resolve; all prior lines in the 21 updated context documents are preserved; the new canonical document is trackable; whitespace and final documentation-only diff/scope checks pass. No application code, migration, environment variable or provider configuration changed. No provider call/retrieval/probe, media regeneration/processing, worker/job, live database/storage/execution access or mutation, test/lint/type/build/browser suite, deployment or hosted enabling occurred. Existing V1 executions/assets/approvals/receipts and all dated investigation evidence remain unchanged; older M10 permissions/status/recommendations below are V1 history and do not authorize V2 work. Stop after documentation; later implementation/paid acceptance requires separate authorization.
+
 ## M10 approval false staleness and existing-result preservation (2026-10-29)
 
 **Source fix/offline checks complete; live migration075 and privileged one-execution repair pending. Existing final media and approved content unchanged. Zero provider requests/intents, worker runs, authorization edits, live database/storage mutations or deployments.** Read-only Supabase inspection confirms the reported approval actually persisted execution727 approved and parent completed at06:01:20 Lagos; the following read incorrectly marked its package stale because the Storyboard input resolver only admitted queued/failed jobs at location_reference. The exact failing comparison is current input NULL versus saved immutable input; current reconstruction matches package revision2 and hashd58ec93b8c77f8fce63c5f40d20c53975b4dfc1f7b30c70c7e31e7697ededde7 byte-for-byte at the canonical JSON/hash boundary. No hash recipe/content/version was changed or rebound.
@@ -2209,6 +2224,8 @@ Project implementation exists: explicit Save draft/title/status controls; one Zo
 
 ## Current Goal
 
+**Current (2026-10-29): Final Video V2 documentation complete; V2 implementation Planned / Not Started.** Follow [the canonical V2 specification](final-video-generation-v2.md) for future work, preserving the owner-reported V1 implemented/end-to-end baseline and immutable historical executions. No implementation, provider verification, worker or paid acceptance is started. The earlier source-delivery goal and other goals below are historical snapshots.
+
 The current M10 source delivery is [recorded at the top](#m10-source-delivery-2026-10-27). M9 is Complete and approved; M10 is Complete in source for the configured local V1 profile. Runtime/provider/manual acceptance remains Pending. Stop before paid execution, remote migration, worker process, deployment or Milestone 11.
 
 **Historical redesign goal:** record the approved full UI/UX redesign before implementation. Its original recommendation was Phase 1 — shared public/workspace shells and navigation architecture. Preserve dated evidence below; it is not the current next step.
@@ -2420,6 +2437,8 @@ This table describes the dashboard unit. Existing landing and creation page cont
 
 ## Next Up
 
+**Current direction (2026-10-29): separately scoped V2 implementation, only when authorized.** First establish the required combined provider capabilities, then implement the segment planner/master-audio/versioned execution path under [the V2 acceptance boundary](final-video-generation-v2.md#implementation-boundary-and-future-acceptance). This documentation task starts none of those actions. V1 is implemented/proven end-to-end per the owner's baseline; V2 remains Planned / Not Started. Earlier setup/acceptance recommendations below are retained V1 and unrelated historical snapshots, not current permission or a requirement to rerun V1.
+
 **Next eligible work: owner-run manual M10 setup and acceptance**, following [the exact supported profile and checklist](final-video-generation.md#implemented-local-v1-source-and-profile): review/apply 069 after prerequisites, configure explicit finite operator funding/private credentials and manually start the isolated local worker only when ready for separately funded acceptance. Verify actual account access/pricing, live private media/provider recovery, visual/speech/lip-sync quality, browser/privacy/approval/deletion and concurrency. M9 Complete/approved; M10 Complete in source; runtime/provider/manual acceptance Pending. No paid/worker/remote migration/deployment/hosted operation or Milestone 11 is started by this recommendation. Customer-credit mapping remains blocked pending explicit commercial policy.
 
 **Historical redesign recommendation:** Phase 1 — shared public/workspace shells and navigation architecture. Earlier roadmap/recommendations below retain historical evidence and do not replace the current M9 boundary.
@@ -2457,6 +2476,8 @@ The older bounded-unit recommendation and roadmap below are historical snapshots
 | Optional future decision | Membership / auto-recharge | Neither is approved current scope or a required next unit. Membership benefits need a product decision; auto-recharge separately needs explicit payment authorization, threshold/pack consent and a failure/recovery contract. No monthly generation subscription is planned as a prerequisite. |
 
 ## Open Questions
+
+**V2 implementation prerequisite — Needs confirmation:** exact selected Seedance endpoint/account support for combined multi-image references, timed multi-shot instructions, external canonical master audio and native speech synchronization across the planned durations; audio/offset/file/prompt/output limits, narration routing, fidelity and trusted pricing. Resolve before any V2 spending, including voice preparation, through separately authorized verification. The architecture choice is settled; no capability probe is authorized now. See [the capability contract](final-video-generation-v2.md#provider-neutral-capability-contract).
 
 Resolve before dependent implementation; prefer the planned directions in architecture.md without treating them as installed services.
 

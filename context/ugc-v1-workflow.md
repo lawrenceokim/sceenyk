@@ -1,5 +1,11 @@
 # UGC V1 workflow contract
 
+## Final Video version boundary (2026-10-29)
+
+This remains the UGC V1 workflow/history. **M10 V1: implemented and proven end-to-end**, per the owner's baseline. The [planned Final Video V2 contract](final-video-generation-v2.md) supersedes only the future final-video execution design: approved scenes → minimum feasible continuous Generation Segments; compatible Seedance 5/10/30s → one video. Reusable voice → exact speech → immutable FFmpeg master audio precedes video/native synchronization; final formatting/composition and final-only review/approval follow. Kling is not mandatory in V2.
+
+**M10 V2 continuous multi-scene generation: Planned / Not Started.** Upstream Character/Product/Location, Storyboard and Package approvals, exact creative content, private history, cost consent and Complete rules remain. Dated per-scene/lip-sync/status notes below describe V1, not V2 runtime support or permission to execute work now. V2 capability/cost/recovery rules live once in the linked specification.
+
 ## M10 implemented source boundary (2026-10-27)
 
 **M9: Complete. M10: Complete in source for the configured local V1 profile. Runtime/provider/manual acceptance: Pending.** An approved current M9 package enables Generate Final Video with explicit bounded operator-funding authorization. Independent private stages run automatically. Character speech uses reusable ElevenLabs identity and automatic lip-sync; narration is composed without mouth synchronization; silent scenes skip both. Review has final Approve and Reject and Delete only.

@@ -1,5 +1,11 @@
 # Sceenyk project overview
 
+## Final Video V2 direction (2026-10-29)
+
+**Milestone 10 V1: implemented and proven end-to-end**, per the owner's baseline. **Milestone 10 V2 continuous multi-scene generation: Planned / Not Started.** [Canonical V2 pipeline and implementation boundary](final-video-generation-v2.md): retain Storyboard scenes and upstream approvals, use the fewest continuous provider-capable Generation Segments, build canonical ElevenLabs master audio before video, and use Seedance native animation/synchronization without a normal Kling step. Final-only review/approval and private, finite authorized recovery remain.
+
+The dated per-scene M10 descriptions/status below are V1 history, not the V2 design or permission to run setup/providers. This update is documentation only; no application or existing execution changes.
+
 ## M10 implemented source boundary (2026-10-27)
 
 **M9: Complete. M10: Complete in source for the configured local V1 profile. Runtime/provider/manual acceptance: Pending.** The Studio Final Video tab and local execution path are implemented. Normal users review only the final candidate; upstream reference, Storyboard and Package approvals are preserved.

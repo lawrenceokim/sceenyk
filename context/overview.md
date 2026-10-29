@@ -1,5 +1,11 @@
 # Sceenyk
 
+## Final Video direction — V1 complete, V2 planned (2026-10-29)
+
+**Milestone 10 V1: implemented and proven end-to-end**, per the owner's milestone baseline. **Milestone 10 V2 continuous multi-scene generation: Planned / Not Started.** [The canonical V2 architecture](final-video-generation-v2.md) owns the new direction: keep creative Storyboard scenes, group them into the fewest provider-compatible continuous Generation Segments, prepare exact ElevenLabs master audio first, then generate native synchronized video and format/compose locally before final review → approval → Complete. Compatible Seedance 5/10/30s projects should each use one continuous video; Kling is optional for other explicitly planned workflows, not a normal Seedance stage.
+
+This is documentation only, not current runtime behavior or fresh capability acceptance. Existing per-scene video + Kling source/executions and the dated M10 status, setup, failures and recovery notes below are **V1 / historical**; retain their original evidence and limits. V2 supplied-audio/native-sync capability still needs verification before implementation/spending. This entry and the V2 specification take precedence for future architecture; existing approved content and execution history remain unchanged.
+
 ## Canonical Storyboard-to-video execution (2026-10-28)
 
 Current source now uses one schema-2 V1 execution contract across Storyboard planning, immutable Package approval and final-video preflight. Structured timed composition transitions, optional sound cues and finite VoiceDelivery are validated before approval. Existing legacy approvals require an owner-reviewed local repair/new revision and a new approved package; no AI regeneration is needed for the inspected project. Manual migration 070 is unapplied. Automatic final processing/funding gates remain unchanged; runtime/manual acceptance is Pending. [Contract and safe recovery](final-video-generation.md#canonical-v1-execution-recovery-2026-10-28).

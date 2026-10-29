@@ -1,5 +1,11 @@
 # Persistent generation jobs
 
+## Planned V2 stage and Generation Segment jobs (2026-10-29)
+
+[V2 planning](final-video-generation-v2.md#generation-segment-planner) and [recovery](final-video-generation-v2.md#private-artifacts-persistence-and-recovery) are **Planned / Not Started**. Persist versioned segment membership/times, capability/plan identities and master-audio bindings; independent stage operations cover reusable voice, utterance speech, local master build, each continuous video segment, any explicitly planned optional lip-sync and local final composition/validation. Storyboard scene count does not determine video-operation count.
+
+Preserve current-input checks, immutable intents/fingerprints, finite paid authority, leases/heartbeats and successful outputs. Failed video retries target only the authorized segment after review; local composition failure reuses video/master and never resynthesizes. Reconcile unknown outcomes before any new request. Recover saved work remains submission-free; final approval alone can complete the parent. The dated scene/Kling schemas, queues and M10 statuses below are V1 history/current source, not V2 implementation. No job/schema/worker/execution is changed or run here.
+
 ## M10 implemented source boundary (2026-10-27)
 
 **M9: Complete. M10: Complete in source for the configured local V1 profile. Runtime/provider/manual acceptance: Pending.** Migration 069 adds private ugc_final_executions, ugc_final_scenes, ugc_final_operations, ugc_character_voice_profiles and append-only ugc_final_events. Service-only RPCs admit, claim and checkpoint exact scoped runs. Independent stage operations retain one paid attempt each, fingerprints, provider/model/request IDs, estimates, opaque receipts and private proofs. UGC parent completion is atomic with current final approval and preserves existing reference approval guards.

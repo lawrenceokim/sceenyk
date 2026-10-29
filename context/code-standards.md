@@ -1,5 +1,11 @@
 # Code Standards
 
+## Planned V2 execution standards (2026-10-29)
+
+[Final Video V2](final-video-generation-v2.md) is the authoritative future design, **Planned / Not Started**. Extend neutral VideoGenerationProvider capabilities for continuous/allowed durations, external audio reference, multiple references, multi-shot prompting, native lip synchronization, output options, estimator and provider limits. Core must minimize feasible Generation Segments from those capabilities, never provider-name branches or one request per Storyboard scene; vendor fields stay inside adapters.
+
+Preserve creative scenes and exact package approvals. Build immutable exact-duration master audio from verified speech/silence first; bind its version/hash/timing/source assets into segment requests and final manifests. Native-sync Seedance replaces normal separate Kling; generic LipSyncProvider is optional only in explicitly planned compatible workflows. Keep immutable stage/segment fingerprints/intents, finite request/spend authorization, reviewed retries/amendments, private output proofs and reconcile-before-resubmit. Local master/composition recovery cannot regenerate paid work. V1 executions/assets/schemas/history remain untouched; future V2 changes require explicit versions, not rebinding old approvals. Dated per-scene M10 standards below are V1 history. This request changes documentation only; no code/schema/configuration/provider operations are authorized.
+
 ## M10 implemented source boundary (2026-10-27)
 
 **M9: Complete. M10: Complete in source for the configured local V1 profile. Runtime/provider/manual acceptance: Pending.** M10 adapters alone translate vendor fields and opaque receipts. Core owns exact immutable scope, finite budgets/intents, leases, recovery and private final validation. No automatic uncertain POST replay or provider fallback. Existing Tailwind/shared controls remain the styling default; FFmpeg stays outside Next.js.

@@ -1,5 +1,11 @@
 # Milestone 10 — Final Video Generation
 
+## Version authority (2026-10-29)
+
+**Milestone 10 V1: implemented and proven end-to-end**, per the owner's reported milestone baseline; this update performs no new runtime/provider audit. **Milestone 10 V2 continuous multi-scene generation: Planned / Not Started.** [The authoritative V2 architecture](final-video-generation-v2.md) defines capability-driven Generation Segments, master-audio-first generation, native Seedance synchronization, optional LipSyncProvider, segment-based cost/recovery and future acceptance.
+
+**Everything below is the retained V1 / historical implementation and investigation record**, including the per-scene Seedance + separate Kling pipeline, dated status/permissions, original failures, pending repairs, source/API research and manual commands. Preserve it as evidence for existing executions; those assets/approvals remain valid under their original contracts. Older claims that M10 is not started or acceptance is pending are dated V1 snapshots, not the current milestone summary. The planned V2 flow supersedes V1 as future architecture without changing current code, source schemas, provider settings or existing executions. Existing schema 2 / ugc-execution-v1 is V1, not V2 continuous generation. Historical commands are not authorization in this documentation task.
+
 ## Final approval false staleness and saved-media investigation (2026-10-29)
 
 **Source fix and offline verification complete. Migration 075 and the privileged one-execution repair are prepared, not applied. No corrected final candidate was published. Zero provider requests, intents, authorization changes, workers, deployments or live database/storage mutations in this investigation.** This supersedes earlier snapshots of execution `62e93717-9e00-486e-b968-a85f272b831d` being stopped at speech fitting.

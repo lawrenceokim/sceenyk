@@ -1,5 +1,11 @@
 # Commercial cost contract
 
+## Planned V2 segment-based video pricing (2026-10-29)
+
+[V2 cost/request authority](final-video-generation-v2.md#costs-request-authorization-and-immutable-identity), **Planned / Not Started**, estimates video requests/cost **per Generation Segment**, not per Storyboard scene. Two speaking scenes in one compatible 10s segment mean **one Seedance video request and zero separate Kling requests**, instead of V1's two video + two lip-sync requests. This is not one total provider request or a guaranteed dollar saving: voice design/binding/utterance work and authorized chargeable observation follow the actual ElevenLabs workflow, while rates depend on duration/resolution/audio/options and trusted estimator provenance.
+
+Freeze capability/configuration/plan/master-aware quotes, immutable fingerprints, finite stage/segment/execution request/spend limits and explicit authorization; preserve reviewed retries/amendments and fail-before-spend checks. Reuse successful master/voice/video, price only reviewed replacement work and reconcile unknown paid outcomes before another request. Local FFmpeg recovery adds no video/TTS request. No tariff, production retail price, customer-credit mapping or configuration change is introduced. Dated per-scene quotes/numbers and M10 statuses below are V1 history, not a V2 quote.
+
 ## Canonical execution cost diagnostics (2026-10-28)
 
 `finalPreflight` and the GET-only final-video inspector itemize the existing per-request operator ceilings as conservative estimates, including distinct Voice Design and voice-identity save requests. Current inspected project: 2×$6.25 video + $0.20 design + $0.01 save + 2×$0.10 speech + 2×$0.20 lip-sync = **$13.31**, 8 requests. Total authorization is unchanged at $7/8 requests: creative repair does not make funding sufficient. These are configured admission ceilings, not newly sourced tariffs or verified actual bills. M9 creative compatibility excludes the insufficient-budget issue; M10 still rejects it before spending. No prices, private authorization or customer-credit mapping is changed. [Exact breakdown/recovery](final-video-generation.md#exact-configured-cost-diagnostics).

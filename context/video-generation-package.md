@@ -1,5 +1,11 @@
 # Milestone 9 — Video Generation Package Preparation
 
+## Planned V2 execution-plan handoff (2026-10-29)
+
+The approved package remains immutable, provider-neutral creative input with every Storyboard scene and exact approved references/timing. [Final Video V2](final-video-generation-v2.md#generation-segment-planner), **Planned / Not Started**, derives a separate versioned execution plan: scene membership → fewest feasible continuous Generation Segments → complete per-segment prompt/timeline plus canonical master-audio binding. A package with two scenes in 10s normally maps to one video request under a compatible provider. Do not rewrite a package/hash/approval or turn scenes into provider-request boundaries.
+
+[V2 provider capabilities](final-video-generation-v2.md#provider-neutral-capability-contract) extend the planned VideoGenerationProvider design with continuous/allowed durations, audio reference, multi-image/multi-shot/native-sync support, output options, estimator and adapter-owned limits. All required combinations must be verified before spending; package approval never provides that spending authority. Existing schema-2 ugc-execution-v1 is V1, not continuous-video V2. The dated per-scene + Kling M10/interface/status notes below are V1 history; no interface/schema/runtime changes occur in this update.
+
 ## Schema-2 execution eligibility (2026-10-28)
 
 New packages freeze the approved schema-2 Storyboard exactly, with schema/compiler/prompt version 2 and `executionVersion=ugc-execution-v1`. The compiler version participates in the input fingerprint; all package/Storyboard/reference hashes, exact speech and approval/version bindings remain enforced. Schema-1 compilation/validation remains available only for unchanged historical reads. No old package is rewritten.

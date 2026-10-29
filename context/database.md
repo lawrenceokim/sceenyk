@@ -1,5 +1,11 @@
 # Development application identity
 
+## Planned V2 persistence boundary (2026-10-29)
+
+[V2 artifact/recovery requirements](final-video-generation-v2.md#private-artifacts-persistence-and-recovery), **Planned / Not Started**, require immutable execution-plan/capability versions, ordered Generation Segment membership/timing, canonical master version/hash/duration/dialogue/source bindings, separate stage/segment paid intents/attempts, private artifact proofs and final segment/master manifest approval. These are persistence concerns, not invented tables/columns/RPCs or a migration proposal. Inspect the actual schema and reuse compatible owners before later implementation.
+
+Preserve ownership/RLS, immutable history, currentness/leases, finite authorization and atomic verified final approval/completion. The existing schema-2 ugc-execution-v1 and per-scene + Kling records below belong to V1 and do not implement V2. Completed executions, assets, approvals and original fingerprints remain valid under their original contracts; no automatic conversion/rebinding. This documentation creates/applies no migration and reads/writes no live database/storage.
+
 ## Canonical execution migration 070 (2026-10-28)
 
 `20261028007000_ugc_execution_contract_v1.sql` is a manual transactional migration after 069; **not applied remotely**. It validates existing columns/function prerequisites, snapshots installed schema-1 readers once, adds strict schema-2 execution/timing validation, and updates only five existing functions (Storyboard/package validators, package action compiler fingerprint, Storyboard checkpoint prompt envelope, final currentness). Existing RPC grants remain unchanged. New helpers are private; only the scoped local repair RPC is service-executable.

@@ -1,5 +1,11 @@
 # Durable generation dispatch
 
+## Planned V2 dispatch boundary (2026-10-29)
+
+[Final Video V2](final-video-generation-v2.md#canonical-v2-pipeline), **Planned / Not Started**, keeps the existing local-worker boundary and one admitted Generate Final Video action. Future dispatch uses capability-planned continuous Generation Segments, after reusable voice/speech validation and canonical master-audio construction; it does not enqueue a video for every Storyboard scene or a mandatory Kling follow-up.
+
+Reload exact approved package/plan/segment/master/profile/configuration and remaining finite authority at fenced checkpoints. Restarts reuse successful stages/segments; unknown paid outcomes reconcile, and local final-composition recovery cannot dispatch video/TTS. Dated M10 per-scene + lip-sync queues and permissions below are retained V1 history. No queue/transport/configuration/worker execution changes here; Render/Inngest remain disabled.
+
 ## M10 implemented source boundary (2026-10-27)
 
 **M9: Complete. M10: Complete in source for the configured local V1 profile. Runtime/provider/manual acceptance: Pending.** The existing fair local queue adds a separately gated final lane. npm run worker:ugc -- --final-video-only isolates M10 from upstream paid preparation, with 90-second leases and 20-second fenced heartbeats. No hosted dispatcher/callback/tunnel is added; Render and Inngest remain disabled. Existing package-only mode remains isolated.
