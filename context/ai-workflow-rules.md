@@ -1,5 +1,9 @@
 # AI Workflow Rules
 
+## Current authorization — V3 Phase 2 (2026-10-29)
+
+The owner's attached Phase 2 request authorizes isolated V3 persistence/migration source, frozen packages, exact inert Higgsfield mapping, native dialogue validation/review/recovery contracts, independent estimates/authorization, a local 480p preflight inspector and focused offline tests/TypeScript/lint. It supersedes older Phase 1 and documentation-only restrictions for this unit. Do not apply remote SQL, call Higgsfield/OpenAI (including authenticated estimates/status), generate media, start workers/jobs, enable paid transport, mutate historical executions or deploy. V1/V2 remain unchanged. The local testing profile is code-only and changes no environment or existing provider configuration. Record remaining unknown requirements as unverified. Stop before Phase 3/provider acceptance.
+
 ## Current authorization — V3 Phase 1 foundation (2026-10-29)
 
 The subsequent owner request authorizes new isolated V3 contracts/planner/compiler/dry adapters, official public provider documentation review and focused offline tests/TypeScript/lint. It supersedes the documentation-only scope below for this foundation only. No actual provider generation/estimate/status/account request, media processing, paid execution activation, old-project access/mutation, existing authorization edit, V1/V2 change, worker/job or deployment. No migration is required for pure planning. Prepare inert request mappings only; transport/admission/persistence and a fresh project's paid test remain later separately authorized work. Follow [the V3 Phase 1 record](generation-architecture-v3.md#phase-1-foundation).

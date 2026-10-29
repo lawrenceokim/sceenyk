@@ -1,5 +1,9 @@
 # Persistent generation jobs
 
+## V3 Phase 2 isolated state contract (2026-10-29)
+
+[V3 recovery/review](generation-v3-phase2.md#dialogue-execution-recovery-and-review) uses its own fresh-project logical job UUID and append-only versioned events/segment attempts. It is not enrolled in V1 workers or routes. Saved results are reused; unknown outcomes reconcile; failure/rejection never auto-generates. Source/brief currentness and compare-and-swap revisions fence progression. Paid queue/submission is blocked in code and manual 076; runtime provider intents/leases, UI and completion remain Phase 3.
+
 ## V3 Phase 1 non-executable plans (2026-10-29)
 
 [The isolated V3 foundation](generation-architecture-v3.md#phase-1-foundation) returns immutable segments with `executionStatus: not_started`, native audiovisual commands, independent estimates and null actual costs/receipts. Single-segment plans select direct final review; multi-segment plans select segment review before joining. These are pure planning contracts, not installed job/approval states, handlers or migrations. Paid readiness always fails the Phase 1 fence; no route/worker consumes V3 and no provider intent is created. Existing V1/V2 queues/counters/recovery remain unchanged. Trusted fresh-project persistence, fenced transport/reconciliation and actual review/completion wiring are Phase 2 work, with no old-run migration/reuse.

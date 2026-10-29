@@ -1,5 +1,9 @@
 # Commercial cost contract
 
+## V3 Phase 2 estimate and authorization separation (2026-10-29)
+
+[V3 cost contract](generation-v3-phase2.md#package-cost-and-authorization) sums exact segment/account-bound authenticated estimates, with explicit local expiry. Missing/expired/ambiguous estimates block `COST_ESTIMATE_UNAVAILABLE`; public approximations and operator ceilings never become prices. Fresh package-specific V3 authority and later observed actual cost/receipts are separate immutable records. No authenticated estimate was requested here, no price/customer-credit mapping is invented, and paid transport remains disabled.
+
 ## V3 Phase 1 Higgsfield estimate foundation (2026-10-29)
 
 [Independent Higgsfield pricing](generation-architecture-v3.md#pricing-implemented-without-network-calls) uses exact command/profile/account-scoped authenticated estimate evidence, captured later through the provider's estimate mechanism. Phase 1 prepares the same-input estimate descriptor and validates retained observations locally, but calls no endpoint. Missing/expired/conflicting evidence returns unavailable and blocks readiness. A separate published token-math helper requires explicit dimensions and does not invent output geometry, discounts or a price from a ceiling/headline per-second rate. No actual amount is fetched now.

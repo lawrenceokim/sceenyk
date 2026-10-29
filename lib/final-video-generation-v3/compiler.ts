@@ -14,7 +14,7 @@ export function compileDirectorInstructions(input: PlanningInput, from: number, 
     `Preserve product identity: ${creative.continuity.product}`, `Preserve location: ${creative.continuity.location}`,
     `This segment covers project ${seconds(startMs)}–${seconds(endMs)}s. All shot ranges below use segment-local seconds.`,
     ...input.references.map(ref => `Reference ${ref.role}: ${ref.name} [asset ${ref.id}, version ${ref.version}, hash ${ref.sha256}].`),
-    input.generateAudio ? "Generate audio together with the visuals. Preserve the exact approved dialogue and sound intentions; synchronize visible performance where supported."
+    input.generateAudio ? "Generate audio together with the visuals. The exact approved dialogue and timing below are creative targets, not guaranteed output. Synchronize visible speaking mouths with their own audible words; keep non-speaking mouths natural. Do not animate a visible mouth for off-screen narration. Preserve the approved sound intentions."
       : "Generate visual output without native audio; no required dialogue or sound may be omitted."];
   const dialogue: CompiledDirection["dialogue"] = [];
   for (const [index, scene] of scenes.entries()) {

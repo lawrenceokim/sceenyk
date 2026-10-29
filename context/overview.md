@@ -1,5 +1,9 @@
 # Sceenyk
 
+## M10 V3 Phase 2 source status (2026-10-29)
+
+[Persistent V3 planning/preflight](generation-v3-phase2.md) adds fresh-project-only source/package versions, independent estimates/authorization, recovery/review contracts and sanitized 480p inspection. Manual migration 076 is unapplied remotely. Paid transport remains disabled; no real project/media/providers, historical V1/V2 changes or deployment are part of this phase. Actual upstream V3 generation, provider acceptance and UI wiring remain Phase 3 prerequisites.
+
 ## M10 V3 Phase 1 foundation status (2026-10-29)
 
 [V3 Phase 1](generation-architecture-v3.md#phase-1-foundation) now implements isolated provider contracts, non-executable OpenAI/Higgsfield mappings, 480p-default minimum-segment planning, structured director compilation and fresh-source/cost/authorization checks. Full paid V3 generation remains disabled and is not registered with routes/workers. V1/V2 code and historical projects remain unchanged; no migration or provider/environment setting changed. Official public Higgsfield findings are recorded, while exact reference limits, native speech/shot guarantees and authenticated account estimates remain unresolved before paid acceptance. The next phase is trusted V3 integration/verification for a new project, not a previous-run resume or ElevenLabs master-audio builder.

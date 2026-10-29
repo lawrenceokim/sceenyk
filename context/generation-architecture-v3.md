@@ -1,5 +1,9 @@
 # Milestone 10 V3 — OpenAI + Higgsfield Generation Architecture
 
+## Phase 2 persistent preflight (2026-10-29)
+
+[Phase 2 implementation, current official evidence, persistence, payload, review/recovery and exact Phase 3 prerequisites](generation-v3-phase2.md) supersede the older next-phase checklist below. V3 now has isolated source-only persistence/package/authorization and local inspection with manual migration 076. Paid execution remains disabled; V1/V2 and historical executions stay unchanged. Upstream/provider/runtime/UI acceptance remains pending.
+
 ## Phase 1 foundation
 
 **Phase 1 Complete in source and focused offline verification. Paid V3 remains disabled and is not wired to application routes/workers.** The subsequent owner request authorizes this isolated foundation and official public documentation research, superseding the earlier documentation-only task scope for Phase 1 only. V1/V2 source and historical executions remain unchanged. No actual provider generation/estimate/status/account call, media generation/processing, project mutation, migration, configuration change or deployment occurred.

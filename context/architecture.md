@@ -1,5 +1,11 @@
 # Architecture Context
 
+## M10 V3 Phase 2 boundary (2026-10-29)
+
+Phase 2 adds isolated, fresh-project-only persistent source snapshots, frozen package versions, independent estimate/authorization records and append-only recovery/review events. New migration 076 is manual and must not be applied remotely by this task. V3 projects are created atomically with their own registry; existing projects cannot be enrolled. Source capture is a privileged, explicitly reviewed import boundary for future V3 upstream services, never a browser assertion of approval. Owner reads remain server-only. V1/V2 tables, executions and providers remain unchanged.
+
+The local 480p profile supports planning, package freezing and sanitized preflight only. Both code and database reject paid queue/submission transitions. Exact outbound mapping is inspectable without credentials or media delivery secrets. Actual provider transport, authenticated estimates, private result retrieval and UI wiring remain Phase 3 prerequisites. The review/recovery state contract is implemented and tested offline; no generated result or live approval is claimed. See [Phase 2](generation-v3-phase2.md).
+
 ## M10 V3 Phase 1 source foundation (2026-10-29)
 
 The owner now authorizes isolated V3 provider contracts, official Higgsfield schema/pricing/lifecycle verification, deterministic minimum-segment planning, director prompt compilation and focused offline validation. New `lib/final-video-generation-v3/` is separate from V1/V2 and has no provider transport, worker/route registration or persistence. Prepared request descriptors are non-executable; paid V3 has a constant fail-closed fence. Native audio is part of the video command; no normal separate TTS/lip-sync/master-audio or single-segment creative FFmpeg stage. Source/currentness/fresh-project/estimate/authorization checks are pure and require future trusted server/database evidence before paid integration. [Phase 1 details](generation-architecture-v3.md#phase-1-foundation).

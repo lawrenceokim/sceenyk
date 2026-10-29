@@ -1,5 +1,9 @@
 # Milestone 9 — Video Generation Package Preparation
 
+## V3 Phase 2 package extension (2026-10-29)
+
+[V3 frozen package v3.2](generation-v3-phase2.md#package-cost-and-authorization) is an isolated versioned extension for newly created V3 projects. It freezes approved creative/reference/Storyboard inputs, minimum Generation Segments, compiled prompts, output/native-audio settings, capability and independent pricing evidence/hashes. Source/brief changes invalidate currentness; rebuilding creates another immutable version. Manual 076 stores these separately and never rebinds historical M9/V1/V2 packages. Paid authority and result/review history remain separate records; transport stays disabled.
+
 ## V3 Phase 1 standalone planning contract (2026-10-29)
 
 [V3 source](generation-architecture-v3.md#source-contracts-planner-and-compiler) defines a separate approved creative-package/Storyboard/reference snapshot and canonical V3 content hashes, with currentness and same-project V3 provenance validation. It derives minimum audiovisual Generation Segments and full director instructions without a master-audio/voice binding. It does not modify M9 schemas/builders/approvals, adapt old packages automatically or persist a V3 record. Planned segments have exact hashes, estimates, not-started execution and separate finite authorization snapshots, but remain non-executable. Future server/database integration must establish actual fresh-project ownership and approval/currentness evidence before any paid work; no source JSON/hash is itself authority.

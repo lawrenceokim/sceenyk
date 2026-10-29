@@ -1,5 +1,9 @@
 # Code Standards
 
+## V3 Phase 2 persistent preflight (2026-10-29)
+
+[Phase 2](generation-v3-phase2.md) adds isolated source/package/authorization/event persistence through manual 076 and a file-only inspector. Keep owner authentication and explicit operator source/authority review server-only, verify private bytes and preserve immutable versions/currentness. The registry must create its project atomically; never enroll V1/V2 projects. Pure recovery/review contracts do not authorize provider calls. Constant code and SQL paid-transition fences stay enabled. Paid intent reservation/leases, transport and actual review UI remain Phase 3. Earlier Phase 1 no-persistence descriptions below are historical boundaries.
+
 ## V3 Phase 1 implemented foundation boundary (2026-10-29)
 
 [Source contracts and checks](generation-architecture-v3.md#source-contracts-planner-and-compiler) live separately in `lib/final-video-generation-v3/`. Keep all provider fields inside adapters; core has only neutral requirements/capabilities, current-input/approval/fresh-project data, immutable plans and independent estimate/authority records. Dry preparations are non-executable and `assertPaidV3Execution()` always rejects; no environment flag, provider transport or worker/route registration exists. Existing V1/V2 schemas, interfaces and hash recipes stay unchanged. Treat supplied context/quote JSON as inputs to future trusted reconstruction, not live authorization. Phase 1 allows focused offline tests/TypeScript/lint; real providers, persistence and activation remain separately authorized Phase 2 work.

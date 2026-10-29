@@ -1,5 +1,9 @@
 # Development application identity
 
+## Manual V3 persistence migration 076 (2026-10-29)
+
+[Phase 2 model](generation-v3-phase2.md#persistence-model-and-migration) adds `ugc_v3_projects`, `ugc_v3_sources`, `ugc_v3_packages`, `ugc_v3_authorizations` and `ugc_v3_events`, with owner-scoped RPCs, append-only versions/events, RLS, no browser privileges and constant paid-transition rejection. The registry creates new projects only. Migration 076 remains unapplied remotely; deployed catalog/prerequisite/ACL verification is manual. Historical V1/V2 schema/data/functions/grants remain unchanged.
+
 ## Planned V3 persistence concerns; no migration (2026-10-29)
 
 [V3](generation-architecture-v3.md#private-persistence-cost-authority-and-recovery), **Planned / Not Started**, needs explicit future version/profile lineage for fresh-project reference/Storyboard approvals, continuous audiovisual segment plans/attempts/assets, segment review, optional multi-clip join and final approval/completion. Exact schema/admission design must follow catalog inspection and compatible-owner reuse; this document introduces no table/column/RPC, migration, enum or deployment claim.

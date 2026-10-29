@@ -1,4 +1,5 @@
 import "server-only";
+import { createHash } from "node:crypto";
 import { z } from "zod";
 import { type EstimateEvidence, type GenerationSegment, type VideoCapabilities, type VideoCommand, type VideoGenerationProvider } from "../contract";
 import { commandFingerprint, normalizeCapabilities, v3Digest } from "../identity";
@@ -69,8 +70,8 @@ export class HiggsfieldVideoGenerationProvider implements VideoGenerationProvide
   }
 }
 
-const statusSchema = z.object({ request_id: z.uuid(), status: z.string(), status_url: z.string().optional(), expires_at: z.string().optional(),
-  video: z.object({ url: z.string() }).optional() });
+const statusSchema = z.object({ request_id: z.uuid(), status: z.string(), status_url: z.string().nullish(), expires_at: z.string().nullish(),
+  video: z.object({ url: z.string() }).nullish() });
 export function mapHiggsfieldStatus(value: unknown, expectedRequestId: string) {
   const parsed = statusSchema.safeParse(value);
   if (!parsed.success || parsed.data.request_id !== expectedRequestId) return { state: "reconciliation_required", requestId: expectedRequestId, videoUrl: null } as const;
@@ -90,4 +91,37 @@ export function prepareStatusObservation(requestId: string, statusUrl: string) {
   if (url.origin !== "https://api.higgsfield.ai" || url.pathname !== `/requests/${requestId}/status` || url.search || url.hash || url.username || url.password)
     throw new Error("STATUS_LOCATOR_INVALID");
   return { executable: false as const, method: "GET" as const, url: statusUrl, requestId };
+}
+
+export function prepareCancelObservation(requestId: string, cancelUrl: string) {
+  z.uuid().parse(requestId);
+  const url = new URL(cancelUrl);
+  if (url.origin !== "https://api.higgsfield.ai" || url.pathname !== `/requests/${requestId}/cancel` || url.search || url.hash || url.username || url.password)
+    throw new Error("CANCEL_LOCATOR_INVALID");
+  return { executable: false as const, method: "POST" as const, url: cancelUrl, requestId };
+}
+
+export function parseHiggsfieldAcceptance(value: unknown) {
+  const parsed = z.object({ request_id: z.uuid(), status: z.literal("queued"), status_url: z.string(), cancel_url: z.string(),
+    expires_after: z.number().int().min(3600).max(604800) }).parse(value);
+  prepareStatusObservation(parsed.request_id, parsed.status_url);
+  prepareCancelObservation(parsed.request_id, parsed.cancel_url);
+  // An idempotency replay may still say queued; observe status_url for actual current state.
+  return { requestId: parsed.request_id, statusUrl: parsed.status_url, cancelUrl: parsed.cancel_url, expiresAfterSeconds: parsed.expires_after };
+}
+
+export function inspectHiggsfieldPayload(segment: GenerationSegment, media: ReadonlyMap<string, string>) {
+  const request = new HiggsfieldVideoGenerationProvider().prepareRequest(segment, media);
+  const input = request.input;
+  const sanitized: Record<string, unknown> = { prompt: `[redacted director prompt; ${String(input.prompt).length} characters]`,
+    duration: input.duration, resolution: input.resolution, output_format: input.output_format, generate_audio: input.generate_audio };
+  if (input.aspect_ratio) sanitized.aspect_ratio = input.aspect_ratio;
+  for (const field of ["image_urls", "audio_urls", "video_urls"] as const) if (Array.isArray(input[field]))
+    sanitized[field] = input[field].map(() => "[redacted approved media URL]");
+  for (const field of ["image_url", "end_image_url"] as const) if (input[field]) sanitized[field] = "[redacted approved media URL]";
+  return { executable: false, method: request.method, model: request.model, generationUrl: request.generationUrl,
+    estimateUrl: request.estimateUrl, commandFingerprint: request.commandFingerprint,
+    exactBodySha256: createHash("sha256").update(JSON.stringify(request.input)).digest("hex"),
+    // Never spread raw request fields/headers/URLs or creative text into logs.
+    input: sanitized };
 }
