@@ -1,5 +1,11 @@
 # Milestone 10 — Character Voice Generation
 
+## Historical separate voice/master-audio strategy; V3 native audio (2026-10-29)
+
+The normal future audio contract is [V3 Higgsfield native audiovisual generation](generation-architecture-v3.md#higgsfield-as-audiovisual-generator), **Planned / Not Started**. Dialogue/voice intent remains in the OpenAI-directed Storyboard; Higgsfield generates audio/dialogue/lip-sync/ambience/SFX together with visuals where supported. There is no mandatory ElevenLabs design/TTS, separate Kling lip-sync or FFmpeg creative master-audio stage.
+
+Keep generic VoiceGenerationProvider/LipSyncProvider boundaries available only for future explicitly selected workflows, not normal V3 fallback stages. All separate voice/profile/master/speech-fitting/provider-account/recovery evidence below is historical V1/V2 experimentation and remains intact; current V1 source and old voice/audio assets are not removed or changed. Fresh V3 testing cannot reuse the previous execution's voice binding/master audio. No audio generation, media processing, provider call or runtime change occurs now.
+
 ## V2 canonical master audio and native video synchronization (2026-10-29)
 
 [Final Video V2](final-video-generation-v2.md), **Planned / Not Started**, retains CharacterVoiceProfile/VoiceGenerationProvider and compatible reusable identity. ElevenLabs still generates the exact approved speech, with request count based on actual design/binding/utterance work, not the number of video segments. Preserve original responses/alignments and permitted fitted derivatives. Validate/correct speech locally before building the [immutable exact-duration master timeline](final-video-generation-v2.md#canonical-master-audio-timeline), containing dialogue and silence at Storyboard timestamps with version/hash, total duration, timing metadata and source speech bindings.

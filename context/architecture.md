@@ -1,5 +1,19 @@
 # Architecture Context
 
+## Canonical V3 architecture — planned, not implemented (2026-10-29)
+
+[Generation Architecture V3](generation-architecture-v3.md) is the authoritative new normal path, **Planned / Not Started**. Planned neutral boundaries are ImageGenerationProvider → OpenAI, CreativeDirectorProvider → OpenAI and VideoGenerationProvider → Higgsfield; FFmpeg is local. OpenAI regenerates references and writes/compiles complete approved cinematic direction. Higgsfield's preferred Seedance 2.5 generates the fewest continuous audiovisual segments with native dialogue/lip-sync/ambience/SFX where supported; provider-specific payloads, limits and pricing remain adapter-owned.
+
+A compatible ≤30s project normally targets one generation. Longer examples are 45s→30+15, 60s→30+30, 90s→30+30+30, only when supported. Multiple generated segments are reviewed/approved before local joining; one segment goes directly to final review. Separate ElevenLabs/Kling/master-audio assembly is historical, not the normal V3 dependency. Verify Higgsfield's actual contract; do not transfer fal.ai capabilities/rates or V2 master-audio gates. Fresh-project testing and segment-level private recovery/cost controls are defined once in V3.
+
+Earlier V1/V2 and Character provider/current/next-phase descriptions below remain unchanged historical/source evidence. Existing V1 and uncommitted V2 foundation source, schemas, configurations, execution lineage and paid authorization are untouched. This task implements no V3 boundary, migration, runtime switch, provider request or project.
+
+## M10 V2 Phase 1 foundation boundary (2026-10-29)
+
+The owner authorized an isolated provider-neutral capability contract, deterministic Generation Segment planner, public official Seedance schema/documentation verification and focused offline checks only. New `lib/final-video-generation-v2/` is a planning-only version/profile boundary: no provider submission/payload builder, worker registration, route, persistence, paid execution or authorization integration. The existing provider interface exposes an optional type-only `segmentPlanning` extension; V1 adapters do not opt in. V1 source, per-scene/Kling/accounting/recovery/executions remain unchanged.
+
+The planner reuses creative field schemas/hash utilities without changing V1 schemas. It preserves approved scenes, checks neutral capabilities, plans the fewest supported contiguous intervals at approved scene boundaries and freezes snapshot/segment fingerprints. Plans are explicitly `executable: false`; intended master audio is not yet a measured/bound media asset. Native generated lip-sync is in the public API contract, but exact supplied-speech-driven synchronization remains unverified and blocks that requirement. [Canonical findings and phase status](final-video-generation-v2.md#phase-1-foundation-2026-10-29).
+
 ## Planned M10 V2 continuous generation (2026-10-29)
 
 [Final Video V2](final-video-generation-v2.md) is the authoritative **Planned / Not Started** architecture. Storyboard scenes remain creative units; a capability-driven planner compiles multiple scenes into the fewest continuous Generation Segments. Compatible Seedance 5/10/30s projects use one segment, with longer content split only as required by verified capabilities. Core plans from neutral capabilities, never provider names. Adapters own vendor request fields and supported combinations.

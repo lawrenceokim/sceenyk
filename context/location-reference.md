@@ -1,5 +1,11 @@
 # UGC Location Reference — Milestone 7
 
+## Planned V3 Location and continuous environment (2026-10-29)
+
+[V3](generation-architecture-v3.md), **Planned / Not Started**, preserves an exact approved Location/reference version for the director Storyboard and each Higgsfield audiovisual segment. OpenAI handles understanding/direction and appropriate reference-image creation/regeneration; Higgsfield handles environment behavior, lighting and camera/shot continuity inside the generated segment where supported. Use minimum continuous segments rather than independent videos per creative scene.
+
+Next testing uses fresh Location data in a brand-new project with a different supplied image and fresh upstream approvals. Historical Location generation/recovery/approval recipes below remain intact; no old Location is retargeted, regenerated or deleted to support V3. No runtime, worker, configuration or project change occurs here.
+
 ## Generation-package handoff (2026-10-27)
 
 M9 Complete/approved per the owner; M10 Planned / Not Started. The exact accepted Location image/root/candidate/plan/approval versions frozen by [M9](video-generation-package.md#canonical-internal-contract) remain future scene dependencies. [M10](final-video-generation.md#scene-generation-identity-and-versioning) must preserve that environment binding and stale prior execution after approved input changes, not substitute latest Location or regenerate it to repair a video scene. Scene/final cleanup cannot delete this accepted upstream media. Existing Location generation/review/recovery/deletion is unchanged; this task runs no live media/provider/worker/test operation.

@@ -1,5 +1,11 @@
 # Commercial cost contract
 
+## Planned V3 Higgsfield segment pricing and 480p testing (2026-10-29)
+
+[V3 pricing intent](generation-architecture-v3.md#development-quality-and-pricing-intent), **Planned / Not Started**, estimates video cost per Higgsfield Generation Segment, not per Storyboard scene. OpenAI understanding/image/creative operations retain their actual separately authorized costs. Native audiovisual generation removes normal separate ElevenLabs/Kling line items; no dollar saving or Higgsfield tariff is inferred. Verify Higgsfield's own model/account pricing, duration/resolution/options and billable units; do not transfer old fal rates or authorization ceilings into an estimate.
+
+Planned development/testing default is 480p, without changing current configuration. Possible testing/free→480p, standard→720p, premium→1080p mappings are future examples, not implemented pricing/entitlements. Preserve finite request/spend authority, versioned quotes/fingerprints, reviewed retries/amendments, successful-segment reuse and reconciliation of unknown outcomes. Historical V1/V2 rates/estimates/voice credits below stay as evidence only; fresh-project testing requires fresh run authorization/accounting without resetting existing account rules.
+
 ## Planned V2 segment-based video pricing (2026-10-29)
 
 [V2 cost/request authority](final-video-generation-v2.md#costs-request-authorization-and-immutable-identity), **Planned / Not Started**, estimates video requests/cost **per Generation Segment**, not per Storyboard scene. Two speaking scenes in one compatible 10s segment mean **one Seedance video request and zero separate Kling requests**, instead of V1's two video + two lip-sync requests. This is not one total provider request or a guaranteed dollar saving: voice design/binding/utterance work and authorized chargeable observation follow the actual ElevenLabs workflow, while rates depend on duration/resolution/audio/options and trusted estimator provenance.

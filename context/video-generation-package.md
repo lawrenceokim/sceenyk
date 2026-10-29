@@ -1,5 +1,15 @@
 # Milestone 9 — Video Generation Package Preparation
 
+## Planned V3 package and Generation Segment handoff (2026-10-29)
+
+[Canonical V3](generation-architecture-v3.md#generation-segments-and-continuity), **Planned / Not Started**, preserves immutable approved Storyboard/reference content and derives minimum continuous audiovisual Generation Segments for Higgsfield. The package/plan carries full cinematic dialogue/sound/shot intent and exact source versions; it does not turn each creative scene into a video request. Package approval remains separate from finite paid authorization.
+
+V3 must explicitly version a native-audio profile rather than inherit V2's mandatory master-audio/ElevenLabs bindings or stronger supplied-external-speech gate. Existing schemas, hash recipes, the optional V2 type extension and non-executable planning source below remain unchanged experimental/history records, not an installed V3 adapter. No fal capability/rate transfer or migration of old packages/executions. New testing creates fresh package/segment lineage in a new project; no package/approval/runtime mutation occurs here.
+
+## V2 Phase 1 optional planning extension (2026-10-29)
+
+[The V2 foundation](final-video-generation-v2.md#implemented-capability-and-segment-contracts) adds optional type-only `VideoGenerationProvider.segmentPlanning` with neutral capabilities, validation and cost estimation. The isolated planning adapter is not registered on V1. A pure package-to-plan-input conversion preserves approved scenes and exact source hashes; future server code must independently verify supplied package-approval/currentness evidence. There is no new package schema, persistence, worker, provider request or change to M9 approval/spending behavior. Segment planning is non-executable and does not migrate V1 or loosen its validators.
+
 ## Planned V2 execution-plan handoff (2026-10-29)
 
 The approved package remains immutable, provider-neutral creative input with every Storyboard scene and exact approved references/timing. [Final Video V2](final-video-generation-v2.md#generation-segment-planner), **Planned / Not Started**, derives a separate versioned execution plan: scene membership → fewest feasible continuous Generation Segments → complete per-segment prompt/timeline plus canonical master-audio binding. A package with two scenes in 10s normally maps to one video request under a compatible provider. Do not rewrite a package/hash/approval or turn scenes into provider-request boundaries.

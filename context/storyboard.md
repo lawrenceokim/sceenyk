@@ -1,5 +1,11 @@
 # Milestone 8 — AI Storyboard and Scene-by-Scene Script Generation
 
+## Planned V3 professional director Storyboard (2026-10-29)
+
+[V3 OpenAI creative direction](generation-architecture-v3.md#openai-as-creative-director), **Planned / Not Started**, keeps the Storyboard structured, editable and reviewable. OpenAI directs scenes/shots, intended timing, actions/reactions, Product interactions, dialogue, camera angles/movement/zooms, cuts/transitions, lighting, environment, pacing, style and sound intentions, then owns provider-neutral creative instruction compilation from approved content.
+
+Scenes remain planning units. Multiple scenes compile into one Higgsfield segment when capabilities allow: 0–5s Scene 1 + 5–10s Scene 2 normally targets one 10s audiovisual generation with the internal shot change. Required native audio/dialogue/sync must be verified for Higgsfield, not inferred from fal.ai. V2's mandatory ElevenLabs master-audio bindings are experimental/superseded; exact intended timing/content, private versioned approvals and stale-input guards remain. The next project gets a fresh Storyboard; no schema, prompt, approved document or existing execution changes now.
+
 ## Scenes remain creative units in planned Final Video V2 (2026-10-29)
 
 Do not remove Storyboard scenes. They still define timestamps, dialogue, actions, facial reactions, camera angles/movements, shot changes, lighting, Product interactions, transitions and pacing. [Final Video V2](final-video-generation-v2.md#generation-segment-planner), **Planned / Not Started**, compiles multiple scenes into one complete prompt/timeline for each capability-planned Generation Segment. **0–5s Scene 1 + 5–10s Scene 2 becomes one 10s request with an explicit shot change at 5s**, not two requests. The immutable master audio preserves those same dialogue timestamps and silence.

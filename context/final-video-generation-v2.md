@@ -1,6 +1,81 @@
 # Milestone 10 V2 — Continuous Multi-Scene Final Video Generation
 
+## Historical V2 experimentation — superseded by V3 (2026-10-29)
+
+**V2 ElevenLabs/Kling-era architecture: Experimental / superseded.** [V3 OpenAI + Higgsfield](generation-architecture-v3.md) is now canonical and **Planned / Not Started**. Preserve every V2 foundation, fal.ai research, master-audio proposal, test result and recovery rule below as dated historical/experimental evidence. V2's continuous native-sync proposal had already removed normal Kling, but its separate ElevenLabs/master-audio dependency is no longer the normal future path.
+
+The existing source-only V2 foundation and 187-check evidence remain valid for their original scope and are unchanged. They do not verify Higgsfield capabilities or implement V3. The earlier next phase to build a dedicated speech master is superseded; do not activate/migrate/reuse previous executions or carry V2's supplied-speech gate into V3 by default. Next testing uses a brand-new project, different supplied image and fresh references/Storyboard/authorization. No runtime, configuration, provider request or old asset changes in this documentation task.
+
+## Phase 1 foundation (2026-10-29)
+
+**Phase 1 foundation Complete in source and focused offline verification. Paid V2 execution remains Planned / Not Started and disabled.** This separately authorized phase adds a planning-only profile; it does not activate the pipeline specified below. V1's paid scene/Kling flow, authorization/accounting/recovery and existing executions remain unchanged. Research used public official web documentation/schema only, with no credentials or inference/status/account/provider calls.
+
+### Verified Seedance API contract
+
+Reviewed on **2026-10-29** against the configured V1 model identifier, without changing it: [current official OpenAPI schema](https://fal.ai/api/openapi/queue/openapi.json?endpoint_id=bytedance/seedance-2.5/reference-to-video), [API input documentation](https://fal.ai/models/bytedance/seedance-2.5/reference-to-video/api), [pricing/model documentation](https://fal.ai/models/bytedance/seedance-2.5/reference-to-video) and [official prompting guide](https://fal.ai/learn/devs/how-to-use-seedance-2-5). Schema enums/descriptions take precedence over conflicting prose. These are public-contract findings, not authenticated account or generated-media acceptance.
+
+| Requirement | Confirmed contract / foundation treatment |
+| --- | --- |
+| Exact model / endpoint | `bytedance/seedance-2.5/reference-to-video`; queue submission would use `https://queue.fal.run/bytedance/seedance-2.5/reference-to-video`. No submission method/payload is implemented in this phase. No switch to a regional or other endpoint. |
+| Duration | Explicit whole seconds **4 through 30**, plus `auto`; maximum continuous duration **30,000ms**. Exact planning excludes `auto`. |
+| Audio reference | `audio_urls` accepts MP3/WAV guidance, addressed as `@Audio1`, etc. Audio-reference support is confirmed. |
+| Native lip animation | `generate_audio` explicitly describes native synchronized sound and lip-synced speech; default true. This confirms generated lip-sync, not exact supplied-speech-master synchronization. |
+| Supplied speech driving mouths | **Unverified at the strict API-contract level.** The schema exposes reference audio plus generated lip-sync but does not explicitly guarantee their binding to the exact supplied speech/timing. Public model examples describe reference-track lip-sync, but are not such a contract or fal runtime acceptance. `supportsSpeechAudioDrivenLipSynchronization` stays unverified. |
+| Multiple images | Up to **30** image references, **30MB each**; JPG/PNG/WebP/BMP/TIFF/GIF/HEIC/HEIF per the schema. Canonical reference ordering and roles must be explicit. |
+| Multi-scene / multi-shot prompt | Supported as natural-language instructions: the schema's prompt example includes a scene cut. There is no structured shot-list API or frame-accurate cut guarantee. Preserve timed creative intent; do not claim deterministic output timing. |
+| Aspect ratios | Explicit `21:9`, `16:9`, `4:3`, `1:1`, `3:4`, `9:16`, plus `auto`. Exact planning excludes `auto`. |
+| Resolutions | Schema lists **480p, 720p, 1080p**. Older model/guide prose lists only 480p/720p; retain the schema enum, while unknown 1080p output dimensions block its cost estimate. |
+| Audio file limits | Up to **10** files, **15MB per file**, **1,800–30,200ms each**, **30,200ms combined**. Sample rate, channels, bit depth and speech-alignment tolerances are not declared. Segment slices must fit the limits; a long project master is not submitted whole. |
+| Other references | Up to 10 MP4/MOV videos; each 1,800–30,200ms and at most 200MB; combined duration at most 30,200ms; 300–6000px per side, ratio 0.4–2.5, 24–60fps. All modalities together: at most **50 files**. Video references are outside the Phase 1 planning-input profile, although the estimator accounts for their documented billing rule. |
+| Prompt / input limits | Prompt is string-or-null in OpenAPI, with no declared `maxLength`; overall payload maximum is undeclared. Do not interpret this as unlimited. API schema uses `@Image1`/`@Audio1`; some prose uses bracket notation. The foundation creates neither provider prompt payloads nor requests. |
+| Workflow restrictions | `editing` forces duration/ratio to auto; `extension` forces ratio to auto. Neither is this exact-duration `reference` profile. Draft overrides resolution to 480p and has a separate seven-day completion lifecycle; no draft workflow here. Seed is not a perfect reproducibility guarantee. |
+| Other fields / access | H264/H265/auto codecs, standard/high bitrate, optional seed/end-user identity are described. B2B end-user identity requirements, actual account availability and safety/access behavior need later verification. Do not change V1 configuration. |
+
+### Pricing evidence and remaining uncertainty
+
+The model page specifies token billing: `tokens = width × height × (inputVideoSeconds + outputSeconds) × 24 / 1024`. At 480p/720p the published rate is **$0.0214 per 1,000 tokens**. With video references, include their duration and multiply by **0.6**. Images/audio references add no separate token charge; generated audio on/off has the same video price. The headline per-second approximations differ from the token formula's worked examples; the adapter uses the formula and published dimensions, not a flat per-second rate or authorization ceiling.
+
+The pure estimator uses rational integer arithmetic and rounds upward once to micro-USD. Example: 10s at published 1280×720 (or 720×1280), images/audio only → **$4.622400** video estimate. Voice costs and spend permissions are separate. The page mentions $0.0234/1,000 tokens for 1080p, but does not supply its dimension table; `estimateCost()` therefore returns **unavailable / OUTPUT_DIMENSIONS_UNCONFIRMED** for 1080p instead of guessing. This estimate is not an executable quote or account bill.
+
+Still unconfirmed: exact supplied-speech-driven native synchronization, frame-accurate cuts, waveform preservation, undeclared prompt/body/sample-format limits, undocumented capability combinations and account/runtime acceptance. The generic native-sync flag and audio-reference flag cannot be combined to infer the stronger supplied-speech flag. `supportsExactShotTiming` and `supportsExactAudioPreservation` also stay unverified. Unsupported structured transitions (including current fade/crossfade intent) and required owned non-dialogue audio without a manifest fail explicitly in this foundation profile.
+
+### Implemented capability and segment contracts
+
+- [`capabilities.ts`](../lib/final-video-generation-v2/capabilities.ts): strict neutral snapshot with `maxContinuousDurationMs`, discrete `supportedDurationsMs`, three-state audio/multi-image/multi-shot/native-sync and stronger timing/audio flags, ratios/resolutions, image/audio/aggregate limits, nullable unknown prompt bound and source/configuration identity. `VideoGenerationPlanningProvider` exposes `getCapabilities()`, pure `validateRequirements()` and `estimateCost()` only.
+- [`provider.ts`](../lib/video-generation-package/provider.ts): existing `VideoGenerationProvider` gains optional **type-only** `segmentPlanning`; existing V1 providers do not opt in. There is no runtime registry/factory selection change.
+- [`contract.ts`](../lib/final-video-generation-v2/contract.ts): separate `ugc-final-v2-foundation` input/result. Each segment retains deterministic ID/version, exact absolute window/duration, included scene numbers, cloned scene actions/camera/lighting/dialogue/transition content, absolute/local dialogue references, shot-change ownership, all approved Character/Product/Location versions/hashes, intended master/slice binding, complete neutral instructions, capability hash, fingerprint and estimate. The plan includes the full capability snapshot, scope/approval/source hashes and fingerprint, and is always **`executable: false`**.
+- [`package-input.ts`](../lib/final-video-generation-v2/package-input.ts): pure conversion of a canonical package plus separately supplied approval evidence/output choice/intended master binding. No lookup or claim of ownership/currentness/approval verification; a future authenticated boundary must establish those facts. No approved package/Storyboard mutation.
+- [`seedance.ts`](../lib/final-video-generation-v2/adapters/seedance.ts): isolated adapter maps reviewed API limits into the neutral snapshot and estimates token costs. All provider-specific identifiers/rules stay here. No credentials, network, request builder, submit/observe method, V1 registration or paid authority.
+
+### Implemented planner rules and validation
+
+[`planner.ts`](../lib/final-video-generation-v2/planner.ts) uses dynamic programming over approved **scene boundaries**, minimizing segment count and preferring the longer first interval for equal-count solutions. It considers all exact allowed durations and adapter constraints; greedy longest-first is insufficient (for allowed 5s/8s and a 10s timeline, use 5s+5s rather than 8s+an invalid 2s remainder). No automatic split inside a scene/utterance, retiming, padding, truncation, creative rewriting or provider fallback.
+
+Input validation checks ordered contiguous scene coverage, exact total and per-scene duration, contained action/dialogue windows, non-overlapping speech, structured delivery/transitions/audio cues, role/asset identity, ratio/resolution and file/count/format/duration limits. Multiple scenes require confirmed multi-shot support; no silent conversion to individual-scene requests. Speaking Character content automatically requires canonical audio, native lip animation and supplied-speech-driven synchronization, even when a caller omits those flags. Unknown extra requirements fail precisely. Adapter-specific combination errors propagate without core provider-name logic.
+
+Canonical hashing reuses the existing pure sorted-key/integer JSON recipe without changing V1. Fingerprints bind owner/project/job, exact source/approval versions, all creative fields/references, intended audio, normalized capability snapshot, plan version and segment membership/times. Provider switching or dependency changes produce new identities. Unknown audio size and unbuilt/unbound master media remain explicit; this structural plan cannot bypass later measured-media validation or cost/authorization admission. The generic long-timeline test envelope is bounded to 100 scenes/600s; it does not expand today's 5/10/30s product options or change existing schemas. No plan persistence is introduced, so **no migration/configuration change is needed**.
+
+### Current 10-second two-scene example
+
+This is the owner's specified structural example using synthetic approved-package/voice metadata in offline tests; no live package, execution or media was read or changed.
+
+| Item | Intended plan |
+| --- | --- |
+| Segment | One version-1 segment, 0–10,000ms, containing scenes 1 (0–5,000ms) and 2 (5,000–10,000ms). ID includes a deterministic fingerprint prefix. |
+| Shot / dialogue | Internal shot change at 5,000ms; dialogue windows 1,200–2,600ms and 6,200–7,600ms, preserved exactly. |
+| References / audio | All three approved reference roles; one intended 10s canonical master/slice with explicit version/timing hash and null unbuilt asset binding. |
+| Verified fully capable fixture | Returns **1 × 10s**, preserves both creative scenes and all instructions, remains non-executable. |
+| Actual reviewed Seedance profile with visible speech | Returns **CAPABILITY_UNVERIFIED: supportsSpeechAudioDrivenLipSynchronization**. No successful speech-ready plan/request is claimed. A non-speaking visual/audio-reference structure can plan as one segment; it does not resolve this speaking requirement. |
+
+### Checks and next phase
+
+`npm run test:ugc-final-v2` passes **187 network-forbidden synthetic capability/planner/cost/V1-compatibility checks**. Coverage includes 5/10/30s, multi-scene 10s (including creative shots shorter than provider minimum video duration), 60s→2×30s, unsupported/discrete durations, non-greedy planning, audio/native-sync/multi-shot gates, limits, timing, reference roles, ratio/resolution, deterministic fingerprints, provider switching and unchanged V1 preflight/Kling behavior. Full `tsc --noEmit --incremental false`, focused ESLint, added documentation links/anchors, whitespace and diff/scope review pass. V1 runtime/schema/route/UI/migration files are unchanged. No media, FFmpeg, providers, live DB/storage or execution jobs are used.
+
+**Exact next separately authorized phase:** local canonical master-audio timeline/slice construction and validation, using synthetic or explicitly supplied saved speech, with immutable source/profile/timing bindings, exact-duration/silence placement and private artifact proofs. It can be developed offline while the stronger Seedance contract question remains unresolved. Resolve that question before later paid preparation/video integration. Provider submission, V2 persistence/admission, funding/retry wiring and runtime rollout are separate later work; none starts automatically after this foundation.
+
 ## Status and authority (2026-10-29)
+
+The following initial architecture/status scope predates the separately authorized Phase 1 foundation above. Its full-pipeline Planned / Not Started status still applies to paid execution; the foundation now has its own source/verification status.
 
 **Milestone 10 V1: implemented and proven end-to-end.** This is the owner's reported milestone baseline for this documentation update, supported by the retained V1 execution/approval history; it is not a fresh provider, deployment or all-cases acceptance audit. [V1 implementation and historical investigations](final-video-generation.md) remain intact, including dated failures, pending repairs and their original verification limits.
 
@@ -48,16 +123,17 @@ Required owned music/SFX and narration routing must still be supported and prese
 
 ## Provider-neutral capability contract
 
-Extend the design of `VideoGenerationProvider` and its capability snapshot rather than hard-coding provider names in orchestration. These are **planned contract values**, not fields added to today's TypeScript interfaces:
+The [Phase 1 contract](#implemented-capability-and-segment-contracts) implements these values behind the optional planning-only provider profile. Full paid execution remains future work. Never hard-code provider names in orchestration:
 
 | Capability | Meaning for V2 |
 | --- | --- |
-| `maxContinuousDuration` | Maximum one-request continuous duration; normalize to integer milliseconds in core. |
-| `supportedDurations` | Explicit allowed durations or a bounded min/max/increment rule; planner must satisfy both this rule and the maximum. |
+| `maxContinuousDurationMs` | Maximum one-request continuous duration in integer milliseconds. |
+| `supportedDurationsMs` | Explicit allowed durations in integer milliseconds; planner must satisfy both this set and the maximum. |
 | `supportsAudioReference` | Whether external canonical audio can condition this reference-to-video workflow; include audio count, duration, format/size and offset restrictions. Native audio generation alone does not establish this. |
 | `supportsMultipleImageReferences` | Ability to bind all required approved references together; retain count, role and format/size limits. Never silently drop a required reference. |
 | `supportsMultiShotPrompting` | Whether one request can express the required timed scenes/shots and internal transitions. |
-| `supportsNativeLipSynchronization` | Ability to animate visible speech from the supplied audio with the required timing/identity, distinct from generic dialogue or audio output. |
+| `supportsNativeLipSynchronization` | Native lip/mouth animation for generated speech. Supplied-speech-master synchronization additionally requires the stronger capability below. |
+| `supportsSpeechAudioDrivenLipSynchronization` | Stronger supplied-speech-master binding, distinct from native generated lip-sync; unverified for the reviewed Seedance API and required for the intended speaking workflow. |
 | `supportedAspectRatios` | Supported ratios for this workflow/output. |
 | `supportedResolutions` | Supported resolutions and any duration/audio-dependent combinations. |
 | Pricing estimator | Versioned estimate from actual segment duration/resolution/options, chargeable operations and trusted rate provenance; preserve unknown costs explicitly. |
@@ -65,7 +141,7 @@ Extend the design of `VideoGenerationProvider` and its capability snapshot rathe
 
 Retain provider/adapter/configuration versions, support states **supported / unsupported / unverified**, reference-role coverage, output formats/codecs, seed policy, asynchronous observation and recovery support. Unsupported or unverified required features block the entire planned path before voice design/TTS/video spending. Adapters alone own endpoints, model identifiers, concrete request fields, reference tags, signing/delivery requirements, provider receipts and tariff translation. Core consumes neutral requirements, segment plans and normalized results; switching provider means replanning/requoting through these contracts.
 
-**Needs confirmation before implementation/paid acceptance:** the exact selected Seedance endpoint/account must support the combined multi-image + timed multi-shot + external master-audio + native speech-synchronization workflow, including 5/10/30s, audio duration/format/offset/size limits, dialogue versus narration routing, timing fidelity and pricing. Current source ([provider contracts](../lib/final-video-generation/providers.ts), [fal adapter](../lib/final-video-generation/adapters/fal.ts)) declares 4–30s whole-second visual duration support but still prepares scenes individually, disables native audio, and has no V2 master-audio submission contract. Historical documentation research and V1 end-to-end success do not verify V2 features. This request resolves the target architecture; it does not authorize a probe or justify claiming these capabilities are verified. If the combination fails verification, stop before spend for an explicit compatible plan rather than silently reintroducing per-scene generation or Kling.
+**Phase 1 verification:** [the current schema findings](#verified-seedance-api-contract) resolve the public duration/audio/image/ratio/resolution limits above. [Remaining uncertainty](#pricing-evidence-and-remaining-uncertainty) still blocks exact supplied-speech-driven synchronization and runtime/account acceptance. Current V1 source ([provider contracts](../lib/final-video-generation/providers.ts), [fal adapter](../lib/final-video-generation/adapters/fal.ts)) still prepares scenes individually and disables native audio; it has no V2 master-audio submission contract and is unchanged. No capability probe or inference is authorized. Unsupported/unverified requirements stop before spend rather than silently reintroducing per-scene generation or Kling.
 
 ## Generation-segment planner
 
@@ -155,6 +231,6 @@ Recover saved work remains provider-submission-free. A separately reviewed conti
 
 ## Implementation boundary and future acceptance
 
-V2 planning is documented; **implementation has not started**. The later authorized unit must introduce capability-driven planning, versioned execution manifests, master timeline/slice construction, segment-aware adapters/preflight/accounting/recovery and final validation without rewriting approved V1 packages or completed records. A switch cannot silently migrate an existing execution or spend under its old scene/Kling authorization. Existing V1 completed executions, assets, approvals, receipts, fingerprints and recovery records remain valid under their original contracts.
+V2 capability/segment-planning foundations are implemented separately; **paid execution implementation has not started**. Later authorized units must add master timeline/slice construction, persistent versioned execution manifests, segment-aware execution/preflight/accounting/recovery and final validation without rewriting approved V1 packages or completed records. A switch cannot silently migrate an existing execution or spend under its old scene/Kling authorization. Existing V1 completed executions, assets, approvals, receipts, fingerprints and recovery records remain valid under their original contracts.
 
 Future acceptance must establish the combined Seedance capability, one video intent for compatible 5/10/30s multi-scene projects, exact master silence/dialogue timing and immutable reuse, native mouth synchronization/continuity, minimum feasible multi-segment plans, accurate voice/segment costs and reviewed retries, unknown-outcome reconciliation, composition-only recovery without provider calls, private owner isolation and final-only approval/completion. These are unrun acceptance criteria, not claims of implementation or permission to invoke providers now.

@@ -1,5 +1,11 @@
 # Sceenyk design system
 
+## Planned V3 presentation boundary (2026-10-29)
+
+[V3](generation-architecture-v3.md#ffmpeg-and-review-boundaries), **Planned / Not Started**, retains the existing visual system and reference/Storyboard review. A single generated audiovisual clip is reviewed directly as final; multiple clips require segment review/approval, then local joining and final review. Do not equate creative scene count, segment readiness or segment acceptance with final Complete, or add normal speech/lip-sync/provider-management controls.
+
+480p is the planned development/testing target, not an actual UI/provider setting or new paid plan. Preserve Tailwind/shared tokens, accessibility and real persisted progress. Earlier V1/V2 presentation/status descriptions below are historical/current source. This task adds no UI, CSS, assets, runtime behavior or visual testing.
+
 ## Planned V2 Final Video design boundary (2026-10-29)
 
 [V2 pipeline](final-video-generation-v2.md#canonical-v2-pipeline), **Planned / Not Started**, preserves Storyboard scene presentation and final-only review/approval. Continuous Generation Segments, master-audio construction and native synchronization are internal execution concepts, not new provider-management or per-scene approval UI. Reuse existing Tailwind/tokens/shared controls and real persisted status; no visual redesign or runtime change is part of this documentation task. Dated per-scene M10 status/presentation below belongs to V1 history/current source.

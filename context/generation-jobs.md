@@ -1,5 +1,11 @@
 # Persistent generation jobs
 
+## Planned V3 audiovisual segment jobs and review (2026-10-29)
+
+[V3](generation-architecture-v3.md), **Planned / Not Started**, plans OpenAI reference/creative stages and independent Higgsfield audiovisual Generation Segment operations, followed by video/segment review and local joining only for multiple approved clips. Required native dialogue/lip-sync stays in the selected video capability path; separate voice/Kling/master-audio jobs are not normal V3 prerequisites. No installed job enums/RPCs/handlers or V3 runtime are asserted by these planned stages.
+
+Keep versioned source/segment fingerprints, ownership/currentness, finite paid intents/attempts, leases, private success proofs and final approval/completion guards. Failed segments retry only after reviewed authorization; unknown outcomes reconcile first; local join failure cannot dispatch AI generation. Fresh testing creates clean new-project lineage with no previous execution reuse/migration. Existing V1 and V2 foundations/jobs/history below remain unchanged experimental/source evidence; no job/worker/schema/state change occurs now.
+
 ## Planned V2 stage and Generation Segment jobs (2026-10-29)
 
 [V2 planning](final-video-generation-v2.md#generation-segment-planner) and [recovery](final-video-generation-v2.md#private-artifacts-persistence-and-recovery) are **Planned / Not Started**. Persist versioned segment membership/times, capability/plan identities and master-audio bindings; independent stage operations cover reusable voice, utterance speech, local master build, each continuous video segment, any explicitly planned optional lip-sync and local final composition/validation. Storyboard scene count does not determine video-operation count.

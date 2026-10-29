@@ -1,5 +1,11 @@
 # Milestone 10 — Final Video Generation
 
+## V3 canonical direction; V1 final-video history (2026-10-29)
+
+**V1: Completed / proven end-to-end / historical. V2 ElevenLabs/Kling-era experiments: Experimental / superseded. V3 OpenAI + Higgsfield: Planned / canonical architecture / Not Started.** [Generation Architecture V3](generation-architecture-v3.md) now owns the normal future Final Video strategy: native Higgsfield audiovisual Generation Segments from OpenAI-approved references/direction, normally one compatible ≤30s clip, with review/approval of multiple segments before local joining and final review.
+
+All original V1 implementation, per-scene video/ElevenLabs/Kling, failure/recovery, setup and approval evidence below is preserved unchanged, including its dated limits. Older statements naming V2 as authoritative are superseded for future design. No prior project/execution is migrated or reused; the next cycle uses a new project/different supplied image/fresh data and authority. Documentation only: no provider, runtime, migration, authorization or historical asset change.
+
 ## Version authority (2026-10-29)
 
 **Milestone 10 V1: implemented and proven end-to-end**, per the owner's reported milestone baseline; this update performs no new runtime/provider audit. **Milestone 10 V2 continuous multi-scene generation: Planned / Not Started.** [The authoritative V2 architecture](final-video-generation-v2.md) defines capability-driven Generation Segments, master-audio-first generation, native Seedance synchronization, optional LipSyncProvider, segment-based cost/recovery and future acceptance.

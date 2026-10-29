@@ -1,5 +1,11 @@
 # UI Context
 
+## Planned V3 video/segment review (2026-10-29)
+
+[V3 review flow](generation-architecture-v3.md#ffmpeg-and-review-boundaries), **Planned / Not Started**, preserves editable/reviewable references and the OpenAI director Storyboard. One continuous audiovisual segment goes directly to final review. When several segments are required, users review/approve the generated segments before local FFmpeg joining, then review/approve the final video. Scenes remain creative units inside a segment, not mandatory separate video-review cards. Intermediate approval cannot show Complete; rejection never auto-regenerates.
+
+Planned development quality is 480p; future plan-based quality examples are not implemented entitlements/pricing. Show only persisted real stage/review state and distinguish provider-free join recovery from reviewed failed-segment generation. Retain existing Tailwind/tokens/shared controls/accessibility and fresh-project isolation. Earlier final-only/voice/master-audio V1/V2 routing below is historical/current source, not the V3 multi-segment UX. No UI, runtime or existing project changes here.
+
 ## Planned V2 Final Video presentation boundary (2026-10-29)
 
 [Final Video V2](final-video-generation-v2.md#canonical-v2-pipeline), **Planned / Not Started**, retains creative Storyboard scenes and all upstream approvals while internal execution groups them into continuous Generation Segments. Normal users still choose Generate Final Video with required finite cost consent, see real persisted progress and review only the validated final → approval → Complete. Master-audio building, native synchronization and segment composition are internal stages; no normal Kling/voice/scene approval or manual stitching step is introduced.

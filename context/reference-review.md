@@ -1,5 +1,11 @@
 # Reference Asset Review — Milestone 6.5
 
+## Planned V3 reference and segment review (2026-10-29)
+
+[V3](generation-architecture-v3.md#canonical-pipeline), **Planned / Not Started**, preserves user review/approval of OpenAI-created/regenerated Character/Product/Location references and the editable director Storyboard/package. Later generated audiovisual review is by Generation Segment, not by every Storyboard scene: one segment is reviewed directly as the final candidate; multiple segments are reviewed/approved before FFmpeg joining and final review. Segment approval alone cannot mark Complete.
+
+Keep version-bound ownership/currentness and original/generated provenance. Next testing creates fresh references in a brand-new project with a different image; old test assets/approvals/executions stay untouched. Earlier provider and final-only V1/V2 routing below is historical/source behavior, not the V3 multi-segment review rule. No review UI, source function, assets or records change here.
+
 ## Downstream package dependencies (2026-10-27)
 
 M9 Complete/approved per owner confirmation; M10 Planned / Not Started. Existing [M9 approval-version bindings](video-generation-package.md#fingerprinting-immutable-versions-and-staleness) remain immutable. [Future scene execution](final-video-generation.md#scene-generation-identity-and-versioning) must bind these exact approved Character/Product sheets and versions/hashes and recheck current approvals before new paid admission. Replacement/rejection/recomposition cannot silently retarget prior packages/scenes; generated scene rejection must not remove accepted/shared/upstream references. Core review/provider/storage behavior remains unchanged; no live media, provider, worker or tests run now.

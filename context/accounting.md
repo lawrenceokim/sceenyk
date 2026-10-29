@@ -1,5 +1,11 @@
 # Generation accounting contract
 
+## Planned V3 segment accounting and fresh-run authority (2026-10-29)
+
+[V3](generation-architecture-v3.md#private-persistence-cost-authority-and-recovery), **Planned / Not Started**, accounts for Higgsfield audiovisual video work per Generation Segment plus the actual authorized OpenAI reference/creative operations. No normal separate TTS/Kling/master-audio spend is required. Preserve finite request/spend limits, immutable intents/receipts/fingerprints, reviewed failed-segment retries/amendments, preserved successes and unknown-outcome reconciliation before repurchase. Segment approval is not final completion/settlement.
+
+The next cycle uses a brand-new project and fresh explicit authorization/accounting; it cannot inherit the old test execution's request budget, paid intents, media or reservations. A new project does not reset account balances/free allowance or change ledger/refund/review-hold/commercial rules. Earlier V1/V2 provider-specific accounting below remains historical/source evidence. No financial code, configuration, balance, project or authorization is changed in this documentation task.
+
 ## Planned V2 segment and stage accounting (2026-10-29)
 
 [V2 cost/recovery rules](final-video-generation-v2.md#costs-request-authorization-and-immutable-identity), **Planned / Not Started**, account for continuous video by Generation Segment rather than Storyboard scene. Normal Seedance native-sync has no separately billed Kling stage. Voice work still has its actual independent design/binding/speech/observation request authority; one video segment is not one total provider operation. Keep provider credits, immediate USD and Sceenyk customer credits distinct.

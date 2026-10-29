@@ -1,5 +1,11 @@
 # Development application identity
 
+## Planned V3 persistence concerns; no migration (2026-10-29)
+
+[V3](generation-architecture-v3.md#private-persistence-cost-authority-and-recovery), **Planned / Not Started**, needs explicit future version/profile lineage for fresh-project reference/Storyboard approvals, continuous audiovisual segment plans/attempts/assets, segment review, optional multi-clip join and final approval/completion. Exact schema/admission design must follow catalog inspection and compatible-owner reuse; this document introduces no table/column/RPC, migration, enum or deployment claim.
+
+Existing V1 schemas/approvals/receipts and V2 experimental planning source stay intact. Native V3 audio must not silently reuse V2's mandatory speech-master/voice binding as an installed requirement. New testing must not copy/migrate/retarget old project/execution records, assets or financial authority. Preserve private grants/RLS, immutable history, currentness, idempotency and atomic completion/accounting protections; no database/storage/project access or mutation occurs here.
+
 ## Planned V2 persistence boundary (2026-10-29)
 
 [V2 artifact/recovery requirements](final-video-generation-v2.md#private-artifacts-persistence-and-recovery), **Planned / Not Started**, require immutable execution-plan/capability versions, ordered Generation Segment membership/timing, canonical master version/hash/duration/dialogue/source bindings, separate stage/segment paid intents/attempts, private artifact proofs and final segment/master manifest approval. These are persistence concerns, not invented tables/columns/RPCs or a migration proposal. Inspect the actual schema and reuse compatible owners before later implementation.

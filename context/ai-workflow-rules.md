@@ -1,5 +1,17 @@
 # AI Workflow Rules
 
+## Current authorization — canonical V3 documentation only (2026-10-29)
+
+Document [V3 OpenAI + Higgsfield](generation-architecture-v3.md) as canonical, **Planned / Not Started**, with OpenAI references/direction, native Higgsfield audiovisual segments, planned 480p testing, multi-segment review/local joining and a brand-new project/different-image test cycle. V1 remains Completed/proven/historical; V2 ElevenLabs/Kling-era/master-audio foundations remain Experimental/superseded. Preserve every earlier record and existing uncommitted source change.
+
+This request supersedes earlier V2 implementation/testing/master-audio next-phase authority for this task. Only source/document review, context edits and link/anchor/whitespace/diff checks are authorized. Do not change runtime code, migrations, dependencies, .env/provider configuration, paid authority, projects/executions/assets; call providers (including probes/retrieval); generate/process media; run workers/jobs or application test/lint/type/build/browser/provider suites; inspect/mutate live DB/storage; delete data; deploy or enable hosted execution. No new project is created or old run resumed now.
+
+Later V3 work requires separate authorization and Higgsfield/OpenAI contract verification; historical fal schemas/rates and V2 supplied-master requirements do not establish the new path. The normal next phase is no longer an ElevenLabs master-audio builder. The two-provider/segment/review/cost/recovery rules live once in V3; old “current/canonical/next” labels and commands below are historical, not permission.
+
+## Current authorization — M10 V2 Phase 1 foundation (2026-10-29)
+
+The subsequent owner request authorizes source changes for isolated V2 capability/planner foundations, public official fal documentation/schema research and focused offline tests/TypeScript/lint. This supersedes the previous documentation-only scope for these foundations only. No authenticated fal/ElevenLabs/provider call, generation, provider request creation, media processing, V1 paid-flow change, authorization/configuration change, worker/job, live execution access/mutation or deployment. Core remains provider-neutral; adapter constraints/pricing remain isolated. Preserve V1/Kling/history/accounting/recovery. No persistence is required by pure planning, so no migration is needed. Do not begin the next execution/audio/runtime phase automatically.
+
 ## Current authorization — Final Video V2 documentation only (2026-10-29)
 
 Document [the canonical V2 continuous multi-scene architecture](final-video-generation-v2.md) and synchronize related context. **Milestone 10 V1: implemented and proven end-to-end**, per the owner's baseline; preserve its original dated evidence/limits. **Milestone 10 V2 continuous multi-scene generation: Planned / Not Started.** Keep Storyboard scenes, plan minimum feasible Generation Segments from neutral provider capabilities, build canonical ElevenLabs master audio before video, and make separate LipSyncProvider optional rather than mandatory Kling in the normal Seedance path.

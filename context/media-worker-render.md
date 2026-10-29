@@ -1,5 +1,11 @@
 # Render media-preparation worker
 
+## Planned V3 reduced FFmpeg role (2026-10-29)
+
+[V3 FFmpeg rules](generation-architecture-v3.md#ffmpeg-and-review-boundaries), **Planned / Not Started**, keep FFmpeg local: inspect metadata, validate duration, normalize formats or convert compatibility as needed; join videos only when multiple generated segments are required. A compatible ≤30s single Higgsfield clip goes directly to final review without stitching. Multiple generated audiovisual segments are user-reviewed/approved before Storyboard-order joining and final review.
+
+Higgsfield handles native audio/dialogue/lip-sync/effects where supported; FFmpeg is not the normal creative audio, speech-master or lip-sync assembler. Failed joining reuses all approved clips and retries only local work. Earlier V1/V2 voice/sync/master-audio/hosted-worker recipes and next-phase commands below remain historical/source evidence, not current execution authority. No worker, FFmpeg/FFprobe, provider, configuration or deployment runs/changes now.
+
 ## Planned V2 local master timeline and composition (2026-10-29)
 
 [Final Video V2](final-video-generation-v2.md#canonical-master-audio-timeline), **Planned / Not Started**, runs local speech validation/permitted correction and exact-duration master-audio construction **before** continuous video generation. FFmpeg places dialogue and silence at immutable Storyboard timestamps; that versioned/hash-bound master conditions video and is authoritative in final output. Multi-segment projects derive exact slices and compose generated intervals against the same project timeline; one-segment projects need only final formatting/audio handling and validation.

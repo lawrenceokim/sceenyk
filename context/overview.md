@@ -1,5 +1,15 @@
 # Sceenyk
 
+## Canonical V3 direction — OpenAI + Higgsfield (2026-10-29)
+
+**M10 V1: Completed / proven end-to-end / historical. M10 V2 ElevenLabs/Kling-era experiments: Experimental / superseded. M10 V3 OpenAI + Higgsfield: Planned / canonical architecture / Not Started.** [The V3 specification](generation-architecture-v3.md) now owns the intended normal path: OpenAI request understanding/reference regeneration/film-direction Storyboard → minimum Generation Segments → Higgsfield native audiovisual generation → video/segment review → local joining only for multiple approved segments → final approval → Complete.
+
+Seedance 2.5 is the preferred Higgsfield video model; ≤30s normally targets one generation and longer content the fewest supported segments, subject to Higgsfield-specific verification. Planned development quality is 480p. The next cycle starts a brand-new project, different supplied image, fresh references/Storyboard/authorization, with no previous test-execution reuse. Earlier V1/V2 provider/master-audio/current/next-phase statements below are historical and superseded for new architecture. This task changes documentation only; existing runtime/projects/assets remain untouched.
+
+## M10 V2 foundation status (2026-10-29)
+
+The separately authorized Phase 1 adds isolated provider-neutral capabilities, a deterministic Generation Segment planner and offline cost/compatibility checks. Full paid V2 generation remains Planned / Not Started; V1 continues unchanged. [Verified public Seedance findings and remaining speech-sync blocker](final-video-generation-v2.md#phase-1-foundation-2026-10-29) supersede the initial documentation-only foundation status below. No provider request, media generation, worker, migration/configuration change or execution activation is part of this phase.
+
 ## Final Video direction — V1 complete, V2 planned (2026-10-29)
 
 **Milestone 10 V1: implemented and proven end-to-end**, per the owner's milestone baseline. **Milestone 10 V2 continuous multi-scene generation: Planned / Not Started.** [The canonical V2 architecture](final-video-generation-v2.md) owns the new direction: keep creative Storyboard scenes, group them into the fewest provider-compatible continuous Generation Segments, prepare exact ElevenLabs master audio first, then generate native synchronized video and format/compose locally before final review → approval → Complete. Compatible Seedance 5/10/30s projects should each use one continuous video; Kling is optional for other explicitly planned workflows, not a normal Seedance stage.

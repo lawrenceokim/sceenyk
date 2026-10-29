@@ -1,5 +1,11 @@
 # Sceenyk project overview
 
+## Canonical V3 project direction (2026-10-29)
+
+[OpenAI + Higgsfield V3](generation-architecture-v3.md), **Planned / canonical architecture / Not Started**, replaces V1/V2 as the normal future generation design. OpenAI owns reference image creation/regeneration and cinematic Storyboard/direction; Higgsfield owns continuous audiovisual Generation Segments, preferably Seedance 2.5 where its verified capabilities support the approved plan. Target 480p for new development/testing. One segment goes directly to final review; multiple segments require segment review/approval before local FFmpeg joining and final review.
+
+The next cycle is a brand-new project with a different image and fresh Character/Product/Location/Storyboard/package/segment/authorization state. No old execution/media/voice/master-audio dependency is reused. V1 remains completed/proven historical evidence; V2 foundations/master-audio/ElevenLabs/Kling-era work below are experimental/superseded. No runtime code, project, assets, migration or provider settings change in this documentation task.
+
 ## Final Video V2 direction (2026-10-29)
 
 **Milestone 10 V1: implemented and proven end-to-end**, per the owner's baseline. **Milestone 10 V2 continuous multi-scene generation: Planned / Not Started.** [Canonical V2 pipeline and implementation boundary](final-video-generation-v2.md): retain Storyboard scenes and upstream approvals, use the fewest continuous provider-capable Generation Segments, build canonical ElevenLabs master audio before video, and use Seedance native animation/synchronization without a normal Kling step. Final-only review/approval and private, finite authorized recovery remain.

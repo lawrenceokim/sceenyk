@@ -1,5 +1,11 @@
 # UGC reference analysis
 
+## Planned V3 OpenAI understanding and regeneration (2026-10-29)
+
+[Canonical V3](generation-architecture-v3.md#provider-responsibilities), **Planned / Not Started**, keeps OpenAI responsible for understanding the request, analyzing requested image transformations, reference prompts/regeneration and professional creative direction. Character Sheet/reference regeneration now targets OpenAI; Product/Location and other reference regeneration may also use that image boundary where appropriate. User review/approval remains explicit and uncertain visual facts must not become invented observations.
+
+The next test cycle uses a brand-new project/different image and fresh analyses/references/Storyboard, with no previous execution dependency. Earlier model/provider/status recipes below are historical/source evidence. This task calls no AI, reruns no analysis and changes no approved input or runtime code.
+
 ## Milestone 6 — Product / Prop Reference Sheet (2026-10-24)
 
 **Milestone 5 — Complete. Milestone 5.5 — Complete. Milestone 6 — Complete in source; manual migration/provider/runtime/visual acceptance pending. Milestone 7 — Location Reference generation — Not Started.** This section supersedes earlier M6-not-started stop points below. See [Product Sheet contract and manual setup](product-sheet.md).

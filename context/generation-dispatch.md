@@ -1,5 +1,11 @@
 # Durable generation dispatch
 
+## Planned V3 dispatch and recovery boundary (2026-10-29)
+
+[V3 canonical generation](generation-architecture-v3.md#canonical-pipeline), **Planned / Not Started**, dispatches only explicitly authorized OpenAI reference/creative work and minimum continuous Higgsfield audiovisual segments through future neutral boundaries. It does not dispatch a video per creative scene or normal ElevenLabs/Kling/master-audio stages. Multiple generated segments wait for review/approval before local joining; final approval remains required for Complete.
+
+Preserve scope/version/currentness, finite intent/budget fences, known-result reuse and reconcile-before-new-request behavior. Local joining recovery cannot trigger AI requests. The new cycle is a new project/different image/fresh data/authority, not a resume or migration of prior test state. Earlier V1/V2 dispatch/worker/next-phase instructions below are historical and authorize nothing in this documentation task; no queue, runtime/configuration, provider or worker changes occur here.
+
 ## Planned V2 dispatch boundary (2026-10-29)
 
 [Final Video V2](final-video-generation-v2.md#canonical-v2-pipeline), **Planned / Not Started**, keeps the existing local-worker boundary and one admitted Generate Final Video action. Future dispatch uses capability-planned continuous Generation Segments, after reusable voice/speech validation and canonical master-audio construction; it does not enqueue a video for every Storyboard scene or a mandatory Kling follow-up.

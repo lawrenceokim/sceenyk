@@ -1,5 +1,11 @@
 # UGC Character Reference Sheet — Milestone 5
 
+## Planned V3 Character/reference regeneration — OpenAI (2026-10-29)
+
+[Canonical V3 reference flow](generation-architecture-v3.md#openai-references-and-character-sheet), **Planned / Not Started**, assigns Character/reference image generation to OpenAI: supplied image → analyze requested transformation → desired-appearance prompts → regenerated identity-preserving reference → explicit user review/approval. This includes Character Sheet/reference work and other appropriate reference regeneration. Preserve useful view/layout/wardrobe/identity requirements and original/generated provenance; exact V3 image model/recipe/view order still needs implementation-time verification.
+
+The new cycle uses a different user-provided image and fresh Character data in a brand-new project. Prior Higgsfield/Soul/SOUL2 image-stage contracts, prompts, migrations and assets below are retained historical/source behavior, not the V3 normal image provider or permission to regenerate the previous project. Higgsfield's V3 role is audiovisual generation. No source, configuration, historical reference/approval or media is changed here.
+
 ## Character V5 Front full framing (2026-10-26)
 
 **Implemented in source; manual migration 062/provider/visual/runtime acceptance pending.** Supersedes revision 3's prompt and landscape ratio below. New Front prompt revision **4** is exactly:

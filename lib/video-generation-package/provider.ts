@@ -1,4 +1,5 @@
 import type { VideoGenerationPackage, VideoGenerationRequirements } from "./contract";
+import type { VideoGenerationPlanningProvider } from "@/lib/final-video-generation-v2/capabilities";
 
 export type CapabilitySupport = "supported" | "unsupported" | "unverified";
 export type VideoGenerationCapabilities = {
@@ -14,6 +15,8 @@ export type VideoExecutionContext = { operationId: string; idempotencyKey: strin
 // Contract only. No adapter, registry, provider selection, SDK or matching is
 // implemented in M9. M10 owns all capability validation and network execution.
 export interface VideoGenerationProvider<Payload, Result> {
+  // Optional, separate V2 profile. Existing V1 adapters/executions do not opt in.
+  readonly segmentPlanning?: VideoGenerationPlanningProvider;
   readonly id: string;
   readonly adapterVersion: string;
   getCapabilities(): VideoGenerationCapabilities;

@@ -1,5 +1,11 @@
 # Product / Prop Reference Sheet — Milestone 6
 
+## Planned V3 Product/Prop reference boundary (2026-10-29)
+
+[V3 OpenAI + Higgsfield](generation-architecture-v3.md#openai-references-and-character-sheet), **Planned / Not Started**, keeps approved named Product/Prop references as exact generation dependencies. OpenAI may create/regenerate these images where appropriate; Higgsfield uses the approved references for native Product/Character audiovisual animation and interactions within continuous segments. Do not add a third normal AI provider or infer a new image model/API.
+
+The next test project has fresh Product data and approvals, independent of the old test execution/assets. Earlier provider-specific recipes/status/setup below remain historical/source evidence and are not run or rewritten. Documentation only: Product runtime, saved media, approvals and accounting remain unchanged.
+
 ## Milestone 7 continuation (2026-10-26)
 
 After current Character and Product approvals, [Location planning/generation/review](location-reference.md) is implemented in source as the next local-worker unit, superseding earlier Milestone 7 Not Started boundaries below. Product provider, prompts, views, assets and approval functions remain unchanged. Location approval pauses before storyboard; manual Location acceptance is pending.

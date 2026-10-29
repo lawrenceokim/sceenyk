@@ -1,5 +1,11 @@
 # UGC V1 workflow contract
 
+## V3 canonical handoff; V1/V2 history preserved (2026-10-29)
+
+This file preserves the UGC V1 workflow and subsequent experiments. The normal future generation contract is now [V3 OpenAI + Higgsfield](generation-architecture-v3.md#canonical-pipeline), **Planned / Not Started**: approve OpenAI-regenerated references and director Storyboard/package → minimum continuous Higgsfield audiovisual segments → review generated video/segments → join only multiple approved segments locally → final review/approval → Complete. Scenes remain creative units; segment count governs video requests.
+
+V1 is Completed / proven end-to-end / historical; V2 ElevenLabs/master-audio/Kling-era work is Experimental / superseded, including earlier “canonical” and master-audio next-phase directions below. Preserve original evidence, security/accounting invariants and old assets/executions. Next testing uses a brand-new project, different supplied image and fresh data/authorization; no prior-run migration/reuse. Documentation only; no implementation or test cycle starts here.
+
 ## Final Video version boundary (2026-10-29)
 
 This remains the UGC V1 workflow/history. **M10 V1: implemented and proven end-to-end**, per the owner's baseline. The [planned Final Video V2 contract](final-video-generation-v2.md) supersedes only the future final-video execution design: approved scenes → minimum feasible continuous Generation Segments; compatible Seedance 5/10/30s → one video. Reusable voice → exact speech → immutable FFmpeg master audio precedes video/native synchronization; final formatting/composition and final-only review/approval follow. Kling is not mandatory in V2.

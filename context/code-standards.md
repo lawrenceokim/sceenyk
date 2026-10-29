@@ -1,5 +1,15 @@
 # Code Standards
 
+## Planned V3 provider and execution standards (2026-10-29)
+
+[Canonical V3](generation-architecture-v3.md), **Planned / Not Started**, uses neutral ImageGenerationProvider/OpenAI, CreativeDirectorProvider/OpenAI and VideoGenerationProvider/Higgsfield boundaries. Keep native audiovisual mode/capabilities, minimum continuous segment planning, provider limits and trustworthy segment pricing versioned and generic; endpoints/model fields/tags/payloads belong in adapters. Do not inherit fal.ai capabilities/rates or V2's mandatory external-master speech gate as Higgsfield behavior.
+
+Preserve exact approved direction/references, immutable fingerprints/intents, ownership/currentness, finite authorization, reviewed segment retries and unknown-outcome reconciliation. Multiple segments require review/approval before local joining; single clips go directly to final review. FFmpeg is local technical/join work, not normal creative audio/lip-sync assembly. Voice/lip-sync interfaces may remain future optional capabilities. Historical V1/V2 code and previous test/source authorizations below remain unchanged and superseded for the new normal path; this request permits documentation checks only, no implementation/testing.
+
+## M10 V2 Phase 1 isolation standards (2026-10-29)
+
+The [implemented foundation](final-video-generation-v2.md#implemented-capability-and-segment-contracts) is planning-only under `ugc-final-v2-foundation`, with no network/request-builder/credential/worker/paid-authority surface. Keep the provider extension optional and type-only; never opt V1 into new capabilities or modify its schemas/hash recipes/executions. Strict neutral snapshots distinguish native generated lip-sync from the unverified stronger supplied-speech capability. Plans remain non-executable, fail with precise capability/timing/reference errors, clone approved scenes and retain canonical fingerprints. Adapter rules/pricing stay isolated; no provider names in the core planner. Focused offline tests/TypeScript/lint are authorized for Phase 1; later audio/execution work remains separate.
+
 ## Planned V2 execution standards (2026-10-29)
 
 [Final Video V2](final-video-generation-v2.md) is the authoritative future design, **Planned / Not Started**. Extend neutral VideoGenerationProvider capabilities for continuous/allowed durations, external audio reference, multiple references, multi-shot prompting, native lip synchronization, output options, estimator and provider limits. Core must minimize feasible Generation Segments from those capabilities, never provider-name branches or one request per Storyboard scene; vendor fields stay inside adapters.

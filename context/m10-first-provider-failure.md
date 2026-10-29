@@ -1,5 +1,11 @@
 # First real M10 provider failure investigation — 2026-10-28
 
+## Historical investigation only — new V3 cycle is independent (2026-10-29)
+
+Preserve all V1/V2 provider failures, voice/Kling/master-audio recovery evidence and exact old-execution commands below. They are historical/experimental, not the normal future path. [Canonical V3 OpenAI + Higgsfield](generation-architecture-v3.md), **Planned / Not Started**, starts its next test cycle with a brand-new project, different supplied image, fresh references/Storyboard and fresh authorization/accounting.
+
+Do not resume, migrate, rebind or reuse the previous test execution/media/voice/master assets for V3, or interpret historical recovery steps as current permission. Nothing in this investigation or its saved project/assets is altered or executed during this documentation update.
+
 **V1 / historical execution investigation.** Preserve the dated evidence and recovery instructions below; the owner's current milestone baseline is M10 V1 implemented and proven end-to-end, not a claim that every historical repair/check is complete. [Final Video V2](final-video-generation-v2.md), **Planned / Not Started**, replaces per-scene + normal Kling as future architecture without changing this execution, its assets, requests, authorization or history. No historical command is run during this documentation update.
 
 Latest speech-timing follow-up (2026-10-29): binding attempt 2 succeeded and Scene 1 is fully ready. Scene 2 video is ready; Scene 2 TTS request `6G0QlOkRqSH8hU90LCHx` returned and saved audio/alignment, then local validation rejected its 1489ms MP3 duration against 1400ms+50ms. The decoded source is 1440ms. A temporary-copy 1.048× atempo test produces a 1387ms WAV without cutting speech, so saved-output recovery needs no new TTS. The live execution remains unchanged at 11/12 with one request for Scene 2 lip-sync. Source now supports bounded fitting, neutral targets, preserved timing proof and explicit provider-free recovery/authorized continuation; no live recovery/amendment/intent/provider ran. [Full evidence, all eleven intents and safe continuation](final-video-generation.md#saved-scene-2-speech-timing-and-local-recovery-2026-10-29).

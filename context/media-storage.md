@@ -1,5 +1,11 @@
 # Private project media
 
+## Planned V3 private audiovisual segments (2026-10-29)
+
+[V3 persistence/recovery](generation-architecture-v3.md#private-persistence-cost-authority-and-recovery), **Planned / Not Started**, stores each successful Higgsfield audiovisual segment with exact approved source/plan/request/attempt lineage, hashes, measured media metadata and verified private publication. Keep native audio/video provenance together; one clip may be the final candidate, while multiple approved clips feed an ordered final manifest/local join. No normal external speech-master artifact is required.
+
+Preserve owner-scoped access, immutable objects, authorized short-lived URLs and all historical references/video/voice/master assets. New testing uses a new project/different image/fresh media lineage, without copying or reusing previous test assets. Joining/storage failure recovers the same approved segments without AI regeneration. These are planned concerns, not new buckets/keys/tables or a cleanup instruction; no storage/media/runtime changes or requests occur here. Earlier V1/V2 artifact choices below are historical.
+
 ## Planned V2 master audio and segment artifacts (2026-10-29)
 
 [V2 private artifacts and recovery](final-video-generation-v2.md#private-artifacts-persistence-and-recovery), **Planned / Not Started**, adds conceptual master-audio/segment manifests to the existing private media boundary. Preserve one immutable exact-duration master with version/hash, dialogue timing and exact source speech bindings; longer projects derive traceable segment audio slices. Store continuous segment video, optional sync derivatives and final output separately with immutable lineage and verified private bytes/technical proofs.
