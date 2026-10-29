@@ -2,7 +2,8 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import { PGlite } from "@electric-sql/pglite";
-import { input, canonicalInput, id } from "./final-video-fixture";
+import { input, canonicalInput, id, fixturePricingRaw } from "./final-video-fixture";
+import { finalPricing } from "../lib/final-video-generation/adapters/pricing";
 import { buildVideoGenerationPackage, packageDigest } from "../lib/video-generation-package/builder";
 import type { PackageRow } from "../lib/video-generation-package/contract";
 import { finalPreflight } from "../lib/final-video-generation/preflight";
@@ -26,7 +27,8 @@ async function main() {
   // check-execution-v1.ts.
   const creativeDoc = buildVideoGenerationPackage(canonicalInput, 1);
   const configuration: FinalConfiguration = { version: "ugc-final-v1", funding: "operator_funded", authorizationId: id(80), language: "en",
-    maxRequests: 20, maxEstimatedCostMicrousd: 20000, ceilings: { video: 1000, voice: 1000, design: 1000, binding: 1000, lip_sync: 1000 },
+    pricing: finalPricing(fixturePricingRaw), maxRequests: 20, maxEstimatedCostMicrousd: 30000000,
+    ceilings: { video: 6250000, voice: 100000, design: 200000, binding: 10000, lip_sync: 200000 },
     providers: adapterIdentities, composition: compositionProfile, output: { height: 720, fps: 25, format: "mp4", toleranceMs: 50, audioSampleRate: 48000 } };
   const hash = packageDigest("sceenyk-final-config", configuration);
   const providers = finalProviders(), plan = finalPreflight(creativeDoc, configuration, providers);
@@ -74,7 +76,7 @@ async function main() {
     const target = new URL(String(url)), body = JSON.parse(String(init?.body));
     equal(target.hostname, "api.elevenlabs.io"); equal(init?.method, "POST");
     if (target.pathname.endsWith("/design")) {
-      designs++; equal(body.model_id, "eleven_multilingual_ttv_v2"); equal(body.auto_generate_text, true); equal(body.should_enhance, false);
+      designs++; equal(body.model_id, "eleven_multilingual_ttv_v2"); equal(body.auto_generate_text, false); equal(body.text, plan.designPreviewText); equal(body.should_enhance, false);
       return Response.json({ previews: [{ generated_voice_id: "synthetic-preview", audio_base_64: Buffer.from("synthetic-audio").toString("base64"), media_type: "audio/mpeg" }] });
     }
     if (target.pathname === "/v1/text-to-voice") {
@@ -86,7 +88,7 @@ async function main() {
     return Response.json({ audio_base64: Buffer.from("synthetic-audio").toString("base64"), alignment, normalized_alignment: alignment },
       { headers: { "request-id": `synthetic-tts-${utterances}`, "character-cost": "2" } });
   };
-  const designed = await providers.voice.design(plan.profile!, context);
+  const designed = await providers.voice.design(plan.profile!, context, plan.designPreviewText);
   const bound = await providers.voice.bind(plan.profile!, designed.receipt, context);
   await providers.voice.synthesize("Hi", defaultDelivery(), plan.profile!, bound.receipt, ["prior-request"], context);
   await providers.voice.synthesize("Hi", defaultDelivery(), plan.profile!, bound.receipt, ["prior-request"], context);

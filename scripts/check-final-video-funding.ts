@@ -6,14 +6,14 @@ import { FinalVideoError } from "../lib/final-video-generation/contract";
 import { finalPreflight } from "../lib/final-video-generation/preflight";
 import { finalProviders } from "../lib/final-video-generation/adapters/registry";
 import { buildVideoGenerationPackage } from "../lib/video-generation-package/builder";
-import { canonicalInput as input } from "./final-video-fixture";
+import { canonicalInput as input, fixturePricingRaw } from "./final-video-fixture";
 
 globalThis.fetch = async () => { throw new Error("NETWORK_FORBIDDEN_IN_FUNDING_CHECKS"); };
 let checks = 0;
 const equal = (a: unknown, b: unknown) => { assert.deepEqual(a, b); checks++; };
 const valid = { authorizationId: "00000000-0000-4000-8000-000000000080", language: "en", maxRequests: 8,
-  maxEstimatedCostMicrousd: 7000000, ceilings: { video: 1000000, voice: 100000, design: 100000, binding: 100000, lip_sync: 1000000 } };
-const values = { UGC_FINAL_VIDEO_ENABLED: "1", UGC_FINAL_OPERATOR_FUNDED: "1", SCEENYK_LOCAL_JOBS_ONLY: "1", UGC_FINAL_AUTHORIZATION: JSON.stringify(valid) };
+  maxEstimatedCostMicrousd: 7000000, ceilings: { video: 6250000, voice: 100000, design: 100000, binding: 100000, lip_sync: 1000000 } };
+const values = { UGC_FINAL_VIDEO_ENABLED: "1", UGC_FINAL_OPERATOR_FUNDED: "1", SCEENYK_LOCAL_JOBS_ONLY: "1", UGC_FINAL_AUTHORIZATION: JSON.stringify(valid), UGC_FINAL_PRICING: fixturePricingRaw };
 const original = Object.fromEntries(Object.keys(values).map(key => [key, process.env[key]]));
 function diagnostic(work: () => unknown) {
   try { work(); assert.fail("Expected a configuration rejection"); }
@@ -30,7 +30,7 @@ try {
   const doc = buildVideoGenerationPackage(input, 1), providers = finalProviders();
   const canonicalPlan = finalPreflight(doc, canonical.value, providers);
   equal(finalPreflight(doc, finalConfiguration().value, providers), canonicalPlan);
-  equal(canonicalPlan.requests, 6); equal(canonicalPlan.estimatedCostMicrousd, 3300000); equal(canonicalPlan.issues, []);
+  equal(canonicalPlan.requests, 6); equal(canonicalPlan.estimatedCostMicrousd, 4701600); equal(canonicalPlan.issues, []);
   equal(finalPreflight(doc, { ...canonical.value, maxRequests: 1 }, providers).issues, ["EXECUTION_BUDGET_INSUFFICIENT"]);
   equal(finalPreflight(doc, { ...canonical.value, maxEstimatedCostMicrousd: 1 }, providers).issues, ["EXECUTION_BUDGET_INSUFFICIENT"]);
   equal(JSON.parse(process.env.UGC_FINAL_AUTHORIZATION), alias); // Does not rewrite env.

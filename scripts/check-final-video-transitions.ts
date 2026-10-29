@@ -5,7 +5,7 @@ import { finalPreflight } from "../lib/final-video-generation/preflight";
 import { finalProviders } from "../lib/final-video-generation/adapters/registry";
 import { finalConfiguration } from "../lib/final-video-generation/config";
 import { buildVideoGenerationPackage } from "../lib/video-generation-package/builder";
-import { canonicalInput as input, input as legacyInput, id } from "./final-video-fixture";
+import { canonicalInput as input, input as legacyInput, id, fixturePricingRaw } from "./final-video-fixture";
 
 globalThis.fetch = async () => { throw new Error("NETWORK_FORBIDDEN_IN_TRANSITION_CHECKS"); };
 let checks = 0;
@@ -47,12 +47,12 @@ const wrongOrder = structuredClone(base); wrongOrder.scenes = [...wrongOrder.sce
 const wrongTotal = structuredClone(overlap); wrongTotal.totalDurationMs = 11000; ok(checkComposition(wrongTotal).issues.some(i => i.code === "COMPOSITION_FINAL_TIMING_MISMATCH"));
 const sound = structuredClone(base); sound.scenes[0].audio.music = "Required music"; ok(checkComposition(sound).issues.some(i => i.code === "AUDIO_ASSET_REQUIRED" && i.layer === "composition"));
 
-const keys = ["UGC_FINAL_VIDEO_ENABLED", "UGC_FINAL_OPERATOR_FUNDED", "SCEENYK_LOCAL_JOBS_ONLY", "UGC_FINAL_AUTHORIZATION"];
+const keys = ["UGC_FINAL_VIDEO_ENABLED", "UGC_FINAL_OPERATOR_FUNDED", "SCEENYK_LOCAL_JOBS_ONLY", "UGC_FINAL_AUTHORIZATION", "UGC_FINAL_PRICING"];
 const saved = Object.fromEntries(keys.map(k => [k, process.env[k]]));
 try {
-  Object.assign(process.env, { UGC_FINAL_VIDEO_ENABLED: "1", UGC_FINAL_OPERATOR_FUNDED: "1", SCEENYK_LOCAL_JOBS_ONLY: "1",
+  Object.assign(process.env, { UGC_FINAL_PRICING: fixturePricingRaw, UGC_FINAL_VIDEO_ENABLED: "1", UGC_FINAL_OPERATOR_FUNDED: "1", SCEENYK_LOCAL_JOBS_ONLY: "1",
     UGC_FINAL_AUTHORIZATION: JSON.stringify({ authorizationId: id(80), language: "en", maxRequests: 8, maxEstimatedCostMicrousd: 7000000,
-      ceilings: { video: 1000000, voice: 100000, design: 100000, binding: 100000, lip_sync: 1000000 } }) });
+      ceilings: { video: 6250000, voice: 100000, design: 100000, binding: 100000, lip_sync: 1000000 } }) });
   const cfg = finalConfiguration().value; equal(cfg.composition, compositionProfile);
   const source = structuredClone(legacyInput); source.storyboard.document.scenes[0].transition = "Dissolve into the next shot.";
   const doc = buildVideoGenerationPackage(source, 1), snapshot = structuredClone(doc), providers = finalProviders();

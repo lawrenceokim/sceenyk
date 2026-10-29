@@ -4,7 +4,7 @@ import { ElevenLabsVoiceGenerationProvider, voiceIdentity } from "./elevenlabs";
 import { credential } from "./http";
 
 export const adapterIdentities = { video: visualIdentity, voice: voiceIdentity, lip_sync: lipIdentity,
-  design: { ...voiceIdentity, model: "eleven_multilingual_ttv_v2" }, binding: { ...voiceIdentity, model: "text-to-voice" } };
+  design: { ...voiceIdentity, model: "eleven_multilingual_ttv_v2", version: "design-fixed-preview-v1" }, binding: { ...voiceIdentity, model: "text-to-voice" } };
 export function assertFinalProviderConfiguration(hasSpeech: boolean) {
   credential("FAL_KEY"); if (hasSpeech) credential("ELEVENLABS_API_KEY");
 }

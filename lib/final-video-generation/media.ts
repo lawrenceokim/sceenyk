@@ -35,8 +35,8 @@ export async function verifyCompositionProcessor(plan: CompositionPlan, hasAudio
   const required = ["fps", "scale", "format", "concat", "settb", "setpts"];
   if (plan.scenes.some(s => s.transition.type === "crossfade")) required.push("xfade");
   if (plan.scenes.some(s => s.transition.type.startsWith("fade_"))) required.push("fade");
-  if (hasAudio) required.push("amix", "adelay", "apad", "atrim", "aresample", "aformat", "asetpts");
-  if (required.some(name => !new RegExp(`\\s${name}\\s`).test(filters)) || !/\slibx264\s/.test(encoders) || hasAudio && !/\saac\s/.test(encoders))
+  if (hasAudio) required.push("amix", "adelay", "apad", "atrim", "aresample", "aformat", "asetpts", "atempo");
+  if (required.some(name => !new RegExp(`\\s${name}\\s`).test(filters)) || !/\slibx264\s/.test(encoders) || hasAudio && (!/\saac\s/.test(encoders) || !/\spcm_s16le\s/.test(encoders)))
     throw new FinalVideoError("FINAL_COMPOSITION_PROCESSOR_UNSUPPORTED");
 }
 export async function normalizeVisual(run: FinalExecution, bytes: Buffer, durationMs: number, ratio: string) {

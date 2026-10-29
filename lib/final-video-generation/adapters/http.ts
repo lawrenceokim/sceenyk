@@ -1,6 +1,8 @@
 import "server-only";
 import { FinalVideoError, type ProviderReceipt } from "../contract";
 import type { ProviderContext } from "../providers";
+import { createHash } from "node:crypto";
+import { providerFailure, safeRequestValue } from "../diagnostics";
 
 export function credential(name: "FAL_KEY" | "ELEVENLABS_API_KEY") {
   const value = process.env[name]?.trim();
@@ -25,6 +27,16 @@ export async function jsonRequest(url: string, init: RequestInit, context: Provi
   if (init.method === "POST" && context.replayResponse) {
     await context.preserveResponse?.(context.replayResponse); return JSON.parse(context.replayResponse.toString("utf8"));
   }
+  const secrets = ["FAL_KEY", "ELEVENLABS_API_KEY", "SUPABASE_SECRET_KEY", "SUPABASE_SERVICE_ROLE_KEY", "R2_SECRET_ACCESS_KEY", "R2_ACCESS_KEY_ID"].map(name => process.env[name] ?? "");
+  if (init.method === "POST" && typeof init.body === "string") {
+    // Retain redacted request fields and an exact byte hash before sending.
+    // Never persist headers, credentials or signed media query strings.
+    let payload: unknown;
+    try { payload = JSON.parse(init.body); } catch { payload = "[NON_JSON_REQUEST]"; }
+    const endpoint = new URL(url); endpoint.search = "";
+    await context.received({ request: { method: "POST", endpoint: endpoint.href,
+      payloadSha256: createHash("sha256").update(init.body).digest("hex"), payload: safeRequestValue(payload, secrets) } });
+  }
   let response: Response;
   try { response = await fetch(url, { ...init, cache: "no-store", redirect: "error",
     signal: AbortSignal.any([context.signal, AbortSignal.timeout(180_000)]) }); }
@@ -35,9 +47,22 @@ export async function jsonRequest(url: string, init: RequestInit, context: Provi
     await context.received({ requestId, usage: { providerCharacterCost: cost && /^\d+(\.\d+)?$/.test(cost) ? cost : null } });
   }
   if (!response.ok) {
-    await response.body?.cancel().catch(() => {});
-    throw new FinalVideoError(response.status >= 500 ? "FINAL_UNCERTAIN_PROVIDER_OUTCOME" :
-      response.status === 429 ? "FINAL_PROVIDER_RATE_LIMIT" : "FINAL_PROVIDER_REJECTED");
+    let body: unknown;
+    const reader = response.body?.getReader();
+    try {
+      const parts: Uint8Array[] = []; let size = 0;
+      if (reader) for (;;) { const part = await reader.read(); if (part.done) break; size += part.value.length;
+        if (size > 32768) throw new Error("ERROR_BODY_TOO_LARGE"); parts.push(part.value); }
+      body = JSON.parse(Buffer.concat(parts, size).toString("utf8"));
+    } catch { body = null; }
+    finally { await reader?.cancel().catch(() => {}); reader?.releaseLock(); }
+    const failure = providerFailure(response.status, init.method === "POST" ? "POST" : "GET",
+      response.headers.get("request-id") ?? response.headers.get("x-request-id") ?? response.headers.get("x-fal-request-id"), body, secrets);
+    // Error JSON must never become response.json: that file is replayed as a
+    // successful provider response by storage-only recovery.
+    await context.received({ failure });
+    throw new FinalVideoError(init.method === "GET" ? "FINAL_RECOVERY_REQUIRED" : response.status >= 500 ? "FINAL_UNCERTAIN_PROVIDER_OUTCOME" :
+      response.status === 429 ? "FINAL_PROVIDER_RATE_LIMIT" : "FINAL_PROVIDER_REJECTED", 409, failure);
   }
   let value: unknown;
   try { const bytes = await boundedBytes(response, 48 * 1024 * 1024);
@@ -80,6 +105,10 @@ export async function retrieveFal(receipt: ProviderReceipt, context: ProviderCon
     if (state.status === "IN_QUEUE" || state.status === "IN_PROGRESS") return null;
     if (state.status !== "COMPLETED") throw new FinalVideoError("FINAL_PROVIDER_FAILED");
     const response = await jsonRequest(queueUrl(result?.resultLocator, receipt.requestId), { method: "GET", headers }, context);
+    // Preserve usage/billing evidence separately from estimates. fal's queue
+    // output does not guarantee a USD charge, so unknown actuals remain null.
+    receipt = { ...receipt, usage: { ...receipt.usage, providerUsage: response.usage ?? null,
+      providerBilling: response.billing ?? null, actualCostMicrousd: receipt.usage?.actualCostMicrousd ?? null } };
     const file = response.video as { url?: string } | undefined;
     download = outputUrl(file?.url);
     await context.received({ ...receipt, result: { ...result, downloadLocator: download } });

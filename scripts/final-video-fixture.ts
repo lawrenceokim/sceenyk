@@ -3,6 +3,8 @@ import { prepareStoryboard } from "../lib/storyboard/contract";
 import { proposeExecutionRepair } from "../lib/storyboard/execution-repair";
 import type { PackageInput } from "../lib/video-generation-package/contract";
 export const id = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
+// Synthetic account contract for offline cost checks, never loaded into env files.
+export const fixturePricingRaw = JSON.stringify({ elevenLabsMicrousdPerCredit: 80, voiceDesignPreviewText: "a".repeat(100) });
 const at = "2026-10-27T12:00:00+00:00";
 const asset = (n: number) => ({ id: id(n), storageKey: `ugc/${id(1)}/${id(2)}/${id(3)}/synthetic/${n}.png`, etag: `etag-${n}`,
   sha256: String(n).repeat(64), sizeBytes: 100, width: 512, height: 512, mimeType: "image/png" as const });

@@ -73,6 +73,7 @@ export type Database = {
       ugc_final_executions: { Row: import("@/lib/final-video-generation/contract").FinalExecution; Insert: never; Update: never; Relationships: [] };
       ugc_final_scenes: { Row: import("@/lib/final-video-generation/contract").FinalScene; Insert: never; Update: never; Relationships: [] };
       ugc_final_operations: { Row: import("@/lib/final-video-generation/contract").Operation; Insert: never; Update: never; Relationships: [] };
+      ugc_final_authorization_amendments: { Row: import("@/lib/final-video-generation/retry").AuthorizationAmendment; Insert: never; Update: never; Relationships: [] };
       ugc_character_voice_profiles: { Row: { id: string; owner_user_id: string; project_id: string; profile: import("@/lib/final-video-generation/contract").CharacterVoiceProfile;
         provider_binding: import("@/lib/final-video-generation/contract").ProviderReceipt; created_at: string }; Insert: never; Update: never; Relationships: [] };
       ugc_generation_jobs: { Row: import("@/lib/ugc-jobs/contract").UgcJobRow; Insert: never; Update: never; Relationships: [] };
@@ -279,10 +280,12 @@ export type Database = {
     Views: Record<string, never>;
     Functions: {
       ugc_final_current: { Args: { p_execution: string }; Returns: boolean };
+      ugc_final_retry_stage: { Args: { p_owner: string; p_execution: string; p_payload: Record<string, unknown> }; Returns: import("@/lib/final-video-generation/contract").FinalExecution | null };
       ugc_final_action: { Args: { p_owner: string; p_project: string; p_job: string; p_action: string; p_payload: Record<string, unknown> }; Returns: import("@/lib/final-video-generation/contract").FinalExecution | null };
       ugc_final_claim: { Args: { p_worker: string }; Returns: import("@/lib/final-video-generation/contract").FinalExecution | null };
       ugc_final_checkpoint: { Args: { p_execution: string; p_token: string; p_operation: string; p_payload?: Record<string, unknown> }; Returns: { execution: import("@/lib/final-video-generation/contract").FinalExecution;
-        operation: import("@/lib/final-video-generation/contract").Operation | null; created: boolean; blocked?: string } | null };
+        operation: import("@/lib/final-video-generation/contract").Operation | null; created: boolean; blocked?: string; creditAllowanceEnforced?: boolean;
+        amendmentsEnforced?: boolean; effectiveAuthorization?: import("@/lib/final-video-generation/retry").EffectiveAuthorization } | null };
       ugc_save_reference_names: { Args: { p_owner_user_id: string; p_project_id: string; p_names: { assetId: string; name: string }[] }; Returns: boolean };
       ugc_enqueue_validated_job: { Args: { p_owner_user_id: string; p_project_id: string; p_idempotency_key: string; p_input_snapshot: import("@/lib/ugc-jobs/input-contract").UgcGenerationSnapshot }; Returns: { code: "ACCEPTED"; job: import("@/lib/ugc-jobs/contract").UgcJobRow } | { code: "PROJECT_UNAVAILABLE" | "INPUT_CHANGED" } };
       ugc_finish_input_validation: { Args: { p_job_id: string; p_claim_token: string; p_input_snapshot: import("@/lib/ugc-jobs/input-contract").UgcGenerationSnapshot }; Returns: import("@/lib/ugc-jobs/contract").UgcJobRow | null };

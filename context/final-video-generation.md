@@ -1,5 +1,251 @@
 # Milestone 10 — Final Video Generation
 
+## Saved Scene 2 speech timing and local recovery (2026-10-29)
+
+**Current execution inspected read-only; source fixed and local/static tests passed. No provider/worker/recovery, new intent, amendment, live asset/accounting write, approved-content change or deployment occurred. No new migration is required for this local recovery; the existing 074 path is already in use.** This is the latest execution snapshot; older binding/Design snapshots below remain historical.
+
+### Exact failure and saved evidence
+
+Execution `62e93717-9e00-486e-b968-a85f272b831d` stopped at Scene 2 speech operation `d8abba4b-eca1-49f9-ab45-639c20f99a61`, ElevenLabs `eleven_multilingual_v2`, attempt 1, request `6G0QlOkRqSH8hU90LCHx`. The approved text is **Smooth and ready.**, from **6200 to 7600ms**, an exact **1400ms** window. The successful request used speed **1.0**. There is no provider rejection: the adapter retained a successful response, decoded its audio, and saved both original and normalized alignment before local duration validation failed.
+
+MP3 container duration is **1488.980ms**, rounded to **1489ms** by the old worker. Its exact rejection condition was `metadata.durationMs > line.endMs - line.startMs + 50`: **1489 > 1450**. Thus the measured container was **89ms over the nominal window**, **39ms above the existing tolerance**. Decoded 48kHz PCM has **69103 samples / 1439.646ms**, rounded **1440ms**. Raw original alignment spells the exact approved text and ends at **1440ms**; normalized alignment is also retained. Container padding accounts for about 49ms of the discrepancy but decoded audio is still about 40ms longer than the strict window.
+
+Original MP3 bytes (24284) are saved in `.source.bytes`, SHA-256 `fb38c7553e67aa4fa8aee6d851059f68ccaa3a1ef2b9117424278ecff6a49fe8`. The original provider response (33310 bytes), including base64 audio and timestamps, is saved locally and in R2 with matching proof SHA `b998f074a295041c452a438f3ddf639d509d988dc17aea94eec5aab3362d0536`; decoded response audio matches the saved source. The operation is **result**, with output null: speech succeeded and remains recoverable, but no validated standalone Scene 2 speech asset has been published. Observed provider `character-cost` is **7 credits**; the existing included-credit contract records **$0 immediate USD**. The original 17-credit estimate stays conservatively reserved; the intent is consumed and is not refunded. No provider invoice/account balance was queried.
+
+### Fitting policy and source behavior
+
+`lib/speech-timing/plan.ts` derives a provider-neutral integer-permille target from exact text/window and configured pace: max(words/2.3, nonspace Unicode characters/16) natural seconds, 10% window headroom capped at 200ms, baseline pace 0.9/1.0/1.1, upward rounding to hundredths, and supported speed 0.7..1.2. Infeasible requests fail before admission; targets are never silently clamped. These are conservative heuristics, not provider duration guarantees. Existing hard words/characters/action/timeline constraints remain intact. Schema-2 Storyboard validation, Package validation and final preflight share the additional timing gate. Before new TTS, its neutral target is included in immutable operation input/fingerprint; the adapter alone maps that target to voice_settings.speed and continues using `/with-timestamps`. Scene 2's future estimate selects **1.04**, with 140ms planning headroom. A hypothetical measured-duration retarget would be **1.15** (ceil(1440/1260 to hundredths)); it is not needed or submitted here, and estimates never guarantee a future voice result.
+
+`speech-fitting.ts` decodes all source samples to PCM, compares actual duration/alignment against the exact window, then uses FFmpeg **atempo**, with an explicit maximum **1.080×** and 25ms fitting headroom. The policy permits no slowdown/stretch to fill silence. It performs no silence removal, waveform cutoff, `-t`, text rewrite, pitch-shifting or word deletion. This conservative engineering limit is not an auditory-quality guarantee. WAV avoids reintroducing MP3 encoder padding. Final measured output must fit the strict window, rather than loosening the old tolerance. Original provider response/source/alignments remain intact; receipt.speechFit records source hash, both durations, policy/tempo, output duration and a separately marked linear-tempo alignment approximation. It is not a fresh transcription. FFmpeg atempo and PCM encoding capabilities are checked before future paid work.
+
+The real saved Scene 2 source was tested **only in temporary copies**. **1.048× tempo** produced a **1387ms WAV**, **13ms inside** the 1400ms window. Derived alignment ends at **1374ms**. No edge silence or speech was cut. The original source remained unchanged and the test WAV was not published. **Existing audio is safely reusable within the configured technical policy; another ElevenLabs request is unnecessary.** Ready Scene 1 outputs and Scene 2 video are reused untouched.
+
+On out-of-policy fitting, the worker preserves saved speech, records precise local fitting failure evidence and stops with `FINAL_SPEECH_RETRY_REQUIRED`. Recovery is disabled for that outcome and UI exposes a separate blocked **Retry failed stage** review notice; it never silently submits another TTS. Existing amendment RPC categories remain Design/binding, so a future TTS replacement needs separate controlled stage-retry review/support and, for this budget, an explicit +1 amendment before it can be admitted. No TTS replacement or new amendment was enabled/created in this task.
+
+### Exact consumed intents and remaining work
+
+| # | Logical operation / attempt | Operation UUID | State |
+|---|---|---|---|
+| 1 | Scene 1 video / 1 | a37f6418-51da-477d-aa93-d5f52f264c75 | ready |
+| 2 | Voice Design / 1 | bc728e62-7473-41d8-a4f0-9fe50252e2c4 | rejected |
+| 3 | Voice Design / 2 | 560fefe1-cc0a-4e69-9bbd-e6b9b2ed7568 | rejected |
+| 4 | Voice Design / 3 | 2b10a074-0307-4ad8-ad8f-f5a52af61954 | rejected |
+| 5 | Voice Design / 4 | 55e4205f-8fdf-47be-904c-efe5b3084075 | ready |
+| 6 | Voice binding / 1 | 284736e6-ee18-444f-97f5-e8d9df693442 | rejected |
+| 7 | Voice binding / 2 | 8fafaeb9-474d-403c-924c-21e3db9a9713 | ready |
+| 8 | Scene 1 speech / 1 | a498d097-14ab-47ec-b830-fb91e639e78e | ready |
+| 9 | Scene 1 lip-sync / 1 | d0cae73d-45d2-40e8-8d5c-769f8b775daa | ready |
+| 10 | Scene 2 video / 1 | 81a69c97-5be4-4e79-95e9-e7c5e301fe65 | ready |
+| 11 | Scene 2 speech / 1 | d8abba4b-eca1-49f9-ab45-639c20f99a61 | successful result; local timing blocked |
+
+Scene 1 guide/mux operations are local composition records, not provider intents. Scene 1's completed 5s scene, video, speech, sync, designed/saved voice and Scene 2's video are preserved. After locally publishing Scene 2 speech, the sole remaining provider operation is **Scene 2 Kling lip-sync** (one request, estimated $0.07). Guide alignment, scene mux, final composition and validation are local. Thus **11 consumed / 12 effective / 1 remaining is sufficient**. A replacement speech request plus that lip-sync would instead require **13 effective**; none is needed now. USD ceiling stays $7; cumulative estimate is currently $4.692400 and expected completion $4.762400, with $2.237600 margin.
+
+### Exact safe manual continuation
+
+1. Keep the worker stopped while loading/restarting the corrected local source. Keep the existing execution, authorization, package, Storyboard, voice and assets. No SQL/migration or new amendment is needed.
+2. On the existing project's Final Video, Check status, then **Recover saved work**. This queues the same execution in provider-free recovery mode.
+3. Run `npm run worker:ugc -- --final-video-only`. For this persisted state it reuses Scene 1 and Scene 2 video, fits the saved Scene 2 speech and saves its WAV/proof without a new ElevenLabs call. It can prepare the local guide, then deliberately stops **before** creating Scene 2's new lip-sync intent with `FINAL_RECOVERY_NEEDS_PROVIDER_REQUEST`. Consumption stays **11/12**.
+4. Check status, review the existing **Resume authorized processing** confirmation and confirm only when ready for the final authorized fal.ai lip-sync. The worker then uses the last request (**12/12**) and completes local composition/final review. A new execution or TTS retry is unnecessary. No step above was executed during implementation.
+
+To repeat GET-only evidence inspection and the temporary-copy timing test (no real output/state writes):
+
+```powershell
+node --env-file=.env.local --conditions=react-server --import=tsx scripts/inspect-final-video-execution.ts 62e93717-9e00-486e-b968-a85f272b831d --speech-timing --storage
+```
+
+`--storage` lists existing R2 objects only; `--speech-timing` reads saved local source/response, verifies their hashes and measures/fits disposable copies. It never publishes a WAV, calls a provider or modifies the real spool/records. `npm run test:ugc-final-speech-timing` uses synthetic local fixtures/replay only and verifies timing limits, infeasible speed, unchanged hard budgets, pitch conservation, repeatable output, original source/alignment preservation and strict fit validation.
+
+## Saved Voice Design and binding-only replacement (2026-10-29)
+
+**Adapter/retry source fixed and offline checks passed. Manual migration 074 after the already-used 073 is required; it has not been applied by this investigation. No real amendment, retry, worker or provider call occurred.** This extends the supported categories below without changing the original authorization/configuration hash, approved package, CharacterVoiceProfile or terminal operation history.
+
+Execution `62e93717-9e00-486e-b968-a85f272b831d` has six consumed intents: preserved Scene 1 video, rejected Design attempts 1–3, saved Design attempt 4, and rejected binding attempt 1. Its three existing +1 amendments make 11 effective requests. Binding rejected POST `/v1/text-to-voice` with retained HTTP 400 / `invalid_labels` / `Each label value cannot exceed 50`. The persisted labels were `application: sceenyk` (7 characters) and `profile: a06659fcfa3e9066ef4f8318a70d580f21a1cd11a8feb4ecf2d7959db9f87891` (64). The profile identifier is a full local digest, unsuitable for the provider's optional short labels.
+
+The adapter now emits only `labels: { application: "sceenyk", language: "en" }`. It keeps the unchanged detailed description in `voice_description`; it omits the profile label instead of truncating the digest. Every outgoing label passes a local 50-character limit, with `FINAL_VOICE_LABEL_VALUE_LIMIT:<offendingKey>` before HTTP submission. No adapter identity/version or approved profile is changed by this optional metadata correction.
+
+Design attempt 4, operation `55e4205f-8fdf-47be-904c-efe5b3084075`, is ready with `receipt.result.previewRef = U3O1s7WmOkd2DHV7Di0f`. This is the saved `generated_voice_id` required by [Create Voice](https://elevenlabs.io/docs/api-reference/text-to-voice/create). It exactly matches binding attempt 1's saved request and its input preview fingerprint matches Design attempt 4. The local 158868-byte MP3 hashes to the persisted `f7b1d6d90f1c33035ea358e7eb94f26a21932522570a042314ea13e7de74215a`; the 695759-byte saved response matches its persisted recovery hash. R2 LIST confirms both objects' sizes/ETags and the preserved Scene 1 objects. No remote preview validity/expiry probe was made. Missing/mismatched saved identifiers or output proofs block replacement; they never cause automatic Design regeneration.
+
+The binding category is narrowly `voice_binding` / `provider_labels_corrected` / retained POST 400 `invalid_labels`. Approval requires the same unbound profile, latest completed Design and exact preview fingerprint/identifier, operator confirmation, current package and output integrity, fresh quote, +1 request and **zero** additional USD. SQL preserves failed binding attempt 1 and creates `voice:binding:attempt:2` with a new fingerprint linked to that failure/amendment. Existing ready Design/video operations resolve before adapter submission, including after worker restart. An uncertain admitted binding is reconciliation-only, never an automatic third attempt.
+
+The proposed fourth amendment changes **6 consumed / 11 authorized / 5 remaining** to **6 / 12 / 6** before replacement admission, then **7 / 12 / 5** after binding attempt 2 admission. The remaining five normal requests are two speech, two lip-sync and Scene 2 video. Binding uses zero additional credits and zero immediate USD; it does not repeat the 119-credit Design request. Conservative Design reservations remain `4 × 119 = 476`; remaining speech uses `5 + 17 = 22`, for 498 reserved/projected against the existing 9981-credit configured snapshot, subject to the server's shared-allowance admission check. Failed-attempt reservations are not silently refunded. Full immediate expected USD remains **$4.762400** (`2 × $2.311200` videos + `2 × $0.070000` sync), leaving **$2.237600** under $7. Actual billing remains separate/unknown where no usage was returned.
+
+### Manual binding retry for the existing execution
+
+1. Keep the local worker stopped. Review/apply only `supabase/migrations/20261029007400_ugc_final_binding_retry.sql` after 073. It changes constraints/guards/RPC definitions and performs no execution/accounting/asset data repair. Do not edit `UGC_FINAL_AUTHORIZATION` or create a new execution.
+2. Restart the local application using this source and the existing authenticated configured operator. Open the existing project's Final Video and Check status. Review **Retry failed stage: Voice binding**, HTTP 400 label correction, zero replacement credits/USD, +1 request, resulting effective 12, and preserved Design/video. The immutable original maxRequests remains 8.
+3. Confirm the correction/amendment checkbox and click **Retry failed stage** once. This atomically appends the fourth amendment and queues the same execution. Before the worker claims it, the inspector should show 6/12 with six remaining. Repeated submission of the same amendment UUID is idempotent.
+4. When ready to submit the corrected binding and continue the five remaining normal stages, run `npm run worker:ugc -- --final-video-only`. It reuses Scene 1 video and Design attempt 4, submits only the replacement **binding** for the failed stage, saves the reusable `voice_id`, then continues the pipeline. Binding admission gives 7/12 with five remaining. No Design/video replacement is authorized by this action.
+5. **Recover saved work** cannot retry the terminal rejected binding. After an uncertain request/restart, recovery can reconcile that same intent/replay saved output/storage without a new POST; missing evidence stops safely. Provider-free recovery stops before new downstream intents; **Resume authorized processing** requires a separate displayed confirmation. Exhaustion blocks new intents and never resets counters. Twelve requests allow the expected completion with no further replacement capacity.
+
+Read-only inspection (the optional storage flag performs R2 LIST only):
+
+```powershell
+node --env-file=.env.local --conditions=react-server --import=tsx scripts/inspect-final-video-execution.ts 62e93717-9e00-486e-b968-a85f272b831d --storage
+```
+
+The inspector now reports original binding payload/label lengths, saved Design linkage and a separately named proposed corrected payload. It never rewrites the historical payload. `npm run test:ugc-final-binding` exercises synthetic migrations through 074, 50/51-character labels, omission of long metadata, response replay with no HTTP, Design reuse, immutable binding history, +1 accounting and lease/recovery fencing. Static UI diagnostics include binding-specific confirmation and pending/failed history. Real retry/provider acceptance remains manual and pending.
+
+## Controlled request amendments and Voice Design retry (2026-10-28)
+
+**Implemented in source; migration 073 and real acceptance remain manual/Pending.** This section supersedes the earlier statement that no amendment/replacement path exists. Implementation did not create an execution/amendment, queue a real retry, contact a provider, edit private funding authorization, alter approved content or delete media.
+
+### Supported reviewed replacement
+
+The first supported scope is a rejected **Voice Design POST**, stage voice_design, after an operator-reviewed HTTP 403 permission correction. Other rejection categories, successful stages, stale packages, bound/changed profiles, active leases and uncertain submissions fail closed. Legacy failures without a retained status can be reviewed as 403 using explicit operator attestation; the original receipt/status is never backfilled or rewritten. No claim of remote permission verification is made.
+
+Separate server-only UGC_FINAL_OPERATOR_USER_ID must equal the authenticated execution owner's app-user UUID. It defaults to disabled and is not part of the original configuration hash. The operator checks a confirmation stating that the 403 was reviewed, permissions were corrected and the displayed request/cost amendment is approved. No request is queued by viewing a quote. The server checks actor/scope, exact original configuration hash, current package/approved assets and fresh byte/ETag/SHA-256 integrity for successful outputs before committing approval.
+
+### Data and accounting
+
+New private append-only ugc_final_authorization_amendments records: amendment UUID; execution/owner/project; original authorization UUID and configuration hash; immutable package hash and CharacterVoiceProfile ID; exact failed operation ID; stage/reason; additional request allowance (one); optional additional micro-USD allowance; authenticated operator UUID, approval/correction flags and reviewed 403 status; exact quote/hash; database creation timestamp. No caller supplies an actor identity. UPDATE/DELETE are forbidden, including after consumption. Service-role writes go through the scoped RPC; browser roles have no table/RPC privileges.
+
+Effective requests = original maxRequests + approved amendment allowances. Effective USD = original maxEstimatedCostMicrousd + approved additional cost allowances. Original configuration/authorization/hash remain immutable. Approved extra request slots are consumed only by their specific replacement attempts; ordinary first attempts retain their original request allocation. Intent admission increments existing counters exactly once, preserving failed/uncertain intent usage. No refund/reset occurs.
+
+| Existing case | Original allowance | Amendments | Effective | Consumed | Remaining |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Current persisted execution, not changed here | 8 | 0 | 8 | 2 | 6 |
+| After manual amendment approval, before replacement intent | 8 | +1 | 9 | 2 | 7 |
+| After replacement intent is admitted | 8 | +1 | 9 | 3 | 6 |
+| After all six remaining normal provider intents | 8 | +1 | 9 | 9 | 0 |
+
+The quote recomputes sunk/known cost using the larger of admitted independent estimate and observed actual USD, plus the independent replacement estimate and every unstarted planned stage. It never uses ceilings as estimates. For the reported state: known/sunk estimate $2.311200; replacement Voice Design 119 credits / $0 immediate USD; remaining pipeline $2.451200; projected immediate total $4.762400; effective USD authorization stays **$7**, no extra USD needed. Historical actual bills remain unknown unless provider usage supplies evidence.
+
+The original failed design's 119-credit reservation stays held. A replacement adds 119, remaining speech adds 22, for **260 conservatively reserved/projected included credits** against the reported/configured 9981-credit snapshot, assuming no other account-snapshot reservations. Quotes read shared reservations and the database serializes/rechecks them; no paid rate or automatic overage is invented. The live quote, not this example, is authoritative if other executions consume that snapshot.
+
+Quote hashes use integer micro-USD/credit counts and textual fractional pricing quantities, preserving the existing package hash recipe. They bind execution version, immutable scope, all operation fingerprints/states/timestamps, current counter, independent cost projection and shared included-credit reservations. Changes between review/confirmation reject the quote. Extra USD, if necessary, is proposed explicitly and must be confirmed; it never silently expands authority.
+
+### Stage-only operation and recovery
+
+The amendment queues the **same execution**, with dispatch_mode=retry; it does not admit or submit a provider request in the HTTP action. The worker verifies current assets and preserved ready outputs, reuses Scene 1's exact video, and resolves Voice Design to a new physical intent voice:design:attempt:2 with attempt=2, a new scoped fingerprint, logical key voice:design, supersedes_operation_id and amendment_id. Attempt 1 remains failed and immutable. Duplicate approvals/clicks and repeated claims resolve the same amendment/intent; no fork or duplicate counter/credit reservation.
+
+The replacement retains execution/package/CharacterVoiceProfile. Its new preview fingerprint feeds the existing identity binding/speech/lip-sync/Scene 2/FFmpeg pipeline. Completed scene/video/audio operations continue to reuse stored outputs. Initial and explicit retry/resume modes permit only finite approved normal/replacement intents. Restarting an uncertain replacement reuses its existing intent/receipt/response and never creates attempt 3 automatically. HTTP GET errors are reconciliation failures, not permission to repurchase a POST.
+
+Recover saved work now sets dispatch_mode=recover and **cannot create any provider intent**. It can GET known results, replay saved successful responses, retry storage and perform local composition. Missing/failed uncertain output cannot become a new POST. If recovery reaches an unstarted authorized stage or an approved but unsubmitted replacement, it stops with FINAL_RECOVERY_NEEDS_PROVIDER_REQUEST and exposes a separate confirmed **Resume authorized processing** action. That action rechecks preserved work, current scope, request/USD and included-credit capacity before queuing authorized continuation. A terminal rejected stage itself uses Retry failed stage, never Recover.
+
+UI shows immutable attempt history, operator-reviewed 403/amendment UUID, pending/active/completed replacement, original/amended/effective/consumed/remaining requests, replacement credits/immediate USD, sunk/remaining/projected USD, proposed USD allowance, preserved work and quote-specific confirmation. Invalid/missing operator setup or stale/unsafe scope blocks the button. No generic provider picker or per-scene creative workflow was introduced.
+
+### Exact manual steps for the existing execution
+
+1. Keep the worker stopped. Review and manually apply **supabase/migrations/20261028007300_ugc_final_authorization_amendments.sql after 072/prerequisites**. This task does not apply it. The migration preserves original rows/receipts/configuration, adds immutable amendments/linked attempts/dispatch mode, and replaces only final action/checkpoint admission behavior.
+2. Obtain the owner UUID with this read-only query (or the inspector's --operator-setup option):
+
+```sql
+select owner_user_id from public.ugc_final_executions
+where id = '62e93717-9e00-486e-b968-a85f272b831d';
+```
+
+3. Set only **UGC_FINAL_OPERATOR_USER_ID=<that app-user UUID>** in the private local environment. Leave UGC_FINAL_AUTHORIZATION, its authorization ID, maxRequests=8, $7, pricing snapshot and provider identities unchanged. Retain the corrected restricted ElevenLabs key permissions. Restart the local app with this source/configuration; sign in as that same owner/operator. No provider permission probe is required/performed.
+4. Open this existing project's Final Video tab and Check status. Confirm the existing execution ID via read-only inspector, preserved Scene 1 video, attempt 1 rejected, +1 request amendment, effective budget 9, replacement 119 included credits / $0 immediate USD, projected total $4.762400 and $7 ceiling. Refresh/review if the live quote differs or is blocked. Do not choose Generate Final Video or delete/reset anything.
+5. With the worker still stopped, check the explicit permission-correction/operator-approval confirmation and click **Retry failed stage**. This persists the immutable amendment and queues this same execution. It does not itself contact a provider. Check status/inspector: original budget remains 8, amendment +1, effective 9, consumed 2, remaining 7, replacement pending. No new execution should appear.
+6. **Only when ready to execute the separately approved provider work**, manually start the final-only worker:
+
+```powershell
+node --env-file=.env.local --conditions=react-server --import=tsx scripts/ugc-worker.ts --final-video-only
+```
+
+This step can submit the replacement Voice Design and continue all remaining normal provider stages automatically. It is not run during implementation. After replacement admission expect consumed 3 / remaining 6. Scene 1 video must remain the same saved object/hash. If the outcome is uncertain, stop for reconciliation; do not authorize another replacement or reset the intent.
+7. If a later provider-free Recover stops at an unstarted stage, review the effective budget and use the separate confirmed Resume authorized processing action. When final composition/validation finishes, use the normal final review/approval flow.
+
+Read-only verification (does not start processing):
+
+```powershell
+node --env-file=.env.local --conditions=react-server --import=tsx scripts/inspect-final-video-execution.ts 62e93717-9e00-486e-b968-a85f272b831d --storage --operator-setup
+```
+
+The inspector reports original and effective authorization separately; original maxRequests=8 is expected even after an amendment. Before 073 it reports retrySchemaAvailable=false. No live retry/worker, provider account access, remote migration/concurrency, browser or final provider acceptance is established by offline tests.
+
+
+## First real provider failure and diagnostic correction (2026-10-28)
+
+[Full read-only investigation](m10-first-provider-failure.md) records execution 62e93717-9e00-486e-b968-a85f272b831d: Scene 1 fal video completed and remains in local/R2 storage; the subsequent global ElevenLabs Voice Design request was rejected with no retained status/body/request ID. The actual remote reason/billing is unknown. Its reconstructed text-only payload matches the official contract; no payload workaround or approved-content change is justified. Two intents used, one success, one rejection, 6/8 capacity left; a design replacement plus remaining planned stages would need seven more requests (nine overall), and the existing attempt=1 contract does not admit a replacement. No authorization was changed.
+
+Future diagnostics preserve sanitized HTTP/provider error evidence and a redacted request snapshot/hash separately from successful response replay. UI/server block terminal rejected-request saved-work recovery. Before this fix, Recover for this exact state would reuse the video then stop at the existing failed design, with no provider request; for other partial states it can submit unstarted authorized downstream stages, now stated before clicking. No recovery was executed, no existing receipts were backfilled and no new migration is required. The existing first video is real partial runtime evidence, not complete M10/provider acceptance.
+
+## ElevenLabs included-credit profile (2026-10-28)
+
+This section supersedes the earlier USD-unavailable state and public-list speech USD estimate below for the explicitly configured local profile. The owner reports a Free account with 10000 included credits, 19 used and 9981 remaining. No provider account request was made. A separate UGC_FINAL_PRICING setting in ignored .env.local now freezes that 9981-credit allowance; UGC_FINAL_AUTHORIZATION, its $7 limit/maxRequests=8 and the approved package are unchanged.
+
+| Operation | Estimated credits | Immediate estimated USD |
+| --- | ---: | ---: |
+| Voice Design, fixed 119-character audition | 119 | $0 |
+| Scene 1 Multilingual v2 speech, 5 characters | 5 | $0 |
+| Scene 2 Multilingual v2 speech, 17 characters | 17 | $0 |
+| Voice identity save (one slot/request) | 0 | $0 |
+| ElevenLabs total | **141** | **$0** |
+| fal Seedance, two 5s scenes | n/a | $4.622400 |
+| fal Kling lip-sync, two 5s scenes | n/a | $0.140000 |
+| Total immediate cost | **141 ElevenLabs credits** | **$4.762400** |
+
+The configured balance after the planned run is **9840 credits**. The unchanged $7 USD authorization has **$2.237600** margin. The read-only approved-package inspector passes video/voice/lip_sync/composition/funding with 8 planned requests against 8 authorized; this is creative/pricing eligibility, not proof that manual database migrations are installed or provider execution has passed.
+
+Voice Design charges the preview text once for all three candidates. Multilingual v2 consumes one credit per Unicode dialogue character, including punctuation and spaces. Sources checked again: [Voice Design](https://elevenlabs.io/docs/eleven-creative/voices/voice-design), [V2 Multilingual credit rule](https://elevenlabs.io/pricing). Code returns both estimatedCredits and estimatedUsdCost, retaining integer estimatedCostMicrousd for the existing USD gate. Included-credit source is configured_included_credits. Identity save retains one request/slot with zero credits and USD.
+
+Configuration is explicit, independent of authorization, and strict:
+
+```json
+{"elevenLabsIncludedCredits":{"allowanceId":"<reviewed-account-snapshot-UUID>","remainingCredits":9981}}
+```
+
+Reuse that snapshot UUID across every local run using the same provider allowance. Database reservations reduce the shared configured allowance; failures/unknown outcomes remain conservatively reserved and recovery reuses an existing intent. The inspector reports the configured provider-balance snapshot, not a fresh account balance or current database reservation total. Runtime admission rechecks reservations. Do not rotate the UUID or reset remainingCredits merely to replenish budget. External account usage, billing-cycle renewal and snapshot refresh require reconciliation against the provider; no automatic monthly reset or account polling exists.
+
+For later paid/PAYG use, replace included mode with an operator-reviewed elevenLabsMicrousdPerCredit in UGC_FINAL_PRICING. For a paid subscription with remaining included credits, included mode still describes incremental USD cost without allocating the subscription fee to requests. Both modes together are rejected; no automatic overage fallback. Missing both modes makes ElevenLabs USD estimates unavailable. Optional voiceDesignPreviewText remains available. No paid USD-per-credit rate has been invented or configured.
+
+Full-package preflight sums all ElevenLabs stage credits and blocks ELEVENLABS_CREDIT_ALLOWANCE_EXCEEDED before any paid intent if the total exceeds the configured allowance. Over-limit runs have no usable whole-run USD estimate; they never silently turn into paid overage. The fal-specific USD subtotal and unchanged per-stage/whole-run USD ceilings remain independently enforced. An exhausted included allowance does not become a free-work override.
+
+Manual **072 after 071/prerequisites** updates only the existing service-only checkpoint function, preserving earlier migrations unchanged. It validates integer credit evidence, accepts zero immediate USD only for explicit included mode/free binding, acquires a shared transaction lock on the allowance UUID, sums reserved credits across executions (or observed actual credits if larger), and rejects new excess with ELEVENLABS_CREDIT_ALLOWANCE_EXCEEDED. Mismatched limits under the same snapshot UUID fail ELEVENLABS_ALLOWANCE_SNAPSHOT_CONFLICT. New intents persist credit evidence in existing operation input; recovery does not reserve twice. Existing receipt/output/failure/composition/recovery/grant branches are preserved. No new tables/columns/triggers. The worker refuses a database response missing creditAllowanceEnforced. **072 is unapplied; database/runtime acceptance remains Pending.**
+
+Actual credits are recorded only from observed provider usage. Under included mode, actual immediate USD is recorded as zero only when that observed usage fits the operation's reserved credits; absent usage or excess leaves actual USD unknown. Paid mode continues to value observed usage at its reviewed account rate. Estimates are never substituted for actual usage.
+
+Rerun from the repository root:
+
+```powershell
+node --env-file=.env.local --conditions=react-server --import=tsx scripts/inspect-final-video-preflight.ts 1fe9e8ab-88a6-4700-ac70-e1175d36ba17
+```
+
+Validation is limited to pure pricing/preflight/static checks and GET-only package inspection. No provider API, worker, media generation, SQL application or deployment.
+
+
+## Independent provider pricing (2026-10-28)
+
+This section supersedes the historical ceiling-as-estimate diagnostics below. Authorization is permission only. Expected provider cost is calculated independently; actual provider cost remains null until observed usage/billing metadata supports it. No authorization ceiling is ever substituted for missing pricing.
+
+Read-only inspection of approved package 1fe9e8ab-88a6-4700-ac70-e1175d36ba17 (revision 2, command version 6) verifies two 5-second 720x1280 scenes, speech lengths 5 and 17 Unicode characters including punctuation/spaces, and two full-scene lip-sync operations. The fixed Voice Design audition repeats the approved dialogue to 119 characters, therefore 119 credits (charged once for three previews). All four creative layers pass. Package/hash, authorization and live state remain unchanged.
+
+| Stage | Exact rule | Expected USD |
+| --- | --- | ---: |
+| Scene 1 video | 720 x 1280 x 5 x 24 / 1024 = 108000 tokens; 108 x $0.0214 | 2.311200 |
+| Scene 2 video | Same 5-second request; reference images are not billable video input | 2.311200 |
+| Voice Design | 119 preview characters x 1 credit/character = 119 credits; USD/credit unconfigured | Unavailable |
+| Identity save | No separate generation charge; one custom voice slot and one request | 0 |
+| Scene 1 speech | 5 characters x published direct API $0.08 / 1000 | 0.000400 |
+| Scene 2 speech | 17 characters x published direct API $0.08 / 1000 | 0.001360 |
+| Scene 1 lip-sync | ceil(5/5) x 5 seconds x $0.014 | 0.070000 |
+| Scene 2 lip-sync | Same full 5-second video; not just speech window | 0.070000 |
+| Known subtotal | Excludes unpriced design, not a full estimate | **4.764160** |
+
+Full expected total = **$4.764160 + 119 x account USD/credit**. Full total and remaining authorization margin are null until design pricing/quantity is known. Unallocated amount before design is $2.235840 of the unchanged $7; no claim of full funding sufficiency is made. Existing design ceiling is $0.20, separately enforced. Each request cost rounds upward to integer micro-USD. Seedance uses its authoritative token formula, not its approximate per-second marketing figure. Billing FPS is 24 even though local final output is 25fps. No video reference or native-audio surcharge is invented. Only exact configured model/provider identities are priced.
+
+Sources checked 2026-10-28: [Seedance token rule](https://fal.ai/models/bytedance/seedance-2.5/reference-to-video), [Kling increments/rate](https://fal.ai/models/fal-ai/kling-video/lipsync/audio-to-video), [Multilingual v2 direct API list rate](https://elevenlabs.io/pricing/api), [Voice Design charging/save rule](https://elevenlabs.io/docs/eleven-creative/voices/voice-design), [Voice Design text limits](https://elevenlabs.io/docs/api-reference/text-to-voice/design). Speech defaults to the published direct API list rate; an explicit account USD/credit contract overrides it. Subscription discounts, tax and the actual account invoice are not inferred.
+
+Voice Design now prepares a fixed audition by joining approved speech in scene order, repeating it until at least 100 Unicode characters and capping the audition at the provider's 1000-character limit. This is audition text only; approved scene words/package stay untouched. The adapter always submits exactly that text with auto_generate_text=false and rejects absent/out-of-range preview text before I/O. Preview character count and estimatedCredits are reported even when its USD rate is missing. Per the owner's explicit instruction, the live account USD/credit rate remains unconfigured, so paid execution fails COST_ESTIMATE_UNAVAILABLE. No rate is invented from the authorization ceiling or the separate speech list price.
+
+Later the operator can configure UGC_FINAL_PRICING as a strict JSON object with elevenLabsMicrousdPerCredit (positive integer, reviewed against the account contract). Optional voiceDesignPreviewText (100..1000 Unicode characters) overrides the derived audition. Without an override the preview is deterministically derived from the approved package. Invalid pricing blocks; missing USD/credit blocks design only while still reporting its credits. No private environment file was edited. No sample account rate is asserted as a live contract. Pricing is frozen/hashed with the execution and the derived preview is bound to the approved package and durable operation input. Configuration changes require refreshed consent and cannot silently update existing runs.
+
+Actuals are in existing operation receipt.usage: providerCharacterCost captures observed ElevenLabs response-header credit usage; an explicitly configured account conversion can record actualCostMicrousd with actualCostSource=observed_provider_credits_at_configured_account_rate. Without that conversion, actual USD remains null. fal usage/billing metadata is preserved when returned; fal's queue output has no guaranteed USD bill, so no USD value is fabricated. Actuals never overwrite estimates or alter spending permission.
+
+There are **8 planned requests against maxRequests=8**: 2 video + 1 design + 1 free identity save + 2 speech + 2 lip-sync. This is sufficient for a clean run with zero replacement allowance. The conservative plan includes design/save even when a compatible identity may be reusable. Existing-intent polling, receipt/spool replay, saving and local composition recovery use no new intent. Once all eight intents are admitted, a new one fails FINAL_BUDGET_EXHAUSTED; Recover does not reset counters, grant permission or replay failed/unknown POSTs. Current one-attempt operations require reconciliation rather than a paid retry. Any future paid replacement needs a separately authorized recovery design/budget; increasing the limit alone does not enable it.
+
+Manual migration **071 after 070/prerequisites** changes only the existing service-only checkpoint function: validate/persist independent pricing evidence in operation input, use its estimate for cumulative admission, enforce unchanged per-stage ceilings, and count the free binding API request. Existing tables/columns, grants, currentness, leases, recovery and completion rules are preserved. No rows or prior migrations are rewritten. The worker refuses provider I/O if persisted estimate/evidence still reflects 069 behavior. Migration 071 remains **unapplied**; database/runtime acceptance is Pending.
+
+Rerun the read-only inspector from the repository root:
+
+```powershell
+node --env-file=.env.local --conditions=react-server --import=tsx scripts/inspect-final-video-preflight.ts 1fe9e8ab-88a6-4700-ac70-e1175d36ba17
+```
+
+Validation in this unit is limited to pure pricing/preflight and static checks. No provider API execution, media generation, worker, SQL application, package mutation, authorization edit or deployment.
+
+
 ## Canonical V1 execution recovery (2026-10-28)
 
 Current source supersedes the older schema-1/contiguous-only compatibility descriptions below. Storyboard schema 2 and package schema/compiler/prompt 2 share `lib/execution-v1/contract.ts`, with `executionVersion=ugc-execution-v1` in packages. Historical schema-1 hashes/content remain readable and unchanged; new approval/admission requires the canonical contract. Composition remains responsible for transitions, not the video or lip-sync provider.
@@ -15,7 +261,7 @@ The approved schema-1 Storyboard/package remain unchanged: Scene 1 **`Dissolve i
 
 **Review local V1 execution repair** clones the existing document in Studio and displays proposals before saving: Scene 1 cut/0ms (explicitly changes the dissolve intent to preserve current timing), Scene 2 fade_out/400ms, six optional audio cues with original wording, normalized delivery plus original performance notes. Owner may edit these values. Unknown creative transitions remain unresolved. Save forks a new review revision through the service-only scoped/idempotent repair RPC; Accept is separate. Original approved Storyboard, requests, package and assets remain intact. Future saves/approvals are privately snapshotted. A **new immutable Generation Package is required** because executable requirements/version/hash change. No OpenAI/provider call is needed for this repair or package compilation.
 
-### Exact configured cost diagnostics
+### Historical ceiling-based cost diagnostics (superseded)
 
 GET-only inspector results from the unchanged configuration:
 
@@ -39,7 +285,7 @@ Total authorization remains **$7.00 (7000000 micro-USD)**; requests **8/8**. The
 2. Open the existing approved Storyboard. Choose **Review local V1 execution repair**. Review every displayed creative change and finite setting, including proposed cut/0ms, final fade/400ms and optional sound. Save; this creates a new review revision. Review and **Accept Storyboard**. Do not use Generate Storyboard, retry paid generation, delete/reset assets or edit old database JSON.
 3. With `UGC_PACKAGE_ENABLED=1`, start only the package consumer: `node --env-file=.env.local --conditions=react-server --import=tsx scripts/ugc-worker.ts --packages-only`. Choose **Prepare Generation Package**, inspect the new immutable result and **Approve Package**. This consumer performs deterministic compilation/private input verification, not provider generation. Stop that consumer when done.
 4. Run `node --env-file=.env.local --conditions=react-server --import=tsx scripts/check-final-video-config.ts`, then `node --env-file=.env.local --conditions=react-server --import=tsx scripts/inspect-final-video-preflight.ts <NEW_PACKAGE_UUID>`. If no UUID is supplied and history includes multiple approvals, the inspector lists IDs/revisions for selection. `--repair-preview` is optional, never saves, and is primarily for legacy diagnosis.
-5. Review creative-layer results and the full cost breakdown. With unchanged $7 authority, **do not start generation**: budget failure is expected. Any decision to authorize a larger finite whole-package budget is the operator's separate manual decision; this task changes no limits. Preserve all per-stage ceilings/request limits/funding mode and rerun the configuration/inspection commands after any independently approved configuration change.
+5. Review the current independent pricing section above and rerun the inspector. The older $13.31 ceiling sum is not a provider estimate and does not justify increasing authorization. With Voice Design USD/credit unconfigured, COST_ESTIMATE_UNAVAILABLE blocks execution. Preserve all ceilings/request limits/funding mode.
 6. Only after the new package is current/approved and every preflight layer passes, restart app/worker for matching configuration hashes and refresh the UI/cost consent. Manually start `node --env-file=.env.local --conditions=react-server --import=tsx scripts/ugc-worker.ts --final-video-only`, then choose **Generate Final Video** when ready to authorize paid work. That is outside this task's verification; no generation is started here.
 
 ### Focused evidence and limitations

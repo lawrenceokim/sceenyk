@@ -2,6 +2,7 @@ import type { VideoGenerationProvider as PackageProvider } from "@/lib/video-gen
 import type { VideoGenerationPackage } from "@/lib/video-generation-package/contract";
 import type { CharacterVoiceProfile, ProviderReceipt, Scene } from "./contract";
 import type { VoiceDelivery } from "@/lib/execution-v1/contract";
+import type { SpeechAlignment, SpeechTimingTarget } from "@/lib/speech-timing/plan";
 
 // Only adapters interpret payloads and opaque receipts/bindings. Core owns intent,
 // authorization and durable bytes; no vendor request fields occur in this file.
@@ -18,10 +19,11 @@ export interface VoiceGenerationProvider {
   readonly id: string; readonly model: string; readonly adapterVersion: string;
   validate(profile: CharacterVoiceProfile, scenes: readonly Scene[]): string[];
   validateTiming(receipt: ProviderReceipt, durationMs: number): void;
-  design(profile: CharacterVoiceProfile, context: ProviderContext): Promise<VoiceResponse>;
+  timing?(receipt: ProviderReceipt): SpeechAlignment;
+  design(profile: CharacterVoiceProfile, context: ProviderContext, previewText?: string): Promise<VoiceResponse>;
   bind(profile: CharacterVoiceProfile, preview: ProviderReceipt, context: ProviderContext): Promise<VoiceResponse>;
   synthesize(text: string, delivery: VoiceDelivery, profile: CharacterVoiceProfile, binding: ProviderReceipt,
-    previous: readonly string[], context: ProviderContext): Promise<VoiceResponse>;
+    previous: readonly string[], context: ProviderContext, timing?: SpeechTimingTarget): Promise<VoiceResponse>;
   retrieve(receipt: ProviderReceipt, context: ProviderContext): Promise<Buffer | null>;
 }
 export interface LipSyncProvider {

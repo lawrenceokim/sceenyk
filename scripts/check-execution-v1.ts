@@ -2,7 +2,7 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import { PGlite } from "@electric-sql/pglite";
-import { input, canonicalInput, id } from "./final-video-fixture";
+import { input, canonicalInput, id, fixturePricingRaw } from "./final-video-fixture";
 import { proposeExecutionRepair } from "../lib/storyboard/execution-repair";
 import { prepareStoryboard, storyboardBinding } from "../lib/storyboard/contract";
 import { validateExecutableStoryboard } from "../lib/storyboard/validation";
@@ -64,14 +64,15 @@ async function main() {
   // These are fixture ceilings, matching the currently inspected configuration;
   // they are admission bounds, not invented provider tariffs or actual usage.
   process.env.UGC_FINAL_VIDEO_ENABLED='1';process.env.UGC_FINAL_OPERATOR_FUNDED='1';process.env.SCEENYK_LOCAL_JOBS_ONLY='1';
+  process.env.UGC_FINAL_PRICING=fixturePricingRaw;
   process.env.UGC_FINAL_AUTHORIZATION=JSON.stringify({authorizationId:id(80),language:'en',maxRequests:8,maxEstimatedCostMicrousd:7000000,
     ceilings:{video:6250000,design:200000,binding:10000,voice:100000,lip_sync:200000}});
   const costsInput=structuredClone(packageInput);
   costsInput.storyboard.document.scenes[0].speech=[{...structuredClone(costsInput.storyboard.document.scenes[1].speech[0]),startMs:1200,endMs:2400,text:'My mug.'}];
   const costs=finalPreflight(assertPackageExecutable(costsInput,2),finalConfiguration().value,finalProviders());
-  equal(costs.requests,8);equal(costs.estimatedCostMicrousd,13310000);equal(costs.diagnostics.map(i=>i.layer),['funding']);
-  equal(costs.breakdown.map(i=>i.estimatedCostMicrousd),[6250000,6250000,200000,10000,100000,100000,200000,200000]);
-  equal(costs.breakdown.reduce((sum,i)=>sum+i.authorizationCeilingMicrousd,0),costs.estimatedCostMicrousd);
+  equal(costs.requests,8);equal(costs.estimatedCostMicrousd,4772160);equal(costs.diagnostics,[]);
+  equal(costs.breakdown.map(i=>i.estimatedCostMicrousd),[2311200,2311200,8000,0,560,1200,70000,70000]);
+  equal(costs.breakdown.reduce((sum,i)=>sum+i.authorizationCeilingMicrousd,0),13310000);
   const unresolved=structuredClone(costsInput);unresolved.storyboard.document.scenes[0].endMs=3500;
   fails(()=>assertPackageExecutable(unresolved,2));
 

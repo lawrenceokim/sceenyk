@@ -14,6 +14,11 @@ import { FinalVideoError, type FinalExecution, type Operation, type ProviderRece
 import type { ProviderContext, VoiceResponse } from "./providers";
 import { speech } from "./planning";
 import { finalPreflight } from "./preflight";
+import { recordProviderUsage } from "./usage";
+import type { EffectiveAuthorization } from "./retry";
+import { voiceLabelValidationMessage } from "./diagnostics";
+import { planSpeechTiming } from "@/lib/speech-timing/plan";
+import { fitSpeechFile, SpeechFitLimitError } from "./speech-fitting";
 import { measure, normalizeVisual, alignedAudio, muxScene, stitch, validateVideo, verifyCompositionProcessor } from "./media";
 import { readPrivateAsset, readResponse, readSpool, recoveryFile, savePrivateAsset, saveResponse, spool, sha256, cleanScratch, deleteFinalSpool } from "./storage";
 
@@ -27,6 +32,7 @@ export async function runFinalVideo(claim: FinalExecution, shutdown: AbortSignal
     return { ok: false, category: "lease_lost" };
   const db = createDatabaseClient(); let row = claim; let lost = false; let pending: Promise<unknown> = Promise.resolve();
   const abort = new AbortController(); const signal = AbortSignal.any([shutdown, abort.signal]);
+  let effective: EffectiveAuthorization | undefined;
   async function checkpoint(command: string, payload: Record<string, unknown> = {}) {
     const task = pending.then(async () => {
       if (lost) throw new FinalVideoError("FINAL_LEASE_LOST");
@@ -35,6 +41,7 @@ export async function runFinalVideo(claim: FinalExecution, shutdown: AbortSignal
         lost = true; abort.abort(); throw new FinalVideoError("FINAL_LEASE_LOST");
       }
       row = result.data.execution;
+      if (result.data.effectiveAuthorization) effective = result.data.effectiveAuthorization;
       if (result.data.blocked) throw new FinalVideoError(result.data.blocked);
       return result.data;
     });
@@ -42,28 +49,45 @@ export async function runFinalVideo(claim: FinalExecution, shutdown: AbortSignal
   }
   const heartbeat = setInterval(() => { void checkpoint("heartbeat").catch(() => {}); }, 20_000);
   const providers = finalProviders();
+  let costPlan: ReturnType<typeof finalPreflight>["breakdown"] = [];
+  let designPreviewText: string | undefined;
+  let activeOperation: Operation | undefined;
+  let activeSceneNumber: number | undefined;
   async function stored(operation: Operation) {
     const bytes = await readPrivateAsset(row, operation.output!, signal); await spool(row, operation.id, "bytes", bytes); return bytes;
   }
   async function intent(key: string, kind: StageKind, input: Record<string, unknown>, sceneId?: string) {
+    const costEstimate = kind === "composition" ? null : costPlan.find(item => item.operationKey === key);
+    if (kind !== "composition" && (!costEstimate || costEstimate.estimatedCostMicrousd === null)) throw new FinalVideoError("COST_ESTIMATE_UNAVAILABLE");
     const identity = kind === "composition" ? { id: "ffmpeg", model: "h264-aac-720p25-transitions-v2" } : row.configuration.providers[kind];
     const fingerprint = packageDigest("sceenyk-final-operation", { key, kind, input, configurationHash: row.configuration_hash,
       packageHash: row.package_hash, owner: row.owner_user_id, project: row.project_id });
     const result = await checkpoint("intent", { key, kind, input, sceneId: sceneId ?? null, fingerprint,
-      provider: identity.id, model: identity.model });
+      provider: identity.id, model: identity.model, costEstimate });
     if (!result.operation) throw new FinalVideoError("FINAL_OPERATION_UNAVAILABLE");
+    if (result.amendmentsEnforced !== true) throw new FinalVideoError("FINAL_RETRY_SETUP_REQUIRED");
+    activeOperation = result.operation;
+    if (row.configuration.pricing?.elevenLabsIncludedCredits && result.creditAllowanceEnforced !== true)
+      throw new FinalVideoError("FINAL_PRICING_MIGRATION_REQUIRED");
+    const storedEstimate = result.operation.input?.costEstimate;
+    // Applied 069 still copies ceilings. Stop before provider I/O unless the
+    // database confirms both the independent estimate and its pricing evidence.
+    if (kind !== "composition" && (result.operation.estimated_cost_microusd !== costEstimate!.estimatedCostMicrousd ||
+      !storedEstimate || typeof storedEstimate !== "object" || !("pricingVersion" in storedEstimate) ||
+      storedEstimate.pricingVersion !== costEstimate!.pricingVersion)) throw new FinalVideoError("FINAL_PRICING_MIGRATION_REQUIRED");
     return { operation: result.operation, created: result.created };
   }
   async function paid(key: string, kind: Exclude<StageKind, "composition">, input: Record<string, unknown>,
     submit: (context: ProviderContext) => Promise<VoiceResponse | ProviderReceipt>, retrieve: (receipt: ProviderReceipt, context: ProviderContext) => Promise<Buffer | null>,
-    validate: (bytes: Buffer) => Promise<{ bytes: Buffer; metadata: Omit<FinalAsset, "key" | "sha256" | "etag" | "sizeBytes"> }>, sceneId?: string, prepareNew?: () => Promise<void>) {
+    validate: (bytes: Buffer, receipt: ProviderReceipt) => Promise<{ bytes: Buffer; metadata: Omit<FinalAsset, "key" | "sha256" | "etag" | "sizeBytes">; receipt?: ProviderReceipt }>, sceneId?: string, prepareNew?: () => Promise<void>) {
     if (prepareNew) {
       const known = await db.from("ugc_final_operations").select("id").eq("execution_id", row.id).eq("operation_key", key).maybeSingle();
       if (known.error) throw new FinalVideoError("FINAL_OPERATION_UNAVAILABLE");
+      if (!known.data && row.dispatch_mode === "recover") throw new FinalVideoError("FINAL_RECOVERY_NEEDS_PROVIDER_REQUEST");
       if (!known.data) await prepareNew();
     }
     const admitted = await intent(key, kind, input, sceneId); let operation = admitted.operation;
-    if (operation.state === "ready") return operation;
+    if (operation.state === "ready") { if (operation.output) await stored(operation); return operation; }
     if (operation.state === "failed") throw new FinalVideoError(operation.error_code ?? "FINAL_PROVIDER_FAILED");
     await checkpoint("phase", { phase: phases[kind][0], sceneId });
     const savedMeta = admitted.created ? null : await readSpool(row, operation.id, "receipt.json");
@@ -74,7 +98,8 @@ export async function runFinalVideo(claim: FinalExecution, shutdown: AbortSignal
       replayResponse: raw ?? undefined,
       preserveResponse: async value => { await context.received({ recovery: await saveResponse(row, operation.id, value, signal) }); },
       received: async value => {
-        receipt = { ...receipt, ...value, usage: { ...receipt.usage, ...value.usage } };
+        receipt = recordProviderUsage({ ...receipt, ...value, usage: { ...receipt.usage, ...value.usage } }, kind, row.configuration.pricing,
+          costPlan.find(item => item.operationKey === key)?.estimatedCredits);
         // Local durable metadata first, then fenced SQL; lost SQL replies are safe.
         await spool(row, operation.id, "receipt.json", Buffer.from(JSON.stringify(receipt)));
         const result = await checkpoint("receipt", { operationId: operation.id, receipt }); operation = result.operation!;
@@ -104,7 +129,13 @@ export async function runFinalVideo(claim: FinalExecution, shutdown: AbortSignal
     // Preserve downloaded success even when decoding/normalization/storage fails.
     await spool(row, operation.id, "source.bytes", bytes);
     await checkpoint("phase", { phase: phases[kind][1], sceneId });
-    const value = await validate(bytes);
+    let value;
+    try { value = await validate(bytes, receipt); }
+    catch (error) {
+      if (error instanceof SpeechFitLimitError) await context.received({ speechFitFailure: error.details });
+      throw error;
+    }
+    if (value.receipt) await context.received(value.receipt);
     if (kind === "voice") providers.voice.validateTiming(receipt, value.metadata.durationMs);
     const asset = await savePrivateAsset(row, operation, value.bytes, value.metadata, signal);
     const done = await checkpoint("output", { operationId: operation.id, asset }); return done.operation!;
@@ -126,14 +157,18 @@ export async function runFinalVideo(claim: FinalExecution, shutdown: AbortSignal
     }
     const config = finalConfiguration();
     if (config.hash !== row.configuration_hash) throw new FinalVideoError("FINAL_CONFIGURATION_CHANGED");
+    if (!row.dispatch_mode) throw new FinalVideoError("FINAL_RETRY_SETUP_REQUIRED");
     const saved = await db.from("ugc_generation_packages").select("*").eq("id", row.package_id)
       .eq("owner_user_id", row.owner_user_id).eq("project_id", row.project_id).single();
     if (saved.error || !saved.data) throw new FinalVideoError("FINAL_PACKAGE_UNAVAILABLE");
     const doc = validateVideoGenerationPackage(saved.data.document, saved.data.input, row.package_version);
     if (doc.packageHash !== row.package_hash) throw new FinalVideoError("FINAL_PACKAGE_CHANGED");
     await checkpoint("phase", { phase: "capability_check" });
-    const preflight = finalPreflight(doc, row.configuration, providers);
+    const preflight = finalPreflight(doc, { ...row.configuration, maxRequests: effective?.effectiveRequests ?? row.configuration.maxRequests,
+      maxEstimatedCostMicrousd: effective?.effectiveCostMicrousd ?? row.configuration.maxEstimatedCostMicrousd }, providers);
     if (preflight.diagnostics.length) throw new FinalPreflightError(preflight.diagnostics);
+    costPlan = preflight.breakdown;
+    designPreviewText = preflight.designPreviewText;
     const compositionPlan = preflight.composition.plan!;
     await verifyCompositionProcessor(compositionPlan, doc.requirements.dialogue || doc.requirements.narration);
     assertFinalProviderConfiguration(doc.scenes.some(scene => speech(scene).length > 0));
@@ -148,6 +183,7 @@ export async function runFinalVideo(claim: FinalExecution, shutdown: AbortSignal
     let binding = row.profile_binding as ProviderReceipt | null;
     const sceneOutputs: FinalAsset[] = []; const priorSpeech: string[] = [];
     for (const scene of doc.scenes) {
+      activeSceneNumber = scene.number;
       const already = await db.from("ugc_final_scenes").select("*").eq("execution_id", row.id).eq("scene_id", scene.id).single();
       if (already.error) throw new FinalVideoError("FINAL_SCENE_UNAVAILABLE");
       if (already.data.phase === "scene_ready" && already.data.output) {
@@ -163,7 +199,7 @@ export async function runFinalVideo(claim: FinalExecution, shutdown: AbortSignal
         if (cached.error) throw new FinalVideoError("FINAL_PROFILE_UNAVAILABLE");
         if (cached.data) binding = cached.data.provider_binding;
         else {
-          const preview = await paid("voice:design", "design", { profile: row.profile }, context => providers.voice.design(row.profile!, context),
+          const preview = await paid("voice:design", "design", { profile: row.profile, previewText: designPreviewText }, context => providers.voice.design(row.profile!, context, designPreviewText),
             (receipt, context) => providers.voice.retrieve(receipt, context), async bytes => {
               const file = await spool(row, randomUUID(), "preview.mp3", bytes); return { bytes, metadata: await measure(file, "audio/mpeg") }; });
           const committed = await paid("voice:binding", "binding", { profileId: row.profile.id, previewFingerprint: preview.fingerprint },
@@ -176,13 +212,17 @@ export async function runFinalVideo(claim: FinalExecution, shutdown: AbortSignal
       const audioParts: { bytes: Buffer; offsetMs: number; windowMs: number; speaker: string; hash: string; operationId: string }[] = [];
       for (const [index, line] of speech(scene).entries()) {
         if (!row.profile || !binding) throw new FinalVideoError("FINAL_PROFILE_UNAVAILABLE");
+        const delivery = voiceDeliverySchema.parse(line.delivery);
+        const target = planSpeechTiming(line.text, line.startMs, line.endMs, delivery.pace);
+        if (!target.feasible) throw new FinalVideoError("FINAL_SPEECH_TARGET_INVALID");
         const utterance = await paid(`voice:${scene.id}:${index}`, "voice", { text: line.text, delivery: line.delivery,
-          startMs: line.startMs, endMs: line.endMs, segmentIndex: index, profileId: row.profile.id, previousRequestIds: priorSpeech.slice(-3) },
-          context => providers.voice.synthesize(line.text, voiceDeliverySchema.parse(line.delivery), row.profile!, binding!, priorSpeech, context),
-          (receipt, context) => providers.voice.retrieve(receipt, context), async bytes => {
-            const file = await spool(row, randomUUID(), "utterance.mp3", bytes); const metadata = await measure(file, "audio/mpeg");
-            if (metadata.durationMs > line.endMs - line.startMs + 50) throw new FinalVideoError("FINAL_SPEECH_TIMING");
-            return { bytes, metadata }; }, scene.id);
+          startMs: line.startMs, endMs: line.endMs, segmentIndex: index, profileId: row.profile.id, previousRequestIds: priorSpeech.slice(-3), timingTarget: target },
+          context => providers.voice.synthesize(line.text, delivery, row.profile!, binding!, priorSpeech, context, target),
+          (receipt, context) => providers.voice.retrieve(receipt, context), async (bytes, receipt) => {
+            const file = await spool(row, randomUUID(), "utterance.mp3", bytes);
+            const fitted = await fitSpeechFile(file, await recoveryFile(row, randomUUID(), "fitted.wav"), line.text, target.windowMs,
+              providers.voice.timing?.(receipt));
+            return { bytes: fitted.bytes, metadata: fitted.metadata, receipt: { speechFit: fitted.proof } }; }, scene.id);
         if (utterance.request_id && Date.now() - Date.parse(utterance.created_at) < 2 * 60 * 60_000) priorSpeech.push(utterance.request_id);
         audioParts.push({ bytes: await stored(utterance), offsetMs: line.startMs - scene.startMs,
           windowMs: line.endMs - line.startMs, speaker: line.speaker, hash: utterance.output!.sha256, operationId: utterance.id });
@@ -233,8 +273,12 @@ export async function runFinalVideo(claim: FinalExecution, shutdown: AbortSignal
     let saved = false;
     if (!lost) { try { await checkpoint("fail", { code }); saved = true; } catch {} }
     console.error("UGC_FINAL_VIDEO_STOPPED", { executionId: row.id, jobId: row.job_id, phase: row.phase,
-      code: /^[A-Z0-9_:.-]{1,160}$/.test(code) ? code : "FINAL_FAILED", failureSaved: saved,
+      sceneNumber: activeSceneNumber, stage: activeOperation?.kind, provider: activeOperation?.provider, model: activeOperation?.model,
+      operationId: activeOperation?.id, fingerprint: activeOperation?.fingerprint, attempt: activeOperation?.attempt,
+      code: /^[A-Z0-9_:.-]{1,160}$/.test(code) || voiceLabelValidationMessage(code) ? code : "FINAL_FAILED", failureSaved: saved,
       configuration: finalConfigurationDiagnostic(error) ?? undefined,
+      providerFailure: error instanceof FinalVideoError ? error.providerFailure : undefined,
+      speechTiming: error instanceof SpeechFitLimitError ? error.details : undefined,
       preflight: error instanceof FinalPreflightError ? error.diagnostics : undefined });
     return { ok: false, category: lost ? "lease_lost" : "failed", failureSaved: saved };
   } finally { clearInterval(heartbeat); await pending; await cleanScratch(claim).catch(() => {}); }

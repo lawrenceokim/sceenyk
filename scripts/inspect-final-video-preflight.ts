@@ -39,6 +39,7 @@ async function main() {
   }
   const row = rows[0], doc = validateVideoGenerationPackage(row.document, row.input, row.revision);
   const result = finalPreflight(doc, configured.value, finalProviders());
+  const usd = (amount: number | null) => amount === null ? null : `$${(amount / 1000000).toFixed(6)}`;
   let repairPreview;
   if (preview) {
     const proposal = proposeExecutionRepair(row.input.storyboard.document), candidate = structuredClone(row.input);
@@ -52,9 +53,27 @@ async function main() {
   console.info(JSON.stringify({ readOnly: true, packageId: row.id, packageRevision: row.revision, packageVersion: doc.packageVersion, commandVersion: row.version,
     totalDurationMs: doc.timeline.totalDurationMs, approvedTransitions: doc.scenes.map(s => ({ sceneNumber: s.number, transition: s.transition })),
     approvedDeliveries: doc.scenes.map(s => ({ sceneNumber: s.number, deliveries: s.speech.filter(l => l.text.trim()).map(l => l.delivery) })),
+    speechTiming: result.speechTiming,
+    elevenLabs: { ...result.elevenLabs, allowanceSource: "configured_operator_snapshot; provider balance not queried",
+      immediateEstimatedUsdCharge: usd(result.elevenLabs.estimatedUsdCost === null ? null : Math.round(result.elevenLabs.estimatedUsdCost * 1000000)),
+      databaseAdmissionRechecksSharedReservations: true },
+    fal: { estimatedCostMicrousd: result.falEstimatedCostMicrousd, estimatedUsdCost: result.falEstimatedCostMicrousd === null ? null : result.falEstimatedCostMicrousd / 1000000 },
     budget: { plannedRequests: result.requests, authorizedRequests: configured.value.maxRequests,
-      estimatedCostMicrousd: result.estimatedCostMicrousd, authorizedCostMicrousd: configured.value.maxEstimatedCostMicrousd },
-    costBreakdown: result.breakdown, stageAuthorizationCeilingsMicrousd: configured.value.ceilings,
+      remainingRequests: configured.value.maxRequests - result.requests,
+      requestBudgetSufficientForCleanRun: result.requests <= configured.value.maxRequests,
+      recoveryPolicy: "Existing intents/receipts/private outputs recover without new paid requests. Exhaustion blocks new intents with FINAL_BUDGET_EXHAUSTED; recovery never resets limits or resubmits an uncertain/failed POST.",
+      estimatedCostMicrousd: result.estimatedCostMicrousd, knownSubtotalMicrousd: result.knownSubtotalMicrousd,
+      trueExpectedTotalUsd: usd(result.estimatedCostMicrousd), knownSubtotalUsd: usd(result.knownSubtotalMicrousd),
+      totalImmediateEstimatedUsdCost: result.estimatedUsdCost,
+      authorizedTotalUsd: usd(configured.value.maxEstimatedCostMicrousd),
+      remainingAuthorizationMarginUsd: usd(result.estimatedCostMicrousd === null ? null : configured.value.maxEstimatedCostMicrousd - result.estimatedCostMicrousd),
+      authorizedCostMicrousd: configured.value.maxEstimatedCostMicrousd,
+      remainingAuthorizationMarginMicrousd: result.estimatedCostMicrousd === null ? null : configured.value.maxEstimatedCostMicrousd - result.estimatedCostMicrousd,
+      fundingSufficient: result.estimatedCostMicrousd === null ? null : !result.layers.funding.length },
+    costBreakdown: result.breakdown.map(item => ({ ...item, estimatedCostUsd: usd(item.estimatedCostMicrousd),
+      authorizationCeilingUsd: usd(item.authorizationCeilingMicrousd), actualProviderCostUsd: null })),
+    actualCostNote: "No provider execution inspected; actual charges are recorded separately in operation receipt.usage when available, never inferred from estimates or ceilings.",
+    stageAuthorizationCeilingsMicrousd: configured.value.ceilings,
     repairPreview,
     eligible: !result.issues.length, layers: result.layers, compositionProfile: configured.value.composition.version,
     packageUntouched: row.package_hash === doc.packageHash, upstreamCurrentnessRecheckedByGenerate: true,

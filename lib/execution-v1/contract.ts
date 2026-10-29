@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { planSpeechTiming } from "@/lib/speech-timing/plan";
 
 export const transitionSchema = z.strictObject({ type: z.enum(["none", "cut", "crossfade", "fade_in", "fade_out"]),
   durationMs: z.number().int().min(0).max(2000) });
@@ -48,8 +49,16 @@ export function executionIssues(doc: { schemaVersion: number; durationMs: number
       else if (cue.data.requirement === "required" || cue.data.assetId !== null)
         add("EXECUTION_AUDIO_BINDING_UNAVAILABLE", `${p}.audio.${role}`, "no owned audio manifest exists in V1; only optional/none cues with null binding are executable", scene.number);
     }
-    for (const [i, line] of scene.speech.entries()) if (!voiceDeliverySchema.safeParse(line.delivery).success)
-      add("EXECUTION_VOICE_DELIVERY", `${p}.speech[${i}].delivery`, "finite canonical VoiceDelivery", scene.number);
+    for (const [i, line] of scene.speech.entries()) {
+      if (!voiceDeliverySchema.safeParse(line.delivery).success)
+        add("EXECUTION_VOICE_DELIVERY", `${p}.speech[${i}].delivery`, "finite canonical VoiceDelivery", scene.number);
+      else if (line.text.trim()) {
+        try {
+          if (!planSpeechTiming(line.text, line.startMs, line.endMs, line.delivery.pace).feasible)
+            add("EXECUTION_SPEECH_TIMING", `${p}.speech[${i}]`, "exact dialogue must fit its window with safety headroom at supported speed", scene.number);
+        } catch { add("EXECUTION_SPEECH_TIMING", `${p}.speech[${i}]`, "valid positive integer-ms speech window", scene.number); }
+      }
+    }
   }
   if (doc.scenes[0]?.startMs !== 0 || end !== doc.durationMs || doc.scenes.reduce((sum, s) => sum + s.endMs - s.startMs, 0) - overlap !== doc.durationMs)
     add("EXECUTION_TOTAL_DURATION", "durationMs", "source durations minus approved overlaps equal selected duration");

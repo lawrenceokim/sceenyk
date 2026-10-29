@@ -1,4 +1,5 @@
 import type { Storyboard } from "./schema";
+import { speechTimingLimits } from "@/lib/speech-timing/plan";
 
 export type StoryboardPace = Storyboard["voice"]["pace"];
 export const speechRates = { slow: 1.8, natural: 2.3, energetic: 2.7 } as const;
@@ -19,7 +20,7 @@ export function speechIntervalBudget(startMs: number, endMs: number, pace: Story
   const availableSpeechMs = durationMs - pauseReserveMs;
   const maximumWords = Math.floor(durationMs / 1000 * speechRates[pace]);
   const maximumNonspaceCharacters = Math.floor(durationMs / 1000 * 16);
-  return { startMs, endMs, durationMs, pauseReserveMs, availableSpeechMs, pace,
+  return { startMs, endMs, durationMs, pauseReserveMs, availableSpeechMs, pace, synthesisSpeedLimits: speechTimingLimits,
     maximumWords, maximumNonspaceCharacters,
     preferredTargetWords: Math.min(preferredSpeechTarget(maximumWords), Math.floor(availableSpeechMs / 1000 * speechRates[pace])),
     preferredTargetNonspaceCharacters: Math.min(preferredSpeechTarget(maximumNonspaceCharacters), Math.floor(availableSpeechMs / 1000 * 16)) };
@@ -72,6 +73,7 @@ export function storyboardSpeechPlan(durationMs: number, existingScenes?: readon
 }
 
 export const speechPlanningInstructions = `Timing constraints are strict production limits, not suggestions. Stay comfortably below speech limits. Never exceed an absolute word or character maximum. Do not shorten required physical actions to create more dialogue time. A scene may contain no dialogue.
+For each exact dialogue/window, synthesis planning estimates duration using both words and nonspace characters, preserves configured pace, reserves 10% headroom (up to 200ms), and admits only the configured synthesisSpeedLimits. Speed selection cannot relax any hard content budget or guarantee the measured duration; generated audio/alignment must still be verified afterwards.
 Plan and verify in this order BEFORE returning: A. Total video duration; B. Number of scenes; C. Exact scene start/end timestamps; D. Required physical action, product interaction, facial reaction, camera movement and transition time; E. Remaining speech time; F. Speech target AND hard maximum; G. Final concise dialogue; H. Final timing verification of every word/character count, action duration, interval, overlap/gap and exact total duration. Return only the existing storyboard schema, never internal planning or additional fields.
 Use speechTimingPlan's supplied scene boundaries and reserved windows. Scenes are planning beats, not mandatory cuts; preserve a continuous shot and the intended concept when appropriate. Select a stable natural pace by default; slow/energetic only if the concept warrants it, never to squeeze in excess words. Rates remain slow=1.8, natural=2.3, energetic=2.7 words/second and 16 nonspace Unicode characters/second.
 Reserve actions BEFORE dialogue. Each scene supplies minimumActionMs=700, preferredActionMs=900 and maximumRecommendedActions. Aim for >=900ms for EACH physical action, >=700ms absolutely; never invent a 600ms action or scene shorter than 700ms. Plan fewer simple actions when space is tight. Every action must fit its scene, remain sequential without overlap, and leave time for product handling, expression and camera movement. Keep complex contact/repositioning/reframing in actionAndCamera. Preserve pose/product continuity; do not invent repetitive lifts. Leave the supplied reaction and transition windows free of speech. At most 60% of the video is a speaking window; the rest is action/camera/reaction/transition time. The 200ms breath/pause reserve per utterance is additional.

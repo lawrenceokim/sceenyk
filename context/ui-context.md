@@ -1,5 +1,21 @@
 # UI Context
 
+## M10 saved speech timing recovery (2026-10-29)
+
+Local speech timing failures show the exact approved window, saved alignment endpoint and available saved response. Recover saved work discloses pitch-preserving correction capped at 8%, no new ElevenLabs request, and a stop before new lip-sync; the existing Resume authorized processing confirmation handles that remaining provider request. Out-of-policy fitting displays measured/required bounds and a separately blocked Retry failed stage review notice, never an automatic TTS call/amendment. Tailwind/shared controls and final-only creative review remain unchanged. [Evidence and safe continuation](final-video-generation.md#saved-scene-2-speech-timing-and-local-recovery-2026-10-29).
+
+## M10 binding correction confirmation (2026-10-29)
+
+The existing retry panel now distinguishes Voice Design/403 permission correction from Voice binding/400 invalid_labels correction. Binding review explicitly promises saved Design/video reuse, zero replacement credits/USD and the precise +1 amendment budget; it still requires a fresh operator checkbox before queueing. History includes both stages and names pending binding attempt 2 accurately. Recover remains provider-free and cannot retry terminal rejections. Existing Tailwind/shared components remain in use. [Manual setup and behavior](final-video-generation.md#saved-voice-design-and-binding-only-replacement-2026-10-29).
+
+## Controlled M10 stage retry and recovery (2026-10-28)
+
+The existing Final Video surface adds an operator-only rejected Voice Design retry review with original attempt, permission-correction reason, preserved outputs, +1 request amendment, credit/immediate-USD projection and resulting effective limits. A quote-specific unchecked confirmation is required before Retry failed stage can queue the same execution. History distinguishes original rejection, operator-reviewed 403, immutable amendment and pending/running/completed replacement. Request totals show original + amendments, consumption/capacity and effective USD. Recover saved work is now strictly provider-intent-free; a separate explicitly confirmed Resume authorized processing action handles unstarted approved requests. Shared Button/Tailwind tokens/layout remain; no stylesheet or normal per-scene creative gate is added. Manual UI/runtime acceptance remains pending. [Contract/manual steps](final-video-generation.md#controlled-request-amendments-and-voice-design-retry-2026-10-28).
+
+## M10 provider rejection diagnostics (2026-10-28)
+
+Final Video shows the failed scene/stage when known, provider/model, retained HTTP status and sanitized provider reason, or explicitly says the original response was not retained. It preserves the saved-output message without implying that missing audio exists. Rejected requests have no misleading Recover saved work action; the server also blocks it. Other recoverable states display a warning before the button that unfinished authorized stages may submit provider requests while reusing successes. Keep existing Tailwind tokens/Button/native layout; no stylesheet or browser acceptance. [First real failure evidence](m10-first-provider-failure.md).
+
 ## Storyboard execution repair controls (2026-10-28)
 
 Studio provides finite transition/duration and VoiceDelivery controls and separates optional descriptive audio cues from required sound. Legacy approved documents are read-only until **Review local V1 execution repair** clones a proposal locally and displays every before/after/reason. Save creates a new review revision, then Accept remains explicit; no AI call, old approval rewrite or automatic package replacement. Use existing shared controls/static Tailwind; no stylesheet is added. [Canonical contract and safe recovery](final-video-generation.md#canonical-v1-execution-recovery-2026-10-28). Runtime/manual visual acceptance remains Pending.

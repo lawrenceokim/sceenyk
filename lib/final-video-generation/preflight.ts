@@ -5,6 +5,8 @@ import type { VideoGenerationProvider, VoiceGenerationProvider, LipSyncProvider 
 import { checkComposition, compositionRequirements } from "./composition";
 import type { CapabilityIssue, CapabilityLayer } from "./capabilities";
 import { executableSceneSchema, executionIssues } from "@/lib/execution-v1/contract";
+import { estimateProviderCost, voiceDesignPreviewText, type CostEstimate, type CostInput } from "./adapters/pricing";
+import { planSpeechTiming } from "@/lib/speech-timing/plan";
 
 export function finalPreflight(doc: VideoGenerationPackage, configuration: FinalConfiguration,
   providers: { video: VideoGenerationProvider; voice: VoiceGenerationProvider; lip: LipSyncProvider }) {
@@ -16,7 +18,7 @@ export function finalPreflight(doc: VideoGenerationPackage, configuration: Final
     const parsed = executableSceneSchema.array().safeParse(doc.scenes);
     if (!parsed.success) add("composition", "EXECUTION_CONTRACT_INVALID");
     else for (const issue of executionIssues({ schemaVersion: 2, durationMs: doc.timeline.totalDurationMs, scenes: parsed.data }))
-      add(issue.field.includes("delivery") ? "voice" : issue.code === "EXECUTION_SCENE_DURATION" ? "video" : issue.code === "EXECUTION_LIP_SYNC_DURATION" ? "lip_sync" : "composition", issue.code, issue.sceneNumber);
+      add(issue.field.includes("delivery") || issue.code === "EXECUTION_SPEECH_TIMING" ? "voice" : issue.code === "EXECUTION_SCENE_DURATION" ? "video" : issue.code === "EXECUTION_LIP_SYNC_DURATION" ? "lip_sync" : "composition", issue.code, issue.sceneNumber);
   }
   for (const issue of providers.video.validatePackage(doc.requirements).issues) add("video", issue.code, issue.scene);
   const caps = providers.video.getCapabilities();
@@ -29,21 +31,45 @@ export function finalPreflight(doc: VideoGenerationPackage, configuration: Final
     if (characterSpeech(scene).length) for (const code of providers.lip.validate(scene.durationMs, shape.width, shape.height)) add("lip_sync", code, scene.number);
   }
   const profile = characterProfile(doc, configuration);
+  const designPreviewText = profile ? voiceDesignPreviewText(doc.scenes.flatMap(scene => speech(scene).map(line => line.text)), configuration.pricing) : undefined;
   if (profile) for (const code of providers.voice.validate(profile, doc.scenes)) add("voice", code);
   const composition = checkComposition(compositionRequirements(doc), configuration.composition);
   diagnostics.push(...composition.issues);
-  const breakdown: { label: string; kind: keyof FinalConfiguration["ceilings"]; sceneNumber?: number; provider: string; model: string;
-    authorizationCeilingMicrousd: number; estimatedCostMicrousd: number; attempts: 1; source: "configured_operator_ceiling" }[] = [];
-  const cost = (kind: keyof FinalConfiguration["ceilings"], label: string, sceneNumber?: number) => breakdown.push({ kind, label, sceneNumber,
-    provider: configuration.providers[kind].id, model: configuration.providers[kind].model, authorizationCeilingMicrousd: configuration.ceilings[kind],
-    estimatedCostMicrousd: configuration.ceilings[kind], attempts: 1, source: "configured_operator_ceiling" });
-  for (const scene of doc.scenes) cost("video", `Scene ${scene.number} video`, scene.number);
-  if (profile) { cost("design", "Voice Design"); cost("binding", "Voice identity save"); }
-  for (const scene of doc.scenes) for (const [i] of speech(scene).entries()) cost("voice", `Scene ${scene.number} speech ${i + 1}`, scene.number);
-  for (const scene of doc.scenes) if (characterSpeech(scene).length) cost("lip_sync", `Scene ${scene.number} lip-sync`, scene.number);
+  const breakdown: (CostEstimate & { label: string; kind: keyof FinalConfiguration["ceilings"]; sceneNumber?: number; provider: string; model: string;
+    operationKey: string; authorizationCeilingMicrousd: number; attempts: 1 })[] = [];
+  const cost = (kind: keyof FinalConfiguration["ceilings"], operationKey: string, label: string, input: CostInput, sceneNumber?: number) => {
+    const estimate = estimateProviderCost(kind, configuration, input);
+    breakdown.push({ ...estimate, kind, label, operationKey, sceneNumber, provider: configuration.providers[kind].id,
+      model: configuration.providers[kind].model, authorizationCeilingMicrousd: configuration.ceilings[kind], attempts: 1 });
+    if (estimate.estimatedCostMicrousd === null) add("funding", "COST_ESTIMATE_UNAVAILABLE", sceneNumber);
+    else if (estimate.estimatedCostMicrousd > configuration.ceilings[kind]) add("funding", "STAGE_AUTHORIZATION_CEILING_EXCEEDED", sceneNumber);
+  };
+  for (const scene of doc.scenes) cost("video", `video:${scene.id}`, `Scene ${scene.number} video`, { durationMs: scene.durationMs, aspectRatio: doc.output.aspectRatio }, scene.number);
+  if (profile) { cost("design", "voice:design", "Voice Design", { text: designPreviewText }); cost("binding", "voice:binding", "Voice identity save", {}); }
+  for (const scene of doc.scenes) for (const [i, line] of speech(scene).entries()) cost("voice", `voice:${scene.id}:${i}`, `Scene ${scene.number} speech ${i + 1}`, { text: line.text }, scene.number);
+  for (const scene of doc.scenes) if (characterSpeech(scene).length) cost("lip_sync", `sync:${scene.id}`, `Scene ${scene.number} lip-sync`, { durationMs: scene.durationMs }, scene.number);
   const requests = breakdown.length;
-  const estimatedCostMicrousd = breakdown.reduce((sum, item) => sum + item.estimatedCostMicrousd, 0);
-  if (requests > configuration.maxRequests || estimatedCostMicrousd > configuration.maxEstimatedCostMicrousd) add("funding", "EXECUTION_BUDGET_INSUFFICIENT");
+  const elevenLabsRows = breakdown.filter(item => item.provider === "elevenlabs");
+  const estimatedCredits = elevenLabsRows.reduce((sum, item) => sum + (item.estimatedCredits ?? 0), 0);
+  const includedCredits = configuration.pricing?.elevenLabsIncludedCredits?.remainingCredits ?? null;
+  const creditsExceeded = includedCredits !== null && estimatedCredits > includedCredits;
+  if (creditsExceeded) add("funding", "ELEVENLABS_CREDIT_ALLOWANCE_EXCEEDED");
+  const elevenLabs = { estimatedCredits, configuredIncludedCredits: includedCredits,
+    remainingIncludedCreditsAfterRun: includedCredits === null ? null : includedCredits - estimatedCredits,
+    billingMode: configuration.pricing?.elevenLabsIncludedCredits ? "included_credits" : configuration.pricing?.elevenLabsMicrousdPerCredit !== undefined ? "configured_usd_per_credit" : "unconfigured",
+    estimatedUsdCost: creditsExceeded || elevenLabsRows.some(item => item.estimatedUsdCost === null) ? null : elevenLabsRows.reduce((sum, item) => sum + item.estimatedCostMicrousd!, 0) / 1000000 };
+  const falEstimatedCostMicrousd = breakdown.filter(item => item.provider === "fal").reduce<number | null>((sum, item) => sum === null || item.estimatedCostMicrousd === null ? null : sum + item.estimatedCostMicrousd, 0);
+  const knownSubtotalMicrousd = breakdown.reduce((sum, item) => sum + (item.estimatedCostMicrousd ?? 0), 0);
+  const estimatedCostMicrousd = creditsExceeded || breakdown.some(item => item.estimatedCostMicrousd === null) ? null : knownSubtotalMicrousd;
+  if (requests > configuration.maxRequests || knownSubtotalMicrousd > configuration.maxEstimatedCostMicrousd) add("funding", "EXECUTION_BUDGET_INSUFFICIENT");
   const layers = Object.fromEntries((["video", "voice", "lip_sync", "composition", "funding"] as const).map(layer => [layer, diagnostics.filter(issue => issue.layer === layer)])) as Record<CapabilityLayer, CapabilityIssue[]>;
-  return { issues: diagnostics.map(issue => issue.code), diagnostics, layers, composition, profile, requests, estimatedCostMicrousd, breakdown };
+  const speechTiming = doc.scenes.flatMap(scene => speech(scene).map(line => {
+    try { if (typeof line.delivery === "string") return { sceneNumber: scene.number, feasible: false };
+      return { sceneNumber: scene.number, text: line.text, startMs: line.startMs, endMs: line.endMs,
+      ...planSpeechTiming(line.text, line.startMs, line.endMs, line.delivery.pace) }; }
+    catch { return { sceneNumber: scene.number, feasible: false }; }
+  }));
+  return { issues: diagnostics.map(issue => issue.code), diagnostics, layers, composition, profile, designPreviewText, speechTiming, requests, estimatedCostMicrousd,
+    estimatedUsdCost: estimatedCostMicrousd === null ? null : estimatedCostMicrousd / 1000000,
+    elevenLabs, falEstimatedCostMicrousd, knownSubtotalMicrousd, breakdown };
 }

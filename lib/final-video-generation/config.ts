@@ -5,6 +5,7 @@ import { adapterIdentities } from "./adapters/registry";
 import type { FinalConfiguration } from "./contract";
 import { FinalConfigurationError, type AuthorizationIssue } from "./configuration-diagnostics";
 import { compositionProfile } from "./composition";
+import { finalPricing } from "./adapters/pricing";
 
 const amount = z.number().int().positive().max(1_000_000_000);
 const authorization = z.strictObject({ authorizationId: z.uuid(), language: z.string().regex(/^[a-z]{2,3}$/),
@@ -50,7 +51,7 @@ export function finalConfiguration(): { value: FinalConfiguration; hash: string 
   if (process.env.UGC_FINAL_OPERATOR_FUNDED !== "1") throw new FinalConfigurationError("FINAL_SETUP_REQUIRED", "operator_funding_disabled");
   const parsed = parseFinalAuthorization(process.env.UGC_FINAL_AUTHORIZATION);
   const value: FinalConfiguration = { ...parsed, version: "ugc-final-v1", funding: "operator_funded",
-    providers: adapterIdentities, composition: compositionProfile,
+    providers: adapterIdentities, composition: compositionProfile, pricing: finalPricing(process.env.UGC_FINAL_PRICING),
     output: { height: 720, fps: 25, format: "mp4", toleranceMs: 50, audioSampleRate: 48000 } };
   return { value, hash: packageDigest("sceenyk-final-config", value) };
 }
