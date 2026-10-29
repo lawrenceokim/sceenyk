@@ -1,5 +1,9 @@
 # Sceenyk
 
+## M10 V3 Phase 1 foundation status (2026-10-29)
+
+[V3 Phase 1](generation-architecture-v3.md#phase-1-foundation) now implements isolated provider contracts, non-executable OpenAI/Higgsfield mappings, 480p-default minimum-segment planning, structured director compilation and fresh-source/cost/authorization checks. Full paid V3 generation remains disabled and is not registered with routes/workers. V1/V2 code and historical projects remain unchanged; no migration or provider/environment setting changed. Official public Higgsfield findings are recorded, while exact reference limits, native speech/shot guarantees and authenticated account estimates remain unresolved before paid acceptance. The next phase is trusted V3 integration/verification for a new project, not a previous-run resume or ElevenLabs master-audio builder.
+
 ## Canonical V3 direction — OpenAI + Higgsfield (2026-10-29)
 
 **M10 V1: Completed / proven end-to-end / historical. M10 V2 ElevenLabs/Kling-era experiments: Experimental / superseded. M10 V3 OpenAI + Higgsfield: Planned / canonical architecture / Not Started.** [The V3 specification](generation-architecture-v3.md) now owns the intended normal path: OpenAI request understanding/reference regeneration/film-direction Storyboard → minimum Generation Segments → Higgsfield native audiovisual generation → video/segment review → local joining only for multiple approved segments → final approval → Complete.

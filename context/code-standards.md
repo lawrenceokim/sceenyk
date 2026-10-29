@@ -1,5 +1,9 @@
 # Code Standards
 
+## V3 Phase 1 implemented foundation boundary (2026-10-29)
+
+[Source contracts and checks](generation-architecture-v3.md#source-contracts-planner-and-compiler) live separately in `lib/final-video-generation-v3/`. Keep all provider fields inside adapters; core has only neutral requirements/capabilities, current-input/approval/fresh-project data, immutable plans and independent estimate/authority records. Dry preparations are non-executable and `assertPaidV3Execution()` always rejects; no environment flag, provider transport or worker/route registration exists. Existing V1/V2 schemas, interfaces and hash recipes stay unchanged. Treat supplied context/quote JSON as inputs to future trusted reconstruction, not live authorization. Phase 1 allows focused offline tests/TypeScript/lint; real providers, persistence and activation remain separately authorized Phase 2 work.
+
 ## Planned V3 provider and execution standards (2026-10-29)
 
 [Canonical V3](generation-architecture-v3.md), **Planned / Not Started**, uses neutral ImageGenerationProvider/OpenAI, CreativeDirectorProvider/OpenAI and VideoGenerationProvider/Higgsfield boundaries. Keep native audiovisual mode/capabilities, minimum continuous segment planning, provider limits and trustworthy segment pricing versioned and generic; endpoints/model fields/tags/payloads belong in adapters. Do not inherit fal.ai capabilities/rates or V2's mandatory external-master speech gate as Higgsfield behavior.

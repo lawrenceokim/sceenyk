@@ -1,5 +1,9 @@
 # Milestone 9 — Video Generation Package Preparation
 
+## V3 Phase 1 standalone planning contract (2026-10-29)
+
+[V3 source](generation-architecture-v3.md#source-contracts-planner-and-compiler) defines a separate approved creative-package/Storyboard/reference snapshot and canonical V3 content hashes, with currentness and same-project V3 provenance validation. It derives minimum audiovisual Generation Segments and full director instructions without a master-audio/voice binding. It does not modify M9 schemas/builders/approvals, adapt old packages automatically or persist a V3 record. Planned segments have exact hashes, estimates, not-started execution and separate finite authorization snapshots, but remain non-executable. Future server/database integration must establish actual fresh-project ownership and approval/currentness evidence before any paid work; no source JSON/hash is itself authority.
+
 ## Planned V3 package and Generation Segment handoff (2026-10-29)
 
 [Canonical V3](generation-architecture-v3.md#generation-segments-and-continuity), **Planned / Not Started**, preserves immutable approved Storyboard/reference content and derives minimum continuous audiovisual Generation Segments for Higgsfield. The package/plan carries full cinematic dialogue/sound/shot intent and exact source versions; it does not turn each creative scene into a video request. Package approval remains separate from finite paid authorization.

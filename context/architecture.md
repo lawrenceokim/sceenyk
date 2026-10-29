@@ -1,5 +1,9 @@
 # Architecture Context
 
+## M10 V3 Phase 1 source foundation (2026-10-29)
+
+The owner now authorizes isolated V3 provider contracts, official Higgsfield schema/pricing/lifecycle verification, deterministic minimum-segment planning, director prompt compilation and focused offline validation. New `lib/final-video-generation-v3/` is separate from V1/V2 and has no provider transport, worker/route registration or persistence. Prepared request descriptors are non-executable; paid V3 has a constant fail-closed fence. Native audio is part of the video command; no normal separate TTS/lip-sync/master-audio or single-segment creative FFmpeg stage. Source/currentness/fresh-project/estimate/authorization checks are pure and require future trusted server/database evidence before paid integration. [Phase 1 details](generation-architecture-v3.md#phase-1-foundation).
+
 ## Canonical V3 architecture — planned, not implemented (2026-10-29)
 
 [Generation Architecture V3](generation-architecture-v3.md) is the authoritative new normal path, **Planned / Not Started**. Planned neutral boundaries are ImageGenerationProvider → OpenAI, CreativeDirectorProvider → OpenAI and VideoGenerationProvider → Higgsfield; FFmpeg is local. OpenAI regenerates references and writes/compiles complete approved cinematic direction. Higgsfield's preferred Seedance 2.5 generates the fewest continuous audiovisual segments with native dialogue/lip-sync/ambience/SFX where supported; provider-specific payloads, limits and pricing remain adapter-owned.

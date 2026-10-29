@@ -1,6 +1,83 @@
 # Milestone 10 V3 — OpenAI + Higgsfield Generation Architecture
 
+## Phase 1 foundation
+
+**Phase 1 Complete in source and focused offline verification. Paid V3 remains disabled and is not wired to application routes/workers.** The subsequent owner request authorizes this isolated foundation and official public documentation research, superseding the earlier documentation-only task scope for Phase 1 only. V1/V2 source and historical executions remain unchanged. No actual provider generation/estimate/status/account call, media generation/processing, project mutation, migration, configuration change or deployment occurred.
+
+### Verified Higgsfield contract (2026-10-29)
+
+Use the [official reference-to-video API](https://open.higgsfield.ai/models/bytedance/seedance-2.5/reference-to-video/api-reference), [text-to-video API](https://open.higgsfield.ai/models/bytedance/seedance-2.5/text-to-video/api-reference) and [image-to-video API](https://open.higgsfield.ai/models/bytedance/seedance-2.5/image-to-video/api-reference). The [official documentation index](https://docs.higgsfield.ai/docs/llms.txt) explicitly gives model-specific documentation priority over the supplementary shared OpenAPI catalog; absence from that catalog does not mean a model is unavailable. No fal.ai schema/rate/limit is used as Higgsfield evidence.
+
+| Field / behavior | Verified finding / implementation |
+| --- | --- |
+| Model identifiers | `bytedance/seedance-2.5/reference-to-video`, `bytedance/seedance-2.5/text-to-video`, `bytedance/seedance-2.5/image-to-video`; production base `https://api.higgsfield.ai`. The adapter owns these identifiers and all request fields. |
+| Duration | Integer seconds 4–30; API default 5. The profile advertises the exact 4,000..30,000ms whole-second set, maximum 30,000ms. No auto duration or illegal tail. |
+| Resolution | 480p/720p/1080p; API default 720p. **The isolated V3 planning default overrides to 480p** without changing existing runtime/provider settings. |
+| Ratios | Reference/text modes list 16:9, 4:3, 1:1, 3:4, 9:16, 21:9. Image mode has no aspect-ratio request field; frame-derived output geometry needs later verification. |
+| Output | MP4/MOV; default MP4. Completed video is returned in `video.url`; private storage, decoding and actual duration/streams still require later validation. |
+| Audio | `generate_audio` boolean, default true. V3 prepares audiovisual requests with this flag; no separate TTS/lip-sync request is created. Native audio generation is confirmed, while exact dialogue/lip-sync/ambience/SFX/music behavior and quality guarantees remain unverified at this API-contract level. |
+| References | Reference mode exposes `image_urls`, `audio_urls`, `video_urls`. Image mode requires `image_url` and optionally `end_image_url`; text mode has no media fields in its parameter table. |
+| Limits | The current public reference parameter table gives no count/file-size/format/duration ceilings, nor prompt/body maximum. These stay **null / unverified**, not inherited from fal.ai or consumer/CLI claims. Required reference-limit verification blocks execution readiness. A sample-only bitrate field is not emitted because it is absent from the parameter table. |
+| Multi-shot | The compiler can express the approved timed shot list, but the API table does not guarantee multi-shot adherence or frame-accurate cuts. Required multi-shot/transition support remains unverified; successful prompt compilation is not visual acceptance. |
+
+The [official request lifecycle](https://docs.higgsfield.ai/docs/concepts/requests) confirms asynchronous submission, durable `request_id`, response-provided status/cancel locators and lowercase `queued`, `in_progress`, `completed`, `failed`, `nsfw`, `canceled` states. The adapter maps these to neutral states; mismatched IDs/unknown states require reconciliation, and completed output without a valid video locator is invalid. Status observation descriptors accept only the exact expected HTTPS API status path. They perform no GET. The TypeScript v2 example uses automatic polling; that is not installed or run here.
+
+The [official retry guidance](https://docs.higgsfield.ai/docs/concepts/errors) describes idempotency keys, bounded status retries and same-key handling for ambiguous submissions. Sceenyk still preserves its stricter reconcile-before-new-paid-work policy; this phase contains no retry transport. [Billing/retention](https://docs.higgsfield.ai/docs/concepts/billing-and-retention) says provider failures/moderation are not charged and outputs normally expire after seven days. That does not alter Sceenyk's ledger/refund policy or authorize replay; future integration must preserve success bytes privately before expiry.
+
+### Pricing implemented without network calls
+
+The [official model pricing](https://open.higgsfield.ai/models/bytedance/seedance-2.5/reference-to-video/playground) publishes `ceil(width × height × (inputVideoSeconds + outputSeconds) × 24 / 1024)` billable tokens. Rates are $0.0214/1,000 tokens at 480p/720p, $0.0234 at 1080p; video inputs multiply the rate by 0.6 and add their durations, while image/audio references do not count as video input. The pure arithmetic helper requires explicit dimensions and uses integer/rational math; it does not infer exact geometry or discounts from a resolution label or headline per-second approximation.
+
+For readiness, the [authenticated estimate response](https://docs.higgsfield.ai/docs/concepts/billing-and-retention) is authoritative. The adapter prepares the inert `POST /estimate/{model}` descriptor with the same mapped inputs as generation, but makes no request. `bindEstimateResponse()` models a future trusted capture of `{usd: "..."}` into exact command/profile/account-scoped, timestamped, expiring evidence. Its capture/expiry metadata is Sceenyk evidence, not additional provider response fields. USD is parsed strictly, rounded upward to micro-USD without floating-point conversion, and invalid/expired/wrong-account/wrong-input/conflicting observations remain unavailable.
+
+**With no authenticated estimate evidence, the actual Higgsfield profile returns unavailable / AUTHENTICATED_ESTIMATE_REQUIRED.** No account amount, output geometry or discount is invented, and public pricing examples do not become an executable quote. Estimate, immutable authorization snapshot/ceilings and later actual provider cost/receipt are separate fields. Actual cost/receipt remain null. Changing output/model/profile/reference/audio settings invalidates quote/authorization bindings; changing a ceiling cannot change the estimated price.
+
+### Source contracts, planner and compiler
+
+- [`contract.ts`](../lib/final-video-generation-v3/contract.ts) defines independent V3 `ImageGenerationProvider`, `CreativeDirectorProvider`, `VideoGenerationProvider`, strict creative/reference/currentness/funding inputs, capabilities, immutable segment/plan and monetary evidence types. Video preparation exposes neutral metadata to core; concrete payloads are adapter-owned. No V1/V2 interface/schema is modified.
+- [`openai.ts`](../lib/final-video-generation-v3/adapters/openai.ts) implements inert image-edit/reference and structured director-Storyboard preparations, plus strict result parsing. Models/token bounds are explicit constructor inputs, not new environment defaults or automatic model switches. It follows [official OpenAI image editing](https://developers.openai.com/api/docs/guides/image-generation) and [structured outputs](https://developers.openai.com/api/docs/guides/structured-outputs), checked against installed SDK types. No client, credentials, API call or automatic approval is created.
+- [`higgsfield.ts`](../lib/final-video-generation-v3/adapters/higgsfield.ts) owns three model IDs, parameter mapping, natural-language reference-role/array-order mapping, capability limits/unknowns and status/locator normalization. All descriptors are explicitly `executable: false`. No SDK, transport, credentials, model submission, polling or estimate call is present.
+- [`planner.ts`](../lib/final-video-generation-v3/planner.ts) uses dynamic programming over approved scene boundaries to find the fewest supported intervals; equal-count solutions prefer the longer first segment. Example: 31s with compatible boundaries → 27s+4s, never 30s+1s. Approved boundaries only at 30s and 31s instead fail precisely. A single scene >30s requires Storyboard replanning. Known prompt limits can force smaller legal groups or return a precise prompt-limit error; nothing is silently truncated/retimed.
+- [`compiler.ts`](../lib/final-video-generation-v3/compiler.ts) preserves exact ordered scenes, dialogue wording/timing, actions/reactions, camera, lighting, style, identity/clothing/product/location continuity and sound intentions as structured data plus a director-readable continuous prompt. Internal shot changes belong to generation; an inter-segment boundary is reserved for joining after review. No model is called to compile approved content.
+- [`identity.ts`](../lib/final-video-generation-v3/identity.ts) reuses the existing sorted-key/integer canonical hash recipe under new V3 domains; snapshots are normalized, plans deeply frozen, and scope/source/capability/command/estimate/authorization identities remain distinct. `assertPaidV3Execution()` always throws; no environment flag enables it.
+- [`validation.ts`](../lib/final-video-generation-v3/validation.ts) checks complete scenes, positive contiguous timing, contained dialogue/actions, non-overlapping speech, current approval/reference/content hashes, same-project V3 provenance, supported outputs/reference limits/native requirements, finite authorization and independent estimates. Readiness rechecks provider snapshot, all current bindings, fresh estimate and immutable authority, and **always returns eligible=false / PAID_V3_EXECUTION_DISABLED**.
+
+Each segment stores ID/version, exact project/package/Storyboard/provenance bindings, start/end/duration, scene numbers, full compiled directions and approved references, ratio/resolution/native-audio settings, capability hash, deterministic fingerprint, estimate, `executionStatus: not_started`, and null actual cost/receipt. The plan stores the full capability snapshot, current-input fingerprint and separate authorization snapshot. Single-segment composition is `direct_final_review`; multi-segment is `review_segments_then_join`. No FFmpeg, media or creative audio assembly is executed or required by this source foundation.
+
+The generic 100-scene/600s planning envelope supports longer synthetic examples; it does not expand current product duration options or rewrite old approvals. Source/currentness/fresh-project/estimate/authorization objects must come from future trusted owner/database/receipt reconstruction. Their JSON shape/hash is not a signature, live grant or proof that a project is new. There is no route accepting them, persistence, paid transport, job registration, UI or migration in Phase 1.
+
+### Ten-second two-scene example
+
+The synthetic new-project fixture has Kai, a blue jacket, a ceramic cup and a bright studio, with fresh V3 reference/approval metadata. Its immutable plan has one segment at 0–10,000ms, scenes [1,2], 480p/9:16, MP4 and native audio enabled. An abbreviated director readout is:
+
+```text
+0–5s: Scene 1. Present the cup. Kai smiles and shows the cup.
+Dialogue 1.2–2.6s, character, exact words: "Look at this."
+At 5s: Cut to Scene 2 (approved transition 0ms).
+5–10s: Scene 2. Present the cup. Kai smiles and shows the cup.
+Dialogue 6.2–7.6s, character, exact words: "Ready to go."
+```
+
+The full compiler also retains every delivery, action/reaction, camera, lighting, continuity, reference and audio-intention field. Under the actual reviewed Higgsfield profile this structural plan remains blocked by unverified reference/native/multi-shot requirements and missing authenticated estimate; no paid-ready or quality-verified output is claimed. Fully capable synthetic adapters verify the successful planning contract without providers.
+
+### Verification and exact Phase 2
+
+`npm run test:ugc-final-v3` passes **270** focused offline checks; unchanged `npm run test:ugc-final-v2` passes **187** (457 total). These cover requested 5/10/30/31/45/60s cases, illegal remainders/boundaries, >30s scenes, default 480p, compiler/immutability/hashes, provider switching, reference/native gates, stale currentness/quotes/authority, mapped variants/statuses and independent pricing. They forbid network and make zero provider requests. Full TypeScript, focused ESLint, local documentation links/anchors, whitespace and final scope checks pass; SHA-256 comparison preserves all 60 protected historical source files exactly. No real project or acceptance media is used.
+
+**Phase 2 before the first paid V3 test must:**
+
+1. Resolve official/account-specific reference limits, native dialogue/sync/sound and multi-shot controls, selected OpenAI models, image-mode framing and safe input/output delivery/retention. Document any remaining unsupported requirement; do not substitute fal data or quality guarantees.
+2. Integrate trusted fresh-project ownership/current-input/reference/approval reconstruction and explicit V3 persistence after actual catalog review, including immutable plans/paid intents, authorization/quote provenance and leases/idempotency. Add a migration only if that integration genuinely requires it; apply nothing automatically.
+3. Implement scoped OpenAI reference/director services, durable response/output capture and user approvals, then Higgsfield estimate capture and separately reviewed finite authorization for the exact selected 480p audiovisual commands. Client-authored hashes, quotes or fresh-project flags cannot be authority.
+4. Implement fenced V3-only transport, response-provided request/status IDs, uncertain-outcome reconciliation, private allowlisted media retrieval/validation and restart recovery. Keep V1/V2 isolated. Only after those guards and explicit authorization may a paid test submit a request.
+5. Add actual single-final or multi-segment approval/readiness behavior and local technical/multi-segment joining only where needed, with current immutable final-manifest approval/completion guards. Verify with focused offline/transport fixtures before separately authorized runtime work.
+6. Run the first explicitly funded/manual acceptance using a brand-new project, different uploaded image, fresh Character/Product/Location/Storyboard/package/authorization and clean V3 state. Do not reuse or migrate previous execution/media/voice/master-audio/paid authority. Review actual identity, timing, native sound/dialogue/lip-sync quality and privacy; none is proven by Phase 1.
+
+Phase 2 is not started by this foundation. V3 runtime activation and all paid provider work remain disabled.
+
 ## Authority and status (2026-10-29)
+
+The initial documentation-only/full-pipeline status below predates the separately authorized Phase 1 source foundation above. It remains the historical architecture decision; complete paid V3 execution is still not implemented/activated by Phase 1.
 
 **Milestone 10 V3 OpenAI + Higgsfield: Planned / canonical architecture / Not Started.** This is the authoritative intended generation architecture. It supersedes the normal provider, voice/audio, review and assembly strategies in the retained V1/V2 documents. It is a product/architecture decision, not a statement that the current runtime implements V3 or that Higgsfield capabilities have been verified.
 
@@ -22,7 +99,7 @@ Only **OpenAI** and **Higgsfield** are external AI providers in the planned norm
 | `CreativeDirectorProvider` | OpenAI | Request understanding, reference analysis, cinematic Storyboard, dialogue/sound intentions and provider-neutral creative direction/instruction compilation. |
 | `VideoGenerationProvider` | Higgsfield | Native audiovisual generation, with **Seedance 2.5 as the initial preferred video model**, subject to its verified Higgsfield API capabilities. |
 
-These are the planned V3 boundaries and adapter assignments, not a claim that named interfaces/adapters are already installed. Core workflow must depend on neutral requirements, capabilities, plans and results. Model IDs, endpoints, reference tags, request fields, provider limits, billing units and response interpretation belong inside adapters. Changing a provider requires an explicitly compatible new plan/profile and quote, not provider-name branches or silent fallback.
+These boundary contracts and dry adapters now exist in the isolated Phase 1 source; their paid services/runtime integration remain future work. Core workflow depends on neutral requirements, capabilities, plans and results. Model IDs, endpoints, reference tags, request fields, provider limits, billing units and response interpretation belong inside adapters. Changing a provider requires an explicitly compatible new plan/profile and quote, not provider-name branches or silent fallback.
 
 ### OpenAI references and Character Sheet
 
@@ -98,9 +175,9 @@ The video provider contract should expose versioned neutral values/support state
 
 Use supported/unsupported/unverified distinctly and fail before paid execution when required features are unsupported or unverified. Keep generic optional speech/lip-sync capabilities for future workflows without making them mandatory in V3.
 
-**Needs confirmation before V3 implementation/paid acceptance:** the exact **Higgsfield** Seedance 2.5 endpoint/model ID, availability, continuous/supported durations, 480p support, ratios/resolutions, reference limits, native dialogue/lip-sync/ambience/SFX controls, multi-shot timing behavior, output/recovery contract and trusted Higgsfield pricing. Also verify the chosen OpenAI image/reference and creative-direction contracts. No specific endpoint/model fields, price, sample-format guarantee or account access is invented here.
+**Phase 1 findings and remaining confirmation:** [the official API findings above](#verified-higgsfield-contract-2026-10-29) establish model IDs, durations, resolutions/480p, reference array fields, output enums and shared lifecycle/estimate mechanism. Exact reference bounds, native speech/sound/shot guarantees, account access, safe delivery, selected OpenAI models and exact authenticated estimates still need Phase 2 verification. No unknown limit, output geometry, price or account acceptance is invented.
 
-Earlier [fal.ai research and V2 capability snapshots](final-video-generation-v2.md#verified-seedance-api-contract) remain useful historical evidence for that service only. A shared model label does not transfer fal's schema, rates, native-audio guarantees or limits to Higgsfield. No provider research/call/probe is performed in this documentation task. The preferred strategy is resolved; these are technical verification prerequisites, not a request to choose providers again.
+Earlier [fal.ai research and V2 capability snapshots](final-video-generation-v2.md#verified-seedance-api-contract) remain useful historical evidence for that service only. A shared model label does not transfer fal's schema, rates, native-audio guarantees or limits to Higgsfield. Phase 1 researched only official public documentation and made no authenticated provider call/probe. The preferred strategy is resolved; remaining technical prerequisites do not require choosing providers again.
 
 ## Development quality and pricing intent
 
@@ -148,7 +225,7 @@ Do not migrate, resume, copy, rebind or reuse the previous test execution, asset
 
 Future acceptance must separately verify the two-provider contracts, 480p output, identity-preserving OpenAI reference review, complete editable director Storyboard, minimum continuous segments, native dialogue/audio/lip-sync where required, segment review, private persistence, finite segment-based costs/retries, unknown-outcome reconciliation and multi-segment local-only joining recovery before final approval/Complete. These are planned checks, not operations run now.
 
-The next eligible separately authorized unit is **V3 contract/capability verification and source planning for this fresh-project path**, followed by scoped implementation and later explicitly funded acceptance. The earlier V2 recommendation to build an ElevenLabs master-audio stage is superseded and is not the next normal V3 phase. This task does not create a project, ask for uploads, start a worker, change runtime routing or begin testing.
+The next eligible separately authorized unit is **the Phase 2 trusted integration and acceptance prerequisites above**. Phase 1 has implemented isolated planning/compilation/dry mapping with focused synthetic checks, not a real test project or paid runtime. The earlier V2 recommendation to build an ElevenLabs master-audio stage is superseded and is not the next normal V3 phase. No project/upload/worker/runtime activation or paid acceptance is started automatically.
 
 ## Documentation and historical preservation
 

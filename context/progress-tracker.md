@@ -1,5 +1,21 @@
 # Progress Tracker
 
+## M10 V3 Phase 1 foundation (2026-10-29)
+
+**Phase 1 Complete in source and focused offline verification; paid V3 remains disabled, with no runtime route/worker activation.** Official Higgsfield model references confirm the requested reference/text/image model IDs, whole-second 4–30s, 480p/720p/1080p, native audio, six explicit text/reference ratios, MP4/MOV and image/audio/video reference arrays. Exact reference/media count/size/format bounds, native speech/sound/multi-shot guarantees, account availability and actual authenticated estimates remain unverified. No inference, estimate, status or account API was called. [Canonical contract evidence, data model, compiled example and exact Phase 2](generation-architecture-v3.md#phase-1-foundation).
+
+New source: `lib/final-video-generation-v3/contract.ts`, `identity.ts`, `compiler.ts`, `planner.ts`, `validation.ts`, `adapters/openai.ts`, `adapters/higgsfield.ts`, `adapters/higgsfield-pricing.ts`; new `scripts/final-video-v3-fixture.ts`, `scripts/check-final-video-v3.ts`; `package.json` adds `test:ugc-final-v3` only. Context updated: this tracker, `generation-architecture-v3.md`, `architecture.md`, `ai-workflow-rules.md`, `code-standards.md`, `overview.md`, `video-generation-package.md`, `pricing.md` and `generation-jobs.md`.
+
+Contracts expose image/reference, creative director and video providers with strict versioned input/currentness/capability/estimate/authority schemas. OpenAI image-edit/director requests and Higgsfield model/request/status/estimate mappings are inert descriptors only. Native audio is generated with video where supported; no separate TTS/lip-sync/master-audio or media/FFmpeg work is invoked. The explicit adapter profile is `final-video-v3-higgsfield`, V3 planning defaults to 480p, plans are deeply frozen and all segments remain not_started with null actual cost/receipt. There is no provider transport, SDK credential/client creation, submit/poll method, persistence, route or worker registration; paid readiness always returns eligible=false and the constant paid fence always throws.
+
+Minimum-count dynamic programming groups approved scenes only at their existing boundaries. Compatible 5/10/30s stay single-segment; 31s with valid boundaries selects 27+4 instead of 30+1; only 30/31 boundaries or a single >30s scene fail for replanning. 45s→30+15 and 60s→30+30 pass compatible fixtures. The compiler retains exact dialogue/action/camera/lighting/style/reference/sound/continuity data both structurally and in director text, mapping internal shots to generation and split boundaries to joining after review. Unsupported/missing/stale input, limits, native features, quotes or finite authority fail precisely without fallback. The actual Higgsfield plan remains structurally reviewable but blocked where public contract/evidence is incomplete.
+
+Independent pricing validates exact-input/profile/account-bound authenticated estimate evidence with expiry/reconciliation and strict micro-USD conversion; no evidence means unavailable. Published token arithmetic is separately implemented with explicit geometry, never inferred per-second pricing/discounts or ceiling-derived estimates. Authorization ID/version/input/capability/ceilings and current consumption are separate from estimates and future actual receipts, rechecked before any possible later handoff. V1/V2 financial or execution records are never modified.
+
+Verified **270 new V3 foundation/compiler/pricing/V1-compatibility checks +187 unchanged V2/V1 checks =457 focused checks**, full TypeScript (`--noEmit --incremental false`), focused ESLint, local documentation links/anchors, whitespace and final scope review. Both suites forbid network and report zero requests. SHA-256 comparison confirms all **60 protected V1/V2/package/Storyboard/execution-contract/compatibility-fixture source files are byte-for-byte unchanged**. No old projects/executions/assets/authorizations, migrations, environment/provider configuration or dependency versions changed; no live database/storage, provider call, media generation/FFmpeg, worker/job, browser/build/deployment or hosted enabling occurred. No migration is needed for non-persisted planning.
+
+Next: separately authorized Phase 2 must resolve remaining provider limits/controls, implement trusted fresh-project source/currentness/persistence and durable approvals/intents, capture real estimates and reviewed authorization, wire fenced V3-only transport/private media/recovery and actual segment/final review before a first explicitly funded test. Use a brand-new project, different uploaded image and fresh Character/Product/Location/Storyboard/package/authority; never resume/migrate/attach prior test execution or assets. Detailed prerequisites are in the canonical Phase 2 checklist. Phase 2 is not started here.
+
 ## Canonical M10 V3 — OpenAI + Higgsfield documentation (2026-10-29)
 
 | Milestone | Current status | Boundary |
@@ -2256,6 +2272,8 @@ Project implementation exists: explicit Save draft/title/status controls; one Zo
 
 ## Current Goal
 
+**Current V3 outcome (2026-10-29): Phase 1 source/offline foundation Complete; full paid generation remains disabled.** The local planner/compiler/dry provider mappings and validation are implemented; actual ownership/persistence/transport/review integration and the new project's paid acceptance are Phase 2, not started. [Verified phase record](#m10-v3-phase-1-foundation-2026-10-29). Earlier documentation-only/current-goal snapshots below are historical.
+
 **Current V3 direction (2026-10-29): documentation complete; implementation Planned / Not Started.** OpenAI references/creative direction + Higgsfield native audiovisual segments is canonical. Existing V1/V2 source and historical projects remain preserved; the next cycle is a new project/different image/fresh data and authorization. Earlier V2 “current goal” and master-audio recommendations below are superseded for the normal path. [V3 status](#canonical-m10-v3--openai--higgsfield-documentation-2026-10-29).
 
 **Phase 1 outcome (2026-10-29): V2 capabilities/segment planner Complete in source and offline checks; paid V2 execution remains Not Started.** The earlier documentation-only/current-goal snapshots below are superseded for foundation status. No V1 behavior or existing execution is changed. [Current phase record](#m10-v2-phase-1-foundation-2026-10-29).
@@ -2472,6 +2490,8 @@ This table describes the dashboard unit. Existing landing and creation page cont
 - Final logo artwork remains unapproved; the wordmark/mark are preview interpretations of the references.
 
 ## Next Up
+
+**Current next eligible work: V3 Phase 2 trusted integration before the first paid fresh-project test.** Follow [the exact Phase 2 checklist](generation-architecture-v3.md#verification-and-exact-phase-2): resolve provider limits/controls/account contract, establish trusted fresh-project persistence/currentness and approvals/intents, capture estimates and explicit finite authority, implement fenced transport/private recovery and actual segment/final review. Nothing is activated automatically; do not reuse prior test state or return to the V2 master-audio phase. Earlier next-step snapshots below are superseded.
 
 **Current next eligible unit (V3, 2026-10-29): separately authorized Higgsfield/OpenAI contract verification and source planning for a brand-new project with a different image.** Establish actual Seedance 2.5 availability/modes/durations, native audio/dialogue/lip-sync, multi-reference/multi-shot support, 480p output and trusted segment pricing before V3 implementation/paid acceptance. Do not continue the old ElevenLabs master-audio phase or resume/migrate/reuse the previous test execution. Historical recommendations below remain evidence, not permission. [Fresh-cycle boundary](generation-architecture-v3.md#new-project-implementation-and-testing-cycle).
 

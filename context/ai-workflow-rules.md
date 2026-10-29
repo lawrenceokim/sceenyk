@@ -1,5 +1,9 @@
 # AI Workflow Rules
 
+## Current authorization — V3 Phase 1 foundation (2026-10-29)
+
+The subsequent owner request authorizes new isolated V3 contracts/planner/compiler/dry adapters, official public provider documentation review and focused offline tests/TypeScript/lint. It supersedes the documentation-only scope below for this foundation only. No actual provider generation/estimate/status/account request, media processing, paid execution activation, old-project access/mutation, existing authorization edit, V1/V2 change, worker/job or deployment. No migration is required for pure planning. Prepare inert request mappings only; transport/admission/persistence and a fresh project's paid test remain later separately authorized work. Follow [the V3 Phase 1 record](generation-architecture-v3.md#phase-1-foundation).
+
 ## Current authorization — canonical V3 documentation only (2026-10-29)
 
 Document [V3 OpenAI + Higgsfield](generation-architecture-v3.md) as canonical, **Planned / Not Started**, with OpenAI references/direction, native Higgsfield audiovisual segments, planned 480p testing, multi-segment review/local joining and a brand-new project/different-image test cycle. V1 remains Completed/proven/historical; V2 ElevenLabs/Kling-era/master-audio foundations remain Experimental/superseded. Preserve every earlier record and existing uncommitted source change.

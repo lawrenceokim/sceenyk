@@ -1,5 +1,11 @@
 # Commercial cost contract
 
+## V3 Phase 1 Higgsfield estimate foundation (2026-10-29)
+
+[Independent Higgsfield pricing](generation-architecture-v3.md#pricing-implemented-without-network-calls) uses exact command/profile/account-scoped authenticated estimate evidence, captured later through the provider's estimate mechanism. Phase 1 prepares the same-input estimate descriptor and validates retained observations locally, but calls no endpoint. Missing/expired/conflicting evidence returns unavailable and blocks readiness. A separate published token-math helper requires explicit dimensions and does not invent output geometry, discounts or a price from a ceiling/headline per-second rate. No actual amount is fetched now.
+
+Estimates, immutable authorization ID/version/input/capability/ceiling snapshots, current consumption and later actual provider cost/receipt stay separate. The default V3 planning resolution is 480p only; no existing environment/provider or retail/credit policy changes. V1/V2 tariffs/configuration/executions below remain unchanged historical/source evidence. A real fresh-project quote and reviewed authorization are Phase 2 prerequisites.
+
 ## Planned V3 Higgsfield segment pricing and 480p testing (2026-10-29)
 
 [V3 pricing intent](generation-architecture-v3.md#development-quality-and-pricing-intent), **Planned / Not Started**, estimates video cost per Higgsfield Generation Segment, not per Storyboard scene. OpenAI understanding/image/creative operations retain their actual separately authorized costs. Native audiovisual generation removes normal separate ElevenLabs/Kling line items; no dollar saving or Higgsfield tariff is inferred. Verify Higgsfield's own model/account pricing, duration/resolution/options and billable units; do not transfer old fal rates or authorization ceilings into an estimate.
