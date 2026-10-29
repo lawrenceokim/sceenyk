@@ -1,5 +1,9 @@
 # UI Context
 
+## Final Video approval status (2026-10-29)
+
+Complete requires a current approved final execution and persisted parent completion/time. A generated unapproved candidate remains Final video ready; a historical approved execution whose currentness fails shows Final approval needs review and a waiting completion step. Validation failures preserve the playable candidate and diagnostics, with no automatic recovery/regeneration/deletion. The inspected false-staleness case needs manual075 plus its exact guarded review-state repair before another review decision. [Evidence, limits and steps](final-video-generation.md#final-approval-false-staleness-and-saved-media-investigation-2026-10-29). Existing Tailwind/player/control styling is unchanged.
+
 ## M10 saved speech timing recovery (2026-10-29)
 
 Local speech timing failures show the exact approved window, saved alignment endpoint and available saved response. Recover saved work discloses pitch-preserving correction capped at 8%, no new ElevenLabs request, and a stop before new lip-sync; the existing Resume authorized processing confirmation handles that remaining provider request. Out-of-policy fitting displays measured/required bounds and a separately blocked Retry failed stage review notice, never an automatic TTS call/amendment. Tailwind/shared controls and final-only creative review remain unchanged. [Evidence and safe continuation](final-video-generation.md#saved-scene-2-speech-timing-and-local-recovery-2026-10-29).

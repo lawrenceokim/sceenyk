@@ -2,9 +2,16 @@ import { packageDigest } from "@/lib/video-generation-package/builder";
 import type { VideoGenerationPackage } from "@/lib/video-generation-package/contract";
 import type { CharacterVoiceProfile, FinalConfiguration, Scene } from "./contract";
 import { checkComposition, compositionRequirements } from "./composition";
+import { FinalVideoError } from "./contract";
 
 export const speech = (scene: Scene) => scene.speech.filter(line => line.text.trim().length > 0);
 export const characterSpeech = (scene: Scene) => speech(scene).filter(line => line.speaker === "character");
+export function sceneSpeechWindow(scene: Pick<Scene, "startMs" | "durationMs">, line: { startMs: number; endMs: number }) {
+  const offsetMs = line.startMs - scene.startMs, windowMs = line.endMs - line.startMs;
+  if (![scene.startMs, scene.durationMs, line.startMs, line.endMs].every(Number.isSafeInteger) ||
+    offsetMs < 0 || windowMs <= 0 || offsetMs + windowMs > scene.durationMs) throw new FinalVideoError("FINAL_SPEECH_TIMING");
+  return { offsetMs, windowMs };
+}
 export function characterProfile(doc: VideoGenerationPackage, config: FinalConfiguration): CharacterVoiceProfile | null {
   if (!doc.scenes.some(scene => speech(scene).length)) return null;
   const content = { characterBinding: doc.approvedReferences.character.id,

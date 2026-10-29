@@ -12,7 +12,7 @@ import { voiceDeliverySchema } from "@/lib/execution-v1/contract";
 import { finalProviders, assertFinalProviderConfiguration } from "./adapters/registry";
 import { FinalVideoError, type FinalExecution, type Operation, type ProviderReceipt, type FinalAsset, type StageKind } from "./contract";
 import type { ProviderContext, VoiceResponse } from "./providers";
-import { speech } from "./planning";
+import { speech, sceneSpeechWindow } from "./planning";
 import { finalPreflight } from "./preflight";
 import { recordProviderUsage } from "./usage";
 import type { EffectiveAuthorization } from "./retry";
@@ -224,15 +224,18 @@ export async function runFinalVideo(claim: FinalExecution, shutdown: AbortSignal
               providers.voice.timing?.(receipt));
             return { bytes: fitted.bytes, metadata: fitted.metadata, receipt: { speechFit: fitted.proof } }; }, scene.id);
         if (utterance.request_id && Date.now() - Date.parse(utterance.created_at) < 2 * 60 * 60_000) priorSpeech.push(utterance.request_id);
-        audioParts.push({ bytes: await stored(utterance), offsetMs: line.startMs - scene.startMs,
-          windowMs: line.endMs - line.startMs, speaker: line.speaker, hash: utterance.output!.sha256, operationId: utterance.id });
+        audioParts.push({ bytes: await stored(utterance), ...sceneSpeechWindow(scene, line),
+          speaker: line.speaker, hash: utterance.output!.sha256, operationId: utterance.id });
       }
-      const allAudio = audioParts.length ? await alignedAudio(row, audioParts, scene.durationMs) : null;
+      let compositionAudio: Buffer | null = null;
       let picture = await stored(video); let syncId: string | null = null;
       const mouthParts = audioParts.filter(part => part.speaker === "character");
       if (mouthParts.length) {
         const guide = await localOutput(`guide:${scene.id}`, { hashes: mouthParts.map(part => part.hash), windows: mouthParts.map(part => [part.offsetMs, part.windowMs]) },
           () => alignedAudio(row, mouthParts, scene.durationMs), scene.id);
+        // Character-only composition consumes the exact persisted guide submitted
+        // to lip-sync. Mixed narration is added from the same canonical utterances.
+        if (mouthParts.length === audioParts.length) compositionAudio = await stored(guide);
         const limits = providers.lip.validate(video.output!.durationMs, video.output!.width, video.output!.height, video.output!.sizeBytes, guide.output!.sizeBytes);
         if (limits.length) throw new FinalVideoError(`FINAL_CAPABILITY:${limits[0]}`);
         const synced = await paid(`sync:${scene.id}`, "lip_sync", { videoHash: video.output!.sha256, audioGuideHash: guide.output!.sha256,
@@ -243,9 +246,10 @@ export async function runFinalVideo(claim: FinalExecution, shutdown: AbortSignal
           }, (receipt, context) => providers.lip.retrieve(receipt, context), bytes => normalizeVisual(row, bytes, scene.durationMs, doc.output.aspectRatio), scene.id);
         picture = await stored(synced); syncId = synced.id;
       }
+      if (!compositionAudio && audioParts.length) compositionAudio = (await alignedAudio(row, audioParts, scene.durationMs)).bytes;
       const completed = await localOutput(`scene:${scene.id}`, { videoHash: video.output!.sha256, syncId,
         audioHashes: audioParts.map(part => part.hash), durationMs: scene.durationMs },
-        () => muxScene(row, picture, allAudio?.bytes ?? null, scene.durationMs, doc.output.aspectRatio), scene.id);
+        () => muxScene(row, picture, compositionAudio, scene.durationMs, doc.output.aspectRatio), scene.id);
       await checkpoint("scene", { sceneId: scene.id, asset: completed.output, manifest: { videoOperation: video.id,
         voiceOperations: audioParts.map(part => part.operationId), syncOperation: syncId, profileId: row.profile?.id ?? null } });
       sceneOutputs.push(completed.output!);

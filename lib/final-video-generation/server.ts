@@ -25,7 +25,7 @@ export function finalReview(row: FinalExecution, current: boolean): FinalReview 
   const leased = !!row.claim_token && Date.parse(row.lease_expires_at ?? "") > Date.now();
   const ratio = row.final_asset ? row.final_asset.width === row.final_asset.height ? "1:1" : row.final_asset.width > row.final_asset.height ? "16:9" : "9:16" : "";
   return { id: row.id, version: row.version, revision: row.revision, state: row.state, phase: row.phase,
-    label: phaseLabels[row.phase], current, error: row.error_code, localError: voiceLabelValidationMessage(row.error_code) ?? undefined,
+    label: row.state === "approved" && !current ? "Final approval needs review" : phaseLabels[row.phase], current, error: row.error_code, localError: voiceLabelValidationMessage(row.error_code) ?? undefined,
     durationMs: row.final_asset?.durationMs ?? null, width: row.final_asset?.width ?? null, height: row.final_asset?.height ?? null,
     aspectRatio: ratio,
     canApprove: current && row.state === "review" && !leased, canReject: row.state === "review" && !leased,
@@ -184,8 +184,23 @@ export async function finalVideoAction(value: unknown) {
     if (!input.executionId) throw new FinalVideoError("FINAL_INVALID_ACTION", 400);
     const found = await ownedFinalExecution({ projectId: input.projectId, jobId: input.jobId, executionId: input.executionId });
     if (input.action === "approve") {
-      if (!found.execution.final_asset || found.execution.state !== "review" && found.execution.state !== "approved") throw new FinalVideoError("FINAL_NOT_READY");
-      await readPrivateAsset(found.execution, found.execution.final_asset, AbortSignal.timeout(120_000));
+      try {
+        const run = found.execution;
+        // SQL repeats currentness under locks after the private-byte proof.
+        const current = await scope.db.rpc("ugc_final_current", { p_execution: run.id });
+        if (current.error) throw new FinalVideoError("FINAL_READ_UNAVAILABLE", 503);
+        if (!current.data) throw new FinalVideoError("FINAL_PACKAGE_CHANGED");
+        if (!run.final_asset || run.state !== "review" && run.state !== "approved") throw new FinalVideoError("FINAL_NOT_READY");
+        if (run.state !== "approved" && input.version !== run.version) throw new FinalVideoError("FINAL_CONFLICT");
+        await readPrivateAsset(run, run.final_asset, AbortSignal.timeout(120_000));
+        payload = { ...payload, verifiedAsset: run.final_asset, verifiedFingerprint: run.final_fingerprint };
+      } catch (error) {
+        const code = error instanceof FinalVideoError ? error.code : "FINAL_APPROVAL_VALIDATION_FAILED";
+        const audit = await scope.db.rpc("ugc_final_record_approval_failure", { p_owner: scope.ownerId, p_execution: found.execution.id,
+          p_version: input.version, p_code: code });
+        if (audit.error) console.error("UGC_FINAL_APPROVAL_AUDIT_UNAVAILABLE", { code: audit.error.code });
+        throw error;
+      }
     }
     if (input.action === "recover") {
       if (found.execution.error_code === "FINAL_SPEECH_RETRY_REQUIRED") throw new FinalVideoError("FINAL_SPEECH_RETRY_REQUIRED");
@@ -220,10 +235,12 @@ export async function finalVideoAction(value: unknown) {
   const result = await scope.db.rpc("ugc_final_action", { p_owner: scope.ownerId, p_project: input.projectId,
     p_job: input.jobId, p_action: input.action, p_payload: payload });
   if (result.error) throw new FinalVideoError(missing(result.error.code) ? "FINAL_SETUP_REQUIRED" : "FINAL_ACTION_UNAVAILABLE", 503);
-  if (!result.data?.id) throw new FinalVideoError("FINAL_CONFLICT");
+  if (!result.data?.id) throw new FinalVideoError(input.action === "approve" ? "FINAL_APPROVAL_REJECTED" : "FINAL_CONFLICT");
   return readFinalVideo(scope.job);
 }
 export function finalErrorMessage(code: string, diagnostics?: readonly CapabilityIssue[]) {
+  if (code === "FINAL_APPROVAL_REJECTED" || code === "FINAL_APPROVAL_VALIDATION_FAILED") return "Final approval did not pass validation. The video is preserved for review; check status before trying again.";
+  if (code === "FINAL_PACKAGE_CHANGED") return "The exact approved package is not current. Final approval stopped; the existing video is preserved for review.";
   if (code === "FINAL_SPEECH_RETRY_REQUIRED") return "Saved speech exceeds the safe local fitting limit. A new TTS request requires a separate reviewed stage retry and sufficient request authorization; none was queued.";
   const labelMessage = voiceLabelValidationMessage(code);
   if (labelMessage) return labelMessage;

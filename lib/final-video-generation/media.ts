@@ -32,7 +32,7 @@ export async function verifyCompositionProcessor(plan: CompositionPlan, hasAudio
     runMediaCommand("ffmpeg", ["-hide_banner", "-filters"]), runMediaCommand("ffmpeg", ["-hide_banner", "-encoders"]),
     runMediaCommand("ffprobe", ["-v", "error", "-version"]),
   ]);
-  const required = ["fps", "scale", "format", "concat", "settb", "setpts"];
+  const required = ["fps", "scale", "format", "concat", "settb", "setpts", "tpad"];
   if (plan.scenes.some(s => s.transition.type === "crossfade")) required.push("xfade");
   if (plan.scenes.some(s => s.transition.type.startsWith("fade_"))) required.push("fade");
   if (hasAudio) required.push("amix", "adelay", "apad", "atrim", "aresample", "aformat", "asetpts", "atempo");
@@ -44,17 +44,19 @@ export async function normalizeVisual(run: FinalExecution, bytes: Buffer, durati
   const metadata = await measure(source, "video/mp4"); validateVideo(metadata, durationMs, ratio);
   const output = await recoveryFile(run, randomUUID(), "normalized.mp4"); const { width, height } = dimensions(ratio);
   await runMediaCommand("ffmpeg", [...common, "-i", source, "-t", (durationMs / 1000).toFixed(3), "-map", "0:v:0", "-an", "-sn", "-dn",
-    "-vf", `scale=${width}:${height},setsar=1,fps=25`, "-c:v", "libx264", "-preset", "fast", "-crf", "18", "-pix_fmt", "yuv420p", "-threads", "1", "-map_metadata", "-1", "-movflags", "+faststart", "-fs", "100000000", output]);
+    "-vf", `scale=${width}:${height},setsar=1,fps=25,tpad=stop_mode=clone:stop_duration=${durationMs / 1000}`, "-c:v", "libx264", "-preset", "fast", "-crf", "18", "-pix_fmt", "yuv420p", "-threads", "1", "-map_metadata", "-1", "-movflags", "+faststart", "-fs", "100000000", output]);
   const normalized = await measure(output, "video/mp4"); validateVideo(normalized, durationMs, ratio);
   return { bytes: await fs.readFile(output), metadata: normalized };
 }
 export async function alignedAudio(run: FinalExecution, parts: { bytes: Buffer; offsetMs: number; windowMs: number }[], durationMs: number) {
   const inputs: string[] = []; const filters: string[] = [];
   for (const [index, part] of parts.entries()) {
+    if (!Number.isSafeInteger(part.offsetMs) || !Number.isSafeInteger(part.windowMs) || part.offsetMs < 0 || part.windowMs <= 0 ||
+      part.offsetMs + part.windowMs > durationMs) throw new FinalVideoError("FINAL_SPEECH_TIMING");
     const input = await spool(run, randomUUID(), "speech.mp3", part.bytes); const metadata = await measure(input, "audio/mpeg");
     if (metadata.durationMs > part.windowMs + 50) throw new FinalVideoError("FINAL_SPEECH_TIMING");
     inputs.push("-i", input);
-    filters.push(`[${index}:a]adelay=${part.offsetMs}:all=1,apad,atrim=duration=${durationMs / 1000},aresample=48000[a${index}]`);
+    filters.push(`[${index}:a]asetpts=PTS-STARTPTS,adelay=${part.offsetMs}:all=1,apad,atrim=duration=${durationMs / 1000},aresample=48000[a${index}]`);
   }
   const output = await recoveryFile(run, randomUUID(), "guide.mp3");
   if (!parts.length) throw new FinalVideoError("FINAL_AUDIO_MISSING");
@@ -99,7 +101,9 @@ export async function stitch(run: FinalExecution, scenes: Iterable<Buffer> | Asy
   const list = await spool(run, randomUUID(), "list.txt", Buffer.from(inputFiles.map(file => `file '${file.replace(/\\/g, "/").replace(/'/g, "'\\''")}'`).join("\n")));
   const output = await recoveryFile(run, randomUUID(), "final.mp4");
   await runMediaCommand("ffmpeg", [...common, "-f", "concat", "-safe", "0", "-i", list, "-map", "0:v:0",
-    ...(hasAudio ? ["-map", "0:a:0"] : ["-an"]), "-c", "copy", "-t", String(durationMs / 1000), "-map_metadata", "-1", "-movflags", "+faststart", output]);
+    ...(hasAudio ? ["-map", "0:a:0", "-c:a", "aac", "-ar", "48000", "-ac", "1", "-af", `asetpts=PTS-STARTPTS,atrim=duration=${durationMs / 1000}`] : ["-an"]),
+    "-vf", "setpts=PTS-STARTPTS", "-c:v", "libx264", "-preset", "fast", "-crf", "18", "-pix_fmt", "yuv420p", "-threads", "1",
+    "-t", String(durationMs / 1000), "-map_metadata", "-1", "-movflags", "+faststart", output]);
   const metadata = await measure(output, "video/mp4"); validateVideo(metadata, durationMs, ratio, hasAudio);
   return { bytes: await fs.readFile(output), metadata };
 }

@@ -8,6 +8,7 @@ import { runMediaCommand } from "../lib/media-preparation/ffmpeg";
 import { normalizeVisual, alignedAudio, muxScene, stitch, measure, validateVideo } from "../lib/final-video-generation/media";
 import { cleanScratch } from "../lib/final-video-generation/storage";
 import type { FinalExecution } from "../lib/final-video-generation/contract";
+import { sceneSpeechWindow } from "../lib/final-video-generation/planning";
 
 async function main() {
   globalThis.fetch = async () => { throw new Error("NETWORK_FORBIDDEN_IN_MEDIA_CHECKS"); };
@@ -20,14 +21,25 @@ async function main() {
     await runMediaCommand("ffmpeg", ["-v", "error", "-nostdin", "-f", "lavfi", "-i", "sine=frequency=400:duration=1", "-c:a", "libmp3lame", "-ar", "44100", "-ac", "1", audioPath]);
     const visual = await normalizeVisual(run, await fs.readFile(videoPath), 5000, "9:16");
     assert.equal(visual.metadata.hasAudio, false); assert.equal(visual.metadata.width, 720); assert.equal(visual.metadata.durationMs, 5000);
+    assert.deepEqual(sceneSpeechWindow({startMs:5000,durationMs:5000},{startMs:6200,endMs:7600}),{offsetMs:1200,windowMs:1400});
+    assert.throws(()=>sceneSpeechWindow({startMs:5000,durationMs:5000},{startMs:1200,endMs:2600}),/FINAL_SPEECH_TIMING/);
+    const shortPath=path.join(directory,"short.mp4");
+    await runMediaCommand("ffmpeg",["-v","error","-nostdin","-i",videoPath,"-t","4.96","-c","copy",shortPath]);
+    const padded=await normalizeVisual(run,await fs.readFile(shortPath),5000,"9:16");
+    assert.equal(padded.metadata.durationMs,5000);
     const speech = await alignedAudio(run, [{ bytes: await fs.readFile(audioPath), offsetMs: 2000, windowMs: 2500 }], 5000);
     assert.ok(Math.abs(speech.metadata.durationMs - 5000) <= 50);
     await assert.rejects(alignedAudio(run, [{ bytes: await fs.readFile(audioPath), offsetMs: 2000, windowMs: 100 }], 5000), /FINAL_SPEECH_TIMING/);
+    await assert.rejects(alignedAudio(run,[{bytes:await fs.readFile(audioPath),offsetMs:6200,windowMs:1400}],5000),/FINAL_SPEECH_TIMING/);
     const spoken = await muxScene(run, visual.bytes, speech.bytes, 5000, "9:16"); assert.equal(spoken.metadata.hasAudio, true);
     const final = await stitch(run, [visual.bytes, spoken.bytes], 10000, "9:16", true);
     validateVideo(final.metadata, 10000, "9:16", true);
+    assert.equal(final.metadata.durationMs,10000);
     const finalPath = path.join(directory, "measured-final.mp4"); await fs.writeFile(finalPath, final.bytes);
     assert.deepEqual(await measure(finalPath, "video/mp4"), final.metadata);
+    const streams=JSON.parse(await runMediaCommand("ffprobe",["-v","error","-show_streams","-of","json",finalPath])).streams as {codec_type:string;duration:string}[];
+    assert.equal(Number(streams.find(s=>s.codec_type==="video")?.duration),10);
+    assert.equal(Number(streams.find(s=>s.codec_type==="audio")?.duration),10);
     async function audibleAt(seconds: number) {
       const stats = await runMediaCommand("ffmpeg", ["-v", "error", "-nostdin", "-ss", String(seconds), "-i", finalPath, "-t", "0.1",
         "-af", "astats=metadata=1:reset=0,ametadata=print:key=lavfi.astats.Overall.RMS_level:file=-", "-f", "null", "-"]);

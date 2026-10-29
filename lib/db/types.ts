@@ -280,6 +280,7 @@ export type Database = {
     Views: Record<string, never>;
     Functions: {
       ugc_final_current: { Args: { p_execution: string }; Returns: boolean };
+      ugc_final_record_approval_failure: { Args: { p_owner: string; p_execution: string; p_version: number; p_code: string }; Returns: undefined };
       ugc_final_retry_stage: { Args: { p_owner: string; p_execution: string; p_payload: Record<string, unknown> }; Returns: import("@/lib/final-video-generation/contract").FinalExecution | null };
       ugc_final_action: { Args: { p_owner: string; p_project: string; p_job: string; p_action: string; p_payload: Record<string, unknown> }; Returns: import("@/lib/final-video-generation/contract").FinalExecution | null };
       ugc_final_claim: { Args: { p_worker: string }; Returns: import("@/lib/final-video-generation/contract").FinalExecution | null };
