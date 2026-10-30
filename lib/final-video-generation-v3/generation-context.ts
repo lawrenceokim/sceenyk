@@ -11,7 +11,9 @@ export const generationContextSchema = z.strictObject({
   category: saveProjectSchema.shape.category,
 });
 export type GenerationContext = z.infer<typeof generationContextSchema>;
-export type ReferenceOriginals = { character: string | null; product: string | null };
+export type ReferenceOriginals = { character: string | null; product: string | null; names?: { character: string | null; product: string | null } };
+export const referenceSubjectSchema = z.strictObject({ role: z.enum(["character", "product"]), originalId: z.uuid(), name: z.string().max(500) });
+export type ReferenceSubject = z.infer<typeof referenceSubjectSchema>;
 export function generationContext(brief: { visual_style: string; creation_type: string; ugc_type: string; prompt: string; tone: string; category: string }): GenerationContext {
   return generationContextSchema.parse({ version: 1, visualStyle: brief.visual_style, creationType: brief.creation_type,
     type: brief.ugc_type, instructions: brief.prompt, tone: brief.tone, category: brief.category });
@@ -42,12 +44,13 @@ const treatments: Record<GenerationContext["visualStyle"], string> = {
   Anime: "Use a coherent anime illustration treatment, consistent linework and anime shading.",
   Realistic: "Use photorealistic materials, natural anatomy, realistic detail and believable lighting.",
 };
-export function referencePrompt(kind: "character" | "product" | "location", context: GenerationContext) {
+export function referencePrompt(kind: "character" | "product" | "location", context: GenerationContext, subject?: ReferenceSubject) {
   return `Create one ${kind === "location" ? "Location reference" : `${kind === "character" ? "Character" : "Product / Prop"} reference sheet`} for the saved Studio direction. ` +
     (kind === "character" ? "Preserve the supplied Character's distinctive face, identity, body proportions, hair, skin features and outfit. Show one consistent subject with clear full-body detail. " :
       kind === "product" ? "Preserve the supplied Product's identity, silhouette, shape, proportions, colors, materials, branding and visible details. Show useful consistent views of this same product. " :
         "Show one clear primary environment suitable for the approved Character and optional Product references. ") +
     `Required visual treatment: ${treatments[context.visualStyle]} Character, Product and Location must belong to this same creative world. ` +
     "Apply the style without substituting identity or inventing extra people/products. Treat user instructions as creative direction within these identity requirements. " +
-    `Structured generation context: ${JSON.stringify(context)}`;
+    `Structured generation context: ${JSON.stringify(context)}. ` +
+    (subject ? `Supplied reference subject: ${JSON.stringify(subject)}. This is the saved subject name, not a request to substitute a different subject.` : "");
 }

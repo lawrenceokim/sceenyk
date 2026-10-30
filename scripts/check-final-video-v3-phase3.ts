@@ -294,8 +294,32 @@ async function sqlChecks() {
     equal((await pg.query("select to_jsonb(a) row from public.ugc_v3_artifacts a where version=1 order by id")).rows, originalsBefore);
     equal((await pg.query("select to_jsonb(p) row from public.projects p where id=$1", [v3Id(998)])).rows, historical);
     equal((await pg.query("select count(*)::int n from public.ugc_v3_projects where project_id=$1", [v3Id(998)])).rows[0], { n: 0 });
+    const beforeReplacement = await catalog();
+    const replacementSql = fs.readFileSync("supabase/migrations/20261030007900_ugc_v3_reference_task_replacement.sql", "utf8");
+    await pg.exec(replacementSql); await pg.exec(replacementSql);
+    equal((await catalog()).filter(a => beforeReplacement.some(b => b.oid === a.oid)), beforeReplacement);
+    const sourcesBeforeReplacement = (await pg.query("select to_jsonb(a) row from public.project_assets a order by id")).rows;
+    await action("enqueue", { kind: "character", requestKey: "replacement:old-style", input: { generationContext: context, briefHash, originalId: originalIds.character, provider: "openai" } });
+    const oldQueued = (await pg.query<{ id: string }>("select id from public.ugc_v3_tasks where request_key='replacement:old-style'")).rows[0].id;
+    await rejects(() => call("ugc_v3_retire_reference_task", [v3Id(999), project, oldQueued]), "FRESH_V3_PROJECT_REQUIRED");
+    equal(await call("ugc_v3_retire_reference_task", [owner, project, oldQueued]), true);
+    equal(await call("ugc_v3_retire_reference_task", [owner, project, oldQueued]), true);
+    equal((await pg.query("select status,error_code,provider_started from public.ugc_v3_tasks where id=$1", [oldQueued])).rows[0], { status: "failed", error_code: "V3_REFERENCE_REQUEST_SUPERSEDED", provider_started: false });
+    const replacementInput = { provider: "openai", model: "fixture-image-model", generationContext: cartoonContext, briefHash: v3Digest("brief", { ...brief, visual_style: "Cartoon" }), originalId: originalIds.character,
+      referenceSubject: { role: "character", originalId: originalIds.character, name: "" }, previousTask: oldQueued };
+    const replacement = { kind: "character", requestKey: "replacement:current", input: replacementInput };
+    await action("enqueue", replacement); await action("enqueue", replacement);
+    equal((await pg.query("select count(*)::int n from public.ugc_v3_tasks where request_key='replacement:current'")).rows[0], { n: 1 });
+    const newTask = await claim();
+    ok(newTask.id !== oldQueued);
+    await rejects(() => call("ugc_v3_retire_reference_task", [owner, project, newTask.id]), "V3_REFERENCE_REPLACEMENT_UNSAFE");
+    await checkpoint(newTask, "intent", {});
+    await pg.query("update public.projects set visual_style='Anime' where id=$1", [project]);
+    await rejects(() => call("ugc_v3_retire_reference_task", [owner, project, newTask.id]), "V3_REFERENCE_REPLACEMENT_UNSAFE");
+    equal((await pg.query("select to_jsonb(a) row from public.project_assets a order by id")).rows, sourcesBeforeReplacement);
+    equal((await pg.query("select has_function_privilege('authenticated','public.ugc_v3_retire_reference_task(uuid,uuid,uuid)','EXECUTE') browser,has_function_privilege('service_role','public.ugc_v3_retire_reference_task(uuid,uuid,uuid)','EXECUTE') server")).rows[0], { browser: false, server: true });
     equal(realNetworkCalls, 0);
-    console.info(JSON.stringify({ phase3Checks: checks, migrations: previous.length + 2, previousFunctionsPreserved: before.length, fixtureHttpCalls, realNetworkCalls, paidTransportEnabled: false }));
+    console.info(JSON.stringify({ phase3Checks: checks, migrations: previous.length + 3, previousFunctionsPreserved: before.length, fixtureHttpCalls, realNetworkCalls, paidTransportEnabled: false }));
   } finally { await pg.close(); }
 }
 void (async () => { await pureAndTransportChecks(); await sqlChecks(); })().catch(error => {

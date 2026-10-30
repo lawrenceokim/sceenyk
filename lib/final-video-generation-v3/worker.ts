@@ -8,7 +8,7 @@ import { OpenAICreativeDirectorProvider } from "./adapters/openai";
 import { HiggsfieldVideoGenerationProvider } from "./adapters/higgsfield";
 import { HiggsfieldV3Transport, HiggsfieldTransportError, exactBodyHash } from "./adapters/higgsfield-transport";
 import { bindEstimateResponse } from "./adapters/higgsfield-pricing";
-import { assertV3Operator, assertV3Transport, v3OpenAIConfig, v3TransportConfig } from "./runtime-config";
+import { assertV3Operator, assertV3Transport, v3OpenAIConfig, v3ReferenceConfig, v3TransportConfig } from "./runtime-config";
 import { V3Store, type RuntimeWorkspace } from "./runtime-store";
 import { taskSchema, privateAssetSchema, quoteSchema, type Task } from "./runtime-contract";
 import { executeV3Segment } from "./execution";
@@ -18,8 +18,9 @@ import { buildFrozenPackage, restoreSegment, readFrozenPackage } from "./package
 import { initialExecution } from "./recovery";
 import { normalizeCapabilities, v3Digest } from "./identity";
 import { bytesHash, readPrivate, inspectImage, publishPrivate, signPrivate, saveSpool, readSpool, inspectVideo, deletePrivate, spoolFile } from "./runtime-media";
-import { generationContext, generationContextSchema, referencePrompt } from "./generation-context";
-import { projectBrief, creativeBriefHash, referenceOriginals, approvedArtifacts, validityEvidence } from "./runtime-server";
+import { generationContext, generationContextSchema, referenceSubjectSchema } from "./generation-context";
+import { projectBrief, creativeBriefHash, referenceOriginals, approvedArtifacts, validityEvidence } from "./creative-inputs";
+import { prepareOpenAIReference } from "./adapters/openai-reference";
 import { higgsfieldRequestIssues } from "./adapters/higgsfield-validity";
 
 async function approvedBytes(w: RuntimeWorkspace, ids: unknown, signal: AbortSignal) {
@@ -49,12 +50,14 @@ async function imageTask(store: V3Store, task: Task, w: RuntimeWorkspace, signal
   let raw = await readSpool(task.id, "openai-response.json");
   if (!raw) {
     if (task.provider_started) throw new Error("V3_OPENAI_OUTCOME_UNKNOWN");
-    const config = v3OpenAIConfig();
+    const config = v3ReferenceConfig();
+    if (model !== config.imageModel || task.input.provider !== undefined && task.input.provider !== "openai") throw new Error("V3_OPENAI_REFERENCE_PROVIDER_UNAVAILABLE");
+    const subject = task.input.referenceSubject === undefined ? undefined : referenceSubjectSchema.parse(task.input.referenceSubject);
+    if (subject && (subject.originalId !== originals[subject.role] || subject.name !== (originals.names?.[subject.role] ?? ""))) throw new Error("V3_CREATIVE_INPUT_STALE");
     const client = new OpenAI({ apiKey: config.apiKey, maxRetries: 0, timeout: 600_000, logLevel: "off" });
-    const prompt = referencePrompt(task.kind as "character" | "product" | "location", context);
     await store.checkpoint(task, "intent");
-    const response = await client.images.edit({ model, image: await Promise.all(inputs.map((b, i) => toFile(b, `reference-${i}.png`, { type: "image/png" }))),
-      prompt, n: 1, size: "1024x1024", quality: "high", output_format: "png", background: "opaque" },
+    const response = await client.images.edit(prepareOpenAIReference(model, await Promise.all(inputs.map((b, i) => toFile(b, `reference-${i}.png`, { type: "image/png" }))),
+      task.kind as "character" | "product" | "location", context, subject),
     { signal, headers: { "X-Client-Request-Id": task.id } });
     raw = Buffer.from(JSON.stringify({ response, requestId: response._request_id ?? null })); await saveSpool(task.id, "openai-response.json", raw);
   }

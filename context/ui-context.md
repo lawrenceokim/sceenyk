@@ -1,5 +1,10 @@
 # UI Context
 
+## V3 reference progress correction (2026-10-30)
+
+Studio Preview derives wording from actual task kind/currentness and review state: References ready to generate, Character/Product Sheet queued/generating/ready for review, Waiting for generation worker after 90s queued, References approved, then independent Location/Storyboard/Package/Final Video stages. Character/Product buttons block only compatible active work for their own kind; stale unstarted requests can be explicitly replaced from the same Generate controls. Unknown/provider-started outcomes remain blocked for review. Configuration failures name OpenAI and never imply fallback. Existing Studio/Sources/Properties, native scrolling and Tailwind styling remain unchanged.
+
+
 ## Canonical Studio V3 correction (2026-10-30)
 
 The existing StudioLayout, Sources upload/name controls, Creation Type and Properties remain the one UI. V3 contributes Preview tabs and review actions only; no separate creative form, upload controls or technical provider/version/hash labels. Old /studio/v3 bookmarks redirect into normal Studio/project routes. Stale reference badges preserve older previews/history and disable approval until regeneration. Tailwind/shared tokens/native scrolling remain. [Current setup/acceptance](generation-v3-phase3.md); manual visual/keyboard acceptance pending.

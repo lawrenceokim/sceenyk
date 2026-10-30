@@ -1,5 +1,12 @@
 # Architecture Context
 
+## V3 reference worker routing correction (2026-10-30)
+
+The common local worker selects the V3 consumer when local V3 is enabled, discovers only the configured operator's explicitly enrolled registry projects, and never imports the historical provider runner on that path. Optional --project scopes that same consumer. Historical maintenance arguments and --legacy retain the previous runner/provider contracts. Worker creative-input reads are separated from request authentication so the CLI does not load web/client navigation modules. Reference-only OpenAI configuration does not require the director model.
+
+Manual migration 079 adds one service-only RPC to retire stale, unstarted reference tasks under locks. It preserves task input/audit history, source assets and all V1/V2 records, and refuses active leases, artifacts or provider-started outcomes. A normal Generate action then enqueues a fresh immutable OpenAI/style/name snapshot with duplicate guards. No final-video planner, pricing, authorization or transport semantics change. See [current routing evidence and retry steps](generation-v3-phase3.md#reference-routing-and-stage-progress-correction-2026-10-30).
+
+
 ## Canonical Studio V3 correction (2026-10-30)
 
 V3 enrollment now occurs inside normal first-save for new UGC projects of the enabled local operator, using the existing atomic registry RPC; existing IDs never enroll. Every project uses CreationWorkspace/StudioLayout, with backend-specific Preview state. Versioned saved generationContext binds reference identity/style/direction and active Sources. Manual 078 extends V3 currentness and approval/source/intent guards after unchanged 076/077; no tables/backfill or V1/V2 changes. [Integration/setup](generation-v3-phase3.md).

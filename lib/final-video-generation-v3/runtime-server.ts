@@ -13,43 +13,15 @@ import { HiggsfieldVideoGenerationProvider } from "./adapters/higgsfield";
 import { readFrozenPackage } from "./package";
 import { runtimePreflight, createPaidIntent, createRuntimeAuthorization } from "./execution-package";
 import { V3Store, type RuntimeWorkspace } from "./runtime-store";
-import { assertV3Operator, v3LocalEnabled, v3TransportConfig, v3OpenAIConfig } from "./runtime-config";
-import { privateAssetSchema, qualitySchema, type Artifact, type Run, type PrivateAsset } from "./runtime-contract";
+import { assertV3Operator, v3LocalEnabled, v3TransportConfig, v3OpenAIConfig, v3ReferenceConfig } from "./runtime-config";
+import { privateAssetSchema, qualitySchema, type Run, type PrivateAsset } from "./runtime-contract";
 import { enrolledV3 } from "./enrollment";
-import { generationContext, artifactCurrent, latestArtifact, type ReferenceOriginals } from "./generation-context";
+import { generationContext, artifactCurrent, latestArtifact, referenceSubjectSchema } from "./generation-context";
 export { latestArtifact } from "./generation-context";
-import { promises as fs } from "node:fs";
+import { creativeTaskCurrent, taskBlocksGeneration } from "./reference-tasks";
+import { projectBrief, creativeBriefHash, referenceOriginals, approvedArtifacts, validityEvidence } from "./creative-inputs";
+export { projectBrief, creativeBriefHash, referenceOriginals, approvedArtifacts, validityEvidence } from "./creative-inputs";
 
-export async function validityEvidence() {
-  const file = process.env.UGC_V3_HIGGSFIELD_LIMITS_FILE;
-  if (!file) return null;
-  try { if ((await fs.stat(file)).size > 32768) return null; return JSON.parse(await fs.readFile(file, "utf8")) as unknown; } catch { return null; }
-}
-export function approvedArtifacts(w: RuntimeWorkspace, brief: Awaited<ReturnType<typeof projectBrief>>, originals: ReferenceOriginals) {
-  if (w.tasks.some(t => ["character", "product", "location", "storyboard"].includes(t.kind) && ["queued", "running", "reconciliation_required"].includes(t.status)))
-    throw new Error("V3_CREATIVE_REQUEST_STILL_ACTIVE");
-  const refs = [latestArtifact(w, "character"), ...(originals.product ? [latestArtifact(w, "product")] : []), latestArtifact(w, "location")].filter((a): a is Artifact => !!a);
-  if (!refs.some(a => a.kind === "character") || !refs.some(a => a.kind === "location") || originals.product && !refs.some(a => a.kind === "product") || refs.some(a => !a.approved_at || !artifactCurrent(a, w.artifacts, generationContext(brief), originals, creativeBriefHash(brief)))) throw new Error("APPROVE_CURRENT_REFERENCES_FIRST");
-  return refs;
-}
-export async function referenceOriginals(owner: string, project: string): Promise<ReferenceOriginals> {
-  const r = await createDatabaseClient().from("project_assets").select("id,studio_role")
-    .eq("owner_user_id", owner).eq("project_id", project).eq("upload_status", "uploaded").eq("removed_from_draft", false).in("studio_role", ["character", "product"]);
-  if (r.error) throw new Error("V3_REFERENCES_UNAVAILABLE");
-  if (["character", "product"].some(kind => r.data.filter(a => a.studio_role === kind).length > 1)) throw new Error("V3_REFERENCE_LIMIT_EXCEEDED");
-  return { character: r.data.find(a => a.studio_role === "character")?.id ?? null, product: r.data.find(a => a.studio_role === "product")?.id ?? null };
-}
-// Preserve the 077 checkpoint hash recipe. Creation Type is separately frozen in generationContext.
-export function creativeBriefHash(brief: Awaited<ReturnType<typeof projectBrief>>) {
-  const { creation_type: _creationType, ...legacyBrief } = brief;
-  void _creationType;
-  return v3Digest("brief", legacyBrief);
-}
-export async function projectBrief(owner: string, project: string) {
-  const r = await createDatabaseClient().from("projects").select("id,title,prompt,aspect_ratio,duration,visual_style,tone,category,ugc_type,creation_type")
-    .eq("id", project).eq("owner_user_id", owner).is("deleted_at", null).maybeSingle();
-  if (r.error || !r.data) throw new Error("FRESH_V3_PROJECT_REQUIRED"); return r.data;
-}
 export async function inspectRuntime(w: RuntimeWorkspace) {
   const docValue = w.packages.at(-1)?.document;
   if (!docValue) return null;
@@ -96,9 +68,12 @@ export async function runtimeDto(w: RuntimeWorkspace) {
       shotTimings: doc.source.storyboardContent.scenes.map(s => ({ number: s.number, startMs: s.startMs, endMs: s.endMs })) };
   }));
   const complete = !!preflight && (preflight.segmentCount === 1 ? runs : joined).some(r => r.packageId === preflight.packageId && r.current && r.state === "approved" && !!r.completedAt);
+  const context = generationContext(brief), briefHash = creativeBriefHash(brief);
+  const tasks = w.tasks.map(t => ({ id: t.id, kind: t.kind, status: t.status, errorCode: t.error_code, providerStarted: t.provider_started,
+    current: creativeTaskCurrent(t, context, briefHash, originals), createdAt: t.created_at, leaseUntil: t.lease_until }));
   return { projectId: w.project.project_id, packageStale: w.packages.length > 0 && !preflight, artifacts, runs: [...runs, ...joined], preflight, complete,
-    tasks: w.tasks.map(t => ({ id: t.id, kind: t.kind, status: t.status, errorCode: t.error_code })),
-    processing: w.tasks.some(t => t.status === "running" || t.status === "queued" && !["PAID_V3_EXECUTION_DISABLED", "V3_ACTIVATION_SCOPE_MISMATCH"].includes(t.error_code ?? "")), localEnabled: v3LocalEnabled() };
+    tasks,
+    processing: w.tasks.some((t, i) => ["character", "product", "location", "storyboard"].includes(t.kind) ? taskBlocksGeneration(t, tasks[i].current) : t.status === "running" || t.status === "queued" && !["PAID_V3_EXECUTION_DISABLED", "V3_ACTIVATION_SCOPE_MISMATCH"].includes(t.error_code ?? "")), localEnabled: v3LocalEnabled() };
 }
 export type RuntimeDto = Awaited<ReturnType<typeof runtimeDto>>;
 export async function readOwnedV3(project: string) {
@@ -130,8 +105,18 @@ export async function ownedV3Action(raw: unknown) {
     if (refs.some(ref => !ref?.approved_at || !artifactCurrent(ref, w.artifacts, context, originals, creativeBriefHash(brief)))) throw new Error("APPROVE_CURRENT_REFERENCES_FIRST");
     const assetId = kind === "location" ? null : z.uuid().parse(a.assetId);
     if (kind !== "location" && assetId !== originals[kind]) throw new Error("CURRENT_STUDIO_REFERENCE_REQUIRED");
-    const openai = v3OpenAIConfig();
-    await enqueue(kind, { brief, briefHash: creativeBriefHash(brief), generationContext: context, model: openai.imageModel, originalId: assetId,
+    const openai = v3ReferenceConfig();
+    const prior = w.tasks.filter(t => t.kind === kind).at(-1);
+    if (prior?.provider_started && ["failed", "reconciliation_required"].includes(prior.status)) throw new Error("V3_REFERENCE_OUTCOME_REQUIRES_REVIEW");
+    if (prior && taskBlocksGeneration(prior, creativeTaskCurrent(prior, context, creativeBriefHash(brief), originals))) return runtimeDto(w);
+    if (prior && ["queued", "running"].includes(prior.status)) {
+      // SQL locks/rechecks stale, unstarted work. Never cancels a paid/unknown outcome.
+      await store.rpc("ugc_v3_retire_reference_task", { p_owner: user.id, p_project: a.projectId, p_task: prior.id });
+    }
+    const subject = kind === "location" ? undefined : referenceSubjectSchema.parse({ role: kind, originalId: assetId, name: originals.names?.[kind] ?? "" });
+    await enqueue(kind, { provider: "openai", profile: HIGGSFIELD_V3_PROFILE,
+      ...(subject ? { referenceSubject: subject } : {}),
+      ...(prior && !prior.provider_started ? { previousTask: prior.id } : {}), brief, briefHash: creativeBriefHash(brief), generationContext: context, model: openai.imageModel, originalId: assetId,
       references: refs.map(r => r!.id),
       previous: previous?.id ?? null });
   } else if (a.action === "review_artifact") {

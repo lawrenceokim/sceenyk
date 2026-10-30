@@ -16,10 +16,15 @@ export function assertV3Transport(config: ReturnType<typeof v3TransportConfig>, 
   if (config.projectId !== scope.projectId || config.packageId !== scope.packageId || !z.uuid().safeParse(scope.projectId).success ||
     !z.uuid().safeParse(scope.packageId).success || !/^[^\s:]+:[^\s:]+$/.test(config.credentials)) throw new Error("V3_ACTIVATION_SCOPE_MISMATCH");
 }
-export function v3OpenAIConfig() {
+export function v3ReferenceConfig() {
   const config = { apiKey: process.env.OPENAI_API_KEY?.trim() ?? "", imageModel: process.env.OPENAI_V3_IMAGE_MODEL?.trim() ?? "",
     directorModel: process.env.OPENAI_V3_DIRECTOR_MODEL?.trim() ?? "" };
   if (!v3LocalEnabled() || process.env.UGC_V3_OPENAI_ENABLED !== "1" || !config.apiKey ||
-    ![config.imageModel, config.directorModel].every(m => /^[a-zA-Z0-9._:-]{1,200}$/.test(m))) throw new Error("V3_OPENAI_DISABLED_OR_UNCONFIGURED");
+    !/^[a-zA-Z0-9._:-]{1,200}$/.test(config.imageModel)) throw new Error("V3_OPENAI_REFERENCE_PROVIDER_UNAVAILABLE");
+  return config;
+}
+export function v3OpenAIConfig() {
+  const config = v3ReferenceConfig();
+  if (!/^[a-zA-Z0-9._:-]{1,200}$/.test(config.directorModel)) throw new Error("V3_OPENAI_DIRECTOR_PROVIDER_UNAVAILABLE");
   return config;
 }

@@ -4,7 +4,7 @@ import { createDatabaseClient } from "@/lib/db/server";
 import { planningInputSchema } from "./contract";
 import { artifactSchema, quoteSchema, runSchema, runtimeAuthorizationSchema, taskSchema } from "./runtime-contract";
 
-export type V3RpcName = "ugc_v3_create_project" | "ugc_v3_write" | "ugc_v3_runtime_read" | "ugc_v3_runtime_action" | "ugc_v3_task_claim" | "ugc_v3_task_checkpoint";
+export type V3RpcName = "ugc_v3_create_project" | "ugc_v3_write" | "ugc_v3_runtime_read" | "ugc_v3_runtime_action" | "ugc_v3_task_claim" | "ugc_v3_task_checkpoint" | "ugc_v3_retire_reference_task";
 export type V3RpcPort = { rpc(name: V3RpcName, args: Record<string, unknown>): PromiseLike<{ data: unknown; error: unknown }> };
 export const runtimeWorkspaceSchema = z.object({ project: z.object({ project_id: z.uuid(), owner_user_id: z.uuid(), logical_job_id: z.uuid() }),
   source: z.object({ revision: z.number().int(), input: planningInputSchema, private_bindings: z.record(z.string(), z.unknown()), current: z.boolean(), created_at: z.string() }).nullable(),

@@ -1,4 +1,4 @@
--- Read-only, owner-run Supabase SQL Editor verification AFTER manual 076 then 077 then 078.
+-- Read-only, owner-run Supabase SQL Editor verification AFTER manual 076 then 077 then 078 then 079.
 -- No jobs, claims, quotes, authorizations or provider requests are created.
 with expected(name) as (values
  ('ugc_v3_projects'),('ugc_v3_sources'),('ugc_v3_packages'),('ugc_v3_authorizations'),('ugc_v3_events'),
@@ -12,7 +12,7 @@ from expected e left join pg_class c on c.oid=to_regclass('public.'||e.name) ord
 with expected(signature) as (values
  ('public.ugc_v3_create_project(uuid,uuid,jsonb)'),('public.ugc_v3_read(uuid,uuid)'),('public.ugc_v3_write(uuid,uuid,text,jsonb)'),
  ('public.ugc_v3_runtime_read(uuid,uuid)'),('public.ugc_v3_runtime_action(uuid,uuid,text,jsonb)'),
- ('public.ugc_v3_generation_context(uuid)'),('public.ugc_v3_artifact_current(uuid)'),('public.ugc_v3_runtime_current(uuid)'),
+ ('public.ugc_v3_retire_reference_task(uuid,uuid,uuid)'),('public.ugc_v3_generation_context(uuid)'),('public.ugc_v3_artifact_current(uuid)'),('public.ugc_v3_runtime_current(uuid)'),
  ('public.ugc_v3_task_claim(uuid)'),('public.ugc_v3_task_checkpoint(uuid,uuid,text,jsonb)'))
 select e.signature,p.oid is not null as installed,p.prosecdef as security_definer,p.proconfig,
  coalesce(has_function_privilege('authenticated',p.oid,'EXECUTE'),false) as browser_execute_should_be_false,

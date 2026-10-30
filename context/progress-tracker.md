@@ -1,5 +1,16 @@
 # Progress Tracker
 
+## V3 reference routing and stage progress correction (2026-10-30)
+
+Read-only inspection found one enrolled fresh V3 project with one queued Character task, OpenAI image model, provider_started=false, no lease/output/artifacts and no legacy UGC jobs. Its frozen style was Original; the saved project now selects Realistic. The printed Soul contract was unconditional startup output from the legacy-only npm run worker:ugc, which never claimed V3 tasks; it did not show Soul executing this request. The Preview also incorrectly labeled any processing task Preparing your video and disabled all generation for stale queued work.
+
+The common command now discovers owned enrolled V3 projects through its V3 consumer when enabled, without loading Soul configuration. --project scopes this consumer; --legacy and existing historical maintenance arguments preserve the previous runner (copied unchanged except its V1_CHARACTER_CONTRACT label). V3_REFERENCE_CONTRACT clearly identifies OpenAI/model/roles/no fallback. A worker-safe creative-input module removes the CLI's web-auth/client-navigation import failure. Reference requests freeze provider/model, saved style/direction and saved Character/Product name, and use the isolated OpenAI image-edit adapter. Missing image configuration fails V3_OPENAI_REFERENCE_PROVIDER_UNAVAILABLE independently of director setup.
+
+Stage-specific progress and per-kind button blocking replace generic video wording. Stale unstarted tasks can be retired safely from normal Generate using new manual 079, then replaced with current saved inputs; old task inputs/events and uploaded assets remain. Provider-started/unknown work cannot be bypassed. No current task/source or historical record was mutated. Existing V3 final-video planning/pricing/authorization/paid transport remain unchanged. [Full trace, changed files, evidence and exact same-project retry](generation-v3-phase3.md#reference-routing-and-stage-progress-correction-2026-10-30).
+
+
+Verified 109 focused reference/config/style/progress checks, 160 Phase 3 checks with all 79 migrations and 079 rerun in disposable PGlite, 22 Studio rendering/wiring checks, TypeScript and focused ESLint. The historical runner matches its prior source except the scoped diagnostic; protected historical providers and V3 planner/pricing/authorization/paid transport files are unchanged. Local/example Higgsfield flags are explicitly 0. Current live queued task and sources remain untouched; manual 079, real provider/browser acceptance and any live worker run remain pending.
+
 ## Studio file-picker cancel and V3 route config regression fixes (2026-10-30)
 
 The native file input's bubbling `cancel` event reached the Sources dialog's unconditional `onCancel`, closing the shared Sources tree even when it was the permanent desktop grid rail. The dialog now handles only events targeted at itself. Both Character and Product/Prop use the same existing file-input component; an empty `change` now returns before `onAdd`. Picker cancellation never invokes Sources close/scroll restoration, changes references/project state or needs resize recovery. Actual dialog cancellation retains its existing close/focus/scroll cleanup. No additional body locks, viewport calculations, resize handlers or upload state were introduced.

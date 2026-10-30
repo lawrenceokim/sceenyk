@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import type { ProjectAsset } from "@/lib/media/types";
 import type { RuntimeDto } from "@/lib/final-video-generation-v3/runtime-server";
 import { uncheckedQuality, type Quality } from "@/lib/final-video-generation-v3/runtime-contract";
+import { referenceBusy, v3ProgressLabel } from "@/lib/final-video-generation-v3/progress";
 
 const field = "w-full rounded-lg border border-border bg-background p-2 text-sm";
 const money = (amount: number | null) => amount === null ? "Unavailable" : `$${(amount / 1_000_000).toFixed(4)}`;
@@ -92,6 +93,9 @@ export function V3WorkflowPreview({ initial, projectId, assets, dirty, revision 
   const reference = (kind: "character" | "product") => assets.find(a => a.studioRole === kind && a.status === "uploaded" && !a.removedFromDraft);
   const latest = workspace?.artifacts.filter(a => !workspace.artifacts.some(n => n.kind === a.kind && n.version > a.version)) ?? [];
   const currentApproved = (kind: string) => latest.some(a => a.kind === kind && a.current && a.approved && !a.rejected);
+  const outdatedReferences = workspace?.tasks.some(t => ["character", "product", "location"].includes(t.kind) && t.status === "queued" && !t.current && !t.providerStarted);
+  const referenceProviderUnavailable = ["character", "product", "location"].some(kind =>
+    workspace?.tasks.filter(t => t.kind === kind).at(-1)?.errorCode === "V3_OPENAI_REFERENCE_PROVIDER_UNAVAILABLE");
   return <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-2" aria-busy={busy}>
     <div className="flex shrink-0 flex-wrap items-center gap-1 self-start rounded-md border border-border bg-muted/40 p-0.5" role="group" aria-label="Preview view">
       {(["progress", "references", "storyboard", "package", "final"] as const).map(item => <button type="button" key={item} aria-pressed={view === item} onClick={() => setView(item)}
@@ -101,12 +105,14 @@ export function V3WorkflowPreview({ initial, projectId, assets, dirty, revision 
     <div className="min-h-0 min-w-0 flex-1 space-y-4 overflow-y-auto overscroll-contain p-1">
     {dirty && <p role="status" className="text-sm text-warning-foreground">Save your Studio changes before generating or approving. Changed style or direction requires fresh references.</p>}
     {busy && <p role="status" className="text-sm text-muted-foreground">Preparing your request…</p>}
-    {error && <p role="alert" className="break-words rounded-lg border border-destructive/30 p-3 text-sm">{error === "REFERENCE_STALE_REGENERATE" || error === "APPROVE_CURRENT_REFERENCES_FIRST" ? "Your references need regeneration and approval for the saved style and direction." : "This request couldn’t finish. Check your saved inputs and local generation setup, then check status."}</p>}
+    {error && <p role="alert" className="break-words rounded-lg border border-destructive/30 p-3 text-sm">{error === "V3_OPENAI_REFERENCE_PROVIDER_UNAVAILABLE" ? "OpenAI reference generation is unavailable. Check UGC_V3_OPENAI_ENABLED, OPENAI_API_KEY and OPENAI_V3_IMAGE_MODEL. No fallback provider will be used." : error === "REFERENCE_STALE_REGENERATE" || error === "APPROVE_CURRENT_REFERENCES_FIRST" ? "Your references need regeneration and approval for the saved style and direction." : "This request couldn’t finish. Check your saved inputs and local generation setup, then check status."}</p>}
     {!workspace ? <p role="status" className="text-sm text-muted-foreground">Loading generation status…</p> : <>
-      <div className="flex flex-wrap items-center justify-between gap-2"><p className="text-sm text-muted-foreground">{workspace.complete ? "Complete" : workspace.processing ? "Preparing your video" : "Preview"}</p><Button variant="outline" disabled={busy} onClick={() => void refresh()}>Check status</Button></div>
+      <div className="flex flex-wrap items-center justify-between gap-2"><p role="status" className="text-sm text-muted-foreground">{v3ProgressLabel(workspace, !!reference("product"))}</p><Button variant="outline" disabled={busy} onClick={() => void refresh()}>Check status</Button></div>
+      {outdatedReferences && <p role="status" className="text-sm text-warning-foreground">Your saved reference inputs changed. Generate again to replace the outdated, unstarted request and keep your uploaded sources.</p>}
+      {referenceProviderUnavailable && <p role="alert" className="text-sm text-destructive">OpenAI reference generation is unavailable. Check the local OpenAI reference configuration, then generate again. No fallback provider was used.</p>}
       {view === "references" && <>
       <section className="space-y-3"><h2 className="font-semibold">References</h2><div className="flex flex-wrap gap-3">
-        {(["character", "product"] as const).map(kind => <Button key={kind} variant="outline" disabled={locked || !reference(kind)} onClick={() => void act("reference", { kind, assetId: reference(kind)!.id })}>
+        {(["character", "product"] as const).map(kind => <Button key={kind} variant="outline" disabled={busy || dirty || referenceBusy(workspace.tasks, kind) || !reference(kind)} onClick={() => void act("reference", { kind, assetId: reference(kind)!.id })}>
           {latest.some(a => a.kind === kind) ? "Regenerate" : "Generate"} {kind === "character" ? "Character Sheet" : "Product Sheet"}</Button>)}
         <Button variant="outline" disabled={locked || !currentApproved("character") || !!reference("product") && !currentApproved("product")} onClick={() => void act("reference", { kind: "location" })}>Generate Location</Button></div>
         {!reference("character") && <p className="text-sm text-muted-foreground">Add a Character using Sources, then save your creative direction in Properties.</p>}
@@ -134,7 +140,7 @@ export function V3WorkflowPreview({ initial, projectId, assets, dirty, revision 
           {!p.transportEnabled && <p className="text-sm text-muted-foreground">Video generation is currently unavailable. Your saved work is preserved.</p>}
           <Button disabled={locked || !p.canSubmit} onClick={() => void act("generate", { packageId: p.packageId, packageHash: p.packageHash })}>Generate Final Video</Button></>}
       </section>}
-      {view === "progress" && workspace.tasks.filter(t => t.status !== "done").map(t => <div key={t.id} className="space-y-1"><p role="status" className="text-sm text-muted-foreground">{taskLabels[t.kind]}: {t.status === "queued" ? "Waiting" : t.status === "running" ? "Preparing" : "Needs attention"}</p>
+      {view === "progress" && workspace.tasks.filter(t => t.status !== "done" && t.errorCode !== "V3_REFERENCE_REQUEST_SUPERSEDED").map(t => <div key={t.id} className="space-y-1"><p role="status" className="text-sm text-muted-foreground">{taskLabels[t.kind]}: {t.status === "queued" ? "Waiting" : t.status === "running" ? "Preparing" : "Needs attention"}</p>
         {t.status === "reconciliation_required" && ["character", "product", "location", "storyboard"].includes(t.kind) && <Button variant="outline" disabled={busy} onClick={() => void act("recover_task", { id: t.id })}>Recover saved response</Button>}
         {t.kind === "join" && t.status === "failed" && <Button variant="outline" disabled={busy} onClick={() => void act("recover_task", { id: t.id })}>Recover local join</Button>}</div>)}
       {view === "final" && workspace.runs.filter(r => !p || r.packageId === p.packageId).map(r => <VideoReview key={r.id} run={r} act={act} busy={locked} segmentCount={p?.segmentCount ?? 1} />)}

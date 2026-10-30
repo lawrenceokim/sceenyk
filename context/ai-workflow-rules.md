@@ -1,5 +1,10 @@
 # AI Workflow Rules
 
+## Current authorization — V3 reference routing/progress correction (2026-10-30)
+
+Trace and read-only inspect the current fresh project's reference queues; correct version-aware worker routing, explicit OpenAI reference configuration, subject/style snapshots, stage wording and provider-free stale queued-task replacement. Focused offline fixtures/type/lint/render checks are authorized. Manual migration 079 may be authored but is not applied remotely by this task. Do not run live workers, providers, media generation, deployment or mutate the current job/historical data. Keep Higgsfield paid transport off; preserve final-video architecture/planner/pricing/authorization. The user will initiate a later actual OpenAI test themselves.
+
+
 ## Canonical Studio V3 correction (2026-10-30)
 
 The current request authorizes integrating V3 into existing Studio, canonical saved style/direction and reference staleness, plus focused offline/fixture/type/lint/render checks. Preserve historical workflows and V3 provider/persistence/authorization/recovery boundaries. Manual 078 is authored only. Do not call providers, generate paid media, start live workers, apply remote SQL or deploy. Keep UGC_V3_HIGGSFIELD_ENABLED=0. [Current integration and owner-run next steps](generation-v3-phase3.md).
