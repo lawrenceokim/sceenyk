@@ -1,5 +1,9 @@
 # Architecture Context
 
+## Canonical Studio V3 correction (2026-10-30)
+
+V3 enrollment now occurs inside normal first-save for new UGC projects of the enabled local operator, using the existing atomic registry RPC; existing IDs never enroll. Every project uses CreationWorkspace/StudioLayout, with backend-specific Preview state. Versioned saved generationContext binds reference identity/style/direction and active Sources. Manual 078 extends V3 currentness and approval/source/intent guards after unchanged 076/077; no tables/backfill or V1/V2 changes. [Integration/setup](generation-v3-phase3.md).
+
 ## M10 V3 Phase 3 runtime boundary (2026-10-29)
 
 The current owner request authorizes a local-only V3 runtime, fresh enrollment, queued OpenAI reference/director work, authenticated estimate capture, immutable exact-body paid intents, private result publication and review UI. Preserve migration 076 unchanged; follow-up 077 extends only the V3 registry with leased tasks, quotes, segment-scoped authorizations and runs. No historical enrollment/backfill or V1/V2 worker activation. V3 configuration uses its own namespace, defaults disabled, and requires an exact project/package activation binding before submit. Request-validity/price uncertainty blocks admission; unguaranteed native dialogue/lip/shot quality is reviewed after generation. Implementation/testing uses fixtures only, never actual OpenAI/Higgsfield requests or remote SQL.

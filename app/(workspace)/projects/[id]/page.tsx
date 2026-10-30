@@ -18,8 +18,7 @@ import type { GenerationJob } from "@/lib/generation/types";
 import { getOwnedProjectOrigin, MarketplaceAccessError } from "@/lib/marketplace/server";
 import type { ProjectOrigin } from "@/lib/marketplace/contract";
 import { isOwnedV3Project, readOwnedV3 } from "@/lib/final-video-generation-v3/runtime-server";
-import { v3LocalEnabled } from "@/lib/final-video-generation-v3/runtime-config";
-import { V3Studio } from "@/components/creation/v3-studio";
+import type { RuntimeDto } from "@/lib/final-video-generation-v3/runtime-server";
 import { unstable_rethrow } from "next/navigation";
 
 export const metadata: Metadata = {
@@ -47,10 +46,10 @@ async function OwnedWorkspace({ params }: { params: Promise<{ id: string }> }) {
   let v3;
   try { v3 = await isOwnedV3Project(project.id); }
   catch (error) { unstable_rethrow(error); return <ProjectLoadFailure />; }
+  let initialV3: RuntimeDto | undefined;
   if (v3) {
-    if (!v3LocalEnabled()) return <p className="p-6 text-sm text-muted-foreground">This V3 project requires the local V3 workspace configuration.</p>;
-    const initial = await readOwnedV3(project.id);
-    return <V3Studio initial={initial} />;
+    try { initialV3 = await readOwnedV3(project.id); }
+    catch (error) { unstable_rethrow(error); return <ProjectLoadFailure />; }
   }
   let origin: ProjectOrigin | null = null;
   try { origin = await getOwnedProjectOrigin(project.id); }
@@ -84,7 +83,8 @@ async function OwnedWorkspace({ params }: { params: Promise<{ id: string }> }) {
   return (
     <CreationWorkspace
       key={project.id}
-      initialProject={project}
+      initialProject={{ ...project, ...(v3 ? { workflow: "final-video-v3" as const } : {}) }}
+      initialV3={initialV3}
       viewerUserId={userId}
       initialAssets={assets}
       initialMediaError={mediaError}

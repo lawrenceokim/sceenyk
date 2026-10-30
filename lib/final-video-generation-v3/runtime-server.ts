@@ -4,7 +4,6 @@ import { z } from "zod";
 import { ensureAppUser } from "@/lib/auth/ensure-app-user";
 import { requireClerkUser } from "@/lib/auth/require-user";
 import { createDatabaseClient } from "@/lib/db/server";
-import { saveProjectSchema } from "@/lib/projects/validation";
 import { planningInputSchema, directorStoryboardSchema, type PlanningInput } from "./contract";
 import { HIGGSFIELD_V3_PROFILE } from "./adapters/higgsfield";
 import { higgsfieldRequestIssues } from "./adapters/higgsfield-validity";
@@ -16,6 +15,9 @@ import { runtimePreflight, createPaidIntent, createRuntimeAuthorization } from "
 import { V3Store, type RuntimeWorkspace } from "./runtime-store";
 import { assertV3Operator, v3LocalEnabled, v3TransportConfig, v3OpenAIConfig } from "./runtime-config";
 import { privateAssetSchema, qualitySchema, type Artifact, type Run, type PrivateAsset } from "./runtime-contract";
+import { enrolledV3 } from "./enrollment";
+import { generationContext, artifactCurrent, latestArtifact, type ReferenceOriginals } from "./generation-context";
+export { latestArtifact } from "./generation-context";
 import { promises as fs } from "node:fs";
 
 export async function validityEvidence() {
@@ -23,16 +25,28 @@ export async function validityEvidence() {
   if (!file) return null;
   try { if ((await fs.stat(file)).size > 32768) return null; return JSON.parse(await fs.readFile(file, "utf8")) as unknown; } catch { return null; }
 }
-export const latestArtifact = (w: RuntimeWorkspace, kind: Artifact["kind"]) => w.artifacts.filter(a => a.kind === kind).at(-1);
-export function approvedArtifacts(w: RuntimeWorkspace) {
+export function approvedArtifacts(w: RuntimeWorkspace, brief: Awaited<ReturnType<typeof projectBrief>>, originals: ReferenceOriginals) {
   if (w.tasks.some(t => ["character", "product", "location", "storyboard"].includes(t.kind) && ["queued", "running", "reconciliation_required"].includes(t.status)))
     throw new Error("V3_CREATIVE_REQUEST_STILL_ACTIVE");
-  const refs = [latestArtifact(w, "character"), latestArtifact(w, "product"), latestArtifact(w, "location")].filter((a): a is Artifact => !!a);
-  if (!refs.some(a => a.kind === "character") || !refs.some(a => a.kind === "location") || refs.some(a => !a.approved_at || a.rejected_at)) throw new Error("APPROVE_CURRENT_REFERENCES_FIRST");
+  const refs = [latestArtifact(w, "character"), ...(originals.product ? [latestArtifact(w, "product")] : []), latestArtifact(w, "location")].filter((a): a is Artifact => !!a);
+  if (!refs.some(a => a.kind === "character") || !refs.some(a => a.kind === "location") || originals.product && !refs.some(a => a.kind === "product") || refs.some(a => !a.approved_at || !artifactCurrent(a, w.artifacts, generationContext(brief), originals, creativeBriefHash(brief)))) throw new Error("APPROVE_CURRENT_REFERENCES_FIRST");
   return refs;
 }
+export async function referenceOriginals(owner: string, project: string): Promise<ReferenceOriginals> {
+  const r = await createDatabaseClient().from("project_assets").select("id,studio_role")
+    .eq("owner_user_id", owner).eq("project_id", project).eq("upload_status", "uploaded").eq("removed_from_draft", false).in("studio_role", ["character", "product"]);
+  if (r.error) throw new Error("V3_REFERENCES_UNAVAILABLE");
+  if (["character", "product"].some(kind => r.data.filter(a => a.studio_role === kind).length > 1)) throw new Error("V3_REFERENCE_LIMIT_EXCEEDED");
+  return { character: r.data.find(a => a.studio_role === "character")?.id ?? null, product: r.data.find(a => a.studio_role === "product")?.id ?? null };
+}
+// Preserve the 077 checkpoint hash recipe. Creation Type is separately frozen in generationContext.
+export function creativeBriefHash(brief: Awaited<ReturnType<typeof projectBrief>>) {
+  const { creation_type: _creationType, ...legacyBrief } = brief;
+  void _creationType;
+  return v3Digest("brief", legacyBrief);
+}
 export async function projectBrief(owner: string, project: string) {
-  const r = await createDatabaseClient().from("projects").select("id,title,prompt,aspect_ratio,duration,visual_style,tone,category,ugc_type")
+  const r = await createDatabaseClient().from("projects").select("id,title,prompt,aspect_ratio,duration,visual_style,tone,category,ugc_type,creation_type")
     .eq("id", project).eq("owner_user_id", owner).is("deleted_at", null).maybeSingle();
   if (r.error || !r.data) throw new Error("FRESH_V3_PROJECT_REQUIRED"); return r.data;
 }
@@ -43,7 +57,8 @@ export async function inspectRuntime(w: RuntimeWorkspace) {
   const authority = w.runtimeAuthorizations.find(a => a.document.packageId === doc.id)?.document;
   const validity = await validityEvidence(), issues = quote ? quote.segments.flatMap(s => higgsfieldRequestIssues(s.body, doc.source.references, quote.validityEvidence, new Date().toISOString())) : ["COST_ESTIMATE_UNAVAILABLE"];
   if (quote && v3Digest("validity-evidence", quote.validityEvidence) !== v3Digest("validity-evidence", validity)) issues.push("VALIDITY_EVIDENCE_CHANGED_REBUILD_PACKAGE");
-  const config = v3TransportConfig(), currentIds = approvedArtifacts(w).map(a => a.id);
+  const brief = await projectBrief(w.project.owner_user_id, w.project.project_id), originals = await referenceOriginals(w.project.owner_user_id, w.project.project_id);
+  const config = v3TransportConfig(), currentIds = approvedArtifacts(w, brief, originals).map(a => a.id);
   if (!config.credentials || !config.accountScope) issues.push("HIGGSFIELD_CREDENTIALS_REQUIRED");
   if (config.accountScope !== doc.accountScope) issues.push("HIGGSFIELD_ESTIMATE_ACCOUNT_CHANGED");
   if (!config.outputHosts.length) issues.push("HIGGSFIELD_OUTPUT_ALLOWLIST_REQUIRED");
@@ -58,10 +73,11 @@ export async function inspectRuntime(w: RuntimeWorkspace) {
   return { ...report, authorizedMaximumMicrousd: authority ? w.runtimeAuthorizations.filter(a => a.document.packageId === doc.id).reduce((sum, a) => sum + a.document.maxEstimatedCostMicrousd, 0) : null };
 }
 export async function runtimeDto(w: RuntimeWorkspace) {
+  const brief = await projectBrief(w.project.owner_user_id, w.project.project_id), originals = await referenceOriginals(w.project.owner_user_id, w.project.project_id);
   let preflight = null; try { preflight = await inspectRuntime(w); } catch { /* Stale/partial creative inputs preserve previous previews. */ }
   const previewUrl = async (asset: PrivateAsset) => { try { return (await signPrivate(asset)).url; } catch { return null; } };
   const artifacts = await Promise.all(w.artifacts.map(async a => ({ id: a.id, kind: a.kind, version: a.version,
-    approved: !!a.approved_at, rejected: !!a.rejected_at, storyboard: a.kind === "storyboard" ? directorStoryboardSchema.parse(a.document.storyboard) : null,
+    current: artifactCurrent(a, w.artifacts, generationContext(brief), originals, creativeBriefHash(brief)), approved: !!a.approved_at, rejected: !!a.rejected_at, storyboard: a.kind === "storyboard" ? directorStoryboardSchema.parse(a.document.storyboard) : null,
     preview: !a.rejected_at && a.document.asset ? await previewUrl(privateAssetSchema.parse(a.document.asset)) : null })));
   const runs = await Promise.all(w.runs.map(async r => ({ id: r.id, packageId: r.package_id, segmentId: r.intent.segmentId, state: r.state,
     current: r.current, completedAt: r.completed_at, errorCode: r.error_code, quality: r.quality, actualDurationMs: r.result?.durationMs ?? null, hasAudio: r.result?.hasAudio ?? null,
@@ -80,7 +96,7 @@ export async function runtimeDto(w: RuntimeWorkspace) {
       shotTimings: doc.source.storyboardContent.scenes.map(s => ({ number: s.number, startMs: s.startMs, endMs: s.endMs })) };
   }));
   const complete = !!preflight && (preflight.segmentCount === 1 ? runs : joined).some(r => r.packageId === preflight.packageId && r.current && r.state === "approved" && !!r.completedAt);
-  return { projectId: w.project.project_id, artifacts, runs: [...runs, ...joined], preflight, complete,
+  return { projectId: w.project.project_id, packageStale: w.packages.length > 0 && !preflight, artifacts, runs: [...runs, ...joined], preflight, complete,
     tasks: w.tasks.map(t => ({ id: t.id, kind: t.kind, status: t.status, errorCode: t.error_code })),
     processing: w.tasks.some(t => t.status === "running" || t.status === "queued" && !["PAID_V3_EXECUTION_DISABLED", "V3_ACTIVATION_SCOPE_MISMATCH"].includes(t.error_code ?? "")), localEnabled: v3LocalEnabled() };
 }
@@ -95,52 +111,45 @@ export async function isOwnedV3Project(project: string) {
   const { userId } = await requireClerkUser(), db = createDatabaseClient();
   const user = await db.from("app_users").select("id").eq("clerk_user_id", userId).maybeSingle();
   if (user.error || !user.data) throw new Error("V3_ACCOUNT_UNAVAILABLE");
-  const port = db as unknown as { rpc(name: string, args: Record<string, unknown>): PromiseLike<{ data: unknown; error: { code?: string } | null }> };
-  const result = await port.rpc("ugc_v3_read", { p_owner: user.data.id, p_project: project });
-  if (result.error?.code === "PGRST202") return false; // Before 076 no project can be enrolled.
-  if (result.error) throw new Error("V3_ENROLLMENT_UNAVAILABLE");
-  if (result.data === null) return false;
-  const enrolled = z.object({ project: z.object({ project_id: z.uuid(), owner_user_id: z.uuid() }) }).safeParse(result.data);
-  if (!enrolled.success || enrolled.data.project.project_id !== project || enrolled.data.project.owner_user_id !== user.data.id) throw new Error("V3_ENROLLMENT_UNAVAILABLE");
-  return true;
+  return enrolledV3(user.data.id, project);
 }
-const actionSchema = z.object({ action: z.enum(["create", "reference", "review_artifact", "storyboard", "build_package", "authorize", "generate", "recover", "recover_task", "approve", "reject_delete"]), projectId: z.uuid() }).passthrough();
+const actionSchema = z.object({ action: z.enum(["reference", "review_artifact", "storyboard", "build_package", "authorize", "generate", "recover", "recover_task", "approve", "reject_delete"]), projectId: z.uuid() }).passthrough();
 export async function ownedV3Action(raw: unknown) {
   const a = actionSchema.parse(raw), user = await ensureAppUser(); assertV3Operator(user.id);
   const store = new V3Store(), signal = AbortSignal.timeout(120_000), now = new Date().toISOString();
-  if (a.action === "create") {
-    const fields = saveProjectSchema.parse(a.fields);
-    if (fields.id !== a.projectId || fields.mode !== "create" || fields.creationType !== "ugc" || fields.prompt.length > 2000) throw new Error("FRESH_V3_PROJECT_REQUIRED");
-    await store.rpc("ugc_v3_create_project", { p_owner: user.id, p_project: a.projectId, p_fields: fields });
-    return runtimeDto(await store.read(user.id, a.projectId));
-  }
-  const w = await store.read(user.id, a.projectId), brief = await projectBrief(user.id, a.projectId);
+  const w = await store.read(user.id, a.projectId), brief = await projectBrief(user.id, a.projectId), originals = await referenceOriginals(user.id, a.projectId);
+  const context = generationContext(brief);
+  if (context.creationType !== "ugc") throw new Error("SELECT_UGC_CREATION_TYPE");
   const enqueue = (kind: string, input: Record<string, unknown>, key = v3Digest("task-input", input)) => store.action(user.id, a.projectId, "enqueue", {
     kind, input, requestKey: `${kind}:${key}` });
   if (a.action === "reference") {
     const kind = z.enum(["character", "product", "location"]).parse(a.kind);
     const previous = latestArtifact(w, kind);
-    if (previous && !previous.rejected_at && !previous.approved_at) throw new Error("REVIEW_EXISTING_REFERENCE_FIRST");
-    if (kind === "location" && !latestArtifact(w, "character")?.approved_at) throw new Error("APPROVE_CHARACTER_FIRST");
+    if (previous && !previous.rejected_at && !previous.approved_at && artifactCurrent(previous, w.artifacts, context, originals, creativeBriefHash(brief))) throw new Error("REVIEW_EXISTING_REFERENCE_FIRST");
+    const refs = kind === "location" ? [latestArtifact(w, "character"), ...(originals.product ? [latestArtifact(w, "product")] : [])] : [];
+    if (refs.some(ref => !ref?.approved_at || !artifactCurrent(ref, w.artifacts, context, originals, creativeBriefHash(brief)))) throw new Error("APPROVE_CURRENT_REFERENCES_FIRST");
     const assetId = kind === "location" ? null : z.uuid().parse(a.assetId);
+    if (kind !== "location" && assetId !== originals[kind]) throw new Error("CURRENT_STUDIO_REFERENCE_REQUIRED");
     const openai = v3OpenAIConfig();
-    await enqueue(kind, { brief, briefHash: v3Digest("brief", brief), model: openai.imageModel, originalId: assetId,
-      references: w.artifacts.filter(r => ["character", "product"].includes(r.kind) && !!r.approved_at && !r.rejected_at).map(r => r.id),
+    await enqueue(kind, { brief, briefHash: creativeBriefHash(brief), generationContext: context, model: openai.imageModel, originalId: assetId,
+      references: refs.map(r => r!.id),
       previous: previous?.id ?? null });
   } else if (a.action === "review_artifact") {
+    const artifact = w.artifacts.find(r => r.id === a.id);
+    if (a.decision === "approve" && (!artifact || !artifactCurrent(artifact, w.artifacts, context, originals, creativeBriefHash(brief)))) throw new Error("REFERENCE_STALE_REGENERATE");
     await store.action(user.id, a.projectId, "review_artifact", { id: z.uuid().parse(a.id), decision: z.enum(["approve", "reject"]).parse(a.decision) });
   } else if (a.action === "storyboard") {
-    const refs = approvedArtifacts(w), previous = latestArtifact(w, "storyboard");
+    const refs = approvedArtifacts(w, brief, originals), previous = latestArtifact(w, "storyboard");
     const oldInput = z.object({ references: z.array(z.string()), briefHash: z.string() }).safeParse(previous?.document.input);
     const changed = previous && (!oldInput.success || v3Digest("reference-ids", oldInput.data.references) !==
-      v3Digest("reference-ids", refs.map(r => r.id)) || oldInput.data.briefHash !== v3Digest("brief", brief));
+      v3Digest("reference-ids", refs.map(r => r.id)) || oldInput.data.briefHash !== creativeBriefHash(brief));
     if (previous && !previous.rejected_at && !changed) throw new Error("REVIEW_EXISTING_STORYBOARD_FIRST");
-    await enqueue("storyboard", { brief, briefHash: v3Digest("brief", brief), model: v3OpenAIConfig().directorModel, references: refs.map(r => r.id), previous: previous?.id ?? null });
+    await enqueue("storyboard", { brief, briefHash: creativeBriefHash(brief), generationContext: context, model: v3OpenAIConfig().directorModel, references: refs.map(r => r.id), previous: previous?.id ?? null });
   } else if (a.action === "build_package") {
-    const refs = approvedArtifacts(w), storyboard = latestArtifact(w, "storyboard");
+    const refs = approvedArtifacts(w, brief, originals), storyboard = latestArtifact(w, "storyboard");
     if (!storyboard?.approved_at || storyboard.rejected_at) throw new Error("APPROVE_STORYBOARD_FIRST");
     const storyboardInput = z.object({ references: z.array(z.uuid()), briefHash: z.string() }).parse(storyboard.document.input);
-    if (v3Digest("reference-ids", storyboardInput.references) !== v3Digest("reference-ids", refs.map(r => r.id)) || storyboardInput.briefHash !== v3Digest("brief", brief))
+    if (v3Digest("reference-ids", storyboardInput.references) !== v3Digest("reference-ids", refs.map(r => r.id)) || storyboardInput.briefHash !== creativeBriefHash(brief))
       throw new Error("STORYBOARD_STALE_REGENERATE");
     const character = refs.find(r => r.kind === "character")!, original = z.object({ id: z.uuid(), sha256: z.string() }).parse(character.document.original);
     const input: PlanningInput = planningInputSchema.parse({ workflow: "final-video-v3", profileId: HIGGSFIELD_V3_PROFILE,
@@ -148,7 +157,7 @@ export async function ownedV3Action(raw: unknown) {
       provenance: { projectWorkflow: "final-video-v3", originalImageId: original.id, originalImageHash: original.sha256 },
       package: { id: randomUUID(), version: w.packages.length + 1, hash: "0".repeat(64), approvedAt: now },
       storyboard: { id: storyboard.id, version: storyboard.version, hash: storyboardContentHash(directorStoryboardSchema.parse(storyboard.document.storyboard)), approvedAt: storyboard.approved_at },
-      direction: brief.prompt, storyboardContent: storyboard.document.storyboard, mode: "reference", resolution: "480p", format: "mp4", generateAudio: true,
+      direction: JSON.stringify({ ...context, duration: brief.duration, aspectRatio: brief.aspect_ratio, narration: "Follows the saved scene instructions" }), storyboardContent: storyboard.document.storyboard, mode: "reference", resolution: "480p", format: "mp4", generateAudio: true,
       references: refs.map(r => { const asset = privateAssetSchema.parse(r.document.asset); return { id: r.id, projectId: a.projectId, originWorkflow: "final-video-v3", role: r.kind,
         kind: "image", name: r.kind, version: r.version, approvalId: r.id, approvalVersion: r.version, sha256: asset.sha256,
         sizeBytes: asset.sizeBytes, mimeType: asset.mimeType, durationMs: null }; }), requiredCapabilities: [] });

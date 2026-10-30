@@ -1,4 +1,4 @@
--- Read-only, owner-run Supabase SQL Editor verification AFTER manual 076 then 077.
+-- Read-only, owner-run Supabase SQL Editor verification AFTER manual 076 then 077 then 078.
 -- No jobs, claims, quotes, authorizations or provider requests are created.
 with expected(name) as (values
  ('ugc_v3_projects'),('ugc_v3_sources'),('ugc_v3_packages'),('ugc_v3_authorizations'),('ugc_v3_events'),
@@ -12,6 +12,7 @@ from expected e left join pg_class c on c.oid=to_regclass('public.'||e.name) ord
 with expected(signature) as (values
  ('public.ugc_v3_create_project(uuid,uuid,jsonb)'),('public.ugc_v3_read(uuid,uuid)'),('public.ugc_v3_write(uuid,uuid,text,jsonb)'),
  ('public.ugc_v3_runtime_read(uuid,uuid)'),('public.ugc_v3_runtime_action(uuid,uuid,text,jsonb)'),
+ ('public.ugc_v3_generation_context(uuid)'),('public.ugc_v3_artifact_current(uuid)'),('public.ugc_v3_runtime_current(uuid)'),
  ('public.ugc_v3_task_claim(uuid)'),('public.ugc_v3_task_checkpoint(uuid,uuid,text,jsonb)'))
 select e.signature,p.oid is not null as installed,p.prosecdef as security_definer,p.proconfig,
  coalesce(has_function_privilege('authenticated',p.oid,'EXECUTE'),false) as browser_execute_should_be_false,
@@ -23,7 +24,7 @@ from pg_constraint where conrelid in (to_regclass('public.ugc_v3_runs'),to_regcl
  and contype in ('p','u','f') order by conrelid::regclass::text,conname;
 
 select tgrelid::regclass as relation,tgname,pg_get_triggerdef(oid) as definition
-from pg_trigger where not tgisinternal and tgname='ugc_v3_isolation' order by tgrelid;
+from pg_trigger where not tgisinternal and tgname in ('ugc_v3_isolation','ugc_v3_studio_approval','ugc_v3_studio_source','ugc_v3_studio_intent') order by tgrelid;
 
 -- Every count below must be zero. These are observational queries, never repairs.
 select (select count(*) from public.ugc_v3_projects v join public.ugc_final_executions f on f.project_id=v.project_id) as legacy_final_attachments,

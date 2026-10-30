@@ -1,5 +1,9 @@
 # Sceenyk
 
+## Canonical Studio V3 correction (2026-10-30)
+
+New eligible local UGC drafts use V3 behind the existing Studio and project save flow. Sources and Properties remain canonical; the separate test form/workspace is retired. Saved Visual Style controls OpenAI references, with preserved history and required regeneration/reapproval after incompatible changes. Historical projects retain their workflows. See [current integration and manual setup](generation-v3-phase3.md). Paid transport remains off; provider/visual acceptance is pending.
+
 ## M10 V3 Phase 3 source status (2026-10-29)
 
 [V3 local runtime](generation-v3-phase3.md) implements the fresh-project reference/director/package/estimate/authorization/video/review path with manual 076→077 setup. Paid transport defaults off and requires explicit exact-project/package activation. Current official request-limit gaps still block the first real test until verified; native dialogue/lip-sync/shot quality is measured after generation. No historical data/provider authority is reused and no live provider/migration/worker/deployment ran. Runtime/visual/account acceptance is manual.

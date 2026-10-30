@@ -1,5 +1,9 @@
 # AI Workflow Rules
 
+## Canonical Studio V3 correction (2026-10-30)
+
+The current request authorizes integrating V3 into existing Studio, canonical saved style/direction and reference staleness, plus focused offline/fixture/type/lint/render checks. Preserve historical workflows and V3 provider/persistence/authorization/recovery boundaries. Manual 078 is authored only. Do not call providers, generate paid media, start live workers, apply remote SQL or deploy. Keep UGC_V3_HIGGSFIELD_ENABLED=0. [Current integration and owner-run next steps](generation-v3-phase3.md).
+
 ## Current authorization — V3 Phase 3 (2026-10-29)
 
 Implement fresh-project V3 runtime/UI and focused offline/fixture validation. Existing 076 stays unchanged and unapplied remotely; a V3-only follow-up migration is allowed for durable runtime/leases/intent guards that 076 intentionally prohibits. Use separate V3 flags/operator/activation authority and keep paid transport off. Do not run real OpenAI/Higgsfield/estimate/status calls, workers against live projects, media generation, remote migrations or deployment. Do not mutate historical V1/V2 projects/executions/configuration. A later explicit operator activation is required for the first controlled paid test; unresolved request-validity limits and pricing still block it. Native speech/lip/shot quality is measured, not guaranteed.

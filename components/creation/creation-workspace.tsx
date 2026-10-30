@@ -1,4 +1,6 @@
 "use client";
+import { V3WorkflowPreview } from "./v3-workflow-preview";
+import type { RuntimeDto } from "@/lib/final-video-generation-v3/runtime-server";
 import { StudioSkeleton } from "./studio-skeleton";
 
 import { BeforeAccountAuth } from "@/components/auth/before-account-auth";
@@ -43,6 +45,7 @@ import {
 } from "./creation-options";
 
 type WorkspaceProps = {
+  initialV3?: RuntimeDto;
   initialProject?: SavedProject;
   viewerUserId?: string;
   initialAssets?: ProjectAsset[];
@@ -88,6 +91,7 @@ function AccountWorkspace(props: WorkspaceProps) {
     <WorkspaceEditor
       key={`${userId ?? "visitor"}:${props.initialProject?.id ?? "new"}`}
       initialProject={props.initialProject}
+      initialV3={props.initialV3}
       initialAssets={props.initialAssets}
       initialMediaError={props.initialMediaError}
       initialGeneration={props.initialGeneration}
@@ -127,6 +131,7 @@ export function CreationWorkspace(props: WorkspaceProps) {
 
 function WorkspaceEditor({
   initialProject,
+  initialV3,
   initialAssets = [],
   initialMediaError = "",
   initialGeneration = null,
@@ -138,6 +143,7 @@ function WorkspaceEditor({
   authReady,
   restoredDraft,
 }: {
+  initialV3?: RuntimeDto;
   restoredDraft?: NonNullable<ReturnType<typeof readGuestDraft>>;
   initialProject?: SavedProject;
   initialAssets?: ProjectAsset[];
@@ -162,7 +168,9 @@ function WorkspaceEditor({
     initialProject?.title ?? restoredDraft?.brief.title ?? "Untitled Project",
   );
   const [projectId, setProjectId] = useState(initialProject?.id ?? null);
-  const ugcProgress = useUgcProgress(projectId, signedIn && authReady);
+  const [workflow, setWorkflow] = useState(initialProject?.workflow);
+  const v3 = workflow === "final-video-v3";
+  const ugcProgress = useUgcProgress(projectId, signedIn && authReady && !v3);
   const showUgcProgress = creationType === "ugc" && (ugcProgress.loading || ugcProgress.error && !ugcProgress.job ||
     !!ugcProgress.job);
   const attemptId = useRef(initialProject?.id ?? null);
@@ -231,6 +239,7 @@ function WorkspaceEditor({
           return null;
         }
         setProjectId(result.project.id);
+        setWorkflow(result.project.workflow);
         persistedId.current = result.project.id;
         // Edits made while saving remain unsaved rather than being overwritten.
         setSavedBrief(brief);
@@ -396,7 +405,7 @@ function WorkspaceEditor({
         >
         {({ project, save }) => (
           <ProjectGeneration
-          projectId={projectId}
+          projectId={v3 ? null : projectId}
           initialJob={initialGeneration}
           initialError={initialGenerationError}
           inputs={{
@@ -408,8 +417,8 @@ function WorkspaceEditor({
               .map((asset) => asset.id),
           }}
           hasLocalFiles={freestyle.files.length > 0}
-          creationType={creationType}
-          ugcControls={studioInputs.creationType === "ugc" ? <UgcGenerationControls
+          creationType={v3 ? "ugc" : creationType}
+          ugcControls={studioInputs.creationType === "ugc" ? v3 ? <p className="text-xs text-muted-foreground">Generate and review your references in Preview.</p> : <UgcGenerationControls
             progress={ugcProgress}
             projectId={projectId} revision={JSON.stringify([brief, studioInputs.generationValidation, mediaUpload.assets, referenceNameValues])}
             localIssues={studioInputs.generationValidation.issues} dirty={dirty || saveState.status === "saving"}
@@ -509,14 +518,16 @@ function WorkspaceEditor({
       studio-toolbar-status [&&]:block [&&]:max-w-[calc(50%_-_70px)] [&&]:min-w-[0] [&&]:overflow-hidden [&&]:text-ellipsis
       [&&]:whitespace-nowrap [&&]:text-[length:12px] [&&]:text-[color:var(--muted-foreground)] max-599:[&&]:hidden
       container-max-530:[&&]:hidden
-    `} role="status">{creationType === "ugc" && ugcProgress.job ? ugcProgress.job.stageLabel : label}</span>
+    `} role="status">{v3 ? "Preview" : creationType === "ugc" && ugcProgress.job ? ugcProgress.job.stageLabel : label}</span>
                     {save}
                   </>
                 }
                 stage={
                   <>
-                    {showUgcProgress && projectId ? <UgcWorkflowPreview key={projectId} projectId={projectId} progress={ugcProgress} /> : output}
-                    {!showUgcProgress && (!output || activeMedia || activeAsset) && (
+                    {v3 && projectId && creationType === "ugc" ? <V3WorkflowPreview key={projectId} projectId={projectId} initial={initialV3} assets={mediaUpload.assets}
+                      dirty={dirty || saveState.status === "saving" || mediaUpload.busy || selectedFiles.some(file => file.studioRole === "character" || file.studioRole === "product")}
+                      revision={JSON.stringify([savedBrief, mediaUpload.assets])} /> : showUgcProgress && projectId ? <UgcWorkflowPreview key={projectId} projectId={projectId} progress={ugcProgress} /> : output}
+                    {!(v3 && creationType === "ugc") && !showUgcProgress && (!output || activeMedia || activeAsset) && (
                       <CreationPreview settings={settings} creationType={creationType} ugcType={ugcType}
                         media={activeMedia} asset={activeAsset} />
                     )}

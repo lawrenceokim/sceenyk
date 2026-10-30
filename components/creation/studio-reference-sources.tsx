@@ -39,7 +39,12 @@ export function StudioReferenceSources({ label, addLabel, role, references, onAd
   return <section className="min-w-0" aria-labelledby={`${id}-heading`}>
     <h3 id={`${id}-heading`} className="mb-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{label}</h3>
     <input ref={input} type="file" accept="image/*" disabled={atLimit} className="sr-only" tabIndex={-1}
-      aria-label={addLabel} onChange={event => { onAdd(Array.from(event.target.files ?? [])); event.target.value = ""; }} />
+      aria-label={addLabel} onChange={event => {
+        const files = Array.from(event.currentTarget.files ?? []);
+        if (!files.length) return;
+        onAdd(files);
+        event.currentTarget.value = "";
+      }} />
     <Button ref={add} type="button" variant="outline" disabled={atLimit} className={buttonClass} onClick={() => { if (!atLimit) input.current?.click(); }}>
       <Plus className="size-3.5" aria-hidden="true" />{addLabel}
     </Button>

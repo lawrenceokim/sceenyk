@@ -31,7 +31,7 @@ export const planningInputSchema = z.strictObject({ workflow: z.literal(V3_WORKF
   // This evidence must later come from trusted owner/database reads, never a browser assertion.
   provenance: z.strictObject({ projectWorkflow: z.literal(V3_WORKFLOW), originalImageId: z.uuid(), originalImageHash: digestSchema }),
   package: approval, storyboard: approval,
-  direction: text, storyboardContent: directorStoryboardSchema,
+  direction: z.string().trim().min(1).max(64_000), storyboardContent: directorStoryboardSchema,
   mode: z.enum(["text", "image", "reference"]).default("reference"),
   resolution: z.string().min(1).default(V3_TEST_RESOLUTION), format: z.string().min(1).default("mp4"),
   generateAudio: z.boolean().default(true), references: z.array(referenceSchema).max(100),

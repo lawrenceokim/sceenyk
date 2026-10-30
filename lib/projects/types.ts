@@ -11,6 +11,7 @@ export type ProjectDraft = {
 
 // Only the brief needed by the workspace; ownership records stay server-side.
 export type SavedProject = ProjectDraft & {
+  workflow?: "final-video-v3";
   id: string;
   status: "draft";
   createdAt: string;

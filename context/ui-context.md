@@ -1,5 +1,9 @@
 # UI Context
 
+## Canonical Studio V3 correction (2026-10-30)
+
+The existing StudioLayout, Sources upload/name controls, Creation Type and Properties remain the one UI. V3 contributes Preview tabs and review actions only; no separate creative form, upload controls or technical provider/version/hash labels. Old /studio/v3 bookmarks redirect into normal Studio/project routes. Stale reference badges preserve older previews/history and disable approval until regeneration. Tailwind/shared tokens/native scrolling remain. [Current setup/acceptance](generation-v3-phase3.md); manual visual/keyboard acceptance pending.
+
 ## V3 Phase 3 local workspace (2026-10-29)
 
 [New V3 Studio](generation-v3-phase3.md) uses existing Tailwind/tokens/shared Buttons and private upload services, with fresh Character/optional Product/Location approvals, director Storyboard review, explicit package estimate/maximum consent and Generate Final Video. One continuous segment goes directly to one final player, quality assessments and explicit Approve or Reject and Delete; deletion never regenerates. Multiple segments approve before local joining and separate joined review. Real JSON task state drives a non-overlapping polling loop; terminal/review/intentional transport pause stops polling. Reopen enrolled projects in V3; historical projects keep their original UI. No new stylesheet/design system. Manual visual/keyboard/provider acceptance remains pending.

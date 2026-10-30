@@ -1,7 +1,6 @@
 import { unstable_rethrow } from "next/navigation";
 import { ownedV3Action, readOwnedV3 } from "@/lib/final-video-generation-v3/runtime-server";
 
-export const runtime = "nodejs";
 const headers = { "Cache-Control": "private, no-store", "CDN-Cache-Control": "no-store", Vary: "Cookie",
   "X-Content-Type-Options": "nosniff", "Referrer-Policy": "no-referrer" };
 function failure(error: unknown) {

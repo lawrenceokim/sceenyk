@@ -1,5 +1,9 @@
 # Code Standards
 
+## Canonical Studio V3 correction (2026-10-30)
+
+Read saved Studio inputs server-side into versioned generationContext; never trust a browser style assertion or infer style from prompt text. Freeze this context with generated references and validate current active Sources, context, approvals and dependency versions before package/submission. Manual 078 verifies columns and adds only V3 guards; preserve 076/077 and historical hashes/data. [Current contract](generation-v3-phase3.md).
+
 ## V3 Phase 3 runtime standards (2026-10-29)
 
 [Phase 3](generation-v3-phase3.md) adds provider-neutral execution/recovery with adapter-owned HTTP/body/error/result mapping, immutable exact-byte hashes/idempotency, database request/authorization uniqueness and leases, and a local-only V3 namespace. Do not repurpose legacy funding/flags or enroll historical projects. Reconcile unknown outcomes before new intents, including across package rebuilds. Private verified publication precedes preview. Bind UI consent to the exact package/quote hash. Keep incomplete request-validity evidence blocked; quality observations do not become invented provider guarantees. Phase 1/2 constant fences remain for their original APIs; only the new runtime path uses separately scoped activation.

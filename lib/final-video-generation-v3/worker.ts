@@ -18,7 +18,8 @@ import { buildFrozenPackage, restoreSegment, readFrozenPackage } from "./package
 import { initialExecution } from "./recovery";
 import { normalizeCapabilities, v3Digest } from "./identity";
 import { bytesHash, readPrivate, inspectImage, publishPrivate, signPrivate, saveSpool, readSpool, inspectVideo, deletePrivate, spoolFile } from "./runtime-media";
-import { projectBrief, validityEvidence } from "./runtime-server";
+import { generationContext, generationContextSchema, referencePrompt } from "./generation-context";
+import { projectBrief, creativeBriefHash, referenceOriginals, approvedArtifacts, validityEvidence } from "./runtime-server";
 import { higgsfieldRequestIssues } from "./adapters/higgsfield-validity";
 
 async function approvedBytes(w: RuntimeWorkspace, ids: unknown, signal: AbortSignal) {
@@ -32,11 +33,15 @@ async function approvedBytes(w: RuntimeWorkspace, ids: unknown, signal: AbortSig
 }
 async function imageTask(store: V3Store, task: Task, w: RuntimeWorkspace, signal: AbortSignal) {
   const model = z.string().min(1).parse(task.input.model), brief = await projectBrief(w.project.owner_user_id, task.project_id);
-  if (v3Digest("brief", brief) !== task.input.briefHash) throw new Error("V3_CREATIVE_INPUT_STALE");
+  if (creativeBriefHash(brief) !== task.input.briefHash) throw new Error("V3_CREATIVE_INPUT_STALE");
+  const context = generationContextSchema.parse(task.input.generationContext);
+  if (v3Digest("generation-context", context) !== v3Digest("generation-context", generationContext(brief))) throw new Error("V3_CREATIVE_INPUT_STALE");
+  const originals = await referenceOriginals(w.project.owner_user_id, task.project_id);
+  if (task.kind !== "location" && task.input.originalId !== originals[task.kind as "character" | "product"]) throw new Error("CURRENT_STUDIO_REFERENCE_REQUIRED");
   let original: { id: string; sha256: string } | null = null, inputs: Buffer[] = [];
   if (task.kind !== "location") {
     const asset = await createDatabaseClient().from("project_assets").select("id,storage_key,verified_etag,size_bytes,mime_type,created_at")
-      .eq("id", String(task.input.originalId)).eq("project_id", task.project_id).eq("owner_user_id", w.project.owner_user_id).eq("upload_status", "uploaded").maybeSingle();
+      .eq("id", String(task.input.originalId)).eq("project_id", task.project_id).eq("owner_user_id", w.project.owner_user_id).eq("upload_status", "uploaded").eq("removed_from_draft", false).maybeSingle();
     if (asset.error || !asset.data?.verified_etag || asset.data.size_bytes > 20 * 1024 * 1024) throw new Error("FRESH_PRIVATE_ORIGINAL_REQUIRED");
     const raw = await readPrivate(asset.data.storage_key, asset.data.verified_etag, asset.data.size_bytes, signal);
     original = { id: asset.data.id, sha256: bytesHash(raw) }; inputs = [(await inspectImage(raw)).bytes];
@@ -46,11 +51,7 @@ async function imageTask(store: V3Store, task: Task, w: RuntimeWorkspace, signal
     if (task.provider_started) throw new Error("V3_OPENAI_OUTCOME_UNKNOWN");
     const config = v3OpenAIConfig();
     const client = new OpenAI({ apiKey: config.apiKey, maxRetries: 0, timeout: 600_000, logLevel: "off" });
-    const prompt = `Create a single approved-reference candidate for this fresh project. Role: ${task.kind}. ` +
-      (task.kind === "character" ? "Regenerate the supplied Character with preserved identity and requested visual style, clear full-body appearance and outfit, one subject, neutral presentation. " :
-        task.kind === "product" ? "Regenerate the supplied Product/Prop faithfully, preserving shape, colors and visible identifiers, one product, neutral presentation. " :
-          "Create one primary Location suitable for the approved Character/Product and project. Show the environment clearly and preserve approved visual continuity. ") +
-      `Creative brief: ${brief.prompt}. Visual style: ${brief.visual_style}. Tone: ${brief.tone}. Do not invent extra people or products.`;
+    const prompt = referencePrompt(task.kind as "character" | "product" | "location", context);
     await store.checkpoint(task, "intent");
     const response = await client.images.edit({ model, image: await Promise.all(inputs.map((b, i) => toFile(b, `reference-${i}.png`, { type: "image/png" }))),
       prompt, n: 1, size: "1024x1024", quality: "high", output_format: "png", background: "opaque" },
@@ -67,18 +68,20 @@ async function imageTask(store: V3Store, task: Task, w: RuntimeWorkspace, signal
 }
 async function storyboardTask(store: V3Store, task: Task, w: RuntimeWorkspace, signal: AbortSignal) {
   const model = z.string().min(1).parse(task.input.model), brief = await projectBrief(w.project.owner_user_id, task.project_id);
-  if (v3Digest("brief", brief) !== task.input.briefHash) throw new Error("V3_CREATIVE_INPUT_STALE");
+  if (creativeBriefHash(brief) !== task.input.briefHash) throw new Error("V3_CREATIVE_INPUT_STALE");
+  approvedArtifacts({ ...w, tasks: w.tasks.filter(t => t.id !== task.id) }, brief, await referenceOriginals(w.project.owner_user_id, task.project_id));
   const refs = await approvedBytes(w, task.input.references, signal);
   let raw = await readSpool(task.id, "openai-response.json");
   if (!raw) {
     if (task.provider_started) throw new Error("V3_OPENAI_OUTCOME_UNKNOWN");
     const config = v3OpenAIConfig(), provider = new OpenAICreativeDirectorProvider({ model, maxOutputTokens: 14_000 });
-    const request = provider.prepareStoryboard({ instruction: `${brief.prompt}\nAspect ratio: ${brief.aspect_ratio}. Visual style: ${brief.visual_style}. Tone: ${brief.tone}. ` +
+    const request = provider.prepareStoryboard({ instruction: `Structured Studio direction: ${JSON.stringify(task.input.generationContext)}\n${brief.prompt}\nAspect ratio: ${brief.aspect_ratio}. Visual style: ${brief.visual_style}. Tone: ${brief.tone}. ` +
       `Approved reference roles in image order: ${(task.input.references as string[]).map(id => w.artifacts.find(a => a.id === id)!.kind).join(", ")}. ` +
       "Use whole-second contiguous scenes with exact total duration; scenes may share one continuous generation. Include realistic dialogue windows, pacing and all film direction. Without a supplied Product reference do not invent a product.",
       durationMs: Number(brief.duration) * 1000, referenceUrls: [] });
-    request.body.input = [{ role: "user", content: [{ type: "input_text", text: `${brief.prompt}\nExact duration: ${Number(brief.duration) * 1000}ms. Aspect ratio: ${brief.aspect_ratio}. ` +
+    request.body.input = [{ role: "user", content: [{ type: "input_text", text: `Structured Studio direction: ${JSON.stringify(task.input.generationContext)}\n${brief.prompt}\nExact duration: ${Number(brief.duration) * 1000}ms. Aspect ratio: ${brief.aspect_ratio}. ` +
       `Visual style: ${brief.visual_style}. Tone: ${brief.tone}. Approved roles: ${(task.input.references as string[]).map(id => w.artifacts.find(a => a.id === id)!.kind).join(", ")}. ` +
+      `Return visualStyle exactly ${JSON.stringify(brief.visual_style)} and tone exactly ${JSON.stringify(brief.tone)}. ` +
       "Use contiguous whole-second scene boundaries, realistic speech windows and explicit camera, action, reaction, lighting, pacing, continuity and sound direction. Do not invent an absent Product." },
       ...refs.map(r => ({ type: "input_image" as const, image_url: `data:image/png;base64,${r.bytes.toString("base64")}`, detail: "high" as const }))] }];
     const client = new OpenAI({ apiKey: config.apiKey, maxRetries: 0, timeout: 600_000, logLevel: "off" });
@@ -90,6 +93,7 @@ async function storyboardTask(store: V3Store, task: Task, w: RuntimeWorkspace, s
   const text = response.output?.flatMap(o => o.type === "message" ? o.content?.filter(c => c.type === "output_text").map(c => c.text ?? "") ?? [] : []).join("");
   const storyboard = directorStoryboardSchema.parse(JSON.parse(text ?? ""));
   if (storyboard.durationMs !== Number(brief.duration) * 1000 || storyboard.aspectRatio !== brief.aspect_ratio) throw new Error("V3_DIRECTOR_TIMING_INVALID");
+  if (storyboard.visualStyle !== brief.visual_style || storyboard.tone !== brief.tone) throw new Error("V3_DIRECTOR_STYLE_INVALID");
   await store.checkpoint(task, "artifact", { id: task.id, document: { storyboard, input: task.input, provider: "openai", model, responseHash: bytesHash(raw), requestId: captured.requestId } });
 }
 async function packageTask(store: V3Store, task: Task, w: RuntimeWorkspace, signal: AbortSignal) {

@@ -6,6 +6,8 @@ import type { ProjectFields, ProjectRow } from "@/lib/db/types";
 import { legacyDuration, projectPageSize } from "./options";
 import { ugcV1ReferenceLimitsSchema } from "./ugc-v1";
 import { readOwnedUgcV1References } from "./ugc-v1-server";
+import { eligibleForV3, enrolledV3 } from "@/lib/final-video-generation-v3/enrollment";
+import { V3Store } from "@/lib/final-video-generation-v3/runtime-store";
 import {
   projectIdSchema,
   projectPageSchema,
@@ -111,7 +113,12 @@ export async function saveOwnedProject(
       const names = await database.rpc("ugc_save_reference_names", { p_owner_user_id: user.id, p_project_id: project.id, p_names: referenceNames });
       if (names.error || !names.data) return { ok: false, code: "UNAVAILABLE", message: "Your reference names couldn’t be saved. Check the references and save again." };
     }
-    return { ok: true, project };
+    try {
+      const v3 = await enrolledV3(user.id, project.id);
+      return { ok: true, project: { ...project, ...(v3 ? { workflow: "final-video-v3" as const } : {}) } };
+    } catch {
+      return { ok: false, code: "UNAVAILABLE", message: "Your draft was saved, but its generation status couldn’t be checked. Save again to continue." };
+    }
   };
   if (settings.duration === legacyDuration.value) {
     const existing = await database.from("projects").select("duration").eq("id", id).eq("owner_user_id", user.id).eq("status", "draft").maybeSingle();
@@ -125,7 +132,15 @@ export async function saveOwnedProject(
     const limits = ugcV1ReferenceLimitsSchema.safeParse(references);
     if (!limits.success) return { ok: false, code: "INVALID_INPUT", message: limits.error.issues[0].message };
   }
-  if (mode === "create") {
+  if (mode === "create" && eligibleForV3(user.id, creationType)) {
+    try {
+      // Existing registry RPC creates project + workflow atomically and retries
+      // the same UUID. It never enrolls an existing historical project.
+      await new V3Store().rpc("ugc_v3_create_project", { p_owner: user.id, p_project: id, p_fields: parsed.data });
+    } catch {
+      return { ok: false, code: "UNAVAILABLE", message: "Your draft couldn’t be prepared. Check the local generation setup and save again." };
+    }
+  } else if (mode === "create") {
     const { data, error } = await database
       .from("projects")
       .insert({ id, owner_user_id: user.id, ...fields })

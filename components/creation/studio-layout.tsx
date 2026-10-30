@@ -108,7 +108,13 @@ export function StudioLayout({ sources, toolbar, stage, properties }: {
       [&&]:min-w-[0] [&&]:[border:1px_solid_var(--border)] [&&]:rounded-[var(--ui-radius-frame)]
       [&&]:[background:var(--card)] [&&]:text-[color:var(--card-foreground)]
     `} aria-labelledby="studio-sources-title"
-        onCancel={event => { event.preventDefault(); closeSources(); }}
+        onCancel={event => {
+          // File inputs also emit a bubbling cancel event. Only a cancel of
+          // this dialog itself should close Sources or release its scroll lock.
+          if (event.target !== event.currentTarget) return;
+          event.preventDefault();
+          closeSources();
+        }}
         onKeyDown={event => {
           if (event.key === "Escape" && mode.current === "panel" && !event.defaultPrevented) { event.preventDefault(); closeSources(); }
         }}

@@ -14,6 +14,8 @@ import { executeV3Segment, type SegmentExecutionDependencies } from "../lib/fina
 import { quoteSchema, runSchema, uncheckedQuality, type PrivateAsset, type ProviderObservation, type Run } from "../lib/final-video-generation-v3/runtime-contract";
 import { runtimeWorkspaceSchema } from "../lib/final-video-generation-v3/runtime-store";
 import { v3Digest } from "../lib/final-video-generation-v3/identity";
+import { generationContext, artifactCurrent, referencePrompt } from "../lib/final-video-generation-v3/generation-context";
+import { eligibleForV3 } from "../lib/final-video-generation-v3/enrollment";
 import { approvedJoinInputs } from "../lib/final-video-generation-v3/join";
 import { inspectExecutionEnvelope } from "../lib/final-video-generation-v3/execution-inspector";
 
@@ -53,6 +55,20 @@ function observation(status: ProviderObservation["status"] = "completed"): Provi
 const asset: PrivateAsset = { id: f.intent.executionId, storageKey: `users/${f.input.scope.ownerId}/projects/${f.input.scope.projectId}/v3/${f.intent.executionId}.mp4`,
   etag: "fixture-etag", sha256: "d".repeat(64), sizeBytes: 100, mimeType: "video/mp4", width: 480, height: 854, durationMs: 10000, hasAudio: true };
 async function pureAndTransportChecks() {
+  const studio = { prompt: "Show the supplied subject", visual_style: "Realistic", creation_type: "ugc", ugc_type: "advertisement", tone: "Professional", category: "product-ad" };
+  for (const style of ["Original", "Cartoon", "Cinematic", "Anime", "Realistic"]) {
+    const context = generationContext({ ...studio, visual_style: style });
+    for (const kind of ["character", "product"] as const) {
+      const prompt = referencePrompt(kind, context);
+      ok(prompt.includes(JSON.stringify(context))); ok(prompt.includes("identity")); ok(prompt.includes("same creative world"));
+    }
+  }
+  const oldEnv = { NODE_ENV: process.env.NODE_ENV, UGC_V3_ENABLED: process.env.UGC_V3_ENABLED, UGC_V3_OPERATOR_USER_ID: process.env.UGC_V3_OPERATOR_USER_ID };
+  Object.assign(process.env, { NODE_ENV: "development", UGC_V3_ENABLED: "1", UGC_V3_OPERATOR_USER_ID: "operator" });
+  equal(eligibleForV3("operator", "ugc"), true); equal(eligibleForV3("operator", "freestyle"), false); equal(eligibleForV3("someone-else", "ugc"), false);
+  process.env.UGC_V3_ENABLED = "0"; equal(eligibleForV3("operator", "ugc"), false);
+  for (const [key, value] of Object.entries(oldEnv)) { if (value === undefined) delete process.env[key]; else process.env[key] = value; }
+
   const { hash, ...intentContent } = f.intent; equal(hash, v3Digest("paid-intent", intentContent));
   const multiInput = v3Input([30000, 15000]), multiContext = v3Context(multiInput, provider); multiContext.now = now;
   const multiDoc = buildFrozenPackage(multiInput, provider, multiContext, { id: v3Id(103), version: 1, sourceRevision: 1 });
@@ -147,17 +163,24 @@ async function sqlChecks() {
     const checkpoint = (t: { id: string; lease_token: string }, kind: string, payload: unknown) => call("ugc_v3_task_checkpoint", [t.id, t.lease_token, kind, payload]);
     const input = v3Input(); input.scope.jobId = registry.logical_job_id; sealV3(input);
     await pg.query("insert into public.project_assets(id,owner_user_id,project_id,upload_request_id,storage_key,original_filename,mime_type,size_bytes,media_type,upload_status,verified_etag) values($1,$2,$3,$4,$5,'fresh.png','image/png',1000,'image','uploaded','etag')", [input.provenance.originalImageId,owner,project,v3Id(970),`users/${owner}/projects/${project}/${input.provenance.originalImageId}/fresh.png`]);
+    await pg.query("update public.project_assets set studio_role='character',reference_id=$1 where id=$1", [input.provenance.originalImageId]);
+    const productOriginal = v3Id(969);
+    await pg.query("insert into public.project_assets(id,owner_user_id,project_id,upload_request_id,storage_key,original_filename,mime_type,size_bytes,media_type,upload_status,verified_etag,studio_role,reference_id) values($1,$2,$3,$4,$5,'product.png','image/png',1000,'image','uploaded','etag','product',$1)", [productOriginal,owner,project,v3Id(968),`users/${owner}/projects/${project}/${productOriginal}/product.png`]);
+    const context = generationContext({ prompt: fields.prompt, visual_style: fields.settings.visualStyle, creation_type: "ugc", ugc_type: fields.ugcType, tone: fields.settings.tone, category: fields.category });
+    const brief = { id: project, title: fields.title, prompt: fields.prompt, aspect_ratio: fields.settings.aspectRatio, duration: fields.settings.duration,
+      visual_style: fields.settings.visualStyle, tone: fields.settings.tone, category: fields.category, ugc_type: fields.ugcType };
+    const briefHash = v3Digest("brief", brief);
     const bindings: Record<string, unknown> = {};
     for (const ref of input.references) {
       await action("enqueue", { kind: ref.role, requestKey: `fixture:${ref.role}`, input: {} });
       const task = await claim();
       const image = { ...asset, id: ref.id, storageKey: `users/${owner}/projects/${project}/v3/${ref.id}.png`, mimeType: "image/png", sha256: ref.sha256, sizeBytes: ref.sizeBytes, durationMs: 0, hasAudio: false };
       bindings[ref.id] = image;
-      equal(await checkpoint(task, "artifact", { id: ref.id, document: { asset: image } }), true);
+      equal(await checkpoint(task, "artifact", { id: ref.id, document: { asset: image, original: ref.role === "location" ? null : { id: ref.role === "character" ? input.provenance.originalImageId : productOriginal }, input: { generationContext: context, references: ref.role === "location" ? input.references.filter(r => r.role !== "location").map(r => r.id) : [] } } }), true);
       await action("review_artifact", { id: ref.id, decision: "approve" });
     }
     await action("enqueue", { kind: "storyboard", requestKey: "fixture:storyboard", input: {} });
-    const storyboardTask = await claim(); await checkpoint(storyboardTask, "artifact", { id: input.storyboard.id, document: { storyboard: input.storyboardContent, input: { references: input.references.map(r => r.id) } } });
+    const storyboardTask = await claim(); await checkpoint(storyboardTask, "artifact", { id: input.storyboard.id, document: { storyboard: input.storyboardContent, input: { generationContext: context, briefHash, references: input.references.map(r => r.id) } } });
     await action("review_artifact", { id: input.storyboard.id, decision: "approve" });
     await action("source", { input, privateBindings: bindings });
     const fresh = fixture(input, v3Id(110));
@@ -197,8 +220,82 @@ async function sqlChecks() {
       equal((await pg.query<{ browser: boolean; directWrite: boolean }>("select has_table_privilege('authenticated',$1,'SELECT') browser,has_table_privilege('service_role',$1,'INSERT') \"directWrite\"", [`public.ugc_v3_${table}`])).rows[0], { browser: false, directWrite: false });
     }
     equal((await pg.query<{ n: number }>("select count(*)::int n from public.ugc_final_executions")).rows[0].n, 0);
+    // 078 must preserve immutable history, require saved Studio context and remain rerunnable.
+    await pg.query("update public.projects set prompt=$2 where id=$1", [project, fields.prompt]);
+    const historical = (await pg.query("select to_jsonb(p) row from public.projects p where id=$1", [v3Id(998)])).rows;
+    const originalsBefore = (await pg.query("select to_jsonb(a) row from public.ugc_v3_artifacts a order by id")).rows;
+    const studioSql = fs.readFileSync("supabase/migrations/20261030007800_ugc_v3_studio_context.sql", "utf8");
+    const beforeStudio = await catalog();
+    await pg.exec(studioSql); await pg.exec(studioSql);
+    const currentOid = (await pg.query<{ oid: number }>("select 'public.ugc_v3_runtime_current(uuid)'::regprocedure::oid oid")).rows[0].oid;
+    equal((await catalog()).filter(a => beforeStudio.some(b => b.oid === a.oid) && a.oid !== currentOid), beforeStudio.filter(a => a.oid !== currentOid));
+    await pg.exec(fs.readFileSync("scripts/verify-v3-setup.sql", "utf8")); checks++;
+    equal(await call("ugc_v3_runtime_current", [next.doc.id]), true);
+    const workspaceBefore = runtimeWorkspaceSchema.parse(await call("ugc_v3_runtime_read", [owner, project]));
+    const originalIds = { character: input.provenance.originalImageId, product: productOriginal };
+    for (const a of workspaceBefore.artifacts) {
+      equal(await call("ugc_v3_artifact_current", [a.id]), true);
+      equal(artifactCurrent(a, workspaceBefore.artifacts, context, originalIds, briefHash), true);
+    }
+    await pg.query("update public.projects set visual_style='Cartoon' where id=$1", [project]);
+    equal(await call("ugc_v3_runtime_current", [next.doc.id]), false);
+    for (const a of workspaceBefore.artifacts) {
+      equal(await call("ugc_v3_artifact_current", [a.id]), false);
+      equal(artifactCurrent(a, workspaceBefore.artifacts, { ...context, visualStyle: "Cartoon" }, originalIds, briefHash), false);
+    }
+    await rejects(() => action("source", { input, privateBindings: bindings }), "REFERENCE_STALE_REGENERATE");
+    await rejects(() => action("review_artifact", { id: input.references[0].id, decision: "approve" }), "ARTIFACT_REVIEW_UNAVAILABLE");
+    await rejects(() => pg.query("update public.ugc_v3_artifacts set approved_at=now() where id=$1", [input.references[0].id]), "REFERENCE_STALE_REGENERATE");
+    equal((await pg.query("select to_jsonb(a) row from public.ugc_v3_artifacts a order by id")).rows, originalsBefore);
+    // A new style candidate is separately reviewed; old approvals remain intact.
+    const cartoonContext = { ...context, visualStyle: "Cartoon" };
+    await action("enqueue", { kind: "character", requestKey: "studio:cartoon", input: { generationContext: cartoonContext, originalId: originalIds.character, briefHash: v3Digest("brief", { ...brief, visual_style: "Cartoon" }) } });
+    const cartoonTask = await claim(); await checkpoint(cartoonTask, "intent", {});
+    await checkpoint(cartoonTask, "artifact", { id: v3Id(967), document: { original: { id: originalIds.character }, input: { generationContext: cartoonContext, references: [] }, asset: bindings[input.references[0].id] } });
+    await action("review_artifact", { id: v3Id(967), decision: "approve" });
+    equal(await call("ugc_v3_artifact_current", [v3Id(967)]), true);
+    equal(await call("ugc_v3_artifact_current", [input.references[0].id]), false);
+    await action("enqueue", { kind: "product", requestKey: "studio:stale-intent", input: { generationContext: context, originalId: originalIds.product } });
+    const staleTask = await claim(); await rejects(() => checkpoint(staleTask, "intent", {}), "V3_CREATIVE_INPUT_STALE");
+    // Changed uploads and Creation Type cannot silently reuse the new approval.
+    await pg.query("update public.project_assets set removed_from_draft=true where id=$1", [originalIds.character]);
+    equal(await call("ugc_v3_artifact_current", [v3Id(967)]), false);
+    await pg.query("update public.project_assets set removed_from_draft=false where id=$1", [originalIds.character]);
+    await pg.query("update public.projects set creation_type='freestyle' where id=$1", [project]);
+    equal(await call("ugc_v3_artifact_current", [v3Id(967)]), false);
+    // Full recovery creates fresh versions, then a fresh package; no old approval is rebound.
+    await pg.query("update public.projects set creation_type='ugc' where id=$1", [project]);
+    await checkpoint(staleTask, "failed", { code: "V3_CREATIVE_INPUT_STALE" });
+    const refreshedInput = structuredClone(input), ids = { character: v3Id(967), product: v3Id(966), location: v3Id(965) };
+    for (const kind of ["product", "location"] as const) {
+      await action("enqueue", { kind, requestKey: `studio:cartoon:${kind}`, input: {} });
+      const task = await claim();
+      const previous = input.references.find(r => r.role === kind)!;
+      await checkpoint(task, "artifact", { id: ids[kind], document: { asset: bindings[previous.id], original: kind === "product" ? { id: originalIds.product } : null,
+        input: { generationContext: cartoonContext, references: kind === "location" ? [ids.character, ids.product] : [] } } });
+      await action("review_artifact", { id: ids[kind], decision: "approve" });
+      equal(await call("ugc_v3_artifact_current", [ids[kind]]), true);
+    }
+    refreshedInput.references = refreshedInput.references.map(r => ({ ...r, id: ids[r.role as keyof typeof ids], version: 2, approvalId: ids[r.role as keyof typeof ids], approvalVersion: 2 }));
+    const newStoryboardId = v3Id(964);
+    await action("enqueue", { kind: "storyboard", requestKey: "studio:cartoon:storyboard", input: {} });
+    const newStoryboardTask = await claim();
+    await checkpoint(newStoryboardTask, "artifact", { id: newStoryboardId, document: { storyboard: refreshedInput.storyboardContent,
+      input: { generationContext: cartoonContext, briefHash: v3Digest("brief", { ...brief, visual_style: "Cartoon" }), references: refreshedInput.references.map(r => r.id) } } });
+    await action("review_artifact", { id: newStoryboardId, decision: "approve" });
+    refreshedInput.storyboard.id = newStoryboardId; refreshedInput.storyboard.version = 2; sealV3(refreshedInput);
+    const newBindings = Object.fromEntries(refreshedInput.references.map((r, i) => [r.id, bindings[input.references[i].id]]));
+    await action("source", { input: refreshedInput, privateBindings: newBindings });
+    const newContext = v3Context(refreshedInput, provider); newContext.now = now;
+    const newPackage = buildFrozenPackage(refreshedInput, provider, newContext, { id: v3Id(963), version: 3, sourceRevision: 2 });
+    await call("ugc_v3_write", [owner, project, "package", { document: newPackage, state: initialExecution(newPackage), eventId: v3Id(962) }]);
+    equal(await call("ugc_v3_runtime_current", [newPackage.id]), true);
+    equal(await call("ugc_v3_runtime_current", [next.doc.id]), false);
+    equal((await pg.query("select to_jsonb(a) row from public.ugc_v3_artifacts a where version=1 order by id")).rows, originalsBefore);
+    equal((await pg.query("select to_jsonb(p) row from public.projects p where id=$1", [v3Id(998)])).rows, historical);
+    equal((await pg.query("select count(*)::int n from public.ugc_v3_projects where project_id=$1", [v3Id(998)])).rows[0], { n: 0 });
     equal(realNetworkCalls, 0);
-    console.info(JSON.stringify({ phase3Checks: checks, migrations: previous.length + 1, previousFunctionsPreserved: before.length, fixtureHttpCalls, realNetworkCalls, paidTransportEnabled: false }));
+    console.info(JSON.stringify({ phase3Checks: checks, migrations: previous.length + 2, previousFunctionsPreserved: before.length, fixtureHttpCalls, realNetworkCalls, paidTransportEnabled: false }));
   } finally { await pg.close(); }
 }
 void (async () => { await pureAndTransportChecks(); await sqlChecks(); })().catch(error => {
