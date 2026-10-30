@@ -1,5 +1,9 @@
 # Code Standards
 
+## V3 Phase 3 runtime standards (2026-10-29)
+
+[Phase 3](generation-v3-phase3.md) adds provider-neutral execution/recovery with adapter-owned HTTP/body/error/result mapping, immutable exact-byte hashes/idempotency, database request/authorization uniqueness and leases, and a local-only V3 namespace. Do not repurpose legacy funding/flags or enroll historical projects. Reconcile unknown outcomes before new intents, including across package rebuilds. Private verified publication precedes preview. Bind UI consent to the exact package/quote hash. Keep incomplete request-validity evidence blocked; quality observations do not become invented provider guarantees. Phase 1/2 constant fences remain for their original APIs; only the new runtime path uses separately scoped activation.
+
 ## V3 Phase 2 persistent preflight (2026-10-29)
 
 [Phase 2](generation-v3-phase2.md) adds isolated source/package/authorization/event persistence through manual 076 and a file-only inspector. Keep owner authentication and explicit operator source/authority review server-only, verify private bytes and preserve immutable versions/currentness. The registry must create its project atomically; never enroll V1/V2 projects. Pure recovery/review contracts do not authorize provider calls. Constant code and SQL paid-transition fences stay enabled. Paid intent reservation/leases, transport and actual review UI remain Phase 3. Earlier Phase 1 no-persistence descriptions below are historical boundaries.

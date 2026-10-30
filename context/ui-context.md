@@ -1,5 +1,9 @@
 # UI Context
 
+## V3 Phase 3 local workspace (2026-10-29)
+
+[New V3 Studio](generation-v3-phase3.md) uses existing Tailwind/tokens/shared Buttons and private upload services, with fresh Character/optional Product/Location approvals, director Storyboard review, explicit package estimate/maximum consent and Generate Final Video. One continuous segment goes directly to one final player, quality assessments and explicit Approve or Reject and Delete; deletion never regenerates. Multiple segments approve before local joining and separate joined review. Real JSON task state drives a non-overlapping polling loop; terminal/review/intentional transport pause stops polling. Reopen enrolled projects in V3; historical projects keep their original UI. No new stylesheet/design system. Manual visual/keyboard/provider acceptance remains pending.
+
 ## Planned V3 video/segment review (2026-10-29)
 
 [V3 review flow](generation-architecture-v3.md#ffmpeg-and-review-boundaries), **Planned / Not Started**, preserves editable/reviewable references and the OpenAI director Storyboard. One continuous audiovisual segment goes directly to final review. When several segments are required, users review/approve the generated segments before local FFmpeg joining, then review/approve the final video. Scenes remain creative units inside a segment, not mandatory separate video-review cards. Intermediate approval cannot show Complete; rejection never auto-regenerates.

@@ -1,5 +1,9 @@
 # Commercial cost contract
 
+## V3 Phase 3 authenticated quotes (2026-10-29)
+
+[V3 runtime pricing](generation-v3-phase3.md#exact-transport-and-cost-lifecycle) captures a quote UUID, exact canonical request body/hash, reviewed account scope, authenticated provider USD amount/response hash, timestamp and five-minute local expiry. Freeze estimates independently from separate reviewed segment/package ceilings; sum segment prices and allocate authority without increasing the aggregate limit. Unknown/expired prices block generation. OpenAI upstream charges are separate from the displayed Higgsfield estimate; no new customer-credit tariff, provider receipt or actual charge is fabricated. No real estimate was requested during implementation.
+
 ## V3 Phase 2 estimate and authorization separation (2026-10-29)
 
 [V3 cost contract](generation-v3-phase2.md#package-cost-and-authorization) sums exact segment/account-bound authenticated estimates, with explicit local expiry. Missing/expired/ambiguous estimates block `COST_ESTIMATE_UNAVAILABLE`; public approximations and operator ceilings never become prices. Fresh package-specific V3 authority and later observed actual cost/receipts are separate immutable records. No authenticated estimate was requested here, no price/customer-credit mapping is invented, and paid transport remains disabled.

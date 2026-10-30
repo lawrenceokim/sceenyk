@@ -25,7 +25,7 @@ export function validateApprovedInput(input: PlanningInput, cap: VideoCapabiliti
   if (input.references.some(ref => ref.kind !== "image" && (ref.durationMs === null || ref.durationMs <= 0)))
     add("REFERENCE_MEDIA_DURATION_INVALID", "references", "Audio/video references require positive measured durations");
   if (new Set(input.references.map(ref => ref.id)).size !== input.references.length) add("REFERENCE_DUPLICATE", "references", "Reference identities must be distinct");
-  if (input.mode === "reference") for (const role of ["character", "product", "location"])
+  if (input.mode === "reference") for (const role of ["character", "location"])
     if (!input.references.some(ref => ref.kind === "image" && ref.role === role)) add("REFERENCE_ROLE_MISSING", "references", `Missing approved ${role} image reference`);
   if (input.mode === "text" && input.references.length) add("TEXT_MODE_REFERENCES_UNSUPPORTED", "references", "Text mode accepts no media in this profile");
   if (input.mode === "image" && (input.references.some(ref => ref.kind !== "image") || input.references.length < 1 || input.references.length > 2 ||

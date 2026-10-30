@@ -28,6 +28,7 @@
 !/context/final-video-generation-v2.md
 !/context/generation-architecture-v3.md
 !/context/generation-v3-phase2.md
+!/context/generation-v3-phase3.md
 !/context/m10-first-provider-failure.md
 !/context/voice-generation.md
 AGENTS.md
@@ -53,6 +54,7 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 /.ugc-final-recovery/
+/.ugc-v3-recovery/
 !.env.example
 
 # vercel

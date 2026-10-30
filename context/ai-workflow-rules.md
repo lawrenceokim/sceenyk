@@ -1,5 +1,9 @@
 # AI Workflow Rules
 
+## Current authorization — V3 Phase 3 (2026-10-29)
+
+Implement fresh-project V3 runtime/UI and focused offline/fixture validation. Existing 076 stays unchanged and unapplied remotely; a V3-only follow-up migration is allowed for durable runtime/leases/intent guards that 076 intentionally prohibits. Use separate V3 flags/operator/activation authority and keep paid transport off. Do not run real OpenAI/Higgsfield/estimate/status calls, workers against live projects, media generation, remote migrations or deployment. Do not mutate historical V1/V2 projects/executions/configuration. A later explicit operator activation is required for the first controlled paid test; unresolved request-validity limits and pricing still block it. Native speech/lip/shot quality is measured, not guaranteed.
+
 ## Current authorization — V3 Phase 2 (2026-10-29)
 
 The owner's attached Phase 2 request authorizes isolated V3 persistence/migration source, frozen packages, exact inert Higgsfield mapping, native dialogue validation/review/recovery contracts, independent estimates/authorization, a local 480p preflight inspector and focused offline tests/TypeScript/lint. It supersedes older Phase 1 and documentation-only restrictions for this unit. Do not apply remote SQL, call Higgsfield/OpenAI (including authenticated estimates/status), generate media, start workers/jobs, enable paid transport, mutate historical executions or deploy. V1/V2 remain unchanged. The local testing profile is code-only and changes no environment or existing provider configuration. Record remaining unknown requirements as unverified. Stop before Phase 3/provider acceptance.

@@ -1,5 +1,9 @@
 # Persistent generation jobs
 
+## V3 Phase 3 scoped local worker (2026-10-29)
+
+[V3 runtime/recovery](generation-v3-phase3.md) adds a separate `worker:ugc-v3 -- --project UUID` queue under development-only V3 settings, operator identity and exact activation binding. It never claims historical jobs. Leased immutable tasks, fsynced provider receipts/media, exact idempotent paid intents and known-request reconciliation survive restart. Unknown outcomes never reset `provider_started` or create a replacement, even after another package is built. Private result/deletion/local-join recovery reuses saved work. All execution switches remain off; no worker/provider/remote SQL ran here.
+
 ## V3 Phase 2 isolated state contract (2026-10-29)
 
 [V3 recovery/review](generation-v3-phase2.md#dialogue-execution-recovery-and-review) uses its own fresh-project logical job UUID and append-only versioned events/segment attempts. It is not enrolled in V1 workers or routes. Saved results are reused; unknown outcomes reconcile; failure/rejection never auto-generates. Source/brief currentness and compare-and-swap revisions fence progression. Paid queue/submission is blocked in code and manual 076; runtime provider intents/leases, UI and completion remain Phase 3.

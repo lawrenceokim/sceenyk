@@ -34,6 +34,8 @@
     "test:ugc-final-v3": "node --conditions=react-server --import=tsx scripts/check-final-video-v3.ts",
     "test:ugc-final-v3-phase2": "node --conditions=react-server --import=tsx scripts/check-final-video-v3-phase2.ts",
     "inspect:ugc-final-v3": "node --conditions=react-server --import=tsx scripts/inspect-final-video-v3.ts",
+    "worker:ugc-v3": "node --conditions=react-server --import=tsx scripts/ugc-v3-worker.ts",
+    "test:ugc-final-v3-phase3": "node --conditions=react-server --import=tsx scripts/check-final-video-v3-phase3.ts",
     "test:ugc-final-approval": "node --conditions=react-server --import=tsx scripts/check-final-video-approval.ts",
     "test:ugc-final-funding": "node --conditions=react-server --import=tsx scripts/check-final-video-funding.ts",
     "test:ugc-final-pricing": "node --conditions=react-server --import=tsx scripts/check-final-video-pricing.ts",

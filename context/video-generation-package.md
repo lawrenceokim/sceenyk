@@ -1,5 +1,9 @@
 # Milestone 9 — Video Generation Package Preparation
 
+## V3 Phase 3 execution extension (2026-10-29)
+
+[The V3 runtime](generation-v3-phase3.md#authorization-and-immutable-paid-intent) extends isolated v3.2 packages with authenticated exact-body quotes, a frozen request-validity evidence snapshot, fresh package/segment-scoped authority and immutable execution intent. Package hashes/versions remain immutable and source/brief/reference changes require rebuild/reapproval. One compatible ≤30s project targets one continuous audiovisual request. Manual 077 adds runtime records without rebinding M9/V1/V2 history. Preflight separates prerequisite eligibility from the disabled transport switch; no real test is activated here.
+
 ## V3 Phase 2 package extension (2026-10-29)
 
 [V3 frozen package v3.2](generation-v3-phase2.md#package-cost-and-authorization) is an isolated versioned extension for newly created V3 projects. It freezes approved creative/reference/Storyboard inputs, minimum Generation Segments, compiled prompts, output/native-audio settings, capability and independent pricing evidence/hashes. Source/brief changes invalidate currentness; rebuilding creates another immutable version. Manual 076 stores these separately and never rebinds historical M9/V1/V2 packages. Paid authority and result/review history remain separate records; transport stays disabled.

@@ -1,5 +1,9 @@
 # Milestone 10 V3 — OpenAI + Higgsfield Generation Architecture
 
+## Phase 3 local runtime (2026-10-29)
+
+[Phase 3 delivery and exact first-test steps](generation-v3-phase3.md) now own fresh-project runtime/enrollment, queued OpenAI references/director work, authenticated estimates, immutable segment-scoped intents, disabled-by-default Higgsfield transport, private result/review/recovery and local joining. Existing 076 is unchanged; manual 077 extends only the V3 boundary and prevents new V3 projects entering legacy queues. Native speech/lip/shot quality is measured, while unresolved request-validity limits and pricing remain blocking. No live provider/test/remote migration/activation/deployment ran.
+
 ## Phase 2 persistent preflight (2026-10-29)
 
 [Phase 2 implementation, current official evidence, persistence, payload, review/recovery and exact Phase 3 prerequisites](generation-v3-phase2.md) supersede the older next-phase checklist below. V3 now has isolated source-only persistence/package/authorization and local inspection with manual migration 076. Paid execution remains disabled; V1/V2 and historical executions stay unchanged. Upstream/provider/runtime/UI acceptance remains pending.

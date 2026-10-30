@@ -1,5 +1,9 @@
 # Architecture Context
 
+## M10 V3 Phase 3 runtime boundary (2026-10-29)
+
+The current owner request authorizes a local-only V3 runtime, fresh enrollment, queued OpenAI reference/director work, authenticated estimate capture, immutable exact-body paid intents, private result publication and review UI. Preserve migration 076 unchanged; follow-up 077 extends only the V3 registry with leased tasks, quotes, segment-scoped authorizations and runs. No historical enrollment/backfill or V1/V2 worker activation. V3 configuration uses its own namespace, defaults disabled, and requires an exact project/package activation binding before submit. Request-validity/price uncertainty blocks admission; unguaranteed native dialogue/lip/shot quality is reviewed after generation. Implementation/testing uses fixtures only, never actual OpenAI/Higgsfield requests or remote SQL.
+
 ## M10 V3 Phase 2 boundary (2026-10-29)
 
 Phase 2 adds isolated, fresh-project-only persistent source snapshots, frozen package versions, independent estimate/authorization records and append-only recovery/review events. New migration 076 is manual and must not be applied remotely by this task. V3 projects are created atomically with their own registry; existing projects cannot be enrolled. Source capture is a privileged, explicitly reviewed import boundary for future V3 upstream services, never a browser assertion of approval. Owner reads remain server-only. V1/V2 tables, executions and providers remain unchanged.

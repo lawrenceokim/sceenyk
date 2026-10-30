@@ -1,9 +1,11 @@
 import "server-only";
-import { packageDigest } from "@/lib/video-generation-package/builder";
+import { packageDigest, canonicalJson } from "@/lib/video-generation-package/builder";
+import { createHash } from "node:crypto";
 import { capabilitiesSchema } from "./contract";
 import type { VideoCommand, SegmentPlan, PlanningInput, DirectorStoryboard } from "./contract";
 
 export const v3Digest = (kind: string, value: unknown) => packageDigest(`sceenyk-v3-${kind}`, value);
+export const v3BodyHash = (body: unknown) => createHash("sha256").update(canonicalJson(body)).digest("hex");
 export function normalizeCapabilities(value: unknown) {
   const cap = capabilitiesSchema.parse(value);
   cap.supportedDurationsMs = [...new Set(cap.supportedDurationsMs)].sort((a, b) => a - b);

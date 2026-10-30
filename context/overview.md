@@ -1,5 +1,9 @@
 # Sceenyk
 
+## M10 V3 Phase 3 source status (2026-10-29)
+
+[V3 local runtime](generation-v3-phase3.md) implements the fresh-project reference/director/package/estimate/authorization/video/review path with manual 076→077 setup. Paid transport defaults off and requires explicit exact-project/package activation. Current official request-limit gaps still block the first real test until verified; native dialogue/lip-sync/shot quality is measured after generation. No historical data/provider authority is reused and no live provider/migration/worker/deployment ran. Runtime/visual/account acceptance is manual.
+
 ## M10 V3 Phase 2 source status (2026-10-29)
 
 [Persistent V3 planning/preflight](generation-v3-phase2.md) adds fresh-project-only source/package versions, independent estimates/authorization, recovery/review contracts and sanitized 480p inspection. Manual migration 076 is unapplied remotely. Paid transport remains disabled; no real project/media/providers, historical V1/V2 changes or deployment are part of this phase. Actual upstream V3 generation, provider acceptance and UI wiring remain Phase 3 prerequisites.

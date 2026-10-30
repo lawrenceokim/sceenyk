@@ -1,5 +1,9 @@
 # Development application identity
 
+## V3 Phase 3 manual runtime extension 077 (2026-10-29)
+
+Apply unchanged 076, then new 077, only after inspecting prerequisites. [Setup and verification](generation-v3-phase3.md#manual-database-setup) includes a read-only SQL script. New V3 task/artifact/quote/authorization/run/event tables have no browser/direct-service-write grants. Owner-scoped RPCs, immutable inputs/bodies/quotes, segment/authorization uniqueness, budget checks, leases, private-result/review gates and project-wide reconciliation fences govern runtime. Two new insert guards prevent only enrolled V3 projects entering legacy queues; no historical row or prior function body/grant is rewritten. Nothing is applied remotely here.
+
 ## Manual V3 persistence migration 076 (2026-10-29)
 
 [Phase 2 model](generation-v3-phase2.md#persistence-model-and-migration) adds `ugc_v3_projects`, `ugc_v3_sources`, `ugc_v3_packages`, `ugc_v3_authorizations` and `ugc_v3_events`, with owner-scoped RPCs, append-only versions/events, RLS, no browser privileges and constant paid-transition rejection. The registry creates new projects only. Migration 076 remains unapplied remotely; deployed catalog/prerequisite/ACL verification is manual. Historical V1/V2 schema/data/functions/grants remain unchanged.
