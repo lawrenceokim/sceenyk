@@ -24,6 +24,8 @@ import { permanentlyDeleteReference } from "./reference-deletion";
 import { referenceDiagnostics } from "./reference-diagnostics";
 import { projectBrief, creativeBriefHash, referenceOriginals, approvedArtifacts, validityEvidence } from "./creative-inputs";
 export { projectBrief, creativeBriefHash, referenceOriginals, approvedArtifacts, validityEvidence } from "./creative-inputs";
+import { enqueueLocation, isLocationDirectorTask, locationTaskStatus, resumeLocation, locationDocument } from "./location-runtime";
+import { discardReference, discardableReferences } from "./reference-retention";
 
 export async function inspectRuntime(w: RuntimeWorkspace) {
   const docValue = w.packages.at(-1)?.document;
@@ -40,7 +42,10 @@ export async function inspectRuntime(w: RuntimeWorkspace) {
   if (w.runs.some(r => r.package_id !== doc.id && !["approved", "failed", "deleted"].includes(r.state))) issues.push("V3_PRIOR_OUTCOME_REQUIRES_RECONCILIATION");
   if (doc.capabilityHash !== v3Digest("capabilities", normalizeCapabilities(new HiggsfieldVideoGenerationProvider().capabilities()))) issues.push("PROVIDER_CAPABILITIES_CHANGED");
   if (quote && quote.segments.some(s => !w.runtimeAuthorizations.some(a => a.document.packageId === doc.id && a.document.segmentUuid === s.segmentUuid))) issues.push("V3_SEGMENT_AUTHORIZATION_REQUIRED");
-  const current = !!w.source?.current && w.source.revision === doc.sourceRevision && doc.source.references.every(r => currentIds.includes(r.id)) &&
+  const approvedLocation = w.artifacts.find(a => a.kind === "location" && currentIds.includes(a.id));
+  const locationCurrent = !locationDocument(approvedLocation) || await new V3Store().rpc("ugc_v3_location_input_current", { p_project: w.project.project_id, d: approvedLocation!.document.input }) === true;
+  if (!locationCurrent) issues.push("REFERENCE_STALE_REGENERATE");
+  const current = locationCurrent && !!w.source?.current && w.source.revision === doc.sourceRevision && doc.source.references.every(r => currentIds.includes(r.id)) &&
     !w.tasks.some(t => ["character", "product", "location", "storyboard"].includes(t.kind) && Date.parse(t.created_at) > Date.parse(w.source!.created_at)) &&
     latestArtifact(w, "storyboard")?.id === doc.source.storyboard.id && !!latestArtifact(w, "storyboard")?.approved_at;
   const report = runtimePreflight(doc, quote, authority, { current, transportEnabled: config.enabled && config.projectId === w.project.project_id && config.packageId === doc.id,
@@ -51,9 +56,15 @@ export async function runtimeDto(w: RuntimeWorkspace) {
   const brief = await projectBrief(w.project.owner_user_id, w.project.project_id), originals = await referenceOriginals(w.project.owner_user_id, w.project.project_id);
   let preflight = null; try { preflight = await inspectRuntime(w); } catch { /* Stale/partial creative inputs preserve previous previews. */ }
   const previewUrl = async (asset: PrivateAsset) => { try { return (await signPrivate(asset)).url; } catch { return null; } };
-  const artifacts = await Promise.all(w.artifacts.map(async a => ({ id: a.id, kind: a.kind, version: a.version, activeSlot: latestArtifact(w, a.kind)?.id === a.id,
-    current: artifactCurrent(a, w.artifacts, generationContext(brief), originals, creativeBriefHash(brief), w.referenceDeletions), approved: !!a.approved_at, rejected: !!a.rejected_at, storyboard: a.kind === "storyboard" ? directorStoryboardSchema.parse(a.document.storyboard) : null,
-    preview: a.document.asset && (!a.rejected_at || ["character", "product", "location"].includes(a.kind)) ? await previewUrl(privateAssetSchema.parse(a.document.asset)) : null })));
+  const visible=w.artifacts.filter(a=>!["character","product","location"].includes(a.kind)||a.approved_at||!a.rejected_at&&latestArtifact(w,a.kind)?.id===a.id);
+  const artifacts = await Promise.all(visible.map(async a => ({ id: a.id, kind: a.kind, version: a.version, activeSlot: latestArtifact(w, a.kind)?.id === a.id,
+    ...(w.referenceDeletions.some(d=>d.id===a.id&&d.state==="prepared")?{cleanupPending:true,cleanupMode:w.referenceDeletions.find(d=>d.id===a.id)?.mode}:{}),
+    current: artifactCurrent(a, w.artifacts, generationContext(brief), originals, creativeBriefHash(brief), w.referenceDeletions) &&
+      (a.kind !== "location" || !isLocationDirectorTask({ kind: "location", input: (a.document.input ?? {}) as Record<string,unknown> }) ||
+        (a.document.input as Record<string,unknown>).briefHash === creativeBriefHash(brief) && v3Digest("location-names",(a.document.input as Record<string,unknown>).names) === v3Digest("location-names",originals.names)),
+    location: a.kind === "location" ? locationDocument(a) : null,
+    approved: !!a.approved_at, rejected: !!a.rejected_at, storyboard: a.kind === "storyboard" ? directorStoryboardSchema.parse(a.document.storyboard) : null,
+    preview: a.document.asset && !w.referenceDeletions.some(d=>d.id===a.id&&d.state==="prepared") && (!a.rejected_at || ["character", "product", "location"].includes(a.kind)) ? await previewUrl(privateAssetSchema.parse(a.document.asset)) : null })));
   const runs = await Promise.all(w.runs.map(async r => ({ id: r.id, packageId: r.package_id, segmentId: r.intent.segmentId, state: r.state,
     current: r.current, completedAt: r.completed_at, errorCode: r.error_code, quality: r.quality, actualDurationMs: r.result?.durationMs ?? null, hasAudio: r.result?.hasAudio ?? null,
     preview: r.result && ["awaiting_review", "approved"].includes(r.state) ? await previewUrl(r.result) : null,
@@ -73,17 +84,22 @@ export async function runtimeDto(w: RuntimeWorkspace) {
   const complete = !!preflight && (preflight.segmentCount === 1 ? runs : joined).some(r => r.packageId === preflight.packageId && r.current && r.state === "approved" && !!r.completedAt);
   const context = generationContext(brief), briefHash = creativeBriefHash(brief);
   const tasks = await Promise.all(w.tasks.map(async (t, index) => {
-    const current = creativeTaskCurrent(t, context, briefHash, originals);
-    const diagnostics = ["character", "product", "location"].includes(t.kind) && ["failed", "reconciliation_required"].includes(t.status) && !t.input.referenceCleanupHold
+    const current = creativeTaskCurrent(t, context, briefHash, originals) && (!isLocationDirectorTask(t) || v3Digest("location-names",t.input.names)===v3Digest("location-names",originals.names) &&
+      JSON.stringify(t.input.references) === JSON.stringify([latestArtifact(w,"character"),...(originals.product?[latestArtifact(w,"product")]:[])].filter(a=>a?.approved_at&&!a.rejected_at&&artifactCurrent(a,w.artifacts,context,originals,briefHash,w.referenceDeletions)).map(a=>a!.id)));
+    const location = isLocationDirectorTask(t) ? await locationTaskStatus(t, current) : null;
+    const diagnostics = !location && ["character", "product", "location"].includes(t.kind) && ["failed", "reconciliation_required"].includes(t.status) && !t.input.referenceCleanupHold
       && t.error_code !== "V3_REFERENCE_REQUEST_SUPERSEDED" && !w.tasks.slice(index + 1).some(n => n.kind === t.kind)
       ? await referenceDiagnostics(t, current, w.referenceDiagnostics.find(d => d.taskId === t.id)) : null;
     return { id: t.id, kind: t.kind, status: t.input.referenceCleanupHold ? "cleanup_pending" : t.status, errorCode: t.error_code, providerStarted: t.provider_started,
-      current, createdAt: t.created_at, leaseUntil: t.lease_until, diagnostics, recoveryAvailable: diagnostics?.recoveryAvailable ?? false,
-      canStartNew: diagnostics?.canStartNew ?? false };
+      ...(t.input.referenceCleanup?{referenceCleanup:true}:{}),
+      current, createdAt: t.created_at, leaseUntil: t.lease_until, diagnostics, location, recoveryAvailable: location?.recoveryAvailable ?? diagnostics?.recoveryAvailable ?? false,
+      canStartNew: location?.canGenerate ?? diagnostics?.canStartNew ?? false };
   }));
   return { projectId: w.project.project_id, packageStale: w.packages.length > 0 && !preflight, artifacts, runs: [...runs, ...joined], preflight, complete,
+    referenceCleanup:{enabled:w.referenceCleanupPolicy,pendingCount:discardableReferences(w).length,
+      ...(w.tasks.some(t=>t.input.referenceCleanup&&["queued","running"].includes(t.status))?{processing:true}:{})},
     tasks,
-    processing: w.tasks.some((t, i) => t.input.referenceCleanupHold ? false : ["character", "product", "location", "storyboard"].includes(t.kind) ? ["queued", "running"].includes(t.status) && taskBlocksGeneration(t, tasks[i].current) : t.status === "running" || t.status === "queued" && !["PAID_V3_EXECUTION_DISABLED", "V3_ACTIVATION_SCOPE_MISMATCH"].includes(t.error_code ?? "")), localEnabled: v3LocalEnabled() };
+    processing: w.tasks.some((t, i) => t.input.referenceCleanup||t.input.referenceCleanupHold ? false : ["character", "product", "location", "storyboard"].includes(t.kind) ? ["queued", "running"].includes(t.status) && taskBlocksGeneration(t, tasks[i].current) : t.status === "running" || t.status === "queued" && !["PAID_V3_EXECUTION_DISABLED", "V3_ACTIVATION_SCOPE_MISMATCH"].includes(t.error_code ?? "")), localEnabled: v3LocalEnabled() };
 }
 export type RuntimeDto = Awaited<ReturnType<typeof runtimeDto>>;
 export async function readOwnedV3(project: string) {
@@ -98,13 +114,37 @@ export async function isOwnedV3Project(project: string) {
   if (user.error || !user.data) throw new Error("V3_ACCOUNT_UNAVAILABLE");
   return enrolledV3(user.data.id, project);
 }
-const actionSchema = z.object({ action: z.enum(["reference", "review_artifact", "storyboard", "build_package", "authorize", "generate", "recover", "recover_task", "approve", "reject_delete"]), projectId: z.uuid() }).passthrough();
+const actionSchema = z.object({ action: z.enum(["reference", "cleanup_references", "discard_reference", "location_continue", "review_artifact", "storyboard", "build_package", "authorize", "generate", "recover", "recover_task", "approve", "reject_delete"]), projectId: z.uuid() }).passthrough();
 export async function ownedV3Action(raw: unknown) {
   const a = actionSchema.parse(raw), user = await ensureAppUser(); assertV3Operator(user.id);
   const store = new V3Store(), signal = AbortSignal.timeout(120_000), now = new Date().toISOString();
   const w = await store.read(user.id, a.projectId), brief = await projectBrief(user.id, a.projectId), originals = await referenceOriginals(user.id, a.projectId);
   const context = generationContext(brief);
   if (context.creationType !== "ugc") throw new Error("SELECT_UGC_CREATION_TYPE");
+  if (a.action === "reference" && a.kind === "location") {
+    const pending=w.tasks.filter(t=>t.kind==="location").at(-1);
+    if(pending&&["queued","running"].includes(pending.status))return runtimeDto(w);
+    const candidate=latestArtifact(w,"location");
+    if(candidate&&!candidate.approved_at){
+      if(a.expectedId!==candidate.id||a.expectedVersion!==candidate.version){
+        if(w.referenceDeletions.some(d=>d.id===a.expectedId&&d.state==="completed"))return runtimeDto(w);
+        throw new Error("V3_REFERENCE_CHANGED_RECONFIRM");
+      }
+      await discardReference(store,user.id,a.projectId,{id:candidate.id,version:candidate.version},signal,true);
+    }
+    await enqueueLocation(store,await store.read(user.id,a.projectId)); return runtimeDto(await store.read(user.id, a.projectId));
+  }
+  if(a.action==="cleanup_references"){
+    await store.rpc("ugc_v3_queue_reference_cleanup",{p_owner:user.id,p_project:a.projectId,p_retry:true});return runtimeDto(await store.read(user.id,a.projectId));
+  }
+  const rejected=w.artifacts.find(r=>r.id===a.id);
+  if(a.action==="discard_reference"||a.action==="review_artifact"&&a.decision==="reject"&&(a.kind==="location"||rejected?.kind==="location")){
+    await discardReference(store,user.id,a.projectId,{id:z.uuid().parse(a.id),version:z.number().int().positive().parse(a.expectedVersion)},signal,true);
+    return runtimeDto(await store.read(user.id,a.projectId));
+  }
+  if (a.action === "location_continue" || a.action === "recover_task" && w.tasks.some(t => t.id === a.id && isLocationDirectorTask(t))) {
+    await resumeLocation(store, w, z.uuid().parse(a.id), a.action === "recover_task"); return runtimeDto(await store.read(user.id, a.projectId));
+  }
   const enqueue = (kind: string, input: Record<string, unknown>, key = v3Digest("task-input", input)) => store.action(user.id, a.projectId, "enqueue", {
     kind, input, requestKey: `${kind}:${key}` });
   if (a.action === "reference") {
@@ -168,6 +208,8 @@ export async function ownedV3Action(raw: unknown) {
     await store.action(user.id, a.projectId, "review_artifact", { id: z.uuid().parse(a.id), decision: z.enum(["approve", "reject"]).parse(a.decision) });
   } else if (a.action === "storyboard") {
     const refs = approvedArtifacts(w, brief, originals), previous = latestArtifact(w, "storyboard");
+    const location = refs.find(r => r.kind === "location");
+    if (locationDocument(location) && await store.rpc("ugc_v3_location_input_current", { p_project: a.projectId, d: location!.document.input }) !== true) throw new Error("V3_CREATIVE_INPUT_STALE");
     const oldInput = z.object({ references: z.array(z.string()), briefHash: z.string() }).safeParse(previous?.document.input);
     const changed = previous && (!oldInput.success || v3Digest("reference-ids", oldInput.data.references) !==
       v3Digest("reference-ids", refs.map(r => r.id)) || oldInput.data.briefHash !== creativeBriefHash(brief));
@@ -175,6 +217,8 @@ export async function ownedV3Action(raw: unknown) {
     await enqueue("storyboard", { brief, briefHash: creativeBriefHash(brief), generationContext: context, model: v3OpenAIConfig().directorModel, references: refs.map(r => r.id), previous: previous?.id ?? null });
   } else if (a.action === "build_package") {
     const refs = approvedArtifacts(w, brief, originals), storyboard = latestArtifact(w, "storyboard");
+    const locationArtifact = refs.find(r => r.kind === "location"), location = locationDocument(locationArtifact);
+    if (location && await store.rpc("ugc_v3_location_input_current", { p_project: a.projectId, d: locationArtifact!.document.input }) !== true) throw new Error("V3_CREATIVE_INPUT_STALE");
     if (!storyboard?.approved_at || storyboard.rejected_at) throw new Error("APPROVE_STORYBOARD_FIRST");
     const storyboardInput = z.object({ references: z.array(z.uuid()), briefHash: z.string() }).parse(storyboard.document.input);
     if (v3Digest("reference-ids", storyboardInput.references) !== v3Digest("reference-ids", refs.map(r => r.id)) || storyboardInput.briefHash !== creativeBriefHash(brief))
@@ -185,7 +229,8 @@ export async function ownedV3Action(raw: unknown) {
       provenance: { projectWorkflow: "final-video-v3", originalImageId: original.id, originalImageHash: original.sha256 },
       package: { id: randomUUID(), version: w.packages.length + 1, hash: "0".repeat(64), approvedAt: now },
       storyboard: { id: storyboard.id, version: storyboard.version, hash: storyboardContentHash(directorStoryboardSchema.parse(storyboard.document.storyboard)), approvedAt: storyboard.approved_at },
-      direction: JSON.stringify({ ...context, duration: brief.duration, aspectRatio: brief.aspect_ratio, narration: "Follows the saved scene instructions" }), storyboardContent: storyboard.document.storyboard, mode: "reference", resolution: "480p", format: "mp4", generateAudio: true,
+      direction: JSON.stringify({ ...context, duration: brief.duration, aspectRatio: brief.aspect_ratio, narration: "Follows the saved scene instructions",
+        ...(location ? { approvedLocation: location } : {}) }), storyboardContent: storyboard.document.storyboard, mode: "reference", resolution: "480p", format: "mp4", generateAudio: true,
       references: refs.map(r => { const asset = privateAssetSchema.parse(r.document.asset); return { id: r.id, projectId: a.projectId, originWorkflow: "final-video-v3", role: r.kind,
         kind: "image", name: r.kind, version: r.version, approvalId: r.id, approvalVersion: r.version, sha256: asset.sha256,
         sizeBytes: asset.sizeBytes, mimeType: asset.mimeType, durationMs: null }; }), requiredCapabilities: [] });

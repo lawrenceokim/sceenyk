@@ -1,6 +1,6 @@
 import { referenceFailureLabel, type ReferenceDiagnostics } from "./reference-status";
 type ProgressTask = { kind: string; status: string; current: boolean; providerStarted: boolean; createdAt: string; leaseUntil: string | null; errorCode: string | null;
-  canStartNew?: boolean; recoveryAvailable?: boolean; diagnostics?: ReferenceDiagnostics | null };
+  canStartNew?: boolean; recoveryAvailable?: boolean; referenceCleanup?:boolean; diagnostics?: ReferenceDiagnostics | null; location?: { label: string; failureLabel: string; requestCount: number } | null };
 type ProgressArtifact = { kind: string; version: number; current: boolean; approved: boolean; rejected: boolean };
 type ProgressState = { complete: boolean; tasks: ProgressTask[]; artifacts: ProgressArtifact[]; runs: { state: string }[] };
 const subjects: Record<string, string> = { character: "Character Sheet", product: "Product Sheet", location: "Location", storyboard: "Storyboard",
@@ -18,12 +18,14 @@ export function v3ProgressLabel(state: ProgressState, productRequired: boolean, 
   if (cleanup) return `${subjects[cleanup.kind]} cleanup needs attention`;
   const failure = state.tasks.find((t, i) => ["character", "product", "location"].includes(t.kind) && ["failed", "reconciliation_required"].includes(t.status)
     && t.errorCode !== "V3_REFERENCE_REQUEST_SUPERSEDED" && !state.tasks.slice(i + 1).some(n => n.kind === t.kind));
-  if (failure) return referenceFailureLabel(failure.kind, failure.diagnostics);
-  const task = state.tasks.find(t => ["queued", "running", "reconciliation_required"].includes(t.status) &&
+  if (failure) return failure.location?.failureLabel ?? referenceFailureLabel(failure.kind, failure.diagnostics);
+  const task = state.tasks.find(t => !t.referenceCleanup && ["queued", "running", "reconciliation_required"].includes(t.status) &&
     (t.current || t.providerStarted || ["package", "video", "join", "delete"].includes(t.kind)));
   if (task) {
     if (task.status === "reconciliation_required") return `${subjects[task.kind]} recovery required`;
+    if (task.location && task.location.requestCount > 0) return task.location.label;
     if (task.status === "queued") return now - Date.parse(task.createdAt) >= 90_000 ? "Waiting for generation worker" : `${subjects[task.kind]} queued`;
+    if (task.location) return task.location.label;
     return task.kind === "package" ? "Preparing Generation Package" : task.kind === "join" ? "Finishing Final Video" : task.kind === "delete" ? "Deleting saved video" : `Generating ${subjects[task.kind]}`;
   }
   const latest = state.artifacts.filter(a => !state.artifacts.some(n => n.kind === a.kind && n.version > a.version));

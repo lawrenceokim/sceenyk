@@ -1,4 +1,4 @@
--- Read-only, owner-run Supabase SQL Editor verification AFTER manual 076 then 077 then 078 then 079 then 080 then 081 then 082.
+-- Read-only, owner-run Supabase SQL Editor verification AFTER manual 076 through 084 in order.
 -- No jobs, claims, quotes, authorizations or provider requests are created.
 with expected(name) as (values
  ('ugc_v3_projects'),('ugc_v3_sources'),('ugc_v3_packages'),('ugc_v3_authorizations'),('ugc_v3_events'),
@@ -12,6 +12,8 @@ from expected e left join pg_class c on c.oid=to_regclass('public.'||e.name) ord
 with expected(signature) as (values
  ('public.ugc_v3_create_project(uuid,uuid,jsonb)'),('public.ugc_v3_read(uuid,uuid)'),('public.ugc_v3_write(uuid,uuid,text,jsonb)'),
  ('public.ugc_v3_runtime_read(uuid,uuid)'),('public.ugc_v3_runtime_action(uuid,uuid,text,jsonb)'),
+ ('public.ugc_v3_location_action(uuid,uuid,text,jsonb)'),('public.ugc_v3_location_checkpoint(uuid,uuid,text,jsonb)'),('public.ugc_v3_location_input_current(uuid,jsonb)'),
+ ('public.ugc_v3_discard_reference_prepare(uuid,uuid,uuid,integer,boolean)'),('public.ugc_v3_discard_reference_finish(uuid,uuid,uuid,uuid,text)'),('public.ugc_v3_queue_reference_cleanup(uuid,uuid,boolean)'),
  ('public.ugc_v3_reference_delete_prepare(uuid,uuid,text,uuid,integer,text,jsonb)'),('public.ugc_v3_reference_delete_finish(uuid,uuid,uuid,uuid,text)'),
  ('public.ugc_v3_recover_reference_task(uuid,uuid,uuid)'),('public.ugc_v3_replace_unusable_reference_task(uuid,uuid,uuid,jsonb)'),('public.ugc_v3_record_reference_diagnostic(uuid,uuid,jsonb)'),
  ('public.ugc_v3_regenerate_reference(uuid,uuid,jsonb)'),('public.ugc_v3_retire_reference_task(uuid,uuid,uuid)'),('public.ugc_v3_generation_context(uuid)'),('public.ugc_v3_artifact_current(uuid)'),('public.ugc_v3_runtime_current(uuid)'),
@@ -27,7 +29,9 @@ from pg_constraint where conrelid in (to_regclass('public.ugc_v3_runs'),to_regcl
 
 select tgrelid::regclass as relation,tgname,pg_get_triggerdef(oid) as definition
 from pg_trigger where not tgisinternal and tgname in ('ugc_v3_isolation','ugc_v3_studio_approval','ugc_v3_studio_source','ugc_v3_studio_intent',
- 'ugc_v3_reference_cleanup_approval','ugc_v3_reference_cleanup_version','ugc_v3_reference_cleanup_intent','ugc_v3_reference_cleanup_enqueue') order by tgrelid;
+ 'ugc_v3_reference_cleanup_approval','ugc_v3_reference_cleanup_version','ugc_v3_reference_cleanup_intent','ugc_v3_reference_cleanup_enqueue',
+ 'ugc_v3_location_artifact_validation','ugc_v3_location_storyboard_binding','ugc_v3_location_source_binding','ugc_v3_location_video_binding',
+ 'ugc_v3_location_version_floor','ugc_v3_reference_retention','ugc_v3_simple_location_intent') order by tgrelid;
 
 select indexname,indexdef from pg_indexes where schemaname='public' and indexname='ugc_v3_reference_deletion_pending';
 

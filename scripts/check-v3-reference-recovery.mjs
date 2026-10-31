@@ -65,7 +65,7 @@ async function fixture(mode){
   const t=await call('ugc_v3_task_claim',[project]),id=randomUUID();
   const asset=await media.publishPrivate(owner,project,id,png,{mimeType:'image/png',width:32,height:32,durationMs:0,hasAudio:false});
   await call('ugc_v3_task_checkpoint',[t.id,t.lease_token,'artifact',{id,document:{asset,original:{id:characterSource},input:{generationContext:context}}}]);
-  if(version===2)await call('ugc_v3_runtime_action',[owner,project,'review_artifact',{id,decision:'approve'}]);
+  await call('ugc_v3_runtime_action',[owner,project,'review_artifact',{id,decision:'approve'}]);
  }
  const brief=await load('lib/final-video-generation-v3/creative-inputs.ts').projectBrief(owner,project),subject={role:'product',originalId:source,name:'bmw fixture'};
  const input={model:'fixture-image',provider:'openai',generationContext:context,briefHash:load('lib/final-video-generation-v3/creative-inputs.ts').creativeBriefHash(brief),originalId:source,

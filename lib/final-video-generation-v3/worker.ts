@@ -24,6 +24,9 @@ import { prepareOpenAIReference } from "./adapters/openai-reference";
 import { assertReferenceSheetPrompt, referenceSourceSchema } from "./reference-sheet-prompt";
 import { savedReferenceResult, recordReferenceStage, referenceStageError, ReferenceTaskError, safeReferenceRequestId } from "./reference-diagnostics";
 import { higgsfieldRequestIssues } from "./adapters/higgsfield-validity";
+import { runLocationTask } from "./location-worker";
+import { isLocationDirectorTask, locationDocument } from "./location-runtime";
+import { discardableReferences, discardReference } from "./reference-retention";
 
 async function approvedBytes(w: RuntimeWorkspace, ids: unknown, signal: AbortSignal) {
   if (!Array.isArray(ids) || !ids.length || ids.some(v => typeof v !== "string")) throw new Error("V3_REFERENCES_REQUIRED");
@@ -115,7 +118,9 @@ async function storyboardTask(store: V3Store, task: Task, w: RuntimeWorkspace, s
       `Approved reference roles in image order: ${(task.input.references as string[]).map(id => w.artifacts.find(a => a.id === id)!.kind).join(", ")}. ` +
       "Use whole-second contiguous scenes with exact total duration; scenes may share one continuous generation. Include realistic dialogue windows, pacing and all film direction. Without a supplied Product reference do not invent a product.",
       durationMs: Number(brief.duration) * 1000, referenceUrls: [] });
-    request.body.input = [{ role: "user", content: [{ type: "input_text", text: `Structured Studio direction: ${JSON.stringify(task.input.generationContext)}\n${brief.prompt}\nExact duration: ${Number(brief.duration) * 1000}ms. Aspect ratio: ${brief.aspect_ratio}. ` +
+    const location = locationDocument(w.artifacts.find(a => a.kind === "location" && (task.input.references as string[]).includes(a.id)));
+    if (location) await store.rpc("ugc_v3_location_input_current", { p_project: task.project_id, d: w.artifacts.find(a => a.id === location.artifactId)!.document.input }).then(current => { if (current !== true) throw new Error("V3_CREATIVE_INPUT_STALE"); });
+    request.body.input = [{ role: "user", content: [{ type: "input_text", text: (location ? `Approved Location prompt and sheet binding: ${JSON.stringify(location)}. Preserve this approved environment when planning scenes.\n` : "") + `Structured Studio direction: ${JSON.stringify(task.input.generationContext)}\n${brief.prompt}\nExact duration: ${Number(brief.duration) * 1000}ms. Aspect ratio: ${brief.aspect_ratio}. ` +
       `Visual style: ${brief.visual_style}. Tone: ${brief.tone}. Approved roles: ${(task.input.references as string[]).map(id => w.artifacts.find(a => a.id === id)!.kind).join(", ")}. ` +
       `Return visualStyle exactly ${JSON.stringify(brief.visual_style)} and tone exactly ${JSON.stringify(brief.tone)}. ` +
       "Use contiguous whole-second scene boundaries, realistic speech windows and explicit camera, action, reaction, lighting, pacing, continuity and sound direction. Do not invent an absent Product." },
@@ -208,14 +213,23 @@ async function deleteTask(store: V3Store, task: Task, w: RuntimeWorkspace, signa
 }
 export async function runV3Task(projectId: string, ownerId: string, store = new V3Store(), signal = AbortSignal.timeout(14 * 60_000)) {
   assertV3Operator(ownerId);
-  const w = await store.read(ownerId, projectId);
+  let w = await store.read(ownerId, projectId);
+  if(w.referenceCleanupPolicy&&discardableReferences(w).length){
+    const queued=await store.rpc("ugc_v3_queue_reference_cleanup",{p_owner:ownerId,p_project:projectId,p_retry:false});
+    if(queued)w=await store.read(ownerId,projectId);
+  }
   const claim = await store.rpc("ugc_v3_task_claim", { p_project: projectId }); if (!claim) return false;
   const task = taskSchema.parse(claim);
   try {
-    if (["character", "product", "location"].includes(task.kind)) await imageTask(store, task, w, signal);
+    if (isLocationDirectorTask(task)) await runLocationTask(store, task, w, signal);
+    else if (["character", "product", "location"].includes(task.kind)) await imageTask(store, task, w, signal);
     else if (task.kind === "storyboard") await storyboardTask(store, task, w, signal);
     else if (task.kind === "package") await packageTask(store, task, w, signal);
     else if (task.kind === "video") await videoTask(store, task, w, signal);
+    else if (task.kind === "delete" && task.input.referenceCleanup) {
+      const target=z.object({id:z.uuid(),version:z.number().int().positive()}).parse(task.input.referenceCleanup);
+      await discardReference(store,ownerId,projectId,target,signal,false);await store.checkpoint(task,"done");
+    }
     else if (task.kind === "delete") await deleteTask(store, task, w, signal);
     else {
       const doc = readFrozenPackage(w.packages.find(p => p.id === task.input.packageId)?.document);
@@ -225,6 +239,9 @@ export async function runV3Task(projectId: string, ownerId: string, store = new 
     }
   } catch (error) {
     const refreshed = await store.read(ownerId, projectId), run = refreshed.runs.find(r => r.id === task.input.runId);
+    if(task.input.referenceCleanup&&refreshed.referenceDeletions.some(d=>d.id===(task.input.referenceCleanup as {id:string}).id&&d.state==="completed")){
+      await store.checkpoint(task,"done");return true;
+    }
     const started = refreshed.tasks.find(t => t.id === task.id)?.provider_started;
     const code = error instanceof Error && /^[A-Z0-9_]{1,100}$/.test(error.message) ? error.message : "V3_TASK_FAILED";
     const rejected = error instanceof HiggsfieldTransportError && error.outcome === "rejected" || error instanceof ReferenceTaskError && error.knownRejected;
