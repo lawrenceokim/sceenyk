@@ -106,5 +106,35 @@ try {
     equal(calls.length,1);equal(calls[0].action,'recover_task');equal(calls[0].id,'failed-task');equal(calls[0].confirmNewRequest,undefined);
     resolveRequest(Response.json({ok:true,workspace:{...initial,artifacts:[],tasks:[]}}));await new Promise(resolve=>setTimeout(resolve,0));
   }
-  console.info(`${checks} actual V3 confirmation/Cancel/Continue/double-click/empty-slot UI checks passed; zero network calls.`);
+  // Package view retains asynchronous failure reasons, exposes stages/details and suppresses duplicate clicks.
+  slots=[];calls=[];
+  const packageId='10000000-0000-4000-8000-000000000001';
+  const packageBuild={stage:'delivery',code:'V3_PACKAGE_BINDING_INVALID',httpStatus:null,packageId,segmentId:null,estimateStatus:'not_requested',recoverable:false};
+  const packageTask={id:'package-task',kind:'package',status:'failed',errorCode:'V3_TASK_FAILED',packageBuild};
+  const initial={projectId:'fixture-project',artifacts:[{id:'storyboard',kind:'storyboard',activeSlot:true,current:true,approved:true,rejected:false}],tasks:[packageTask],runs:[],processing:false,preflight:null,complete:false,localEnabled:true};
+  const props={initial,projectId:initial.projectId,assets:[],dirty:false,revision:'saved'};
+  const render=()=>{cursor=0;return V3WorkflowPreview(props);};
+  find(render(),node=>node.type==='button'&&text(node)==='Package').props.onClick();
+  let tree=render(),status=find(tree,node=>node.type?.name==='PackageStatus');
+  equal(text(status.type(status.props)).includes('Package build failed'),true);
+  equal(text(status.type(status.props)).includes('Recovery required'),false);
+  equal(text(status.type(status.props)).includes('Package technical details'),true);
+  const buildButton=find(tree,node=>node.type?.name==='Button'&&text(node)==='Build package and estimate');
+  buildButton.props.onClick();buildButton.props.onClick();equal(calls.length,1);equal(calls[0].retryTaskId,'package-task');
+  resolveRequest(Response.json({ok:true,workspace:{...initial,tasks:[{...packageTask,status:'running',packageBuild:{...packageBuild,code:null,stage:'estimate',estimateStatus:'requested'}}],processing:true}}));
+  await new Promise(resolve=>setTimeout(resolve,0));
+  tree=render();status=find(tree,node=>node.type?.name==='PackageStatus');equal(text(status.type(status.props)).includes('Checking generation cost'),true);
+  equal(find(tree,node=>node.type?.name==='Button'&&text(node)==='Build package and estimate').props.disabled,true);
+  slots=[];props.initial={...initial,localEnabled:false};
+  find(render(),node=>node.type==='button'&&text(node)==='Package').props.onClick();
+  status=find(render(),node=>node.type?.name==='PackageStatus');equal(text(status.type(status.props)).includes('Package technical details'),false);
+  slots=[];props.initial={...initial,tasks:[{...packageTask,status:'done',packageBuild:{...packageBuild,stage:'ready',code:null,estimateStatus:'available'}}],
+    preflight:{durationMs:10000,aspectRatio:'9:16',currentness:'current',estimatedCostMicrousd:1250000,authorizedMaximumMicrousd:null,packageHash:'hash',issues:[],transportEnabled:false,canSubmit:false,quoteId:'quote'}};
+  find(render(),node=>node.type==='button'&&text(node)==='Package').props.onClick();
+  equal(text(render()).includes('Estimated video cost: $1.2500'),true);
+  status=find(render(),node=>node.type?.name==='PackageStatus');equal(text(status.type(status.props)).includes('Generation Package ready'),true);
+  slots=[];props.initial={...props.initial,tasks:[{...packageTask,status:'done',packageBuild:{...packageBuild,estimateStatus:'unavailable'}}],preflight:{...props.initial.preflight,estimatedCostMicrousd:null,quoteId:null}};
+  find(render(),node=>node.type==='button'&&text(node)==='Package').props.onClick();
+  equal(find(render(),node=>node.type?.name==='Button'&&text(node)==='Approve Generation Package').props.disabled,true);
+  console.info(`${checks} actual V3 confirmation/package-stage/double-click UI checks passed; zero network calls.`);
 } finally {globalThis.fetch=originalFetch;delete globalThis.__referenceReact;}

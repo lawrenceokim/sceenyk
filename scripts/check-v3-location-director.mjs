@@ -9,6 +9,8 @@ import {typescriptLoader} from './lib/load-typescript.mjs';
 const require=createRequire(import.meta.url),builder=require('../lib/video-generation-package/builder.ts');
 const normal=v=>JSON.parse(JSON.stringify(v)),hash=b=>createHash('sha256').update(b).digest('hex');
 let checks=0,networkCalls=0,mode='pass',saveFailure=false,storageFailure=false,deleteFailure=false,deleteAttempts=0;
+let estimateCalls=0,estimateMode='pass',packageSaveFailure=false;
+let previousFunctionsPreserved=0;
 const equal=(a,b)=>{assert.deepEqual(normal(a),normal(b));checks++;},ok=v=>{assert.ok(v);checks++;};
 const pg=new PGlite(),owner=randomUUID(),oldEnv={...process.env},spool=new Map(),objects=new Map(),calls=[],deleted=[],sources=new Map();
 const master=await sharp({create:{width:1024,height:1024,channels:3,background:'#787878'}}).png().toBuffer();
@@ -23,6 +25,7 @@ const db={async rpc(name,args){try{return{data:await call(name,Object.values(arg
  maybeSingle(){return this.execute(true);},then(resolve,reject){return this.execute().then(resolve,reject);}};}};
 const media={bytesHash:hash,readSpool:async(id,name)=>spool.get(`${id}:${name}`)??null,
  saveSpool:async(id,name,bytes)=>{const key=`${id}:${name}`;if(spool.has(key)&&hash(spool.get(key))!==hash(bytes))throw new Error('V3_SPOOL_CONFLICT');spool.set(key,bytes);
+  if(packageSaveFailure&&name==='package.json'){packageSaveFailure=false;throw new Error('V3_LOCAL_SAVE_ACK_LOST');}
   if(saveFailure&&name==='openai-response.json'){saveFailure=false;throw new Error('FIXTURE_LOST_SAVE_ACK');}},
  writeReferenceDiagnostics:async(id,value)=>spool.set(`${id}:reference-diagnostics.json`,Buffer.from(JSON.stringify(value))),
  purgeReferenceSpool:async id=>{for(const key of [...spool.keys()])if(key.startsWith(`${id}:`))spool.delete(key);},
@@ -30,7 +33,7 @@ const media={bytesHash:hash,readSpool:async(id,name)=>spool.get(`${id}:${name}`)
  readPrivate:async key=>objects.get(key)?.bytes??master,
  inspectImage:async bytes=>{const b=await sharp(bytes).rotate().png().toBuffer(),m=await sharp(b).metadata();return{bytes:b,metadata:{mimeType:'image/png',width:m.width,height:m.height,durationMs:0,hasAudio:false}};},
  publishPrivate:async(user,project,id,bytes,meta)=>{if(storageFailure)throw new Error('FIXTURE_STORAGE');const asset={id,storageKey:`users/${user}/projects/${project}/v3/${id}.png`,etag:'fixture',sha256:hash(bytes),sizeBytes:bytes.length,...meta};objects.set(asset.storageKey,{asset,bytes});return asset;},
- signPrivate:async a=>({url:`https://private.example.test/${a.id}`,expiresAt:'fixture'})};
+ signPrivate:async a=>({url:`https://private.example.test/${a.id}`,expiresAt:new Date(Date.now()+300000).toISOString()})};
 async function fixtureResponse(kind,body,options){
  const id=options.headers['X-Client-Request-Id'];
  ok((await pg.query("select id from public.ugc_v3_tasks where output->'requests' @> $1::jsonb",[JSON.stringify([{id,status:'intent'}])])).rows[0]);
@@ -63,7 +66,7 @@ const load=typescriptLoader({'@/lib/auth/ensure-app-user':{ensureAppUser:async()
  '@/lib/video-generation-package/builder':{...builder,packageDigest:(d,v)=>builder.packageDigest(d,normal(v)),canonicalJson:v=>builder.canonicalJson(normal(v))},
  './join':{joinV3Segments:async()=>{throw new Error('JOIN_FORBIDDEN');}},'next/navigation':{unstable_rethrow:()=>{}},
  openai:{__esModule:true,default:FixtureOpenAI,toFile:async bytes=>new File([bytes],'source.png',{type:'image/png'})}},
- {Error,Response,Request,File,AbortController,fetch:async()=>{networkCalls++;throw new Error('NETWORK_FORBIDDEN');},console:{...console,info(){}}});
+ {Error,Response,Request,File,AbortController,structuredClone:normal,fetch:async(url)=>{if(String(url).startsWith('https://api.higgsfield.ai/estimate/')){estimateCalls++;return estimateMode==='pass'?Response.json({usd:'1.25'}):Response.json({}, {status:503});}networkCalls++;throw new Error('NETWORK_FORBIDDEN');},console:{...console,info(){}}});
 const route=load('app/api/ugc/v3/route.ts'),{runV3Task}=load('lib/final-video-generation-v3/worker.ts'),{V3Store}=load('lib/final-video-generation-v3/runtime-store.ts');
 const contract=load('lib/final-video-generation-v3/location-contract.ts'),{runtimeDto}=load('lib/final-video-generation-v3/runtime-server.ts');
 const read=async p=>runtimeDto(await new V3Store(db).read(owner,p));
@@ -96,8 +99,14 @@ try{
  Object.assign(process.env,{NODE_ENV:'development',UGC_V3_ENABLED:'1',UGC_V3_OPENAI_ENABLED:'1',OPENAI_API_KEY:'fixture-only',OPENAI_V3_IMAGE_MODEL:'fixture-image',OPENAI_V3_DIRECTOR_MODEL:'fixture-director',UGC_V3_OPERATOR_USER_ID:owner,UGC_V3_HIGGSFIELD_ENABLED:'0',SCEENYK_LOCAL_JOBS_ONLY:'1',RENDER:'false',VERCEL:'0'});
  await pg.exec('create role anon;create role authenticated;create role service_role bypassrls;');
  const migrations=fs.readdirSync('supabase/migrations').filter(n=>n.endsWith('.sql')).sort();
- for(const file of migrations)await pg.exec(fs.readFileSync(`supabase/migrations/${file}`,'utf8'));
+ for(const file of migrations){
+  let previous;
+  if(file.includes('08500'))previous=(await pg.query("select oid::regprocedure::text signature,prosrc,proacl::text grants,proconfig from pg_proc where pronamespace='public'::regnamespace order by oid")).rows;
+  await pg.exec(fs.readFileSync(`supabase/migrations/${file}`,'utf8'));
+  if(previous){const current=(await pg.query("select oid::regprocedure::text signature,prosrc,proacl::text grants,proconfig from pg_proc where pronamespace='public'::regnamespace order by oid")).rows;equal(current.filter(f=>previous.some(p=>p.signature===f.signature)),previous);previousFunctionsPreserved=previous.length;}
+ }
  await pg.exec(fs.readFileSync('supabase/migrations/20261031008400_ugc_v3_simple_location_retention.sql','utf8'));
+ await pg.exec(fs.readFileSync('supabase/migrations/20261031008500_ugc_v3_package_flow.sql','utf8'));
  await pg.exec(fs.readFileSync('scripts/verify-v3-setup.sql','utf8'));checks++;
  await pg.query("insert into public.app_users(id,clerk_user_id) values($1,'fixture')",[owner]);
  const f=await fixture(),before=await cp(f.project),start=calls.length;
@@ -171,5 +180,76 @@ try{
  equal((await pg.query("select has_function_privilege('authenticated','public.ugc_v3_discard_reference_prepare(uuid,uuid,uuid,integer,boolean)','EXECUTE') browser,has_function_privilege('service_role','public.ugc_v3_discard_reference_prepare(uuid,uuid,uuid,integer,boolean)','EXECUTE') server")).rows[0],{browser:false,server:true});
  mode='unknown';const unknown=await fixture();await post(unknown.project,{action:'reference',kind:'location'});await tick(unknown.project);const missing=await read(unknown.project);equal(missing.tasks.at(-1).recoveryAvailable,false);equal(missing.tasks.at(-1).canStartNew,false);ok(!JSON.stringify(missing).includes('FAKE_SECRET'));
  mode='optional';const optional=await fixture(true);const optionalCount=calls.length;await generate(optional.project);equal(calls.length-optionalCount,2);
- equal(networkCalls,0);console.info(JSON.stringify({simpleLocationAndRetentionChecks:checks,migrations:migrations.length,fixtureProviderCalls:calls.length,realNetworkCalls:networkCalls,automaticImageChecks:0}));
+ // Real route -> atomic admission -> worker -> package/estimate -> refresh, using HTTP fixtures only.
+ Object.assign(process.env,{UGC_V3_HIGGSFIELD_CREDENTIALS:'fixture:key',UGC_V3_HIGGSFIELD_ACCOUNT_SCOPE:'fixture-account'});
+ const packageRow=async p=>(await pg.query("select * from public.ugc_v3_tasks where project_id=$1 and kind='package' order by created_at desc,id desc limit 1",[p])).rows[0];
+ const packageCount=async p=>(await pg.query('select count(*)::int n from public.ugc_v3_packages where project_id=$1',[p])).rows[0].n;
+ const taskBefore=await packageRow(f.project),originalCreative=await cp(f.project),providerCount=calls.length;
+ // Reproduce the original failure, then prove the binding envelope now accepts its readback proof.
+ const binding=(await pg.query('select private_bindings from public.ugc_v3_sources where project_id=$1',[f.project])).rows[0].private_bindings;
+ const sample=Object.values(binding)[0];equal(load('lib/final-video-generation-v3/runtime-contract.ts').privateAssetSchema.safeParse(sample).success,false);
+ equal(load('lib/final-video-generation-v3/package-task.ts').packageBindingSchema.safeParse(sample).success,true);
+ for(let i=0;i<3;i++)equal((await post(f.project,{action:'build_package'})).status,200);
+ equal((await packageRow(f.project)).id,taskBefore.id);
+ equal((await pg.query('select count(*)::int n from public.ugc_v3_sources where project_id=$1',[f.project])).rows[0].n,1);
+ await tick(f.project);let built=await read(f.project);assert.equal((await packageRow(f.project)).status,'done',JSON.stringify((await packageRow(f.project)).output));checks++;
+ equal(await packageCount(f.project),1);equal(built.preflight.estimatedCostMicrousd,1250000);equal(built.preflight.segmentCount,1);equal(built.preflight.canSubmit,false);
+ equal(built.tasks.find(t=>t.kind==='package').packageBuild.estimateStatus,'available');
+ equal((await read(f.project)).preflight.packageId,built.preflight.packageId);
+ equal((await post(f.project,{action:'build_package',retryTaskId:taskBefore.id})).status,200);equal(await packageCount(f.project),1);
+ equal((await packageRow(f.project)).id,taskBefore.id);equal(await cp(f.project),originalCreative);equal(calls.length,providerCount);
+ ok(!JSON.stringify(built).includes('fixture:key'));ok(!JSON.stringify(built.tasks).includes('private.example.test'));
+ equal((await pg.query("select count(*)::int n from public.ugc_v3_run_authorizations where project_id=$1",[f.project])).rows[0].n,0);
+ const stages=(await pg.query("select document->>'stage' stage from public.ugc_v3_runtime_events where entity_id=$1 and kind='package_stage' order by id",[taskBefore.id])).rows.map(r=>r.stage);
+ for(const stage of ['validation','planning','delivery','payload','estimate','persistence','ready'])ok(stages.includes(stage));
+ // Force a new quote after expiry. Invalid data fails visibly before any estimate, then retry reuses its task.
+ await pg.query("update public.ugc_v3_quotes set document=jsonb_set(document,'{expiresAt}',to_jsonb('2020-01-01T00:00:00Z'::text)) where project_id=$1",[f.project]);
+ equal((await post(f.project,{action:'build_package',retryTaskId:taskBefore.id})).status,200);
+ let retry=await packageRow(f.project);const beforeEstimate=estimateCalls;
+ const actualRead=V3Store.prototype.read;
+ V3Store.prototype.read=async function(...args){const w=await actualRead.apply(this,args);if(w.project.project_id===f.project){const key=Object.keys(w.source.private_bindings)[0];w.source.private_bindings[key].verifiedReadback=false;}return w;};
+ await tick(f.project);let failed=(await read(f.project)).tasks.find(t=>t.id===retry.id);
+ equal(failed.status,'failed');equal(failed.packageBuild.code,'V3_PACKAGE_BINDING_INVALID');equal(failed.packageBuild.stage,'delivery');equal(failed.packageBuild.recoverable,false);equal(estimateCalls,beforeEstimate);equal(await packageCount(f.project),1);
+ V3Store.prototype.read=actualRead;
+ // Persistence failure rolls back package and quote together; saved work alone permits recovery.
+ await pg.exec("create function public.fixture_package_failure() returns trigger language plpgsql as $$ begin raise exception 'FIXTURE_PACKAGE_PERSIST_FAILED'; end $$; create trigger fixture_package_failure before insert on public.ugc_v3_quotes for each row execute function public.fixture_package_failure();");
+ packageSaveFailure=true;equal((await post(f.project,{action:'build_package'})).status,200);await tick(f.project);
+ failed=(await read(f.project)).tasks.find(t=>t.id===retry.id);equal(failed.packageBuild.recoverable,true);const savedEstimateCalls=estimateCalls;
+ equal(failed.packageBuild.stage,'persistence');equal(await packageCount(f.project),1);
+ await pg.exec('drop trigger fixture_package_failure on public.ugc_v3_quotes;drop function public.fixture_package_failure();');
+ equal((await post(f.project,{action:'build_package'})).status,200);await tick(f.project);equal(estimateCalls,savedEstimateCalls);equal(await packageCount(f.project),2);
+ // Estimate failures preserve one unpriced package and no authority; no recovery claim is shown.
+ await pg.query("update public.ugc_v3_quotes set document=jsonb_set(document,'{expiresAt}',to_jsonb('2020-01-01T00:00:00Z'::text)) where project_id=$1",[f.project]);
+ estimateMode='failed';equal((await post(f.project,{action:'build_package',retryTaskId:retry.id})).status,200);await tick(f.project);
+ built=await read(f.project);const unavailable=built.tasks.filter(t=>t.kind==='package').at(-1);equal(unavailable.status,'done');equal(unavailable.packageBuild.estimateStatus,'unavailable');equal(unavailable.packageBuild.httpStatus,503);equal(unavailable.packageBuild.recoverable,false);equal(built.preflight.estimatedCostMicrousd,null);equal(built.preflight.canSubmit,false);equal(await packageCount(f.project),3);
+ equal((await post(f.project,{action:'authorize',packageId:built.preflight.packageId,packageHash:built.preflight.packageHash,operatorApproved:true,maximumMicrousd:2000000})).status,409);
+ // Missing required approval blocks admission; approved Storyboard is preserved.
+ await pg.query("update public.ugc_v3_artifacts set approved_at=null where project_id=$1 and kind='product'",[f.project]);
+ equal((await post(f.project,{action:'build_package'})).body.code,'V3_PRODUCT_APPROVAL_REQUIRED');equal(await packageCount(f.project),3);
+ // A worker collision with a completed deletion is reconciled locally, without touching media/providers.
+ const completed=(await pg.query("select id from public.ugc_v3_reference_deletions where project_id=$1 and state='completed' limit 1",[history.project])).rows[0];
+ await pg.query("insert into public.ugc_v3_tasks(project_id,kind,request_key,input,status,error_code) values($1,'delete',$2,$3,'failed','V3_REFERENCE_CLEANUP_IN_PROGRESS')",[history.project,`race:${randomUUID()}`,JSON.stringify({referenceCleanup:{id:completed.id,version:1}})]);
+ equal(await call('ugc_v3_reconcile_reference_cleanup',[owner,history.project]),1);
+ equal((await pg.query("select status,error_code from public.ugc_v3_tasks where project_id=$1 and request_key like 'race:%'",[history.project])).rows[0],{status:'done',error_code:null});
+ equal((await pg.query("select has_function_privilege('authenticated','public.ugc_v3_package_begin(uuid,uuid,jsonb,jsonb,uuid)','EXECUTE') browser,has_function_privilege('service_role','public.ugc_v3_package_begin(uuid,uuid,jsonb,jsonb,uuid)','EXECUTE') server")).rows[0],{browser:false,server:true});
+ // Approved history cannot enter the permanent-delete coordinator, including through an old client.
+ const preserve=await fixture(),preserved=(await read(preserve.project)).artifacts.filter(a=>a.kind==='character').at(-1),preserveBefore=await cp(preserve.project),deletesBefore=deleted.length;
+ await assert.rejects(call('ugc_v3_reference_delete_prepare',[owner,preserve.project,'character',preserved.id,preserved.version,'reject',null]),/V3_APPROVED_REFERENCE_PRESERVED/);checks++;
+ equal((await post(preserve.project,{action:'reference',kind:'character',assetId:sources.get(`${preserve.project}:character`),confirmedDeletion:true,expectedId:preserved.id,expectedVersion:preserved.version})).status,200);
+ equal((await read(preserve.project)).artifacts.find(a=>a.id===preserved.id).approved,true);equal(deleted.length,deletesBefore);equal((await cp(preserve.project)).artifacts,preserveBefore.artifacts);
+ equal((await post(preserve.project,{action:'reference',kind:'character',assetId:sources.get(`${preserve.project}:character`),confirmedDeletion:true,expectedId:preserved.id,expectedVersion:preserved.version})).status,200);
+ equal((await pg.query("select count(*)::int n from public.ugc_v3_tasks where project_id=$1 and request_key=$2",[preserve.project,`approved-reference-replacement:${preserved.id}`])).rows[0].n,1);
+ // An active explicit deletion lease makes background cleanup wait, then receipt reconciliation completes it.
+ const collision=await fixture(),unapproved=await seedSheet(collision.project,'character',collision.context,false);
+ await seedSheet(collision.project,'character',collision.context,true);
+ const operation=await call('ugc_v3_discard_reference_prepare',[owner,collision.project,unapproved.id,3,false]),beforeCollisionCalls=calls.length;
+ await tick(collision.project);
+ const waiting=(await pg.query("select * from public.ugc_v3_tasks where project_id=$1 and kind='delete'",[collision.project])).rows[0];
+ equal(waiting.status,'queued');equal(waiting.error_code,'V3_REFERENCE_CLEANUP_IN_PROGRESS');
+ ok(objects.has(operation.asset.storageKey));
+ await media.deleteReferencePrivate(owner,collision.project,operation.asset);await media.purgeReferenceSpool(operation.source_task_id);
+ equal(await call('ugc_v3_discard_reference_finish',[owner,collision.project,operation.id,operation.lease_token,null]),true);
+ equal((await pg.query('select status,error_code from public.ugc_v3_tasks where id=$1',[waiting.id])).rows[0],{status:'done',error_code:null});
+ equal((await pg.query('select id from public.ugc_v3_artifacts where id=$1',[unapproved.id])).rows.length,0);equal(objects.has(operation.asset.storageKey),false);equal(calls.length,beforeCollisionCalls);
+ equal(networkCalls,0);console.info(JSON.stringify({simpleLocationAndRetentionChecks:checks,migrations:migrations.length,previousFunctionsPreserved,fixtureProviderCalls:calls.length,fixtureEstimateCalls:estimateCalls,realNetworkCalls:networkCalls,automaticImageChecks:0}));
 }finally{await pg.close();for(const k of Object.keys(process.env))if(!(k in oldEnv))delete process.env[k];Object.assign(process.env,oldEnv);}

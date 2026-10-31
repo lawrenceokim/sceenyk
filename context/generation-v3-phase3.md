@@ -1,5 +1,9 @@
 # M10 V3 Phase 3 — local runtime and first-test preparation
 
+## Cleanup and Generation Package stabilization (2026-10-31)
+
+[Exact investigation and continuation](v3-flow-stabilization.md): corrected binding-envelope parsing, atomic duplicate-safe Build admission and package/estimate commit, saved-stage feedback and truthful recovery/estimate/stale/approval states. Rejected/superseded candidates retain deterministic storage-first cleanup and sanitized retry errors; completed receipts reconcile stale tasks and approved Character/Product versions are preserved on Regenerate. **Manual 085 follows 084.** Source/offline acceptance and the requested project's provider-free cleanup reconciliation are complete; remote migration, real estimate/account and browser package acceptance are pending. Apply 085, run `scripts/verify-v3-setup.sql`, restart app/local worker and build once with the existing approved references/Storyboard. No approval regeneration or manual repair script is needed. Higgsfield stays 0 and no provider call ran in the repair.
+
 ## Simple Location prompt and retention (2026-10-31)
 
 The latest correction replaces the former five-step Location Director with **one ChatGPT analysis/prompt response and one image response**. The first request reads approved Character/optional Product sheet bytes, saved direction, Visual Style/content Type and existing context and returns only `{name,prompt}`. The image request uses the existing configured model and customized prompt, requesting four equal 2×2 views of one empty environment. Every technically readable returned image is published directly for owner review; wrong dimensions, visible subjects or layout/style issues are not AI vetoes. No consistency model call, geometric feasibility gate, automatic edit, master-image request or corrective generation remains. Models, SDK retry policy (zero), auth/payment/credit owners and Character/Product generation stay unchanged.

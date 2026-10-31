@@ -14,7 +14,7 @@ import { readFrozenPackage } from "./package";
 import { runtimePreflight, createPaidIntent, createRuntimeAuthorization } from "./execution-package";
 import { V3Store, type RuntimeWorkspace } from "./runtime-store";
 import { assertV3Operator, v3LocalEnabled, v3TransportConfig, v3OpenAIConfig, v3ReferenceConfig } from "./runtime-config";
-import { privateAssetSchema, qualitySchema, type Run, type PrivateAsset } from "./runtime-contract";
+import { privateAssetSchema, privateBindingSchema, qualitySchema, type Run, type PrivateAsset } from "./runtime-contract";
 import { enrolledV3 } from "./enrollment";
 import { generationContext, artifactCurrent, latestArtifact, referenceSubjectSchema, referenceDeletedVersion } from "./generation-context";
 export { latestArtifact } from "./generation-context";
@@ -26,6 +26,7 @@ import { projectBrief, creativeBriefHash, referenceOriginals, approvedArtifacts,
 export { projectBrief, creativeBriefHash, referenceOriginals, approvedArtifacts, validityEvidence } from "./creative-inputs";
 import { enqueueLocation, isLocationDirectorTask, locationTaskStatus, resumeLocation, locationDocument } from "./location-runtime";
 import { discardReference, discardableReferences } from "./reference-retention";
+import { packageBuildDetailsSchema } from "./package-status";
 
 export async function inspectRuntime(w: RuntimeWorkspace) {
   const docValue = w.packages.at(-1)?.document;
@@ -84,13 +85,39 @@ export async function runtimeDto(w: RuntimeWorkspace) {
   const complete = !!preflight && (preflight.segmentCount === 1 ? runs : joined).some(r => r.packageId === preflight.packageId && r.current && r.state === "approved" && !!r.completedAt);
   const context = generationContext(brief), briefHash = creativeBriefHash(brief);
   const tasks = await Promise.all(w.tasks.map(async (t, index) => {
+    let packageBuild = null;
+    if (t.kind === "package") {
+      const saved = packageBuildDetailsSchema.safeParse((t.output as { packageBuild?: unknown } | null)?.packageBuild);
+      packageBuild = saved.success ? saved.data : { stage: "validation" as const, code: t.error_code, httpStatus: null,
+        packageId: String(t.input.packageId), segmentId: null, estimateStatus: "not_requested" as const, recoverable: false };
+      const bindings = Object.values(w.source?.private_bindings ?? {});
+      if (t.status === "queued") packageBuild.code = null;
+      if (!saved.success && t.error_code === "V3_TASK_FAILED" && w.source?.revision === t.input.sourceRevision && !w.packages.some(p => p.id === t.input.packageId) &&
+        bindings.length && bindings.every(b => privateBindingSchema.safeParse(b).success) && bindings.some(b => !privateAssetSchema.safeParse(b).success)) {
+        packageBuild.stage = "delivery"; packageBuild.code = "V3_PACKAGE_LEGACY_BINDING_PARSER_FAILED";
+      }
+      if (t.status === "done" && w.packages.at(-1)?.id === t.input.packageId && (!preflight || preflight.currentness === "stale")) packageBuild.code = "PACKAGE_STALE";
+      else if (t.status === "done" && preflight && preflight.packageId === t.input.packageId && preflight.estimateExpiresAt && Date.parse(preflight.estimateExpiresAt) <= Date.now()) {
+        packageBuild.code = "COST_ESTIMATE_UNAVAILABLE"; packageBuild.estimateStatus = "unavailable";
+      }
+      // Recovery means a valid complete saved envelope exists, never just a failed task row.
+      if (["failed", "reconciliation_required"].includes(t.status)) {
+        try { const bytes = await readSpool(t.id, "package.json");
+          if (bytes) { const envelope = JSON.parse(bytes.toString("utf8")); readFrozenPackage(envelope.document);
+            packageBuild.recoverable = !envelope.quote || Date.parse(envelope.quote.expiresAt) > Date.now(); }
+          else packageBuild.recoverable = w.packages.some(p => p.id === t.input.packageId);
+        } catch { packageBuild.recoverable = false; }
+      }
+    }
+    const cleanupCompleted = !!t.input.referenceCleanup && w.referenceDeletions.some(d => d.id === (t.input.referenceCleanup as { id: string }).id && d.state === "completed");
     const current = creativeTaskCurrent(t, context, briefHash, originals) && (!isLocationDirectorTask(t) || v3Digest("location-names",t.input.names)===v3Digest("location-names",originals.names) &&
       JSON.stringify(t.input.references) === JSON.stringify([latestArtifact(w,"character"),...(originals.product?[latestArtifact(w,"product")]:[])].filter(a=>a?.approved_at&&!a.rejected_at&&artifactCurrent(a,w.artifacts,context,originals,briefHash,w.referenceDeletions)).map(a=>a!.id)));
     const location = isLocationDirectorTask(t) ? await locationTaskStatus(t, current) : null;
     const diagnostics = !location && ["character", "product", "location"].includes(t.kind) && ["failed", "reconciliation_required"].includes(t.status) && !t.input.referenceCleanupHold
       && t.error_code !== "V3_REFERENCE_REQUEST_SUPERSEDED" && !w.tasks.slice(index + 1).some(n => n.kind === t.kind)
       ? await referenceDiagnostics(t, current, w.referenceDiagnostics.find(d => d.taskId === t.id)) : null;
-    return { id: t.id, kind: t.kind, status: t.input.referenceCleanupHold ? "cleanup_pending" : t.status, errorCode: t.error_code, providerStarted: t.provider_started,
+    return { id: t.id, kind: t.kind, status: cleanupCompleted ? "done" : t.input.referenceCleanupHold ? "cleanup_pending" : t.status, errorCode: cleanupCompleted ? null : t.error_code, providerStarted: t.provider_started,
+      packageBuild,
       ...(t.input.referenceCleanup?{referenceCleanup:true}:{}),
       current, createdAt: t.created_at, leaseUntil: t.lease_until, diagnostics, location, recoveryAvailable: location?.recoveryAvailable ?? diagnostics?.recoveryAvailable ?? false,
       canStartNew: location?.canGenerate ?? diagnostics?.canStartNew ?? false };
@@ -135,6 +162,7 @@ export async function ownedV3Action(raw: unknown) {
     await enqueueLocation(store,await store.read(user.id,a.projectId)); return runtimeDto(await store.read(user.id, a.projectId));
   }
   if(a.action==="cleanup_references"){
+    await store.rpc("ugc_v3_reconcile_reference_cleanup", { p_owner: user.id, p_project: a.projectId });
     await store.rpc("ugc_v3_queue_reference_cleanup",{p_owner:user.id,p_project:a.projectId,p_retry:true});return runtimeDto(await store.read(user.id,a.projectId));
   }
   const rejected=w.artifacts.find(r=>r.id===a.id);
@@ -192,6 +220,8 @@ export async function ownedV3Action(raw: unknown) {
       if (!proceed || a.confirmedDeletion !== true) return runtimeDto(await store.read(user.id, a.projectId));
     }
     if (kind === "location") await enqueue(kind, input);
+    else if (a.confirmedDeletion === true && previous?.approved_at) await store.rpc("ugc_v3_regenerate_approved_reference", {
+      p_owner: user.id, p_project: a.projectId, p_id: z.uuid().parse(a.expectedId), p_version: z.number().int().positive().parse(a.expectedVersion), p_input: input });
     else if (a.confirmedDeletion === true) await permanentlyDeleteReference(store, user.id, a.projectId,
       { kind, id: z.uuid().parse(a.expectedId), version: z.number().int().positive().parse(a.expectedVersion) }, "regenerate", input, signal);
     else await store.rpc("ugc_v3_regenerate_reference", { p_owner: user.id, p_project: a.projectId,
@@ -240,9 +270,8 @@ export async function ownedV3Action(raw: unknown) {
       await readPrivate(asset.storageKey, asset.etag, asset.sizeBytes, signal, asset.sha256);
       bindings[ref.id] = { ...asset, verifiedReadback: true };
     }
-    await store.action(user.id, a.projectId, "source", { input, privateBindings: bindings });
-    const updated = await store.read(user.id, a.projectId);
-    await enqueue("package", { sourceRevision: updated.source!.revision, packageId: randomUUID(), packageVersion: w.packages.length + 1 });
+    await store.rpc("ugc_v3_package_begin", { p_owner: user.id, p_project: a.projectId, p_input: input, p_bindings: bindings,
+      p_retry_task: a.retryTaskId ? z.uuid().parse(a.retryTaskId) : null });
   } else if (a.action === "authorize") {
     const doc = readFrozenPackage(w.packages.at(-1)?.document), quote = w.quotes.find(q => q.document.packageId === doc.id)?.document;
     if (a.packageId !== doc.id || a.packageHash !== doc.hash || a.quoteId !== quote?.id) throw new Error("V3_REVIEW_SNAPSHOT_CHANGED");

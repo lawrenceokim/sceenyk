@@ -1,5 +1,9 @@
 # AI Workflow Rules
 
+## Current authorization — V3 cleanup/package stabilization (2026-10-31)
+
+The attached owner request authorizes investigation, existing-workflow fixes, focused full-flow local fixtures and narrowly scoped repair of project `3f6d210e-5e85-410b-8c37-3881507eec60`. Read-only live DB/R2 evidence and provider-free cleanup/state reconciliation are permitted. Preserve all approved references/Storyboard, original uploads and historical V1/V2. No OpenAI/Higgsfield call during investigation/repair, including estimate/status probes; keep `UGC_V3_HIGGSFIELD_ENABLED=0`. Normal future owner-clicked package building may use the existing configured prepaid estimate path, but cannot authorize or submit video automatically. Record fixture acceptance separately from live provider/browser acceptance. Migration 085 is additive to existing V3 tables/RPCs.
+
 ## Current authorization — simple Location prompt and unwanted-image cleanup (2026-10-31)
 
 The latest owner correction supersedes Location Blueprint/feasibility/AI consistency/correction requirements below. Implement only one existing-model ChatGPT analysis/prompt call, one existing-model image request and direct user review of every technically readable returned image. No AI post-image assessment, automatic repair or semantic veto. Keep Character/Product generation prompts/adapters unchanged. Delete explicitly rejected and superseded unapproved V3 image assets and their image-bearing local response files; keep the current awaiting-review candidate and approved history. Reuse private storage/lease/owner fences and preserve minimal request audit, auth/payments/credits and V1/V2 data. Additive manual SQL and focused offline checks are authorized; no provider request, live project/storage mutation, remote SQL or deployment is performed during implementation. Higgsfield stays disabled.

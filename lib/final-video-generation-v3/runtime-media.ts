@@ -97,14 +97,27 @@ export async function deletePrivate(owner: string, project: string, asset: Priva
 }
 export const signPrivate = (asset: PrivateAsset) => signR2Read(asset.storageKey, asset.etag, asset.mimeType);
 
+function referenceStorageFailure(error: unknown, operation: "HEAD" | "DELETE" | "VERIFY") {
+  const root = error instanceof Error && error.message === "CHARACTER_STORAGE_METADATA_FAILED" ? error.cause : error;
+  const e = root as { name?: unknown; $metadata?: { httpStatusCode?: unknown } };
+  const allowed = /^(AccessDenied|Forbidden|PreconditionFailed|NotFound|NoSuchKey|TimeoutError|AbortError|RequestTimeout|InternalError|ServiceUnavailable|SlowDown|Error|CredentialsProviderError|InvalidAccessKeyId|SignatureDoesNotMatch)$/;
+  const name = typeof e?.name === "string" && allowed.test(e.name) ? e.name.toUpperCase() : "UNAVAILABLE";
+  const status = Number(e?.$metadata?.httpStatusCode);
+  return new Error(`V3_STORAGE_DELETE_${operation}_${Number.isInteger(status) && status >= 100 && status <= 599 ? `HTTP_${status}_` : ""}${name}`);
+}
+async function referenceDeleteHead(key: string, signal: AbortSignal, operation: "HEAD" | "VERIFY") {
+  try { return await headR2CharacterObject(key, signal); } catch (error) { throw referenceStorageFailure(error, operation); }
+}
+
 export async function deleteReferencePrivate(owner: string, project: string, asset: PrivateAsset, signal: AbortSignal) {
   if (asset.mimeType !== "image/png" || asset.storageKey !== `${v3Prefix(owner, project)}${asset.id}.png`) throw new Error("V3_REFERENCE_DELETE_SCOPE");
-  const head = await headR2CharacterObject(asset.storageKey, signal);
+  const head = await referenceDeleteHead(asset.storageKey, signal, "HEAD");
   if (!head) return; // A previous deletion may have succeeded before acknowledgement/finalization.
   if (head.etag !== asset.etag) throw new Error("V3_DELETE_ASSET_CHANGED");
   const { bucket, sdk } = client();
-  await sdk.send(new DeleteObjectCommand({ Bucket: bucket, Key: asset.storageKey, IfMatch: asset.etag }), { abortSignal: signal });
-  if (await headR2CharacterObject(asset.storageKey, signal)) throw new Error("V3_DELETE_UNCONFIRMED");
+  try { await sdk.send(new DeleteObjectCommand({ Bucket: bucket, Key: asset.storageKey, IfMatch: asset.etag }), { abortSignal: signal }); }
+  catch (error) { throw referenceStorageFailure(error, "DELETE"); }
+  if (await referenceDeleteHead(asset.storageKey, signal, "VERIFY")) throw new Error("V3_DELETE_UNCONFIRMED");
 }
 
 export async function purgeReferenceSpool(taskId: string) {

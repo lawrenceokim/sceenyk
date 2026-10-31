@@ -1,6 +1,7 @@
 import { referenceFailureLabel, type ReferenceDiagnostics } from "./reference-status";
+import { packageBuildLabel, type PackageBuildDetails } from "./package-status";
 type ProgressTask = { kind: string; status: string; current: boolean; providerStarted: boolean; createdAt: string; leaseUntil: string | null; errorCode: string | null;
-  canStartNew?: boolean; recoveryAvailable?: boolean; referenceCleanup?:boolean; diagnostics?: ReferenceDiagnostics | null; location?: { label: string; failureLabel: string; requestCount: number } | null };
+  canStartNew?: boolean; recoveryAvailable?: boolean; referenceCleanup?:boolean; packageBuild?: PackageBuildDetails | null; diagnostics?: ReferenceDiagnostics | null; location?: { label: string; failureLabel: string; requestCount: number } | null };
 type ProgressArtifact = { kind: string; version: number; current: boolean; approved: boolean; rejected: boolean };
 type ProgressState = { complete: boolean; tasks: ProgressTask[]; artifacts: ProgressArtifact[]; runs: { state: string }[] };
 const subjects: Record<string, string> = { character: "Character Sheet", product: "Product Sheet", location: "Location", storyboard: "Storyboard",
@@ -19,6 +20,9 @@ export function v3ProgressLabel(state: ProgressState, productRequired: boolean, 
   const failure = state.tasks.find((t, i) => ["character", "product", "location"].includes(t.kind) && ["failed", "reconciliation_required"].includes(t.status)
     && t.errorCode !== "V3_REFERENCE_REQUEST_SUPERSEDED" && !state.tasks.slice(i + 1).some(n => n.kind === t.kind));
   if (failure) return failure.location?.failureLabel ?? referenceFailureLabel(failure.kind, failure.diagnostics);
+  const packageTask = state.tasks.filter(t => t.kind === "package").at(-1);
+  if (packageTask?.packageBuild && !state.runs.length) return packageTask.status === "queued" && now - Date.parse(packageTask.createdAt) >= 90_000
+    ? "Waiting for generation worker" : packageBuildLabel(packageTask.packageBuild, packageTask.status);
   const task = state.tasks.find(t => !t.referenceCleanup && ["queued", "running", "reconciliation_required"].includes(t.status) &&
     (t.current || t.providerStarted || ["package", "video", "join", "delete"].includes(t.kind)));
   if (task) {

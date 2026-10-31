@@ -4,15 +4,25 @@ import type { ReactElement, ReactNode } from "react";
 import { V3LocationStatus } from "../components/creation/v3-location-status";
 import { v3ProgressLabel, referenceBusy } from "../lib/final-video-generation-v3/progress";
 import type { RuntimeDto } from "../lib/final-video-generation-v3/runtime-server";
+import { packageBuildLabel, packageBuildError, type PackageBuildDetails } from "../lib/final-video-generation-v3/package-status";
 
 let checks=0;
 const equal=(a:unknown,b:unknown)=>{assert.deepEqual(a,b);checks++;};
 const ok=(v:unknown)=>{assert.ok(v);checks++;};
+const packageDetails: PackageBuildDetails = { stage: "delivery", code: "V3_PACKAGE_BINDING_INVALID", httpStatus: null,
+  packageId: "10000000-0000-4000-8000-000000000001", segmentId: null, estimateStatus: "not_requested", recoverable: false };
+equal(packageBuildLabel(packageDetails,"failed"),"Package build failed");
+equal(packageBuildLabel({...packageDetails,recoverable:true},"failed"),"Generation Package: Recovery required");
+equal(packageBuildLabel({...packageDetails,estimateStatus:"unavailable"},"done"),"Cost estimate unavailable");
+equal(packageBuildLabel({...packageDetails,estimateStatus:"available"},"done"),"Generation Package ready");
+equal(packageBuildLabel({...packageDetails,code:"APPROVED_INPUT_STALE"},"failed"),"References changed — rebuild required");
+ok(packageBuildError("V3_PRODUCT_APPROVAL_REQUIRED").includes("Product Sheet is not approved"));
+ok(packageBuildError("STORYBOARD_STALE_REGENERATE").includes("Rebuild the Storyboard first"));
 const calls:{action:string;payload:Record<string,unknown>}[]=[];
 const act=async(action:string,payload:Record<string,unknown>)=>{calls.push({action,payload});return true;};
 const base:RuntimeDto["tasks"][number]={id:"10000000-0000-4000-8000-000000000001",kind:"location",status:"failed",current:true,
   createdAt:new Date().toISOString(),leaseUntil:null,errorCode:"V3_LOCATION_STORAGE_FAILED",providerStarted:true,
-  diagnostics:null,recoveryAvailable:true,canStartNew:false,
+  diagnostics:null,packageBuild:null,recoveryAvailable:true,canStartNew:false,
   location:{phase:"publish",label:"Saving Location",failureLabel:"Location storage failed",errorCode:"V3_LOCATION_STORAGE_FAILED",
     requestCount:2,maxRequests:2,recoveryAvailable:true,canContinue:false,canGenerate:false}};
 function nodes(node:ReactNode):ReactElement<{children?:ReactNode;disabled?:boolean;onClick?:()=>void}>[]{

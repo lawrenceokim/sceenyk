@@ -1,4 +1,5 @@
 const messages: Record<string, string> = {
+  V3_PACKAGE_SETUP_REQUIRED: "The V3 workflow needs database migration 085. Apply it before rebuilding a package or replacing an approved sheet.",
   V3_LOCATION_SIMPLE_SETUP_REQUIRED: "The simplified Location flow needs database migration 084 after 083. Apply the update, restart the app/worker and check status.",
   V3_LOCATION_WORKER_RESTART_REQUIRED: "Restart the local worker to load the simplified Location flow, then Generate Location again. The outdated worker was stopped before making a provider request.",
   V3_REFERENCE_RETENTION_SETUP_REQUIRED: "Unwanted-image cleanup needs database migration 084. Apply the update and retry deletion.",
@@ -69,5 +70,6 @@ const messages: Record<string, string> = {
   APPROVE_CURRENT_REFERENCES_FIRST: "Regenerate and approve references for the current saved inputs before continuing.",
 };
 export function v3ActionErrorMessage(code: string) {
+  if (code.startsWith("V3_STORAGE_DELETE_")) return `The unwanted image could not be deleted (${code}). Its saved metadata is preserved for retry.`;
   return messages[code] ?? "This request couldn’t finish. Check your saved inputs and local generation setup, then check status.";
 }

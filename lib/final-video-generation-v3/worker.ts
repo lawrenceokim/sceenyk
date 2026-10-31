@@ -1,23 +1,20 @@
 import "server-only";
 import OpenAI, { toFile } from "openai";
 import { z } from "zod";
-import { randomUUID } from "node:crypto";
 import { promises as fs } from "node:fs";
 import { createDatabaseClient } from "@/lib/db/server";
 import { OpenAICreativeDirectorProvider } from "./adapters/openai";
-import { HiggsfieldVideoGenerationProvider } from "./adapters/higgsfield";
-import { HiggsfieldV3Transport, HiggsfieldTransportError, exactBodyHash } from "./adapters/higgsfield-transport";
-import { bindEstimateResponse } from "./adapters/higgsfield-pricing";
+import { HiggsfieldV3Transport, HiggsfieldTransportError } from "./adapters/higgsfield-transport";
 import { assertV3Operator, assertV3Transport, v3OpenAIConfig, v3ReferenceConfig, v3TransportConfig } from "./runtime-config";
 import { V3Store, type RuntimeWorkspace } from "./runtime-store";
-import { taskSchema, privateAssetSchema, quoteSchema, type Task } from "./runtime-contract";
+import { taskSchema, privateAssetSchema, type Task } from "./runtime-contract";
 import { executeV3Segment } from "./execution";
 import { joinV3Segments } from "./join";
-import { directorStoryboardSchema, type PlanningContext } from "./contract";
-import { buildFrozenPackage, restoreSegment, readFrozenPackage } from "./package";
-import { initialExecution } from "./recovery";
-import { normalizeCapabilities, v3Digest } from "./identity";
-import { bytesHash, readPrivate, inspectImage, publishPrivate, signPrivate, saveSpool, readSpool, inspectVideo, deletePrivate, spoolFile } from "./runtime-media";
+import { directorStoryboardSchema } from "./contract";
+import { readFrozenPackage } from "./package";
+import { v3Digest } from "./identity";
+import { packageTask } from "./package-task";
+import { bytesHash, readPrivate, inspectImage, publishPrivate, saveSpool, readSpool, inspectVideo, deletePrivate, spoolFile } from "./runtime-media";
 import { generationContext, generationContextSchema, referenceSubjectSchema } from "./generation-context";
 import { projectBrief, creativeBriefHash, referenceOriginals, approvedArtifacts, validityEvidence } from "./creative-inputs";
 import { prepareOpenAIReference } from "./adapters/openai-reference";
@@ -137,49 +134,6 @@ async function storyboardTask(store: V3Store, task: Task, w: RuntimeWorkspace, s
   if (storyboard.visualStyle !== brief.visual_style || storyboard.tone !== brief.tone) throw new Error("V3_DIRECTOR_STYLE_INVALID");
   await store.checkpoint(task, "artifact", { id: task.id, document: { storyboard, input: task.input, provider: "openai", model, responseHash: bytesHash(raw), requestId: captured.requestId } });
 }
-async function packageTask(store: V3Store, task: Task, w: RuntimeWorkspace, signal: AbortSignal) {
-  const source = w.source;
-  if (!source?.current || source.revision !== task.input.sourceRevision) throw new Error("PACKAGE_STALE");
-  const provider = new HiggsfieldVideoGenerationProvider(), config = v3TransportConfig(), transport = new HiggsfieldV3Transport(config), input = source.input;
-  const context: PlanningContext = { current: { workflow: input.workflow, profileId: input.profileId, scope: input.scope, provenance: input.provenance,
-    package: input.package, storyboard: input.storyboard, references: input.references }, now: new Date().toISOString(), accountScope: config.accountScope, estimateEvidence: [],
-    authorization: { id: randomUUID(), version: 1, projectId: task.project_id, packageHash: input.package.hash, inputFingerprint: v3Digest("input", input),
-      capabilityHash: v3Digest("capabilities", normalizeCapabilities(provider.capabilities())), maxRequests: 0, maxCostMicrousd: 0, consumedRequests: 0, committedCostMicrousd: 0 } };
-  const identity = { id: String(task.input.packageId), version: Number(task.input.packageVersion), sourceRevision: source.revision };
-  const saved = await readSpool(task.id, "package.json");
-  let envelope;
-  if (saved) envelope = JSON.parse(saved.toString("utf8")) as { document: unknown; quote: unknown };
-  else {
-    const provisional = buildFrozenPackage(input, provider, context, identity), media = new Map<string, string>();
-    let expiry = Date.now() + 5 * 60_000;
-    for (const ref of input.references) {
-      const binding = privateAssetSchema.parse(source.private_bindings[ref.id]);
-      await readPrivate(binding.storageKey, binding.etag, binding.sizeBytes, signal, binding.sha256);
-      const signed = await signPrivate(binding); media.set(ref.id, signed.url); expiry = Math.min(expiry, Date.parse(signed.expiresAt) - 30_000);
-    }
-    const segments = [];
-    for (const segment of provisional.segments) {
-      const restored = restoreSegment(provisional, segment.id), request = provider.prepareRequest(restored, media);
-      const estimate = await transport.estimate(request.model, request.input, signal);
-      context.estimateEvidence.push(bindEstimateResponse(restored.command, { usd: estimate.usd }, { providerId: "higgsfield", accountScope: config.accountScope,
-        observedAt: context.now, expiresAt: new Date(expiry).toISOString() }));
-      const cost = provider.estimateCost(restored.command, context.estimateEvidence, config.accountScope, context.now);
-      if (cost.estimatedCostMicrousd === null) throw new Error("COST_ESTIMATE_UNAVAILABLE");
-      segments.push({ segmentUuid: randomUUID(), segmentId: segment.id, segmentVersion: 1 as const, fingerprint: segment.fingerprint,
-        model: request.model, body: request.input, bodyHash: exactBodyHash(request.input), estimatedCostMicrousd: cost.estimatedCostMicrousd, estimateResponseHash: estimate.responseHash });
-    }
-    const document = buildFrozenPackage(input, provider, context, identity);
-    const quote = quoteSchema.parse({ id: randomUUID(), projectId: task.project_id, packageId: document.id, packageHash: document.hash, currency: "USD", validityEvidence: await validityEvidence(),
-      observedAt: context.now, expiresAt: new Date(expiry).toISOString(), segments, totalMicrousd: document.pricing.totalMicrousd });
-    envelope = { document, quote }; await saveSpool(task.id, "package.json", Buffer.from(JSON.stringify(envelope)));
-  }
-  const document = readFrozenPackage(envelope.document), quote = quoteSchema.parse(envelope.quote);
-  await store.rpc("ugc_v3_write", { p_owner: w.project.owner_user_id, p_project: task.project_id, p_action: "package", p_payload: {
-    document, state: initialExecution(document), eventId: task.id } });
-  const refreshed = await store.read(w.project.owner_user_id, task.project_id);
-  if (!refreshed.quotes.some(q => q.document.id === quote.id)) await store.action(w.project.owner_user_id, task.project_id, "quote", { document: quote });
-  await store.checkpoint(task, "done");
-}
 async function videoTask(store: V3Store, task: Task, w: RuntimeWorkspace, signal: AbortSignal) {
   const run = w.runs.find(r => r.id === task.input.runId); if (!run) throw new Error("V3_RUN_NOT_FOUND");
   if (run.result) { await store.checkpoint(task, "done"); return; }
@@ -214,6 +168,10 @@ async function deleteTask(store: V3Store, task: Task, w: RuntimeWorkspace, signa
 export async function runV3Task(projectId: string, ownerId: string, store = new V3Store(), signal = AbortSignal.timeout(14 * 60_000)) {
   assertV3Operator(ownerId);
   let w = await store.read(ownerId, projectId);
+  if (w.tasks.some(t => t.input.referenceCleanup && t.status !== "done" && w.referenceDeletions.some(d => d.id === (t.input.referenceCleanup as { id: string }).id && d.state === "completed"))) {
+    await store.rpc("ugc_v3_reconcile_reference_cleanup", { p_owner: ownerId, p_project: projectId });
+    w = await store.read(ownerId, projectId);
+  }
   if(w.referenceCleanupPolicy&&discardableReferences(w).length){
     const queued=await store.rpc("ugc_v3_queue_reference_cleanup",{p_owner:ownerId,p_project:projectId,p_retry:false});
     if(queued)w=await store.read(ownerId,projectId);
@@ -246,7 +204,8 @@ export async function runV3Task(projectId: string, ownerId: string, store = new 
     const code = error instanceof Error && /^[A-Z0-9_]{1,100}$/.test(error.message) ? error.message : "V3_TASK_FAILED";
     const rejected = error instanceof HiggsfieldTransportError && error.outcome === "rejected" || error instanceof ReferenceTaskError && error.knownRejected;
     const unknown = !rejected && (started || !!run?.observation) && !["PAID_V3_EXECUTION_DISABLED", "V3_ACTIVATION_SCOPE_MISMATCH"].includes(code);
-    const paused = ["PAID_V3_EXECUTION_DISABLED", "V3_ACTIVATION_SCOPE_MISMATCH"].includes(code);
+    const paused = ["PAID_V3_EXECUTION_DISABLED", "V3_ACTIVATION_SCOPE_MISMATCH"].includes(code) ||
+      !!task.input.referenceCleanup && ["V3_REFERENCE_CLEANUP_IN_PROGRESS", "V3_REFERENCE_CLEANUP_PENDING"].includes(code);
     if (error instanceof ReferenceTaskError && task.lease_token) {
       try { await store.rpc("ugc_v3_record_reference_diagnostic", { p_task: task.id, p_token: task.lease_token, p_document: error.metadata }); }
       catch { /* Still preserve the original code/HTTP/request ID through the normal task checkpoint. */ }

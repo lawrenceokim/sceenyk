@@ -1,5 +1,9 @@
 # UI Context
 
+## V3 package/cleanup feedback stabilization (2026-10-31)
+
+The existing Package tab displays persisted validation, plan, reference-delivery, cost and save stages automatically. Failed builds retain their specific reason across refresh; only validated saved package work uses recovery wording. Unavailable/expired estimates and stale/missing approvals have distinct messages and cannot authorize video. Local-development disclosures show sanitized stage/code/HTTP/package/segment/estimate/recoverability fields. Confirmed Character/Product regeneration preserves approved history; the dialog discloses preservation for approved versions and permanent deletion for unwanted unapproved candidates. Completed deletion receipts suppress obsolete warnings. No tab/layout/stylesheet redesign; existing Tailwind/shared controls and native disclosures remain. [Evidence, migration 085 and owner continuation](v3-flow-stabilization.md).
+
 ## Simple Location review and approved-only history (2026-10-31)
 
 Location displays Planning → Generating → Saving → ready for review. The returned image is shown directly with Approve / Reject and Delete, with no Blueprint editor/details, AI pass/fail panel, consistency check or automatic correction. Generate/Regenerate discloses one customized ChatGPT prompt and one image. Regenerate deletes a bound current unapproved candidate before a fresh attempt; approved Location history is retained. Readable mismatched images remain reviewable. Stale returned images remain visible and can be deleted, while approval requires current saved inputs. Saved legacy output offers provider-free Recover regardless of earlier AI-check flags. A recovered prompt needs explicit Continue before the remaining image request.

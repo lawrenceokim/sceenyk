@@ -30,7 +30,8 @@ export async function permanentlyDeleteReference(store: V3Store, owner: string, 
     if (await store.rpc("ugc_v3_reference_delete_finish", { p_owner: owner, p_project: project, p_id: op.id,
       p_token: op.lease_token, p_error: null }) !== true) throw new Error("V3_REFERENCE_CLEANUP_PENDING");
   } catch (error) {
-    const code = phase === "storage" ? "V3_REFERENCE_STORAGE_DELETE_FAILED" : phase === "spool" ? "V3_REFERENCE_LOCAL_CLEANUP_FAILED" :
+    const code = phase === "storage" && error instanceof Error && /^V3_(STORAGE_DELETE_|DELETE_|REFERENCE_DELETE_SCOPE)/.test(error.message) ? error.message :
+      phase === "storage" ? "V3_REFERENCE_STORAGE_DELETE_FAILED" : phase === "spool" ? "V3_REFERENCE_LOCAL_CLEANUP_FAILED" :
       error instanceof Error && error.message === "V3_CREATIVE_INPUT_STALE" ? "V3_CREATIVE_INPUT_STALE" : "V3_REFERENCE_DELETE_FINALIZE_FAILED";
     // Keep the reserved task held, release this cleanup lease and allow the same confirmed operation to resume.
     try { await store.rpc("ugc_v3_reference_delete_finish", { p_owner: owner, p_project: project, p_id: op.id,

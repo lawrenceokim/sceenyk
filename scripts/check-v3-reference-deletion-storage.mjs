@@ -5,7 +5,7 @@ import path from 'node:path';
 import os from 'node:os';
 import {randomUUID} from 'node:crypto';
 import {typescriptLoader} from './lib/load-typescript.mjs';
-let checks=0,sends=0,failDelete=false,leaveObject=false;
+let checks=0,sends=0,failDelete=false,leaveObject=false,headFailure=null;
 const heads=new Map(),owner=randomUUID(),project=randomUUID(),id=randomUUID();
 const asset={id,storageKey:`users/${owner}/projects/${project}/v3/${id}.png`,etag:'fixture-etag',mimeType:'image/png'};
 const locationSourceTask=randomUUID(),locationChildren=new Map(['plan','sheet','check','repair','recheck'].map(key=>[key,randomUUID()]));
@@ -13,7 +13,7 @@ const load=typescriptLoader({
   './location-contract':{locationRequestId:(task,key)=>{assert.equal(task,locationSourceTask);return locationChildren.get(key);}},
   './generation-context':{latestArtifact:()=>null},
   '@/lib/storage/config':{getStorageConfig:()=>({bucket:'fixture-bucket',endpoint:'https://storage.invalid',accessKeyId:'fixture',secretAccessKey:'fixture'})},
-  '@/lib/storage/r2':{headR2CharacterObject:async key=>heads.get(key)??null},
+  '@/lib/storage/r2':{headR2CharacterObject:async key=>{if(headFailure)throw headFailure;return heads.get(key)??null;}},
   '@/lib/final-video-generation/media':{measure:async()=>{throw new Error('VIDEO_FORBIDDEN');}},
   '@aws-sdk/client-s3':{
     DeleteObjectCommand:class{constructor(input){this.input=input;}},
@@ -25,10 +25,13 @@ const reject=async(fn,pattern)=>{await assert.rejects(fn,pattern);checks++;};
 for(const storageKey of [`users/${owner}/projects/${project}/uploads/${id}.png`,`users/${randomUUID()}/projects/${project}/v3/${id}.png`,asset.storageKey.replace('.png','.mp4')])
   await reject(()=>deleteReferencePrivate(owner,project,{...asset,storageKey},AbortSignal.timeout(1000)),/V3_REFERENCE_DELETE_SCOPE/);
 assert.equal(sends,0);checks++;
+headFailure=new Error('CHARACTER_STORAGE_METADATA_FAILED',{cause:Object.assign(new Error('secret must never appear'),{name:'AccessDenied',$metadata:{httpStatusCode:403}})});
+await reject(()=>deleteReferencePrivate(owner,project,asset,AbortSignal.timeout(1000)),/^Error: V3_STORAGE_DELETE_HEAD_HTTP_403_ACCESSDENIED$/);
+assert.equal(sends,0);checks++;headFailure=null;
 heads.set(asset.storageKey,{etag:'another-etag'});
 await reject(()=>deleteReferencePrivate(owner,project,asset,AbortSignal.timeout(1000)),/V3_DELETE_ASSET_CHANGED/);
 heads.set(asset.storageKey,{etag:asset.etag});failDelete=true;
-await reject(()=>deleteReferencePrivate(owner,project,asset,AbortSignal.timeout(1000)),/FIXTURE_DELETE_FAILED/);
+await reject(()=>deleteReferencePrivate(owner,project,asset,AbortSignal.timeout(1000)),/V3_STORAGE_DELETE_DELETE_ERROR/);
 assert.ok(heads.has(asset.storageKey));checks++;
 failDelete=false;leaveObject=true;
 await reject(()=>deleteReferencePrivate(owner,project,asset,AbortSignal.timeout(1000)),/V3_DELETE_UNCONFIRMED/);

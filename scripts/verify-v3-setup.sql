@@ -1,4 +1,4 @@
--- Read-only, owner-run Supabase SQL Editor verification AFTER manual 076 through 084 in order.
+-- Read-only, owner-run Supabase SQL Editor verification AFTER manual 076 through 085 in order.
 -- No jobs, claims, quotes, authorizations or provider requests are created.
 with expected(name) as (values
  ('ugc_v3_projects'),('ugc_v3_sources'),('ugc_v3_packages'),('ugc_v3_authorizations'),('ugc_v3_events'),
@@ -12,6 +12,9 @@ from expected e left join pg_class c on c.oid=to_regclass('public.'||e.name) ord
 with expected(signature) as (values
  ('public.ugc_v3_create_project(uuid,uuid,jsonb)'),('public.ugc_v3_read(uuid,uuid)'),('public.ugc_v3_write(uuid,uuid,text,jsonb)'),
  ('public.ugc_v3_runtime_read(uuid,uuid)'),('public.ugc_v3_runtime_action(uuid,uuid,text,jsonb)'),
+ ('public.ugc_v3_package_begin(uuid,uuid,jsonb,jsonb,uuid)'),('public.ugc_v3_package_checkpoint(uuid,uuid,jsonb,boolean)'),
+ ('public.ugc_v3_package_commit(uuid,uuid,uuid,uuid,jsonb,jsonb,jsonb,jsonb)'),('public.ugc_v3_reconcile_reference_cleanup(uuid,uuid)'),
+ ('public.ugc_v3_regenerate_approved_reference(uuid,uuid,uuid,integer,jsonb)'),
  ('public.ugc_v3_location_action(uuid,uuid,text,jsonb)'),('public.ugc_v3_location_checkpoint(uuid,uuid,text,jsonb)'),('public.ugc_v3_location_input_current(uuid,jsonb)'),
  ('public.ugc_v3_discard_reference_prepare(uuid,uuid,uuid,integer,boolean)'),('public.ugc_v3_discard_reference_finish(uuid,uuid,uuid,uuid,text)'),('public.ugc_v3_queue_reference_cleanup(uuid,uuid,boolean)'),
  ('public.ugc_v3_reference_delete_prepare(uuid,uuid,text,uuid,integer,text,jsonb)'),('public.ugc_v3_reference_delete_finish(uuid,uuid,uuid,uuid,text)'),
@@ -31,7 +34,7 @@ select tgrelid::regclass as relation,tgname,pg_get_triggerdef(oid) as definition
 from pg_trigger where not tgisinternal and tgname in ('ugc_v3_isolation','ugc_v3_studio_approval','ugc_v3_studio_source','ugc_v3_studio_intent',
  'ugc_v3_reference_cleanup_approval','ugc_v3_reference_cleanup_version','ugc_v3_reference_cleanup_intent','ugc_v3_reference_cleanup_enqueue',
  'ugc_v3_location_artifact_validation','ugc_v3_location_storyboard_binding','ugc_v3_location_source_binding','ugc_v3_location_video_binding',
- 'ugc_v3_location_version_floor','ugc_v3_reference_retention','ugc_v3_simple_location_intent') order by tgrelid;
+ 'ugc_v3_location_version_floor','ugc_v3_reference_retention','ugc_v3_simple_location_intent','ugc_v3_preserve_approved_reference') order by tgrelid;
 
 select indexname,indexdef from pg_indexes where schemaname='public' and indexname='ugc_v3_reference_deletion_pending';
 

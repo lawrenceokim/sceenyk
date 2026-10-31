@@ -25,8 +25,9 @@ export async function discardReference(store:V3Store,owner:string,project:string
     for(const id of ids)await purgeReferenceSpool(id);
     phase="database";
     if(await store.rpc("ugc_v3_discard_reference_finish",{p_owner:owner,p_project:project,p_id:op.id,p_token:op.lease_token,p_error:null})!==true)throw new Error("V3_REFERENCE_CLEANUP_PENDING");
-  }catch{
-    const code=phase==="storage"?"V3_REFERENCE_DISCARD_STORAGE_FAILED":phase==="spool"?"V3_REFERENCE_DISCARD_LOCAL_FAILED":"V3_REFERENCE_DISCARD_FINALIZE_FAILED";
+  }catch(error){
+    const code=phase==="storage"&&error instanceof Error&&/^V3_(STORAGE_DELETE_|DELETE_|REFERENCE_DELETE_SCOPE)/.test(error.message)?error.message:
+      phase==="storage"?"V3_REFERENCE_DISCARD_STORAGE_FAILED":phase==="spool"?"V3_REFERENCE_DISCARD_LOCAL_FAILED":"V3_REFERENCE_DISCARD_FINALIZE_FAILED";
     try{await store.rpc("ugc_v3_discard_reference_finish",{p_owner:owner,p_project:project,p_id:op.id,p_token:op.lease_token,p_error:code});}catch{/* The durable cleanup lease allows a later retry. */}
     throw new Error(code);
   }

@@ -11,6 +11,7 @@ import { referenceBusy, v3ProgressLabel } from "@/lib/final-video-generation-v3/
 import { v3ActionErrorMessage } from "@/lib/final-video-generation-v3/reference-errors";
 import { ReferenceRegenerationDialog } from "./reference-regeneration-dialog";
 import { referenceFailureLabel } from "@/lib/final-video-generation-v3/reference-status";
+import { packageBuildLabel, packageBuildError } from "@/lib/final-video-generation-v3/package-status";
 
 const field = "w-full rounded-lg border border-border bg-background p-2 text-sm";
 const money = (amount: number | null) => amount === null ? "Unavailable" : `$${(amount / 1_000_000).toFixed(4)}`;
@@ -33,6 +34,17 @@ function ReferenceTechnicalDetails({ task }: { task: RuntimeDto["tasks"][number]
   return <details className="text-xs text-muted-foreground"><summary className="cursor-pointer">Technical details</summary>
     <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">{Object.entries(fields).map(([label, value]) => <div key={label} className="contents">
       <dt>{label}</dt><dd className="min-w-0 break-all">{value}</dd></div>)}</dl></details>;
+}
+function PackageStatus({ task, technical }: { task: RuntimeDto["tasks"][number]; technical: boolean }) {
+  const d = task.packageBuild;
+  if (!d) return null;
+  return <div className="space-y-2 text-sm"><p role="status">{packageBuildLabel(d, task.status)}</p>
+    {d.code && <p role="alert" className="text-destructive">{packageBuildError(d.code)}</p>}
+    {technical && <details className="text-xs text-muted-foreground"><summary className="cursor-pointer">Package technical details</summary>
+      <dl className="mt-2 space-y-1">{Object.entries({ Stage: d.stage, Code: d.code ?? "None", "HTTP status": d.httpStatus ?? "Not recorded",
+        "Package ID": d.packageId, "Segment ID": d.segmentId ?? "Not assigned", "Estimate status": d.estimateStatus, Recoverable: d.recoverable ? "Yes" : "No" })
+        .map(([label, value]) => <div key={label} className="break-all"><dt className="inline font-medium">{label}: </dt><dd className="inline">{value}</dd></div>)}</dl></details>}
+  </div>;
 }
 function VideoReview({ run, act, busy, segmentCount }: { run: RuntimeDto["runs"][number]; act: Action; busy: boolean; segmentCount: number }) {
   const [quality, setQuality] = useState<Quality>({ ...uncheckedQuality, ...(run.expectedDialogue.length ? {} : {
@@ -64,6 +76,7 @@ function VideoReview({ run, act, busy, segmentCount }: { run: RuntimeDto["runs"]
 }
 export function V3WorkflowPreview({ initial, projectId, assets, dirty, revision }: { initial?: RuntimeDto; projectId: string; assets: ProjectAsset[]; dirty: boolean; revision: string }) {
   const [workspace, setWorkspace] = useState(initial ?? null), [busy, setBusy] = useState(false), [error, setError] = useState("");
+  const [buildActionFailure, setBuildActionFailure] = useState<{ code: string; httpStatus: number | null } | null>(null);
   const [maximum, setMaximum] = useState(""), [approvedHash, setApprovedHash] = useState<string | null>(null);
   const refreshLock = useRef(false), refreshRequested = useRef(false);
   const actionLock = useRef(false);
@@ -78,7 +91,7 @@ export function V3WorkflowPreview({ initial, projectId, assets, dirty, revision 
         refreshRequested.current = false;
         const response = await fetch(`/api/ugc/v3?project=${encodeURIComponent(projectId)}`, { cache: "no-store", signal });
         const body = await response.json(); if (!body.ok) throw new Error(body.code);
-        if (!signal?.aborted) { setWorkspace(body.workspace); setError(""); }
+        if (!signal?.aborted) setWorkspace(body.workspace);
       } while (refreshRequested.current && !signal?.aborted);
     }
     catch (e) { if (!signal?.aborted) setError(e instanceof Error ? e.message : "V3_STATUS_UNAVAILABLE"); }
@@ -99,16 +112,21 @@ export function V3WorkflowPreview({ initial, projectId, assets, dirty, revision 
   const act: Action = async (action, payload = {}) => {
     if (actionLock.current) return false;
     actionLock.current = true; setBusy(true); setError("");
+    if (action === "build_package") setBuildActionFailure(null);
     try {
       const id = projectId;
       const response = await fetch("/api/ugc/v3", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action, projectId: id, ...payload }) });
-      const body = await response.json(); if (!body.ok) throw new Error(body.code); setWorkspace(body.workspace);
+      const body = await response.json(); if (!body.ok) {
+        if (action === "build_package") setBuildActionFailure({ code: body.code, httpStatus: response.status });
+        throw new Error(body.code);
+      } setWorkspace(body.workspace);
       if (action === "build_package") setApprovedHash(null);
       return true;
     } catch (e) { setError(e instanceof Error ? e.message : "V3_ACTION_UNAVAILABLE"); return false; }
     finally { actionLock.current = false; setBusy(false); }
   };
   const p = workspace?.preflight;
+  const packageTask = workspace?.tasks.filter(t => t.kind === "package").at(-1);
   const locked = busy || dirty || !!workspace?.processing;
   const reference = (kind: "character" | "product") => assets.find(a => a.studioRole === kind && a.status === "uploaded" && !a.removedFromDraft);
   const latest = workspace?.artifacts.filter(a => a.activeSlot) ?? [];
@@ -135,6 +153,7 @@ export function V3WorkflowPreview({ initial, projectId, assets, dirty, revision 
     workspace?.tasks.filter(t => t.kind === kind).at(-1)?.errorCode === "V3_OPENAI_REFERENCE_PROVIDER_UNAVAILABLE");
   return <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-2" aria-busy={busy}>
     <ReferenceRegenerationDialog kind={regeneration?.kind ?? null} busy={busy} blocked={dirty}
+      preserveApproved={!!latest.find(a => a.id === regeneration?.id)?.approved}
       error={error ? v3ActionErrorMessage(error) : dirty ? "Save your Studio changes before continuing." : ""}
       onCancel={() => setRegeneration(null)} onContinue={continueRegeneration} />
     <div className="flex shrink-0 flex-wrap items-center gap-1 self-start rounded-md border border-border bg-muted/40 p-0.5" role="group" aria-label="Preview view">
@@ -145,7 +164,7 @@ export function V3WorkflowPreview({ initial, projectId, assets, dirty, revision 
     <div className="min-h-0 min-w-0 flex-1 space-y-4 overflow-y-auto overscroll-contain p-1">
     {dirty && <p role="status" className="text-sm text-warning-foreground">Save your Studio changes before generating or approving. Changed style or direction requires fresh references.</p>}
     {busy && <p role="status" className="text-sm text-muted-foreground">Preparing your request…</p>}
-    {error && <p role="alert" className="break-words rounded-lg border border-destructive/30 p-3 text-sm">{v3ActionErrorMessage(error)}</p>}
+    {error && <p role="alert" className="break-words rounded-lg border border-destructive/30 p-3 text-sm">{/PACKAGE|STORYBOARD|APPROV/.test(error) ? packageBuildError(error) : v3ActionErrorMessage(error)}</p>}
     {!workspace ? <p role="status" className="text-sm text-muted-foreground">Loading generation status…</p> : <>
       <div className="flex flex-wrap items-center justify-between gap-2"><p role="status" className="text-sm text-muted-foreground">{v3ProgressLabel(workspace, !!reference("product"))}</p><Button variant="outline" disabled={busy} onClick={() => void refresh()}>Check status</Button></div>
       {outdatedReferences && <p role="status" className="text-sm text-warning-foreground">Your saved reference inputs changed. Generate again to replace the outdated, unstarted request and keep your uploaded sources.</p>}
@@ -183,17 +202,22 @@ export function V3WorkflowPreview({ initial, projectId, assets, dirty, revision 
             <Button variant="outline" disabled={busy} onClick={() => void act("review_artifact", { id: a.id, decision: "reject" })}>Reject Storyboard</Button></div>}</article>)}</section>}
       {view === "package" && <section className="space-y-3 rounded-xl border border-border p-4"><h2 className="font-semibold">Generation Package</h2>
         {workspace.packageStale && <p role="status" className="text-sm text-warning-foreground">This package needs rebuilding. Regenerate and approve references and Storyboard for your saved style and direction first.</p>}
-        <Button variant="outline" disabled={locked || !currentApproved("storyboard")} onClick={() => void act("build_package")}>Build package and estimate</Button>
+        <Button variant="outline" disabled={locked || !currentApproved("storyboard")} onClick={() => void act("build_package", { retryTaskId: packageTask?.id })}>Build package and estimate</Button>
+        {buildActionFailure && workspace.localEnabled && <details className="text-xs text-muted-foreground"><summary className="cursor-pointer">Build request technical details</summary>
+          <p>Stage: validation · Code: {buildActionFailure.code} · HTTP status: {buildActionFailure.httpStatus ?? "Not received"}</p>
+          <p>Package ID: Not assigned · Segment ID: Not assigned · Estimate status: Not requested · Recoverable: No</p></details>}
+        {packageTask && <PackageStatus task={packageTask} technical={workspace.localEnabled} />}
         {p && <><p className="text-sm">{p.durationMs / 1000}s · {p.aspectRatio} · {p.currentness === "current" ? "Ready for review" : "Needs rebuilding"}</p>
           <p className="text-sm">Estimated video cost: {money(p.estimatedCostMicrousd)}</p><p className="text-sm">Authorized maximum: {money(p.authorizedMaximumMicrousd)}</p>
           <label className="block space-y-1 text-sm">Maximum authorized USD<input type="number" min="0" step="0.000001" className={field} value={maximum} onChange={e => setMaximum(e.target.value)} /></label>
           <label className="flex items-start gap-2 text-sm"><input type="checkbox" checked={approvedHash === p.packageHash} onChange={e => setApprovedHash(e.target.checked ? p.packageHash : null)} />I reviewed this exact package and approve the displayed request and cost limit.</label>
-          <Button variant="outline" disabled={locked || approvedHash !== p.packageHash || !maximum} onClick={() => void act("authorize", { operatorApproved: true, packageId: p.packageId, packageHash: p.packageHash, quoteId: p.quoteId, maximumMicrousd: Math.floor(Number(maximum) * 1_000_000) })}>Approve Generation Package</Button>
+          <Button variant="outline" disabled={locked || p.estimatedCostMicrousd === null || !p.quoteId || approvedHash !== p.packageHash || !maximum} onClick={() => void act("authorize", { operatorApproved: true, packageId: p.packageId, packageHash: p.packageHash, quoteId: p.quoteId, maximumMicrousd: Math.floor(Number(maximum) * 1_000_000) })}>Approve Generation Package</Button>
           {p.issues.length > 0 && <p role="status" className="text-sm text-muted-foreground">Video generation is awaiting setup or approval.</p>}
           {!p.transportEnabled && <p className="text-sm text-muted-foreground">Video generation is currently unavailable. Your saved work is preserved.</p>}
           <Button disabled={locked || !p.canSubmit} onClick={() => void act("generate", { packageId: p.packageId, packageHash: p.packageHash })}>Generate Final Video</Button></>}
       </section>}
-      {view === "progress" && workspace.tasks.filter(t => t.status !== "done" && t.errorCode !== "V3_REFERENCE_REQUEST_SUPERSEDED" &&
+      {view === "progress" && packageTask && <PackageStatus task={packageTask} technical={workspace.localEnabled} />}
+      {view === "progress" && workspace.tasks.filter(t => t.kind !== "package" && t.status !== "done" && t.errorCode !== "V3_REFERENCE_REQUEST_SUPERSEDED" &&
         (!["character", "product", "location"].includes(t.kind) || workspace.tasks.filter(n => n.kind === t.kind).at(-1)?.id === t.id)).map(t => <div key={t.id} className="space-y-1"><p role="status" className="text-sm text-muted-foreground">{t.referenceCleanup?t.status==="failed"?"Unwanted image deletion failed":"Deleting unwanted reference image":t.location ? ["failed","reconciliation_required"].includes(t.status)?t.location.failureLabel:t.location.label : t.diagnostics ? referenceFailureLabel(t.kind, t.diagnostics) : `${taskLabels[t.kind]}: ${t.status === "queued" ? "Waiting" : t.status === "running" ? "Preparing" : "Recovery required"}`}</p>
         {(!t.location&&t.recoveryAvailable || t.status === "reconciliation_required" && t.kind === "storyboard") && <Button variant="outline" disabled={busy} onClick={() => void act("recover_task", { id: t.id })}>Recover saved response</Button>}
         {t.kind === "join" && t.status === "failed" && <Button variant="outline" disabled={busy} onClick={() => void act("recover_task", { id: t.id })}>Recover local join</Button>}</div>)}

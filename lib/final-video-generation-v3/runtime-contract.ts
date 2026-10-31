@@ -5,6 +5,8 @@ export const privateAssetSchema = z.strictObject({ id: z.uuid(), storageKey: z.s
   sizeBytes: z.number().int().positive().safe(), mimeType: z.enum(["image/png", "video/mp4"]),
   width: z.number().int().positive(), height: z.number().int().positive(), durationMs: z.number().int().nonnegative(), hasAudio: z.boolean() });
 export type PrivateAsset = z.infer<typeof privateAssetSchema>;
+export const privateBindingSchema = privateAssetSchema.extend({ verifiedReadback: z.literal(true) })
+  .transform(({ verifiedReadback: _proof, ...asset }) => { void _proof; return asset; });
 export const qualitySchema = z.strictObject({ characterContinuity: z.enum(["not_checked", "pass", "fail"]),
   productContinuity: z.enum(["not_checked", "pass", "fail", "not_applicable"]), locationContinuity: z.enum(["not_checked", "pass", "fail"]),
   dialoguePresence: z.enum(["not_checked", "pass", "fail", "not_applicable"]), speechTiming: z.enum(["not_checked", "pass", "fail", "not_applicable"]),
