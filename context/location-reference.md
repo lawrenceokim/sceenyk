@@ -1,5 +1,63 @@
 # UGC Location Reference — Milestone 7
 
+## AI Location Director — agreed upcoming V3 approach (2026-10-31)
+
+**Agreed / Planned / Not Implemented.** This section owns the upcoming V3 Location contract. It refines [the canonical V3 architecture](generation-architecture-v3.md#ai-location-director--planned-2026-10-31); it does not describe current runtime behavior. Current V3 queues a direct OpenAI Location image edit using approved references and saved generation context. It has no separate Location Blueprint, physical-suitability gate, required four-view Location grid or semantic cross-view consistency/repair stage. The dated Milestone 7 planning, model alternatives, recovery and approval records below describe the historical workflow and remain intact.
+
+Reuse the project's existing configured **director model** (`OPENAI_V3_DIRECTOR_MODEL`) for visual understanding, location planning and consistency assessment, and its existing configured **image-generation model** (`OPENAI_V3_IMAGE_MODEL`) for the reference sheet. Do not introduce another model, change either configuration, adopt a historical model alternative or silently fall back to a different provider. Higgsfield remains video-only and its video transport stays disabled. This documentation agreement authorizes no provider call or implementation.
+
+### Inputs and story-driven selection
+
+Read the latest saved project inputs and the exact current approved generated Character sheet and, when applicable, Product/Prop sheet. The director must actually analyze those images alongside their names/provenance, the user's creative direction, selected Visual Style, content Type (Advertisement, Unboxing, Explanation, etc.) and other saved constraints relevant to staging, framing and duration. A Product is optional only when the project does not require one; a required missing/unapproved reference blocks planning rather than being invented. Unsaved browser values and historical approvals are not current input authority.
+
+Infer provisional actions and staging needs from the actual request before Storyboard exists. Select a primary environment because it supports the story, product scale, Character movement and intended actions; never choose a random attractive setting. Distinguish user requirements, visible evidence and assumptions. An unboxing may need a usable work surface and handling space; a vehicle demonstration may need vehicle access, realistic clearance and room for camera/movement. Do not invent exact product dimensions from an image or force a large product into an unsuitable space. If an essential constraint cannot be resolved from saved inputs, record the uncertainty and request clarification before image generation.
+
+### Structured Location Blueprint and pre-image validation
+
+The existing director produces a structured, versioned **Location Blueprint**, not just a free-form image prompt. The following are planned semantic fields, not an implemented schema or new database tables:
+
+| Blueprint area | Required content |
+| --- | --- |
+| Input bindings | Project context/version, exact Character and optional Product sheet IDs/versions/hashes, saved direction, content Type, Visual Style and configured model/prompt provenance. |
+| Environment and rationale | Location type, indoor/outdoor setting, atmosphere and concrete reasons it serves the story, Character, Product and actions; trace each choice to a requirement or declared assumption. |
+| Shared layout | One spatial map with stable axes/origin, architecture, entrances, fixed landmarks, surfaces and necessary background objects; identify clear staging and action zones. |
+| Required space and actions | Product footprint/height/access, handling or movement envelope, Character clearance, camera clearance and required surfaces/support; label estimates and uncertain dimensions explicitly. |
+| Lighting | Time of day, light sources/directions, softness, exposure intent and atmosphere consistent with the shared map. |
+| Camera positions | A position, height, orientation, framing/lens intent and sightline for each required view, all anchored to the same layout. |
+| Visual style and exclusions | Exact saved Visual Style/material treatment; empty environment with no Character, featured Product/Prop or unrelated people, including their reflections/shadows. Necessary fixed staging fixtures may remain. |
+| Validation and consistency criteria | Requirement-by-requirement feasibility findings, unresolved assumptions, stable landmarks and expected visibility/relationships in each view. |
+
+Before any image request, validate Blueprint structure and required input bindings, then assess physical feasibility: entrances/access, product scale, clearances, floor/support/surface suitability, intended action paths and viable camera sightlines. An AI assertion alone is not proof of real-world dimensions; retain the evidence and assumptions behind the decision. A failed or critically uncertain fit returns to targeted Blueprint revision or clarification, without generating an image or weakening the user's requirements. Keep already valid choices intact. Later Storyboard actions must also fit this Blueprint; if they require a different space, explicitly revise/review the location rather than silently changing it downstream.
+
+### Four views of one empty location
+
+After the suitability gate passes, use the existing configured image model to create one **2×2 Location reference sheet**:
+
+| Position | Required view |
+| --- | --- |
+| Top-left | Aerial/top view. |
+| Top-right | Horizontal eye-level view. |
+| Bottom-left | Elevated wide-angle view. |
+| Bottom-right | Point-of-view (POV) view from the planned camera/participant position. |
+
+All panels must depict the **same physical environment**, not four alternative locations or an aesthetic mood board. Use the same Blueprint/map, architecture, fixed objects, layout, materials, lighting/time and Visual Style; perspective and visibility change with the specified camera. Preserve landmark relationships and available staging space across views. POV means a viewpoint, not a visible person, hands, body or product. The Character and Product sheets inform planning; they are not subjects to draw into the environment. No Character, featured Product or unrelated people may appear in any panel. Character/Product placement and action occur later during video generation.
+
+### Consistency check and targeted correction
+
+Technically validate the saved image and 2×2 layout, then use the same existing director to compare all four panels against the Blueprint and one another. Record panel-specific findings for architecture/topology, landmark/object positions, scale/clearances, lighting/material/style continuity, correct camera views and absence of excluded subjects. Successful byte decoding alone does not establish semantic consistency or physical suitability.
+
+When correction is needed, target the failed panel/region or failed constraint while retaining the validated Blueprint and passing views wherever the existing image adapter supports a safe edit. Recheck the entire grid afterward so a repair cannot introduce a new inconsistency. Exact region-edit/masking capability is an implementation-time verification item, not a claimed current feature. If safe partial editing is unsupported, a clearly scoped full-sheet correction must retain the same Blueprint and explain why the repair affects the whole sheet; never substitute a different environment. Define a bounded correction/request budget before execution, preserve all attempt accounting and stop for explicit further authorization when it is exhausted. Targeted regeneration is a new image request; provider-free recovery only reprocesses saved output and never regenerates an image. Unknown provider outcomes require reconciliation, not automatic resubmission.
+
+### Approval, persistence and downstream reuse
+
+Save Blueprint revisions, feasibility/consistency findings, input/model/prompt bindings, provider receipts and sheet asset/version/hash using the existing owned V3 persistence/private-media boundaries, extended only when a later implementation verifies what is needed. PostgreSQL holds structured metadata/provenance; private object storage holds image bytes. No schema/migration is prescribed or created by this documentation change.
+
+Owner Location approval must bind the exact validated Blueprint revision and matching four-view sheet as one reusable location reference. Preserve that approved pair for Storyboard scene planning, camera/action blocking, Generation Package construction and video generation; downstream work must use the approved versions rather than re-infer a new location or select the latest unapproved candidate. Changes to relevant direction/style/content Type or approved Character/Product dependencies make the pair stale for new downstream work without rewriting approved content. Explicit new review is required. Location work must not alter approved Character/Product sheets, and rejection never automatically starts another provider request. Exact Blueprint presentation/review controls remain a future implementation detail.
+
+### Future acceptance boundary
+
+Implementation must demonstrate input-dependent selection across content Types and product scales, rejection of physically impossible staging before image generation, exact panel ordering, the same empty environment in all views, detected/repaired inconsistencies, preserved passing work and request accounting, and approved Blueprint/sheet reuse with ownership/currentness checks. These checks, model capability acceptance, persistence design and UI/worker changes are **pending**, not completed by existing reference-generation tests. No code, model configuration, migration, project, worker or provider is changed/run by this agreement.
+
 ## Planned V3 Location and continuous environment (2026-10-29)
 
 [V3](generation-architecture-v3.md), **Planned / Not Started**, preserves an exact approved Location/reference version for the director Storyboard and each Higgsfield audiovisual segment. OpenAI handles understanding/direction and appropriate reference-image creation/regeneration; Higgsfield handles environment behavior, lighting and camera/shot continuity inside the generated segment where supported. Use minimum continuous segments rather than independent videos per creative scene.
