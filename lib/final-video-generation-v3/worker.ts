@@ -21,6 +21,8 @@ import { bytesHash, readPrivate, inspectImage, publishPrivate, signPrivate, save
 import { generationContext, generationContextSchema, referenceSubjectSchema } from "./generation-context";
 import { projectBrief, creativeBriefHash, referenceOriginals, approvedArtifacts, validityEvidence } from "./creative-inputs";
 import { prepareOpenAIReference } from "./adapters/openai-reference";
+import { assertReferenceSheetPrompt, referenceSourceSchema } from "./reference-sheet-prompt";
+import { savedReferenceResult, recordReferenceStage, referenceStageError, ReferenceTaskError, safeReferenceRequestId } from "./reference-diagnostics";
 import { higgsfieldRequestIssues } from "./adapters/higgsfield-validity";
 
 async function approvedBytes(w: RuntimeWorkspace, ids: unknown, signal: AbortSignal) {
@@ -33,41 +35,72 @@ async function approvedBytes(w: RuntimeWorkspace, ids: unknown, signal: AbortSig
   }));
 }
 async function imageTask(store: V3Store, task: Task, w: RuntimeWorkspace, signal: AbortSignal) {
-  const model = z.string().min(1).parse(task.input.model), brief = await projectBrief(w.project.owner_user_id, task.project_id);
-  if (creativeBriefHash(brief) !== task.input.briefHash) throw new Error("V3_CREATIVE_INPUT_STALE");
-  const context = generationContextSchema.parse(task.input.generationContext);
-  if (v3Digest("generation-context", context) !== v3Digest("generation-context", generationContext(brief))) throw new Error("V3_CREATIVE_INPUT_STALE");
-  const originals = await referenceOriginals(w.project.owner_user_id, task.project_id);
-  if (task.kind !== "location" && task.input.originalId !== originals[task.kind as "character" | "product"]) throw new Error("CURRENT_STUDIO_REFERENCE_REQUIRED");
-  let original: { id: string; sha256: string } | null = null, inputs: Buffer[] = [];
-  if (task.kind !== "location") {
-    const asset = await createDatabaseClient().from("project_assets").select("id,storage_key,verified_etag,size_bytes,mime_type,created_at")
-      .eq("id", String(task.input.originalId)).eq("project_id", task.project_id).eq("owner_user_id", w.project.owner_user_id).eq("upload_status", "uploaded").eq("removed_from_draft", false).maybeSingle();
-    if (asset.error || !asset.data?.verified_etag || asset.data.size_bytes > 20 * 1024 * 1024) throw new Error("FRESH_PRIVATE_ORIGINAL_REQUIRED");
-    const raw = await readPrivate(asset.data.storage_key, asset.data.verified_etag, asset.data.size_bytes, signal);
-    original = { id: asset.data.id, sha256: bytesHash(raw) }; inputs = [(await inspectImage(raw)).bytes];
-  } else inputs = (await approvedBytes(w, task.input.references, signal)).map(r => r.bytes);
-  let raw = await readSpool(task.id, "openai-response.json");
-  if (!raw) {
-    if (task.provider_started) throw new Error("V3_OPENAI_OUTCOME_UNKNOWN");
-    const config = v3ReferenceConfig();
-    if (model !== config.imageModel || task.input.provider !== undefined && task.input.provider !== "openai") throw new Error("V3_OPENAI_REFERENCE_PROVIDER_UNAVAILABLE");
+  let stage = "source", httpStatus: number | null = null, requestId: string | null = null;
+  try {
+    const model = z.string().min(1).parse(task.input.model), brief = await projectBrief(w.project.owner_user_id, task.project_id);
+    if (creativeBriefHash(brief) !== task.input.briefHash) throw new Error("V3_CREATIVE_INPUT_STALE");
+    const context = generationContextSchema.parse(task.input.generationContext);
+    if (v3Digest("generation-context", context) !== v3Digest("generation-context", generationContext(brief))) throw new Error("V3_CREATIVE_INPUT_STALE");
+    const originals = await referenceOriginals(w.project.owner_user_id, task.project_id);
+    if (task.kind !== "location" && task.input.originalId !== originals[task.kind as "character" | "product"]) throw new Error("CURRENT_STUDIO_REFERENCE_REQUIRED");
+    stage = "response_parse";
+    let saved = await savedReferenceResult(task.id);
+    httpStatus = saved.httpStatus; requestId = saved.requestId;
     const subject = task.input.referenceSubject === undefined ? undefined : referenceSubjectSchema.parse(task.input.referenceSubject);
-    if (subject && (subject.originalId !== originals[subject.role] || subject.name !== (originals.names?.[subject.role] ?? ""))) throw new Error("V3_CREATIVE_INPUT_STALE");
-    const client = new OpenAI({ apiKey: config.apiKey, maxRetries: 0, timeout: 600_000, logLevel: "off" });
-    await store.checkpoint(task, "intent");
-    const response = await client.images.edit(prepareOpenAIReference(model, await Promise.all(inputs.map((b, i) => toFile(b, `reference-${i}.png`, { type: "image/png" }))),
-      task.kind as "character" | "product" | "location", context, subject),
-    { signal, headers: { "X-Client-Request-Id": task.id } });
-    raw = Buffer.from(JSON.stringify({ response, requestId: response._request_id ?? null })); await saveSpool(task.id, "openai-response.json", raw);
+    if (subject && (subject.role !== task.kind || subject.originalId !== originals[subject.role] || subject.name !== (originals.names?.[subject.role] ?? ""))) throw new Error("V3_CREATIVE_INPUT_STALE");
+    const hasSavedOutput = !!saved.raw || !!saved.imageBytes;
+    if (!hasSavedOutput && (task.provider_started || task.input.recoveryOnly === true)) { stage = "recovery"; throw new Error("V3_REFERENCE_SAVED_RESPONSE_UNUSABLE"); }
+    stage = "source";
+    if (!hasSavedOutput && (task.kind === "character" || task.kind === "product")) {
+      if (!subject) throw new Error("V3_REFERENCE_PROMPT_OUTDATED_REGENERATE");
+      assertReferenceSheetPrompt(task.input.referencePrompt, task.kind, context, subject);
+      referenceSourceSchema.parse(task.input.referenceSource);
+    }
+    let original: { id: string; sha256: string } | null = null, inputs: Buffer[] = [];
+    if (task.kind !== "location") {
+      const asset = await createDatabaseClient().from("project_assets").select("id,storage_key,verified_etag,size_bytes,mime_type,created_at")
+        .eq("id", String(task.input.originalId)).eq("project_id", task.project_id).eq("owner_user_id", w.project.owner_user_id).eq("upload_status", "uploaded").eq("removed_from_draft", false).maybeSingle();
+      if (asset.error || !asset.data?.verified_etag || asset.data.size_bytes > 20 * 1024 * 1024) throw new Error("FRESH_PRIVATE_ORIGINAL_REQUIRED");
+      if (task.input.referenceSource !== undefined) {
+        const source = referenceSourceSchema.parse(task.input.referenceSource);
+        if (source.id !== asset.data.id || source.etag !== asset.data.verified_etag || source.sizeBytes !== asset.data.size_bytes || source.mimeType !== asset.data.mime_type) throw new Error("V3_REFERENCE_SOURCE_STALE");
+      }
+      const raw = await readPrivate(asset.data.storage_key, asset.data.verified_etag, asset.data.size_bytes, signal);
+      original = { id: asset.data.id, sha256: bytesHash(raw) };
+      if (!hasSavedOutput) inputs = [(await inspectImage(raw)).bytes];
+    } else if (!hasSavedOutput) inputs = (await approvedBytes(w, task.input.references, signal)).map(r => r.bytes);
+    if (!hasSavedOutput) {
+      // The only provider branch. Recovery and provider-started tasks can never enter it.
+      const config = v3ReferenceConfig();
+      if (model !== config.imageModel || task.input.provider !== undefined && task.input.provider !== "openai") throw new Error("V3_OPENAI_REFERENCE_PROVIDER_UNAVAILABLE");
+      const client = new OpenAI({ apiKey: config.apiKey, maxRetries: 0, timeout: 600_000, logLevel: "off" });
+      await store.checkpoint(task, "intent"); stage = "provider";
+      await recordReferenceStage(task.id, { stage, httpStatus, requestId, errorCode: null });
+      const response = await client.images.edit(prepareOpenAIReference(model, await Promise.all(inputs.map((b, i) => toFile(b, `reference-${i}.png`, { type: "image/png" }))),
+        task.kind as "character" | "product" | "location", context, subject), { signal, headers: { "X-Client-Request-Id": task.id } }).asResponse();
+      httpStatus = response.status; requestId = safeReferenceRequestId(response.headers.get("x-request-id"));
+      stage = "response_receive";
+      const responseText = await response.text(); stage = "response_save";
+      await saveSpool(task.id, "openai-response.json", Buffer.from(JSON.stringify({ responseText, requestId, httpStatus })));
+      stage = "response_parse"; saved = await savedReferenceResult(task.id);
+    }
+    stage = saved.responseError === "V3_REFERENCE_IMAGE_VALIDATION_FAILED" ? "image_validation" : "response_parse";
+    if (!saved.image) throw new Error(saved.responseError ?? "V3_REFERENCE_SAVED_RESPONSE_UNUSABLE");
+    const image = saved.image;
+    stage = "image_save";
+    if (!saved.imageBytes) await saveSpool(task.id, "image.png", image.bytes);
+    stage = "storage";
+    await recordReferenceStage(task.id, { stage, httpStatus, requestId, errorCode: null });
+    const asset = await publishPrivate(w.project.owner_user_id, task.project_id, task.id, image.bytes, image.metadata, signal);
+    stage = "publication";
+    await store.checkpoint(task, "artifact", { id: task.id, document: { asset, original, input: task.input, provider: "openai", model,
+      responseHash: bytesHash(saved.raw ?? image.bytes), requestId, httpStatus, recoveredFrom: hasSavedOutput ? saved.recoveredFrom : null } });
+    await recordReferenceStage(task.id, { stage: "complete", httpStatus, requestId, errorCode: null });
+  } catch (error) {
+    const failure = referenceStageError(error, stage, httpStatus, requestId);
+    await recordReferenceStage(task.id, failure.metadata);
+    throw failure;
   }
-  const saved = JSON.parse(raw.toString("utf8")) as { response: { data?: { b64_json?: string }[] }; requestId: string | null }, response = saved.response;
-  const encoded = response.data?.length === 1 ? response.data[0].b64_json : null;
-  if (!encoded || encoded.length > 30 * 1024 * 1024 || !/^[A-Za-z0-9+/]+={0,2}$/.test(encoded)) throw new Error("V3_IMAGE_RESPONSE_INVALID");
-  const image = await inspectImage(Buffer.from(encoded, "base64")); await saveSpool(task.id, "image.png", image.bytes);
-  const asset = await publishPrivate(w.project.owner_user_id, task.project_id, task.id, image.bytes, image.metadata, signal);
-  await store.checkpoint(task, "artifact", { id: task.id, document: { asset, original, input: task.input, provider: "openai", model,
-    responseHash: bytesHash(raw), requestId: saved.requestId } });
 }
 async function storyboardTask(store: V3Store, task: Task, w: RuntimeWorkspace, signal: AbortSignal) {
   const model = z.string().min(1).parse(task.input.model), brief = await projectBrief(w.project.owner_user_id, task.project_id);
@@ -194,10 +227,16 @@ export async function runV3Task(projectId: string, ownerId: string, store = new 
     const refreshed = await store.read(ownerId, projectId), run = refreshed.runs.find(r => r.id === task.input.runId);
     const started = refreshed.tasks.find(t => t.id === task.id)?.provider_started;
     const code = error instanceof Error && /^[A-Z0-9_]{1,100}$/.test(error.message) ? error.message : "V3_TASK_FAILED";
-    const rejected = error instanceof HiggsfieldTransportError && error.outcome === "rejected";
+    const rejected = error instanceof HiggsfieldTransportError && error.outcome === "rejected" || error instanceof ReferenceTaskError && error.knownRejected;
     const unknown = !rejected && (started || !!run?.observation) && !["PAID_V3_EXECUTION_DISABLED", "V3_ACTIVATION_SCOPE_MISMATCH"].includes(code);
     const paused = ["PAID_V3_EXECUTION_DISABLED", "V3_ACTIVATION_SCOPE_MISMATCH"].includes(code);
+    if (error instanceof ReferenceTaskError && task.lease_token) {
+      try { await store.rpc("ugc_v3_record_reference_diagnostic", { p_task: task.id, p_token: task.lease_token, p_document: error.metadata }); }
+      catch { /* Still preserve the original code/HTTP/request ID through the normal task checkpoint. */ }
+    }
     await store.checkpoint(task, paused ? "pending" : unknown ? "unknown" : "failed", { code,
+      ...(error instanceof ReferenceTaskError && (started || error.metadata.httpStatus !== null || error.metadata.requestId !== null) ?
+        { httpStatus: error.metadata.httpStatus, correlationId: error.metadata.requestId, outcome: error.knownRejected ? "rejected" : "unknown" } : {}),
       ...(error instanceof HiggsfieldTransportError ? { httpStatus: error.httpStatus, correlationId: error.correlationId, outcome: error.outcome } : {}) });
   }
   return true;

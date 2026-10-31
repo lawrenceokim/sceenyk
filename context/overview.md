@@ -1,5 +1,9 @@
 # Sceenyk
 
+## Confirmed V3 reference replacement (2026-10-30)
+
+Replacing an existing Character/Product Sheet now requires the owner's explicit Cancel/Continue confirmation. Continue permanently deletes the selected generated sheet and queues one fresh OpenAI reference after cleanup; Reject deletes without generation. Uploaded sources, names/settings, unrelated history and historical workflows remain. Manual 081 follows 080; source/offline acceptance is complete and live cleanup/provider/visual acceptance remains pending. [Current contract and retest](generation-v3-phase3.md#confirmed-permanent-reference-regeneration-2026-10-30).
+
 ## Canonical Studio V3 correction (2026-10-30)
 
 New eligible local UGC drafts use V3 behind the existing Studio and project save flow. Sources and Properties remain canonical; the separate test form/workspace is retired. Saved Visual Style controls OpenAI references, with preserved history and required regeneration/reapproval after incompatible changes. Historical projects retain their workflows. See [current integration and manual setup](generation-v3-phase3.md). Paid transport remains off; provider/visual acceptance is pending.

@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readFileSync, mkdtempSync, rmdirSync } from "node:fs";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
 import { generationContext, type ReferenceOriginals } from "../lib/final-video-generation-v3/generation-context";
 import { prepareOpenAIReference } from "../lib/final-video-generation-v3/adapters/openai-reference";
 import { v3ReferenceConfig, v3OpenAIConfig } from "../lib/final-video-generation-v3/runtime-config";
@@ -11,6 +13,9 @@ import { runV3Task } from "../lib/final-video-generation-v3/worker";
 import { V3Store } from "../lib/final-video-generation-v3/runtime-store";
 import { v3Digest } from "../lib/final-video-generation-v3/identity";
 import { v3Id } from "./final-video-v3-fixture";
+import { CHARACTER_SHEET_PROMPT_VERSION, CHARACTER_SHEET_TEMPLATE, PRODUCT_SHEET_PROMPT_VERSION, PRODUCT_SHEET_TEMPLATE } from "../lib/final-video-generation-v3/reference-sheet-templates";
+import { assertReferenceSheetPrompt, referenceSheetPromptSnapshot, referenceSourceSchema } from "../lib/final-video-generation-v3/reference-sheet-prompt";
+import { purgeReferenceSpool } from "../lib/final-video-generation-v3/runtime-media";
 
 let checks = 0, networkCalls = 0;
 globalThis.fetch = async () => { networkCalls++; throw new Error("NETWORK_FORBIDDEN"); };
@@ -18,8 +23,9 @@ const equal = (a: unknown, b: unknown) => { assert.deepEqual(a, b); checks++; };
 const ok = (a: unknown) => { assert.ok(a); checks++; };
 async function main() {
 const originalEnv = { ...process.env };
+const diagnosticsDir = mkdtempSync(join(tmpdir(), "sceenyk-v3-diagnostics-"));
 Object.assign(process.env, { NODE_ENV: "development", UGC_V3_ENABLED: "1", UGC_V3_OPENAI_ENABLED: "1", OPENAI_API_KEY: "fixture-only",
-  UGC_V3_OPERATOR_USER_ID: v3Id(1), OPENAI_V3_IMAGE_MODEL: "fixture-openai-image", OPENAI_V3_DIRECTOR_MODEL: "", UGC_V3_HIGGSFIELD_ENABLED: "0" });
+  UGC_V3_OPERATOR_USER_ID: v3Id(1), OPENAI_V3_IMAGE_MODEL: "fixture-openai-image", OPENAI_V3_DIRECTOR_MODEL: "", UGC_V3_HIGGSFIELD_ENABLED: "0", UGC_V3_RECOVERY_DIR: diagnosticsDir });
 try {
   // References require the image configuration only; director setup is independent.
   equal(v3ReferenceConfig().imageModel, "fixture-openai-image");
@@ -43,10 +49,50 @@ try {
       const subject = { role, originalId: v3Id(role === "character" ? 4 : 5), name: role === "character" ? "Ari" : "Ceramic cup" };
       const body = prepareOpenAIReference(v3ReferenceConfig().imageModel, [image], role, context, subject);
       equal(body.model, "fixture-openai-image"); equal(body.image, [image]);
-      ok(body.prompt.includes(JSON.stringify(context))); ok(body.prompt.includes(subject.name)); ok(body.prompt.includes("identity"));
+      ok(body.prompt.includes(`"instructions":${JSON.stringify(context.instructions)}`)); ok(body.prompt.includes(subject.name)); ok(body.prompt.includes("identity"));
       ok(!/soul\/v2|higgsfield-ai/.test(JSON.stringify({ ...body, image: undefined })));
+      const template = role === "character" ? CHARACTER_SHEET_TEMPLATE : PRODUCT_SHEET_TEMPLATE;
+      const styleField = role === "character" ? `**Visual style:** \`"${visual_style}"\`` : `Apply the user-selected visual style: "${visual_style}".`;
+      ok(body.prompt.startsWith(template.replace("{{VISUAL_STYLE}}", visual_style)));
+      equal(body.prompt.split(styleField).length - 1, 1);
+      equal(body.prompt.split(`"${visual_style}"`).length - 1, 1);
+      ok(!body.prompt.includes("{{VISUAL_STYLE}}")); ok(!body.prompt.includes('"visualStyle":'));
+      equal(body.size, "1024x1024"); equal(body.n, 1); equal(body.quality, "high");
+      if (role === "character") {
+        for (const panel of ["Top Left — Side View", "Top Right — Back View", "Bottom Left — Front View", "Bottom Right — Face Close-Up"])
+          ok(body.prompt.includes(panel));
+        ok(body.prompt.includes("full body from the neck down"));
+        ok(!body.prompt.includes("TOP-RIGHT PANEL — FRONT VIEW"));
+      } else {
+        for (const panel of ["TOP-LEFT PANEL — SIDE VIEW", "TOP-RIGHT PANEL — FRONT VIEW", "BOTTOM-LEFT PANEL — BACK VIEW", "BOTTOM-RIGHT PANEL — TOP VIEW"])
+          ok(body.prompt.includes(panel));
+        ok(body.prompt.includes("#D3D3D3")); ok(body.prompt.includes("Preserve genuine product branding"));
+        ok(!body.prompt.includes("Face Close-Up"));
+      }
+      const snapshot = referenceSheetPromptSnapshot(role, context, subject);
+      equal(snapshot.version, role === "character" ? CHARACTER_SHEET_PROMPT_VERSION : PRODUCT_SHEET_PROMPT_VERSION);
+      equal(snapshot.version, 2); equal(snapshot.prompt, body.prompt);
+      assertReferenceSheetPrompt(snapshot, role, context, subject); checks++;
+      for (const incompatible of [undefined, { ...snapshot, version: 1 }, { ...snapshot, prompt: "old prompt" }, { ...snapshot, hash: "0".repeat(64) }]) {
+        assert.throws(() => assertReferenceSheetPrompt(incompatible, role, context, subject), /V3_REFERENCE_PROMPT_OUTDATED_REGENERATE/); checks++;
+      }
+      assert.throws(() => assertReferenceSheetPrompt(snapshot, role, { ...context, visualStyle: visual_style === "Anime" ? "Realistic" : "Anime" }, subject), /V3_REFERENCE_PROMPT_OUTDATED_REGENERATE/); checks++;
+      assert.throws(() => assertReferenceSheetPrompt(snapshot, role, context, { ...subject, name: "Different subject" }), /V3_REFERENCE_PROMPT_OUTDATED_REGENERATE/); checks++;
+      const conflict = prepareOpenAIReference("fixture-openai-image", [image], role,
+        { ...context, instructions: "Show six panels in a wide beach scene with dramatic shadows" }, subject);
+      ok(conflict.prompt.startsWith(template.replace("{{VISUAL_STYLE}}", visual_style)));
+      ok(conflict.prompt.includes("cannot override it, the specified panel order, 2×2 layout"));
     }
   }
+  const source = { id: v3Id(4), etag: "frozen-upload-version", sizeBytes: 1234, mimeType: "image/png" };
+  equal(referenceSourceSchema.parse(source), source);
+  assert.throws(() => referenceSourceSchema.parse({ ...source, etag: "" })); checks++;
+  // The final worker dispatch uses owned uploaded bytes as image edits, never a text-only/image-generator fallback.
+  const workerSource = readFileSync("lib/final-video-generation-v3/worker.ts", "utf8");
+  ok(workerSource.includes("client.images.edit(prepareOpenAIReference(model, await Promise.all(inputs.map"));
+  ok(workerSource.includes("inputs = [(await inspectImage(raw)).bytes]"));
+  ok(workerSource.includes("source.etag !== asset.data.verified_etag"));
+  ok(workerSource.includes("assertReferenceSheetPrompt(task.input.referencePrompt"));
   const context = generationContext(base), originals: ReferenceOriginals = { character: v3Id(4), product: null, names: { character: "Ari", product: null } };
   const input = { generationContext: context, briefHash: "saved-brief", originalId: v3Id(4), provider: "openai", referenceSubject: { role: "character", originalId: v3Id(4), name: "Ari" } };
   equal(creativeTaskCurrent({ kind: "character", input }, context, "saved-brief", originals), true);
@@ -97,6 +143,48 @@ try {
     equal(checkpoints.length, 1); equal(checkpoints[0].p_action, "failed"); equal(checkpoints[0].p_payload, { code: "V3_CREATIVE_INPUT_STALE" });
   }
   equal(metadataReads, 2);
+  await purgeReferenceSpool(v3Id(40));
+  rmdirSync(diagnosticsDir);
+  const recoveryDir = mkdtempSync(join(tmpdir(), "sceenyk-v3-prompts-"));
+  process.env.UGC_V3_RECOVERY_DIR = recoveryDir;
+  try {
+    globalThis.fetch = async url => {
+      const request = new URL(String(url));
+      if (request.origin !== "https://database.example.test") { networkCalls++; throw new Error("PROVIDER_FORBIDDEN"); }
+      if (request.pathname === "/rest/v1/projects") return Response.json([brief]);
+      if (request.pathname === "/rest/v1/project_assets" && !request.searchParams.has("id"))
+        return Response.json([{ id: v3Id(4), studio_role: "character", reference_name: "Ari" }, { id: v3Id(5), studio_role: "product", reference_name: "Ceramic cup" }]);
+      if (request.pathname === "/rest/v1/project_assets") return Response.json({ id: request.searchParams.get("id")!.slice(3), verified_etag: "changed-source-version", size_bytes: 1234, mime_type: "image/png" });
+      throw new Error("UNEXPECTED_METADATA_READ");
+    };
+    for (const [index, kind] of (["character", "product"] as const).entries()) {
+      const subject = { role: kind, originalId: v3Id(kind === "character" ? 4 : 5), name: kind === "character" ? "Ari" : "Ceramic cup" };
+      const frozenPrompt = referenceSheetPromptSnapshot(kind, context, subject);
+      for (const mode of ["unversioned", "source_changed"] as const) {
+        const queued = { id: v3Id(60 + index), project_id: v3Id(2), kind, status: "running", provider_started: false,
+          lease_token: v3Id(41), lease_until: new Date(now + 60_000).toISOString(), output: null, error_code: null, created_at: new Date(now).toISOString(),
+          input: { model: "fixture-openai-image", provider: "openai", generationContext: context,
+            briefHash: v3Digest("brief", Object.fromEntries(Object.entries(brief).filter(([key]) => key !== "creation_type"))),
+            originalId: subject.originalId, referenceSubject: subject, ...(mode === "source_changed" ? {
+              referencePrompt: frozenPrompt, referenceSource: { ...source, id: subject.originalId } } : {}) } };
+        const workspace = { project: { project_id: v3Id(2), owner_user_id: v3Id(1), logical_job_id: v3Id(3) }, source: null,
+          packages: [], tasks: [queued], artifacts: [], quotes: [], runtimeAuthorizations: [], runs: [] };
+        const checkpoints: Record<string, unknown>[] = [];
+        const store = new V3Store({ rpc: async (name, args) => {
+          if (name === "ugc_v3_runtime_read") return { data: workspace, error: null };
+          if (name === "ugc_v3_task_claim") return { data: queued, error: null };
+          if (name === "ugc_v3_task_checkpoint") { checkpoints.push(args); return { data: true, error: null }; }
+          throw new Error("UNEXPECTED_RPC");
+        } });
+        equal(await runV3Task(v3Id(2), v3Id(1), store), true);
+        equal(checkpoints.map(c => ({ action: c.p_action, payload: c.p_payload })), [{ action: "failed", payload: {
+          code: mode === "unversioned" ? "V3_REFERENCE_PROMPT_OUTDATED_REGENERATE" : "V3_REFERENCE_SOURCE_STALE" } }]);
+      }
+    }
+  } finally {
+    for (const index of [60, 61]) await purgeReferenceSpool(v3Id(index));
+    rmdirSync(recoveryDir);
+  }
   equal(networkCalls, 0);
   console.info(`${checks} V3 reference routing/configuration/style/progress checks passed; zero provider/network calls.`);
 } finally {

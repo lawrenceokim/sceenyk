@@ -32,6 +32,8 @@
     "test:ugc-final-video": "node --conditions=react-server --import=tsx scripts/check-final-video.ts && node --conditions=react-server --import=tsx scripts/check-final-video-media.ts",
     "test:ugc-final-v2": "node --conditions=react-server --import=tsx scripts/check-final-video-v2.ts",
     "test:ugc-v3-references": "node --conditions=react-server --import=tsx scripts/check-v3-reference-routing.ts",
+    "test:ugc-v3-regeneration": "node --conditions=react-server --import=tsx scripts/check-v3-reference-regeneration.mjs && node scripts/check-v3-reference-regeneration-ui.mjs && node scripts/check-v3-reference-deletion-storage.mjs",
+    "test:ugc-v3-recovery": "node --conditions=react-server --import=tsx scripts/check-v3-reference-recovery.mjs",
     "test:ugc-final-v3": "node --conditions=react-server --import=tsx scripts/check-final-video-v3.ts",
     "test:ugc-final-v3-phase2": "node --conditions=react-server --import=tsx scripts/check-final-video-v3-phase2.ts",
     "inspect:ugc-final-v3": "node --conditions=react-server --import=tsx scripts/inspect-final-video-v3.ts",

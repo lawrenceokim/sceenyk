@@ -15,7 +15,7 @@ export function approvedArtifacts(w: RuntimeWorkspace, brief: Awaited<ReturnType
   if (w.tasks.some(t => ["character", "product", "location", "storyboard"].includes(t.kind) && ["queued", "running", "reconciliation_required"].includes(t.status)))
     throw new Error("V3_CREATIVE_REQUEST_STILL_ACTIVE");
   const refs = [latestArtifact(w, "character"), ...(originals.product ? [latestArtifact(w, "product")] : []), latestArtifact(w, "location")].filter((a): a is Artifact => !!a);
-  if (!refs.some(a => a.kind === "character") || !refs.some(a => a.kind === "location") || originals.product && !refs.some(a => a.kind === "product") || refs.some(a => !a.approved_at || !artifactCurrent(a, w.artifacts, generationContext(brief), originals, creativeBriefHash(brief)))) throw new Error("APPROVE_CURRENT_REFERENCES_FIRST");
+  if (!refs.some(a => a.kind === "character") || !refs.some(a => a.kind === "location") || originals.product && !refs.some(a => a.kind === "product") || refs.some(a => !a.approved_at || !artifactCurrent(a, w.artifacts, generationContext(brief), originals, creativeBriefHash(brief), w.referenceDeletions))) throw new Error("APPROVE_CURRENT_REFERENCES_FIRST");
   return refs;
 }
 export async function referenceOriginals(owner: string, project: string): Promise<ReferenceOriginals> {

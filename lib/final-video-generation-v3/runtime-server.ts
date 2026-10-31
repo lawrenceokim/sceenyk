@@ -16,9 +16,12 @@ import { V3Store, type RuntimeWorkspace } from "./runtime-store";
 import { assertV3Operator, v3LocalEnabled, v3TransportConfig, v3OpenAIConfig, v3ReferenceConfig } from "./runtime-config";
 import { privateAssetSchema, qualitySchema, type Run, type PrivateAsset } from "./runtime-contract";
 import { enrolledV3 } from "./enrollment";
-import { generationContext, artifactCurrent, latestArtifact, referenceSubjectSchema } from "./generation-context";
+import { generationContext, artifactCurrent, latestArtifact, referenceSubjectSchema, referenceDeletedVersion } from "./generation-context";
 export { latestArtifact } from "./generation-context";
 import { creativeTaskCurrent, taskBlocksGeneration } from "./reference-tasks";
+import { referenceSheetPromptSnapshot, referenceSourceSchema } from "./reference-sheet-prompt";
+import { permanentlyDeleteReference } from "./reference-deletion";
+import { referenceDiagnostics } from "./reference-diagnostics";
 import { projectBrief, creativeBriefHash, referenceOriginals, approvedArtifacts, validityEvidence } from "./creative-inputs";
 export { projectBrief, creativeBriefHash, referenceOriginals, approvedArtifacts, validityEvidence } from "./creative-inputs";
 
@@ -48,9 +51,9 @@ export async function runtimeDto(w: RuntimeWorkspace) {
   const brief = await projectBrief(w.project.owner_user_id, w.project.project_id), originals = await referenceOriginals(w.project.owner_user_id, w.project.project_id);
   let preflight = null; try { preflight = await inspectRuntime(w); } catch { /* Stale/partial creative inputs preserve previous previews. */ }
   const previewUrl = async (asset: PrivateAsset) => { try { return (await signPrivate(asset)).url; } catch { return null; } };
-  const artifacts = await Promise.all(w.artifacts.map(async a => ({ id: a.id, kind: a.kind, version: a.version,
-    current: artifactCurrent(a, w.artifacts, generationContext(brief), originals, creativeBriefHash(brief)), approved: !!a.approved_at, rejected: !!a.rejected_at, storyboard: a.kind === "storyboard" ? directorStoryboardSchema.parse(a.document.storyboard) : null,
-    preview: !a.rejected_at && a.document.asset ? await previewUrl(privateAssetSchema.parse(a.document.asset)) : null })));
+  const artifacts = await Promise.all(w.artifacts.map(async a => ({ id: a.id, kind: a.kind, version: a.version, activeSlot: latestArtifact(w, a.kind)?.id === a.id,
+    current: artifactCurrent(a, w.artifacts, generationContext(brief), originals, creativeBriefHash(brief), w.referenceDeletions), approved: !!a.approved_at, rejected: !!a.rejected_at, storyboard: a.kind === "storyboard" ? directorStoryboardSchema.parse(a.document.storyboard) : null,
+    preview: a.document.asset && (!a.rejected_at || ["character", "product", "location"].includes(a.kind)) ? await previewUrl(privateAssetSchema.parse(a.document.asset)) : null })));
   const runs = await Promise.all(w.runs.map(async r => ({ id: r.id, packageId: r.package_id, segmentId: r.intent.segmentId, state: r.state,
     current: r.current, completedAt: r.completed_at, errorCode: r.error_code, quality: r.quality, actualDurationMs: r.result?.durationMs ?? null, hasAudio: r.result?.hasAudio ?? null,
     preview: r.result && ["awaiting_review", "approved"].includes(r.state) ? await previewUrl(r.result) : null,
@@ -69,11 +72,18 @@ export async function runtimeDto(w: RuntimeWorkspace) {
   }));
   const complete = !!preflight && (preflight.segmentCount === 1 ? runs : joined).some(r => r.packageId === preflight.packageId && r.current && r.state === "approved" && !!r.completedAt);
   const context = generationContext(brief), briefHash = creativeBriefHash(brief);
-  const tasks = w.tasks.map(t => ({ id: t.id, kind: t.kind, status: t.status, errorCode: t.error_code, providerStarted: t.provider_started,
-    current: creativeTaskCurrent(t, context, briefHash, originals), createdAt: t.created_at, leaseUntil: t.lease_until }));
+  const tasks = await Promise.all(w.tasks.map(async (t, index) => {
+    const current = creativeTaskCurrent(t, context, briefHash, originals);
+    const diagnostics = ["character", "product", "location"].includes(t.kind) && ["failed", "reconciliation_required"].includes(t.status) && !t.input.referenceCleanupHold
+      && t.error_code !== "V3_REFERENCE_REQUEST_SUPERSEDED" && !w.tasks.slice(index + 1).some(n => n.kind === t.kind)
+      ? await referenceDiagnostics(t, current, w.referenceDiagnostics.find(d => d.taskId === t.id)) : null;
+    return { id: t.id, kind: t.kind, status: t.input.referenceCleanupHold ? "cleanup_pending" : t.status, errorCode: t.error_code, providerStarted: t.provider_started,
+      current, createdAt: t.created_at, leaseUntil: t.lease_until, diagnostics, recoveryAvailable: diagnostics?.recoveryAvailable ?? false,
+      canStartNew: diagnostics?.canStartNew ?? false };
+  }));
   return { projectId: w.project.project_id, packageStale: w.packages.length > 0 && !preflight, artifacts, runs: [...runs, ...joined], preflight, complete,
     tasks,
-    processing: w.tasks.some((t, i) => ["character", "product", "location", "storyboard"].includes(t.kind) ? taskBlocksGeneration(t, tasks[i].current) : t.status === "running" || t.status === "queued" && !["PAID_V3_EXECUTION_DISABLED", "V3_ACTIVATION_SCOPE_MISMATCH"].includes(t.error_code ?? "")), localEnabled: v3LocalEnabled() };
+    processing: w.tasks.some((t, i) => t.input.referenceCleanupHold ? false : ["character", "product", "location", "storyboard"].includes(t.kind) ? ["queued", "running"].includes(t.status) && taskBlocksGeneration(t, tasks[i].current) : t.status === "running" || t.status === "queued" && !["PAID_V3_EXECUTION_DISABLED", "V3_ACTIVATION_SCOPE_MISMATCH"].includes(t.error_code ?? "")), localEnabled: v3LocalEnabled() };
 }
 export type RuntimeDto = Awaited<ReturnType<typeof runtimeDto>>;
 export async function readOwnedV3(project: string) {
@@ -100,28 +110,61 @@ export async function ownedV3Action(raw: unknown) {
   if (a.action === "reference") {
     const kind = z.enum(["character", "product", "location"]).parse(a.kind);
     const previous = latestArtifact(w, kind);
-    if (previous && !previous.rejected_at && !previous.approved_at && artifactCurrent(previous, w.artifacts, context, originals, creativeBriefHash(brief))) throw new Error("REVIEW_EXISTING_REFERENCE_FIRST");
+    if (kind === "location" && previous && !previous.rejected_at && !previous.approved_at && artifactCurrent(previous, w.artifacts, context, originals, creativeBriefHash(brief), w.referenceDeletions)) throw new Error("REVIEW_EXISTING_REFERENCE_FIRST");
     const refs = kind === "location" ? [latestArtifact(w, "character"), ...(originals.product ? [latestArtifact(w, "product")] : [])] : [];
-    if (refs.some(ref => !ref?.approved_at || !artifactCurrent(ref, w.artifacts, context, originals, creativeBriefHash(brief)))) throw new Error("APPROVE_CURRENT_REFERENCES_FIRST");
+    if (refs.some(ref => !ref?.approved_at || !artifactCurrent(ref, w.artifacts, context, originals, creativeBriefHash(brief), w.referenceDeletions))) throw new Error("APPROVE_CURRENT_REFERENCES_FIRST");
     const assetId = kind === "location" ? null : z.uuid().parse(a.assetId);
     if (kind !== "location" && assetId !== originals[kind]) throw new Error("CURRENT_STUDIO_REFERENCE_REQUIRED");
     const openai = v3ReferenceConfig();
     const prior = w.tasks.filter(t => t.kind === kind).at(-1);
-    if (prior?.provider_started && ["failed", "reconciliation_required"].includes(prior.status)) throw new Error("V3_REFERENCE_OUTCOME_REQUIRES_REVIEW");
-    if (prior && taskBlocksGeneration(prior, creativeTaskCurrent(prior, context, creativeBriefHash(brief), originals))) return runtimeDto(w);
-    if (prior && ["queued", "running"].includes(prior.status)) {
+    const replacingUnusable = !!prior?.provider_started && ["failed", "reconciliation_required"].includes(prior.status) && kind !== "location";
+    if (replacingUnusable) {
+      const diagnostics = await referenceDiagnostics(prior!, creativeTaskCurrent(prior!, context, creativeBriefHash(brief), originals));
+      if (diagnostics.recoveryAvailable) throw new Error("V3_REFERENCE_RECOVER_SAVED_OUTPUT_FIRST");
+      if (!diagnostics.canStartNew || a.confirmNewRequest !== true || a.failedTaskId !== prior!.id) throw new Error("V3_REFERENCE_NEW_REQUEST_CONFIRMATION_REQUIRED");
+    } else if (prior?.provider_started && ["failed", "reconciliation_required"].includes(prior.status)) throw new Error("V3_REFERENCE_OUTCOME_REQUIRES_REVIEW");
+    if (prior && !replacingUnusable && !prior.input.referenceCleanupHold && taskBlocksGeneration(prior, creativeTaskCurrent(prior, context, creativeBriefHash(brief), originals))) return runtimeDto(w);
+    if (kind !== "location" && previous && a.confirmedDeletion !== true) throw new Error("V3_REFERENCE_CONFIRMATION_REQUIRED");
+    if (prior && !prior.input.referenceCleanupHold && ["queued", "running"].includes(prior.status)) {
       // SQL locks/rechecks stale, unstarted work. Never cancels a paid/unknown outcome.
       await store.rpc("ugc_v3_retire_reference_task", { p_owner: user.id, p_project: a.projectId, p_task: prior.id });
     }
     const subject = kind === "location" ? undefined : referenceSubjectSchema.parse({ role: kind, originalId: assetId, name: originals.names?.[kind] ?? "" });
-    await enqueue(kind, { provider: "openai", profile: HIGGSFIELD_V3_PROFILE,
+    let sheetInput = {};
+    if (kind !== "location" && subject) {
+      const source = await createDatabaseClient().from("project_assets").select("id,verified_etag,size_bytes,mime_type")
+        .eq("id", subject.originalId).eq("project_id", a.projectId).eq("owner_user_id", user.id)
+        .eq("upload_status", "uploaded").eq("removed_from_draft", false).maybeSingle();
+      if (source.error || !source.data) throw new Error("FRESH_PRIVATE_ORIGINAL_REQUIRED");
+      sheetInput = { referenceEpoch: referenceDeletedVersion(w.referenceDeletions, kind), referencePrompt: referenceSheetPromptSnapshot(kind, context, subject),
+        referenceSource: referenceSourceSchema.parse({ id: source.data.id, etag: source.data.verified_etag,
+          sizeBytes: source.data.size_bytes, mimeType: source.data.mime_type }) };
+    }
+    const input = { provider: "openai", profile: HIGGSFIELD_V3_PROFILE,
+      ...sheetInput,
       ...(subject ? { referenceSubject: subject } : {}),
-      ...(prior && !prior.provider_started ? { previousTask: prior.id } : {}), brief, briefHash: creativeBriefHash(brief), generationContext: context, model: openai.imageModel, originalId: assetId,
+      ...(prior && (!prior.provider_started || replacingUnusable) ? { previousTask: prior.id } : {}), brief, briefHash: creativeBriefHash(brief), generationContext: context, model: openai.imageModel, originalId: assetId,
       references: refs.map(r => r!.id),
-      previous: previous?.id ?? null });
+      previous: a.confirmedDeletion === true ? z.uuid().parse(a.expectedId) : previous?.id ?? null };
+    if (replacingUnusable) {
+      const proceed = await store.rpc("ugc_v3_replace_unusable_reference_task", { p_owner: user.id, p_project: a.projectId, p_task: prior!.id,
+        p_payload: { kind, input, requestKey: `${kind}:${v3Digest("task-input", input)}`, enqueue: a.confirmedDeletion !== true } });
+      if (!proceed || a.confirmedDeletion !== true) return runtimeDto(await store.read(user.id, a.projectId));
+    }
+    if (kind === "location") await enqueue(kind, input);
+    else if (a.confirmedDeletion === true) await permanentlyDeleteReference(store, user.id, a.projectId,
+      { kind, id: z.uuid().parse(a.expectedId), version: z.number().int().positive().parse(a.expectedVersion) }, "regenerate", input, signal);
+    else await store.rpc("ugc_v3_regenerate_reference", { p_owner: user.id, p_project: a.projectId,
+      p_payload: { kind, input, requestKey: `${kind}:${v3Digest("task-input", input)}` } });
   } else if (a.action === "review_artifact") {
     const artifact = w.artifacts.find(r => r.id === a.id);
-    if (a.decision === "approve" && (!artifact || !artifactCurrent(artifact, w.artifacts, context, originals, creativeBriefHash(brief)))) throw new Error("REFERENCE_STALE_REGENERATE");
+    if (a.decision === "reject" && (a.kind === "character" || a.kind === "product" || artifact?.kind === "character" || artifact?.kind === "product")) {
+      const kind = z.enum(["character", "product"]).parse(artifact?.kind ?? a.kind);
+      await permanentlyDeleteReference(store, user.id, a.projectId, { kind, id: z.uuid().parse(a.id),
+        version: z.number().int().positive().parse(a.expectedVersion) }, "reject", null, signal);
+      return runtimeDto(await store.read(user.id, a.projectId));
+    }
+    if (a.decision === "approve" && (!artifact || !artifactCurrent(artifact, w.artifacts, context, originals, creativeBriefHash(brief), w.referenceDeletions))) throw new Error("REFERENCE_STALE_REGENERATE");
     await store.action(user.id, a.projectId, "review_artifact", { id: z.uuid().parse(a.id), decision: z.enum(["approve", "reject"]).parse(a.decision) });
   } else if (a.action === "storyboard") {
     const refs = approvedArtifacts(w, brief, originals), previous = latestArtifact(w, "storyboard");
@@ -181,6 +224,14 @@ export async function ownedV3Action(raw: unknown) {
     await store.action(user.id, a.projectId, joined ? "recover_delete" : "recover", { id: z.uuid().parse(a.id) });
   } else if (a.action === "recover_task") {
     const task = w.tasks.find(t => t.id === a.id);
+    if (task && ["character", "product", "location"].includes(task.kind)) {
+      if (task.status === "done" && w.artifacts.some(a => a.id === task.id)) return runtimeDto(w);
+      if (task.input.recoveryOnly === true && ["queued", "running"].includes(task.status)) return runtimeDto(w);
+      const diagnostics = await referenceDiagnostics(task, creativeTaskCurrent(task, context, creativeBriefHash(brief), originals));
+      if (!diagnostics.recoveryAvailable) throw new Error("V3_REFERENCE_SAVED_RESPONSE_UNUSABLE");
+      await store.rpc("ugc_v3_recover_reference_task", { p_owner: user.id, p_project: a.projectId, p_task: task.id });
+      return runtimeDto(await store.read(user.id, a.projectId));
+    }
     if (!task || task.kind !== "join" && (!["character", "product", "location", "storyboard"].includes(task.kind) || !await readSpool(task.id, "openai-response.json")))
       throw new Error("V3_NO_SAVED_OPENAI_RESPONSE");
     await store.action(user.id, a.projectId, "recover_task", { id: task.id });

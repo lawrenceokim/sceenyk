@@ -60,7 +60,7 @@ async function pureAndTransportChecks() {
     const context = generationContext({ ...studio, visual_style: style });
     for (const kind of ["character", "product"] as const) {
       const prompt = referencePrompt(kind, context);
-      ok(prompt.includes(JSON.stringify(context))); ok(prompt.includes("identity")); ok(prompt.includes("same creative world"));
+      ok(prompt.includes(`"instructions":${JSON.stringify(context.instructions)}`)); ok(prompt.includes("identity")); ok(prompt.includes("same creative world"));
     }
   }
   const oldEnv = { NODE_ENV: process.env.NODE_ENV, UGC_V3_ENABLED: process.env.UGC_V3_ENABLED, UGC_V3_OPERATOR_USER_ID: process.env.UGC_V3_OPERATOR_USER_ID };

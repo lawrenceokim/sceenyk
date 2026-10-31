@@ -1,5 +1,17 @@
 # UI Context
 
+## V3 reference failure diagnostics (2026-10-31)
+
+Character/Product failures display the inspected failure category, with Recover only for valid current saved output. Missing/unusable/outdated results show an enabled Generate action with explicit new-OpenAI-request explanation; it is never automatic recovery. Known provider rejection, unknown provider outcome, saved-output recovery, storage, validation and unusable response states are distinct. Local development adds expandable sanitized Technical details (provider/model/task/stage/HTTP/error/request ID and saved/recovery booleans). Only the latest role task controls busy state, and terminal reconciliation stops automatic status polling. Existing approved references, Sources, confirmation/deletion and Final Video presentation stay unchanged. Manual 082 and owner-run acceptance remain pending.
+
+## V3 permanent-regeneration confirmation (2026-10-30)
+
+Generate/Regenerate for an occupied Character/Product slot opens one shared Base UI dialog: exact requested title/warning and Cancel/Continue. Cancel only closes it. Continue binds the displayed record ID/version and disables repeated submission during cleanup; failure remains actionable inside the dialog. First generation in an empty slot skips confirmation. Confirmed regeneration removes the selected old sheet from current UI/history and queues one OpenAI replacement only after cleanup succeeds. Reject permanently removes the current generated sheet and leaves the slot empty without generation. Old history cannot become active after deleting the latest version. Existing layout/Tailwind tokens and Final Video UI remain unchanged. This explicitly supersedes the retained-rejected-sheet UX below for newly confirmed deletion; existing historical data is never swept automatically. Manual 081 and owner-run acceptance are pending.
+
+## V3 pending-reference regeneration (2026-10-30)
+
+Character/Product Regenerate is available for unwanted sheets awaiting review; it never requires approving the prior candidate. The atomic action preserves the old media/history, rejects that pending candidate for current use and queues one replacement. Explicit Reject retains a private history preview and queues nothing. Reference history includes a rejected latest candidate even before another version exists. Existing queued/processing request buttons remain blocked, duplicate API clicks return current state, and known setup/active/stale/recovery errors give actionable instructions. Existing layout, styling and Location UX remain unchanged. Manual 080 and owner-run provider/visual acceptance are required; [trace/setup/retry](generation-v3-phase3.md#pending-reference-regeneration-correction-2026-10-30).
+
 ## V3 reference progress correction (2026-10-30)
 
 Studio Preview derives wording from actual task kind/currentness and review state: References ready to generate, Character/Product Sheet queued/generating/ready for review, Waiting for generation worker after 90s queued, References approved, then independent Location/Storyboard/Package/Final Video stages. Character/Product buttons block only compatible active work for their own kind; stale unstarted requests can be explicitly replaced from the same Generate controls. Unknown/provider-started outcomes remain blocked for review. Configuration failures name OpenAI and never imply fallback. Existing Studio/Sources/Properties, native scrolling and Tailwind styling remain unchanged.

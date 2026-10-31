@@ -2,6 +2,7 @@ import { z } from "zod";
 import { saveProjectSchema } from "@/lib/projects/validation";
 import type { Artifact } from "./runtime-contract";
 import { v3Digest } from "./identity";
+import { buildReferenceSheetPrompt } from "./reference-sheet-prompt";
 
 // Structured, saved Studio inputs. No client-supplied style or inferred prompt tags.
 export const generationContextSchema = z.strictObject({
@@ -18,12 +19,15 @@ export function generationContext(brief: { visual_style: string; creation_type: 
   return generationContextSchema.parse({ version: 1, visualStyle: brief.visual_style, creationType: brief.creation_type,
     type: brief.ugc_type, instructions: brief.prompt, tone: brief.tone, category: brief.category });
 }
-export const latestArtifact = (w: { artifacts: Artifact[] }, kind: Artifact["kind"]) =>
-  w.artifacts.filter(a => a.kind === kind).sort((a, b) => a.version - b.version).at(-1);
+export type ReferenceDeletion = { id?: string; kind: string; artifact_version: number; state: string };
+export const referenceDeletedVersion = (deletions: ReferenceDeletion[] = [], kind: string) =>
+  Math.max(0, ...deletions.filter(d => d.kind === kind && d.state === "completed").map(d => d.artifact_version));
+export const latestArtifact = (w: { artifacts: Artifact[]; referenceDeletions?: ReferenceDeletion[] }, kind: Artifact["kind"]) =>
+  w.artifacts.filter(a => a.kind === kind && a.version > referenceDeletedVersion(w.referenceDeletions, kind)).sort((a, b) => a.version - b.version).at(-1);
 
-export function artifactCurrent(a: Artifact, artifacts: Artifact[], context: GenerationContext, originals: ReferenceOriginals, briefHash?: string): boolean {
+export function artifactCurrent(a: Artifact, artifacts: Artifact[], context: GenerationContext, originals: ReferenceOriginals, briefHash?: string, deletions: ReferenceDeletion[] = []): boolean {
   if (a.kind === "joined") return true; // Final media uses the immutable package currentness fence.
-  if (a.rejected_at || latestArtifact({ artifacts }, a.kind)?.id !== a.id) return false;
+  if (a.rejected_at || deletions.some(d => d.id === a.id && d.state === "prepared") || latestArtifact({ artifacts, referenceDeletions: deletions }, a.kind)?.id !== a.id) return false;
   const input = z.object({ generationContext: generationContextSchema, references: z.array(z.string()).optional() }).safeParse(a.document.input);
   if (!input.success || v3Digest("generation-context", input.data.generationContext) !== v3Digest("generation-context", context)) return false;
   if (a.kind === "character" || a.kind === "product") {
@@ -32,8 +36,8 @@ export function artifactCurrent(a: Artifact, artifacts: Artifact[], context: Gen
   }
   if (a.kind === "storyboard" && briefHash && a.document.input && (a.document.input as { briefHash?: string }).briefHash !== briefHash) return false;
   const kinds = ["character", ...(originals.product ? ["product" as const] : []), ...(a.kind === "storyboard" ? ["location" as const] : [])] as const;
-  const refs = kinds.map(kind => latestArtifact({ artifacts }, kind as Artifact["kind"]));
-  return refs.every(ref => ref?.approved_at && artifactCurrent(ref, artifacts, context, originals, briefHash)) &&
+  const refs = kinds.map(kind => latestArtifact({ artifacts, referenceDeletions: deletions }, kind as Artifact["kind"]));
+  return refs.every(ref => ref?.approved_at && artifactCurrent(ref, artifacts, context, originals, briefHash, deletions)) &&
     JSON.stringify(input.data.references) === JSON.stringify(refs.map(ref => ref!.id));
 }
 
@@ -45,10 +49,9 @@ const treatments: Record<GenerationContext["visualStyle"], string> = {
   Realistic: "Use photorealistic materials, natural anatomy, realistic detail and believable lighting.",
 };
 export function referencePrompt(kind: "character" | "product" | "location", context: GenerationContext, subject?: ReferenceSubject) {
-  return `Create one ${kind === "location" ? "Location reference" : `${kind === "character" ? "Character" : "Product / Prop"} reference sheet`} for the saved Studio direction. ` +
-    (kind === "character" ? "Preserve the supplied Character's distinctive face, identity, body proportions, hair, skin features and outfit. Show one consistent subject with clear full-body detail. " :
-      kind === "product" ? "Preserve the supplied Product's identity, silhouette, shape, proportions, colors, materials, branding and visible details. Show useful consistent views of this same product. " :
-        "Show one clear primary environment suitable for the approved Character and optional Product references. ") +
+  if (kind !== "location") return buildReferenceSheetPrompt(kind, context, subject);
+  return "Create one Location reference for the saved Studio direction. " +
+    "Show one clear primary environment suitable for the approved Character and optional Product references. " +
     `Required visual treatment: ${treatments[context.visualStyle]} Character, Product and Location must belong to this same creative world. ` +
     "Apply the style without substituting identity or inventing extra people/products. Treat user instructions as creative direction within these identity requirements. " +
     `Structured generation context: ${JSON.stringify(context)}. ` +

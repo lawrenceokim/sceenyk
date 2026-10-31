@@ -14,12 +14,16 @@ export function v3Prefix(owner: string, project: string) {
   if (![owner, project].every(v => /^[a-f0-9-]{36}$/.test(v))) throw new Error("V3_STORAGE_SCOPE");
   return `users/${owner}/projects/${project}/v3/`;
 }
-export async function spoolFile(id: string, name: string) {
+function spoolPaths(id: string, name: string) {
   if (!/^[a-f0-9-]{36}$/.test(id) || !/^[a-z-]+\.(json|bytes|mp4|png)$/.test(name)) throw new Error("V3_SPOOL_SCOPE");
   const root = path.resolve(process.env.UGC_V3_RECOVERY_DIR || ".ugc-v3-recovery"), dir = path.join(root, id);
+  return { root, dir, file: path.join(dir, name) };
+}
+export async function spoolFile(id: string, name: string) {
+  const { root, dir, file } = spoolPaths(id, name);
   await fs.mkdir(dir, { recursive: true, mode: 0o700 });
   if ((await fs.lstat(root)).isSymbolicLink() || (await fs.lstat(dir)).isSymbolicLink()) throw new Error("V3_SPOOL_SCOPE");
-  return path.join(dir, name);
+  return file;
 }
 export async function saveSpool(id: string, name: string, bytes: Buffer) {
   const file = await spoolFile(id, name), temporary = `${file}.${randomUUID()}.tmp`;
@@ -32,9 +36,17 @@ export async function saveSpool(id: string, name: string, bytes: Buffer) {
   return file;
 }
 export async function readSpool(id: string, name: string) {
-  const file = await spoolFile(id, name);
-  try { const stat = await fs.lstat(file); if (!stat.isFile() || stat.isSymbolicLink() || stat.size > 256 * 1024 * 1024) throw new Error("V3_SPOOL_SCOPE");
+  const { root, dir, file } = spoolPaths(id, name);
+  try { if ((await fs.lstat(root)).isSymbolicLink() || (await fs.lstat(dir)).isSymbolicLink()) throw new Error("V3_SPOOL_SCOPE");
+    const stat = await fs.lstat(file); if (!stat.isFile() || stat.isSymbolicLink() || stat.size > 256 * 1024 * 1024) throw new Error("V3_SPOOL_SCOPE");
     return await fs.readFile(file); } catch (e) { if ((e as NodeJS.ErrnoException).code === "ENOENT") return null; throw e; }
+}
+export async function writeReferenceDiagnostics(id: string, value: unknown) {
+  const bytes = Buffer.from(JSON.stringify(value)); if (bytes.length > 8192) throw new Error("V3_DIAGNOSTICS_SIZE");
+  const file = await spoolFile(id, "reference-diagnostics.json"), temporary = `${file}.${randomUUID()}.tmp`;
+  const handle = await fs.open(temporary, "wx", 0o600);
+  try { await handle.writeFile(bytes); await handle.sync(); } finally { await handle.close(); }
+  try { await fs.rename(temporary, file); } finally { await fs.unlink(temporary).catch(() => {}); }
 }
 export async function readPrivate(key: string, etag: string, size: number, signal: AbortSignal, hash?: string) {
   if (!size || size > 256 * 1024 * 1024) throw new Error("V3_MEDIA_SIZE_INVALID");
@@ -84,3 +96,23 @@ export async function deletePrivate(owner: string, project: string, asset: Priva
   if (await headR2CharacterObject(asset.storageKey, signal)) throw new Error("V3_DELETE_UNCONFIRMED");
 }
 export const signPrivate = (asset: PrivateAsset) => signR2Read(asset.storageKey, asset.etag, asset.mimeType);
+
+export async function deleteReferencePrivate(owner: string, project: string, asset: PrivateAsset, signal: AbortSignal) {
+  if (asset.mimeType !== "image/png" || asset.storageKey !== `${v3Prefix(owner, project)}${asset.id}.png`) throw new Error("V3_REFERENCE_DELETE_SCOPE");
+  const head = await headR2CharacterObject(asset.storageKey, signal);
+  if (!head) return; // A previous deletion may have succeeded before acknowledgement/finalization.
+  if (head.etag !== asset.etag) throw new Error("V3_DELETE_ASSET_CHANGED");
+  const { bucket, sdk } = client();
+  await sdk.send(new DeleteObjectCommand({ Bucket: bucket, Key: asset.storageKey, IfMatch: asset.etag }), { abortSignal: signal });
+  if (await headR2CharacterObject(asset.storageKey, signal)) throw new Error("V3_DELETE_UNCONFIRMED");
+}
+
+export async function purgeReferenceSpool(taskId: string) {
+  const dir = path.dirname(await spoolFile(taskId, "image.png"));
+  const files = await fs.readdir(dir, { withFileTypes: true });
+  if (files.some(f => !f.isFile() || !/^(openai-response\.json|image\.png|reference-diagnostics\.json)(\.[a-f0-9-]{36}\.tmp)?$/.test(f.name))) throw new Error("V3_REFERENCE_DELETE_SCOPE");
+  for (const file of files) {
+    try { await fs.unlink(path.join(dir, file.name)); } catch (e) { if ((e as NodeJS.ErrnoException).code !== "ENOENT") throw e; }
+  }
+  try { await fs.rmdir(dir); } catch (e) { if ((e as NodeJS.ErrnoException).code !== "ENOENT") throw e; }
+}
