@@ -223,6 +223,57 @@ try{
  equal((await post(f.project,{...approval,maximumMicrousd:100})).status,409);
  const approved=await post(f.project,approval);assert.equal(approved.status,200,JSON.stringify(approved.body));checks++;
  equal(approved.body.workspace.preflight.authorizationState,'bound');equal(approved.body.workspace.preflight.canSubmit,false);equal(estimateCalls,0);
+ // Controlled video: refreshed delivery, unchanged package, duplicate-safe paid intent, explicit renewal after confirmed deletion.
+ const videoBefore=normal((await new V3Store(db).read(owner,f.project)).packages),videoCreative=await cp(f.project);
+ const videoRequest={action:'generate',packageId:built.preflight.packageId,packageHash:built.preflight.packageHash};
+ equal((await post(f.project,videoRequest)).body.code,'PAID_V3_EXECUTION_DISABLED');
+ Object.assign(process.env,{UGC_V3_HIGGSFIELD_ENABLED:'1',UGC_V3_HIGGSFIELD_CREDENTIALS:'fixture:key',UGC_V3_HIGGSFIELD_ACCOUNT_SCOPE:'fixture',
+  UGC_V3_HIGGSFIELD_OUTPUT_HOSTS:'cdn.example.test',UGC_V3_ACTIVATION_PROJECT_ID:f.project,UGC_V3_ACTIVATION_PACKAGE_ID:built.preflight.packageId});
+ equal((await read(f.project)).preflight.eligibleForPaidSubmission,true);
+ process.env.UGC_V3_ACTIVATION_PACKAGE_ID=randomUUID();equal((await post(f.project,videoRequest)).body.code,'V3_ACTIVATION_SCOPE_MISMATCH');
+ process.env.UGC_V3_ACTIVATION_PACKAGE_ID=built.preflight.packageId;
+ const generated=await post(f.project,videoRequest);assert.equal(generated.status,200,JSON.stringify(generated.body));checks++;
+ let videoWorkspace=await new V3Store(db).read(owner,f.project),videoRun=videoWorkspace.runs[0];equal(videoWorkspace.runs.length,1);
+ equal(videoRun.intent.body.prompt,videoWorkspace.quotes[0].document.segments[0].body.prompt);
+ ok(Date.parse(videoRun.intent.deliveryExpiresAt)>Date.now());equal(videoRun.intent.authorization.maxRequests,1);
+ process.env.UGC_V3_HIGGSFIELD_ENABLED='0';equal((await post(f.project,videoRequest)).status,200);
+ equal((await new V3Store(db).read(owner,f.project)).runs.length,1);equal(estimateCalls,0);
+ const videoClaim=await call('ugc_v3_task_claim',[f.project]);equal(await call('ugc_v3_task_checkpoint',[videoClaim.id,videoClaim.lease_token,'intent',{}]),true);
+ const videoObservation={requestId:randomUUID(),status:'completed',statusUrl:'https://api.higgsfield.ai/requests/fixture/status',cancelUrl:null,expiresAt:null,
+  resultUrl:'https://cdn.example.test/final.mp4',correlationId:null,receiptHash:'a'.repeat(64),actualCostMicrousd:null};
+ equal(await call('ugc_v3_task_checkpoint',[videoClaim.id,videoClaim.lease_token,'observation',videoObservation]),true);
+ const videoAsset={id:videoRun.id,storageKey:`users/${owner}/projects/${f.project}/v3/${videoRun.id}.mp4`,etag:'fixture',sha256:'b'.repeat(64),sizeBytes:100,
+  mimeType:'video/mp4',width:480,height:854,durationMs:10000,hasAudio:true};
+ equal(await call('ugc_v3_task_checkpoint',[videoClaim.id,videoClaim.lease_token,'video_stage',{stage:'HIGGSFIELD_RESULT_RECEIVED'}]),true);
+ equal((await read(f.project)).runs[0].stage.stage,'HIGGSFIELD_RESULT_RECEIVED');
+ equal(await call('ugc_v3_task_checkpoint',[videoClaim.id,videoClaim.lease_token,'result',videoAsset]),true);
+ equal(await call('ugc_v3_task_checkpoint',[videoClaim.id,videoClaim.lease_token,'video_stage',{stage:'V3_FINAL_VIDEO_READY_FOR_REVIEW'}]),true);
+ equal((await read(f.project)).complete,false);equal((await read(f.project)).runs[0].actualCostMicrousd,null);
+ const quality=load('lib/final-video-generation-v3/runtime-contract.ts').uncheckedQuality;
+ equal((await post(f.project,{action:'reject_delete',id:videoRun.id,quality})).body.code,'V3_VIDEO_DELETE_CONFIRMATION_REQUIRED');
+ equal((await post(f.project,{action:'reject_delete',id:videoRun.id,quality,confirmedDeletion:true})).status,200);
+ const deleteClaim=await call('ugc_v3_task_claim',[f.project]);equal(await call('ugc_v3_task_checkpoint',[deleteClaim.id,deleteClaim.lease_token,'deleted',{}]),true);
+ equal((await new V3Store(db).read(owner,f.project)).runs[0].result,null);
+ Object.assign(process.env,{UGC_V3_HIGGSFIELD_ENABLED:'1'});
+ equal((await post(f.project,videoRequest)).body.code,'V3_SEGMENT_AUTHORIZATION_REQUIRED');
+ equal((await post(f.project,approval)).status,200);
+ videoWorkspace=await new V3Store(db).read(owner,f.project);equal(videoWorkspace.runtimeAuthorizations.length,2);
+ const videoDoc=load('lib/final-video-generation-v3/package.ts').readFrozenPackage(videoWorkspace.packages.at(-1).document),videoQuote=videoWorkspace.quotes[0].document;
+ const intentFactory=load('lib/final-video-generation-v3/execution-package.ts').createPaidIntent,videoNow=new Date().toISOString();
+ const delivery=await load('lib/final-video-generation-v3/video-delivery.ts').prepareVideoDelivery(videoWorkspace,videoDoc,videoQuote.segments[0],AbortSignal.timeout(1000));
+ const nextIntent=intentFactory(videoDoc,videoQuote,videoWorkspace.runtimeAuthorizations.at(-1).document,videoNow,delivery);
+ const changed=normal(nextIntent);changed.body.prompt+=' changed';changed.bodyHash=load('lib/final-video-generation-v3/identity.ts').v3BodyHash(changed.body);
+ const {hash:changedHash,...changedBody}=changed;void changedHash;changed.hash=load('lib/final-video-generation-v3/identity.ts').v3Digest('paid-intent',changedBody);
+ await assert.rejects(call('ugc_v3_runtime_action',[owner,f.project,'generate',{intent:changed}]),/PAID_INTENT_INVALID_OR_STALE/);checks++;
+ const changedUrl=normal(nextIntent);changedUrl.body.image_urls[0]='https://private.example.test/different-object';changedUrl.bodyHash=load('lib/final-video-generation-v3/identity.ts').v3BodyHash(changedUrl.body);
+ const {hash:changedUrlHash,...changedUrlBody}=changedUrl;void changedUrlHash;changedUrl.hash=load('lib/final-video-generation-v3/identity.ts').v3Digest('paid-intent',changedUrlBody);
+ await assert.rejects(call('ugc_v3_runtime_action',[owner,f.project,'generate',{intent:changedUrl}]),/PAID_INTENT_INVALID_OR_STALE/);checks++;
+ equal((await post(f.project,videoRequest)).status,200);equal((await post(f.project,videoRequest)).status,200);
+ videoWorkspace=await new V3Store(db).read(owner,f.project);equal(videoWorkspace.runs.length,2);equal(videoWorkspace.runs.filter(r=>r.state==='queued').length,1);
+ equal(videoWorkspace.packages,videoBefore);equal(await cp(f.project),videoCreative);equal(calls.length,providerCount);equal(networkCalls,0);
+ process.env.UGC_V3_HIGGSFIELD_ENABLED='0';
+ const videoMigration=fs.readFileSync('supabase/migrations/20261101008700_ugc_v3_controlled_video.sql','utf8');await pg.exec(videoMigration);
+ equal((await pg.query("select has_function_privilege('authenticated','public.ugc_v3_video_setup()','EXECUTE') browser,has_function_privilege('service_role','public.ugc_v3_video_setup()','EXECUTE') server")).rows[0],{browser:false,server:true});
  // Real 30s legacy unavailable package -> one immutable locally priced repair, same approved source.
  mode='pass';storyboardDurations=[30000];const repairFixture=await fixture(false,'30');const loc=await generate(repairFixture.project);
  await post(repairFixture.project,{action:'review_artifact',id:loc.id,decision:'approve'});await post(repairFixture.project,{action:'storyboard'});await tick(repairFixture.project);

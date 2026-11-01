@@ -2,12 +2,19 @@ import "server-only";
 import { canonicalJson } from "@/lib/video-generation-package/builder";
 import { z } from "zod";
 import { paidIntentSchema, type PaidIntent, type ProviderObservation } from "../runtime-contract";
-import { assertV3Transport, type v3TransportConfig } from "../runtime-config";
+import { assertV3Transport, exactOutputHosts, type v3TransportConfig } from "../runtime-config";
 import { higgsfieldModels, parseHiggsfieldAcceptance, prepareStatusObservation } from "./higgsfield";
 import { v3Digest, v3BodyHash } from "../identity";
 
 const models = new Set<string>(Object.values(higgsfieldModels));
 export const exactBodyHash = v3BodyHash;
+export function outputHostname(value: string | null) {
+  try {
+    const url = new URL(value ?? "");
+    if (url.protocol !== "https:" || url.username || url.password || url.hash || url.port || !exactOutputHosts([url.hostname])) return null;
+    return url.hostname;
+  } catch { return null; }
+}
 export class HiggsfieldTransportError extends Error {
   constructor(readonly code: string, readonly outcome: "rejected" | "unknown" | "observation_failed", readonly httpStatus: number | null = null,
     readonly correlationId: string | null = null) { super(code); }
@@ -70,10 +77,10 @@ export class HiggsfieldV3Transport {
   async fetchCompletedResult(known: ProviderObservation, signal: AbortSignal) {
     if (known.status !== "completed" || !known.resultUrl) throw new Error("HIGGSFIELD_RESULT_UNAVAILABLE");
     if (known.expiresAt && Date.parse(known.expiresAt) <= Date.now()) throw new Error("HIGGSFIELD_RESULT_EXPIRED");
+    const host = outputHostname(known.resultUrl);
+    if (!host) throw new Error("HIGGSFIELD_OUTPUT_URL_INVALID");
+    if (!this.config.outputHosts.includes(host)) throw new Error("OUTPUT_HOST_APPROVAL_REQUIRED");
     const url = new URL(known.resultUrl);
-    if (url.protocol !== "https:" || url.username || url.password || url.hash || url.port ||
-      !this.config.outputHosts.includes(url.hostname) || !/^[a-z0-9.-]+$/.test(url.hostname) || url.hostname === "localhost" || /^\d+\./.test(url.hostname))
-      throw new Error("HIGGSFIELD_OUTPUT_HOST_UNAPPROVED");
     // No Authorization header is ever forwarded to output/CDN hosts; redirects are refused.
     const response = await this.request(url, { redirect: "error", signal: AbortSignal.any([signal, AbortSignal.timeout(120_000)]) });
     if (!response.ok || !response.body) throw new Error("HIGGSFIELD_DOWNLOAD_FAILED");

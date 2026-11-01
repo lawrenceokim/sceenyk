@@ -146,5 +146,29 @@ try {
   equal(find(render(),node=>node.type?.name==='Button'&&text(node)==='Approve Generation Package').props.disabled,true);
   slots=[];props.initial={...props.initial,preflight:{...props.initial.preflight,estimatedCostMicrousd:28205000}};
   find(render(),node=>node.type==='button'&&text(node)==='Package').props.onClick();equal(text(render()).includes('Estimated video cost: ~$28.21'),true);
-  console.info(`${checks} actual V3 confirmation/package-stage/double-click UI checks passed; zero network calls.`);
+  // Actual Final Video handlers: confirmation cannot spend, rejection is explicit, and host recovery reveals no URL.
+  slots=[];
+  const video={id:'saved-video',packageId:'saved-package',segmentId:'segment-1',state:'awaiting_review',current:true,completedAt:null,errorCode:null,quality:null,
+    actualDurationMs:30000,hasAudio:true,preview:'https://private.example.test/preview',expectedDialogue:[],shotTimings:[],provider:'higgsfield',model:'bytedance/seedance-2.5/reference-to-video',
+    aspectRatio:'9:16',resolution:'480p',estimatedCostMicrousd:16923000,actualCostMicrousd:null,stage:{stage:'V3_FINAL_VIDEO_READY_FOR_REVIEW'},outputHostname:null};
+  const videoProps={initial:{projectId:'fixture-project',artifacts:[],tasks:[],runs:[video],preflight:null,processing:false,complete:false},projectId:'fixture-project',assets:[],dirty:false,revision:'saved'};
+  cursor=0;let outer=V3WorkflowPreview(videoProps);
+  find(outer,node=>node.type==='button'&&text(node)==='Final Video').props.onClick();cursor=0;outer=V3WorkflowPreview(videoProps);
+  const review=find(outer,node=>node.type?.name==='VideoReview'),reviewCalls=[];
+  slots=[];const reviewProps={...review.props,act:async(action,payload)=>{reviewCalls.push({action,...payload});return true;}};
+  const renderReview=()=>{cursor=0;return review.type(reviewProps);};
+  let reviewTree=renderReview();equal(text(reviewTree).includes('Actual provider cost: Unknown'),true);equal(text(reviewTree).includes('9:16'),true);equal(text(reviewTree).includes('480p'),true);
+  equal(find(reviewTree,node=>node.type?.name==='Dialog').props.open,false);
+  find(reviewTree,node=>node.type?.name==='Button'&&text(node)==='Reject and Delete').props.onClick();
+  equal(reviewCalls.length,0);reviewTree=renderReview();let videoDialog=find(reviewTree,node=>node.type?.name==='Dialog');equal(videoDialog.props.open,true);
+  find(videoDialog,node=>node.type?.name==='Button'&&text(node)==='Cancel').props.onClick();equal(find(renderReview(),node=>node.type?.name==='Dialog').props.open,false);equal(reviewCalls.length,0);
+  find(renderReview(),node=>node.type?.name==='Button'&&text(node)==='Reject and Delete').props.onClick();videoDialog=find(renderReview(),node=>node.type?.name==='Dialog');
+  find(videoDialog,node=>node.type?.name==='Button'&&text(node)==='Reject and Delete').props.onClick();await new Promise(resolve=>setTimeout(resolve,0));
+  equal(reviewCalls.length,1);equal(reviewCalls[0].action,'reject_delete');equal(reviewCalls[0].confirmedDeletion,true);equal(reviewCalls[0].id,video.id);
+  reviewProps.run={...video,state:'reconciliation_required',preview:null,errorCode:'OUTPUT_HOST_APPROVAL_REQUIRED',outputHostname:'cdn.example.test'};
+  reviewTree=renderReview();equal(text(reviewTree).includes('cdn.example.test'),true);equal(text(reviewTree).includes('Recovery will not submit another generation request'),true);
+  equal(text(reviewTree).includes('https://'),false);find(reviewTree,node=>node.type?.name==='Button'&&text(node)==='Recover saved work').props.onClick();
+  equal(reviewCalls.at(-1).action,'recover');equal(reviewCalls.at(-1).id,video.id);equal(reviewCalls.some(c=>c.action==='generate'),false);
+  reviewProps.run={...video,state:'deleted',preview:null};equal(text(renderReview()).includes('Review and approve the Generation Package again'),true);
+  console.info(`${checks} actual V3 reference/package/video confirmation, host-approval and double-click UI checks passed; zero network calls.`);
 } finally {globalThis.fetch=originalFetch;delete globalThis.__referenceReact;}

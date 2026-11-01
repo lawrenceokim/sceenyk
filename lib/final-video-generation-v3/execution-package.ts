@@ -26,19 +26,26 @@ export function createRuntimeAuthorization(doc: FrozenPackage, quote: RuntimeQuo
   const content = { ...body, packageMaxEstimatedCostMicrousd: approval.packageMaximumMicrousd ?? approval.maximumMicrousd };
   return runtimeAuthorizationSchema.parse({ ...content, hash: v3Digest("runtime-authorization", content) });
 }
-export function createPaidIntent(doc: FrozenPackage, quote: RuntimeQuote, authorization: RuntimeAuthorization, now: string) {
-  const report = runtimePreflight(doc, quote, authorization, { current: true, transportEnabled: false, now, validityIssues: [] });
+export type ReferenceDelivery = { body: Record<string, unknown>; expiresAt: string };
+export function createPaidIntent(doc: FrozenPackage, quote: RuntimeQuote, authorization: RuntimeAuthorization, now: string, delivery?: ReferenceDelivery) {
+  const report = runtimePreflight(doc, quote, authorization, { current: true, transportEnabled: false, now, validityIssues: [], deliveryReady: !!delivery });
   if (!report.eligibleForPaidSubmission) throw new Error(report.issues.join(","));
   const segment = quote.segments.find(s => s.segmentUuid === authorization.segmentUuid)!;
+  if (delivery) {
+    const { image_urls: originalUrls, ...original } = segment.body, { image_urls: urls, ...refreshed } = delivery.body;
+    if (v3Digest("delivery-content", original) !== v3Digest("delivery-content", refreshed) || !Array.isArray(urls) ||
+      !Array.isArray(originalUrls) || urls.length !== originalUrls.length || urls.some(u => typeof u !== "string" || new URL(u).protocol !== "https:") ||
+      !Number.isFinite(Date.parse(delivery.expiresAt)) || Date.parse(delivery.expiresAt) <= Date.parse(now)) throw new Error("V3_DELIVERY_BINDING_INVALID");
+  }
   const body = { schema: "v3-paid-intent-v1" as const, id: randomUUID(), executionId: randomUUID(), projectId: doc.source.scope.projectId,
     packageId: doc.id, packageVersion: doc.version, packageHash: doc.hash, segmentUuid: segment.segmentUuid, segmentId: segment.segmentId,
     segmentVersion: 1 as const, segmentHash: segment.fingerprint, provider: "higgsfield" as const, model: segment.model,
-    requestFingerprint: segment.fingerprint, body: segment.body, bodyHash: segment.bodyHash, estimatedCostMicrousd: segment.estimatedCostMicrousd,
-    authorization, idempotencyKey: randomUUID(), attempt: 1 as const, createdAt: now, deliveryExpiresAt: quote.deliveryExpiresAt ?? quote.expiresAt };
+    requestFingerprint: segment.fingerprint, body: delivery?.body ?? segment.body, bodyHash: delivery ? exactBodyHash(delivery.body) : segment.bodyHash, estimatedCostMicrousd: segment.estimatedCostMicrousd,
+    authorization, idempotencyKey: randomUUID(), attempt: 1 as const, createdAt: now, deliveryExpiresAt: delivery?.expiresAt ?? quote.deliveryExpiresAt ?? quote.expiresAt };
   return paidIntentSchema.parse({ ...body, hash: v3Digest("paid-intent", body) });
 }
 export function runtimePreflight(value: unknown, quoteValue: unknown, authorizationValue: unknown, options: {
-  current: boolean; transportEnabled: boolean; now: string; validityIssues: string[]; existingIntent?: boolean;
+  current: boolean; transportEnabled: boolean; now: string; validityIssues: string[]; existingIntent?: boolean; deliveryReady?: boolean;
 }) {
   const doc = readFrozenPackage(value), quote = quoteSchema.safeParse(quoteValue), a = runtimeAuthorizationSchema.safeParse(authorizationValue), issues = [...options.validityIssues];
   const manual = doc.pricing.source === "manual_provider_estimate";
@@ -50,7 +57,7 @@ export function runtimePreflight(value: unknown, quoteValue: unknown, authorizat
   if (!quote.success || quote.data.packageId !== doc.id || quote.data.packageHash !== doc.hash || Date.parse(quote.data.observedAt) > Date.parse(options.now) ||
     (manual ? quote.data.pricingSource !== "manual_provider_estimate" || quote.data.expiresAt !== null || packageCost(doc, new HiggsfieldVideoGenerationProvider(), options.now).code !== null
       : !quote.data.expiresAt || Date.parse(quote.data.expiresAt) <= Date.parse(options.now))) issues.push(manual ? "V3_LOCAL_PRICING_SNAPSHOT_INVALID" : "COST_ESTIMATE_UNAVAILABLE");
-  if (manual && quote.success && (!quote.data.deliveryExpiresAt || Date.parse(quote.data.deliveryExpiresAt) <= Date.parse(options.now))) issues.push("V3_REFERENCE_DELIVERY_EXPIRED");
+  if (manual && quote.success && !options.deliveryReady && (!quote.data.deliveryExpiresAt || Date.parse(quote.data.deliveryExpiresAt) <= Date.parse(options.now))) issues.push("V3_REFERENCE_DELIVERY_EXPIRED");
   if (!a.success) issues.push("V3_AUTHORIZATION_REQUIRED");
   if (a.success) {
     const { hash, ...content } = a.data;

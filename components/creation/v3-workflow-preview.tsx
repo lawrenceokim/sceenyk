@@ -4,6 +4,7 @@ import { V3LocationStatus } from "./v3-location-status";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import type { ProjectAsset } from "@/lib/media/types";
 import type { RuntimeDto } from "@/lib/final-video-generation-v3/runtime-server";
 import { uncheckedQuality, type Quality } from "@/lib/final-video-generation-v3/runtime-contract";
@@ -24,6 +25,12 @@ const videoStateLabels: Record<RuntimeDto["runs"][number]["state"], string> = {
   reconciliation_required: "Video needs attention", result_saved: "Preparing preview", awaiting_review: "Ready for review",
   approved: "Approved video", failed: "Video needs attention", deleting: "Deleting video", deleted: "Video deleted",
 };
+function videoProgressLabel(stage?: string) {
+  return stage ? ({ V3_FINAL_VIDEO_JOB_CLAIMED: "Preparing video generation", HIGGSFIELD_SUBMITTING: "Submitting video request",
+    HIGGSFIELD_REQUEST_ACCEPTED: "Video request accepted", HIGGSFIELD_PROCESSING: "Generating video",
+    HIGGSFIELD_RESULT_RECEIVED: "Downloading and checking video", V3_FINAL_VIDEO_SAVED: "Preparing saved video preview",
+    V3_FINAL_VIDEO_READY_FOR_REVIEW: "Ready for review" } as Record<string, string>)[stage] : undefined;
+}
 const taskLabels: Record<string, string> = { character: "Character", product: "Product / Prop", location: "Location", storyboard: "Storyboard",
   package: "Generation Package", video: "Final Video", delete: "Deleting saved work", join: "Finishing video" };
 type Action = (action: string, payload?: Record<string, unknown>) => Promise<boolean>;
@@ -51,14 +58,18 @@ function PackageStatus({ task, technical }: { task: RuntimeDto["tasks"][number];
   </div>;
 }
 function VideoReview({ run, act, busy, segmentCount }: { run: RuntimeDto["runs"][number]; act: Action; busy: boolean; segmentCount: number }) {
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const [quality, setQuality] = useState<Quality>({ ...uncheckedQuality, ...(run.expectedDialogue.length ? {} : {
     dialoguePresence: "not_applicable", speechTiming: "not_applicable", lipAudioSync: "not_applicable" }) });
   const labels: Record<Exclude<keyof Quality, "notes">, string> = { characterContinuity: "Character continuity", productContinuity: "Product continuity",
     locationContinuity: "Location continuity", dialoguePresence: "Dialogue present", speechTiming: "Rough speech timing", lipAudioSync: "Visible lip/audio synchronization", visualQuality: "Visual quality" };
   return <section className="space-y-3 rounded-xl border border-border p-4" aria-label="Final video review">
     <h2 className="font-semibold">{run.state === "awaiting_review" ? segmentCount > 1 && run.segmentId !== "joined" ? "Segment ready for review" : "Final Video ready" : videoStateLabels[run.state]}</h2>
+    <p role="status" className="text-sm text-muted-foreground">{["queued", "submitting", "provider_processing"].includes(run.state) ? videoProgressLabel(run.stage?.stage) ?? videoStateLabels[run.state] : videoStateLabels[run.state]}</p>
     {run.preview && <video controls playsInline preload="metadata" src={run.preview} className="max-h-[65dvh] w-full rounded-lg bg-black" />}
     <p className="text-sm text-muted-foreground">Actual duration: {run.actualDurationMs === null ? "Not measured" : `${run.actualDurationMs / 1000}s`}. Audio: {run.hasAudio === null ? "Not measured" : run.hasAudio ? "Present" : "Absent"}.</p>
+    <p className="text-sm text-muted-foreground">{run.aspectRatio} · {run.resolution} · {run.provider} · {run.model}</p>
+    <p className="text-sm text-muted-foreground">Estimated cost: ~{money(run.estimatedCostMicrousd)}. Actual provider cost: {run.actualCostMicrousd === null ? "Unknown" : money(run.actualCostMicrousd)}.</p>
     <details className="text-sm"><summary className="cursor-pointer">Expected dialogue and shot timing</summary>
       <ul className="mt-2 space-y-1">{run.expectedDialogue.map((line, i) => <li key={i}>{line.startMs / 1000}–{line.endMs / 1000}s · {line.speaker}: {line.text}</li>)}</ul>
       <p className="mt-2">{run.shotTimings.map(s => `Shot ${s.number}: ${s.startMs / 1000}–${s.endMs / 1000}s`).join("; ")}</p>
@@ -71,11 +82,23 @@ function VideoReview({ run, act, busy, segmentCount }: { run: RuntimeDto["runs"]
         </select></label>)}</div>
       <label className="block space-y-1 text-sm">Review notes<textarea className={field} maxLength={4000} value={quality.notes} onChange={e => setQuality(q => ({ ...q, notes: e.target.value }))} /></label>
       <div className="flex flex-wrap gap-2"><Button disabled={busy || !run.current} onClick={() => void act("approve", { id: run.id, quality })}>{segmentCount > 1 && run.segmentId !== "joined" ? "Approve Segment" : "Approve Final Video"}</Button>
-        <Button variant="outline" disabled={busy} onClick={() => void act("reject_delete", { id: run.id, quality })}>Reject and Delete</Button></div>
+        <Button variant="outline" disabled={busy} onClick={() => setConfirmDelete(true)}>Reject and Delete</Button></div>
+      <Dialog open={confirmDelete} onOpenChange={open => { if (!busy) setConfirmDelete(open); }}><DialogContent>
+        <DialogHeader><DialogTitle>Delete this Final Video?</DialogTitle><DialogDescription>This permanently deletes the saved video and local candidate copies. Generating another video requires a new approval and an explicit Generate action.</DialogDescription></DialogHeader>
+        <DialogFooter><Button variant="outline" disabled={busy} onClick={() => setConfirmDelete(false)}>Cancel</Button>
+          <Button disabled={busy} onClick={() => void act("reject_delete", { id: run.id, quality, confirmedDeletion: true }).then(ok => { if (ok) setConfirmDelete(false); })}>Reject and Delete</Button></DialogFooter>
+      </DialogContent></Dialog>
     </>}
+    {run.state === "deleted" && <p className="text-sm">Video deleted. Review and approve the Generation Package again, then choose Generate Final Video.</p>}
+    {run.errorCode === "OUTPUT_HOST_APPROVAL_REQUIRED" && <div role="status" className="space-y-1 text-sm">
+      <p>The video is generated. Its download host needs approval before saving.</p>
+      {run.outputHostname && <details><summary className="cursor-pointer">Local output host approval</summary><p className="break-all">Hostname: {run.outputHostname}</p>
+        <p>Verify this host, add it exactly to UGC_V3_HIGGSFIELD_OUTPUT_HOSTS, restart the local worker, and recover this saved request.</p></details>}
+      <p>Recovery will not submit another generation request.</p>
+    </div>}
     {["reconciliation_required", "provider_processing", "deleting"].includes(run.state) && <Button variant="outline" disabled={busy} onClick={() => void act("recover", { id: run.id })}>
       {run.state === "deleting" ? "Retry deletion" : "Recover saved work"}</Button>}
-    {run.errorCode && <p role="status" className="break-words text-sm text-muted-foreground">{"This saved work needs attention. Check status or recover the saved result."}</p>}
+    {run.errorCode && run.errorCode !== "OUTPUT_HOST_APPROVAL_REQUIRED" && <p role="status" className="break-words text-sm text-muted-foreground">{run.errorCode === "V3_PROVIDER_OUTCOME_UNKNOWN" ? "Submission outcome is unknown. This request will not be submitted again automatically; reconcile its provider outcome before taking another paid action." : "This saved work needs attention. Check status or recover the saved result."}</p>}
   </section>;
 }
 export function V3WorkflowPreview({ initial, projectId, assets, dirty, revision }: { initial?: RuntimeDto; projectId: string; assets: ProjectAsset[]; dirty: boolean; revision: string }) {
@@ -232,6 +255,10 @@ export function V3WorkflowPreview({ initial, projectId, assets, dirty, revision 
         {(!t.location&&t.recoveryAvailable || t.status === "reconciliation_required" && t.kind === "storyboard") && <Button variant="outline" disabled={busy} onClick={() => void act("recover_task", { id: t.id })}>Recover saved response</Button>}
         {t.kind === "join" && t.status === "failed" && <Button variant="outline" disabled={busy} onClick={() => void act("recover_task", { id: t.id })}>Recover local join</Button>}</div>)}
       {view === "final" && workspace.runs.filter(r => !p || r.packageId === p.packageId).map(r => <VideoReview key={r.id} run={r} act={act} busy={locked} segmentCount={p?.segmentCount ?? 1} />)}
+      {view === "final" && p && !workspace.runs.some(r => r.packageId === p.packageId && r.state !== "deleted") && <div className="flex flex-wrap gap-2">
+        <Button variant="outline" disabled={locked} onClick={() => setView("package")}>Review Generation Package</Button>
+        <Button disabled={locked || !p.canSubmit} onClick={() => void act("generate", { packageId: p.packageId, packageHash: p.packageHash })}>Generate Final Video</Button>
+      </div>}
       {view === "final" && p && workspace.runs.some(r => r.packageId !== p.packageId) && <details className="space-y-3"><summary className="cursor-pointer text-sm">Earlier attempts and saved work</summary>
         {workspace.runs.filter(r => r.packageId !== p.packageId).map(r => <VideoReview key={r.id} run={r} act={act} busy={locked} segmentCount={1} />)}</details>}
       {workspace.complete && <p role="status" className="font-semibold">Complete</p>}

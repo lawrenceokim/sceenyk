@@ -106,7 +106,7 @@ export function prepareCancelObservation(requestId: string, cancelUrl: string) {
 
 export function parseHiggsfieldAcceptance(value: unknown) {
   const parsed = z.object({ request_id: z.uuid(), status: z.literal("queued"), status_url: z.string(), cancel_url: z.string(),
-    expires_after: z.number().int().min(3600).max(604800) }).parse(value);
+    expires_after: z.number().int().positive().optional() }).parse(value);
   prepareStatusObservation(parsed.request_id, parsed.status_url);
   prepareCancelObservation(parsed.request_id, parsed.cancel_url);
   // An idempotency replay may still say queued; observe status_url for actual current state.

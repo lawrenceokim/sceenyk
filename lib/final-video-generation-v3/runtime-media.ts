@@ -82,6 +82,7 @@ export async function inspectImage(bytes: Buffer) {
   return { bytes: png, metadata: { mimeType: "image/png" as const, width: meta.width, height: meta.height, durationMs: 0, hasAudio: false } };
 }
 export async function inspectVideo(id: string, bytes: Buffer, expected: { durationMs: number; aspectRatio: string; generateAudio: boolean }) {
+  if (!bytes.length || bytes.length > 256 * 1024 * 1024) throw new Error("V3_VIDEO_SIZE_INVALID");
   const file = await saveSpool(id, "video.mp4", bytes), meta = await measure(file, "video/mp4"), [w, h] = expected.aspectRatio.split(":").map(Number);
   // Technical 250ms test tolerance is explicit local policy, not a provider guarantee.
   if (Math.abs(meta.durationMs - expected.durationMs) > 250 || Math.abs(meta.width / meta.height - w / h) > 0.01 ||
@@ -94,6 +95,14 @@ export async function deletePrivate(owner: string, project: string, asset: Priva
   if (head.etag !== asset.etag) throw new Error("V3_DELETE_ASSET_CHANGED");
   const { bucket, sdk } = client(); await sdk.send(new DeleteObjectCommand({ Bucket: bucket, Key: asset.storageKey, IfMatch: asset.etag }), { abortSignal: signal });
   if (await headR2CharacterObject(asset.storageKey, signal)) throw new Error("V3_DELETE_UNCONFIRMED");
+}
+export async function purgeVideoSpool(id: string) {
+  const dir = path.dirname(await spoolFile(id, "video.mp4"));
+  for (const file of await fs.readdir(dir, { withFileTypes: true })) {
+    if (!/^(result\.bytes|video\.mp4|joined\.mp4)(\.[a-f0-9-]{36}\.tmp)?$/.test(file.name)) continue;
+    if (!file.isFile() || file.isSymbolicLink()) throw new Error("V3_DELETE_SCOPE");
+    try { await fs.unlink(path.join(dir, file.name)); } catch (e) { if ((e as NodeJS.ErrnoException).code !== "ENOENT") throw e; }
+  }
 }
 export const signPrivate = (asset: PrivateAsset) => signR2Read(asset.storageKey, asset.etag, asset.mimeType);
 

@@ -82,7 +82,8 @@
     "test:documentation": "node scripts/check-documentation.mjs",
     "test:workspace-internal": "node scripts/check-workspace-internal.mjs",
     "test:studio": "node scripts/check-studio-draft.mjs && node scripts/check-studio-ui.mjs",
-    "test:studio-browser": "node scripts/check-studio-browser.mjs"
+    "test:studio-browser": "node scripts/check-studio-browser.mjs",
+    "preflight:ugc-v3-video": "node --conditions=react-server --import=tsx scripts/preflight-v3-controlled-video.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1148.0",

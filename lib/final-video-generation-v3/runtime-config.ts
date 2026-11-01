@@ -11,10 +11,15 @@ export function v3TransportConfig() {
     credentials: process.env.UGC_V3_HIGGSFIELD_CREDENTIALS ?? "", accountScope: process.env.UGC_V3_HIGGSFIELD_ACCOUNT_SCOPE ?? "",
     outputHosts: (process.env.UGC_V3_HIGGSFIELD_OUTPUT_HOSTS ?? "").split(",").map(s => s.trim()).filter(Boolean) };
 }
+export function exactOutputHosts(hosts: string[]) {
+  return hosts.length > 0 && hosts.every(h => /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)+$/.test(h) && !/^\d+\./.test(h) && !h.endsWith(".localhost"));
+}
 export function assertV3Transport(config: ReturnType<typeof v3TransportConfig>, scope: { projectId: string; packageId: string }) {
   if (!config.enabled) throw new Error("PAID_V3_EXECUTION_DISABLED");
   if (config.projectId !== scope.projectId || config.packageId !== scope.packageId || !z.uuid().safeParse(scope.projectId).success ||
     !z.uuid().safeParse(scope.packageId).success || !/^[^\s:]+:[^\s:]+$/.test(config.credentials)) throw new Error("V3_ACTIVATION_SCOPE_MISMATCH");
+  if (!config.accountScope) throw new Error("HIGGSFIELD_CREDENTIALS_REQUIRED");
+  if (config.outputHosts.length && !exactOutputHosts(config.outputHosts)) throw new Error("HIGGSFIELD_OUTPUT_ALLOWLIST_INVALID");
 }
 export function v3ReferenceConfig() {
   const config = { apiKey: process.env.OPENAI_API_KEY?.trim() ?? "", imageModel: process.env.OPENAI_V3_IMAGE_MODEL?.trim() ?? "",

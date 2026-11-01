@@ -1,5 +1,9 @@
 # AI Workflow Rules
 
+## Current authorization — controlled V3 video implementation (2026-11-01)
+
+Implement the existing approved project/package's first continuous Seedance video path and focused offline tests. Read-only current DB/R2 inspection is authorized; do not submit generation, estimates, run a live worker, rebuild creative work/package, deploy or enable paid transport. Finish with `UGC_V3_HIGGSFIELD_ENABLED=0`; the owner will manually activate the exact project/package after reviewing source and applying migration 087. The owner's later clarification permits submission with an empty output-host allowlist: persist request ID, poll completion, expose only its sanitized hostname, stop before untrusted download, and recover the same completed request after manual exact-host approval. Never guess the host, auto-trust it, follow redirects or replay a paid POST. Another video after confirmed deletion requires fresh explicit authorization and Generate. [Exact continuation](v3-controlled-video.md).
+
 ## Current authorization — local approximate V3 pricing (2026-10-31)
 
 Use the owner's fixed approximate Seedance rates in one versioned module, independent of resolution/aspect ratio and remote estimate/account/transport availability. Normal package build/review/approval must make no Higgsfield pricing request. Preserve current approved creative inputs, immutable history and separate explicit finite cost authorization. A provider-free repair of the named current package is authorized; use a new immutable priced revision if the saved document is already frozen. Add required additive SQL and focused offline/current-data checks. No OpenAI/Higgsfield calls, video generation, deployment or paid enabling; keep Higgsfield 0. New local pricing supersedes older remote-estimate requirements for normal V3 only.

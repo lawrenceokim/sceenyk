@@ -1,5 +1,7 @@
 # M10 V3 Phase 3 — local runtime and first-test preparation
 
+The [2026-11-01 controlled video contract](v3-controlled-video.md) supersedes the older mandatory pre-known output-host/global request-limits-file requirements below. Generation has not been run. Preserve the approved priced revision; use fresh same-object signed delivery and manual trust of the first returned hostname before downloading that existing result.
+
 ## Local approximate pricing (2026-10-31)
 
 This owner-approved policy supersedes remote estimate requirements below for new V3 package build/review/approval. `lib/final-video-generation-v3/pricing/higgsfield-pricing.ts` is the centralized versioned configuration (`seedance-2026-10-31`): Text-to-Video and Image-to-Video **$0.4701/sec**, Reference-to-Video **$0.5641/sec**. Multiply each minimum-planned segment's seconds by its configured rate and sum integer micro-USD; round only the displayed USD to two decimals. Resolution/aspect ratio do not affect pricing. Unsupported model/mode reports “Approximate pricing is not configured for this model.” No `.env` price or remote pricing HTTP request is involved.

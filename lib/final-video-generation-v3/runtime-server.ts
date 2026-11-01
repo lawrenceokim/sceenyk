@@ -6,14 +6,14 @@ import { requireClerkUser } from "@/lib/auth/require-user";
 import { createDatabaseClient } from "@/lib/db/server";
 import { planningInputSchema, directorStoryboardSchema, type PlanningInput } from "./contract";
 import { HIGGSFIELD_V3_PROFILE } from "./adapters/higgsfield";
-import { higgsfieldRequestIssues } from "./adapters/higgsfield-validity";
 import { readPrivate, signPrivate, readSpool } from "./runtime-media";
-import { packageContentHash, storyboardContentHash, v3Digest, normalizeCapabilities } from "./identity";
-import { HiggsfieldVideoGenerationProvider } from "./adapters/higgsfield";
+import { packageContentHash, storyboardContentHash, v3Digest } from "./identity";
 import { readFrozenPackage } from "./package";
-import { runtimePreflight, createPaidIntent, createRuntimeAuthorization } from "./execution-package";
+import { createPaidIntent, createRuntimeAuthorization } from "./execution-package";
 import { V3Store, type RuntimeWorkspace } from "./runtime-store";
-import { assertV3Operator, v3LocalEnabled, v3TransportConfig, v3OpenAIConfig, v3ReferenceConfig } from "./runtime-config";
+import { assertV3Operator, assertV3Transport, v3LocalEnabled, v3TransportConfig, v3OpenAIConfig, v3ReferenceConfig } from "./runtime-config";
+import { prepareVideoDelivery } from "./video-delivery";
+import { outputHostname } from "./adapters/higgsfield-transport";
 import { privateAssetSchema, privateBindingSchema, qualitySchema, type Run, type PrivateAsset } from "./runtime-contract";
 import { enrolledV3 } from "./enrollment";
 import { generationContext, artifactCurrent, latestArtifact, referenceSubjectSchema, referenceDeletedVersion } from "./generation-context";
@@ -22,36 +22,17 @@ import { creativeTaskCurrent, taskBlocksGeneration } from "./reference-tasks";
 import { referenceSheetPromptSnapshot, referenceSourceSchema } from "./reference-sheet-prompt";
 import { permanentlyDeleteReference } from "./reference-deletion";
 import { referenceDiagnostics } from "./reference-diagnostics";
-import { projectBrief, creativeBriefHash, referenceOriginals, approvedArtifacts, validityEvidence } from "./creative-inputs";
+import { projectBrief, creativeBriefHash, referenceOriginals, approvedArtifacts } from "./creative-inputs";
 export { projectBrief, creativeBriefHash, referenceOriginals, approvedArtifacts, validityEvidence } from "./creative-inputs";
 import { enqueueLocation, isLocationDirectorTask, locationTaskStatus, resumeLocation, locationDocument } from "./location-runtime";
 import { discardReference, discardableReferences } from "./reference-retention";
 import { packageBuildDetailsSchema } from "./package-status";
 
-export async function inspectRuntime(w: RuntimeWorkspace) {
-  const docValue = w.packages.at(-1)?.document;
-  if (!docValue) return null;
-  const doc = readFrozenPackage(docValue), quote = w.quotes.find(q => q.document.packageId === doc.id)?.document;
-  const authority = w.runtimeAuthorizations.find(a => a.document.packageId === doc.id)?.document;
-  const validity = await validityEvidence(), issues = quote ? quote.segments.flatMap(s => higgsfieldRequestIssues(s.body, doc.source.references, quote.validityEvidence, new Date().toISOString())) : ["COST_ESTIMATE_UNAVAILABLE"];
-  if (quote && v3Digest("validity-evidence", quote.validityEvidence) !== v3Digest("validity-evidence", validity)) issues.push("VALIDITY_EVIDENCE_CHANGED_REBUILD_PACKAGE");
-  const brief = await projectBrief(w.project.owner_user_id, w.project.project_id), originals = await referenceOriginals(w.project.owner_user_id, w.project.project_id);
-  const config = v3TransportConfig(), currentIds = approvedArtifacts(w, brief, originals).map(a => a.id);
-  if (!config.credentials || !config.accountScope) issues.push("HIGGSFIELD_CREDENTIALS_REQUIRED");
-  if (doc.pricing.source !== "manual_provider_estimate" && config.accountScope !== doc.accountScope) issues.push("HIGGSFIELD_ESTIMATE_ACCOUNT_CHANGED");
-  if (!config.outputHosts.length) issues.push("HIGGSFIELD_OUTPUT_ALLOWLIST_REQUIRED");
-  if (w.runs.some(r => r.package_id !== doc.id && !["approved", "failed", "deleted"].includes(r.state))) issues.push("V3_PRIOR_OUTCOME_REQUIRES_RECONCILIATION");
-  if (doc.capabilityHash !== v3Digest("capabilities", normalizeCapabilities(new HiggsfieldVideoGenerationProvider().capabilities()))) issues.push("PROVIDER_CAPABILITIES_CHANGED");
-  if (quote && quote.segments.some(s => !w.runtimeAuthorizations.some(a => a.document.packageId === doc.id && a.document.segmentUuid === s.segmentUuid))) issues.push("V3_SEGMENT_AUTHORIZATION_REQUIRED");
-  const approvedLocation = w.artifacts.find(a => a.kind === "location" && currentIds.includes(a.id));
-  const locationCurrent = !locationDocument(approvedLocation) || await new V3Store().rpc("ugc_v3_location_input_current", { p_project: w.project.project_id, d: approvedLocation!.document.input }) === true;
-  if (!locationCurrent) issues.push("REFERENCE_STALE_REGENERATE");
-  const current = locationCurrent && !!w.source?.current && w.source.revision === doc.sourceRevision && doc.source.references.every(r => currentIds.includes(r.id)) &&
-    !w.tasks.some(t => ["character", "product", "location", "storyboard"].includes(t.kind) && Date.parse(t.created_at) > Date.parse(w.source!.created_at)) &&
-    latestArtifact(w, "storyboard")?.id === doc.source.storyboard.id && !!latestArtifact(w, "storyboard")?.approved_at;
-  const report = runtimePreflight(doc, quote, authority, { current, transportEnabled: config.enabled && config.projectId === w.project.project_id && config.packageId === doc.id,
-    now: new Date().toISOString(), validityIssues: issues, existingIntent: w.runs.some(r => r.package_id === doc.id) });
-  return { ...report, authorizedMaximumMicrousd: authority ? w.runtimeAuthorizations.filter(a => a.document.packageId === doc.id).reduce((sum, a) => sum + a.document.maxEstimatedCostMicrousd, 0) : null };
+export { inspectRuntime } from "./runtime-inspection";
+import { inspectRuntime } from "./runtime-inspection";
+function videoStage(output: unknown): { stage: string } | null {
+  const parsed = z.object({ stage: z.string().regex(/^(V3_FINAL_VIDEO_(JOB_CLAIMED|SAVED|READY_FOR_REVIEW)|HIGGSFIELD_(SUBMITTING|REQUEST_ACCEPTED|PROCESSING|RESULT_RECEIVED))$/) }).safeParse(output);
+  return parsed.success ? parsed.data : null;
 }
 export async function runtimeDto(w: RuntimeWorkspace) {
   const brief = await projectBrief(w.project.owner_user_id, w.project.project_id), originals = await referenceOriginals(w.project.owner_user_id, w.project.project_id);
@@ -67,6 +48,10 @@ export async function runtimeDto(w: RuntimeWorkspace) {
     approved: !!a.approved_at, rejected: !!a.rejected_at, storyboard: a.kind === "storyboard" ? directorStoryboardSchema.parse(a.document.storyboard) : null,
     preview: a.document.asset && !w.referenceDeletions.some(d=>d.id===a.id&&d.state==="prepared") && (!a.rejected_at || ["character", "product", "location"].includes(a.kind)) ? await previewUrl(privateAssetSchema.parse(a.document.asset)) : null })));
   const runs = await Promise.all(w.runs.map(async r => ({ id: r.id, packageId: r.package_id, segmentId: r.intent.segmentId, state: r.state,
+    provider: r.intent.provider, model: r.intent.model, resolution: "480p", aspectRatio: String(r.intent.body.aspect_ratio),
+    estimatedCostMicrousd: r.intent.estimatedCostMicrousd, actualCostMicrousd: r.observation?.actualCostMicrousd ?? null,
+    stage: videoStage(w.tasks.find(t => t.kind === "video" && t.input.runId === r.id)?.output),
+    outputHostname: v3LocalEnabled() && r.error_code === "OUTPUT_HOST_APPROVAL_REQUIRED" ? outputHostname(r.observation?.resultUrl ?? null) : null,
     current: r.current, completedAt: r.completed_at, errorCode: r.error_code, quality: r.quality, actualDurationMs: r.result?.durationMs ?? null, hasAudio: r.result?.hasAudio ?? null,
     preview: r.result && ["awaiting_review", "approved"].includes(r.state) ? await previewUrl(r.result) : null,
     expectedDialogue: w.packages.find(p => p.id === r.package_id) ? readFrozenPackage(w.packages.find(p => p.id === r.package_id)!.document).source.storyboardContent.scenes.flatMap(s => s.speech) : [],
@@ -77,6 +62,8 @@ export async function runtimeDto(w: RuntimeWorkspace) {
     const deletion = w.tasks.find(t => t.kind === "delete" && t.input.artifactId === a.id);
     const state: Run["state"] = a.approved_at ? "approved" : a.rejected_at ? deletion?.status === "done" ? "deleted" : "deleting" : "awaiting_review";
     return { id: a.id, packageId: doc.id, segmentId: "joined", state, completedAt: a.approved_at,
+      provider: "higgsfield", model: "multiple segments", resolution: "480p", aspectRatio: doc.source.storyboardContent.aspectRatio,
+      estimatedCostMicrousd: doc.pricing.totalMicrousd, actualCostMicrousd: null, stage: null, outputHostname: null,
       current: !!w.source?.current && w.source.revision === doc.sourceRevision && w.runs.filter(r => r.package_id === doc.id).every(r => r.current),
       errorCode: deletion?.error_code ?? null, quality: null, actualDurationMs: asset.durationMs, hasAudio: asset.hasAudio,
       preview: !a.rejected_at ? await previewUrl(asset) : null, expectedDialogue: doc.source.storyboardContent.scenes.flatMap(s => s.speech),
@@ -279,19 +266,25 @@ export async function ownedV3Action(raw: unknown) {
     const maximum = z.number().int().nonnegative().safe().parse(a.maximumMicrousd);
     if (maximum < quote.totalMicrousd) throw new Error("V3_PACKAGE_AUTHORIZATION_INSUFFICIENT");
     for (const [index, segment] of quote.segments.entries()) {
-      if (w.runtimeAuthorizations.some(x => x.document.segmentUuid === segment.segmentUuid)) continue;
+      if (w.runtimeAuthorizations.some(x => x.document.segmentUuid === segment.segmentUuid && Date.parse(x.document.expiresAt) > Date.now() &&
+        !w.runs.some(r => r.intent.authorization.id === x.document.id))) continue;
       const auth = createRuntimeAuthorization(doc, quote, segment.segmentUuid, { operatorId: user.id, approved: true,
         maximumMicrousd: segment.estimatedCostMicrousd + (index === 0 ? maximum - quote.totalMicrousd : 0), packageMaximumMicrousd: maximum, now });
       await store.action(user.id, a.projectId, "authorize", { document: auth });
     }
   } else if (a.action === "generate") {
-    const preflight = await inspectRuntime(w); if (!preflight?.eligibleForPaidSubmission) throw new Error(preflight?.issues[0] ?? "V3_PREFLIGHT_REQUIRED");
     // The web request records intent only. The separate local worker is the only submitter.
-    const doc = readFrozenPackage(w.packages.at(-1)?.document), quote = w.quotes.find(q => q.document.packageId === doc.id)!.document;
+    const doc = readFrozenPackage(w.packages.at(-1)?.document);
     if (a.packageId !== doc.id || a.packageHash !== doc.hash) throw new Error("V3_REVIEW_SNAPSHOT_CHANGED");
+    if (w.runs.some(r => r.package_id === doc.id && r.state !== "deleted")) return runtimeDto(w);
+    assertV3Transport(v3TransportConfig(), { projectId: a.projectId, packageId: doc.id });
+    const preflight = await inspectRuntime(w); if (!preflight?.eligibleForPaidSubmission) throw new Error(preflight?.issues[0] ?? "V3_PREFLIGHT_REQUIRED");
+    const quote = w.quotes.find(q => q.document.packageId === doc.id)!.document;
     for (const segment of quote.segments) {
-      const auth = w.runtimeAuthorizations.find(x => x.document.segmentUuid === segment.segmentUuid)!.document;
-      await store.action(user.id, a.projectId, "generate", { intent: createPaidIntent(doc, quote, auth, now) });
+      const auth = w.runtimeAuthorizations.filter(x => x.document.segmentUuid === segment.segmentUuid &&
+        !w.runs.some(r => r.intent.authorization.id === x.document.id)).at(-1)!.document;
+      const delivery = await prepareVideoDelivery(w, doc, segment, signal);
+      await store.action(user.id, a.projectId, "generate", { intent: createPaidIntent(doc, quote, auth, new Date().toISOString(), delivery) });
     }
   } else if (a.action === "recover") {
     const joined = w.artifacts.some(j => j.id === a.id && j.kind === "joined");
@@ -310,6 +303,7 @@ export async function ownedV3Action(raw: unknown) {
       throw new Error("V3_NO_SAVED_OPENAI_RESPONSE");
     await store.action(user.id, a.projectId, "recover_task", { id: task.id });
   } else {
+    if (a.action === "reject_delete" && a.confirmedDeletion !== true) throw new Error("V3_VIDEO_DELETE_CONFIRMATION_REQUIRED");
     const run = w.runs.find(r => r.id === a.id), joined = w.artifacts.find(j => j.id === a.id && j.kind === "joined");
     const result = run?.result ?? (joined ? privateAssetSchema.parse(joined.document.asset) : null);
     if (!result) throw new Error("V3_RESULT_UNAVAILABLE");
@@ -321,7 +315,8 @@ export async function ownedV3Action(raw: unknown) {
         speech.some(s => s.speaker === "character") && quality.lipAudioSync !== "pass") throw new Error("V3_QUALITY_REVIEW_REQUIRED");
       await readPrivate(result.storageKey, result.etag, result.sizeBytes, signal, result.sha256);
     }
-    await store.action(user.id, a.projectId, joined ? a.action === "approve" ? "approve_joined" : "reject_joined" : a.action, { id: run?.id ?? joined!.id, quality });
+    await store.action(user.id, a.projectId, joined ? a.action === "approve" ? "approve_joined" : "reject_joined" : a.action, { id: run?.id ?? joined!.id, quality,
+      ...(a.action === "reject_delete" ? { confirmedDeletion: true } : {}) });
     if (run && a.action === "approve") {
       const refreshed = await store.read(user.id, a.projectId), doc = readFrozenPackage(w.packages.find(p => p.id === run.package_id)!.document);
       if (doc.segments.length > 1 && doc.segments.every(s => refreshed.runs.some(r => r.package_id === doc.id && r.intent.segmentId === s.id && r.state === "approved")))

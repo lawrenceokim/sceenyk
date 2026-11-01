@@ -1,4 +1,9 @@
 const messages: Record<string, string> = {
+  V3_VIDEO_SETUP_REQUIRED: "Video generation needs database migration 087 after 086. Apply it and restart the app and local worker; keep paid video generation disabled until review.",
+  V3_SEGMENT_AUTHORIZATION_REQUIRED: "Review and approve this Generation Package again before explicitly generating another video. Each authorization permits one request.",
+  V3_AUTHORIZATION_EXPIRED: "This approval expired. Review and approve the saved Generation Package again; rebuilding it is not required.",
+  HIGGSFIELD_OUTPUT_ALLOWLIST_INVALID: "Configure exact lowercase hostnames only; wildcard domains and URLs are not accepted.",
+  OUTPUT_HOST_APPROVAL_REQUIRED: "The generated video is preserved at Higgsfield. Verify the hostname in local diagnostics, add that exact host to the output allowlist, restart and recover this same request.",
   V3_LOCAL_PRICING_SETUP_REQUIRED: "Local approximate pricing needs database migration 086 after 085. Apply it, restart the app/worker and reopen the saved package.",
   V3_PACKAGE_SETUP_REQUIRED: "The V3 workflow needs database migration 085. Apply it before rebuilding a package or replacing an approved sheet.",
   V3_LOCATION_SIMPLE_SETUP_REQUIRED: "The simplified Location flow needs database migration 084 after 083. Apply the update, restart the app/worker and check status.",

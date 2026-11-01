@@ -10,7 +10,7 @@ async function main() {
       const { loadEnvConfig } = await import("@next/env"); loadEnvConfig(process.cwd(), true);
       const { v3LocalEnabled } = await import("../lib/final-video-generation-v3/runtime-config");
       const { V3Store } = await import("../lib/final-video-generation-v3/runtime-store");
-      const { inspectRuntime } = await import("../lib/final-video-generation-v3/runtime-server");
+      const { inspectRuntime } = await import("../lib/final-video-generation-v3/runtime-inspection");
       if (!v3LocalEnabled() || !process.env.UGC_V3_OPERATOR_USER_ID) throw new Error();
       const report = await inspectRuntime(await new V3Store().read(process.env.UGC_V3_OPERATOR_USER_ID, args[1]));
       process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);

@@ -1,7 +1,6 @@
 import "server-only";
 import OpenAI, { toFile } from "openai";
 import { z } from "zod";
-import { promises as fs } from "node:fs";
 import { createDatabaseClient } from "@/lib/db/server";
 import { OpenAICreativeDirectorProvider } from "./adapters/openai";
 import { HiggsfieldV3Transport, HiggsfieldTransportError } from "./adapters/higgsfield-transport";
@@ -14,9 +13,9 @@ import { directorStoryboardSchema } from "./contract";
 import { readFrozenPackage } from "./package";
 import { v3Digest } from "./identity";
 import { packageTask } from "./package-task";
-import { bytesHash, readPrivate, inspectImage, publishPrivate, saveSpool, readSpool, inspectVideo, deletePrivate, spoolFile } from "./runtime-media";
+import { bytesHash, readPrivate, inspectImage, publishPrivate, saveSpool, readSpool, inspectVideo, deletePrivate, purgeVideoSpool } from "./runtime-media";
 import { generationContext, generationContextSchema, referenceSubjectSchema } from "./generation-context";
-import { projectBrief, creativeBriefHash, referenceOriginals, approvedArtifacts, validityEvidence } from "./creative-inputs";
+import { projectBrief, creativeBriefHash, referenceOriginals, approvedArtifacts } from "./creative-inputs";
 import { prepareOpenAIReference } from "./adapters/openai-reference";
 import { assertReferenceSheetPrompt, referenceSourceSchema } from "./reference-sheet-prompt";
 import { savedReferenceResult, recordReferenceStage, referenceStageError, ReferenceTaskError, safeReferenceRequestId } from "./reference-diagnostics";
@@ -139,14 +138,20 @@ async function videoTask(store: V3Store, task: Task, w: RuntimeWorkspace, signal
   if (run.result) { await store.checkpoint(task, "done"); return; }
   const config = v3TransportConfig(), transport = new HiggsfieldV3Transport(config);
   const doc = readFrozenPackage(w.packages.find(p => p.id === run.package_id)!.document), segment = doc.segments.find(s => s.id === run.intent.segmentId)!;
+  const stage = async (value: string, requestId?: string) => {
+    console.info(JSON.stringify({ stage: value, projectId: task.project_id, packageId: run.package_id, runId: run.id, ...(requestId ? { requestId } : {}) }));
+    await store.checkpoint(task, "video_stage", { stage: value });
+  };
+  await stage("V3_FINAL_VIDEO_JOB_CLAIMED");
   await executeV3Segment(run, task.provider_started, { provider: transport, beforeSubmit: async intent => {
     assertV3Transport(config, intent);
     if (doc.pricing.source !== "manual_provider_estimate" && config.accountScope !== doc.accountScope) throw new Error("HIGGSFIELD_ESTIMATE_ACCOUNT_CHANGED");
     const quote = w.quotes.find(q => q.document.packageId === run.package_id)?.document;
-    const validity = await validityEvidence(), issues = higgsfieldRequestIssues(intent.body, doc.source.references, quote?.validityEvidence, new Date().toISOString());
-    if (!quote || v3Digest("validity-evidence", validity) !== v3Digest("validity-evidence", quote.validityEvidence)) issues.push("VALIDITY_EVIDENCE_CHANGED");
+    const issues = higgsfieldRequestIssues(intent.body, doc.source.references, quote?.validityEvidence, new Date().toISOString());
+    if (!quote) issues.push("V3_QUOTE_REQUIRED");
     if (issues.length) throw new Error(issues[0]);
   },
+    stage,
     checkpoint: (action, payload) => store.checkpoint(task, action, payload), readSaved: name => readSpool(run.id, name),
     save: (name, bytes) => saveSpool(run.id, name, bytes), validateAndPublish: async bytes => {
       const metadata = await inspectVideo(run.id, bytes, { durationMs: segment.durationMs, aspectRatio: doc.source.storyboardContent.aspectRatio, generateAudio: true });
@@ -159,10 +164,7 @@ async function deleteTask(store: V3Store, task: Task, w: RuntimeWorkspace, signa
   const asset = run?.state === "deleting" ? run.result : joined ? privateAssetSchema.parse(joined.document.asset) : null;
   if (!asset) throw new Error("V3_DELETE_UNAVAILABLE");
   await deletePrivate(w.project.owner_user_id, task.project_id, asset, signal);
-  for (const name of ["result.bytes", "video.mp4"]) {
-    try { await fs.unlink(await spoolFile(asset.id, name)); } catch (e) { if ((e as NodeJS.ErrnoException).code !== "ENOENT") throw e; }
-  }
-  if (joined) { try { await fs.unlink(await spoolFile(asset.id, "joined.mp4")); } catch (e) { if ((e as NodeJS.ErrnoException).code !== "ENOENT") throw e; } }
+  await purgeVideoSpool(asset.id);
   await store.checkpoint(task, "deleted");
 }
 export async function runV3Task(projectId: string, ownerId: string, store = new V3Store(), signal = AbortSignal.timeout(14 * 60_000)) {

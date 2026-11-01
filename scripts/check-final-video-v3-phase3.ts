@@ -4,7 +4,7 @@ import { randomUUID } from "node:crypto";
 import { PGlite } from "@electric-sql/pglite";
 import { v3Input, v3Context, v3Id, sealV3 } from "./final-video-v3-fixture";
 import { HiggsfieldVideoGenerationProvider, higgsfieldModels } from "../lib/final-video-generation-v3/adapters/higgsfield";
-import { HiggsfieldV3Transport, exactBodyHash, HiggsfieldTransportError } from "../lib/final-video-generation-v3/adapters/higgsfield-transport";
+import { HiggsfieldV3Transport, exactBodyHash, HiggsfieldTransportError, outputHostname } from "../lib/final-video-generation-v3/adapters/higgsfield-transport";
 import { higgsfieldRequestIssues } from "../lib/final-video-generation-v3/adapters/higgsfield-validity";
 import { bindEstimateResponse } from "../lib/final-video-generation-v3/adapters/higgsfield-pricing";
 import { buildFrozenPackage, restoreSegment } from "../lib/final-video-generation-v3/package";
@@ -77,7 +77,7 @@ async function pureAndTransportChecks() {
   equal(approvedJoinInputs(multiDoc, multiRuns).map(s => s.segmentId), multiDoc.segments.map(s => s.id));
   assert.throws(() => approvedJoinInputs(multiDoc, [{ ...multiRuns[0], state: "awaiting_review" }, multiRuns[1]]), /APPROVED_SEGMENTS/); checks++;
   equal(f.doc.segments.length, 1); equal(f.doc.segments[0].durationMs, 10000);
-  equal(higgsfieldRequestIssues(f.intent.body, f.input.references, null, now), ["HIGGSFIELD_REQUEST_LIMITS_UNVERIFIED"]);
+  equal(higgsfieldRequestIssues(f.intent.body, f.input.references, null, now), []);
   equal(higgsfieldRequestIssues(f.intent.body, f.input.references, limits, now), []);
   equal(higgsfieldRequestIssues(f.intent.body, f.input.references, { ...limits, maxImageCount: 1 }, now), ["REFERENCE_COUNT_EXCEEDED"]);
   const ready = runtimePreflight(f.doc, f.quote, f.auth, { current: true, transportEnabled: false, now, validityIssues: [] });
@@ -111,18 +111,34 @@ async function pureAndTransportChecks() {
   const done = await enabled.reconcile(accepted, new AbortController().signal); equal(done.status, "completed");
   equal((await enabled.fetchCompletedResult(done, new AbortController().signal)).length, 3);
   await rejects(() => enabled.fetchCompletedResult({ ...done, expiresAt: "2020-01-01T00:00:00Z" }, new AbortController().signal), "HIGGSFIELD_RESULT_EXPIRED");
-  await rejects(() => enabled.fetchCompletedResult({ ...done, resultUrl: "https://unapproved.example.test/video.mp4" }, new AbortController().signal), "HIGGSFIELD_OUTPUT_HOST_UNAPPROVED");
+  await rejects(() => enabled.fetchCompletedResult({ ...done, resultUrl: "https://unapproved.example.test/video.mp4" }, new AbortController().signal), "OUTPUT_HOST_APPROVAL_REQUIRED");
+  equal(outputHostname("https://cdn.example.test/video.mp4?private=secret"), "cdn.example.test");
+  for (const bad of ["http://cdn.example.test/file", "https://user:secret@cdn.example.test/file", "https://127.0.0.1/file", "https://cdn.example.test:444/file", "https://[::1]/file"]) equal(outputHostname(bad), null);
+  // The first submission needs no pre-known CDN. Approval pauses download, preserving the completed request.
+  let controlledPosts = 0, controlledDownloads = 0;
+  const controlledHttp: typeof fetch = async (url, init) => { if (init?.method === "POST") controlledPosts++;
+    if (String(url).startsWith("https://cdn.example.test/")) controlledDownloads++; return http(url, init); };
+  const controlledSaved = new Map<string, Buffer>(); let controlledObservation: ProviderObservation | null = null;
+  const controlledDeps: SegmentExecutionDependencies = { beforeSubmit: () => {},
+    provider: new HiggsfieldV3Transport({ ...config, enabled: true, outputHosts: [] }, controlledHttp),
+    checkpoint: async (action, payload) => { if (action === "observation") controlledObservation = payload as ProviderObservation; },
+    readSaved: async name => controlledSaved.get(name) ?? null, save: async (name, bytes) => { controlledSaved.set(name, bytes); }, validateAndPublish: async () => asset };
+  await rejects(() => executeV3Segment(runFor(), false, controlledDeps, new AbortController().signal), "OUTPUT_HOST_APPROVAL_REQUIRED");
+  equal(controlledPosts, 1); equal(controlledDownloads, 0); ok(controlledSaved.has("completed.json")); ok(controlledObservation);
+  await executeV3Segment({ ...runFor(), state: "reconciliation_required", observation: controlledObservation }, true,
+    { ...controlledDeps, provider: new HiggsfieldV3Transport({ ...config, enabled: false }, controlledHttp) }, new AbortController().signal);
+  equal(controlledPosts, 1); equal(controlledDownloads, 1);
   const rejecting = new HiggsfieldV3Transport({ ...config, enabled: true }, async () => Response.json({ detail: "private provider error" }, { status: 422 }));
   await assert.rejects(() => rejecting.submit(f.intent, new AbortController().signal), e => e instanceof HiggsfieldTransportError && e.outcome === "rejected"); checks++;
   const uncertain = new HiggsfieldV3Transport({ ...config, enabled: true }, async () => { throw new Error("lost"); });
   await assert.rejects(() => uncertain.submit(f.intent, new AbortController().signal), e => e instanceof HiggsfieldTransportError && e.outcome === "unknown"); checks++;
   const saved = new Map<string, Buffer>(), checkpoints: string[] = []; let submits = 0, polls = 0, downloads = 0, publishes = 0;
   const deps: SegmentExecutionDependencies = { beforeSubmit: () => {}, checkpoint: async action => { checkpoints.push(action); },
-    provider: { submit: async () => { submits++; return observation("queued"); }, reconcile: async () => { polls++; return observation(); },
+    provider: { submit: async () => { submits++; return observation("queued"); }, reconcile: async () => { ok(checkpoints.includes("observation")); polls++; return observation(); },
       fetchCompletedResult: async () => { downloads++; return Buffer.from("fixture bytes"); } },
     readSaved: async n => saved.get(n) ?? null, save: async (n, b) => { saved.set(n, b); }, validateAndPublish: async () => { publishes++; return asset; } };
   await executeV3Segment(runFor(), false, deps, new AbortController().signal);
-  equal(submits, 1); equal(polls, 1); equal(downloads, 1); equal(checkpoints, ["intent", "observation", "result"]);
+  equal(submits, 1); equal(polls, 1); equal(downloads, 1); equal(checkpoints, ["intent", "observation", "observation", "result"]);
   await executeV3Segment({ ...runFor(), state: "reconciliation_required" }, true, deps, new AbortController().signal);
   equal(submits, 1); equal(downloads, 1); equal(publishes, 2);
   const before = checkpoints.length;
@@ -138,6 +154,16 @@ async function pureAndTransportChecks() {
   const submittedBeforeRecovery = submits;
   await executeV3Segment({ ...runFor(), observation: observation(), state: "reconciliation_required" }, true, failureDeps, new AbortController().signal);
   equal(submits, submittedBeforeRecovery);
+  // A failed local receipt write still leaves the request ID in the database before any poll.
+  let durableReceipt: ProviderObservation | null = null;
+  const receiptFailure = { ...deps, readSaved: async () => null,
+    checkpoint: async (action: string, value?: unknown) => { if (action === "observation") durableReceipt = value as ProviderObservation; },
+    save: async () => { throw new Error("RECEIPT_DISK_FAILED"); } };
+  await rejects(() => executeV3Segment(runFor(), false, receiptFailure, new AbortController().signal), "RECEIPT_DISK_FAILED");
+  ok(durableReceipt); const receiptSubmits = submits;
+  await executeV3Segment({ ...runFor(), state: "reconciliation_required", observation: durableReceipt }, true,
+    { ...receiptFailure, save: async () => {} }, new AbortController().signal);
+  equal(submits, receiptSubmits);
 }
 
 async function sqlChecks() {
