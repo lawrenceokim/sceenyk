@@ -1,4 +1,5 @@
 const messages: Record<string, string> = {
+  V3_LOCAL_PRICING_SETUP_REQUIRED: "Local approximate pricing needs database migration 086 after 085. Apply it, restart the app/worker and reopen the saved package.",
   V3_PACKAGE_SETUP_REQUIRED: "The V3 workflow needs database migration 085. Apply it before rebuilding a package or replacing an approved sheet.",
   V3_LOCATION_SIMPLE_SETUP_REQUIRED: "The simplified Location flow needs database migration 084 after 083. Apply the update, restart the app/worker and check status.",
   V3_LOCATION_WORKER_RESTART_REQUIRED: "Restart the local worker to load the simplified Location flow, then Generate Location again. The outdated worker was stopped before making a provider request.",

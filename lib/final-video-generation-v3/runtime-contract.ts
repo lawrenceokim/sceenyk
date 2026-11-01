@@ -17,10 +17,12 @@ export const uncheckedQuality: Quality = { characterContinuity: "not_checked", p
   dialoguePresence: "not_checked", speechTiming: "not_checked", lipAudioSync: "not_checked", visualQuality: "not_checked", notes: "" };
 export const quoteSchema = z.strictObject({ id: z.uuid(), packageId: z.uuid(), packageHash: digestSchema, projectId: z.uuid(),
   validityEvidence: z.unknown().nullable().default(null),
-  currency: z.literal("USD"), observedAt: z.iso.datetime({ offset: true }), expiresAt: z.iso.datetime({ offset: true }),
+  currency: z.literal("USD"), observedAt: z.iso.datetime({ offset: true }), expiresAt: z.iso.datetime({ offset: true }).nullable(),
+  pricingSource: z.literal("manual_provider_estimate").optional(), deliveryExpiresAt: z.iso.datetime({ offset: true }).optional(),
   segments: z.array(z.strictObject({ segmentUuid: z.uuid(), segmentId: z.string().min(1), segmentVersion: z.literal(1), fingerprint: digestSchema,
     model: z.string().min(1), body: z.record(z.string(), z.unknown()), bodyHash: digestSchema, estimatedCostMicrousd: z.number().int().nonnegative().safe(),
-    estimateResponseHash: digestSchema })).min(1), totalMicrousd: z.number().int().nonnegative().safe() });
+    estimateResponseHash: digestSchema })).min(1), totalMicrousd: z.number().int().nonnegative().safe() })
+  .refine(q => q.pricingSource === "manual_provider_estimate" ? q.expiresAt === null && !!q.deliveryExpiresAt : q.expiresAt !== null);
 export type RuntimeQuote = z.infer<typeof quoteSchema>;
 export const runtimeAuthorizationSchema = z.strictObject({ schema: z.literal("v3-paid-authorization-v1"), id: z.uuid(), projectId: z.uuid(),
   packageId: z.uuid(), packageVersion: z.number().int().positive(), packageHash: digestSchema, quoteId: z.uuid(), segmentUuid: z.uuid(),

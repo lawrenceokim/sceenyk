@@ -10,6 +10,7 @@ const require=createRequire(import.meta.url),builder=require('../lib/video-gener
 const normal=v=>JSON.parse(JSON.stringify(v)),hash=b=>createHash('sha256').update(b).digest('hex');
 let checks=0,networkCalls=0,mode='pass',saveFailure=false,storageFailure=false,deleteFailure=false,deleteAttempts=0;
 let estimateCalls=0,estimateMode='pass',packageSaveFailure=false;
+let storyboardDurations=[5000,5000];
 let previousFunctionsPreserved=0;
 const equal=(a,b)=>{assert.deepEqual(normal(a),normal(b));checks++;},ok=v=>{assert.ok(v);checks++;};
 const pg=new PGlite(),owner=randomUUID(),oldEnv={...process.env},spool=new Map(),objects=new Map(),calls=[],deleted=[],sources=new Map();
@@ -25,7 +26,7 @@ const db={async rpc(name,args){try{return{data:await call(name,Object.values(arg
  maybeSingle(){return this.execute(true);},then(resolve,reject){return this.execute().then(resolve,reject);}};}};
 const media={bytesHash:hash,readSpool:async(id,name)=>spool.get(`${id}:${name}`)??null,
  saveSpool:async(id,name,bytes)=>{const key=`${id}:${name}`;if(spool.has(key)&&hash(spool.get(key))!==hash(bytes))throw new Error('V3_SPOOL_CONFLICT');spool.set(key,bytes);
-  if(packageSaveFailure&&name==='package.json'){packageSaveFailure=false;throw new Error('V3_LOCAL_SAVE_ACK_LOST');}
+  if(packageSaveFailure&&name==='package-local-pricing.json'){packageSaveFailure=false;throw new Error('V3_LOCAL_SAVE_ACK_LOST');}
   if(saveFailure&&name==='openai-response.json'){saveFailure=false;throw new Error('FIXTURE_LOST_SAVE_ACK');}},
  writeReferenceDiagnostics:async(id,value)=>spool.set(`${id}:reference-diagnostics.json`,Buffer.from(JSON.stringify(value))),
  purgeReferenceSpool:async id=>{for(const key of [...spool.keys()])if(key.startsWith(`${id}:`))spool.delete(key);},
@@ -54,7 +55,7 @@ async function fixtureResponse(kind,body,options){
 class FixtureOpenAI{constructor(config){equal(config.maxRetries,0);}
  responses={create:(body,options)=>{
   if(body.text.format.name==='director_storyboard_v3')return(async()=>{
-   calls.push({kind:'storyboard',body:normal(body)});const storyboard=normal(load('scripts/final-video-v3-fixture.ts').v3Input().storyboardContent);storyboard.tone='Professional';
+   calls.push({kind:'storyboard',body:normal(body)});const storyboard=normal(load('scripts/final-video-v3-fixture.ts').v3Input(storyboardDurations).storyboardContent);storyboard.tone='Professional';
    assert.match(body.input[0].content[0].text,/Approved Location prompt and sheet binding/);assert.match(body.input[0].content[0].text,/Accessible vehicle studio/);checks+=2;
    return{_request_id:'req_storyboard',status:'completed',output:[{type:'message',content:[{type:'output_text',text:JSON.stringify(storyboard)}]}]};
   })();
@@ -83,8 +84,8 @@ async function seedSheet(project,role,context,approved=true){
  if(approved)await call('ugc_v3_runtime_action',[owner,project,'review_artifact',{id:t.id,decision:'approve'}]);
  return t;
 }
-async function fixture(optional=false){
- const project=randomUUID(),fields={title:'Simple Location fixture',category:'product-ad',prompt:'Present the BMW in an appropriate environment',ugcType:optional?'unboxing':'advertisement',settings:{duration:'10',aspectRatio:'9:16',visualStyle:'Realistic',tone:'Professional'}};
+async function fixture(optional=false,duration='10'){
+ const project=randomUUID(),fields={title:'Simple Location fixture',category:'product-ad',prompt:'Present the BMW in an appropriate environment',ugcType:optional?'unboxing':'advertisement',settings:{duration,aspectRatio:'9:16',visualStyle:'Realistic',tone:'Professional'}};
  await call('ugc_v3_create_project',[owner,project,fields]);
  const context=load('lib/final-video-generation-v3/generation-context.ts').generationContext({prompt:fields.prompt,visual_style:'Realistic',creation_type:'ugc',ugc_type:fields.ugcType,tone:'Professional',category:fields.category});
  for(const role of optional?['character']:['character','product']){
@@ -101,12 +102,13 @@ try{
  const migrations=fs.readdirSync('supabase/migrations').filter(n=>n.endsWith('.sql')).sort();
  for(const file of migrations){
   let previous;
-  if(file.includes('08500'))previous=(await pg.query("select oid::regprocedure::text signature,prosrc,proacl::text grants,proconfig from pg_proc where pronamespace='public'::regnamespace order by oid")).rows;
+  if(file.includes('08500')||file.includes('08600'))previous=(await pg.query("select oid::regprocedure::text signature,prosrc,proacl::text grants,proconfig from pg_proc where pronamespace='public'::regnamespace order by oid")).rows;
   await pg.exec(fs.readFileSync(`supabase/migrations/${file}`,'utf8'));
   if(previous){const current=(await pg.query("select oid::regprocedure::text signature,prosrc,proacl::text grants,proconfig from pg_proc where pronamespace='public'::regnamespace order by oid")).rows;equal(current.filter(f=>previous.some(p=>p.signature===f.signature)),previous);previousFunctionsPreserved=previous.length;}
  }
  await pg.exec(fs.readFileSync('supabase/migrations/20261031008400_ugc_v3_simple_location_retention.sql','utf8'));
  await pg.exec(fs.readFileSync('supabase/migrations/20261031008500_ugc_v3_package_flow.sql','utf8'));
+ await pg.exec(fs.readFileSync('supabase/migrations/20261031008600_ugc_v3_local_pricing.sql','utf8'));
  await pg.exec(fs.readFileSync('scripts/verify-v3-setup.sql','utf8'));checks++;
  await pg.query("insert into public.app_users(id,clerk_user_id) values($1,'fixture')",[owner]);
  const f=await fixture(),before=await cp(f.project),start=calls.length;
@@ -120,7 +122,7 @@ try{
  equal(await call('ugc_v3_queue_reference_cleanup',[owner,f.project,false]),0);ok(objects.has(ready.output.document.asset.storageKey));
  equal((await post(f.project,{action:'review_artifact',id:candidate.id,decision:'approve'})).status,200);
  equal((await post(f.project,{action:'storyboard'})).status,200);await tick(f.project);const sb=(await read(f.project)).artifacts.find(a=>a.kind==='storyboard');ok(sb);
- equal((await post(f.project,{action:'review_artifact',id:sb.id,decision:'approve'})).status,200);equal((await post(f.project,{action:'build_package'})).status,200);
+ equal((await post(f.project,{action:'review_artifact',id:sb.id,decision:'approve'})).status,200);const firstBuild=await post(f.project,{action:'build_package'});assert.equal(firstBuild.status,200,JSON.stringify(firstBuild.body));checks++;
  const source=(await pg.query('select input from public.ugc_v3_sources where project_id=$1',[f.project])).rows[0].input;equal(JSON.parse(source.direction).approvedLocation.instruction,instruction);
  // An outdated generic worker is fenced before it can skip the ChatGPT prompt or call a provider.
  const outdated=await fixture();await post(outdated.project,{action:'reference',kind:'location'});const outdatedClaim=await call('ugc_v3_task_claim',[outdated.project]),outdatedCalls=calls.length;
@@ -181,7 +183,7 @@ try{
  mode='unknown';const unknown=await fixture();await post(unknown.project,{action:'reference',kind:'location'});await tick(unknown.project);const missing=await read(unknown.project);equal(missing.tasks.at(-1).recoveryAvailable,false);equal(missing.tasks.at(-1).canStartNew,false);ok(!JSON.stringify(missing).includes('FAKE_SECRET'));
  mode='optional';const optional=await fixture(true);const optionalCount=calls.length;await generate(optional.project);equal(calls.length-optionalCount,2);
  // Real route -> atomic admission -> worker -> package/estimate -> refresh, using HTTP fixtures only.
- Object.assign(process.env,{UGC_V3_HIGGSFIELD_CREDENTIALS:'fixture:key',UGC_V3_HIGGSFIELD_ACCOUNT_SCOPE:'fixture-account'});
+ Object.assign(process.env,{UGC_V3_HIGGSFIELD_CREDENTIALS:'',UGC_V3_HIGGSFIELD_ACCOUNT_SCOPE:''});estimateMode='failed';
  const packageRow=async p=>(await pg.query("select * from public.ugc_v3_tasks where project_id=$1 and kind='package' order by created_at desc,id desc limit 1",[p])).rows[0];
  const packageCount=async p=>(await pg.query('select count(*)::int n from public.ugc_v3_packages where project_id=$1',[p])).rows[0].n;
  const taskBefore=await packageRow(f.project),originalCreative=await cp(f.project),providerCount=calls.length;
@@ -192,8 +194,19 @@ try{
  for(let i=0;i<3;i++)equal((await post(f.project,{action:'build_package'})).status,200);
  equal((await packageRow(f.project)).id,taskBefore.id);
  equal((await pg.query('select count(*)::int n from public.ugc_v3_sources where project_id=$1',[f.project])).rows[0].n,1);
+ // Binding validation and atomic rollback remain real failures; neither can request remote pricing.
+ const actualRead=V3Store.prototype.read;
+ V3Store.prototype.read=async function(...args){const w=await actualRead.apply(this,args);if(w.project.project_id===f.project){const key=Object.keys(w.source.private_bindings)[0];w.source.private_bindings[key].verifiedReadback=false;}return w;};
+ await tick(f.project);let failed=(await read(f.project)).tasks.find(t=>t.id===taskBefore.id);
+ equal(failed.status,'failed');equal(failed.packageBuild.code,'V3_PACKAGE_BINDING_INVALID');equal(failed.packageBuild.recoverable,false);equal(estimateCalls,0);equal(await packageCount(f.project),0);
+ V3Store.prototype.read=actualRead;
+ await pg.exec("create function public.fixture_package_failure() returns trigger language plpgsql as $$ begin raise exception 'FIXTURE_PACKAGE_PERSIST_FAILED'; end $$; create trigger fixture_package_failure before insert on public.ugc_v3_quotes for each row execute function public.fixture_package_failure();");
+ packageSaveFailure=true;equal((await post(f.project,{action:'build_package'})).status,200);await tick(f.project);
+ failed=(await read(f.project)).tasks.find(t=>t.id===taskBefore.id);equal(failed.packageBuild.recoverable,true);equal(failed.packageBuild.stage,'persistence');equal(await packageCount(f.project),0);
+ await pg.exec('drop trigger fixture_package_failure on public.ugc_v3_quotes;drop function public.fixture_package_failure();');
+ equal((await post(f.project,{action:'build_package'})).status,200);
  await tick(f.project);let built=await read(f.project);assert.equal((await packageRow(f.project)).status,'done',JSON.stringify((await packageRow(f.project)).output));checks++;
- equal(await packageCount(f.project),1);equal(built.preflight.estimatedCostMicrousd,1250000);equal(built.preflight.segmentCount,1);equal(built.preflight.canSubmit,false);
+ equal(await packageCount(f.project),1);equal(built.preflight.estimatedCostMicrousd,5641000);equal(built.preflight.segmentCount,1);equal(built.preflight.canSubmit,false);
  equal(built.tasks.find(t=>t.kind==='package').packageBuild.estimateStatus,'available');
  equal((await read(f.project)).preflight.packageId,built.preflight.packageId);
  equal((await post(f.project,{action:'build_package',retryTaskId:taskBefore.id})).status,200);equal(await packageCount(f.project),1);
@@ -202,30 +215,43 @@ try{
  equal((await pg.query("select count(*)::int n from public.ugc_v3_run_authorizations where project_id=$1",[f.project])).rows[0].n,0);
  const stages=(await pg.query("select document->>'stage' stage from public.ugc_v3_runtime_events where entity_id=$1 and kind='package_stage' order by id",[taskBefore.id])).rows.map(r=>r.stage);
  for(const stage of ['validation','planning','delivery','payload','estimate','persistence','ready'])ok(stages.includes(stage));
- // Force a new quote after expiry. Invalid data fails visibly before any estimate, then retry reuses its task.
- await pg.query("update public.ugc_v3_quotes set document=jsonb_set(document,'{expiresAt}',to_jsonb('2020-01-01T00:00:00Z'::text)) where project_id=$1",[f.project]);
- equal((await post(f.project,{action:'build_package',retryTaskId:taskBefore.id})).status,200);
- let retry=await packageRow(f.project);const beforeEstimate=estimateCalls;
- const actualRead=V3Store.prototype.read;
- V3Store.prototype.read=async function(...args){const w=await actualRead.apply(this,args);if(w.project.project_id===f.project){const key=Object.keys(w.source.private_bindings)[0];w.source.private_bindings[key].verifiedReadback=false;}return w;};
- await tick(f.project);let failed=(await read(f.project)).tasks.find(t=>t.id===retry.id);
- equal(failed.status,'failed');equal(failed.packageBuild.code,'V3_PACKAGE_BINDING_INVALID');equal(failed.packageBuild.stage,'delivery');equal(failed.packageBuild.recoverable,false);equal(estimateCalls,beforeEstimate);equal(await packageCount(f.project),1);
- V3Store.prototype.read=actualRead;
- // Persistence failure rolls back package and quote together; saved work alone permits recovery.
- await pg.exec("create function public.fixture_package_failure() returns trigger language plpgsql as $$ begin raise exception 'FIXTURE_PACKAGE_PERSIST_FAILED'; end $$; create trigger fixture_package_failure before insert on public.ugc_v3_quotes for each row execute function public.fixture_package_failure();");
- packageSaveFailure=true;equal((await post(f.project,{action:'build_package'})).status,200);await tick(f.project);
- failed=(await read(f.project)).tasks.find(t=>t.id===retry.id);equal(failed.packageBuild.recoverable,true);const savedEstimateCalls=estimateCalls;
- equal(failed.packageBuild.stage,'persistence');equal(await packageCount(f.project),1);
- await pg.exec('drop trigger fixture_package_failure on public.ugc_v3_quotes;drop function public.fixture_package_failure();');
- equal((await post(f.project,{action:'build_package'})).status,200);await tick(f.project);equal(estimateCalls,savedEstimateCalls);equal(await packageCount(f.project),2);
- // Estimate failures preserve one unpriced package and no authority; no recovery claim is shown.
- await pg.query("update public.ugc_v3_quotes set document=jsonb_set(document,'{expiresAt}',to_jsonb('2020-01-01T00:00:00Z'::text)) where project_id=$1",[f.project]);
- estimateMode='failed';equal((await post(f.project,{action:'build_package',retryTaskId:retry.id})).status,200);await tick(f.project);
- built=await read(f.project);const unavailable=built.tasks.filter(t=>t.kind==='package').at(-1);equal(unavailable.status,'done');equal(unavailable.packageBuild.estimateStatus,'unavailable');equal(unavailable.packageBuild.httpStatus,503);equal(unavailable.packageBuild.recoverable,false);equal(built.preflight.estimatedCostMicrousd,null);equal(built.preflight.canSubmit,false);equal(await packageCount(f.project),3);
- equal((await post(f.project,{action:'authorize',packageId:built.preflight.packageId,packageHash:built.preflight.packageHash,operatorApproved:true,maximumMicrousd:2000000})).status,409);
- // Missing required approval blocks admission; approved Storyboard is preserved.
- await pg.query("update public.ugc_v3_artifacts set approved_at=null where project_id=$1 and kind='product'",[f.project]);
- equal((await post(f.project,{action:'build_package'})).body.code,'V3_PRODUCT_APPROVAL_REQUIRED');equal(await packageCount(f.project),3);
+ // Delivery expiry does not expire local pricing or prevent explicit finite package approval.
+ await pg.query("update public.ugc_v3_quotes set document=jsonb_set(document,'{deliveryExpiresAt}',to_jsonb('2020-01-01T00:00:00Z'::text)) where project_id=$1",[f.project]);
+ built=await read(f.project);equal(built.preflight.estimatedCostMicrousd,5641000);equal(built.preflight.issues.includes('COST_ESTIMATE_UNAVAILABLE'),false);
+ equal((await post(f.project,{action:'build_package',retryTaskId:taskBefore.id})).status,200);equal(await packageCount(f.project),1);
+ const approval={action:'authorize',packageId:built.preflight.packageId,packageHash:built.preflight.packageHash,quoteId:built.preflight.quoteId,operatorApproved:true,maximumMicrousd:6770000};
+ equal((await post(f.project,{...approval,maximumMicrousd:100})).status,409);
+ const approved=await post(f.project,approval);assert.equal(approved.status,200,JSON.stringify(approved.body));checks++;
+ equal(approved.body.workspace.preflight.authorizationState,'bound');equal(approved.body.workspace.preflight.canSubmit,false);equal(estimateCalls,0);
+ // Real 30s legacy unavailable package -> one immutable locally priced repair, same approved source.
+ mode='pass';storyboardDurations=[30000];const repairFixture=await fixture(false,'30');const loc=await generate(repairFixture.project);
+ await post(repairFixture.project,{action:'review_artifact',id:loc.id,decision:'approve'});await post(repairFixture.project,{action:'storyboard'});await tick(repairFixture.project);
+ const board=(await read(repairFixture.project)).artifacts.find(a=>a.kind==='storyboard');await post(repairFixture.project,{action:'review_artifact',id:board.id,decision:'approve'});await post(repairFixture.project,{action:'build_package'});
+ const legacyTask=await call('ugc_v3_task_claim',[repairFixture.project]),repairSource=(await new V3Store(db).read(owner,repairFixture.project)).source;
+ const historicalProvider=new(load('lib/final-video-generation-v3/adapters/higgsfield.ts').HiggsfieldVideoGenerationProvider)('historical_account');
+ const historicalContext=load('scripts/final-video-v3-fixture.ts').v3Context(repairSource.input,historicalProvider);historicalContext.now=new Date().toISOString();
+ const historical=load('lib/final-video-generation-v3/package.ts').buildFrozenPackage(repairSource.input,historicalProvider,historicalContext,{id:legacyTask.input.packageId,version:1,sourceRevision:repairSource.revision});
+ await call('ugc_v3_write',[owner,repairFixture.project,'package',{document:historical,state:load('lib/final-video-generation-v3/recovery.ts').initialExecution(historical),eventId:legacyTask.id}]);
+ await call('ugc_v3_task_checkpoint',[legacyTask.id,legacyTask.lease_token,'done',{}]);equal(historical.pricing.status,'unavailable');const repairApprovals=await cp(repairFixture.project),repairCalls=calls.length;
+ const repairedTask=await call('ugc_v3_local_price_repair',[owner,repairFixture.project,historical.id,'seedance-2026-10-31']);
+ await load('lib/final-video-generation-v3/package-task.ts').packageTask(new V3Store(db),repairedTask,await new V3Store(db).read(owner,repairFixture.project),AbortSignal.timeout(10000));
+ const repaired=await read(repairFixture.project);equal(repaired.preflight.estimatedCostMicrousd,16923000);equal(repaired.preflight.pricingVersion,'seedance-2026-10-31');equal(await packageCount(repairFixture.project),2);equal(await cp(repairFixture.project),repairApprovals);equal(calls.length,repairCalls);equal(estimateCalls,0);
+ equal((await pg.query('select document from public.ugc_v3_packages where id=$1',[historical.id])).rows[0].document,historical);
+ equal((await call('ugc_v3_local_price_repair',[owner,repairFixture.project,historical.id,'seedance-2026-10-31'])).id,repairedTask.id);equal(await packageCount(repairFixture.project),2);
+ const repairedWorkspace=await new V3Store(db).read(owner,repairFixture.project),pricedDoc=load('lib/final-video-generation-v3/package.ts').readFrozenPackage(repairedWorkspace.packages.at(-1).document),localQuote=repairedWorkspace.quotes.at(-1).document;
+ const oversized=load('lib/final-video-generation-v3/execution-package.ts').createRuntimeAuthorization(pricedDoc,localQuote,localQuote.segments[0].segmentUuid,{operatorId:owner,approved:true,maximumMicrousd:20310000,now:new Date().toISOString()});
+ oversized.expiresAt=new Date(Date.parse(oversized.approvedAt)+48*60*60*1000).toISOString();const {hash:oldAuthorizationHash,...oversizedBody}=oversized;void oldAuthorizationHash;oversized.hash=load('lib/final-video-generation-v3/identity.ts').v3Digest('runtime-authorization',oversizedBody);
+ await assert.rejects(call('ugc_v3_runtime_action',[owner,repairFixture.project,'authorize',{document:oversized}]),/V3_AUTHORIZATION_INVALID/);checks++;
+ const tampered=normal(localQuote);tampered.id=randomUUID();tampered.segments[0].estimatedCostMicrousd++;
+ await assert.rejects(call('ugc_v3_runtime_action',[owner,repairFixture.project,'quote',{document:tampered}]),/V3_LOCAL_PRICING_SNAPSHOT_INVALID/);checks++;
+ equal((await pg.query("select has_function_privilege('authenticated','public.ugc_v3_local_package_begin(uuid,uuid,jsonb,jsonb,uuid)','EXECUTE') browser,has_function_privilege('service_role','public.ugc_v3_local_package_begin(uuid,uuid,jsonb,jsonb,uuid)','EXECUTE') server")).rows[0],{browser:false,server:true});
+ const legacyAgain=load('lib/final-video-generation-v3/package.ts').buildFrozenPackage(repairSource.input,historicalProvider,historicalContext,{id:randomUUID(),version:3,sourceRevision:repairSource.revision});
+ await call('ugc_v3_write',[owner,repairFixture.project,'package',{document:legacyAgain,state:load('lib/final-video-generation-v3/recovery.ts').initialExecution(legacyAgain),eventId:randomUUID()}]);
+ const beginArgs=[owner,repairFixture.project,repairSource.input,repairSource.private_bindings,null];
+ const normalUpgrade=await call('ugc_v3_local_package_begin',beginArgs);equal(await call('ugc_v3_local_package_begin',beginArgs),normalUpgrade);
+ await tick(repairFixture.project);equal((await read(repairFixture.project)).preflight.estimatedCostMicrousd,16923000);equal(await packageCount(repairFixture.project),4);equal(estimateCalls,0);
+ await pg.query("update public.ugc_v3_artifacts set approved_at=null where project_id=$1 and kind='product'",[repairFixture.project]);
+ equal((await post(repairFixture.project,{action:'build_package'})).body.code,'V3_PRODUCT_APPROVAL_REQUIRED');
  // A worker collision with a completed deletion is reconciled locally, without touching media/providers.
  const completed=(await pg.query("select id from public.ugc_v3_reference_deletions where project_id=$1 and state='completed' limit 1",[history.project])).rows[0];
  await pg.query("insert into public.ugc_v3_tasks(project_id,kind,request_key,input,status,error_code) values($1,'delete',$2,$3,'failed','V3_REFERENCE_CLEANUP_IN_PROGRESS')",[history.project,`race:${randomUUID()}`,JSON.stringify({referenceCleanup:{id:completed.id,version:1}})]);

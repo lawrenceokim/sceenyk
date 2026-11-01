@@ -1,5 +1,9 @@
 # UI Context
 
+## Local approximate V3 pricing (2026-10-31)
+
+The existing Package tab labels totals `Estimated video cost: ~$X.XX`, explains that the configured approximate rate is not a guaranteed provider charge, and shows per-segment estimates for multi-segment packages. Maximum authorized USD remains separate, defaults to a server-calculated configurable 20% buffer rounded upward to cents, and is editable before explicit checkbox/button approval. Changing the package selects a fresh suggested ceiling; editing or clearing it persists through status refreshes for that exact package. Approval acknowledges the next Final Video stage while paid generation stays disabled. Local pricing does not expire with signed request URLs; genuine input/approval failures remain visible. Existing shared controls, Tailwind utilities, accessibility and layout are retained.
+
 ## V3 package/cleanup feedback stabilization (2026-10-31)
 
 The existing Package tab displays persisted validation, plan, reference-delivery, cost and save stages automatically. Failed builds retain their specific reason across refresh; only validated saved package work uses recovery wording. Unavailable/expired estimates and stale/missing approvals have distinct messages and cannot authorize video. Local-development disclosures show sanitized stage/code/HTTP/package/segment/estimate/recoverability fields. Confirmed Character/Product regeneration preserves approved history; the dialog discloses preservation for approved versions and permanent deletion for unwanted unapproved candidates. Completed deletion receipts suppress obsolete warnings. No tab/layout/stylesheet redesign; existing Tailwind/shared controls and native disclosures remain. [Evidence, migration 085 and owner continuation](v3-flow-stabilization.md).

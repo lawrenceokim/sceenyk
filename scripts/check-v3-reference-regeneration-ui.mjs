@@ -123,18 +123,28 @@ try {
   buildButton.props.onClick();buildButton.props.onClick();equal(calls.length,1);equal(calls[0].retryTaskId,'package-task');
   resolveRequest(Response.json({ok:true,workspace:{...initial,tasks:[{...packageTask,status:'running',packageBuild:{...packageBuild,code:null,stage:'estimate',estimateStatus:'requested'}}],processing:true}}));
   await new Promise(resolve=>setTimeout(resolve,0));
-  tree=render();status=find(tree,node=>node.type?.name==='PackageStatus');equal(text(status.type(status.props)).includes('Checking generation cost'),true);
+  tree=render();status=find(tree,node=>node.type?.name==='PackageStatus');equal(text(status.type(status.props)).includes('Calculating approximate cost'),true);
   equal(find(tree,node=>node.type?.name==='Button'&&text(node)==='Build package and estimate').props.disabled,true);
   slots=[];props.initial={...initial,localEnabled:false};
   find(render(),node=>node.type==='button'&&text(node)==='Package').props.onClick();
   status=find(render(),node=>node.type?.name==='PackageStatus');equal(text(status.type(status.props)).includes('Package technical details'),false);
   slots=[];props.initial={...initial,tasks:[{...packageTask,status:'done',packageBuild:{...packageBuild,stage:'ready',code:null,estimateStatus:'available'}}],
-    preflight:{durationMs:10000,aspectRatio:'9:16',currentness:'current',estimatedCostMicrousd:1250000,authorizedMaximumMicrousd:null,packageHash:'hash',issues:[],transportEnabled:false,canSubmit:false,quoteId:'quote'}};
+    preflight:{durationMs:30000,aspectRatio:'9:16',currentness:'current',estimatedCostMicrousd:16923000,authorizedMaximumMicrousd:null,packageHash:'hash',issues:[],transportEnabled:false,canSubmit:false,quoteId:'quote',suggestedMaximumMicrousd:20310000,suggestedAuthorizationBufferPercent:20}};
   find(render(),node=>node.type==='button'&&text(node)==='Package').props.onClick();
-  equal(text(render()).includes('Estimated video cost: $1.2500'),true);
+  equal(text(render()).includes('Estimated video cost: ~$16.92'),true);
+  equal(text(render()).includes('real provider charge may differ'),true);
+  let ceiling=find(render(),node=>node.type==='input'&&node.props.type==='number');equal(ceiling.props.value,'20.31');
+  ceiling.props.onChange({target:{value:'25.00'}});ceiling=find(render(),node=>node.type==='input'&&node.props.type==='number');equal(ceiling.props.value,'25.00');
+  calls=[];equal(calls.length,0);
+  find(render(),node=>node.type==='input'&&node.props.type==='checkbox').props.onChange({target:{checked:true}});
+  const approvePackage=find(render(),node=>node.type?.name==='Button'&&text(node)==='Approve Generation Package');equal(approvePackage.props.disabled,false);
+  approvePackage.props.onClick();equal(calls.length,1);equal(calls[0].action,'authorize');equal(calls[0].maximumMicrousd,25000000);equal(calls[0].operatorApproved,true);
+  resolveRequest(Response.json({ok:true,workspace:props.initial}));await new Promise(resolve=>setTimeout(resolve,0));
   status=find(render(),node=>node.type?.name==='PackageStatus');equal(text(status.type(status.props)).includes('Generation Package ready'),true);
   slots=[];props.initial={...props.initial,tasks:[{...packageTask,status:'done',packageBuild:{...packageBuild,estimateStatus:'unavailable'}}],preflight:{...props.initial.preflight,estimatedCostMicrousd:null,quoteId:null}};
   find(render(),node=>node.type==='button'&&text(node)==='Package').props.onClick();
   equal(find(render(),node=>node.type?.name==='Button'&&text(node)==='Approve Generation Package').props.disabled,true);
+  slots=[];props.initial={...props.initial,preflight:{...props.initial.preflight,estimatedCostMicrousd:28205000}};
+  find(render(),node=>node.type==='button'&&text(node)==='Package').props.onClick();equal(text(render()).includes('Estimated video cost: ~$28.21'),true);
   console.info(`${checks} actual V3 confirmation/package-stage/double-click UI checks passed; zero network calls.`);
 } finally {globalThis.fetch=originalFetch;delete globalThis.__referenceReact;}

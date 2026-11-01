@@ -37,6 +37,8 @@
     "test:ugc-v3-location": "node --conditions=react-server --import=tsx scripts/check-v3-location-director.mjs && node --import=tsx scripts/check-v3-location-ui.tsx",
     "test:ugc-v3-flow": "node --conditions=react-server --import=tsx scripts/check-v3-location-director.mjs && node --import=tsx scripts/check-v3-location-ui.tsx",
     "repair:ugc-v3-flow": "node --conditions=react-server --import=tsx scripts/repair-v3-flow.ts",
+    "test:ugc-v3-local-pricing": "node --conditions=react-server --import=tsx scripts/check-v3-local-pricing.ts",
+    "repair:ugc-v3-local-pricing": "node --conditions=react-server --import=tsx scripts/repair-v3-local-pricing.ts",
     "test:ugc-final-v3": "node --conditions=react-server --import=tsx scripts/check-final-video-v3.ts",
     "test:ugc-final-v3-phase2": "node --conditions=react-server --import=tsx scripts/check-final-video-v3-phase2.ts",
     "inspect:ugc-final-v3": "node --conditions=react-server --import=tsx scripts/inspect-final-video-v3.ts",

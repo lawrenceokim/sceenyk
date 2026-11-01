@@ -117,7 +117,7 @@ ok(planned(changedOutput, v3Provider(), v3Context(speaking)).readinessIssues.som
 const invalidPrice: VideoGenerationProvider = { ...v3Provider(), estimateCost: () => ({ ...stable.segments[0].estimate, estimatedCostMicrousd: -1 }) };
 fails(speaking, "ESTIMATE_RECEIPT_INVALID", v3Context(speaking), invalidPrice);
 
-const adapter = new HiggsfieldVideoGenerationProvider(), caps = adapter.capabilities();
+const adapter = new HiggsfieldVideoGenerationProvider("historical_account"), caps = adapter.capabilities();
 equal(caps.maxContinuousDurationMs, 30000); equal(caps.supportedResolutions, ["480p", "720p", "1080p"]); equal(caps.supportedFormats, ["mp4", "mov"]);
 equal(caps.referenceLimits.image.maxCount, null); equal(caps.features.nativeDialogue, "unverified");
 const actual = planned(speaking, adapter), context = v3Context(speaking, adapter), segment = actual.segments[0];

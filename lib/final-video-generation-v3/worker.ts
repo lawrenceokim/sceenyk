@@ -141,7 +141,7 @@ async function videoTask(store: V3Store, task: Task, w: RuntimeWorkspace, signal
   const doc = readFrozenPackage(w.packages.find(p => p.id === run.package_id)!.document), segment = doc.segments.find(s => s.id === run.intent.segmentId)!;
   await executeV3Segment(run, task.provider_started, { provider: transport, beforeSubmit: async intent => {
     assertV3Transport(config, intent);
-    if (config.accountScope !== doc.accountScope) throw new Error("HIGGSFIELD_ESTIMATE_ACCOUNT_CHANGED");
+    if (doc.pricing.source !== "manual_provider_estimate" && config.accountScope !== doc.accountScope) throw new Error("HIGGSFIELD_ESTIMATE_ACCOUNT_CHANGED");
     const quote = w.quotes.find(q => q.document.packageId === run.package_id)?.document;
     const validity = await validityEvidence(), issues = higgsfieldRequestIssues(intent.body, doc.source.references, quote?.validityEvidence, new Date().toISOString());
     if (!quote || v3Digest("validity-evidence", validity) !== v3Digest("validity-evidence", quote.validityEvidence)) issues.push("VALIDITY_EVIDENCE_CHANGED");

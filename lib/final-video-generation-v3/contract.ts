@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { manualPricingSchema, type ManualPricing } from "./pricing/contract";
 import { packageSceneSchema } from "@/lib/video-generation-package/contract";
 import { transitionSchema, voiceDeliverySchema, audioCueSchema } from "@/lib/execution-v1/contract";
 
@@ -57,12 +58,12 @@ export const capabilitiesSchema = z.strictObject({ version: z.literal("video-cap
   referenceLimits: z.strictObject({ total: positive.nullable(), image: fileLimit, audio: fileLimit, video: fileLimit }) });
 export type VideoCapabilities = z.infer<typeof capabilitiesSchema>;
 export type CostEstimate = { status: "estimated" | "unavailable"; estimatedCostMicrousd: number | null;
-  source: "account_estimate" | "unavailable"; sourceUrl: string; pricingVersion: string; reason: string | null;
+  source: "account_estimate" | "manual_provider_estimate" | "unavailable"; sourceUrl: string; pricingVersion: string; reason: string | null; pricing?: ManualPricing;
   evidenceHash: string | null; actualProviderCostMicrousd: null; providerReceipt: null };
 export const costEstimateSchema = z.strictObject({ status: z.enum(["estimated", "unavailable"]), estimatedCostMicrousd: z.number().int().nonnegative().nullable(),
-  source: z.enum(["account_estimate", "unavailable"]), sourceUrl: z.url(), pricingVersion: text, reason: z.string().nullable(),
+  source: z.enum(["account_estimate", "manual_provider_estimate", "unavailable"]), pricing: manualPricingSchema.optional(), sourceUrl: z.url(), pricingVersion: text, reason: z.string().nullable(),
   evidenceHash: digestSchema.nullable(), actualProviderCostMicrousd: z.null(), providerReceipt: z.null() })
-  .refine(value => value.status === "estimated" ? value.source === "account_estimate" && value.estimatedCostMicrousd !== null && value.evidenceHash !== null && value.reason === null
+  .refine(value => value.status === "estimated" ? ["account_estimate", "manual_provider_estimate"].includes(value.source) && (value.source !== "manual_provider_estimate" || !!value.pricing) && value.estimatedCostMicrousd !== null && value.evidenceHash !== null && value.reason === null
     : value.source === "unavailable" && value.estimatedCostMicrousd === null);
 export const estimateEvidenceSchema = z.strictObject({ source: z.literal("authenticated_provider_estimate"),
   providerId: text, profileId: text, commandFingerprint: digestSchema, accountScope: text,

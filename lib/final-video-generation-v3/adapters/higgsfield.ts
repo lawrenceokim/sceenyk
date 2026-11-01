@@ -4,6 +4,7 @@ import { z } from "zod";
 import { type EstimateEvidence, type GenerationSegment, type VideoCapabilities, type VideoCommand, type VideoGenerationProvider } from "../contract";
 import { commandFingerprint, normalizeCapabilities, v3Digest } from "../identity";
 import { estimateHiggsfieldCost } from "./higgsfield-pricing";
+import { localCostEstimate } from "../pricing/higgsfield-pricing";
 
 export const HIGGSFIELD_V3_PROFILE = "final-video-v3-higgsfield";
 export const higgsfieldModels = { text: "bytedance/seedance-2.5/text-to-video", image: "bytedance/seedance-2.5/image-to-video",
@@ -22,6 +23,7 @@ function publicHttps(value: string): string {
   return value;
 }
 export class HiggsfieldVideoGenerationProvider implements VideoGenerationProvider {
+  constructor(private readonly pricingPolicy: "manual" | "historical_account" = "manual") {}
   capabilities(): VideoCapabilities {
     return { version: "video-capabilities-v3", providerId: "higgsfield", profileId: HIGGSFIELD_V3_PROFILE,
       adapterVersion: "seedance-25-higgsfield-foundation-v1", contractVersion: "higgsfield-seedance-25-2026-10-29", verifiedOn: "2026-10-29",
@@ -34,6 +36,7 @@ export class HiggsfieldVideoGenerationProvider implements VideoGenerationProvide
       maxPromptCharacters: null, referenceLimits: { total: null, image: noVerifiedFileLimits(), audio: noVerifiedFileLimits(), video: noVerifiedFileLimits() } };
   }
   estimateCost(command: VideoCommand, evidence: readonly EstimateEvidence[], accountScope: string, now: string) {
+    if (this.pricingPolicy === "manual") return localCostEstimate(command, higgsfieldModels[command.mode], `${command.mode}-to-video`);
     return estimateHiggsfieldCost(command, evidence, accountScope, now);
   }
   // Inert descriptor only. No SDK/client, env/credentials, fetch, submit or poll method.

@@ -20,7 +20,7 @@ globalThis.fetch = async () => { networkCalls++; throw new Error("NETWORK_FORBID
 const equal = (a: unknown, b: unknown) => { assert.deepEqual(a, b); checks++; };
 const ok = (v: unknown) => { assert.ok(v); checks++; };
 const throws = (fn: () => unknown, code?: string) => { if (code) assert.throws(fn, new RegExp(code)); else assert.throws(fn); checks++; };
-const provider = new HiggsfieldVideoGenerationProvider(), now = new Date().toISOString();
+const provider = new HiggsfieldVideoGenerationProvider("historical_account"), now = new Date().toISOString();
 const future = new Date(Date.now() + 3_600_000).toISOString();
 function fixture(durations = [5000, 5000], version = 1) {
   const input = v3Input(durations), context = v3Context(input, provider); context.now = now;

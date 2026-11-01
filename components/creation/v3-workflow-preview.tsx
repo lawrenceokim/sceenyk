@@ -14,7 +14,11 @@ import { referenceFailureLabel } from "@/lib/final-video-generation-v3/reference
 import { packageBuildLabel, packageBuildError } from "@/lib/final-video-generation-v3/package-status";
 
 const field = "w-full rounded-lg border border-border bg-background p-2 text-sm";
-const money = (amount: number | null) => amount === null ? "Unavailable" : `$${(amount / 1_000_000).toFixed(4)}`;
+const money = (amount: number | null) => {
+  if (amount === null) return "Unavailable";
+  const cents = (BigInt(amount) + BigInt(5000)) / BigInt(10000);
+  return `$${cents / BigInt(100)}.${String(cents % BigInt(100)).padStart(2, "0")}`;
+};
 const videoStateLabels: Record<RuntimeDto["runs"][number]["state"], string> = {
   queued: "Waiting to generate", submitting: "Starting video", provider_processing: "Generating video",
   reconciliation_required: "Video needs attention", result_saved: "Preparing preview", awaiting_review: "Ready for review",
@@ -77,7 +81,7 @@ function VideoReview({ run, act, busy, segmentCount }: { run: RuntimeDto["runs"]
 export function V3WorkflowPreview({ initial, projectId, assets, dirty, revision }: { initial?: RuntimeDto; projectId: string; assets: ProjectAsset[]; dirty: boolean; revision: string }) {
   const [workspace, setWorkspace] = useState(initial ?? null), [busy, setBusy] = useState(false), [error, setError] = useState("");
   const [buildActionFailure, setBuildActionFailure] = useState<{ code: string; httpStatus: number | null } | null>(null);
-  const [maximum, setMaximum] = useState(""), [approvedHash, setApprovedHash] = useState<string | null>(null);
+  const [maximum, setMaximum] = useState<{ packageHash: string; value: string } | null>(null), [approvedHash, setApprovedHash] = useState<string | null>(null);
   const refreshLock = useRef(false), refreshRequested = useRef(false);
   const actionLock = useRef(false);
   const [regeneration, setRegeneration] = useState<{ kind: "character" | "product"; id: string; version: number } | null>(null);
@@ -126,6 +130,7 @@ export function V3WorkflowPreview({ initial, projectId, assets, dirty, revision 
     finally { actionLock.current = false; setBusy(false); }
   };
   const p = workspace?.preflight;
+  const maximumValue = p && maximum?.packageHash === p.packageHash ? maximum.value : p?.suggestedMaximumMicrousd ? (p.suggestedMaximumMicrousd / 1_000_000).toFixed(2) : "";
   const packageTask = workspace?.tasks.filter(t => t.kind === "package").at(-1);
   const locked = busy || dirty || !!workspace?.processing;
   const reference = (kind: "character" | "product") => assets.find(a => a.studioRole === kind && a.status === "uploaded" && !a.removedFromDraft);
@@ -208,10 +213,15 @@ export function V3WorkflowPreview({ initial, projectId, assets, dirty, revision 
           <p>Package ID: Not assigned · Segment ID: Not assigned · Estimate status: Not requested · Recoverable: No</p></details>}
         {packageTask && <PackageStatus task={packageTask} technical={workspace.localEnabled} />}
         {p && <><p className="text-sm">{p.durationMs / 1000}s · {p.aspectRatio} · {p.currentness === "current" ? "Ready for review" : "Needs rebuilding"}</p>
-          <p className="text-sm">Estimated video cost: {money(p.estimatedCostMicrousd)}</p><p className="text-sm">Authorized maximum: {money(p.authorizedMaximumMicrousd)}</p>
-          <label className="block space-y-1 text-sm">Maximum authorized USD<input type="number" min="0" step="0.000001" className={field} value={maximum} onChange={e => setMaximum(e.target.value)} /></label>
+          <p className="text-sm">Estimated video cost: {p.estimatedCostMicrousd === null ? "Unavailable" : `~${money(p.estimatedCostMicrousd)}`}</p>
+          <p className="text-sm text-muted-foreground">Approximate Sceenyk estimate based on the configured Higgsfield model rate. The real provider charge may differ.</p>
+          {p.segmentCount > 1 && <ul className="space-y-1 text-sm">{p.segments.map((s, i) => <li key={s.id}>Segment {i + 1} · {s.durationMs / 1000}s: ~{money(s.estimatedCostMicrousd)}</li>)}</ul>}
+          <p className="text-sm">Authorized maximum: {money(p.authorizedMaximumMicrousd)}</p>
+          <label className="block space-y-1 text-sm">Maximum authorized USD<input type="number" min="0" step="0.01" className={field} value={maximumValue} onChange={e => setMaximum({ packageHash: p.packageHash, value: e.target.value })} /></label>
+          <p className="text-xs text-muted-foreground">The suggested maximum includes a configurable {p.suggestedAuthorizationBufferPercent}% buffer. Review or edit it before approving; it is a spending limit, not a guaranteed charge.</p>
           <label className="flex items-start gap-2 text-sm"><input type="checkbox" checked={approvedHash === p.packageHash} onChange={e => setApprovedHash(e.target.checked ? p.packageHash : null)} />I reviewed this exact package and approve the displayed request and cost limit.</label>
-          <Button variant="outline" disabled={locked || p.estimatedCostMicrousd === null || !p.quoteId || approvedHash !== p.packageHash || !maximum} onClick={() => void act("authorize", { operatorApproved: true, packageId: p.packageId, packageHash: p.packageHash, quoteId: p.quoteId, maximumMicrousd: Math.floor(Number(maximum) * 1_000_000) })}>Approve Generation Package</Button>
+          <Button variant="outline" disabled={locked || p.estimatedCostMicrousd === null || !p.quoteId || approvedHash !== p.packageHash || !maximumValue} onClick={() => void act("authorize", { operatorApproved: true, packageId: p.packageId, packageHash: p.packageHash, quoteId: p.quoteId, maximumMicrousd: Math.round(Number(maximumValue) * 1_000_000) })}>Approve Generation Package</Button>
+          {p.authorizationState === "bound" && <p role="status" className="text-sm">Generation Package approved. Final Video is the next stage.</p>}
           {p.issues.length > 0 && <p role="status" className="text-sm text-muted-foreground">Video generation is awaiting setup or approval.</p>}
           {!p.transportEnabled && <p className="text-sm text-muted-foreground">Video generation is currently unavailable. Your saved work is preserved.</p>}
           <Button disabled={locked || !p.canSubmit} onClick={() => void act("generate", { packageId: p.packageId, packageHash: p.packageHash })}>Generate Final Video</Button></>}

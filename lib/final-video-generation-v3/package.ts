@@ -5,6 +5,8 @@ import { capabilitiesSchema, costEstimateSchema, digestSchema, estimateEvidenceS
 import { commandFingerprint, freezeDocument, normalizeCapabilities, v3Digest } from "./identity";
 import { planGenerationSegments } from "./planner";
 import { compileDirectorInstructions } from "./compiler";
+import { validateManualSnapshot } from "./pricing/higgsfield-pricing";
+import { estimateHiggsfieldCost } from "./adapters/higgsfield-pricing";
 
 export const localV3Profile = Object.freeze({ id: "v3-local-480p-preflight", resolution: "480p",
   workflowEnabled: true, planningOnly: true, paidTransportEnabled: false } as const);
@@ -18,6 +20,7 @@ export const frozenPackageSchema = z.strictObject({ schema: z.literal("generatio
   inputHash: digestSchema, capabilitySnapshot: capabilitiesSchema, capabilityHash: digestSchema,
   segments: z.array(storedSegmentSchema).min(1).max(100), estimateEvidence: z.array(estimateEvidenceSchema), accountScope: z.string().min(1).max(2000),
   pricing: z.strictObject({ status: z.enum(["estimated", "unavailable"]), totalMicrousd: z.number().int().nonnegative().safe().nullable(),
+    source: z.literal("manual_provider_estimate").optional(), pricingVersion: z.string().optional(), configurationDate: z.string().optional(),
     estimatedAt: z.iso.datetime({ offset: true }), expiresAt: z.iso.datetime({ offset: true }).nullable() }),
   composition: z.enum(["direct_final_review", "review_segments_then_join"]), hash: digestSchema });
 export type FrozenPackage = z.infer<typeof frozenPackageSchema>;
@@ -31,6 +34,9 @@ export function buildFrozenPackage(input: unknown, provider: VideoGenerationProv
   for (const segment of plan.segments) {
     if (segment.estimate.status !== "estimated" || segment.estimate.estimatedCostMicrousd === null) { available = false; continue; }
     total += segment.estimate.estimatedCostMicrousd;
+    if (segment.estimate.source === "manual_provider_estimate") {
+      validateManualSnapshot(segment.estimate.pricing); continue;
+    }
     const matching = context.estimateEvidence.filter(e => v3Digest("estimate-evidence", e) === segment.estimate.evidenceHash);
     if (matching.length !== 1) { available = false; continue; }
     const expiry = matching[0].expiresAt;
@@ -45,6 +51,9 @@ export function buildFrozenPackage(input: unknown, provider: VideoGenerationProv
     estimateEvidence: structuredClone(context.estimateEvidence), accountScope: context.accountScope,
     pricing: { status: available ? "estimated" as const : "unavailable" as const, totalMicrousd: available ? total : null,
       estimatedAt: context.now, expiresAt: available ? expiresAt : null }, composition: plan.composition };
+  if (plan.segments.every(s => s.estimate.source === "manual_provider_estimate")) Object.assign(body.pricing, {
+    source: "manual_provider_estimate", pricingVersion: plan.segments[0].estimate.pricing!.pricingVersion,
+    configurationDate: plan.segments[0].estimate.pricing!.configurationDate });
   return freezeDocument(frozenPackageSchema.parse({ ...body, hash: v3Digest("frozen-package", body) }));
 }
 
@@ -63,6 +72,17 @@ export function readFrozenPackage(value: unknown): FrozenPackage {
   }
   if (end !== doc.source.storyboardContent.durationMs || scene !== doc.source.storyboardContent.scenes.length + 1 ||
     doc.composition !== (doc.segments.length === 1 ? "direct_final_review" : "review_segments_then_join")) throw new Error("PACKAGE_PLAN_INVALID");
+  if (doc.pricing.source === "manual_provider_estimate") {
+    let total = 0;
+    for (const segment of doc.segments) {
+      const s = validateManualSnapshot(segment.estimate.pricing);
+      if (segment.estimate.source !== "manual_provider_estimate" || s.durationMs !== segment.durationMs || s.provider !== doc.capabilitySnapshot.providerId ||
+        s.mode !== `${doc.source.mode}-to-video` || s.pricingVersion !== doc.pricing.pricingVersion || segment.estimate.pricingVersion !== s.pricingVersion || s.configurationDate !== doc.pricing.configurationDate ||
+        s.estimatedCostMicrousd !== segment.estimate.estimatedCostMicrousd || segment.estimate.evidenceHash !== v3Digest("manual-pricing", s)) throw new Error("V3_PRICING_SNAPSHOT_INVALID");
+      total += s.estimatedCostMicrousd;
+    }
+    if (doc.pricing.status !== "estimated" || doc.pricing.expiresAt !== null || total !== doc.pricing.totalMicrousd) throw new Error("V3_PRICING_SNAPSHOT_INVALID");
+  } else if (doc.segments.some(s => s.estimate.source === "manual_provider_estimate")) throw new Error("V3_PRICING_SNAPSHOT_INVALID");
   return freezeDocument(doc);
 }
 
@@ -82,9 +102,15 @@ export function packageCurrentness(doc: FrozenPackage, current: unknown, sourceR
 }
 
 export function packageCost(doc: FrozenPackage, provider: VideoGenerationProvider, now: string) {
+  if (doc.pricing.source === "manual_provider_estimate") {
+    readFrozenPackage(doc);
+    return { code: null, totalMicrousd: doc.pricing.totalMicrousd! } as const;
+  }
   let total = 0;
   for (const segment of doc.segments) {
-    const estimate = provider.estimateCost(restoreSegment(doc, segment.id).command, doc.estimateEvidence, doc.accountScope, now);
+    const command = restoreSegment(doc, segment.id).command;
+    const estimate = doc.capabilitySnapshot.providerId === "higgsfield" ? estimateHiggsfieldCost(command, doc.estimateEvidence, doc.accountScope, now)
+      : provider.estimateCost(command, doc.estimateEvidence, doc.accountScope, now);
     if (estimate.status !== "estimated" || estimate.estimatedCostMicrousd === null || estimate.evidenceHash !== segment.estimate.evidenceHash ||
       estimate.estimatedCostMicrousd !== segment.estimate.estimatedCostMicrousd) return { code: "COST_ESTIMATE_UNAVAILABLE", totalMicrousd: null } as const;
     total += estimate.estimatedCostMicrousd;

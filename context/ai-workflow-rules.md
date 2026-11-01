@@ -1,5 +1,9 @@
 # AI Workflow Rules
 
+## Current authorization — local approximate V3 pricing (2026-10-31)
+
+Use the owner's fixed approximate Seedance rates in one versioned module, independent of resolution/aspect ratio and remote estimate/account/transport availability. Normal package build/review/approval must make no Higgsfield pricing request. Preserve current approved creative inputs, immutable history and separate explicit finite cost authorization. A provider-free repair of the named current package is authorized; use a new immutable priced revision if the saved document is already frozen. Add required additive SQL and focused offline/current-data checks. No OpenAI/Higgsfield calls, video generation, deployment or paid enabling; keep Higgsfield 0. New local pricing supersedes older remote-estimate requirements for normal V3 only.
+
 ## Current authorization — V3 cleanup/package stabilization (2026-10-31)
 
 The attached owner request authorizes investigation, existing-workflow fixes, focused full-flow local fixtures and narrowly scoped repair of project `3f6d210e-5e85-410b-8c37-3881507eec60`. Read-only live DB/R2 evidence and provider-free cleanup/state reconciliation are permitted. Preserve all approved references/Storyboard, original uploads and historical V1/V2. No OpenAI/Higgsfield call during investigation/repair, including estimate/status probes; keep `UGC_V3_HIGGSFIELD_ENABLED=0`. Normal future owner-clicked package building may use the existing configured prepaid estimate path, but cannot authorize or submit video automatically. Record fixture acceptance separately from live provider/browser acceptance. Migration 085 is additive to existing V3 tables/RPCs.

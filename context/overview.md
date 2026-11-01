@@ -1,5 +1,9 @@
 # Sceenyk
 
+## Local approximate V3 video pricing (2026-10-31)
+
+Normal V3 package build/review/approval now uses the owner's versioned approximate Seedance rates locally: Text/Image $0.4701/sec and Reference $0.5641/sec. Resolution and aspect ratio do not affect this estimate. The current 30s package has a preserved-creative priced revision at ~$16.92; approved references/Storyboard and the original package remain unchanged. Price snapshots are immutable, actual provider cost stays separate and the editable suggested authorization maximum still needs explicit approval. Migration 086 follows installed 085; no provider request, video generation or deployment ran and Higgsfield remains disabled. [Current pricing/setup and repair evidence](generation-v3-phase3.md#local-approximate-pricing-2026-10-31).
+
 ## Confirmed V3 reference replacement (2026-10-30)
 
 Replacing an existing Character/Product Sheet now requires the owner's explicit Cancel/Continue confirmation. Continue permanently deletes the selected generated sheet and queues one fresh OpenAI reference after cleanup; Reject deletes without generation. Uploaded sources, names/settings, unrelated history and historical workflows remain. Manual 081 follows 080; source/offline acceptance is complete and live cleanup/provider/visual acceptance remains pending. [Current contract and retest](generation-v3-phase3.md#confirmed-permanent-reference-regeneration-2026-10-30).

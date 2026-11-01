@@ -14,9 +14,12 @@ export function packageBuildLabel(d: PackageBuildDetails, status: string) {
   }
   if (status === "done") return d.estimateStatus === "available" ? "Generation Package ready" : "Cost estimate unavailable";
   return { validation: "Validating project", planning: "Preparing generation plan", delivery: "Preparing approved references",
-    payload: "Preparing generation request", estimate: "Checking generation cost", persistence: "Saving Generation Package", ready: "Generation Package ready" }[d.stage];
+    payload: "Preparing generation request", estimate: "Calculating approximate cost", persistence: "Saving Generation Package", ready: "Generation Package ready" }[d.stage];
 }
 export function packageBuildError(code: string) {
+  if (code === "V3_APPROXIMATE_PRICING_NOT_CONFIGURED") return "Approximate pricing is not configured for this model.";
+  if (code === "V3_LOCAL_PRICING_SETUP_REQUIRED") return "Local approximate pricing needs database migration 086 after 085.";
+  if (code === "COST_ESTIMATE_UNAVAILABLE") return "This package uses the previous pricing flow. Build package and estimate to apply the local configured rate; your approved creative inputs are preserved.";
   if (/STORYBOARD.*STALE|CREATIVE_INPUT_STALE/.test(code)) return "A project input changed after Storyboard approval. Rebuild the Storyboard first.";
   if (/STALE|CHANGED/.test(code)) return "References changed — rebuild required. Approve the current references and Storyboard first.";
   if (/PRODUCT.*APPROV/.test(code)) return "Generation Package could not be created because the Product Sheet is not approved.";

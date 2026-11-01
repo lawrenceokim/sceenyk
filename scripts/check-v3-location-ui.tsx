@@ -18,6 +18,7 @@ equal(packageBuildLabel({...packageDetails,estimateStatus:"available"},"done"),"
 equal(packageBuildLabel({...packageDetails,code:"APPROVED_INPUT_STALE"},"failed"),"References changed — rebuild required");
 ok(packageBuildError("V3_PRODUCT_APPROVAL_REQUIRED").includes("Product Sheet is not approved"));
 ok(packageBuildError("STORYBOARD_STALE_REGENERATE").includes("Rebuild the Storyboard first"));
+equal(packageBuildError("V3_APPROXIMATE_PRICING_NOT_CONFIGURED"),"Approximate pricing is not configured for this model.");
 const calls:{action:string;payload:Record<string,unknown>}[]=[];
 const act=async(action:string,payload:Record<string,unknown>)=>{calls.push({action,payload});return true;};
 const base:RuntimeDto["tasks"][number]={id:"10000000-0000-4000-8000-000000000001",kind:"location",status:"failed",current:true,

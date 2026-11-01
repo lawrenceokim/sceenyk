@@ -24,7 +24,7 @@ globalThis.fetch = async () => { realNetworkCalls++; throw new Error("NETWORK_FO
 const equal = (a: unknown, b: unknown) => { assert.deepEqual(a, b); checks++; };
 const ok = (v: unknown) => { assert.ok(v); checks++; };
 const rejects = async (fn: () => Promise<unknown>, code: string) => { await assert.rejects(fn, new RegExp(code)); checks++; };
-const now = new Date().toISOString(), expiry = new Date(Date.now() + 240_000).toISOString(), provider = new HiggsfieldVideoGenerationProvider();
+const now = new Date().toISOString(), expiry = new Date(Date.now() + 240_000).toISOString(), provider = new HiggsfieldVideoGenerationProvider("historical_account");
 function fixture(input = v3Input(), packageId = v3Id(100), version = 1) {
   const context = v3Context(input, provider); context.now = now;
   const provisional = buildFrozenPackage(input, provider, context, { id: packageId, version, sourceRevision: 1 });

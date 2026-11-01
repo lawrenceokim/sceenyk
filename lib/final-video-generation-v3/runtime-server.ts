@@ -38,7 +38,7 @@ export async function inspectRuntime(w: RuntimeWorkspace) {
   const brief = await projectBrief(w.project.owner_user_id, w.project.project_id), originals = await referenceOriginals(w.project.owner_user_id, w.project.project_id);
   const config = v3TransportConfig(), currentIds = approvedArtifacts(w, brief, originals).map(a => a.id);
   if (!config.credentials || !config.accountScope) issues.push("HIGGSFIELD_CREDENTIALS_REQUIRED");
-  if (config.accountScope !== doc.accountScope) issues.push("HIGGSFIELD_ESTIMATE_ACCOUNT_CHANGED");
+  if (doc.pricing.source !== "manual_provider_estimate" && config.accountScope !== doc.accountScope) issues.push("HIGGSFIELD_ESTIMATE_ACCOUNT_CHANGED");
   if (!config.outputHosts.length) issues.push("HIGGSFIELD_OUTPUT_ALLOWLIST_REQUIRED");
   if (w.runs.some(r => r.package_id !== doc.id && !["approved", "failed", "deleted"].includes(r.state))) issues.push("V3_PRIOR_OUTCOME_REQUIRES_RECONCILIATION");
   if (doc.capabilityHash !== v3Digest("capabilities", normalizeCapabilities(new HiggsfieldVideoGenerationProvider().capabilities()))) issues.push("PROVIDER_CAPABILITIES_CHANGED");
@@ -102,9 +102,9 @@ export async function runtimeDto(w: RuntimeWorkspace) {
       }
       // Recovery means a valid complete saved envelope exists, never just a failed task row.
       if (["failed", "reconciliation_required"].includes(t.status)) {
-        try { const bytes = await readSpool(t.id, "package.json");
+        try { const bytes = await readSpool(t.id, "package-local-pricing.json") ?? await readSpool(t.id, "package.json");
           if (bytes) { const envelope = JSON.parse(bytes.toString("utf8")); readFrozenPackage(envelope.document);
-            packageBuild.recoverable = !envelope.quote || Date.parse(envelope.quote.expiresAt) > Date.now(); }
+            packageBuild.recoverable = envelope.quote?.pricingSource === "manual_provider_estimate" || !envelope.quote || !!envelope.quote.expiresAt && Date.parse(envelope.quote.expiresAt) > Date.now(); }
           else packageBuild.recoverable = w.packages.some(p => p.id === t.input.packageId);
         } catch { packageBuild.recoverable = false; }
       }
@@ -270,7 +270,7 @@ export async function ownedV3Action(raw: unknown) {
       await readPrivate(asset.storageKey, asset.etag, asset.sizeBytes, signal, asset.sha256);
       bindings[ref.id] = { ...asset, verifiedReadback: true };
     }
-    await store.rpc("ugc_v3_package_begin", { p_owner: user.id, p_project: a.projectId, p_input: input, p_bindings: bindings,
+    await store.rpc("ugc_v3_local_package_begin", { p_owner: user.id, p_project: a.projectId, p_input: input, p_bindings: bindings,
       p_retry_task: a.retryTaskId ? z.uuid().parse(a.retryTaskId) : null });
   } else if (a.action === "authorize") {
     const doc = readFrozenPackage(w.packages.at(-1)?.document), quote = w.quotes.find(q => q.document.packageId === doc.id)?.document;
