@@ -1,5 +1,11 @@
 # UI Context
 
+## V3 sheet review and Location prerequisite feedback (2026-11-02)
+
+Character/Product sheets stay current/reviewable after unrelated saves. A saved Visual Style/source change shows regeneration-required status, blocks stale approval and preserves explicit Reject/Delete and confirmed Regenerate. Every confirmed replacement uses the exact permanent-deletion wording with Cancel/Continue, including approved sheets; the selected replaced image is not retained in history.
+
+Generate Location retains an inactive appearance with aria-disabled when references are missing or not current/approved, but stays operable to explain the prerequisite without sending a generation request. Both missing: "Create or generate a Character Sheet and Product Sheet first." Both existing but unapproved/stale: "Approve the Character Sheet and Product Sheet to generate a Location." Mixed states name the missing sheet; Character-only projects receive Character-only wording. Successful approvals update eligibility from the returned workspace immediately, without Check status or route refresh. Busy/unsaved/in-flight fences remain unchanged. Use the existing Button and a compact polite status notification beside it; no new notification dependency or stylesheet.
+
 ## Studio Sources and Workflow Drawer (2026-11-02)
 
 Current Studio presentation supersedes the older Preview workflow-tab arrangement: Character/Product sheet generation and review sit under the corresponding uploaded source/name, followed by Location. Keep item loading, approval/rejection, regeneration, recovery and approved history with that source. Preview is a clean media viewer with the existing empty state; selecting an image updates desktop Preview or opens a full-viewport mobile image dialog. Saved generated video playback uses Preview.

@@ -31,6 +31,7 @@ import {
 import { v3ActionErrorMessage } from "@/lib/final-video-generation-v3/reference-errors";
 import { ReferenceRegenerationDialog } from "./reference-regeneration-dialog";
 import { referenceFailureLabel } from "@/lib/final-video-generation-v3/reference-status";
+import { locationReferenceFeedback } from "@/lib/final-video-generation-v3/reference-prerequisites";
 import {
   packageBuildLabel,
   packageBuildError,
@@ -454,6 +455,7 @@ export function V3WorkflowPreview({
   const [view, setView] = useState<
     "progress" | "storyboard" | "package" | "final"
   >("progress");
+  const [showLocationFeedback, setShowLocationFeedback] = useState(false);
   const previewMedia = useMemo<StudioPreviewMedia[]>(
     () => [
       ...(workspace?.artifacts
@@ -633,6 +635,9 @@ export function V3WorkflowPreview({
     latest.some(
       (a) => a.kind === kind && a.current && a.approved && !a.rejected,
     );
+  const locationFeedback = locationReferenceFeedback(workspace?.artifacts ?? [], {
+    character: !!reference("character"), product: !!reference("product"),
+  });
   const sourcePanel = (kind: "character" | "product" | "location") => {
     const label =
       kind === "character"
@@ -688,11 +693,12 @@ export function V3WorkflowPreview({
               variant="outline"
               disabled={
                 locked ||
-                (!!workspace && referenceBusy(workspace.tasks, "location")) ||
-                !currentApproved("character") ||
-                (!!reference("product") && !currentApproved("product"))
+                (!!workspace && referenceBusy(workspace.tasks, "location"))
               }
+              aria-disabled={!!locationFeedback}
+              className="aria-disabled:cursor-not-allowed aria-disabled:bg-muted aria-disabled:text-muted-foreground aria-disabled:opacity-60"
               onClick={() => {
+                if (locationFeedback) { setShowLocationFeedback(true); return; }
                 const current = latest.find((a) => a.kind === "location");
                 void act("reference", {
                   kind: "location",
@@ -717,6 +723,9 @@ export function V3WorkflowPreview({
             >
               {current ? "Regenerate" : "Generate"} {label}
             </Button>
+          )}
+          {kind === "location" && showLocationFeedback && locationFeedback && (
+            <p role="status" aria-live="polite" className="text-muted-foreground">{locationFeedback}</p>
           )}
           {kind !== "location" && current && (
             <h4 className="font-medium">{label}</h4>
@@ -830,8 +839,15 @@ export function V3WorkflowPreview({
               ) : !current.current ? (
                 <div className="space-y-2">
                   <p role="status" className="text-warning-foreground">
-                    Stale — regenerate and approve.
+                    {current.kind === "character" || current.kind === "product"
+                      ? "Visual Style or source changed — regenerate and approve this sheet."
+                      : "Stale — regenerate and approve."}
                   </p>
+                  {(current.kind === "character" || current.kind === "product") && (
+                    <Button variant="outline" disabled={busy} onClick={() => void act("review_artifact", {
+                      id: current.id, kind: current.kind, expectedVersion: current.version, decision: "reject",
+                    })}>Reject and Delete</Button>
+                  )}
                   {current.kind === "location" && !current.approved && (
                     <Button
                       variant="outline"
@@ -943,9 +959,6 @@ export function V3WorkflowPreview({
         kind={regeneration?.kind ?? null}
         busy={busy}
         blocked={dirty}
-        preserveApproved={
-          !!latest.find((a) => a.id === regeneration?.id)?.approved
-        }
         error={
           error
             ? v3ActionErrorMessage(error)

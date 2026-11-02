@@ -29,11 +29,15 @@ export function artifactCurrent(a: Artifact, artifacts: Artifact[], context: Gen
   if (a.kind === "joined") return true; // Final media uses the immutable package currentness fence.
   if (a.rejected_at || deletions.some(d => d.id === a.id && d.state === "prepared") || latestArtifact({ artifacts, referenceDeletions: deletions }, a.kind)?.id !== a.id) return false;
   const input = z.object({ generationContext: generationContextSchema, references: z.array(z.string()).optional() }).safeParse(a.document.input);
-  if (!input.success || v3Digest("generation-context", input.data.generationContext) !== v3Digest("generation-context", context)) return false;
+  if (!input.success) return false;
   if (a.kind === "character" || a.kind === "product") {
     const original = z.object({ id: z.string() }).safeParse(a.document.original);
-    return original.success && original.data.id === originals[a.kind];
+    // Sheets depend on their uploaded subject and Visual Style. The complete
+    // generation snapshot stays intact for provenance, not as a sheet dependency.
+    return original.success && original.data.id === originals[a.kind] &&
+      input.data.generationContext.visualStyle === context.visualStyle;
   }
+  if (v3Digest("generation-context", input.data.generationContext) !== v3Digest("generation-context", context)) return false;
   if (a.kind === "storyboard" && briefHash && a.document.input && (a.document.input as { briefHash?: string }).briefHash !== briefHash) return false;
   const kinds = ["character", ...(originals.product ? ["product" as const] : []), ...(a.kind === "storyboard" ? ["location" as const] : [])] as const;
   const refs = kinds.map(kind => latestArtifact({ artifacts, referenceDeletions: deletions }, kind as Artifact["kind"]));

@@ -1,5 +1,11 @@
 # Architecture Context
 
+## V3 sheet dependency boundary (2026-11-02)
+
+For completed Character/Product sheets, currentness is uploaded source identity + saved Visual Style, plus existing latest-version/rejection/deletion fences. Full immutable generationContext and brief snapshots are retained unchanged for provenance and existing task/provider execution. Direction, Tone, duration, Type, narration, title and unrelated saves do not propagate backward to sheet currentness. Location and later stages retain their own current full-brief/reference dependencies; Product remains optional unless its uploaded source is present.
+
+Confirmed sheet regeneration uses the existing permanent-delete coordinator for both approved/unapproved and stale/current latest targets. The old generated PNG, image-bearing local response files and its artifact/task/version-specific metadata are removed before the reserved replacement becomes worker-eligible. Keep the uploaded source, reference name and project settings. Minimal completed-operation IDs remain only for idempotency/version floors. Current approvals remain protected from casual rejection; stale approved latest sheets permit explicit Reject/Delete. Automatic cleanup preserves approved history. Manual migration 088 after 087 changes existing V3 currentness/approved-cleanup guards only, with no new tables or backfill. It does not change workers, prompts, providers, Storyboard/Package, pricing, financial authority, video execution or V1/V2.
+
 ## Studio presentation ownership (2026-11-02)
 
 Studio retains Sources | Preview | Properties. Sources owns the displayed uploaded Character/Product inputs and existing reference generation/review, Location and approved image history. Preview is media-only: selected private/local images or a saved generated video, with the existing empty state. Progress, Storyboard, Generation Package and Final Video workflow controls are presented in a right-side overlay opened beside Properties (about 45vw on desktop; full viewport on mobile).

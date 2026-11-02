@@ -72,7 +72,7 @@ const messages: Record<string, string> = {
   V3_REFERENCE_PROMPT_OUTDATED_REGENERATE: "This request uses an older reference prompt. Select Check status, then generate a new sheet.",
   REVIEW_EXISTING_REFERENCE_FIRST: "Review or reject the current Location reference before generating another Location.",
   ARTIFACT_REVIEW_UNAVAILABLE: "This reference has already been reviewed or replaced. Select Check status to review the latest version.",
-  REFERENCE_STALE_REGENERATE: "Your references need regeneration and approval for the saved style and direction.",
+  REFERENCE_STALE_REGENERATE: "This reference is stale. Regenerate and approve it before continuing.",
   APPROVE_CURRENT_REFERENCES_FIRST: "Regenerate and approve references for the current saved inputs before continuing.",
 };
 export function v3ActionErrorMessage(code: string) {

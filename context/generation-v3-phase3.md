@@ -1,5 +1,15 @@
 # M10 V3 Phase 3 — local runtime and first-test preparation
 
+## Completed sheet dependencies and confirmed cleanup (2026-11-02)
+
+Current source supersedes the older full-context Character/Product staleness and approved-sheet history-preservation statements below. Completed sheets depend only on their uploaded source and saved Visual Style, with existing latest/rejected/deleted fences. Unrelated direction/Tone/duration/Type/title/narration/other-field saves preserve currentness and approvals. Location and later stages keep their existing own full-input dependencies. Worker checks, immutable generation snapshots, prompt templates/provider routing, Storyboard, Package, pricing/authorization and video are unchanged.
+
+Confirmed Regenerate uses the existing permanent deletion/held replacement coordinator for stale/current, approved/unapproved Character/Product sheets. It deletes the selected generated PNG, private object and generated-result task/artifact/image-bearing response data before releasing one replacement; it preserves uploaded sources, names, settings and minimal identifier-only idempotency/version-floor receipts. Stale approvals cannot approve; stale approved sheets may be explicitly rejected/deleted. Current approvals remain protected from casual Reject, and automatic cleanup cannot delete approved history. The confirmation always states permanent deletion with Cancel/Continue.
+
+**Manual setup:** apply [088](../supabase/migrations/20261102008800_ugc_v3_sheet_dependencies.sql) after 087, then restart/reopen Studio. The migration is transactional/rerunnable, checks existing catalog prerequisites and replaces only three V3 SQL functions; it creates no table, backfills no data and starts no task/provider. No remote SQL was applied here. [Focused verification and existing unrelated pricing-fixture limits](progress-tracker.md#v3-sheet-dependencies-and-location-prerequisites-2026-11-02).
+
+Manual acceptance: generate both sheets and leave them unapproved; edit/save Creative Direction and verify current review controls. Approve, edit/save another unrelated property and verify approvals remain. Change/save Visual Style and verify both stale, approval blocked and Delete/Regenerate available. Cancel replacement to retain the image; Continue to delete it and queue one new current-style sheet. Verify uploaded sources/names/settings stay intact. Attempt Location with missing/mixed/unapproved/stale sheets for the specific notification, then approve current sheets and verify immediate enabling. Character-only projects continue without a Product. Real provider/upload/storage acceptance is owner-run.
+
 The [2026-11-01 controlled video contract](v3-controlled-video.md) supersedes the older mandatory pre-known output-host/global request-limits-file requirements below. Generation has not been run. Preserve the approved priced revision; use fresh same-object signed delivery and manual trust of the first returned hostname before downloading that existing result.
 
 ## Local approximate pricing (2026-10-31)

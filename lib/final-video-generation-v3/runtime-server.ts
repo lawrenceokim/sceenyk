@@ -217,8 +217,6 @@ export async function ownedV3Action(raw: unknown) {
       if (!proceed || a.confirmedDeletion !== true) return runtimeDto(await store.read(user.id, a.projectId));
     }
     if (kind === "location") await enqueue(kind, input);
-    else if (a.confirmedDeletion === true && previous?.approved_at) await store.rpc("ugc_v3_regenerate_approved_reference", {
-      p_owner: user.id, p_project: a.projectId, p_id: z.uuid().parse(a.expectedId), p_version: z.number().int().positive().parse(a.expectedVersion), p_input: input });
     else if (a.confirmedDeletion === true) await permanentlyDeleteReference(store, user.id, a.projectId,
       { kind, id: z.uuid().parse(a.expectedId), version: z.number().int().positive().parse(a.expectedVersion) }, "regenerate", input, signal);
     else await store.rpc("ugc_v3_regenerate_reference", { p_owner: user.id, p_project: a.projectId,

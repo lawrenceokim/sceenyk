@@ -109,6 +109,7 @@ try{
  await pg.exec(fs.readFileSync('supabase/migrations/20261031008400_ugc_v3_simple_location_retention.sql','utf8'));
  await pg.exec(fs.readFileSync('supabase/migrations/20261031008500_ugc_v3_package_flow.sql','utf8'));
  await pg.exec(fs.readFileSync('supabase/migrations/20261031008600_ugc_v3_local_pricing.sql','utf8'));
+ await pg.exec(fs.readFileSync('supabase/migrations/20261102008800_ugc_v3_sheet_dependencies.sql','utf8'));
  await pg.exec(fs.readFileSync('scripts/verify-v3-setup.sql','utf8'));checks++;
  await pg.query("insert into public.app_users(id,clerk_user_id) values($1,'fixture')",[owner]);
  const f=await fixture(),before=await cp(f.project),start=calls.length;
@@ -182,6 +183,8 @@ try{
  equal((await pg.query("select has_function_privilege('authenticated','public.ugc_v3_discard_reference_prepare(uuid,uuid,uuid,integer,boolean)','EXECUTE') browser,has_function_privilege('service_role','public.ugc_v3_discard_reference_prepare(uuid,uuid,uuid,integer,boolean)','EXECUTE') server")).rows[0],{browser:false,server:true});
  mode='unknown';const unknown=await fixture();await post(unknown.project,{action:'reference',kind:'location'});await tick(unknown.project);const missing=await read(unknown.project);equal(missing.tasks.at(-1).recoveryAvailable,false);equal(missing.tasks.at(-1).canStartNew,false);ok(!JSON.stringify(missing).includes('FAKE_SECRET'));
  mode='optional';const optional=await fixture(true);const optionalCount=calls.length;await generate(optional.project);equal(calls.length-optionalCount,2);
+ // The focused scope keeps unrelated package/pricing acceptance independently runnable.
+ if(!process.argv.includes('--references-only')) {
  // Real route -> atomic admission -> worker -> package/estimate -> refresh, using HTTP fixtures only.
  Object.assign(process.env,{UGC_V3_HIGGSFIELD_CREDENTIALS:'',UGC_V3_HIGGSFIELD_ACCOUNT_SCOPE:''});estimateMode='failed';
  const packageRow=async p=>(await pg.query("select * from public.ugc_v3_tasks where project_id=$1 and kind='package' order by created_at desc,id desc limit 1",[p])).rows[0];
@@ -309,13 +312,14 @@ try{
  equal(await call('ugc_v3_reconcile_reference_cleanup',[owner,history.project]),1);
  equal((await pg.query("select status,error_code from public.ugc_v3_tasks where project_id=$1 and request_key like 'race:%'",[history.project])).rows[0],{status:'done',error_code:null});
  equal((await pg.query("select has_function_privilege('authenticated','public.ugc_v3_package_begin(uuid,uuid,jsonb,jsonb,uuid)','EXECUTE') browser,has_function_privilege('service_role','public.ugc_v3_package_begin(uuid,uuid,jsonb,jsonb,uuid)','EXECUTE') server")).rows[0],{browser:false,server:true});
- // Approved history cannot enter the permanent-delete coordinator, including through an old client.
+ }
+ // Current approved sheets reject casual deletion, but explicit confirmed replacement deletes its exact target.
  const preserve=await fixture(),preserved=(await read(preserve.project)).artifacts.filter(a=>a.kind==='character').at(-1),preserveBefore=await cp(preserve.project),deletesBefore=deleted.length;
  await assert.rejects(call('ugc_v3_reference_delete_prepare',[owner,preserve.project,'character',preserved.id,preserved.version,'reject',null]),/V3_APPROVED_REFERENCE_PRESERVED/);checks++;
  equal((await post(preserve.project,{action:'reference',kind:'character',assetId:sources.get(`${preserve.project}:character`),confirmedDeletion:true,expectedId:preserved.id,expectedVersion:preserved.version})).status,200);
- equal((await read(preserve.project)).artifacts.find(a=>a.id===preserved.id).approved,true);equal(deleted.length,deletesBefore);equal((await cp(preserve.project)).artifacts,preserveBefore.artifacts);
+ equal((await read(preserve.project)).artifacts.some(a=>a.id===preserved.id),false);equal(deleted.length,deletesBefore+1);equal((await cp(preserve.project)).artifacts,preserveBefore.artifacts.filter(a=>a.id!==preserved.id));
  equal((await post(preserve.project,{action:'reference',kind:'character',assetId:sources.get(`${preserve.project}:character`),confirmedDeletion:true,expectedId:preserved.id,expectedVersion:preserved.version})).status,200);
- equal((await pg.query("select count(*)::int n from public.ugc_v3_tasks where project_id=$1 and request_key=$2",[preserve.project,`approved-reference-replacement:${preserved.id}`])).rows[0].n,1);
+ equal((await pg.query("select count(*)::int n from public.ugc_v3_tasks where project_id=$1 and request_key=$2",[preserve.project,`reference-replacement:${preserved.id}`])).rows[0].n,1);
  // An active explicit deletion lease makes background cleanup wait, then receipt reconciliation completes it.
  const collision=await fixture(),unapproved=await seedSheet(collision.project,'character',collision.context,false);
  await seedSheet(collision.project,'character',collision.context,true);
@@ -328,5 +332,5 @@ try{
  equal(await call('ugc_v3_discard_reference_finish',[owner,collision.project,operation.id,operation.lease_token,null]),true);
  equal((await pg.query('select status,error_code from public.ugc_v3_tasks where id=$1',[waiting.id])).rows[0],{status:'done',error_code:null});
  equal((await pg.query('select id from public.ugc_v3_artifacts where id=$1',[unapproved.id])).rows.length,0);equal(objects.has(operation.asset.storageKey),false);equal(calls.length,beforeCollisionCalls);
- equal(networkCalls,0);console.info(JSON.stringify({simpleLocationAndRetentionChecks:checks,migrations:migrations.length,previousFunctionsPreserved,fixtureProviderCalls:calls.length,fixtureEstimateCalls:estimateCalls,realNetworkCalls:networkCalls,automaticImageChecks:0}));
+ equal(networkCalls,0);console.info(JSON.stringify({scope:process.argv.includes('--references-only')?'references-and-location':'full',simpleLocationAndRetentionChecks:checks,migrations:migrations.length,previousFunctionsPreserved,fixtureProviderCalls:calls.length,fixtureEstimateCalls:estimateCalls,realNetworkCalls:networkCalls,automaticImageChecks:0}));
 }finally{await pg.close();for(const k of Object.keys(process.env))if(!(k in oldEnv))delete process.env[k];Object.assign(process.env,oldEnv);}
