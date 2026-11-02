@@ -3,8 +3,17 @@
 import { revalidatePath } from "next/cache";
 import { unstable_rethrow } from "next/navigation";
 import { AppUserSyncError } from "@/lib/auth/ensure-app-user";
-import { deleteOwnedProject, renameOwnedProject, saveOwnedProject } from "@/lib/projects/server";
+import { deleteOwnedProject, getOwnedProject, renameOwnedProject, saveOwnedProject } from "@/lib/projects/server";
 import type { DeleteProjectResult, RenameProjectResult, SaveProjectResult } from "@/lib/projects/types";
+
+export async function projectAvailabilityAction(id: string): Promise<{ ok: true; available: boolean } | { ok: false }> {
+  try {
+    return { ok: true, available: !!await getOwnedProject(id) };
+  } catch (error: unknown) {
+    unstable_rethrow(error);
+    return { ok: false };
+  }
+}
 
 export async function saveProjectAction(
   input: unknown,
@@ -53,6 +62,7 @@ export async function deleteProjectAction(input: unknown): Promise<DeleteProject
     if (result.ok) {
       revalidatePath("/projects");
       revalidatePath(`/projects/${result.projectId}`);
+      revalidatePath("/studio");
     }
     return result;
   } catch (error: unknown) {

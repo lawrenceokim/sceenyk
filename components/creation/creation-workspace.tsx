@@ -2,6 +2,7 @@
 import { V3WorkflowPreview } from "./v3-workflow-preview";
 import type { RuntimeDto } from "@/lib/final-video-generation-v3/runtime-server";
 import { StudioSkeleton } from "./studio-skeleton";
+import { StudioProjectGuard } from "./studio-project-guard";
 
 import { BeforeAccountAuth } from "@/components/auth/before-account-auth";
 import { clearGuestDraft, readGuestDraft, rememberGuestDraft } from "./guest-draft";
@@ -53,6 +54,7 @@ type WorkspaceProps = {
   initialGeneration?: GenerationJob | null;
   initialGenerationError?: string;
   initialOrigin?: ProjectOrigin | null;
+  onProjectSaved?: (id: string) => void;
 };
 
 function AccountWorkspace(props: WorkspaceProps) {
@@ -86,7 +88,7 @@ function AccountWorkspace(props: WorkspaceProps) {
       </div>
     );
   }
-  if (!props.initialProject && isSignedIn && userId) return <NewAccountWorkspace key={userId} userId={userId} />;
+  if (!props.initialProject && isSignedIn && userId) return <NewAccountWorkspace key={userId} userId={userId} onProjectSaved={props.onProjectSaved} />;
   return (
     <WorkspaceEditor
       key={`${userId ?? "visitor"}:${props.initialProject?.id ?? "new"}`}
@@ -97,13 +99,14 @@ function AccountWorkspace(props: WorkspaceProps) {
       initialGeneration={props.initialGeneration}
       initialGenerationError={props.initialGenerationError}
       initialOrigin={props.initialOrigin}
+      onProjectSaved={props.onProjectSaved}
       signedIn={!!isSignedIn}
       authReady={isLoaded}
     />
   );
 }
 
-function NewAccountWorkspace({ userId }: { userId: string }) {
+function NewAccountWorkspace({ userId, onProjectSaved }: { userId: string; onProjectSaved?: (id: string) => void }) {
   const [guestDraft] = useState(readGuestDraft);
   useEffect(() => { clearGuestDraft(); }, []);
   const [result, setResult] = useState<{ preferences: CreationPreferences; unavailable: boolean } | null>(null);
@@ -117,16 +120,18 @@ function NewAccountWorkspace({ userId }: { userId: string }) {
     return () => { active = false; };
   }, [userId]);
   if (!result) return <StudioSkeleton />;
-  return <WorkspaceEditor signedIn authReady initialPreferences={result.preferences} preferencesUnavailable={result.unavailable} restoredDraft={guestDraft ?? undefined} />;
+  return <WorkspaceEditor signedIn authReady initialPreferences={result.preferences} preferencesUnavailable={result.unavailable} restoredDraft={guestDraft ?? undefined} onProjectSaved={onProjectSaved} />;
 }
 
 export function CreationWorkspace(props: WorkspaceProps) {
   const available = useAuthAvailable();
-  return available ? (
-    <AccountWorkspace {...props} />
-  ) : (
-    <WorkspaceEditor signedIn={false} authReady />
-  );
+  return <StudioProjectGuard initialProjectId={props.initialProject?.id}>
+    {(bindProject, fresh) => available ? (
+      <AccountWorkspace {...(fresh ? {} : props)} onProjectSaved={bindProject} />
+    ) : (
+      <WorkspaceEditor signedIn={false} authReady onProjectSaved={bindProject} />
+    )}
+  </StudioProjectGuard>;
 }
 
 function WorkspaceEditor({
@@ -142,6 +147,7 @@ function WorkspaceEditor({
   signedIn,
   authReady,
   restoredDraft,
+  onProjectSaved,
 }: {
   initialV3?: RuntimeDto;
   restoredDraft?: NonNullable<ReturnType<typeof readGuestDraft>>;
@@ -155,6 +161,7 @@ function WorkspaceEditor({
   preferencesUnavailable?: boolean;
   signedIn: boolean;
   authReady: boolean;
+  onProjectSaved?: (id: string) => void;
 }) {
   const [selectedCategory] = useState<CategoryId>(
     initialProject?.category ?? restoredDraft?.brief.category ?? initialPreferences.category,
@@ -239,6 +246,7 @@ function WorkspaceEditor({
           return null;
         }
         setProjectId(result.project.id);
+        onProjectSaved?.(result.project.id);
         setWorkflow(result.project.workflow);
         persistedId.current = result.project.id;
         // Edits made while saving remain unsaved rather than being overwritten.

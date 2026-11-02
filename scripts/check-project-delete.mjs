@@ -55,7 +55,7 @@ try {
   check('deleted project cannot obtain a final-video URL', await finalVideo.getOwnedFinalVideo({ projectId: id, jobId: randomUUID() }) === null);
   check('deletion marker retained', !!await scalar('select deleted_at value from projects where id=$1', [id]));
   check('repeated deletion idempotent', (await action.deleteProjectAction({ id })).ok);
-  check('list and editor caches invalidated', invalidations.join(',') === `/projects,/projects/${id},/projects,/projects/${id}`);
+  check('list, editor and Studio caches invalidated', invalidations.join(',') === `/projects,/projects/${id},/studio,/projects,/projects/${id},/studio`);
   check('project media records retained', JSON.stringify((await pg.query('select * from project_assets')).rows) === assetsBefore);
   check('published template/snapshot retained', JSON.stringify((await pg.query('select * from marketplace_listings')).rows) === listingsBefore);
   check('free/credit balances unchanged', JSON.stringify((await pg.query('select * from generation_accounts order by owner_user_id')).rows) === financialBefore);

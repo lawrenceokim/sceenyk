@@ -4,7 +4,6 @@ import type { Metadata } from "next";
 import { CreationHeader } from "@/components/creation/creation-header";
 import { CreationWorkspace } from "@/components/creation/creation-workspace";
 import { ProjectLoadFailure } from "@/components/creation/project-load-failure";
-import { ProjectUnavailable } from "@/components/creation/project-unavailable";
 import { requireClerkUser } from "@/lib/auth/require-user";
 import { AppUserSyncError } from "@/lib/auth/ensure-app-user";
 import { getOwnedProject, ProjectAccessError } from "@/lib/projects/server";
@@ -19,7 +18,7 @@ import { getOwnedProjectOrigin, MarketplaceAccessError } from "@/lib/marketplace
 import type { ProjectOrigin } from "@/lib/marketplace/contract";
 import { isOwnedV3Project, readOwnedV3 } from "@/lib/final-video-generation-v3/runtime-server";
 import type { RuntimeDto } from "@/lib/final-video-generation-v3/runtime-server";
-import { unstable_rethrow } from "next/navigation";
+import { redirect, unstable_rethrow } from "next/navigation";
 
 export const metadata: Metadata = {
   title: "Project draft — Sceenyk",
@@ -40,9 +39,7 @@ async function OwnedWorkspace({ params }: { params: Promise<{ id: string }> }) {
       return <ProjectLoadFailure />;
     throw error;
   }
-  // Missing and foreign projects are expected results. Keep the streamed
-  // boundary/provider intact rather than interrupting it with a render error.
-  if (!project) return <ProjectUnavailable />;
+  if (!project) redirect("/studio");
   let v3;
   try { v3 = await isOwnedV3Project(project.id); }
   catch (error) { unstable_rethrow(error); return <ProjectLoadFailure />; }

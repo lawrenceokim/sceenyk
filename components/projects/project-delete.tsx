@@ -3,6 +3,7 @@
 import { startTransition, useRef, useState } from "react";
 import { Trash2 } from "lucide-react";
 import { deleteProjectAction } from "@/app/actions/projects";
+import { markProjectDeleted } from "@/lib/projects/client-lifecycle";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogTrigger, DialogContent, DialogTitle, DialogDescription, DialogClose } from "@/components/ui/dialog";
 
@@ -16,7 +17,10 @@ export function ProjectDelete({ projectId, title }: { projectId: string; title: 
     running.current = true; setBusy(true); setError("");
     try {
       const result = await deleteProjectAction({ id: projectId });
-      if (result.ok) setOpen(false);
+      if (result.ok) {
+        markProjectDeleted(result.projectId);
+        setOpen(false);
+      }
       else setError(result.message);
     } catch { setError("Your project couldn’t be deleted. Please try again."); }
     finally { running.current = false; setBusy(false); }
