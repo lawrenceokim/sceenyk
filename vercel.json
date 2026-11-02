@@ -2,6 +2,11 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "routes": [
     {
+      "src": "^/api/(?:ingest|inngest)(?:/.*)?$",
+      "status": 204,
+      "headers": { "X-Sceenyk-Inngest": "temporarily-disabled" }
+    },
+    {
       "src": "^/(?:settings|credits|templates|projects|marketplace/purchases)(?:/.*|\\..*)?$",
       "continue": true,
       "transforms": [

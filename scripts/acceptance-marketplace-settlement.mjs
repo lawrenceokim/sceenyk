@@ -1,3 +1,4 @@
+import './lib/inngest-paused.mjs'; // TEMPORARY: stop Cloud calls before any work.
 // Explicit deployed Merchant Sandbox acceptance. No AI/provider generation,
 // credits, payouts, Live endpoints, history deletion or buyer passwords.
 import assert from 'node:assert/strict';

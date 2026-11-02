@@ -1,3 +1,4 @@
+import './lib/inngest-paused.mjs'; // TEMPORARY: stop Cloud calls before any work.
 // Explicit real deployed acceptance. Reserved Clerk development identities and
 // synthetic media only. Never print keys, tickets, raw errors or private URLs.
 import fs from "node:fs";

@@ -1,3 +1,4 @@
+import './lib/inngest-paused.mjs'; // TEMPORARY: stop Cloud calls before any work.
 // Scoped, real deployed acceptance. No provider mocks or direct plan/job writes.
 // Reuse the same artifact on every invocation; launch never repeats admission.
 // Run modes sequentially: each updates the same acceptance artifact.

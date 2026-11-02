@@ -1,3 +1,4 @@
+import './lib/inngest-paused.mjs'; // TEMPORARY: stop Cloud calls before any work.
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';

@@ -1,6 +1,6 @@
 import "server-only";
 import { Inngest } from "inngest";
-import { localJobsOnly } from "./execution-policy";
+import { inngestExecutionPaused, localJobsOnly } from "./execution-policy";
 
 // Explicit local opt-in. NODE_ENV=production always keeps SDK verification on,
 // including when someone accidentally deploys INNGEST_DEV=1.
@@ -23,7 +23,8 @@ export const inngest = new Inngest({
       console.error("Workflow SDK error.", { code: "WORKFLOW_ERROR" }),
   },
   fetch: async (input, init) => {
-    if (localJobsOnly()) throw new Error("WORKFLOW_EXECUTION_DISABLED");
+    // TEMPORARY: block every SDK transport, including sends and sync retries.
+    if (inngestExecutionPaused() || localJobsOnly()) throw new Error("WORKFLOW_EXECUTION_DISABLED");
     return fetch(input, {
       ...init,
       cache: "no-store",

@@ -1,3 +1,4 @@
+import './lib/inngest-paused.mjs'; // TEMPORARY: stop Cloud calls before any work.
 // No admission, generation or provider submission. Reuses accepted real media.
 // preflight/media are read-only. verify/duplicate require deployed migration 015.
 import assert from 'node:assert/strict';

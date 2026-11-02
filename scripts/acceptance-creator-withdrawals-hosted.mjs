@@ -1,3 +1,4 @@
+import './lib/inngest-paused.mjs'; // TEMPORARY: stop Cloud calls before any work.
 // Explicit acceptance against deployed Sceenyk/Sandbox, reserved Clerk test
 // identities only. Provider recipient/evidence remain private in the temp folder.
 import assert from 'node:assert/strict';

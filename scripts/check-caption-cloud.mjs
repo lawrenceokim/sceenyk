@@ -1,3 +1,4 @@
+import './lib/inngest-paused.mjs'; // TEMPORARY: stop Cloud calls before any work.
 // Read-only by default; --sync registers the already deployed functions with Inngest.
 import assert from 'node:assert/strict';
 import {createHmac} from 'node:crypto';

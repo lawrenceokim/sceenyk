@@ -6,6 +6,7 @@ import { compositionPlanSchema } from "@/lib/composition/contract";
 import { getPricingConfiguration } from "@/lib/pricing/config";
 import { projectIdSchema } from "@/lib/projects/validation";
 import { attemptGenerationDispatch } from "./dispatch";
+import { inngestExecutionPaused } from "@/lib/workflows/execution-policy";
 import {
   canAdvanceStage,
   canTransition,
@@ -140,6 +141,10 @@ export async function createGenerationJob(
   const parsed = confirmGenerationSchema.safeParse(input);
   if (!parsed.success)
     return { ok: false, code: "INVALID_INPUT", message: "Review the generation cost before confirming." };
+  // TEMPORARY: do not reserve credits or queue new legacy Inngest work while
+  // dispatch is paused. Existing status reads and local UGC runners still work.
+  if (inngestExecutionPaused())
+    return { ok: false, code: "UNAVAILABLE", message: "Background generation is temporarily paused." };
   const database = createDatabaseClient();
   const owner = user.id;
   const { data, error } = await database.rpc("confirm_generation_quote", {

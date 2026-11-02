@@ -1,3 +1,4 @@
+import './lib/inngest-paused.mjs'; // TEMPORARY: stop Cloud calls before any work.
 // Reuses the accepted immutable 10s job. Never admits a job or buys provider work.
 // Prints safe metadata only; private keys/capabilities never enter the artifact.
 import assert from 'node:assert/strict';

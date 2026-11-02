@@ -1,5 +1,11 @@
 # Architecture Context
 
+## Temporary Inngest shutdown (2026-11-02)
+
+All hosted Inngest entry points are temporarily disconnected to reduce Vercel function usage. The first terminal `vercel.json` routing rule returns 204 for `/api/inngest` and `/api/ingest` before application routing. The fallback application route imports no services and immediately returns 204 for all seven HTTP methods. The former signed SDK serve registration is preserved in unreferenced `lib/workflows/legacy-route.ts`; all workflow implementations, schedules and retry logic remain available for deliberate restoration. An unconditional code pause blocks SDK transport, outbox dispatch and new legacy admission before credit reservations, regardless of environment flags. Eight manual Cloud tools fail before any work. Existing local-worker policy, local UGC/V3 work, status reads and direct payments/webhooks are preserved; automatic Inngest earnings/payout reconciliation is paused.
+
+[Complete source inventory, changed files and restoration](inngest-pause.md). Existing Cloud schedules/retries and old deployment URLs are external state and must also be paused/retired to stop incoming HTTP traffic itself. No deployment or Cloud state change has been performed; source/offline verification does not establish production invocation/billing reduction.
+
 ## Current-rate V3 display estimates (2026-11-01)
 
 The owned runtime DTO supplies separate `displayEstimatedCostMicrousd` values calculated from current configured model/mode rates and frozen planned segment durations. Final Video reviews, earlier attempts, joined videos and Package totals/segment rows use these presentation values. Frozen packages, quotes, paid intents, actual provider cost and authorization/preflight amounts retain their saved values; the display calculation cannot admit work or reprice execution. Unknown model rates retain the saved estimate. Reference-to-Video uses the observed Sceenyk testing rate ($6.17/30s, stored at whole micro-USD precision), not a guaranteed provider tariff. No persistence or migration is required.
