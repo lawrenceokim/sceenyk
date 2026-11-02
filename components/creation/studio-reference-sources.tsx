@@ -1,7 +1,7 @@
 "use client";
 
 import { useId, useRef } from "react";
-import { ImageIcon, Plus, X } from "lucide-react";
+import { ImageIcon, LoaderCircle, Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AccountAction } from "@/components/account-action";
 import { LocalMediaThumbnail } from "./local-media-preview";
@@ -51,13 +51,17 @@ export function StudioReferenceSources({ label, addLabel, role, references, onAd
     {references.length > 0 && <ul className="mt-3 flex min-w-0 flex-wrap gap-2" aria-label={label}>
       {images.map(({ local, asset }) => {
         const filename = local?.file.name ?? asset?.filename ?? label;
+        const uploading = !!local && signedIn && uploadStates[local.id]?.status !== "failed";
         return <li key={local?.id ?? asset?.id} className="min-w-0 max-w-full basis-full">
-          <div className="relative size-16 shrink-0 rounded-lg border border-border bg-field" title={filename}>
+          <div className="relative size-16 shrink-0 rounded-lg border border-border bg-field" title={filename} aria-busy={uploading}>
           <div className="relative size-full overflow-hidden rounded-lg">
             {local ? <LocalMediaThumbnail media={local} className="size-full" alt={filename} />
               : asset?.status === "uploaded" ? <PersistentMediaPreview asset={asset} thumbnail />
                 : <span className="flex size-full items-center justify-center"><ImageIcon className="size-5 text-muted-foreground" aria-hidden="true" /></span>}
           </div>
+          {uploading && <span aria-hidden="true" className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-lg bg-background/40">
+            <LoaderCircle className="size-5 text-foreground motion-safe:animate-spin" />
+          </span>}
           <button type="button" disabled={busy} aria-label={`Remove ${filename}`}
             className="absolute -top-1 -right-1 flex size-5 cursor-pointer items-center justify-center rounded-full border border-border bg-card text-foreground shadow-sm outline-none transition-colors duration-[var(--motion-micro)] ease-[var(--motion-ease)] hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none [@media(pointer:coarse)]:size-7"
             onClick={() => { if (local) onRemoveLocal(local.id); else if (asset) onRemoveAsset(asset); add.current?.focus(); }}>
@@ -65,6 +69,7 @@ export function StudioReferenceSources({ label, addLabel, role, references, onAd
           </button>
           </div>
           {!local && asset?.status === "uploaded" && <div className="mt-2 min-w-0 space-y-1">
+            <p role="status" className="text-[11px] text-muted-foreground">Image saved</p>
             <label htmlFor={`${id}-${asset.id}-name`} className="block text-[11px] font-medium text-foreground">
               {role === "character" ? "Character name" : "Product / Prop name"}
             </label>

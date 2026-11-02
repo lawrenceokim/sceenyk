@@ -2,6 +2,8 @@
 
 ## Studio project deletion lifecycle (2026-11-02)
 
+Upload-focus correction: same-document focus/visibility checks run in the background and keep an already admitted editor visible, including on transient read failure. Actual retained-route reactivation and `pageshow` still gate reveal, while confirmed deletion or an authoritative missing-project result still resets/replaces to Studio. This prevents native file-picker return from hiding Activity and cancelling its upload effects; deletion actions/markers/redirects remain unchanged.
+
 Successful project deletion also invalidates `/studio` and publishes an ID-only deletion marker to retained editors (with a browser-storage fallback/signal across tabs). `StudioProjectGuard` is the single client admission/reset boundary for both loaded project routes and Studio drafts that acquire a saved ID without remounting. It uses the existing owner-scoped, uncached `getOwnedProject` through a read-only action on activation/focus/pageshow; missing/inaccessible projects replace navigation to `/studio`, while read failures retain the draft behind an error/retry surface. The server project loader redirects missing/inaccessible projects before loading media/workflow status. Nested React Activity preserves valid drafts while existence is checked; confirmed deletion/missing lookup remounts only the affected editor with canonical new-project props and stops its existing polling effects. No project is created merely by opening Studio. The guest auth-handoff draft contains no saved project ID and remains independent. Project deletion RPC, authorization, generated-media storage and all UGC generation pipelines remain unchanged.
 
 ## Temporary Inngest shutdown (2026-11-02)

@@ -169,6 +169,18 @@ try {
   await evaluate('window.originalFile=window.editorFile;window.seedProject()');
   await wait('window.checks.length>0');
   check('first save and native URL binding preserve editor and local File', await evaluate('window.mounts===1&&window.editorFile===window.originalFile&&location.pathname.endsWith(window.fixtureA)'));
+  await evaluate('window.preFocusCleanups=window.cleanups;window.holdCheck=true;window.dispatchEvent(new Event("focus"))');
+  await wait('!!window.releaseCheck');
+  check('file-picker focus checks do not hide Studio or stop its effects', await evaluate(`!!(${visible})&&window.cleanups===window.preFocusCleanups&&window.editorFile===window.originalFile`));
+  await evaluate('window.holdCheck=false;window.releaseCheck()');
+  await wait(`!!(${visible})`);
+  await evaluate('window.checkError=true;window.beforeFocusChecks=window.checks.length;window.dispatchEvent(new Event("focus"))');
+  await wait('window.checks.length>window.beforeFocusChecks');
+  check('transient file-picker focus-check failure preserves the admitted editor', await evaluate(`!!(${visible})&&window.cleanups===window.preFocusCleanups`));
+  await evaluate('window.checkError=false;window.releaseCheck=null;window.holdCheck=true;document.dispatchEvent(new Event("visibilitychange"))');
+  await wait('!!window.releaseCheck');
+  check('same-document visibility checks keep Studio visible during upload', await evaluate(`!!(${visible})&&window.cleanups===window.preFocusCleanups`));
+  await evaluate('window.holdCheck=false;window.releaseCheck()');
   await evaluate('window.late=window.deliverLate;window.navigate("/projects")');
   await wait('!!document.querySelector("[data-projects]")');
   check('navigating away cleans up polling', await evaluate('window.cleanups>0'));
@@ -211,7 +223,7 @@ try {
   // Existence is still checked when no local deletion notification was received.
   await evaluate('window.openOther()'); await wait(`!!(${visible})&&window.editorState.title==="Saved B"`);
   await evaluate('window.editTitle("Unsaved B");window.navigate("/projects")'); await wait('!!document.querySelector("[data-projects]")');
-  await evaluate('window.markDeleted(window.fixtureA);window.holdCheck=true;window.navigate("/projects/"+window.fixtureB)');
+  await evaluate('window.markDeleted(window.fixtureA);window.releaseCheck=null;window.holdCheck=true;window.navigate("/projects/"+window.fixtureB)');
   await wait('!!window.releaseCheck');
   check('retained project stays hidden until fresh DB verification', await evaluate(`!(${visible})`));
   await evaluate('window.holdCheck=false;window.releaseCheck()'); await wait(`!!(${visible})`);

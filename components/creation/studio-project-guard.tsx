@@ -60,27 +60,32 @@ export function StudioProjectGuard({ initialProjectId, children }: {
     const verify = async (hide: boolean) => {
       const version = ++request;
       if (hide) setStatus({ id: projectId, phase: "checking" });
+      const failed = () => setStatus(current => !hide && current.id === projectId && current.phase === "ready"
+        ? current : { id: projectId, phase: "error" });
       try {
         const result = await projectAvailabilityAction(projectId);
         if (!active || version !== request || isProjectDeleted(projectId)) return;
-        if (!result.ok) setStatus({ id: projectId, phase: "error" });
+        if (!result.ok) failed();
         else if (result.available) setStatus({ id: projectId, phase: "ready" });
         else {
           setStatus({ id: projectId, phase: "missing" });
           resetToNewProject();
         }
       } catch {
-        if (active && version === request) setStatus({ id: projectId, phase: "error" });
+        if (active && version === request) failed();
       }
     };
-    const onActive = () => { if (document.visibilityState !== "hidden") void verify(true); };
+    // A native file picker returns focus/visibility to this SAME editor. Check
+    // existence in the background without hiding Activity and aborting uploads.
+    const onActive = () => { if (document.visibilityState !== "hidden") void verify(false); };
+    const onPageShow = () => { if (document.visibilityState !== "hidden") void verify(true); };
     void verify(false);
-    window.addEventListener("pageshow", onActive);
+    window.addEventListener("pageshow", onPageShow);
     window.addEventListener("focus", onActive);
     document.addEventListener("visibilitychange", onActive);
     return () => {
       active = false;
-      window.removeEventListener("pageshow", onActive);
+      window.removeEventListener("pageshow", onPageShow);
       window.removeEventListener("focus", onActive);
       document.removeEventListener("visibilitychange", onActive);
     };
