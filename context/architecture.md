@@ -1,5 +1,9 @@
 # Architecture Context
 
+## Current-rate V3 display estimates (2026-11-01)
+
+The owned runtime DTO supplies separate `displayEstimatedCostMicrousd` values calculated from current configured model/mode rates and frozen planned segment durations. Final Video reviews, earlier attempts, joined videos and Package totals/segment rows use these presentation values. Frozen packages, quotes, paid intents, actual provider cost and authorization/preflight amounts retain their saved values; the display calculation cannot admit work or reprice execution. Unknown model rates retain the saved estimate. Reference-to-Video uses the observed Sceenyk testing rate ($6.17/30s, stored at whole micro-USD precision), not a guaranteed provider tariff. No persistence or migration is required.
+
 ## Controlled V3 video execution (2026-11-01)
 
 The existing local V3 worker submits one continuous frozen Seedance reference-to-video request. Fresh signed delivery queries may replace expired queries for the same ordered verified private objects; no package, prompt, reference or price approval is rebuilt. Migration 087 retains immutable authorizations/intents, unique consumed authorization IDs and one active package/segment run. Only confirmed deletion releases that segment; another paid action requires a fresh explicit finite authorization. Accepted request IDs persist in SQL and a local receipt before polling. Unknown submission outcomes never trigger POST replay. Polling, existing-result download and private publication continue with paid transport disabled.

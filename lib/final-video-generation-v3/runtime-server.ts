@@ -27,6 +27,7 @@ export { projectBrief, creativeBriefHash, referenceOriginals, approvedArtifacts,
 import { enqueueLocation, isLocationDirectorTask, locationTaskStatus, resumeLocation, locationDocument } from "./location-runtime";
 import { discardReference, discardableReferences } from "./reference-retention";
 import { packageBuildDetailsSchema } from "./package-status";
+import { currentDisplayPricing } from "./pricing/display-pricing";
 
 export { inspectRuntime } from "./runtime-inspection";
 import { inspectRuntime } from "./runtime-inspection";
@@ -37,6 +38,11 @@ function videoStage(output: unknown): { stage: string } | null {
 export async function runtimeDto(w: RuntimeWorkspace) {
   const brief = await projectBrief(w.project.owner_user_id, w.project.project_id), originals = await referenceOriginals(w.project.owner_user_id, w.project.project_id);
   let preflight = null; try { preflight = await inspectRuntime(w); } catch { /* Stale/partial creative inputs preserve previous previews. */ }
+  const displayPricing = (packageId: string) => {
+    const saved = w.packages.find(p => p.id === packageId);
+    return saved ? currentDisplayPricing(readFrozenPackage(saved.document)) : null;
+  };
+  const preflightPricing = preflight ? displayPricing(preflight.packageId) : null;
   const previewUrl = async (asset: PrivateAsset) => { try { return (await signPrivate(asset)).url; } catch { return null; } };
   const visible=w.artifacts.filter(a=>!["character","product","location"].includes(a.kind)||a.approved_at||!a.rejected_at&&latestArtifact(w,a.kind)?.id===a.id);
   const artifacts = await Promise.all(visible.map(async a => ({ id: a.id, kind: a.kind, version: a.version, activeSlot: latestArtifact(w, a.kind)?.id === a.id,
@@ -50,6 +56,7 @@ export async function runtimeDto(w: RuntimeWorkspace) {
   const runs = await Promise.all(w.runs.map(async r => ({ id: r.id, packageId: r.package_id, segmentId: r.intent.segmentId, state: r.state,
     provider: r.intent.provider, model: r.intent.model, resolution: "480p", aspectRatio: String(r.intent.body.aspect_ratio),
     estimatedCostMicrousd: r.intent.estimatedCostMicrousd, actualCostMicrousd: r.observation?.actualCostMicrousd ?? null,
+    displayEstimatedCostMicrousd: displayPricing(r.package_id)?.segments.find(s => s.id === r.intent.segmentId)?.estimatedCostMicrousd ?? r.intent.estimatedCostMicrousd,
     stage: videoStage(w.tasks.find(t => t.kind === "video" && t.input.runId === r.id)?.output),
     outputHostname: v3LocalEnabled() && r.error_code === "OUTPUT_HOST_APPROVAL_REQUIRED" ? outputHostname(r.observation?.resultUrl ?? null) : null,
     current: r.current, completedAt: r.completed_at, errorCode: r.error_code, quality: r.quality, actualDurationMs: r.result?.durationMs ?? null, hasAudio: r.result?.hasAudio ?? null,
@@ -64,6 +71,7 @@ export async function runtimeDto(w: RuntimeWorkspace) {
     return { id: a.id, packageId: doc.id, segmentId: "joined", state, completedAt: a.approved_at,
       provider: "higgsfield", model: "multiple segments", resolution: "480p", aspectRatio: doc.source.storyboardContent.aspectRatio,
       estimatedCostMicrousd: doc.pricing.totalMicrousd, actualCostMicrousd: null, stage: null, outputHostname: null,
+      displayEstimatedCostMicrousd: currentDisplayPricing(doc).totalMicrousd,
       current: !!w.source?.current && w.source.revision === doc.sourceRevision && w.runs.filter(r => r.package_id === doc.id).every(r => r.current),
       errorCode: deletion?.error_code ?? null, quality: null, actualDurationMs: asset.durationMs, hasAudio: asset.hasAudio,
       preview: !a.rejected_at ? await previewUrl(asset) : null, expectedDialogue: doc.source.storyboardContent.scenes.flatMap(s => s.speech),
@@ -109,7 +117,9 @@ export async function runtimeDto(w: RuntimeWorkspace) {
       current, createdAt: t.created_at, leaseUntil: t.lease_until, diagnostics, location, recoveryAvailable: location?.recoveryAvailable ?? diagnostics?.recoveryAvailable ?? false,
       canStartNew: location?.canGenerate ?? diagnostics?.canStartNew ?? false };
   }));
-  return { projectId: w.project.project_id, packageStale: w.packages.length > 0 && !preflight, artifacts, runs: [...runs, ...joined], preflight, complete,
+  return { projectId: w.project.project_id, packageStale: w.packages.length > 0 && !preflight, artifacts, runs: [...runs, ...joined],
+    preflight: preflight ? { ...preflight, displayEstimatedCostMicrousd: preflightPricing?.totalMicrousd ?? preflight.estimatedCostMicrousd,
+      segments: preflight.segments.map(s => ({ ...s, displayEstimatedCostMicrousd: preflightPricing?.segments.find(d => d.id === s.id)?.estimatedCostMicrousd ?? s.estimatedCostMicrousd })) } : null, complete,
     referenceCleanup:{enabled:w.referenceCleanupPolicy,pendingCount:discardableReferences(w).length,
       ...(w.tasks.some(t=>t.input.referenceCleanup&&["queued","running"].includes(t.status))?{processing:true}:{})},
     tasks,

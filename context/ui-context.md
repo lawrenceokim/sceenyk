@@ -1,5 +1,9 @@
 # UI Context
 
+## Current-rate generated-video estimates (2026-11-01)
+
+Final Video, earlier attempts, joined-video review and Package total/segment estimates display current-rate calculations supplied separately by the owned runtime DTO. A historical 30s Seedance Reference-to-Video now displays ~$6.17 and 10s ~$2.06. Existing two-decimal formatting, actual-provider-cost labels, layout and controls remain. Maximum authorization and its suggested buffer still use the original saved quote; updating an approximate display estimate does not change consent or saved execution records.
+
 ## Local approximate V3 pricing (2026-10-31)
 
 The existing Package tab labels totals `Estimated video cost: ~$X.XX`, explains that the configured approximate rate is not a guaranteed provider charge, and shows per-segment estimates for multi-segment packages. Maximum authorized USD remains separate, defaults to a server-calculated configurable 20% buffer rounded upward to cents, and is editable before explicit checkbox/button approval. Changing the package selects a fresh suggested ceiling; editing or clearing it persists through status refreshes for that exact package. Approval acknowledges the next Final Video stage while paid generation stays disabled. Local pricing does not expire with signed request URLs; genuine input/approval failures remain visible. Existing shared controls, Tailwind utilities, accessibility and layout are retained.

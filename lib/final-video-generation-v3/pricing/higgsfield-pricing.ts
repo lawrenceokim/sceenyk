@@ -2,13 +2,15 @@ import { manualPricingSchema, type ManualPricing } from "./contract";
 import type { CostEstimate, VideoCommand } from "../contract";
 import { v3Digest } from "../identity";
 
-// Owner-supplied approximate midpoint rates, not a provider quote or guaranteed charge.
-export const pricingConfiguration = Object.freeze({ version: "seedance-2026-10-31", date: "2026-10-31",
+// Sceenyk testing estimates, not official provider prices or guaranteed charges.
+export const pricingConfiguration = Object.freeze({ version: "seedance-observed-2026-11-01", date: "2026-11-01",
   source: "manual_provider_estimate" as const, authorizationBufferBasisPoints: 2000, authorizationLifetimeMs: 24 * 60 * 60 * 1000,
   rates: Object.freeze([
     Object.freeze({ provider: "higgsfield", model: "bytedance/seedance-2.5/text-to-video", mode: "text-to-video", rate: 470100 }),
     Object.freeze({ provider: "higgsfield", model: "bytedance/seedance-2.5/image-to-video", mode: "image-to-video", rate: 470100 }),
-    Object.freeze({ provider: "higgsfield", model: "bytedance/seedance-2.5/reference-to-video", mode: "reference-to-video", rate: 564100 }),
+    // Observed $6.17 / 30s at 480p, 9:16, audio enabled; rounded to whole micro-USD for the existing estimator.
+    Object.freeze({ provider: "higgsfield", model: "bytedance/seedance-2.5/reference-to-video", mode: "reference-to-video",
+      observedUsdPerSecond: "0.2056666667", rate: 205667 }),
   ]) });
 export const pricingSourceUrl = "https://open.higgsfield.ai/models/bytedance/seedance-2.5/reference-to-video/playground";
 export function getEstimatedRate(provider: string, model: string, mode: string) {

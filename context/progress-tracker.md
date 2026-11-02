@@ -1,5 +1,11 @@
 # Progress Tracker
 
+## Current-rate V3 generated-video estimate displays (2026-11-01)
+
+Implemented a read-only current-pricing projection in `pricing/display-pricing.ts` and the owned `runtimeDto`, consumed by every V3 Final Video estimate (including earlier attempts/joined outputs) and Package total/segment rows in `v3-workflow-preview.tsx`. The observed Reference-to-Video rate from $6.17/30s is recorded as $0.2056666667/sec and stored at the existing whole micro-USD precision ($0.205667/sec), yielding ~$2.06/10s and ~$6.17/30s. Original package/quote/run snapshots, actual costs, authorization limits, suggested buffer, actions and generation/recovery/storage/provider code remain unchanged; Text/Image rates are unchanged. No provider request, regeneration, package rebuild, data mutation, schema/migration, browser run or deployment.
+
+Verification: focused historical frozen-package display checks cover 10s/20s/30s, per-segment/joined totals, unknown-model fallback and unchanged saved hashes with zero network calls. The existing actual component/handler suite passes 125 checks, including current display values with historical authorization limits and unchanged consent/deletion/recovery handlers. TypeScript, focused ESLint and whitespace checks pass. Browser confirmation is manual after refreshing Studio; existing saved estimates are intentionally retained in persistence.
+
 ## Controlled V3 Higgsfield video path (2026-11-01)
 
 **Implemented and focused offline verification passed. Migration 087 and live browser/provider/billing acceptance remain pending.** The named approved package/version/hash, original uploads, Character v2/Product v1/Location v3 and Storyboard stay unchanged. A read-only live check confirms a current 30s single-segment package, ~$16.92 estimate, one-request $20.31 authorization expiring 2026-11-01 13:44 UTC, valid credentials/account configuration and private reference SHA-256 readback. No provider/account-access probe, mutation, worker or paid request has run. Local activation IDs are scoped to this exact project/package with transport **0** and no guessed output host.

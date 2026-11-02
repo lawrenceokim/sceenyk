@@ -69,7 +69,7 @@ function VideoReview({ run, act, busy, segmentCount }: { run: RuntimeDto["runs"]
     {run.preview && <video controls playsInline preload="metadata" src={run.preview} className="max-h-[65dvh] w-full rounded-lg bg-black" />}
     <p className="text-sm text-muted-foreground">Actual duration: {run.actualDurationMs === null ? "Not measured" : `${run.actualDurationMs / 1000}s`}. Audio: {run.hasAudio === null ? "Not measured" : run.hasAudio ? "Present" : "Absent"}.</p>
     <p className="text-sm text-muted-foreground">{run.aspectRatio} · {run.resolution} · {run.provider} · {run.model}</p>
-    <p className="text-sm text-muted-foreground">Estimated cost: ~{money(run.estimatedCostMicrousd)}. Actual provider cost: {run.actualCostMicrousd === null ? "Unknown" : money(run.actualCostMicrousd)}.</p>
+    <p className="text-sm text-muted-foreground">Estimated cost: ~{money(run.displayEstimatedCostMicrousd ?? run.estimatedCostMicrousd)}. Actual provider cost: {run.actualCostMicrousd === null ? "Unknown" : money(run.actualCostMicrousd)}.</p>
     <details className="text-sm"><summary className="cursor-pointer">Expected dialogue and shot timing</summary>
       <ul className="mt-2 space-y-1">{run.expectedDialogue.map((line, i) => <li key={i}>{line.startMs / 1000}–{line.endMs / 1000}s · {line.speaker}: {line.text}</li>)}</ul>
       <p className="mt-2">{run.shotTimings.map(s => `Shot ${s.number}: ${s.startMs / 1000}–${s.endMs / 1000}s`).join("; ")}</p>
@@ -236,9 +236,9 @@ export function V3WorkflowPreview({ initial, projectId, assets, dirty, revision 
           <p>Package ID: Not assigned · Segment ID: Not assigned · Estimate status: Not requested · Recoverable: No</p></details>}
         {packageTask && <PackageStatus task={packageTask} technical={workspace.localEnabled} />}
         {p && <><p className="text-sm">{p.durationMs / 1000}s · {p.aspectRatio} · {p.currentness === "current" ? "Ready for review" : "Needs rebuilding"}</p>
-          <p className="text-sm">Estimated video cost: {p.estimatedCostMicrousd === null ? "Unavailable" : `~${money(p.estimatedCostMicrousd)}`}</p>
+          <p className="text-sm">Estimated video cost: {(p.displayEstimatedCostMicrousd ?? p.estimatedCostMicrousd) === null ? "Unavailable" : `~${money(p.displayEstimatedCostMicrousd ?? p.estimatedCostMicrousd)}`}</p>
           <p className="text-sm text-muted-foreground">Approximate Sceenyk estimate based on the configured Higgsfield model rate. The real provider charge may differ.</p>
-          {p.segmentCount > 1 && <ul className="space-y-1 text-sm">{p.segments.map((s, i) => <li key={s.id}>Segment {i + 1} · {s.durationMs / 1000}s: ~{money(s.estimatedCostMicrousd)}</li>)}</ul>}
+          {p.segmentCount > 1 && <ul className="space-y-1 text-sm">{p.segments.map((s, i) => <li key={s.id}>Segment {i + 1} · {s.durationMs / 1000}s: ~{money(s.displayEstimatedCostMicrousd ?? s.estimatedCostMicrousd)}</li>)}</ul>}
           <p className="text-sm">Authorized maximum: {money(p.authorizedMaximumMicrousd)}</p>
           <label className="block space-y-1 text-sm">Maximum authorized USD<input type="number" min="0" step="0.01" className={field} value={maximumValue} onChange={e => setMaximum({ packageHash: p.packageHash, value: e.target.value })} /></label>
           <p className="text-xs text-muted-foreground">The suggested maximum includes a configurable {p.suggestedAuthorizationBufferPercent}% buffer. Review or edit it before approving; it is a spending limit, not a guaranteed charge.</p>

@@ -129,9 +129,10 @@ try {
   find(render(),node=>node.type==='button'&&text(node)==='Package').props.onClick();
   status=find(render(),node=>node.type?.name==='PackageStatus');equal(text(status.type(status.props)).includes('Package technical details'),false);
   slots=[];props.initial={...initial,tasks:[{...packageTask,status:'done',packageBuild:{...packageBuild,stage:'ready',code:null,estimateStatus:'available'}}],
-    preflight:{durationMs:30000,aspectRatio:'9:16',currentness:'current',estimatedCostMicrousd:16923000,authorizedMaximumMicrousd:null,packageHash:'hash',issues:[],transportEnabled:false,canSubmit:false,quoteId:'quote',suggestedMaximumMicrousd:20310000,suggestedAuthorizationBufferPercent:20}};
+    preflight:{durationMs:30000,aspectRatio:'9:16',currentness:'current',estimatedCostMicrousd:16923000,displayEstimatedCostMicrousd:6170010,authorizedMaximumMicrousd:null,packageHash:'hash',issues:[],transportEnabled:false,canSubmit:false,quoteId:'quote',suggestedMaximumMicrousd:20310000,suggestedAuthorizationBufferPercent:20}};
   find(render(),node=>node.type==='button'&&text(node)==='Package').props.onClick();
-  equal(text(render()).includes('Estimated video cost: ~$16.92'),true);
+  equal(text(render()).includes('Estimated video cost: ~$6.17'),true);
+  equal(text(render()).includes('$16.92'),false);
   equal(text(render()).includes('real provider charge may differ'),true);
   let ceiling=find(render(),node=>node.type==='input'&&node.props.type==='number');equal(ceiling.props.value,'20.31');
   ceiling.props.onChange({target:{value:'25.00'}});ceiling=find(render(),node=>node.type==='input'&&node.props.type==='number');equal(ceiling.props.value,'25.00');
@@ -141,16 +142,22 @@ try {
   approvePackage.props.onClick();equal(calls.length,1);equal(calls[0].action,'authorize');equal(calls[0].maximumMicrousd,25000000);equal(calls[0].operatorApproved,true);
   resolveRequest(Response.json({ok:true,workspace:props.initial}));await new Promise(resolve=>setTimeout(resolve,0));
   status=find(render(),node=>node.type?.name==='PackageStatus');equal(text(status.type(status.props)).includes('Generation Package ready'),true);
-  slots=[];props.initial={...props.initial,tasks:[{...packageTask,status:'done',packageBuild:{...packageBuild,estimateStatus:'unavailable'}}],preflight:{...props.initial.preflight,estimatedCostMicrousd:null,quoteId:null}};
+  slots=[];props.initial={...props.initial,tasks:[{...packageTask,status:'done',packageBuild:{...packageBuild,estimateStatus:'unavailable'}}],preflight:{...props.initial.preflight,estimatedCostMicrousd:null,displayEstimatedCostMicrousd:null,quoteId:null}};
   find(render(),node=>node.type==='button'&&text(node)==='Package').props.onClick();
   equal(find(render(),node=>node.type?.name==='Button'&&text(node)==='Approve Generation Package').props.disabled,true);
-  slots=[];props.initial={...props.initial,preflight:{...props.initial.preflight,estimatedCostMicrousd:28205000}};
+  slots=[];props.initial={...props.initial,preflight:{...props.initial.preflight,estimatedCostMicrousd:28205000,displayEstimatedCostMicrousd:undefined}};
   find(render(),node=>node.type==='button'&&text(node)==='Package').props.onClick();equal(text(render()).includes('Estimated video cost: ~$28.21'),true);
+  slots=[];props.initial={...props.initial,preflight:{...props.initial.preflight,segmentCount:2,displayEstimatedCostMicrousd:8226680,
+    segments:[{id:'first',durationMs:10000,estimatedCostMicrousd:5641000,displayEstimatedCostMicrousd:2056670},
+      {id:'second',durationMs:30000,estimatedCostMicrousd:16923000,displayEstimatedCostMicrousd:6170010}]}};
+  find(render(),node=>node.type==='button'&&text(node)==='Package').props.onClick();
+  equal(text(render()).includes('Estimated video cost: ~$8.23'),true);
+  equal(text(render()).includes('Segment 1 · 10s: ~$2.06'),true);equal(text(render()).includes('Segment 2 · 30s: ~$6.17'),true);
   // Actual Final Video handlers: confirmation cannot spend, rejection is explicit, and host recovery reveals no URL.
   slots=[];
   const video={id:'saved-video',packageId:'saved-package',segmentId:'segment-1',state:'awaiting_review',current:true,completedAt:null,errorCode:null,quality:null,
     actualDurationMs:30000,hasAudio:true,preview:'https://private.example.test/preview',expectedDialogue:[],shotTimings:[],provider:'higgsfield',model:'bytedance/seedance-2.5/reference-to-video',
-    aspectRatio:'9:16',resolution:'480p',estimatedCostMicrousd:16923000,actualCostMicrousd:null,stage:{stage:'V3_FINAL_VIDEO_READY_FOR_REVIEW'},outputHostname:null};
+    aspectRatio:'9:16',resolution:'480p',estimatedCostMicrousd:16923000,displayEstimatedCostMicrousd:6170010,actualCostMicrousd:null,stage:{stage:'V3_FINAL_VIDEO_READY_FOR_REVIEW'},outputHostname:null};
   const videoProps={initial:{projectId:'fixture-project',artifacts:[],tasks:[],runs:[video],preflight:null,processing:false,complete:false},projectId:'fixture-project',assets:[],dirty:false,revision:'saved'};
   cursor=0;let outer=V3WorkflowPreview(videoProps);
   find(outer,node=>node.type==='button'&&text(node)==='Final Video').props.onClick();cursor=0;outer=V3WorkflowPreview(videoProps);
@@ -158,6 +165,10 @@ try {
   slots=[];const reviewProps={...review.props,act:async(action,payload)=>{reviewCalls.push({action,...payload});return true;}};
   const renderReview=()=>{cursor=0;return review.type(reviewProps);};
   let reviewTree=renderReview();equal(text(reviewTree).includes('Actual provider cost: Unknown'),true);equal(text(reviewTree).includes('9:16'),true);equal(text(reviewTree).includes('480p'),true);
+  equal(text(reviewTree).includes('Estimated cost: ~$6.17'),true);equal(text(reviewTree).includes('$16.92'),false);
+  reviewProps.run={...video,segmentId:'joined',model:'multiple segments',displayEstimatedCostMicrousd:12340020,actualCostMicrousd:13000000};
+  equal(text(renderReview()).includes('Estimated cost: ~$12.34. Actual provider cost: $13.00'),true);
+  reviewProps.run=video;
   equal(find(reviewTree,node=>node.type?.name==='Dialog').props.open,false);
   find(reviewTree,node=>node.type?.name==='Button'&&text(node)==='Reject and Delete').props.onClick();
   equal(reviewCalls.length,0);reviewTree=renderReview();let videoDialog=find(reviewTree,node=>node.type?.name==='Dialog');equal(videoDialog.props.open,true);
