@@ -27,6 +27,7 @@ import type { CreationType, UgcType } from "@/lib/projects/options";
 import { mediaKindForMime } from "@/lib/media/validation";
 import { CreationPreview } from "./creation-preview";
 import { StudioLayout } from "./studio-layout";
+import { StudioPanelPortal, StudioPanelTarget, type StudioPreviewMedia } from "./studio-workspace-panels";
 import { StudioInspectorSection } from "./studio-inspector-section";
 import { StudioAspectControl } from "./studio-aspect-control";
 import { GenerationSettings } from "./generation-settings";
@@ -426,7 +427,7 @@ function WorkspaceEditor({
           }}
           hasLocalFiles={freestyle.files.length > 0}
           creationType={v3 ? "ugc" : creationType}
-          ugcControls={studioInputs.creationType === "ugc" ? v3 ? <p className="text-xs text-muted-foreground">Generate and review your references in Preview.</p> : <UgcGenerationControls
+          ugcControls={studioInputs.creationType === "ugc" ? v3 ? undefined : <UgcGenerationControls
             progress={ugcProgress}
             projectId={projectId} revision={JSON.stringify([brief, studioInputs.generationValidation, mediaUpload.assets, referenceNameValues])}
             localIssues={studioInputs.generationValidation.issues} dirty={dirty || saveState.status === "saving"}
@@ -440,6 +441,12 @@ function WorkspaceEditor({
         >
             {({ controls, output, status, label }) => (
               <StudioLayout
+                media={studioInputs.creationType === "ugc" ? [...studioReferenceImages(studioInputs.characters), ...studioReferenceImages(studioInputs.products)].flatMap(({ local, asset }): StudioPreviewMedia[] =>
+                  local ? [{ id: local.id, label: local.file.name, kind: "local", media: local }]
+                    : asset?.status === "uploaded" ? [{ id: asset.id, label: asset.filename, kind: "asset", asset }] : []) : undefined}
+                workflow={creationType === "ugc" ? v3 && projectId ? <V3WorkflowPreview key={projectId} projectId={projectId} initial={initialV3} assets={mediaUpload.assets}
+                  dirty={dirty || saveState.status === "saving" || mediaUpload.busy || selectedFiles.some(file => file.studioRole === "character" || file.studioRole === "product")}
+                  revision={JSON.stringify([savedBrief, mediaUpload.assets])} /> : <><StudioPanelPortal panel="workflow">{controls}</StudioPanelPortal><UgcWorkflowPreview key={projectId ?? "new"} projectId={projectId ?? ""} progress={ugcProgress} /></> : undefined}
                 sources={
                   <>
                     {preferencesUnavailable && <p role="status" className="text-caption text-muted-foreground">Creation defaults unavailable.</p>}
@@ -499,6 +506,7 @@ function WorkspaceEditor({
                         onAdd={files => addFiles(files, "product")} onRemoveLocal={removeFile} onRemoveAsset={removeReference} onNameChange={changeReferenceName}
                         onUpload={mediaUpload.upload} onRecover={mediaUpload.recover} uploadStates={mediaUpload.uploadStates}
                         busy={mediaUpload.busy || saveState.status === "saving"} signedIn={signedIn} authReady={authReady} />
+                      <StudioPanelTarget panel="location" />
                       {(mediaError || mediaUpload.assetError) && <p role="status" className="break-words text-xs text-destructive">{mediaError || mediaUpload.assetError}</p>}
                     </> : <MediaDropzone
           files={freestyle.files}
@@ -526,16 +534,14 @@ function WorkspaceEditor({
       studio-toolbar-status [&&]:block [&&]:max-w-[calc(50%_-_70px)] [&&]:min-w-[0] [&&]:overflow-hidden [&&]:text-ellipsis
       [&&]:whitespace-nowrap [&&]:text-[length:12px] [&&]:text-[color:var(--muted-foreground)] max-599:[&&]:hidden
       container-max-530:[&&]:hidden
-    `} role="status">{v3 ? "Preview" : creationType === "ugc" && ugcProgress.job ? ugcProgress.job.stageLabel : label}</span>
+    `} role="status">{creationType === "ugc" ? "Preview" : label}</span>
                     {save}
                   </>
                 }
                 stage={
                   <>
-                    {v3 && projectId && creationType === "ugc" ? <V3WorkflowPreview key={projectId} projectId={projectId} initial={initialV3} assets={mediaUpload.assets}
-                      dirty={dirty || saveState.status === "saving" || mediaUpload.busy || selectedFiles.some(file => file.studioRole === "character" || file.studioRole === "product")}
-                      revision={JSON.stringify([savedBrief, mediaUpload.assets])} /> : showUgcProgress && projectId ? <UgcWorkflowPreview key={projectId} projectId={projectId} progress={ugcProgress} /> : output}
-                    {!(v3 && creationType === "ugc") && !showUgcProgress && (!output || activeMedia || activeAsset) && (
+                    {creationType === "ugc" ? <CreationPreview settings={settings} creationType={creationType} ugcType={ugcType} /> : output}
+                    {creationType !== "ugc" && !showUgcProgress && (!output || activeMedia || activeAsset) && (
                       <CreationPreview settings={settings} creationType={creationType} ugcType={ugcType}
                         media={activeMedia} asset={activeAsset} />
                     )}
@@ -572,7 +578,7 @@ function WorkspaceEditor({
                       <p className="mt-2 text-caption text-muted-foreground">Narration follows your prompt.</p>
                     </section></StudioInspectorSection>
                     <div className="md:hidden">{status}</div>
-                    {controls}
+                    {creationType !== "ugc" && controls}
                   </>
                 }
               />

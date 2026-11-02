@@ -10,8 +10,9 @@ const bundle = await build({
   entryPoints: ['components/creation/studio-reference-sources.tsx'],
   bundle: true, write: false, platform: 'node', format: 'cjs', packages: 'external', jsx: 'automatic',
   plugins: [{ name: 'source-card-fixtures', setup(builder) {
-    builder.onResolve({ filter: /^(react|@\/components\/(ui\/button|account-action)|\.\/(local-media-preview|persistent-media-preview))$/ }, args => ({ path: args.path, namespace: 'fixture' }));
+    builder.onResolve({ filter: /^(react|@\/components\/(ui\/button|account-action)|\.\/(local-media-preview|persistent-media-preview|studio-workspace-panels))$/ }, args => ({ path: args.path, namespace: 'fixture' }));
     builder.onLoad({ filter: /.*/, namespace: 'fixture' }, args => {
+      if (args.path === './studio-workspace-panels') return { contents: 'export const useStudioPanels=()=>null;export function StudioPanelTarget(){return null;}' };
       if (args.path === 'react') return { contents: 'export const useId=()=>"fixture",useRef=()=>({current:null});' };
       const name = args.path.endsWith('button') ? 'Button' : args.path.endsWith('account-action') ? 'AccountAction' : args.path.endsWith('local-media-preview') ? 'LocalMediaThumbnail' : 'PersistentMediaPreview';
       return { contents: `export function ${name}(props){return props.children;}` };

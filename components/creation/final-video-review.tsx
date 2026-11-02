@@ -3,12 +3,14 @@
 import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import type { FinalAvailability } from "@/lib/final-video-generation/contract";
+import { useStudioPanels } from "./studio-workspace-panels";
 
 export function FinalVideoReview({ projectId, jobId, packageId, value, checkStatus, onSaved }: {
   projectId: string; jobId: string; packageId?: string; value?: FinalAvailability;
   checkStatus: () => void; onSaved: (value: FinalAvailability) => void;
 }) {
   const [busy, setBusy] = useState(false); const [message, setMessage] = useState<string | null>(null);
+  const panels = useStudioPanels();
   const requestId = useRef<string | null>(null); const review = value?.review;
   const retryId = useRef<{ quote: string; id: string } | null>(null);
   const [confirmedRetry, setConfirmedRetry] = useState<string | null>(null);
@@ -43,7 +45,8 @@ export function FinalVideoReview({ projectId, jobId, packageId, value, checkStat
       <p className="mt-1 text-sm text-muted-foreground" role="status" aria-live="polite">{review?.label ?? "Generate your final video from the approved package."}</p></div>
     {review && !review.current && review.state !== "deleted" && <p className="text-sm text-destructive">The approved package changed. This result cannot be approved as current.</p>}
     {review && ["review", "approved"].includes(review.state) && <>
-      <video key={`${review.id}:${review.revision}`} className="max-h-[60dvh] w-full rounded-md bg-black object-contain" controls playsInline preload="metadata" src={preview} aria-label="Private final video preview" />
+      {panels ? <Button variant="outline" onClick={() => panels.selectMedia(`legacy-video:${review.id}`)}>View in Preview</Button>
+        : <video key={`${review.id}:${review.revision}`} className="max-h-[60dvh] w-full rounded-md bg-black object-contain" controls playsInline preload="metadata" src={preview} aria-label="Private final video preview" />}
       <p className="text-xs text-muted-foreground">{((review.durationMs ?? 0) / 1000).toFixed(2)}s · {review.aspectRatio} · {review.width} × {review.height}</p>
     </>}
     {review?.error && <div className="space-y-1 break-words text-sm text-destructive" role="alert">

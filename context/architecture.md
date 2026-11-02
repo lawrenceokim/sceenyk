@@ -1,5 +1,11 @@
 # Architecture Context
 
+## Studio presentation ownership (2026-11-02)
+
+Studio retains Sources | Preview | Properties. Sources owns the displayed uploaded Character/Product inputs and existing reference generation/review, Location and approved image history. Preview is media-only: selected private/local images or a saved generated video, with the existing empty state. Progress, Storyboard, Generation Package and Final Video workflow controls are presented in a right-side overlay opened beside Properties (about 45vw on desktop; full viewport on mobile).
+
+The existing V3WorkflowPreview and historical UgcWorkflowPreview remain the sole client workflow/action/polling owners. Presentation-only portals in studio-workspace-panels.tsx place their existing controls into stable Sources/drawer targets; there is no additional workflow state machine. The shared Sheet keeps its content mounted when closed. Media IDs select from current owned source/runtime previews; removal or deletion removes the preview from the current collection. Mobile image viewing is a full-viewport dialog and does not replace desktop selection. A Studio-scoped optional DialogPortalContainer keeps confirmations/viewers inside the native Sources modal top layer; other dialogs retain body portals. Opening/closing panels makes no navigation, refresh, generation or mutation request. Existing privacy and server/provider/database boundaries are unchanged.
+
 ## Studio project deletion lifecycle (2026-11-02)
 
 Upload-focus correction: same-document focus/visibility checks run in the background and keep an already admitted editor visible, including on transient read failure. Actual retained-route reactivation and `pageshow` still gate reveal, while confirmed deletion or an authoritative missing-project result still resets/replaces to Studio. This prevents native file-picker return from hiding Activity and cancelling its upload effects; deletion actions/markers/redirects remain unchanged.

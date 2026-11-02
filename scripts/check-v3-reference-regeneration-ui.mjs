@@ -9,14 +9,15 @@ let slots=[],cursor=0,calls=[],resolveRequest;
 const hooks={...React,
   useState(initial){const i=cursor++;if(!(i in slots))slots[i]=initial;return[slots[i],value=>{slots[i]=typeof value==='function'?value(slots[i]):value;}];},
   useRef(initial){const i=cursor++;if(!(i in slots))slots[i]={current:initial};return slots[i];},
-  useEffect(){},useCallback:value=>value,
+  useEffect(){},useCallback:value=>value,useMemo:value=>value(),
 };
 globalThis.__referenceReact=hooks;
 const bundled=await build({absWorkingDir:process.cwd(),entryPoints:[resolve('components/creation/v3-workflow-preview.tsx')],tsconfig:resolve('tsconfig.json'),bundle:true,write:false,platform:'node',format:'cjs',packages:'external',plugins:[{
   name:'reference-ui-fixtures',setup(builder){
-    builder.onResolve({filter:/^(react|next\/image|@\/components\/ui\/(button|dialog))$/},args=>({path:args.path,namespace:'fixture'}));
+    builder.onResolve({filter:/^(react|next\/image|@\/components\/ui\/(button|dialog)|\.\/studio-workspace-panels)$/},args=>({path:args.path,namespace:'fixture'}));
     builder.onLoad({filter:/.*/,namespace:'fixture'},args=>{
-      if(args.path==='react')return{contents:'const r=globalThis.__referenceReact;export const useState=r.useState,useRef=r.useRef,useEffect=r.useEffect,useCallback=r.useCallback;'};
+      if(args.path==='react')return{contents:'const r=globalThis.__referenceReact;export const useState=r.useState,useRef=r.useRef,useEffect=r.useEffect,useCallback=r.useCallback,useMemo=r.useMemo;'};
+      if(args.path==='./studio-workspace-panels')return{contents:'export const useStudioPanels=()=>globalThis.__studioPanels??null;export function StudioPanelPortal(props){return props.children;}export function StudioWorkflowMedia(){return null;}'};
       if(args.path==='next/image')return{contents:'export default function Image(props){return null;}'};
       const names=args.path.endsWith('/button')?['Button']:['Dialog','DialogContent','DialogDescription','DialogFooter','DialogHeader','DialogTitle'];
       return{contents:names.map(name=>`export function ${name}(props){return props.children;}`).join('\n')};
@@ -39,8 +40,17 @@ try {
     const subject=kind==='character'?'Character':'Product',id=`saved-${kind}`;
     const initial={projectId:'fixture-project',artifacts:[{id,kind,version:1,activeSlot:true,current:true,approved:false,rejected:false,preview:'private-old-image'}],tasks:[],runs:[],processing:false,preflight:null,complete:false};
     const saved=JSON.stringify(initial);
+    const selections=[];globalThis.__studioPanels={selectMedia:id=>selections.push(id)};
     const props={initial,projectId:initial.projectId,assets:[{id:'source',studioRole:kind,status:'uploaded',removedFromDraft:false}],dirty:false,revision:'saved'};
     const render=()=>{cursor=0;return V3WorkflowPreview(props);};
+    const routed=render();
+    equal(elements(routed).filter(node=>node.type?.name==='StudioPanelPortal').map(node=>node.props.panel),['character','product','location','workflow']);
+    const workflow=find(routed,node=>node.type?.name==='StudioPanelPortal'&&node.props.panel==='workflow');
+    equal(elements(workflow).filter(node=>node.type==='button').map(text),['Progress','Storyboard','Package','Final Video']);
+    equal(elements(workflow).some(node=>node.props?.['aria-label']===subject+' Sheet'),false);
+    const source=find(routed,node=>node.type?.name==='StudioPanelPortal'&&node.props.panel===kind);
+    find(source,node=>node.type==='button'&&node.props['aria-label']==='Preview '+subject+' Sheet version 1').props.onClick();
+    equal(selections,['v3-reference:'+id]);equal(calls.length,0);
     const modal=tree=>find(tree,node=>node.type?.name==='ReferenceRegenerationDialog');
     const button=tree=>find(tree,node=>node.type?.name==='Button'&&text(node)===`Regenerate ${subject} Sheet`);
     button(render()).props.onClick();
@@ -182,4 +192,4 @@ try {
   equal(reviewCalls.at(-1).action,'recover');equal(reviewCalls.at(-1).id,video.id);equal(reviewCalls.some(c=>c.action==='generate'),false);
   reviewProps.run={...video,state:'deleted',preview:null};equal(text(renderReview()).includes('Review and approve the Generation Package again'),true);
   console.info(`${checks} actual V3 reference/package/video confirmation, host-approval and double-click UI checks passed; zero network calls.`);
-} finally {globalThis.fetch=originalFetch;delete globalThis.__referenceReact;}
+} finally {globalThis.fetch=originalFetch;delete globalThis.__referenceReact;delete globalThis.__studioPanels;}

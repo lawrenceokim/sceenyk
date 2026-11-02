@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { RefreshCw } from "lucide-react";
 import { MediaPreviewSkeleton } from "@/components/ui/skeleton";
 
-export function PersistentMediaPreview({ asset, thumbnail = false }: { asset: ProjectAsset; thumbnail?: boolean }) {
+export function PersistentMediaPreview({ asset, thumbnail = false, onSelect }: { asset: ProjectAsset; thumbnail?: boolean; onSelect?: () => void }) {
   const [source, setSource] = useState<{ url?: string; error?: string }>({});
   const [refresh, setRefresh] = useState(0);
   useEffect(() => {
@@ -39,8 +39,9 @@ export function PersistentMediaPreview({ asset, thumbnail = false }: { asset: Pr
       onClick={() => { setSource({}); setRefresh(value => value + 1); }}>
       <RefreshCw className="size-4" aria-hidden="true" />
     </button>;
-    return source.url ? <Image src={source.url} alt={asset.filename} fill unoptimized sizes="64px" className="object-cover" onError={failed} />
+    const content = source.url ? <Image src={source.url} alt={asset.filename} fill unoptimized sizes="64px" className="object-cover" onError={failed} />
       : <MediaPreviewSkeleton className="size-full rounded-md" />;
+    return onSelect ? <button type="button" aria-label={`Preview ${asset.filename}`} onClick={onSelect} className="relative block size-full cursor-zoom-in rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-ring">{content}</button> : content;
   }
   if (source.error)
     return (

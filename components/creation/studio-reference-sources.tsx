@@ -12,6 +12,7 @@ import type { UploadState } from "@/lib/media/upload-client";
 import { studioReferenceImages, type StudioReference } from "./studio-inputs";
 import { ugcV1LimitMessages } from "@/lib/projects/ugc-v1";
 import { referenceNameLimit } from "@/lib/projects/reference-names";
+import { StudioPanelTarget, useStudioPanels } from "./studio-workspace-panels";
 
 export function StudioReferenceSources({ label, addLabel, role, references, onAdd, onRemoveLocal, onRemoveAsset,
   onUpload, onRecover, onNameChange, uploadStates, busy, signedIn, authReady }: {
@@ -31,6 +32,7 @@ export function StudioReferenceSources({ label, addLabel, role, references, onAd
   authReady: boolean;
 }) {
   const id = useId();
+  const panels = useStudioPanels();
   const input = useRef<HTMLInputElement>(null);
   const add = useRef<HTMLButtonElement>(null);
   const images = studioReferenceImages(references);
@@ -55,8 +57,8 @@ export function StudioReferenceSources({ label, addLabel, role, references, onAd
         return <li key={local?.id ?? asset?.id} className="min-w-0 max-w-full basis-full">
           <div className="relative size-16 shrink-0 rounded-lg border border-border bg-field" title={filename} aria-busy={uploading}>
           <div className="relative size-full overflow-hidden rounded-lg">
-            {local ? <LocalMediaThumbnail media={local} className="size-full" alt={filename} />
-              : asset?.status === "uploaded" ? <PersistentMediaPreview asset={asset} thumbnail />
+            {local ? <button type="button" aria-label={`Preview ${filename}`} className="block size-full cursor-zoom-in outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring" onClick={() => panels?.selectMedia(local.id)}><LocalMediaThumbnail media={local} className="size-full" alt={filename} /></button>
+              : asset?.status === "uploaded" ? <PersistentMediaPreview asset={asset} thumbnail onSelect={() => panels?.selectMedia(asset.id)} />
                 : <span className="flex size-full items-center justify-center"><ImageIcon className="size-5 text-muted-foreground" aria-hidden="true" /></span>}
           </div>
           {uploading && <span aria-hidden="true" className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-lg bg-background/40">
@@ -83,6 +85,7 @@ export function StudioReferenceSources({ label, addLabel, role, references, onAd
         </li>;
       })}
     </ul>}
+    <div className="mt-2"><StudioPanelTarget panel={role} /></div>
     {images.length > 1 && <p role="alert" className="mt-2 text-xs text-destructive">{ugcV1LimitMessages[role]}</p>}
     <div className="mt-2 space-y-2">
       {references.flatMap(reference => reference.images).map(({ local, asset }) => {

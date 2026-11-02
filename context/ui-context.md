@@ -1,5 +1,11 @@
 # UI Context
 
+## Studio Sources and Workflow Drawer (2026-11-02)
+
+Current Studio presentation supersedes the older Preview workflow-tab arrangement: Character/Product sheet generation and review sit under the corresponding uploaded source/name, followed by Location. Keep item loading, approval/rejection, regeneration, recovery and approved history with that source. Preview is a clean media viewer with the existing empty state; selecting an image updates desktop Preview or opens a full-viewport mobile image dialog. Saved generated video playback uses Preview.
+
+The Workflow icon beside Properties opens a right-side overlay containing Progress, Storyboard, Package and Final Video. References is no longer a workflow tab. The overlay is approximately 45vw on desktop and full viewport on mobile, scrolls internally, supports close/Escape/focus return, safe areas and reduced motion. Closing it keeps workflow content mounted and preserves Sources/Properties/Preview edits and selection. Reuse the existing workflow components, shared Sheet/Dialog/Button primitives, tokens and Tailwind utilities. No new stylesheet or backend contract is required. Visual/live acceptance remains manual.
+
 ## Current-rate generated-video estimates (2026-11-01)
 
 Final Video, earlier attempts, joined-video review and Package total/segment estimates display current-rate calculations supplied separately by the owned runtime DTO. A historical 30s Seedance Reference-to-Video now displays ~$6.17 and 10s ~$2.06. Existing two-decimal formatting, actual-provider-cost labels, layout and controls remain. Maximum authorization and its suggested buffer still use the original saved quote; updating an approximate display estimate does not change consent or saved execution records.
