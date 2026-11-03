@@ -21,6 +21,8 @@ export const StudioPanelsContext = createContext<{
   register: (panel: StudioPanel, element: HTMLDivElement | null) => void;
   selectMedia: (id: string) => void;
   setWorkflowMedia: (media: StudioPreviewMedia[], collection: string) => void;
+  setWorkflowAttention: (attention: boolean) => void;
+  openWorkflow: () => void;
 } | null>(null);
 
 export function useStudioPanels() { return useContext(StudioPanelsContext); }

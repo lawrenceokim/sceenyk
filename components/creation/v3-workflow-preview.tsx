@@ -1,5 +1,6 @@
 "use client";
 import { V3LocationStatus } from "./v3-location-status";
+import { StudioWorkflowGuidance } from "./studio-workflow-guidance";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
@@ -473,9 +474,7 @@ export function V3WorkflowPreview({
               ? "Character Sheet"
               : a.kind === "product"
                 ? "Product Sheet"
-                : "Location") +
-            " · v" +
-            a.version,
+                : "Location"),
           kind: "image" as const,
           src: a.preview!,
         })) ?? []),
@@ -635,6 +634,10 @@ export function V3WorkflowPreview({
     latest.some(
       (a) => a.kind === kind && a.current && a.approved && !a.rejected,
     );
+  const referencesComplete = !!workspace && !locationReferenceFeedback(workspace.artifacts, {
+    character: !!reference("character"), product: !!reference("product"),
+  }) && currentApproved("location");
+  const selectStoryboard = useCallback(() => setView("storyboard"), []);
   const locationFeedback = locationReferenceFeedback(workspace?.artifacts ?? [], {
     character: !!reference("character"), product: !!reference("product"),
   });
@@ -668,11 +671,24 @@ export function V3WorkflowPreview({
             width={1024}
             height={1024}
             src={a.preview}
-            alt={label + " version " + a.version}
+            alt={label}
             className="max-h-48 w-full rounded-lg object-contain"
           />
         </button>
       ) : null;
+    const generationButton = kind === "location" ? (
+      <Button variant={current ? "default" : "outline"}
+        disabled={locked || (!!workspace && referenceBusy(workspace.tasks, "location"))}
+        aria-disabled={!!locationFeedback}
+        className="aria-disabled:cursor-not-allowed aria-disabled:bg-muted aria-disabled:text-muted-foreground aria-disabled:opacity-60"
+        onClick={() => {
+          if (locationFeedback) { setShowLocationFeedback(true); return; }
+          const current = latest.find(a => a.kind === "location");
+          void act("reference", { kind: "location", expectedId: current?.id, expectedVersion: current?.version });
+        }}>{current ? "Regenerate Location" : "Generate Location"}</Button>
+    ) : <Button variant={current ? "default" : "outline"}
+      disabled={!workspace || busy || dirty || referenceBusy(workspace.tasks, kind) || !reference(kind)}
+      onClick={() => requestReference(kind)}>{current ? "Regenerate" : "Generate"} {label}</Button>;
     return (
       <StudioPanelPortal key={kind} panel={kind}>
         <section
@@ -688,42 +704,7 @@ export function V3WorkflowPreview({
               Location
             </h3>
           )}
-          {kind === "location" ? (
-            <Button
-              variant="outline"
-              disabled={
-                locked ||
-                (!!workspace && referenceBusy(workspace.tasks, "location"))
-              }
-              aria-disabled={!!locationFeedback}
-              className="aria-disabled:cursor-not-allowed aria-disabled:bg-muted aria-disabled:text-muted-foreground aria-disabled:opacity-60"
-              onClick={() => {
-                if (locationFeedback) { setShowLocationFeedback(true); return; }
-                const current = latest.find((a) => a.kind === "location");
-                void act("reference", {
-                  kind: "location",
-                  expectedId: current?.id,
-                  expectedVersion: current?.version,
-                });
-              }}
-            >
-              {current ? "Regenerate Location" : "Generate Location"}
-            </Button>
-          ) : (
-            <Button
-              variant="outline"
-              disabled={
-                !workspace ||
-                busy ||
-                dirty ||
-                referenceBusy(workspace.tasks, kind) ||
-                !reference(kind)
-              }
-              onClick={() => requestReference(kind)}
-            >
-              {current ? "Regenerate" : "Generate"} {label}
-            </Button>
-          )}
+          {!current && generationButton}
           {kind === "location" && showLocationFeedback && locationFeedback && (
             <p role="status" aria-live="polite" className="text-muted-foreground">{locationFeedback}</p>
           )}
@@ -803,9 +784,9 @@ export function V3WorkflowPreview({
             <V3LocationStatus task={task} busy={busy} dirty={dirty} act={act} />
           )}
           {current && (
-            <article className="space-y-2 rounded-lg border border-border p-2">
+            <article className="space-y-2">
               {image(current)}
-              <p className="text-muted-foreground">Version {current.version}</p>
+              {generationButton}
               {current.cleanupPending ? (
                 <div className="space-y-2">
                   <p role="status">Deletion pending</p>
@@ -863,11 +844,7 @@ export function V3WorkflowPreview({
                     </Button>
                   )}
                 </div>
-              ) : current.approved ? (
-                <p role="status" className="text-success-foreground">
-                  Approved
-                </p>
-              ) : (
+              ) : current.approved ? null : (
                 <>
                   <p role="status" className="text-muted-foreground">
                     Ready for review
@@ -908,15 +885,12 @@ export function V3WorkflowPreview({
           {history.length > 0 && (
             <details>
               <summary className="cursor-pointer text-muted-foreground">
-                Approved history
+                Earlier sheets
               </summary>
               <div className="mt-2 space-y-3">
                 {history.map((a) => (
                   <article key={a.id} className="space-y-1">
                     {image(a)}
-                    <p className="text-muted-foreground">
-                      Version {a.version} · Previously approved
-                    </p>
                   </article>
                 ))}
               </div>
@@ -955,6 +929,8 @@ export function V3WorkflowPreview({
   return (
     <>
       <StudioWorkflowMedia media={previewMedia} />
+      <StudioWorkflowGuidance projectId={projectId} ready={!!workspace} referencesComplete={referencesComplete}
+        complete={!!workspace?.complete} selectStoryboard={selectStoryboard} />
       <ReferenceRegenerationDialog
         kind={regeneration?.kind ?? null}
         busy={busy}
@@ -1032,7 +1008,7 @@ export function V3WorkflowPreview({
               </p>
             ) : (
               <>
-                <div className="flex flex-wrap items-center justify-between gap-2">
+                {view !== "storyboard" && <div className="flex flex-wrap items-center justify-between gap-2">
                   <p role="status" className="text-sm text-muted-foreground">
                     {v3ProgressLabel(workspace, !!reference("product"))}
                   </p>
@@ -1043,12 +1019,12 @@ export function V3WorkflowPreview({
                   >
                     Check status
                   </Button>
-                </div>
+                </div>}
                 {view === "storyboard" && (
                   <section className="space-y-3">
                     <h2 className="font-semibold">Storyboard</h2>
                     <Button
-                      variant="outline"
+                      variant="default"
                       disabled={
                         locked ||
                         !currentApproved("character") ||

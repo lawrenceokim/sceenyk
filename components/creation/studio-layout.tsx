@@ -80,6 +80,7 @@ export function StudioLayout({
     [],
   );
   const [workflowOpen, setWorkflowOpen] = useState(false);
+  const [workflowAttention, setWorkflowAttention] = useState(false);
   const [workflowCollections, setWorkflowCollections] = useState<
     Record<string, StudioPreviewMedia[]>
   >({});
@@ -117,18 +118,26 @@ export function StudioLayout({
       if (mode.current !== "inline") closeSources();
     }
   }
-  function restoreScroll() {
+  const restoreScroll = useCallback(() => {
     const previous = lockedScroll.current;
     if (!previous) return;
     lockedScroll.current = null;
     document.body.style.overflow = previous.overflow;
     window.scrollTo({ left: previous.x, top: previous.y, behavior: "instant" });
-  }
-  function closeSources() {
+  }, []);
+  const closeSources = useCallback(() => {
     sourcesDialog.current?.close();
     setModalContainer(null);
     restoreScroll();
-  }
+  }, [restoreScroll, setModalContainer]);
+  const openWorkflow = useCallback(() => {
+    setMobileImageId(null);
+    if (mode.current !== "inline") {
+      returnFocus.current = false;
+      closeSources();
+    }
+    setWorkflowOpen(true);
+  }, [closeSources, setMobileImageId, setWorkflowOpen]);
   function openSources() {
     if (!sourcesDialog.current || sourcesDialog.current.open) return;
     returnFocus.current = true;
@@ -195,10 +204,10 @@ export function StudioLayout({
         lockedScroll.current = null;
       }
     };
-  }, []);
+  }, [restoreScroll]);
   return (
     <StudioPanelsContext.Provider
-      value={{ targets, register, selectMedia, setWorkflowMedia }}
+      value={{ targets, register, selectMedia, setWorkflowMedia, setWorkflowAttention, openWorkflow }}
     >
       <DialogPortalContainer.Provider value={modalContainer}>
         <StudioPropertiesTarget.Provider value={propertiesTarget}>
@@ -433,12 +442,15 @@ export function StudioLayout({
                               size="icon"
                               variant="ghost"
                               aria-label="Open Workflow"
-                              title="Workflow"
-                              className="size-8 [@media(pointer:coarse)]:size-11"
+                              title={workflowAttention ? "Workflow has unfinished steps" : "Workflow"}
+                              data-workflow-attention={workflowAttention}
+                              className={`relative size-8 [@media(pointer:coarse)]:size-11 ${workflowAttention ? "bg-primary/10 text-primary ring-2 ring-primary/50 shadow-[0_0_14px_var(--primary)]" : ""}`}
                             />
                           }
                         >
-                          <Workflow className="size-4" aria-hidden="true" />
+                          {workflowAttention && <span aria-hidden="true" className="pointer-events-none absolute inset-0 rounded-lg bg-primary/20 motion-safe:animate-[pulse_2.5s_ease-in-out_infinite]" />}
+                          <Workflow className="relative size-4" aria-hidden="true" />
+                          {workflowAttention && <span className="sr-only">Workflow has unfinished steps</span>}
                         </SheetTrigger>
                         <SheetContent
                           keepMounted

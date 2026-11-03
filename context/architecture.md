@@ -1,5 +1,11 @@
 # Architecture Context
 
+## Studio workflow attention and handoff (2026-11-02)
+
+The existing V3 owner publishes a presentation-only reference-complete/unfinished indication to StudioLayout. Required references are current, approved, active Character/Location plus Product only when its saved uploaded source is present. Final completion uses the existing authoritative runtimeDto.complete, which already distinguishes final joined/single-video approval from individual segment approval. No new persisted workflow flag, acknowledgement, state machine, provider call or database contract is added.
+
+StudioWorkflowGuidance establishes the first saved snapshot as a baseline and detects only later incomplete-to-complete reference transitions. A successful saved approval may select Storyboard and open the existing drawer once; repeated polls, close/open or tab changes cannot dismiss attention or force reopening. Reopening a ready unfinished project restores the pulse from persisted data without auto-opening. Reduced motion keeps a static purple cue. Sources/cards and Storyboard change presentation only, preserving their current action owners, confirmations and all generation behavior.
+
 ## V3 sheet dependency boundary (2026-11-02)
 
 For completed Character/Product sheets, currentness is uploaded source identity + saved Visual Style, plus existing latest-version/rejection/deletion fences. Full immutable generationContext and brief snapshots are retained unchanged for provenance and existing task/provider execution. Direction, Tone, duration, Type, narration, title and unrelated saves do not propagate backward to sheet currentness. Location and later stages retain their own current full-brief/reference dependencies; Product remains optional unless its uploaded source is present.

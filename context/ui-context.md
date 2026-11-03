@@ -1,5 +1,11 @@
 # UI Context
 
+## Studio reference cleanup and next-step guidance (2026-11-02)
+
+Current V3 generated Character/Product/Location Sources show a clean borderless image and a primary-purple Regenerate button below it, without visible version or Approved labels. Keep existing Approve/Reject, stale/error/recovery states, original uploads, confirmations and Location prerequisite feedback. Earlier-sheet disclosures omit version/approval copy. Preview labels also omit version copy.
+
+After a saved final required reference approval, open Workflow once on Storyboard. On later reloads/reopens, show persistent unfinished attention without forcing the drawer open. Its existing Properties trigger uses a slow Sceenyk-purple opacity pulse plus ring/glow while saved references are complete and the saved final video remains unapproved; drawer interaction is never completion. Reduced motion retains a static cue, and the accessible Open Workflow label plus unfinished-step text remains available. Storyboard omits the general Location status/Check status row; internal polling and actions are unchanged. Reuse the existing desktop/mobile Sheet geometry and Tailwind/shared primitives with no additional stylesheet.
+
 ## V3 sheet review and Location prerequisite feedback (2026-11-02)
 
 Character/Product sheets stay current/reviewable after unrelated saves. A saved Visual Style/source change shows regeneration-required status, blocks stale approval and preserves explicit Reject/Delete and confirmed Regenerate. Every confirmed replacement uses the exact permanent-deletion wording with Cancel/Continue, including approved sheets; the selected replaced image is not retained in history.
