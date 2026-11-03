@@ -1,6 +1,8 @@
 "use client";
 import { V3LocationStatus } from "./v3-location-status";
 import { V3StoryboardContent } from "./v3-storyboard-content";
+import { V3StoryboardSkeleton } from "./v3-storyboard-skeleton";
+import { V3PackageSkeleton } from "./v3-package-skeleton";
 import { StudioWorkflowGuidance } from "./studio-workflow-guidance";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -458,6 +460,8 @@ export function V3WorkflowPreview({
     "progress" | "storyboard" | "package" | "final"
   >("progress");
   const [showLocationFeedback, setShowLocationFeedback] = useState(false);
+  const [storyboardRequestPending, setStoryboardRequestPending] = useState(false);
+  const [packageRequestPending, setPackageRequestPending] = useState(false);
   const previewMedia = useMemo<StudioPreviewMedia[]>(
     () => [
       ...(workspace?.artifacts
@@ -595,6 +599,27 @@ export function V3WorkflowPreview({
   const packageTask = workspace?.tasks
     .filter((t) => t.kind === "package")
     .at(-1);
+  const packageLoading =
+    !p &&
+    !buildActionFailure &&
+    (packageRequestPending ||
+      (!!packageTask && ["queued", "running"].includes(packageTask.status)));
+  const storyboardTask = workspace?.tasks
+    .filter((t) => t.kind === "storyboard")
+    .at(-1);
+  const artifacts = workspace?.artifacts ?? [];
+  const storyboards = artifacts.filter(
+    (a) =>
+      a.storyboard &&
+      !a.rejected &&
+      !artifacts.some((n) => n.kind === a.kind && n.version > a.version),
+  );
+  const storyboardLoading =
+    storyboards.length === 0 &&
+    (storyboardRequestPending ||
+      (!!storyboardTask &&
+        ["queued", "running"].includes(storyboardTask.status) &&
+        (storyboardTask.current || storyboardTask.providerStarted)));
   const locked = busy || dirty || !!workspace?.processing;
   const reference = (kind: "character" | "product") =>
     assets.find(
@@ -1009,7 +1034,7 @@ export function V3WorkflowPreview({
               </p>
             ) : (
               <>
-                {view !== "storyboard" && <div className="flex flex-wrap items-center justify-between gap-2">
+                {view !== "storyboard" && view !== "package" && <div className="flex flex-wrap items-center justify-between gap-2">
                   <p role="status" className="text-sm text-muted-foreground">
                     {v3ProgressLabel(workspace, !!reference("product"))}
                   </p>
@@ -1032,20 +1057,17 @@ export function V3WorkflowPreview({
                         !currentApproved("location") ||
                         (!!reference("product") && !currentApproved("product"))
                       }
-                      onClick={() => void act("storyboard")}
+                      onClick={() => {
+                        setStoryboardRequestPending(true);
+                        void act("storyboard").finally(() =>
+                          setStoryboardRequestPending(false),
+                        );
+                      }}
                     >
                       Generate Storyboard
                     </Button>
-                    {workspace.artifacts
-                      .filter(
-                        (a) =>
-                          a.storyboard &&
-                          !a.rejected &&
-                          !workspace.artifacts.some(
-                            (n) => n.kind === a.kind && n.version > a.version,
-                          ),
-                      )
-                      .map((a) => (
+                    {storyboardLoading && <V3StoryboardSkeleton />}
+                    {storyboards.map((a) => (
                         <article
                           key={a.id}
                           className="space-y-3 rounded-xl border border-border p-4"
@@ -1093,8 +1115,21 @@ export function V3WorkflowPreview({
                   </section>
                 )}
                 {view === "package" && (
-                  <section className="space-y-3 rounded-xl border border-border p-4">
-                    <h2 className="font-semibold">Generation Package</h2>
+                  <section className="space-y-3">
+                    <h2 className="font-semibold">Package &amp; Estimates</h2>
+                    <Button
+                      variant="default"
+                      disabled={locked || !currentApproved("storyboard")}
+                      onClick={() => {
+                        setPackageRequestPending(true);
+                        void act("build_package", {
+                          retryTaskId: packageTask?.id,
+                        }).finally(() => setPackageRequestPending(false));
+                      }}
+                    >
+                      Build package and estimate
+                    </Button>
+                    {packageLoading && <V3PackageSkeleton />}
                     {workspace.packageStale && (
                       <p
                         role="status"
@@ -1105,17 +1140,6 @@ export function V3WorkflowPreview({
                         direction first.
                       </p>
                     )}
-                    <Button
-                      variant="outline"
-                      disabled={locked || !currentApproved("storyboard")}
-                      onClick={() =>
-                        void act("build_package", {
-                          retryTaskId: packageTask?.id,
-                        })
-                      }
-                    >
-                      Build package and estimate
-                    </Button>
                     {buildActionFailure && workspace.localEnabled && (
                       <details className="text-xs text-muted-foreground">
                         <summary className="cursor-pointer">
@@ -1139,9 +1163,11 @@ export function V3WorkflowPreview({
                       />
                     )}
                     {p && (
-                      <>
+                      <div className="min-w-0 space-y-3 rounded-xl border border-border bg-card p-4">
                         <p className="text-sm">
                           {p.durationMs / 1000}s · {p.aspectRatio} ·{" "}
+                          {p.segmentCount}{" "}
+                          {p.segmentCount === 1 ? "generation segment" : "generation segments"} ·{" "}
                           {p.currentness === "current"
                             ? "Ready for review"
                             : "Needs rebuilding"}
@@ -1264,7 +1290,7 @@ export function V3WorkflowPreview({
                         >
                           Generate Final Video
                         </Button>
-                      </>
+                      </div>
                     )}
                   </section>
                 )}

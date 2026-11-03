@@ -23,13 +23,22 @@ export function calculateManualEstimate(provider: string, model: string, mode: s
   if (!Number.isSafeInteger(durationMs) || durationMs < 4000 || durationMs > 30000 || durationMs % 1000) throw new Error("V3_PRICING_DURATION_INVALID");
   const cost = durationMs / 1000 * rate.rate;
   return manualPricingSchema.parse({ provider, model, mode, durationMs, rateMicrousdPerSecond: rate.rate,
-    estimatedUsdPerSecond: decimalUsd(rate.rate).slice(0, -2), estimatedUsd: decimalUsd(cost), estimatedCostMicrousd: cost,
+    estimatedUsdPerSecond: "observedUsdPerSecond" in rate ? rate.observedUsdPerSecond : decimalUsd(rate.rate).slice(0, -2),
+    estimatedUsd: decimalUsd(cost), estimatedCostMicrousd: cost,
     pricingSource: pricingConfiguration.source, pricingVersion: pricingConfiguration.version, configurationDate: pricingConfiguration.date });
 }
 export function validateManualSnapshot(value: unknown) {
   const s = manualPricingSchema.parse(value);
+  const [whole, fraction] = s.estimatedUsdPerSecond.split(".");
+  // Positive decimal USD, rounded half-up to the unchanged whole-micro-USD
+  // estimator. Integer arithmetic keeps provider-rate precision out of floats.
+  const decimalRate = BigInt(whole) * BigInt(1_000_000) + BigInt(fraction.padEnd(6, "0").slice(0, 6)) +
+    BigInt(Number(fraction[6] ?? "0") >= 5 ? 1 : 0);
+  // Previously saved four-place strings were truncated by this estimator. Keep
+  // their exact bytes/hash valid; new snapshots retain the configured precision.
+  const legacyRate = s.estimatedUsdPerSecond === decimalUsd(s.rateMicrousdPerSecond).slice(0, -2);
   if (s.durationMs < 4000 || s.durationMs > 30000 || s.durationMs % 1000 || s.estimatedCostMicrousd !== s.durationMs / 1000 * s.rateMicrousdPerSecond ||
-    s.estimatedUsdPerSecond !== decimalUsd(s.rateMicrousdPerSecond).slice(0, -2) || s.estimatedUsd !== decimalUsd(s.estimatedCostMicrousd)) throw new Error("V3_PRICING_SNAPSHOT_INVALID");
+    (!legacyRate && decimalRate !== BigInt(s.rateMicrousdPerSecond)) || s.estimatedUsd !== decimalUsd(s.estimatedCostMicrousd)) throw new Error("V3_PRICING_SNAPSHOT_INVALID");
   return s; // Historical snapshots reproduce their frozen rate, independently of today's configuration.
 }
 export function localCostEstimate(command: VideoCommand, model: string, mode: string): CostEstimate {
