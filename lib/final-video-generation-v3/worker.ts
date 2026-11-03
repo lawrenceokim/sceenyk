@@ -23,6 +23,7 @@ import { higgsfieldRequestIssues } from "./adapters/higgsfield-validity";
 import { runLocationTask } from "./location-worker";
 import { isLocationDirectorTask, locationDocument } from "./location-runtime";
 import { discardableReferences, discardReference } from "./reference-retention";
+import { STORYBOARD_DIRECTOR_VERSION, storyboardDirectorInput, validateDirectedStoryboard } from "./storyboard-director";
 
 async function approvedBytes(w: RuntimeWorkspace, ids: unknown, signal: AbortSignal) {
   if (!Array.isArray(ids) || !ids.length || ids.some(v => typeof v !== "string")) throw new Error("V3_REFERENCES_REQUIRED");
@@ -104,22 +105,20 @@ async function imageTask(store: V3Store, task: Task, w: RuntimeWorkspace, signal
 async function storyboardTask(store: V3Store, task: Task, w: RuntimeWorkspace, signal: AbortSignal) {
   const model = z.string().min(1).parse(task.input.model), brief = await projectBrief(w.project.owner_user_id, task.project_id);
   if (creativeBriefHash(brief) !== task.input.briefHash) throw new Error("V3_CREATIVE_INPUT_STALE");
-  approvedArtifacts({ ...w, tasks: w.tasks.filter(t => t.id !== task.id) }, brief, await referenceOriginals(w.project.owner_user_id, task.project_id));
+  const approved = approvedArtifacts({ ...w, tasks: w.tasks.filter(t => t.id !== task.id) }, brief, await referenceOriginals(w.project.owner_user_id, task.project_id));
+  if (JSON.stringify(task.input.references) !== JSON.stringify(approved.map(a => a.id)) ||
+    v3Digest("generation-context", generationContextSchema.parse(task.input.generationContext)) !== v3Digest("generation-context", generationContext(brief)))
+    throw new Error("V3_CREATIVE_INPUT_STALE");
   const refs = await approvedBytes(w, task.input.references, signal);
   let raw = await readSpool(task.id, "openai-response.json");
   if (!raw) {
     if (task.provider_started) throw new Error("V3_OPENAI_OUTCOME_UNKNOWN");
     const config = v3OpenAIConfig(), provider = new OpenAICreativeDirectorProvider({ model, maxOutputTokens: 14_000 });
-    const request = provider.prepareStoryboard({ instruction: `Structured Studio direction: ${JSON.stringify(task.input.generationContext)}\n${brief.prompt}\nAspect ratio: ${brief.aspect_ratio}. Visual style: ${brief.visual_style}. Tone: ${brief.tone}. ` +
-      `Approved reference roles in image order: ${(task.input.references as string[]).map(id => w.artifacts.find(a => a.id === id)!.kind).join(", ")}. ` +
-      "Use whole-second contiguous scenes with exact total duration; scenes may share one continuous generation. Include realistic dialogue windows, pacing and all film direction. Without a supplied Product reference do not invent a product.",
-      durationMs: Number(brief.duration) * 1000, referenceUrls: [] });
     const location = locationDocument(w.artifacts.find(a => a.kind === "location" && (task.input.references as string[]).includes(a.id)));
     if (location) await store.rpc("ugc_v3_location_input_current", { p_project: task.project_id, d: w.artifacts.find(a => a.id === location.artifactId)!.document.input }).then(current => { if (current !== true) throw new Error("V3_CREATIVE_INPUT_STALE"); });
-    request.body.input = [{ role: "user", content: [{ type: "input_text", text: (location ? `Approved Location prompt and sheet binding: ${JSON.stringify(location)}. Preserve this approved environment when planning scenes.\n` : "") + `Structured Studio direction: ${JSON.stringify(task.input.generationContext)}\n${brief.prompt}\nExact duration: ${Number(brief.duration) * 1000}ms. Aspect ratio: ${brief.aspect_ratio}. ` +
-      `Visual style: ${brief.visual_style}. Tone: ${brief.tone}. Approved roles: ${(task.input.references as string[]).map(id => w.artifacts.find(a => a.id === id)!.kind).join(", ")}. ` +
-      `Return visualStyle exactly ${JSON.stringify(brief.visual_style)} and tone exactly ${JSON.stringify(brief.tone)}. ` +
-      "Use contiguous whole-second scene boundaries, realistic speech windows and explicit camera, action, reaction, lighting, pacing, continuity and sound direction. Do not invent an absent Product." },
+    const instruction = storyboardDirectorInput(brief, approved.map(a => a.kind), location);
+    const request = provider.prepareStoryboard({ instruction, durationMs: Number(brief.duration) * 1000, referenceUrls: [] });
+    request.body.input = [{ role: "user", content: [{ type: "input_text", text: instruction },
       ...refs.map(r => ({ type: "input_image" as const, image_url: `data:image/png;base64,${r.bytes.toString("base64")}`, detail: "high" as const }))] }];
     const client = new OpenAI({ apiKey: config.apiKey, maxRetries: 0, timeout: 600_000, logLevel: "off" });
     await store.checkpoint(task, "intent");
@@ -131,6 +130,8 @@ async function storyboardTask(store: V3Store, task: Task, w: RuntimeWorkspace, s
   const storyboard = directorStoryboardSchema.parse(JSON.parse(text ?? ""));
   if (storyboard.durationMs !== Number(brief.duration) * 1000 || storyboard.aspectRatio !== brief.aspect_ratio) throw new Error("V3_DIRECTOR_TIMING_INVALID");
   if (storyboard.visualStyle !== brief.visual_style || storyboard.tone !== brief.tone) throw new Error("V3_DIRECTOR_STYLE_INVALID");
+  if (task.input.directorVersion === STORYBOARD_DIRECTOR_VERSION) validateDirectedStoryboard(storyboard, {
+    durationMs: Number(brief.duration) * 1000, aspectRatio: brief.aspect_ratio, visualStyle: brief.visual_style, tone: brief.tone });
   await store.checkpoint(task, "artifact", { id: task.id, document: { storyboard, input: task.input, provider: "openai", model, responseHash: bytesHash(raw), requestId: captured.requestId } });
 }
 async function videoTask(store: V3Store, task: Task, w: RuntimeWorkspace, signal: AbortSignal) {

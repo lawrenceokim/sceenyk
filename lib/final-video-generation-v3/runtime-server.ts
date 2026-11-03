@@ -5,6 +5,7 @@ import { ensureAppUser } from "@/lib/auth/ensure-app-user";
 import { requireClerkUser } from "@/lib/auth/require-user";
 import { createDatabaseClient } from "@/lib/db/server";
 import { planningInputSchema, directorStoryboardSchema, type PlanningInput } from "./contract";
+import { STORYBOARD_DIRECTOR_VERSION, STORYBOARD_PROMPT_COMPILER_VERSION } from "./storyboard-director";
 import { HIGGSFIELD_V3_PROFILE } from "./adapters/higgsfield";
 import { readPrivate, signPrivate, readSpool } from "./runtime-media";
 import { packageContentHash, storyboardContentHash, v3Digest } from "./identity";
@@ -239,7 +240,7 @@ export async function ownedV3Action(raw: unknown) {
     const changed = previous && (!oldInput.success || v3Digest("reference-ids", oldInput.data.references) !==
       v3Digest("reference-ids", refs.map(r => r.id)) || oldInput.data.briefHash !== creativeBriefHash(brief));
     if (previous && !previous.rejected_at && !changed) throw new Error("REVIEW_EXISTING_STORYBOARD_FIRST");
-    await enqueue("storyboard", { brief, briefHash: creativeBriefHash(brief), generationContext: context, model: v3OpenAIConfig().directorModel, references: refs.map(r => r.id), previous: previous?.id ?? null });
+    await enqueue("storyboard", { directorVersion: STORYBOARD_DIRECTOR_VERSION, brief, briefHash: creativeBriefHash(brief), generationContext: context, model: v3OpenAIConfig().directorModel, references: refs.map(r => r.id), previous: previous?.id ?? null });
   } else if (a.action === "build_package") {
     const refs = approvedArtifacts(w, brief, originals), storyboard = latestArtifact(w, "storyboard");
     const locationArtifact = refs.find(r => r.kind === "location"), location = locationDocument(locationArtifact);
@@ -255,6 +256,7 @@ export async function ownedV3Action(raw: unknown) {
       package: { id: randomUUID(), version: w.packages.length + 1, hash: "0".repeat(64), approvedAt: now },
       storyboard: { id: storyboard.id, version: storyboard.version, hash: storyboardContentHash(directorStoryboardSchema.parse(storyboard.document.storyboard)), approvedAt: storyboard.approved_at },
       direction: JSON.stringify({ ...context, duration: brief.duration, aspectRatio: brief.aspect_ratio, narration: "Follows the saved scene instructions",
+        ...(storyboard.document.input && (storyboard.document.input as { directorVersion?: string }).directorVersion === STORYBOARD_DIRECTOR_VERSION ? { promptCompiler: STORYBOARD_PROMPT_COMPILER_VERSION } : {}),
         ...(location ? { approvedLocation: location } : {}) }), storyboardContent: storyboard.document.storyboard, mode: "reference", resolution: "480p", format: "mp4", generateAudio: true,
       references: refs.map(r => { const asset = privateAssetSchema.parse(r.document.asset); return { id: r.id, projectId: a.projectId, originWorkflow: "final-video-v3", role: r.kind,
         kind: "image", name: r.kind, version: r.version, approvalId: r.id, approvalVersion: r.version, sha256: asset.sha256,

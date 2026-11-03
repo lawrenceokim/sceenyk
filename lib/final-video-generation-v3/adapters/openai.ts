@@ -3,6 +3,7 @@ import type { ResponseCreateParamsNonStreaming } from "openai/resources/response
 import { zodTextFormat } from "openai/helpers/zod";
 import { z } from "zod";
 import { directorStoryboardSchema, V3_WORKFLOW, type CreativeDirectorProvider, type ImageGenerationProvider } from "../contract";
+import { storyboardDirectorInstructions } from "../storyboard-director";
 
 const model = z.string().regex(/^[a-zA-Z0-9._:-]{1,200}$/);
 const prompt = z.string().trim().min(1).max(64000);
@@ -26,7 +27,7 @@ export class OpenAICreativeDirectorProvider implements CreativeDirectorProvider<
   prepareStoryboard(input: { instruction: string; durationMs: number; referenceUrls: readonly string[] }) {
     z.number().int().min(1).max(600000).parse(input.durationMs);
     const body: ResponseCreateParamsNonStreaming = { model: this.config.model, store: false, max_output_tokens: this.config.maxOutputTokens,
-      instructions: "Act as a professional film director. Return the structured Storyboard with complete scene order/timing, exact dialogue, actions/reactions, product interactions, camera/zoom/cuts/transitions, lighting, environment, pacing, visual style and native sound intentions. Scenes are creative units, not independent video requests. Preserve the approved reference identities. Do not invent additional people or products.",
+      instructions: storyboardDirectorInstructions,
       input: [{ role: "user", content: [{ type: "input_text", text: `${prompt.parse(input.instruction)}\nExact intended total: ${input.durationMs}ms.` }, ...input.referenceUrls.map(image)] }],
       text: { format: zodTextFormat(directorStoryboardSchema, "director_storyboard_v3") } };
     return { workflow: V3_WORKFLOW, executable: false as const, providerId: "openai", body };

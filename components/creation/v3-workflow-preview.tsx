@@ -1,5 +1,6 @@
 "use client";
 import { V3LocationStatus } from "./v3-location-status";
+import { V3StoryboardContent } from "./v3-storyboard-content";
 import { StudioWorkflowGuidance } from "./studio-workflow-guidance";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -1049,36 +1050,7 @@ export function V3WorkflowPreview({
                           key={a.id}
                           className="space-y-3 rounded-xl border border-border p-4"
                         >
-                          <p>{a.storyboard!.concept}</p>
-                          {a.storyboard!.scenes.map((s) => (
-                            <details key={s.id}>
-                              <summary className="cursor-pointer text-sm">
-                                Shot {s.number}: {s.startMs / 1000}–
-                                {s.endMs / 1000}s · {s.purpose}
-                              </summary>
-                              <div className="mt-2 space-y-2 break-words text-sm">
-                                {Object.entries(s)
-                                  .filter(
-                                    ([key]) =>
-                                      ![
-                                        "id",
-                                        "number",
-                                        "startMs",
-                                        "endMs",
-                                        "purpose",
-                                      ].includes(key),
-                                  )
-                                  .map(([key, value]) => (
-                                    <div key={key}>
-                                      <p className="font-medium capitalize">
-                                        {key.replaceAll(/([A-Z])/g, " $1")}
-                                      </p>
-                                      <ReadableDirection value={value} />
-                                    </div>
-                                  ))}
-                              </div>
-                            </details>
-                          ))}
+                          <V3StoryboardContent storyboard={a.storyboard!} />
                           {!a.current ? (
                             <p
                               role="status"
@@ -1090,7 +1062,7 @@ export function V3WorkflowPreview({
                           ) : a.approved ? (
                             <p className="text-sm">Storyboard approved</p>
                           ) : (
-                            <div className="flex gap-2">
+                            <div className="flex flex-wrap gap-2">
                               <Button
                                 disabled={locked || !a.current}
                                 onClick={() =>
@@ -1432,34 +1404,4 @@ export function V3WorkflowPreview({
       </StudioPanelPortal>
     </>
   );
-}
-
-function ReadableDirection({ value }: { value: unknown }) {
-  if (value === null || value === undefined) return null;
-  if (Array.isArray(value))
-    return (
-      <ul className="space-y-1">
-        {value.map((item, i) => (
-          <li key={i}>
-            <ReadableDirection value={item} />
-          </li>
-        ))}
-      </ul>
-    );
-  if (typeof value === "object")
-    return (
-      <dl className="space-y-1">
-        {Object.entries(value).map(([key, item]) => (
-          <div key={key}>
-            <dt className="inline font-medium capitalize">
-              {key.replaceAll(/([A-Z])/g, " $1")}:{" "}
-            </dt>
-            <dd className="inline">
-              <ReadableDirection value={item} />
-            </dd>
-          </div>
-        ))}
-      </dl>
-    );
-  return <span>{String(value)}</span>;
 }
