@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { videoResolutionSchema } from "@/lib/projects/video-resolution";
 import { digestSchema } from "./contract";
 
 export const privateAssetSchema = z.strictObject({ id: z.uuid(), storageKey: z.string().min(1), etag: z.string().min(1), sha256: digestSchema,
@@ -27,7 +28,7 @@ export type RuntimeQuote = z.infer<typeof quoteSchema>;
 export const runtimeAuthorizationSchema = z.strictObject({ schema: z.literal("v3-paid-authorization-v1"), id: z.uuid(), projectId: z.uuid(),
   packageId: z.uuid(), packageVersion: z.number().int().positive(), packageHash: digestSchema, quoteId: z.uuid(), segmentUuid: z.uuid(),
   segmentId: z.string().min(1), segmentVersion: z.literal(1), segmentHash: digestSchema, provider: z.literal("higgsfield"), model: z.string().min(1),
-  resolution: z.literal("480p"), durationMs: z.number().int().positive(), generateAudio: z.literal(true),
+  resolution: videoResolutionSchema, durationMs: z.number().int().positive(), generateAudio: z.literal(true),
   maxRequests: z.literal(1), maxEstimatedCostMicrousd: z.number().int().nonnegative().safe(), operatorId: z.uuid(),
   packageMaxEstimatedCostMicrousd: z.number().int().nonnegative().safe(),
   approvedAt: z.iso.datetime({ offset: true }), expiresAt: z.iso.datetime({ offset: true }), hash: digestSchema });

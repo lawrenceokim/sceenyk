@@ -14,7 +14,7 @@ const equal = (a: unknown, b: unknown) => { assert.deepEqual(a, b); checks++; };
 const ok = (a: unknown) => { assert.ok(a); checks++; };
 const fails = (fn: () => unknown, code?: string) => { if (code) assert.throws(fn, new RegExp(code)); else assert.throws(fn); checks++; };
 const brief: Parameters<typeof storyboardDirectorInput>[0] = { id: v3Id(2), title: "A purposeful reveal", prompt: "A quiet reveal. No dialogue; use tactile sound and a warm reaction.",
-  aspect_ratio: "9:16", duration: "10", visual_style: "Realistic", tone: "Professional", category: "storytelling", ugc_type: "advertisement", creation_type: "ugc" };
+  aspect_ratio: "9:16", duration: "10", visual_style: "Realistic", tone: "Professional", category: "storytelling", ugc_type: "advertisement", creation_type: "ugc", video_resolution: "480p" };
 const location = { instruction: { name: "Studio", prompt: "An empty studio with a broad working surface." }, sheetHash: "a".repeat(64) };
 const provider = new OpenAICreativeDirectorProvider({ model: "fixture-director", maxOutputTokens: 14000 });
 for (const [category, type] of [["product-ad", "advertisement"], ["cinematic", "advertisement"], ["gaming", "advertisement"], ["storytelling", "explanation"], ["social", "unboxing"]] as const) {

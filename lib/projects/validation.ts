@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { videoResolutionSchema } from "./video-resolution";
 import { saveReferenceNamesSchema } from "./reference-names";
 import {
   aspectRatios,
@@ -37,6 +38,7 @@ export const saveProjectSchema = z.strictObject({
       `Keep the prompt within ${projectPromptLimit.toLocaleString()} characters.`,
     ),
   settings: z.strictObject({
+    resolution: videoResolutionSchema.optional(),
     aspectRatio: z.enum(aspectRatios.map(({ value }) => value)),
     duration: z.enum(storedDurationValues),
     visualStyle: z.enum(visualStyles),

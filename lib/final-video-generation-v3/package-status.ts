@@ -17,6 +17,7 @@ export function packageBuildLabel(d: PackageBuildDetails, status: string) {
     payload: "Preparing generation request", estimate: "Calculating approximate cost", persistence: "Saving Generation Package", ready: "Generation Package ready" }[d.stage];
 }
 export function packageBuildError(code: string) {
+  if (code === "V3_RESOLUTION_PRICING_NOT_CONFIGURED") return "Pricing is not configured for this video resolution. Choose 480p or wait for a verified resolution-specific rate before approving paid generation.";
   if (code === "V3_APPROXIMATE_PRICING_NOT_CONFIGURED") return "Approximate pricing is not configured for this model.";
   if (code === "V3_LOCAL_PRICING_SETUP_REQUIRED") return "Local approximate pricing needs database migration 086 after 085.";
   if (code === "COST_ESTIMATE_UNAVAILABLE") return "This package uses the previous pricing flow. Build package and estimate to apply the local configured rate; your approved creative inputs are preserved.";

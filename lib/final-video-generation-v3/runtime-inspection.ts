@@ -1,4 +1,5 @@
 import "server-only";
+import { projectVideoResolution } from "@/lib/projects/video-resolution";
 import type { RuntimeWorkspace } from "./runtime-store";
 import { V3Store } from "./runtime-store";
 import { readFrozenPackage } from "./package";
@@ -34,7 +35,7 @@ export async function inspectRuntime(w: RuntimeWorkspace) {
   const approvedLocation = w.artifacts.find(a => a.kind === "location" && currentIds.includes(a.id));
   const locationCurrent = !locationDocument(approvedLocation) || await new V3Store().rpc("ugc_v3_location_input_current", { p_project: w.project.project_id, d: approvedLocation!.document.input }) === true;
   if (!locationCurrent) issues.push("REFERENCE_STALE_REGENERATE");
-  const current = locationCurrent && !!w.source?.current && w.source.revision === doc.sourceRevision && doc.source.references.every(r => currentIds.includes(r.id)) &&
+  const current = locationCurrent && doc.source.resolution === projectVideoResolution(brief.video_resolution) && !!w.source?.current && w.source.revision === doc.sourceRevision && doc.source.references.every(r => currentIds.includes(r.id)) &&
     !w.tasks.some(t => ["character", "product", "location", "storyboard"].includes(t.kind) && Date.parse(t.created_at) > Date.parse(w.source!.created_at)) &&
     latestArtifact(w, "storyboard")?.id === doc.source.storyboard.id && !!latestArtifact(w, "storyboard")?.approved_at;
   const report = runtimePreflight(doc, quote, authority, { current, transportEnabled: config.enabled,

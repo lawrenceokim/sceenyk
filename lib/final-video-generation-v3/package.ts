@@ -7,8 +7,9 @@ import { planGenerationSegments } from "./planner";
 import { compileDirectorInstructions } from "./compiler";
 import { validateManualSnapshot } from "./pricing/higgsfield-pricing";
 import { estimateHiggsfieldCost } from "./adapters/higgsfield-pricing";
+import { videoResolutions } from "@/lib/projects/video-resolution";
 
-export const localV3Profile = Object.freeze({ id: "v3-local-480p-preflight", resolution: "480p",
+export const localV3Profile = Object.freeze({ id: "v3-local-480p-preflight", defaultResolution: "480p", supportedResolutions: videoResolutions,
   workflowEnabled: true, planningOnly: true, paidTransportEnabled: false } as const);
 const storedSegmentSchema = z.strictObject({ id: z.string().min(1), version: z.literal(1), startMs: z.number().int().nonnegative(),
   endMs: z.number().int().positive(), durationMs: z.number().int().positive(), includedSceneNumbers: z.array(z.number().int().positive()).min(1),
@@ -76,7 +77,7 @@ export function readFrozenPackage(value: unknown): FrozenPackage {
     let total = 0;
     for (const segment of doc.segments) {
       const s = validateManualSnapshot(segment.estimate.pricing);
-      if (segment.estimate.source !== "manual_provider_estimate" || s.durationMs !== segment.durationMs || s.provider !== doc.capabilitySnapshot.providerId ||
+      if (s.resolution !== undefined && s.resolution !== doc.source.resolution || segment.estimate.source !== "manual_provider_estimate" || s.durationMs !== segment.durationMs || s.provider !== doc.capabilitySnapshot.providerId ||
         s.mode !== `${doc.source.mode}-to-video` || s.pricingVersion !== doc.pricing.pricingVersion || segment.estimate.pricingVersion !== s.pricingVersion || s.configurationDate !== doc.pricing.configurationDate ||
         s.estimatedCostMicrousd !== segment.estimate.estimatedCostMicrousd || segment.estimate.evidenceHash !== v3Digest("manual-pricing", s)) throw new Error("V3_PRICING_SNAPSHOT_INVALID");
       total += s.estimatedCostMicrousd;
@@ -104,6 +105,8 @@ export function packageCurrentness(doc: FrozenPackage, current: unknown, sourceR
 export function packageCost(doc: FrozenPackage, provider: VideoGenerationProvider, now: string) {
   if (doc.pricing.source === "manual_provider_estimate") {
     readFrozenPackage(doc);
+    if (doc.segments.some(s => (s.estimate.pricing?.resolution ?? "480p") !== doc.source.resolution))
+      return { code: "V3_RESOLUTION_PRICING_NOT_CONFIGURED", totalMicrousd: null } as const;
     return { code: null, totalMicrousd: doc.pricing.totalMicrousd! } as const;
   }
   let total = 0;

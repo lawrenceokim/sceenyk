@@ -1,4 +1,5 @@
 const messages: Record<string, string> = {
+  V3_RESOLUTION_PRICING_NOT_CONFIGURED: "Pricing is not configured for this video resolution. Choose 480p or ask the administrator to configure a verified rate before paid generation.",
   V3_DIRECT_APPROVAL_SETUP_REQUIRED: "Video approval needs database migration 092 after 091. Ask the administrator to complete setup; your saved video is preserved.",
   CURRENT_REVIEW_REQUIRED: "This video's package is no longer current. Review the current Generation Package before approving.",
   JOINED_APPROVAL_INVALID: "The final video's package or approved segments changed. See Progress before approving.",

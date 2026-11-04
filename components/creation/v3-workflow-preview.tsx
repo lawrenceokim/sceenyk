@@ -3,9 +3,10 @@ import { V3LocationStatus } from "./v3-location-status";
 import { V3StoryboardContent } from "./v3-storyboard-content";
 import { V3StoryboardSkeleton } from "./v3-storyboard-skeleton";
 import { V3PackageSkeleton } from "./v3-package-skeleton";
+import { V3WorkflowProgress } from "./v3-workflow-progress";
 import { FinalVideoGenerate, FinalVideoReview } from "./v3-final-video-controls";
 import { finalVideoPresentation } from "./v3-final-video-state";
-import { videoExecutionLabel, shouldPollV3Video } from "@/lib/final-video-generation-v3/video-progress";
+import { shouldPollV3Video } from "@/lib/final-video-generation-v3/video-progress";
 import { StudioWorkflowGuidance } from "./studio-workflow-guidance";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -20,10 +21,7 @@ import {
 import { Button } from "@/components/ui/button";
 import type { ProjectAsset } from "@/lib/media/types";
 import type { RuntimeDto } from "@/lib/final-video-generation-v3/runtime-server";
-import {
-  referenceBusy,
-  v3ProgressLabel,
-} from "@/lib/final-video-generation-v3/progress";
+import { referenceBusy } from "@/lib/final-video-generation-v3/progress";
 import { v3ActionErrorMessage } from "@/lib/final-video-generation-v3/reference-errors";
 import { ReferenceRegenerationDialog } from "./reference-regeneration-dialog";
 import { referenceFailureLabel } from "@/lib/final-video-generation-v3/reference-status";
@@ -37,16 +35,6 @@ const money = (amount: number | null) => {
   if (amount === null) return "Unavailable";
   const cents = (BigInt(amount) + BigInt(5000)) / BigInt(10000);
   return `$${cents / BigInt(100)}.${String(cents % BigInt(100)).padStart(2, "0")}`;
-};
-const taskLabels: Record<string, string> = {
-  character: "Character",
-  product: "Product / Prop",
-  location: "Location",
-  storyboard: "Storyboard",
-  package: "Generation Package",
-  video: "Final Video",
-  delete: "Deleting saved work",
-  join: "Finishing video",
 };
 type Action = (
   action: string,
@@ -146,6 +134,7 @@ export function V3WorkflowPreview({
   const [workspace, setWorkspace] = useState(initial ?? null),
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
+  const [statusError, setStatusError] = useState("");
   const [buildActionFailure, setBuildActionFailure] = useState<{
     code: string;
     httpStatus: number | null;
@@ -158,6 +147,7 @@ export function V3WorkflowPreview({
   const refreshLock = useRef(false),
     refreshRequested = useRef(false);
   const actionLock = useRef(false);
+  const workspaceVersion = useRef(0);
   const [regeneration, setRegeneration] = useState<{
     kind: "character" | "product";
     id: string;
@@ -217,17 +207,22 @@ export function V3WorkflowPreview({
       try {
         do {
           refreshRequested.current = false;
+          const version = workspaceVersion.current;
           const response = await fetch(
             `/api/ugc/v3?project=${encodeURIComponent(projectId)}`,
             { cache: "no-store", signal },
           );
           const body = await response.json();
           if (!body.ok) throw new Error(body.code);
-          if (!signal?.aborted) setWorkspace(body.workspace);
+          // An older status read must not overwrite a just-saved approval/action.
+          if (!signal?.aborted && !actionLock.current && version === workspaceVersion.current) {
+            setWorkspace(body.workspace);
+            setStatusError("");
+          }
         } while (refreshRequested.current && !signal?.aborted);
       } catch (e) {
         if (!signal?.aborted)
-          setError(e instanceof Error ? e.message : "V3_STATUS_UNAVAILABLE");
+          setStatusError(e instanceof Error ? e.message : "V3_STATUS_UNAVAILABLE");
       } finally {
         refreshLock.current = false;
       }
@@ -240,6 +235,21 @@ export function V3WorkflowPreview({
     }, 0);
     return () => clearTimeout(timer);
   }, [refresh, revision]);
+  useEffect(() => {
+    // Review/terminal states have no polling timer. Returning to a retained page
+    // still reads saved approvals or recoveries made in another window.
+    const onReturn = () => {
+      if (document.visibilityState === "visible") void refresh();
+    };
+    window.addEventListener("focus", onReturn);
+    window.addEventListener("pageshow", onReturn);
+    document.addEventListener("visibilitychange", onReturn);
+    return () => {
+      window.removeEventListener("focus", onReturn);
+      window.removeEventListener("pageshow", onReturn);
+      document.removeEventListener("visibilitychange", onReturn);
+    };
+  }, [refresh]);
   const processing =
     !!workspace?.processing || !!workspace?.referenceCleanup?.processing || shouldPollV3Video(workspace?.runs ?? []);
   const pollingInterval = workspace?.runs.some(run => run.state === "reconciliation_required" || run.submissionBlocker) ? 10_000 : 3000;
@@ -289,7 +299,9 @@ export function V3WorkflowPreview({
           });
         throw new Error(body.code);
       }
+      workspaceVersion.current++;
       setWorkspace(body.workspace);
+      setStatusError("");
       if (action === "build_package") setApprovedHash(null);
       return true;
     } catch (e) {
@@ -301,6 +313,7 @@ export function V3WorkflowPreview({
     }
   };
   const p = workspace?.preflight;
+  const workflowError = error || statusError;
   const maximumValue =
     p && maximum?.packageHash === p.packageHash
       ? maximum.value
@@ -323,7 +336,7 @@ export function V3WorkflowPreview({
   const packageReady = !!p && p.currentness === "current" && !workspace?.packageStale &&
     p.estimatedCostMicrousd !== null && !!p.quoteId && !packageUpdating && !packageBuildFailed &&
     !packageTask?.packageBuild?.code &&
-    !p.issues.some(issue => ["COST_ESTIMATE_UNAVAILABLE", "V3_LOCAL_PRICING_SNAPSHOT_INVALID"].includes(issue));
+    !p.issues.some(issue => ["COST_ESTIMATE_UNAVAILABLE", "V3_LOCAL_PRICING_SNAPSHOT_INVALID", "V3_RESOLUTION_PRICING_NOT_CONFIGURED"].includes(issue));
   const packageApproved = packageReady && p?.authorizationState === "bound" &&
     !p.issues.some(issue => issue.startsWith("V3_AUTHORIZATION_") || issue === "V3_SEGMENT_AUTHORIZATION_REQUIRED");
   const packageReviewLabel = packageReady
@@ -747,14 +760,14 @@ export function V3WorkflowPreview({
                 Preparing your request…
               </p>
             )}
-            {error && actionArea === "workflow" && (
+            {workflowError && actionArea === "workflow" && (view !== "progress" || !workspace) && (
               <p
                 role="alert"
                 className="break-words rounded-lg border border-destructive/30 p-3 text-sm"
               >
-                {view !== "final" && error !== "V3_DIRECT_APPROVAL_SETUP_REQUIRED" && /PACKAGE|STORYBOARD|APPROV/.test(error)
-                  ? packageBuildError(error)
-                  : v3ActionErrorMessage(error)}
+                {view !== "final" && workflowError !== "V3_DIRECT_APPROVAL_SETUP_REQUIRED" && /PACKAGE|STORYBOARD|APPROV/.test(workflowError)
+                  ? packageBuildError(workflowError)
+                  : v3ActionErrorMessage(workflowError)}
               </p>
             )}
             {!workspace ? (
@@ -763,18 +776,15 @@ export function V3WorkflowPreview({
               </p>
             ) : (
               <>
-                {view === "progress" && <div className="flex flex-wrap items-center justify-between gap-2">
-                  <p role="status" className="text-sm text-muted-foreground">
-                    {v3ProgressLabel(workspace, !!reference("product"))}
-                  </p>
-                  <Button
-                    variant="outline"
-                    disabled={busy}
-                    onClick={() => void refresh()}
-                  >
-                    Check status
-                  </Button>
-                </div>}
+                {view === "progress" && <V3WorkflowProgress
+                  workspace={workspace}
+                  productRequired={!!reference("product")}
+                  busy={busy}
+                  locked={locked}
+                  error={actionArea === "workflow" ? workflowError : statusError}
+                  buildFailure={buildActionFailure}
+                  act={act}
+                />}
                 {view === "storyboard" && (
                   <section className="space-y-3">
                     <h2 className="font-semibold">Storyboard</h2>
@@ -846,6 +856,8 @@ export function V3WorkflowPreview({
                 {view === "package" && (
                   <section className="min-w-0 space-y-3">
                     <h2 className="font-semibold">Package &amp; Estimates</h2>
+                    {workspace.selectedResolution && <p className="text-xs text-muted-foreground">Selected output: {workspace.selectedResolution}</p>}
+                    {workspace.resolutionPricingAvailable === false && <p role="status" className="text-sm text-warning-foreground">Pricing for {workspace.selectedResolution} is not configured. Choose 480p or wait for a verified rate before approving paid generation.</p>}
                     <Button
                       variant="default"
                       className="w-full max-w-full whitespace-normal sm:w-auto"
@@ -880,6 +892,7 @@ export function V3WorkflowPreview({
                     {p && (
                       <>
                         <dl aria-label="Package overview" className="flex min-w-0 flex-wrap gap-2">
+                          <div className="inline-flex max-w-full items-center gap-1.5 rounded-lg bg-primary/10 px-2.5 py-1.5 text-xs font-medium text-primary"><dt>Resolution</dt><dd>{p.resolution}</dd></div>
                           <div className="inline-flex max-w-full items-center gap-1.5 rounded-lg bg-primary/10 px-2.5 py-1.5 text-xs font-medium text-primary">
                             <Clock3 aria-hidden="true" className="size-4 shrink-0" /><dt className="sr-only">Video duration</dt><dd>{p.durationMs / 1000}s</dd>
                           </div>
@@ -957,6 +970,9 @@ export function V3WorkflowPreview({
                           variant="default"
                           className="w-full whitespace-normal"
                           disabled={
+                            !packageReady ||
+                            workspace.resolutionPricingAvailable === false ||
+                            p.issues.includes("V3_RESOLUTION_PRICING_NOT_CONFIGURED") ||
                             packageApproved ||
                             locked ||
                             p.estimatedCostMicrousd === null ||
@@ -996,111 +1012,6 @@ export function V3WorkflowPreview({
                     )}
                   </section>
                 )}
-                {view === "progress" && buildActionFailure && workspace.localEnabled && (
-                  <details className="text-xs text-muted-foreground">
-                    <summary className="cursor-pointer">Build request technical details</summary>
-                    <p>Stage: validation · Code: {buildActionFailure.code} · HTTP status: {buildActionFailure.httpStatus ?? "Not received"}</p>
-                    <p>Package ID: Not assigned · Segment ID: Not assigned · Estimate status: Not requested · Recoverable: No</p>
-                  </details>
-                )}
-                {view === "progress" && packageTask && (
-                  <PackageStatus
-                    task={packageTask}
-                    technical={workspace.localEnabled}
-                  />
-                )}
-                {view === "progress" &&
-                  workspace.tasks
-                    .filter(
-                      (t) =>
-                        t.kind !== "package" &&
-                        t.status !== "done" &&
-                        t.errorCode !== "V3_REFERENCE_REQUEST_SUPERSEDED" &&
-                        (!["character", "product", "location"].includes(
-                          t.kind,
-                        ) ||
-                          workspace.tasks
-                            .filter((n) => n.kind === t.kind)
-                            .at(-1)?.id === t.id),
-                    )
-                    .map((t) => (
-                      <div key={t.id} className="space-y-1">
-                        <p
-                          role="status"
-                          className="text-sm text-muted-foreground"
-                        >
-                          {t.referenceCleanup
-                            ? t.status === "failed"
-                              ? "Unwanted image deletion failed"
-                              : "Deleting unwanted reference image"
-                            : t.location
-                              ? ["failed", "reconciliation_required"].includes(
-                                  t.status,
-                                )
-                                ? t.location.failureLabel
-                                : t.location.label
-                              : t.diagnostics
-                                ? referenceFailureLabel(t.kind, t.diagnostics)
-                                : `${taskLabels[t.kind]}: ${t.status === "queued" ? "Waiting" : t.status === "running" ? "Preparing" : "Recovery required"}`}
-                        </p>
-                        {((!t.location && t.recoveryAvailable) ||
-                          (t.status === "reconciliation_required" &&
-                            t.kind === "storyboard")) && (
-                          <Button
-                            variant="outline"
-                            disabled={busy}
-                            onClick={() =>
-                              void act("recover_task", { id: t.id })
-                            }
-                          >
-                            Recover saved response
-                          </Button>
-                        )}
-                        {t.kind === "join" && t.status === "failed" && (
-                          <Button
-                            variant="outline"
-                            disabled={busy}
-                            onClick={() =>
-                              void act("recover_task", { id: t.id })
-                            }
-                          >
-                            Recover local join
-                          </Button>
-                        )}
-                      </div>
-                    ))}
-                {view === "progress" && p && (
-                  <details className="text-xs text-muted-foreground">
-                    <summary className="cursor-pointer">Final Video prerequisites</summary>
-                    <dl className="mt-2 space-y-1 break-words">
-                      <div><dt className="inline font-medium">Project: </dt><dd className="inline">{p.projectId}</dd></div>
-                      <div><dt className="inline font-medium">Package: </dt><dd className="inline">{p.packageId}</dd></div>
-                      <div><dt className="inline font-medium">Currentness: </dt><dd className="inline">{p.currentness}</dd></div>
-                      <div><dt className="inline font-medium">Authorization: </dt><dd className="inline">{p.authorizationState}</dd></div>
-                      <div><dt className="inline font-medium">Server paid-generation switch: </dt><dd className="inline">{p.transportEnabled ? "On" : "Off"}</dd></div>
-                      <div><dt className="inline font-medium">Submission allowed: </dt><dd className="inline">{p.canSubmit ? "Yes" : "No"}</dd></div>
-                      <div><dt className="inline font-medium">Prerequisite codes: </dt><dd className="inline">{p.issues.join(", ") || "None"}</dd></div>
-                    </dl>
-                  </details>
-                )}
-                {view === "progress" && workspace.runs.length > 0 && (
-                  <details className="space-y-3 text-xs text-muted-foreground">
-                    <summary className="cursor-pointer">Final Video details</summary>
-                    {workspace.runs.map(run => <div key={run.id} className="space-y-1 break-words">
-                      <p>{videoExecutionLabel(run)} · {run.id}</p>
-                      <p>{run.aspectRatio} · {run.resolution} · {run.provider} · {run.model}</p>
-                      <p>Duration: {run.actualDurationMs === null ? "Not measured" : run.actualDurationMs / 1000 + "s"}. Audio: {run.hasAudio === null ? "Not measured" : run.hasAudio ? "Present" : "Absent"}.</p>
-                      <p>Estimated cost: ~{money(run.displayEstimatedCostMicrousd ?? run.estimatedCostMicrousd)}. Actual provider cost: {run.actualCostMicrousd === null ? "Unknown" : money(run.actualCostMicrousd)}.</p>
-                      {run.errorCode && <p>{run.errorCode}</p>}
-                      {run.submissionBlocker && <p>{run.submissionBlocker}</p>}
-                      {run.outputHostname && <p>Download host requiring administrator approval: {run.outputHostname}</p>}
-                      <details><summary className="cursor-pointer">Expected dialogue and shot timing</summary>
-                        {run.expectedDialogue.map((line, index) => <p key={index}>{line.startMs / 1000}–{line.endMs / 1000}s · {line.speaker}: {line.text}</p>)}
-                        <p>{run.shotTimings.map(shot => "Shot " + shot.number + ": " + shot.startMs / 1000 + "–" + shot.endMs / 1000 + "s").join("; ")}</p>
-                      </details>
-                    </div>)}
-                  </details>
-                )}
                 {view === "final" && (
                   <section className="min-w-0 space-y-4">
                     <h2 className="font-semibold">Final Video</h2>
@@ -1139,28 +1050,7 @@ export function V3WorkflowPreview({
                     ))}
                   </section>
                 )}
-                {view === "progress" &&
-                  p &&
-                  workspace.runs.some((r) => r.packageId !== p.packageId) && (
-                    <details className="space-y-3">
-                      <summary className="cursor-pointer text-sm">
-                        Earlier attempts and saved work
-                      </summary>
-                      {workspace.runs
-                        .filter((r) => r.packageId !== p.packageId)
-                        .map((r) => (
-                          <FinalVideoReview
-                            key={r.id}
-                            run={r}
-                            act={act}
-                            busy={locked}
-                            segmentCount={1}
-                            compact
-                          />
-                        ))}
-                    </details>
-                  )}
-                {workspace.complete && (
+                {workspace.complete && view !== "progress" && (
                   <p role="status" className="font-semibold">
                     Complete
                   </p>

@@ -6,8 +6,8 @@ import { calculateManualEstimate, getEstimatedRate } from "./higgsfield-pricing"
 export function currentDisplayPricing(doc: FrozenPackage) {
   const segments = doc.segments.map(segment => {
     const saved = segment.estimate.pricing;
-    const estimate = saved && getEstimatedRate(saved.provider, saved.model, saved.mode)
-      ? calculateManualEstimate(saved.provider, saved.model, saved.mode, segment.durationMs).estimatedCostMicrousd
+    const estimate = saved && getEstimatedRate(saved.provider, saved.model, saved.mode, doc.source.resolution)
+      ? calculateManualEstimate(saved.provider, saved.model, saved.mode, segment.durationMs, doc.source.resolution).estimatedCostMicrousd
       : segment.estimate.estimatedCostMicrousd;
     return { id: segment.id, estimatedCostMicrousd: estimate };
   });

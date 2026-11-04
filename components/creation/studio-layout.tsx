@@ -400,21 +400,17 @@ export function StudioLayout({
                     aria-label="Preview content"
                   >
                     {selected ? (
-                      <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-2">
-                        <div className="flex shrink-0 items-center justify-between gap-2">
-                          <p className="truncate text-xs text-muted-foreground">
-                            {selected.label}
-                          </p>
-                          <Button
-                            type="button"
-                            size="icon"
-                            variant="ghost"
-                            aria-label="Clear Preview"
-                            onClick={() => setSelectedId(null)}
-                          >
-                            <X className="size-4" aria-hidden="true" />
-                          </Button>
-                        </div>
+                      <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="ghost"
+                          aria-label="Clear Preview"
+                          className="absolute top-2 right-2 z-10 size-8 rounded-full border border-border/60 bg-background/75 p-2 text-foreground shadow-sm backdrop-blur-sm hover:bg-background/90 [@media(pointer:coarse)]:size-11"
+                          onClick={() => setSelectedId(null)}
+                        >
+                          <X className="size-4" aria-hidden="true" />
+                        </Button>
                         <StudioMediaView media={selected} />
                       </div>
                     ) : (
@@ -514,25 +510,27 @@ export function StudioLayout({
             >
               <DialogContent
                 showCloseButton={false}
-                className="[&&]:inset-0 [&&]:flex [&&]:h-dvh [&&]:w-screen [&&]:max-h-none [&&]:max-w-none [&&]:translate-x-0 [&&]:translate-y-0 [&&]:flex-col [&&]:gap-2 [&&]:rounded-none [&&]:p-3 [&&]:pt-[max(12px,env(safe-area-inset-top))] [&&]:pb-[max(12px,env(safe-area-inset-bottom))]"
+                className="[&&]:inset-0 [&&]:flex [&&]:h-dvh [&&]:w-screen [&&]:max-h-none [&&]:max-w-none [&&]:translate-x-0 [&&]:translate-y-0 [&&]:flex-col [&&]:gap-0 [&&]:rounded-none [&&]:p-3 [&&]:pt-[max(12px,env(safe-area-inset-top))] [&&]:pb-[max(12px,env(safe-area-inset-bottom))]"
               >
-                <DialogTitle className="shrink-0 truncate py-3 pr-12 text-sm">
+                <DialogTitle className="sr-only">
                   {mobileImage?.label ?? "Image preview"}
                 </DialogTitle>
-                <DialogClose
-                  render={
-                    <Button
-                      type="button"
-                      size="icon"
-                      variant="ghost"
-                      aria-label="Close image preview"
-                      className="absolute top-[max(8px,env(safe-area-inset-top))] right-2 size-11"
-                    />
-                  }
-                >
-                  <X className="size-5" aria-hidden="true" />
-                </DialogClose>
-                {mobileImage && <StudioMediaView media={mobileImage} />}
+                <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
+                  <DialogClose
+                    render={
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        aria-label="Close image preview"
+                        className="absolute top-2 right-2 z-10 size-11 rounded-full border border-border/60 bg-background/75 p-2 text-foreground shadow-sm backdrop-blur-sm hover:bg-background/90"
+                      />
+                    }
+                  >
+                    <X className="size-5" aria-hidden="true" />
+                  </DialogClose>
+                  {mobileImage && <StudioMediaView media={mobileImage} />}
+                </div>
               </DialogContent>
             </Dialog>
           </StudioToolbarTarget.Provider>

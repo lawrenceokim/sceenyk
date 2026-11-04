@@ -27,6 +27,7 @@ export type AppUserProfile = Pick<
 >;
 
 export type ProjectFields = {
+  video_resolution?: import("@/lib/projects/video-resolution").VideoResolution;
   creation_type: CreationType;
   ugc_type: UgcType;
   title: string;

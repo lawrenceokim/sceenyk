@@ -31,12 +31,13 @@ export async function referenceOriginals(owner: string, project: string): Promis
 }
 // Preserve the 077 checkpoint hash recipe. Creation Type is separately frozen in generationContext.
 export function creativeBriefHash(brief: Awaited<ReturnType<typeof projectBrief>>) {
-  const { creation_type: _creationType, ...legacyBrief } = brief;
+  const { creation_type: _creationType, video_resolution: _resolution, ...legacyBrief } = brief;
   void _creationType;
+  void _resolution; // Output resolution is not a reference/Storyboard creative dependency.
   return v3Digest("brief", legacyBrief);
 }
 export async function projectBrief(owner: string, project: string) {
-  const r = await createDatabaseClient().from("projects").select("id,title,prompt,aspect_ratio,duration,visual_style,tone,category,ugc_type,creation_type")
+  const r = await createDatabaseClient().from("projects").select("id,title,prompt,aspect_ratio,duration,visual_style,tone,category,ugc_type,creation_type,video_resolution")
     .eq("id", project).eq("owner_user_id", owner).is("deleted_at", null).maybeSingle();
   if (r.error || !r.data) throw new Error("FRESH_V3_PROJECT_REQUIRED"); return r.data;
 }

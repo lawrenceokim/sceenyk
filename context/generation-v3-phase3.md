@@ -1,5 +1,9 @@
 # M10 V3 Phase 3 — local runtime and first-test preparation
 
+## User-selectable video resolution (2026-11-04)
+
+V3 now routes the saved 480p/720p/1080p setting through Studio, new Director metadata, frozen output packages/segments, authorization/payload guards, worker/recovery validation and requested-versus-measured output displays. Resolution changes preserve approved references and the reusable creative Storyboard; prior output packages become stale without changing their saved bytes. Existing 480p hashes, prices, submitted requests and historical outputs remain compatible. Manual **093 after 092** is required. **720p/1080p paid authorization remains blocked until verified resolution-specific local rates are configured**; no price is invented or fetched from Higgsfield. [Routing, pricing evidence, setup, checks and changed files](v3-video-resolution.md) supersede dated 480p-only execution-profile statements below. No live project/provider/media/migration/configuration/deployment operation ran.
+
 ## Automatic V3 processing and production setup (2026-11-04)
 
 This is the current execution contract and supersedes dated per-project worker/OFF-after-acceptance instructions below. Ordinary users approve their current owned Generation Package and click Generate Final Video once. The existing action atomically queues the existing V3 run/task; a supervised service discovers the database's project/owner records and processes it automatically. Project/package activation UUIDs, per-project terminal commands and per-request environment toggles are not required. The administrator may leave UGC_V3_HIGGSFIELD_ENABLED=1 for normal operation; only the administrator controls this switch. OFF blocks new admission and skips every unsubmitted paid video claim, while accepted work keeps polling/downloading/saving.

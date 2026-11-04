@@ -147,6 +147,7 @@ async function videoTask(store: V3Store, task: Task, w: RuntimeWorkspace, signal
   await stage("V3_FINAL_VIDEO_JOB_CLAIMED");
   await executeV3Segment(run, task.provider_started, { provider: transport, beforeSubmit: async intent => {
     assertV3Transport(config, intent);
+    if (intent.body.resolution !== doc.source.resolution || intent.authorization.resolution !== doc.source.resolution) throw new Error("V3_RESOLUTION_BINDING_INVALID");
     // Do not mark a request started when its signed inputs have already expired.
     if (Date.parse(intent.deliveryExpiresAt) <= Date.now()) throw new Error("V3_REFERENCE_DELIVERY_EXPIRED");
     if (doc.pricing.source !== "manual_provider_estimate" && config.accountScope !== doc.accountScope) throw new Error("HIGGSFIELD_ESTIMATE_ACCOUNT_CHANGED");
@@ -158,7 +159,7 @@ async function videoTask(store: V3Store, task: Task, w: RuntimeWorkspace, signal
     stage,
     checkpoint: (action, payload) => store.checkpoint(task, action, payload), readSaved: name => readSpool(run.id, name),
     save: (name, bytes) => saveSpool(run.id, name, bytes), validateAndPublish: async bytes => {
-      const metadata = await inspectVideo(run.id, bytes, { durationMs: segment.durationMs, aspectRatio: doc.source.storyboardContent.aspectRatio, generateAudio: true });
+      const metadata = await inspectVideo(run.id, bytes, { durationMs: segment.durationMs, aspectRatio: doc.source.storyboardContent.aspectRatio, generateAudio: true, resolution: run.intent.authorization.resolution });
       return publishPrivate(w.project.owner_user_id, task.project_id, run.id, bytes, metadata, signal);
     } }, signal);
 }

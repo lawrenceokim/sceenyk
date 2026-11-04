@@ -54,7 +54,7 @@ export class HiggsfieldV3Transport {
     const intent = paidIntentSchema.parse(value); assertV3Transport(this.config, intent);
     const { hash, ...content } = intent;
     if (hash !== v3Digest("paid-intent", content) || intent.authorization.projectId !== intent.projectId || intent.authorization.packageId !== intent.packageId ||
-      intent.authorization.packageHash !== intent.packageHash || intent.authorization.segmentUuid !== intent.segmentUuid || intent.authorization.model !== intent.model)
+      intent.authorization.packageHash !== intent.packageHash || intent.authorization.segmentUuid !== intent.segmentUuid || intent.authorization.model !== intent.model || intent.authorization.resolution !== intent.body.resolution)
       throw new Error("V3_PAID_INTENT_BINDING_INVALID");
     if (!models.has(intent.model) || exactBodyHash(intent.body) !== intent.bodyHash || Date.parse(intent.deliveryExpiresAt) <= Date.now()) throw new Error("V3_INTENT_INVALID_OR_EXPIRED");
     const response = await this.json(`https://api.higgsfield.ai/${intent.model}`, "POST", intent.body, signal, intent.idempotencyKey);

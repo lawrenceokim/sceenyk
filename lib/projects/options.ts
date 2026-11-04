@@ -47,6 +47,7 @@ export const tones = [
 ] as const;
 
 export interface CreationSettings {
+  resolution?: import("./video-resolution").VideoResolution;
   aspectRatio: (typeof aspectRatios)[number]["value"];
   duration: (typeof storedDurationValues)[number];
   visualStyle: (typeof visualStyles)[number];

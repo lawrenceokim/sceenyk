@@ -1,4 +1,5 @@
 import "server-only";
+import { videoResolutionSchema } from "@/lib/projects/video-resolution";
 import { z } from "zod";
 import { higgsfieldModels } from "./higgsfield";
 
@@ -9,7 +10,7 @@ export const validityEvidenceSchema = z.strictObject({ model: z.literal(higgsfie
   maxPromptBytes: z.number().int().positive(), maxBodyBytes: z.number().int().positive() });
 export function higgsfieldRequestIssues(body: Record<string, unknown>, references: { sizeBytes: number; mimeType: string }[], evidence: unknown, now: string): string[] {
   const parsed = validityEvidenceSchema.safeParse(evidence);
-  const bodyShape = z.strictObject({ prompt: z.string().min(1), duration: z.number().int().min(4).max(30), resolution: z.literal("480p"),
+  const bodyShape = z.strictObject({ prompt: z.string().min(1), duration: z.number().int().min(4).max(30), resolution: videoResolutionSchema,
     output_format: z.literal("mp4"), generate_audio: z.literal(true), aspect_ratio: z.enum(["16:9", "4:3", "1:1", "3:4", "9:16", "21:9"]),
     image_urls: z.array(z.url()).min(1) });
   if (!bodyShape.safeParse(body).success) return ["HIGGSFIELD_REQUEST_INVALID"];

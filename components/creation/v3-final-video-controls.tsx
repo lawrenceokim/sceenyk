@@ -61,6 +61,7 @@ export function FinalVideoReview({ run, act, busy, segmentCount, generating = fa
         </DialogContent>
       </Dialog>
     </>}
+    {!compact && ["awaiting_review", "approved"].includes(run.state) && <p className="text-xs text-muted-foreground">Requested: {run.resolution}{run.actualDimensions ? ` · Actual: ${run.actualDimensions.width} × ${run.actualDimensions.height}` : ""}</p>}
     {run.state === "deleted" && <p className="text-sm text-muted-foreground">Video deleted. Approve the Generation Package again to generate another video.</p>}
     {run.submissionBlocker && <p role="status" className="text-sm text-muted-foreground">{videoRequestBlocker(run.submissionBlocker) ?? "Video generation is paused. See Progress for details."}</p>}
     {run.errorCode && <p role="alert" className="text-sm text-muted-foreground">

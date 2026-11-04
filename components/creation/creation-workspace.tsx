@@ -30,6 +30,8 @@ import { StudioLayout } from "./studio-layout";
 import { StudioPanelPortal, StudioPanelTarget, type StudioPreviewMedia } from "./studio-workspace-panels";
 import { StudioInspectorSection } from "./studio-inspector-section";
 import { StudioAspectControl } from "./studio-aspect-control";
+import { StudioResolution } from "./studio-resolution";
+import { projectVideoResolution } from "@/lib/projects/video-resolution";
 import { GenerationSettings } from "./generation-settings";
 import { MediaDropzone } from "./media-dropzone";
 import { PromptComposer } from "./prompt-composer";
@@ -224,7 +226,8 @@ function WorkspaceEditor({
       settings.aspectRatio !== savedBrief.settings.aspectRatio ||
       settings.duration !== savedBrief.settings.duration ||
       settings.visualStyle !== savedBrief.settings.visualStyle ||
-      settings.tone !== savedBrief.settings.tone);
+      settings.tone !== savedBrief.settings.tone ||
+      projectVideoResolution(settings.resolution) !== projectVideoResolution(savedBrief.settings.resolution));
 
   function saveDraft(): Promise<string | null> {
     if (saveInFlight.current) return saveInFlight.current;
@@ -557,26 +560,10 @@ function WorkspaceEditor({
         /></StudioInspectorSection>
                     <StudioInspectorSection title="Style & pacing"><GenerationSettings settings={settings} onChange={setSettings}
                       ugcType={creationType === "ugc" ? ugcType : undefined} onUgcTypeChange={setUgcType} /></StudioInspectorSection>
-                    <StudioInspectorSection title="Narration"><section className={`
-      studio-property [&&]:min-w-[0] [&&]:text-[length:var(--ui-text-control)] [&&_h2]:text-[length:var(--ui-text-panel)]
-      [&&_h2]:font-[600] [&&_legend]:text-[length:var(--ui-text-panel)] [&&_legend]:font-[600]
-      [&&_.text-body-sm]:text-[length:12px] [&&_.text-body-sm]:leading-[18px]
-      [&&_[data-slot='button']]:min-h-[var(--workspace-control-height)] [&&_[data-slot='button']]:h-[auto]
-      [&&_[data-slot='button']]:pt-[6px] [&&_[data-slot='button']]:pr-[8px] [&&_[data-slot='button']]:pb-[6px]
-      [&&_[data-slot='button']]:pl-[8px] [&&_[data-slot='button']]:text-[length:var(--ui-text-control)]
-      [&&_[data-slot='button']]:rounded-[var(--ui-radius-control)] [&&_fieldset]:min-w-[0]
-      [.studio-inspector-content_>_&&_>_h2]:absolute [.studio-inspector-content_>_&&_>_h2]:w-[1px]
-      [.studio-inspector-content_>_&&_>_h2]:h-[1px] [.studio-inspector-content_>_&&_>_h2]:overflow-hidden
-      [.studio-inspector-content_>_&&_>_h2]:[clip-path:inset(50%)] [.studio-inspector-content_>_&&_>_label]:mt-[0]
-      [.studio-sources_&&_>_div:first-child]:gap-[8px] [.studio-sources_&&_>_div:first-child_>_span]:pt-[2px]
-      [.studio-sources_&&_>_div:first-child_>_span]:pr-[8px] [.studio-sources_&&_>_div:first-child_>_span]:pb-[2px]
-      [.studio-sources_&&_>_div:first-child_>_span]:pl-[8px] [.studio-sources_&&_h2_svg]:w-[16px]
-      [.studio-sources_&&_h2_svg]:h-[16px] [.studio-sources_&&_h2_svg]:text-[color:var(--muted-foreground)]
-      [.studio-sources_&&_>_div:first-child_>_span.rounded-full]:[background:var(--muted)]
-      [.studio-sources_&&_>_div:first-child_>_span.rounded-full]:text-[color:var(--muted-foreground)]
-    `}>
-                      <p className="mt-2 text-caption text-muted-foreground">Narration follows your prompt.</p>
-                    </section></StudioInspectorSection>
+                    {(v3 || !initialProject && creationType === "ugc") && <StudioInspectorSection title="Resolution"><StudioResolution
+                      value={projectVideoResolution(settings.resolution)}
+                      onChange={resolution => setSettings({ ...settings, resolution })} />
+                    </StudioInspectorSection>}
                     <div className="md:hidden">{status}</div>
                     {creationType !== "ugc" && controls}
                   </>

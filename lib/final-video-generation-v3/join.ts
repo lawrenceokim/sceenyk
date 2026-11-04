@@ -19,7 +19,7 @@ export async function joinV3Segments(id: string, doc: FrozenPackage, runs: Run[]
   const ordered = approvedJoinInputs(doc, runs), paths: string[] = [];
   const saved = await readSpool(id, "video.mp4");
   if (saved) {
-    const metadata = await inspectVideo(id, saved, { durationMs: doc.source.storyboardContent.durationMs, aspectRatio: doc.source.storyboardContent.aspectRatio, generateAudio: true });
+    const metadata = await inspectVideo(id, saved, { durationMs: doc.source.storyboardContent.durationMs, aspectRatio: doc.source.storyboardContent.aspectRatio, generateAudio: true, resolution: doc.source.resolution });
     const asset = await publishPrivate(doc.source.scope.ownerId, doc.source.scope.projectId, id, saved, metadata, signal);
     return { asset, packageId: doc.id, packageHash: doc.hash, segments: ordered.map(s => ({ runId: s.runId, assetHash: s.asset.sha256, segmentId: s.segmentId })) };
   }
@@ -33,7 +33,7 @@ export async function joinV3Segments(id: string, doc: FrozenPackage, runs: Run[]
   await runMediaCommand("ffmpeg", ["-v", "error", "-nostdin", "-y", "-threads", "1", "-filter_complex_threads", "1", "-protocol_whitelist", "file,pipe",
     ...paths.flatMap(file => ["-i", file]), "-filter_complex", filters, "-map", "[v]", "-map", "[a]", "-c:v", "libx264", "-crf", "18", "-c:a", "aac", "-movflags", "+faststart", output]);
   const bytes = await fs.readFile(output), metadata = await inspectVideo(id, bytes, { durationMs: doc.source.storyboardContent.durationMs,
-    aspectRatio: doc.source.storyboardContent.aspectRatio, generateAudio: true });
+    aspectRatio: doc.source.storyboardContent.aspectRatio, generateAudio: true, resolution: doc.source.resolution });
   const asset = await publishPrivate(doc.source.scope.ownerId, doc.source.scope.projectId, id, bytes, metadata, signal);
   return { asset, packageId: doc.id, packageHash: doc.hash, segments: ordered.map(s => ({ runId: s.runId, assetHash: s.asset.sha256, segmentId: s.segmentId })) };
 }

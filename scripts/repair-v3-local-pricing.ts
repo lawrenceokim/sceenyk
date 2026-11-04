@@ -30,7 +30,7 @@ async function main() {
   const refs = approvedArtifacts(before, await projectBrief(owner, project), await referenceOriginals(owner, project));
   if (original.source.references.some(r => !refs.some(a => a.id === r.id && a.version === r.version))) throw new Error("APPROVED_INPUT_STALE");
   if (before.runs.some(r => r.package_id === id) || before.runtimeAuthorizations.some(a => a.document.packageId === id)) throw new Error("V3_AUTHORIZED_PACKAGE_PRESERVED");
-  const estimate = original.segments.reduce((sum, s) => sum + calculateManualEstimate("higgsfield", higgsfieldModels[original.source.mode], `${original.source.mode}-to-video`, s.durationMs).estimatedCostMicrousd, 0);
+  const estimate = original.segments.reduce((sum, s) => sum + calculateManualEstimate("higgsfield", higgsfieldModels[original.source.mode], `${original.source.mode}-to-video`, s.durationMs, original.source.resolution).estimatedCostMicrousd, 0);
   if (!args.includes("--repair")) { console.info(JSON.stringify({ projectId: project, originalPackageId: id, current: true, estimatedCostMicrousd: estimate,
     pricingVersion: pricingConfiguration.version, providerCalls: 0, repairApplied: false }, null, 2)); return; }
   let task;

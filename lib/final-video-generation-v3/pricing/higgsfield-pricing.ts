@@ -1,28 +1,29 @@
 import { manualPricingSchema, type ManualPricing } from "./contract";
 import type { CostEstimate, VideoCommand } from "../contract";
 import { v3Digest } from "../identity";
+import { defaultVideoResolution, projectVideoResolution, type VideoResolution } from "@/lib/projects/video-resolution";
 
 // Sceenyk testing estimates, not official provider prices or guaranteed charges.
 export const pricingConfiguration = Object.freeze({ version: "seedance-observed-2026-11-01", date: "2026-11-01",
   source: "manual_provider_estimate" as const, authorizationBufferBasisPoints: 2000, authorizationLifetimeMs: 24 * 60 * 60 * 1000,
   rates: Object.freeze([
-    Object.freeze({ provider: "higgsfield", model: "bytedance/seedance-2.5/text-to-video", mode: "text-to-video", rate: 470100 }),
-    Object.freeze({ provider: "higgsfield", model: "bytedance/seedance-2.5/image-to-video", mode: "image-to-video", rate: 470100 }),
+    Object.freeze({ provider: "higgsfield", model: "bytedance/seedance-2.5/text-to-video", mode: "text-to-video", resolution: "480p", rate: 470100 }),
+    Object.freeze({ provider: "higgsfield", model: "bytedance/seedance-2.5/image-to-video", mode: "image-to-video", resolution: "480p", rate: 470100 }),
     // Observed $6.17 / 30s at 480p, 9:16, audio enabled; rounded to whole micro-USD for the existing estimator.
     Object.freeze({ provider: "higgsfield", model: "bytedance/seedance-2.5/reference-to-video", mode: "reference-to-video",
-      observedUsdPerSecond: "0.2056666667", rate: 205667 }),
+      resolution: "480p", observedUsdPerSecond: "0.2056666667", rate: 205667 }),
   ]) });
 export const pricingSourceUrl = "https://open.higgsfield.ai/models/bytedance/seedance-2.5/reference-to-video/playground";
-export function getEstimatedRate(provider: string, model: string, mode: string) {
-  return pricingConfiguration.rates.find(r => r.provider === provider && r.model === model && r.mode === mode) ?? null;
+export function getEstimatedRate(provider: string, model: string, mode: string, resolution: VideoResolution = defaultVideoResolution) {
+  return pricingConfiguration.rates.find(r => r.provider === provider && r.model === model && r.mode === mode && r.resolution === resolution) ?? null;
 }
 export const decimalUsd = (microusd: number) => `${Math.floor(microusd / 1_000_000)}.${String(microusd % 1_000_000).padStart(6, "0")}`;
-export function calculateManualEstimate(provider: string, model: string, mode: string, durationMs: number): ManualPricing {
-  const rate = getEstimatedRate(provider, model, mode);
-  if (!rate) throw new Error("V3_APPROXIMATE_PRICING_NOT_CONFIGURED");
+export function calculateManualEstimate(provider: string, model: string, mode: string, durationMs: number, resolution: VideoResolution = defaultVideoResolution): ManualPricing {
+  const rate = getEstimatedRate(provider, model, mode, resolution);
+  if (!rate) throw new Error(resolution === "480p" ? "V3_APPROXIMATE_PRICING_NOT_CONFIGURED" : "V3_RESOLUTION_PRICING_NOT_CONFIGURED");
   if (!Number.isSafeInteger(durationMs) || durationMs < 4000 || durationMs > 30000 || durationMs % 1000) throw new Error("V3_PRICING_DURATION_INVALID");
   const cost = durationMs / 1000 * rate.rate;
-  return manualPricingSchema.parse({ provider, model, mode, durationMs, rateMicrousdPerSecond: rate.rate,
+  return manualPricingSchema.parse({ provider, model, mode, durationMs, ...(resolution !== "480p" ? { resolution } : {}), rateMicrousdPerSecond: rate.rate,
     estimatedUsdPerSecond: "observedUsdPerSecond" in rate ? rate.observedUsdPerSecond : decimalUsd(rate.rate).slice(0, -2),
     estimatedUsd: decimalUsd(cost), estimatedCostMicrousd: cost,
     pricingSource: pricingConfiguration.source, pricingVersion: pricingConfiguration.version, configurationDate: pricingConfiguration.date });
@@ -42,7 +43,14 @@ export function validateManualSnapshot(value: unknown) {
   return s; // Historical snapshots reproduce their frozen rate, independently of today's configuration.
 }
 export function localCostEstimate(command: VideoCommand, model: string, mode: string): CostEstimate {
-  const pricing = calculateManualEstimate("higgsfield", model, mode, command.direction.durationMs);
+  const resolution = projectVideoResolution(command.resolution);
+  if (!getEstimatedRate("higgsfield", model, mode, resolution)) return {
+    status: "unavailable", source: "unavailable", sourceUrl: pricingSourceUrl, pricingVersion: pricingConfiguration.version,
+    estimatedCostMicrousd: null, evidenceHash: null,
+    reason: command.resolution === "480p" ? "V3_APPROXIMATE_PRICING_NOT_CONFIGURED" : "V3_RESOLUTION_PRICING_NOT_CONFIGURED",
+    actualProviderCostMicrousd: null, providerReceipt: null,
+  };
+  const pricing = calculateManualEstimate("higgsfield", model, mode, command.direction.durationMs, resolution);
   return { status: "estimated", source: "manual_provider_estimate", sourceUrl: pricingSourceUrl, pricingVersion: pricing.pricingVersion,
     estimatedCostMicrousd: pricing.estimatedCostMicrousd, evidenceHash: v3Digest("manual-pricing", pricing), pricing,
     reason: null, actualProviderCostMicrousd: null, providerReceipt: null };

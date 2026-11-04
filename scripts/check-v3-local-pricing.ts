@@ -27,9 +27,11 @@ for(const resolution of ["480p","720p","1080p"] as const)for(const ratio of ["9:
   const input=v3Input([30000]);input.resolution=resolution;input.storyboardContent.aspectRatio=ratio;sealV3(input);
   const context=v3Context(input,provider);context.now=now;context.accountScope="no-provider-credentials";
   const doc=buildFrozenPackage(input,provider,context,{id:v3Id(100),version:1,sourceRevision:1});
-  eq(doc.pricing.totalMicrousd,6170010);eq(doc.pricing.expiresAt,null);eq(doc.pricing.pricingVersion,pricingConfiguration.version);
+  eq(doc.pricing.totalMicrousd,resolution === "480p" ? 6170010 : null);eq(doc.pricing.expiresAt,null);
+  if (resolution === "480p") eq(doc.pricing.pricingVersion,pricingConfiguration.version);
+  else eq(doc.segments[0].estimate.reason,"V3_RESOLUTION_PRICING_NOT_CONFIGURED");
   eq(readFrozenPackage(JSON.parse(JSON.stringify(doc))).hash,doc.hash);
-  eq(packageCost(doc,provider,"2030-01-01T00:00:00Z").totalMicrousd,6170010);
+  eq(packageCost(doc,provider,"2030-01-01T00:00:00Z").totalMicrousd,resolution === "480p" ? 6170010 : null);
 }
 const input=v3Input([30000,30000]),context=v3Context(input,provider);context.now=now;
 const doc=buildFrozenPackage(input,provider,context,{id:v3Id(101),version:1,sourceRevision:1});

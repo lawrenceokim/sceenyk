@@ -1,4 +1,5 @@
 import "server-only";
+import { videoResolutionSchema } from "@/lib/projects/video-resolution";
 import { z } from "zod";
 import { digestSchema } from "./contract";
 import type { VideoGenerationProvider } from "./contract";
@@ -9,7 +10,7 @@ export const authorizationSchema = z.strictObject({ workflow: z.literal("final-v
   projectId: z.uuid(), packageId: z.uuid(), packageVersion: z.number().int().positive(), packageHash: digestSchema,
   providerId: z.string().min(1), profileId: z.string().min(1), model: z.string().min(1),
   maxRequests: z.number().int().positive().safe(), maxEstimatedCostMicrousd: z.number().int().nonnegative().safe(),
-  resolution: z.literal("480p"), durationMs: z.number().int().positive(), segmentCount: z.number().int().positive(),
+  resolution: videoResolutionSchema, durationMs: z.number().int().positive(), segmentCount: z.number().int().positive(),
   operatorApproval: z.strictObject({ operatorId: z.uuid(), approvedAt: z.iso.datetime({ offset: true }),
     decision: z.literal("approve_exact_package"), expiresAt: z.iso.datetime({ offset: true }) }), hash: digestSchema });
 export type V3Authorization = z.infer<typeof authorizationSchema>;

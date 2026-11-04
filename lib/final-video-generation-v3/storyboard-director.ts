@@ -1,4 +1,5 @@
 import "server-only";
+import { projectVideoResolution } from "@/lib/projects/video-resolution";
 import { directorStoryboardSchema, type DirectorStoryboard } from "./contract";
 import { generationContext } from "./generation-context";
 import type { projectBrief } from "./creative-inputs";
@@ -49,7 +50,7 @@ export function storyboardDirectorInput(brief: Brief, roles: readonly string[], 
     throw new Error("V3_REFERENCES_REQUIRED");
   const context = generationContext(brief);
   return [
-    `Saved creative inputs: ${JSON.stringify({ title: brief.title, ...context, durationMs: Number(brief.duration) * 1000, aspectRatio: brief.aspect_ratio })}`,
+    `Saved creative inputs: ${JSON.stringify({ title: brief.title, ...context, durationMs: Number(brief.duration) * 1000, aspectRatio: brief.aspect_ratio, resolution: projectVideoResolution(brief.video_resolution) })}`,
     "The following directing suggestions are subordinate to every explicit saved user preference; apply only the parts compatible with the brief.",
     `Creation Type (${context.creationType}): ${context.creationType === "ugc" ? "Use a credible subject-led or demonstration-led approach where requested; do not force on-camera speech or a sales persona." : "Let the requested visual scene and creative concept determine the performance and structure rather than defaulting to a presenter advertisement."}`,
     `Content Type (${context.type}): ${contentApproaches[context.type]}`,

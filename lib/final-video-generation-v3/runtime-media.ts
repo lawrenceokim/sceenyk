@@ -1,4 +1,5 @@
 import "server-only";
+import { assertV3VideoMetadata, type VideoExpectation } from "./video-metadata";
 import { createHash, randomUUID } from "node:crypto";
 import { promises as fs } from "node:fs";
 import path from "node:path";
@@ -81,12 +82,10 @@ export async function inspectImage(bytes: Buffer) {
   if (!meta.width || !meta.height || (meta.pages ?? 1) !== 1) throw new Error("V3_IMAGE_INVALID");
   return { bytes: png, metadata: { mimeType: "image/png" as const, width: meta.width, height: meta.height, durationMs: 0, hasAudio: false } };
 }
-export async function inspectVideo(id: string, bytes: Buffer, expected: { durationMs: number; aspectRatio: string; generateAudio: boolean }) {
+export async function inspectVideo(id: string, bytes: Buffer, expected: VideoExpectation) {
   if (!bytes.length || bytes.length > 256 * 1024 * 1024) throw new Error("V3_VIDEO_SIZE_INVALID");
-  const file = await saveSpool(id, "video.mp4", bytes), meta = await measure(file, "video/mp4"), [w, h] = expected.aspectRatio.split(":").map(Number);
-  // Technical 250ms test tolerance is explicit local policy, not a provider guarantee.
-  if (Math.abs(meta.durationMs - expected.durationMs) > 250 || Math.abs(meta.width / meta.height - w / h) > 0.01 ||
-    Math.min(meta.width, meta.height) !== 480 || expected.generateAudio && !meta.hasAudio) throw new Error("V3_VIDEO_TECHNICAL_VALIDATION_FAILED");
+  const file = await saveSpool(id, "video.mp4", bytes), meta = await measure(file, "video/mp4");
+  assertV3VideoMetadata(meta, expected);
   return { mimeType: "video/mp4" as const, width: meta.width, height: meta.height, durationMs: meta.durationMs, hasAudio: meta.hasAudio };
 }
 export async function deletePrivate(owner: string, project: string, asset: PrivateAsset, signal: AbortSignal) {

@@ -44,6 +44,7 @@ export async function packageTask(store: V3Store, task: Task, w: RuntimeWorkspac
           maxRequests: 0, maxCostMicrousd: 0, consumedRequests: 0, committedCostMicrousd: 0 } };
       const identity = { id: details.packageId, version: Number(task.input.packageVersion), sourceRevision: source.revision };
       const provisional = buildFrozenPackage(input, provider, context, identity), media = new Map<string, string>();
+      if (provisional.pricing.status !== "estimated") throw new Error(provisional.segments.find(s => s.estimate.reason)?.estimate.reason ?? "V3_APPROXIMATE_PRICING_NOT_CONFIGURED");
       await stage("delivery");
       let expiry = Date.now() + 5 * 60_000;
       for (const ref of input.references) {

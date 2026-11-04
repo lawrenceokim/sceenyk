@@ -1,10 +1,11 @@
 import { z } from "zod";
+import { defaultVideoResolution, videoResolutionSchema } from "@/lib/projects/video-resolution";
 import { manualPricingSchema, type ManualPricing } from "./pricing/contract";
 import { packageSceneSchema } from "@/lib/video-generation-package/contract";
 import { transitionSchema, voiceDeliverySchema, audioCueSchema } from "@/lib/execution-v1/contract";
 
 export const V3_WORKFLOW = "final-video-v3" as const;
-export const V3_TEST_RESOLUTION = "480p" as const;
+export const V3_TEST_RESOLUTION = defaultVideoResolution; // Historical export; default, not an execution restriction.
 const positive = z.number().int().positive();
 const ms = z.number().int().nonnegative().max(600_000);
 const text = z.string().trim().min(1).max(2000);
@@ -34,7 +35,7 @@ export const planningInputSchema = z.strictObject({ workflow: z.literal(V3_WORKF
   package: approval, storyboard: approval,
   direction: z.string().trim().min(1).max(64_000), storyboardContent: directorStoryboardSchema,
   mode: z.enum(["text", "image", "reference"]).default("reference"),
-  resolution: z.string().min(1).default(V3_TEST_RESOLUTION), format: z.string().min(1).default("mp4"),
+  resolution: videoResolutionSchema.default(defaultVideoResolution), format: z.string().min(1).default("mp4"),
   generateAudio: z.boolean().default(true), references: z.array(referenceSchema).max(100),
   requiredCapabilities: z.array(z.string().min(1).max(120)).max(20).default([]) });
 export type PlanningInput = z.infer<typeof planningInputSchema>;

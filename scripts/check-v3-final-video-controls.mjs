@@ -111,6 +111,8 @@ try {
   reviewProps.run={...baseRun,submissionBlocker:'V3_REFERENCE_DELIVERY_EXPIRED'};
   find(review(),n=>n.type?.name==='Button'&&text(n)==='Refresh saved request links').props.onClick();equal(actions.at(-1),['refresh_video_delivery',{id:'saved-run'}]);
   reviewProps.run={...baseRun,state:'deleting'};find(review(),n=>n.type?.name==='Button'&&text(n)==='Retry deletion').props.onClick();equal(actions.at(-1),['recover',{id:'saved-run'}]);
+  reviewProps.run={...baseRun,state:'approved',resolution:'720p',actualDimensions:{width:720,height:1280}};tree=review();
+  equal(text(tree).includes('Requested: 720p'),true);equal(text(tree).includes('Actual: 720 × 1280'),true);
   equal(networkCalls,0);
   console.log(JSON.stringify({checks,realNetworkCalls:networkCalls,scope:'Final Video saved-state UI and actual handlers'}));
 }finally{globalThis.fetch=originalFetch;delete globalThis.__referenceReact;delete globalThis.__studioPanels;}

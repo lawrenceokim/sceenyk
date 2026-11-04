@@ -4,6 +4,7 @@ import { ensureAppUser } from "@/lib/auth/ensure-app-user";
 import { createDatabaseClient } from "@/lib/db/server";
 import type { ProjectFields, ProjectRow } from "@/lib/db/types";
 import { legacyDuration, projectPageSize } from "./options";
+import { projectVideoResolution } from "./video-resolution";
 import { ugcV1ReferenceLimitsSchema } from "./ugc-v1";
 import { readOwnedUgcV1References } from "./ugc-v1-server";
 import { eligibleForV3, enrolledV3 } from "@/lib/final-video-generation-v3/enrollment";
@@ -25,9 +26,9 @@ import type {
 } from "./types";
 
 const briefColumns =
-  "id,title,category,prompt,creation_type,ugc_type,aspect_ratio,duration,visual_style,tone,status,created_at,updated_at";
+  "id,title,category,prompt,creation_type,ugc_type,aspect_ratio,duration,visual_style,tone,video_resolution,status,created_at,updated_at";
 const summaryColumns =
-  "id,title,category,creation_type,ugc_type,aspect_ratio,duration,visual_style,tone,status,created_at,updated_at";
+  "id,title,category,creation_type,ugc_type,aspect_ratio,duration,visual_style,tone,video_resolution,status,created_at,updated_at";
 
 export class ProjectAccessError extends Error {
   constructor() {
@@ -59,6 +60,8 @@ function toSummary(
     creationType: row.creation_type ?? "freestyle",
     ugcType: row.ugc_type ?? "advertisement",
     settings: {
+      // Preserve the shape of historical 480p/legacy generation snapshots.
+      ...(row.video_resolution && row.video_resolution !== "480p" ? { resolution: projectVideoResolution(row.video_resolution) } : {}),
       aspectRatio: row.aspect_ratio,
       duration: row.duration,
       visualStyle: row.visual_style,
@@ -96,7 +99,12 @@ export async function saveOwnedProject(
     return { ok: false, code: "INVALID_INPUT", message };
   }
   const { id, mode, title, category, prompt, settings, creationType, ugcType, referenceNames } = parsed.data;
+  if (projectVideoResolution(settings.resolution) !== "480p" &&
+    !(mode === "create" ? eligibleForV3(user.id, creationType) : await enrolledV3(user.id, id))) {
+    return { ok: false, code: "INVALID_INPUT", message: "This resolution requires a V3 video project." };
+  }
   const fields: ProjectFields = {
+    video_resolution: projectVideoResolution(settings.resolution),
     title,
     category,
     prompt,

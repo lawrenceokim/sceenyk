@@ -65,7 +65,7 @@ class OwnedV3Workspace {
     if (operatorApproved !== true) throw new Error("OPERATOR_SOURCE_REVIEW_REQUIRED");
     const workspace = await this.read(projectId), input = planningInputSchema.parse(raw);
     if (input.scope.projectId !== projectId || input.scope.ownerId !== this.ownerId || input.scope.jobId !== workspace.project.logical_job_id ||
-      input.resolution !== "480p" || input.format !== "mp4" || input.mode !== "reference" || !input.generateAudio) throw new Error("V3_SOURCE_SCOPE_INVALID");
+      input.format !== "mp4" || input.mode !== "reference" || !input.generateAudio) throw new Error("V3_SOURCE_SCOPE_INVALID");
     const privateBindings = z.record(z.uuid(), bindingSchema).parse(bindings), verified: Record<string, unknown> = {};
     const original = await createDatabaseClient().from("project_assets").select("id,storage_key,verified_etag,size_bytes")
       .eq("id", input.provenance.originalImageId).eq("project_id", projectId).eq("owner_user_id", this.ownerId).eq("upload_status", "uploaded").maybeSingle();

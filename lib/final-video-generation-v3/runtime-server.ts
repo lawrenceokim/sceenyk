@@ -1,4 +1,6 @@
 import "server-only";
+import { projectVideoResolution } from "@/lib/projects/video-resolution";
+import { getEstimatedRate } from "./pricing/higgsfield-pricing";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { ensureAppUser } from "@/lib/auth/ensure-app-user";
@@ -56,7 +58,8 @@ export async function runtimeDto(w: RuntimeWorkspace) {
     approved: !!a.approved_at, rejected: !!a.rejected_at, storyboard: a.kind === "storyboard" ? directorStoryboardSchema.parse(a.document.storyboard) : null,
     preview: a.document.asset && !w.referenceDeletions.some(d=>d.id===a.id&&d.state==="prepared") && (!a.rejected_at || ["character", "product", "location"].includes(a.kind)) ? await previewUrl(privateAssetSchema.parse(a.document.asset)) : null })));
   const runs = await Promise.all(w.runs.map(async r => ({ id: r.id, packageId: r.package_id, segmentId: r.intent.segmentId, state: r.state,
-    provider: r.intent.provider, model: r.intent.model, resolution: "480p", aspectRatio: String(r.intent.body.aspect_ratio),
+    provider: r.intent.provider, model: r.intent.model, resolution: r.intent.authorization.resolution, aspectRatio: String(r.intent.body.aspect_ratio),
+    ...(r.result ? { actualDimensions: { width: r.result.width, height: r.result.height } } : {}),
     estimatedCostMicrousd: r.intent.estimatedCostMicrousd, actualCostMicrousd: r.observation?.actualCostMicrousd ?? null,
     displayEstimatedCostMicrousd: displayPricing(r.package_id)?.segments.find(s => s.id === r.intent.segmentId)?.estimatedCostMicrousd ?? r.intent.estimatedCostMicrousd,
     stage: videoStage(w.tasks.find(t => t.kind === "video" && t.input.runId === r.id)?.output),
@@ -74,7 +77,8 @@ export async function runtimeDto(w: RuntimeWorkspace) {
     const deletion = w.tasks.find(t => t.kind === "delete" && t.input.artifactId === a.id);
     const state: Run["state"] = a.approved_at ? "approved" : a.rejected_at ? deletion?.status === "done" ? "deleted" : "deleting" : "awaiting_review";
     return { id: a.id, packageId: doc.id, segmentId: "joined", state, completedAt: a.approved_at,
-      provider: "higgsfield", model: "multiple segments", resolution: "480p", aspectRatio: doc.source.storyboardContent.aspectRatio,
+      provider: "higgsfield", model: "multiple segments", resolution: doc.source.resolution, aspectRatio: doc.source.storyboardContent.aspectRatio,
+      ...(asset ? { actualDimensions: { width: asset.width, height: asset.height } } : {}),
       estimatedCostMicrousd: doc.pricing.totalMicrousd, actualCostMicrousd: null, stage: null, outputHostname: null, submissionBlocker: null, hasKnownRequest: false,
       displayEstimatedCostMicrousd: currentDisplayPricing(doc).totalMicrousd,
       current: !!w.source?.current && w.source.revision === doc.sourceRevision && w.runs.filter(r => r.package_id === doc.id).every(r => r.current),
@@ -123,6 +127,8 @@ export async function runtimeDto(w: RuntimeWorkspace) {
       canStartNew: location?.canGenerate ?? diagnostics?.canStartNew ?? false };
   }));
   return { projectId: w.project.project_id, packageStale: w.packages.length > 0 && !preflight, artifacts, runs: [...runs, ...joined],
+    ...(projectVideoResolution(brief.video_resolution) !== "480p" ? { selectedResolution: projectVideoResolution(brief.video_resolution),
+      resolutionPricingAvailable: !!getEstimatedRate("higgsfield", "bytedance/seedance-2.5/reference-to-video", "reference-to-video", projectVideoResolution(brief.video_resolution)) } : {}),
     preflight: preflight ? { ...preflight, displayEstimatedCostMicrousd: preflightPricing?.totalMicrousd ?? preflight.estimatedCostMicrousd,
       segments: preflight.segments.map(s => ({ ...s, displayEstimatedCostMicrousd: preflightPricing?.segments.find(d => d.id === s.id)?.estimatedCostMicrousd ?? s.estimatedCostMicrousd })) } : null, complete,
     referenceCleanup:{enabled:w.referenceCleanupPolicy,pendingCount:discardableReferences(w).length,
@@ -261,7 +267,7 @@ export async function ownedV3Action(raw: unknown) {
       storyboard: { id: storyboard.id, version: storyboard.version, hash: storyboardContentHash(directorStoryboardSchema.parse(storyboard.document.storyboard)), approvedAt: storyboard.approved_at },
       direction: JSON.stringify({ ...context, duration: brief.duration, aspectRatio: brief.aspect_ratio, narration: "Follows the saved scene instructions",
         ...(storyboard.document.input && (storyboard.document.input as { directorVersion?: string }).directorVersion === STORYBOARD_DIRECTOR_VERSION ? { promptCompiler: STORYBOARD_PROMPT_COMPILER_VERSION } : {}),
-        ...(location ? { approvedLocation: location } : {}) }), storyboardContent: storyboard.document.storyboard, mode: "reference", resolution: "480p", format: "mp4", generateAudio: true,
+        ...(location ? { approvedLocation: location } : {}) }), storyboardContent: storyboard.document.storyboard, mode: "reference", resolution: projectVideoResolution(brief.video_resolution), format: "mp4", generateAudio: true,
       references: refs.map(r => { const asset = privateAssetSchema.parse(r.document.asset); return { id: r.id, projectId: a.projectId, originWorkflow: "final-video-v3", role: r.kind,
         kind: "image", name: r.kind, version: r.version, approvalId: r.id, approvalVersion: r.version, sha256: asset.sha256,
         sizeBytes: asset.sizeBytes, mimeType: asset.mimeType, durationMs: null }; }), requiredCapabilities: [] });
