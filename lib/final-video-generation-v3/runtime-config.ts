@@ -2,11 +2,19 @@ import "server-only";
 import { z } from "zod";
 
 export function v3LocalEnabled() { return process.env.NODE_ENV === "development" && process.env.UGC_V3_ENABLED === "1"; }
+// Multi-user access is an explicit administrator rollout. Every caller still needs
+// authenticated identity and the existing owner-scoped database operations.
+export function v3OwnedAccessEnabled() { return process.env.UGC_V3_ENABLED === "1" && process.env.UGC_V3_ACCESS_MODE === "owned"; }
+export function v3RuntimeEnabled() { return v3OwnedAccessEnabled() || (!process.env.UGC_V3_ACCESS_MODE || process.env.UGC_V3_ACCESS_MODE === "operator") && v3LocalEnabled(); }
+export function v3UserAllowed(ownerId: string) {
+  return v3RuntimeEnabled() && (v3OwnedAccessEnabled() ? z.uuid().safeParse(ownerId).success : process.env.UGC_V3_OPERATOR_USER_ID === ownerId);
+}
+export function assertV3Access(ownerId: string) { if (!v3UserAllowed(ownerId)) throw new Error("V3_ACCESS_UNAVAILABLE"); }
 export function assertV3Operator(ownerId: string) {
   if (!v3LocalEnabled() || process.env.UGC_V3_OPERATOR_USER_ID !== ownerId) throw new Error("V3_LOCAL_OPERATOR_REQUIRED");
 }
 export function v3TransportConfig() {
-  return { enabled: v3LocalEnabled() && process.env.UGC_V3_HIGGSFIELD_ENABLED === "1",
+  return { enabled: v3RuntimeEnabled() && process.env.UGC_V3_HIGGSFIELD_ENABLED === "1",
     credentials: process.env.UGC_V3_HIGGSFIELD_CREDENTIALS ?? "", accountScope: process.env.UGC_V3_HIGGSFIELD_ACCOUNT_SCOPE ?? "",
     outputHosts: (process.env.UGC_V3_HIGGSFIELD_OUTPUT_HOSTS ?? "").split(",").map(s => s.trim()).filter(Boolean) };
 }
@@ -23,7 +31,7 @@ export function assertV3Transport(config: ReturnType<typeof v3TransportConfig>, 
 export function v3ReferenceConfig() {
   const config = { apiKey: process.env.OPENAI_API_KEY?.trim() ?? "", imageModel: process.env.OPENAI_V3_IMAGE_MODEL?.trim() ?? "",
     directorModel: process.env.OPENAI_V3_DIRECTOR_MODEL?.trim() ?? "" };
-  if (!v3LocalEnabled() || process.env.UGC_V3_OPENAI_ENABLED !== "1" || !config.apiKey ||
+  if (!v3RuntimeEnabled() || process.env.UGC_V3_OPENAI_ENABLED !== "1" || !config.apiKey ||
     !/^[a-zA-Z0-9._:-]{1,200}$/.test(config.imageModel)) throw new Error("V3_OPENAI_REFERENCE_PROVIDER_UNAVAILABLE");
   return config;
 }

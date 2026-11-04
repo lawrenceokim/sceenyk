@@ -6,6 +6,7 @@ import { V3PackageSkeleton } from "./v3-package-skeleton";
 import { V3FinalVideoSkeleton } from "./v3-final-video-skeleton";
 import { finalVideoPresentation } from "./v3-final-video-state";
 import { videoRequestBlocker } from "@/lib/final-video-generation-v3/video-request-status";
+import { videoExecutionLabel, shouldPollV3Video } from "@/lib/final-video-generation-v3/video-progress";
 import { StudioWorkflowGuidance } from "./studio-workflow-guidance";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -64,21 +65,6 @@ const videoStateLabels: Record<RuntimeDto["runs"][number]["state"], string> = {
   deleting: "Deleting video",
   deleted: "Video deleted",
 };
-function videoProgressLabel(stage?: string) {
-  return stage
-    ? (
-        {
-          V3_FINAL_VIDEO_JOB_CLAIMED: "Preparing video generation",
-          HIGGSFIELD_SUBMITTING: "Submitting video request",
-          HIGGSFIELD_REQUEST_ACCEPTED: "Video request accepted",
-          HIGGSFIELD_PROCESSING: "Generating video",
-          HIGGSFIELD_RESULT_RECEIVED: "Downloading and checking video",
-          V3_FINAL_VIDEO_SAVED: "Preparing saved video preview",
-          V3_FINAL_VIDEO_READY_FOR_REVIEW: "Ready for review",
-        } as Record<string, string>
-      )[stage]
-    : undefined;
-}
 const taskLabels: Record<string, string> = {
   character: "Character",
   product: "Product / Prop",
@@ -216,10 +202,7 @@ function VideoReview({
           : videoStateLabels[run.state]}
       </h2>
       <p role="status" className="text-sm text-muted-foreground">
-        {videoRequestBlocker(run.submissionBlocker) ?? (["queued", "submitting", "provider_processing"].includes(run.state)
-          ? (videoProgressLabel(run.stage?.stage) ??
-            videoStateLabels[run.state])
-          : videoStateLabels[run.state])}
+        {videoRequestBlocker(run.submissionBlocker) ?? videoExecutionLabel(run)}
       </p>
       {run.preview && (
         <Button
@@ -395,13 +378,13 @@ function VideoReview({
               </summary>
               <p className="break-all">Hostname: {run.outputHostname}</p>
               <p>
-                Verify this host, add it exactly to
-                UGC_V3_HIGGSFIELD_OUTPUT_HOSTS, restart the local worker, and
-                recover this saved request.
+                The administrator must approve this exact download host.
+                The processing service will recover this same accepted request
+                after its configuration is updated.
               </p>
             </details>
           )}
-          <p>Recovery will not submit another generation request.</p>
+          <p>Your saved request is preserved. Recovery does not submit another generation.</p>
         </div>
       )}
       {run.state === "queued" && run.submissionBlocker === "V3_REFERENCE_DELIVERY_EXPIRED" && (
@@ -542,21 +525,22 @@ export function V3WorkflowPreview({
     return () => clearTimeout(timer);
   }, [refresh, revision]);
   const processing =
-    !!workspace?.processing || !!workspace?.referenceCleanup?.processing;
+    !!workspace?.processing || !!workspace?.referenceCleanup?.processing || shouldPollV3Video(workspace?.runs ?? []);
+  const pollingInterval = workspace?.runs.some(run => run.state === "reconciliation_required" || run.submissionBlocker) ? 10_000 : 3000;
   useEffect(() => {
     if (!projectId || !processing) return;
     const controller = new AbortController();
     let timer: ReturnType<typeof setTimeout>;
     const tick = async () => {
       await refresh(controller.signal);
-      if (!controller.signal.aborted) timer = setTimeout(tick, 3000);
+      if (!controller.signal.aborted) timer = setTimeout(tick, pollingInterval);
     };
-    timer = setTimeout(tick, 3000);
+    timer = setTimeout(tick, pollingInterval);
     return () => {
       clearTimeout(timer);
       controller.abort();
     };
-  }, [projectId, processing, refresh]);
+  }, [projectId, processing, pollingInterval, refresh]);
   const act: Action = async (action, payload = {}) => {
     if (actionLock.current) return false;
     actionLock.current = true;
@@ -982,7 +966,7 @@ export function V3WorkflowPreview({
   };
   return (
     <>
-      <StudioWorkflowMedia media={previewMedia} />
+      <StudioWorkflowMedia media={previewMedia} autoSelectVideo />
       <StudioWorkflowGuidance projectId={projectId} ready={!!workspace} referencesComplete={referencesComplete}
         complete={!!workspace?.complete} selectStoryboard={selectStoryboard} />
       <ReferenceRegenerationDialog
@@ -1402,7 +1386,7 @@ export function V3WorkflowPreview({
                     {finalVideo.reason && (
                       <p role="status" className="text-sm text-muted-foreground">
                         {finalVideo.loading && finalVideo.activeRuns[0]
-                          ? videoProgressLabel(finalVideo.activeRuns[0].stage?.stage) ?? videoStateLabels[finalVideo.activeRuns[0].state]
+                          ? videoExecutionLabel(finalVideo.activeRuns[0])
                           : finalVideo.reason}
                       </p>
                     )}

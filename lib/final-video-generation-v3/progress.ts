@@ -1,9 +1,10 @@
 import { referenceFailureLabel, type ReferenceDiagnostics } from "./reference-status";
 import { packageBuildLabel, type PackageBuildDetails } from "./package-status";
+import { videoExecutionLabel, type SavedVideoProgress } from "./video-progress";
 type ProgressTask = { kind: string; status: string; current: boolean; providerStarted: boolean; createdAt: string; leaseUntil: string | null; errorCode: string | null;
   canStartNew?: boolean; recoveryAvailable?: boolean; referenceCleanup?:boolean; packageBuild?: PackageBuildDetails | null; diagnostics?: ReferenceDiagnostics | null; location?: { label: string; failureLabel: string; requestCount: number } | null };
 type ProgressArtifact = { kind: string; version: number; current: boolean; approved: boolean; rejected: boolean };
-type ProgressState = { complete: boolean; tasks: ProgressTask[]; artifacts: ProgressArtifact[]; runs: { state: string }[] };
+type ProgressState = { complete: boolean; tasks: ProgressTask[]; artifacts: ProgressArtifact[]; runs: SavedVideoProgress[]; preflight?: { packageId: string } | null };
 const subjects: Record<string, string> = { character: "Character Sheet", product: "Product Sheet", location: "Location", storyboard: "Storyboard",
   package: "Generation Package", video: "Final Video", join: "Final Video", delete: "saved video" };
 export function referenceBusy(tasks: ProgressTask[], kind: string, now = Date.now()) {
@@ -15,6 +16,9 @@ export function referenceBusy(tasks: ProgressTask[], kind: string, now = Date.no
 }
 export function v3ProgressLabel(state: ProgressState, productRequired: boolean, now = Date.now()) {
   if (state.complete) return "Complete";
+  if (state.tasks.some(t => t.kind === "join" && ["queued", "running"].includes(t.status))) return "Saving";
+  const video = state.runs.filter(r => r.state !== "deleted" && r.current !== false && (!state.preflight || r.packageId === state.preflight.packageId)).at(-1);
+  if (video) return videoExecutionLabel(video);
   const cleanup = state.tasks.find(t => t.status === "cleanup_pending");
   if (cleanup) return `${subjects[cleanup.kind]} cleanup needs attention`;
   const failure = state.tasks.find((t, i) => ["character", "product", "location"].includes(t.kind) && ["failed", "reconciliation_required"].includes(t.status)

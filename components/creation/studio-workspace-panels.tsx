@@ -20,7 +20,7 @@ export const StudioPanelsContext = createContext<{
   targets: Partial<Record<StudioPanel, HTMLDivElement>>;
   register: (panel: StudioPanel, element: HTMLDivElement | null) => void;
   selectMedia: (id: string) => void;
-  setWorkflowMedia: (media: StudioPreviewMedia[], collection: string) => void;
+  setWorkflowMedia: (media: StudioPreviewMedia[], collection: string, autoSelectVideo?: boolean) => void;
   setWorkflowAttention: (attention: boolean) => void;
   openWorkflow: () => void;
 } | null>(null);
@@ -41,9 +41,9 @@ export function StudioPanelPortal({ panel, children }: { panel: StudioPanel; chi
   return target ? createPortal(children, target) : null;
 }
 
-export function StudioWorkflowMedia({ media, collection = "workflow" }: { media: StudioPreviewMedia[]; collection?: string }) {
+export function StudioWorkflowMedia({ media, collection = "workflow", autoSelectVideo = false }: { media: StudioPreviewMedia[]; collection?: string; autoSelectVideo?: boolean }) {
   const setMedia = useStudioPanels()?.setWorkflowMedia;
-  useEffect(() => { setMedia?.(media, collection); }, [setMedia, media, collection]);
+  useEffect(() => { setMedia?.(media, collection, autoSelectVideo); }, [setMedia, media, collection, autoSelectVideo]);
   useEffect(() => () => setMedia?.([], collection), [setMedia, collection]);
   return null;
 }

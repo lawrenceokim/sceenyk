@@ -1,5 +1,10 @@
 # AI Workflow Rules
 
+## Current authorization — automatic V3 processing (2026-11-04)
+
+Implement owner-authorized multi-user admission, an always-running service around the existing V3 SQL queue/worker, quieter stage logging, accepted-request restart recovery and synchronized saved-state UI. Preserve provider payloads, OpenAI/reference/Storyboard/pricing, spending approval, duplicate/unknown-outcome/storage protections and history. Keep default operator access unless an administrator explicitly chooses owned mode. Do not restore paused Inngest, deploy, apply remote migrations, change actual environment settings, run live workers or submit/provider-poll real requests. Verify with offline fixtures only; document one-time production setup and remaining acceptance separately.
+
+
 ## Current authorization — stuck V3 video investigation (2026-11-04)
 
 Inspect saved DB/task/event/local receipt evidence read-only. Fix confirmed worker-pause feedback and safe continuation of the same unsubmitted run only. No provider/account requests, paid retry, new execution, live job/state repair, worker execution or migration application. A provider-free owner action may refresh expired signed references on the existing unsubmitted run with transport OFF, unchanged spending authority and database concurrency fences; 090 remains manual. Preserve accepted-request recovery and all other generation paths.

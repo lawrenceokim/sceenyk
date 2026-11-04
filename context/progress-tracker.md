@@ -1,5 +1,65 @@
 # Progress Tracker
 
+## V3 automatic multi-user video execution (2026-11-04)
+
+**Complete in source/offline acceptance; administrator deployment and live acceptance remain pending.** V3 now has an explicit administrator-owned access mode, a supervised persistent service around the existing SQL tasks/core worker, safe first-submission delivery renewal, known-request restart recovery, monotonic stage logs and synchronized status/Preview. Users approve their current owned package and click Generate once. The administrator may keep the global paid switch ON across eligible requests; OFF skips unsubmitted paid claims and leaves accepted polling/download/storage enabled. No per-project worker, Project/Package activation UUID or between-request switch toggle is required in the service setup.
+
+The local/operator gate was an actual deployment/access restriction, not package authorization. Default operator mode preserves it. UGC_V3_ACCESS_MODE=owned with UGC_V3_ENABLED=1 explicitly admits authenticated project owners in production or development, keeping Clerk/app-user resolution, exact owner-scoped DB reads/actions, fresh enrollment and immutable per-package/segment approval/hash/expiry/model/cost/request ceilings. Unknown modes/foreign IDs/invalid authority fail closed. V3 still uses its existing USD spending approval and does not debit the legacy credit wallet; public commercial funded-budget/settlement policy and billing acceptance remain separate. Existing Inngest ingress/dispatch/schedules stay paused; no legacy workflow is restored.
+
+Migration 091, manual after 090, adds five service-only functions for readiness, paged project/owner discovery, submission-aware claims, monotonic stages and known-request recovery. It checks existing schema/function prerequisites, creates no table, alters no existing function and backfills nothing. Project/task/run leases and the existing active-segment/consumed-authorization uniqueness remain authoritative. The bounded pool accepts new projects into free slots while others run. Unsubmitted expired input links refresh on the SAME run through 090's existing private-byte/lease/CAS/receipt/authority fences while transport remains ON. Provider-started is never reset; unknown outcomes without SQL/local request identity never resubmit or automatically become new executions. Known accepted SQL/local receipts resume after restart, including OFF; output-host trust and expiry still block unsafe retrieval.
+
+Progress and Final Video share saved execution labels: Queued → Submitting → Processing → Downloading → Saving → Ready for Review. Requeued polls cannot rewind persisted stages or masquerade as an unclaimed job. Identical stage logs/pauses are suppressed. Status polling observes all pending/reconciliation states (slower for pauses) so a newly restored local receipt can become visible without another action; GET status never queues/submits. Saved media replaces the skeleton and V3 selects a new video once in central Preview without closing the drawer or overriding later selection on URL refresh. Manual quality approval/rejection, segment/join behavior, provider adapters/payload mapping, OpenAI prompts/models/reference/Storyboard creation, pricing and private storage implementation remain unchanged.
+
+Verification: **1,728 offline checks passed**: 775 actual route/action/worker/PGlite checks over all 91 migrations; 61 access/concurrency/scheduling/heartbeat/status/Preview checks; 191 execution/accepted-recovery checks; 388 OpenAI reference/configuration/style/progress checks; 270 V3 foundation/pricing/compiler/V1/V2 compatibility checks; 43 status/UI checks. All real network/provider counts are zero; provider/storage calls are fixtures. Migration reruns preserve 377 existing function definitions/grants/configurations, and browser roles cannot execute the new functions. Tests cover independent projects and a different authenticated production-mode owner, wrong-owner/forged-owner/package rejection, missing/expired/stale/insufficient authority, concurrent Generate/claim deduplication, monotonic and lease-fenced stages, SQL/local-receipt restart recovery with no extra POST, unknown-outcome refusal, OFF recovery/saving and automatic review/Preview readiness. TypeScript, targeted ESLint and whitespace checks pass. Compose parses offline with restart/storage/health configuration and no automatic paid-switch override. Native multi-connection contention, container build/start, production resource/health/deployment, real provider/account/billing and browser/visual acceptance were not run.
+
+The older scripts/check-v3-studio-ui.tsx direct-SSR fixture requires a server-only test shim and still expects retired Preview view/References markup. Its first markup assertion fails against BOTH current source and unchanged HEAD under the same network-blocked shim. This is a confirmed pre-existing stale fixture, was not weakened/changed and is not counted among passing checks; the current focused status/Preview contracts above pass. No qualifying Next.js feedback candidates arose in the reporting pass.
+
+Reproduce focused checks: npm run test:ugc-v3-background; npm run test:ugc-v3-flow; npm run test:ugc-v3-references; npm run test:ugc-final-v3-phase3; npm run test:ugc-final-v3; npx --no-install tsc --noEmit; targeted ESLint; git diff --check.
+
+[One-time administrator setup and operating requirements](generation-v3-phase3.md#automatic-v3-processing-and-production-setup-2026-11-04): apply 090 if needed, then 091; configure owned mode on app/worker; provision one supervised Linux service with existing DB/R2/OpenAI/Higgsfield configuration, exact trusted output hosts, FFmpeg and persistent private recovery storage. Preserve/mount/copy the original recovery directory when moving an existing worker so local-only receipts/results remain available. The supplied Dockerfile/Compose use non-root execution, restart policy, a persistent volume, heartbeat and graceful shutdown. Set UGC_V3_WORKER_ENABLED=1 on the worker; choose the administrator paid switch explicitly and keep app/worker values consistent. No actual environment/switch, migration, live job/project/package/authorization/execution, provider/storage data, hosting or deployment was changed. No live worker was run.
+
+Changed files (38):
+
+- `.dockerignore`
+- `.env.example`
+- `components/creation/studio-layout.tsx`
+- `components/creation/studio-video-selection.ts`
+- `components/creation/studio-workspace-panels.tsx`
+- `components/creation/v3-final-video-state.ts`
+- `components/creation/v3-workflow-preview.tsx`
+- `compose.ugc-v3.yml`
+- `context/ai-workflow-rules.md`
+- `context/architecture.md`
+- `context/generation-v3-phase3.md`
+- `context/overview.md`
+- `context/progress-tracker.md`
+- `context/ui-context.md`
+- `lib/final-video-generation-v3/background-worker.ts`
+- `lib/final-video-generation-v3/enrollment.ts`
+- `lib/final-video-generation-v3/execution.ts`
+- `lib/final-video-generation-v3/local-worker.ts`
+- `lib/final-video-generation-v3/progress.ts`
+- `lib/final-video-generation-v3/reference-errors.ts`
+- `lib/final-video-generation-v3/refresh-video-delivery.ts`
+- `lib/final-video-generation-v3/runtime-config.ts`
+- `lib/final-video-generation-v3/runtime-inspection.ts`
+- `lib/final-video-generation-v3/runtime-server.ts`
+- `lib/final-video-generation-v3/runtime-store.ts`
+- `lib/final-video-generation-v3/video-progress.ts`
+- `lib/final-video-generation-v3/video-request-status.ts`
+- `lib/final-video-generation-v3/worker-recovery.ts`
+- `lib/final-video-generation-v3/worker.ts`
+- `package.json`
+- `scripts/check-final-video-v3-phase3.ts`
+- `scripts/check-ugc-v3-worker-health.mjs`
+- `scripts/check-v3-background-worker.ts`
+- `scripts/check-v3-location-director.mjs`
+- `scripts/check-v3-reference-routing.ts`
+- `scripts/ugc-v3-background-worker.ts`
+- `supabase/migrations/20261104009100_ugc_v3_background_processing.sql`
+- `workers/ugc-v3/Dockerfile`
+
+
 ## V3 repeated Final Video claim investigation (2026-11-04)
 
 Read-only saved-record evidence identifies paid transport disabled in the worker, rather than a model/provider failure. Run 7349cbcd-13af-4618-8f9c-bd5c03b4858a / task 96c92876-6c90-40d6-8465-94eeb1133222 remains queued with provider_started=false, no lease, no observation/result and no local acceptance/completion/media files. Its task has PAID_V3_EXECUTION_DISABLED and poll_count=65; durable events alternate video_stage/pending with that exact code through 05:00:05 UTC (06:00:05 WAT). The file switch is 1 (file modified 04:45:07 UTC), so the earlier worker's effective environment disagreed with the file. A stale process or inherited shell value explains that mismatch; its old process environment is not available to distinguish them. Both worker commands route to runLocalV3Worker/runV3Task for V3; activation UUID removal does not produce this error. No lease conflict/provider start is recorded. The owned package remains current and its original authority expires 2026-11-05T00:01:55.368Z. Delivery expired 2026-11-04T05:01:10.299Z while paused; blind restart is unsafe until same-run links are refreshed.

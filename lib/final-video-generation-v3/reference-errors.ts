@@ -1,7 +1,9 @@
 const messages: Record<string, string> = {
-  V3_VIDEO_DELIVERY_REFRESH_SETUP_REQUIRED: "Refreshing this unsubmitted request needs database migration 090 after 089. Keep the worker stopped and paid submissions OFF until setup is complete.",
+  V3_ACCESS_UNAVAILABLE: "V3 generation is not available for this account in the current server access mode.",
+  V3_BACKGROUND_SETUP_REQUIRED: "Automatic video processing needs database migration 091 after 090. Ask the administrator to complete worker setup.",
+  V3_VIDEO_DELIVERY_REFRESH_SETUP_REQUIRED: "Refreshing this unsubmitted request needs database migration 090 after 089. Ask the administrator to complete setup.",
   V3_REFRESH_REQUIRES_VIDEO_DISABLED: "Stop the worker, set the server paid-generation switch to 0, and restart the app before refreshing this saved request's links. Refreshing does not submit video generation.",
-  V3_UNSUBMITTED_REQUEST_REQUIRED: "Only a queued request that has never started at the provider can refresh its links. Stop the worker and check the existing request's state; accepted work must use recovery.",
+  V3_UNSUBMITTED_REQUEST_REQUIRED: "The processing service has already claimed or submitted this request. Check its saved status; accepted work is recovered without another paid submission.",
   V3_SAVED_PROVIDER_EVIDENCE_REQUIRES_RECOVERY: "A provider receipt or saved result already exists. Preserve this request and use recovery; its delivery must not be replaced.",
   V3_VIDEO_SETUP_REQUIRED: "Video generation needs database migration 087 after 086. Apply it and restart the app and local worker; keep paid video generation disabled until review.",
   V3_SEGMENT_AUTHORIZATION_REQUIRED: "Review and approve this Generation Package again before explicitly generating another video. Each authorization permits one request.",

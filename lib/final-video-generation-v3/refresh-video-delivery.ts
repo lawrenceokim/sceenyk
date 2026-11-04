@@ -3,7 +3,6 @@ import { readFrozenPackage } from "./package";
 import { paidIntentSchema, type PaidIntent } from "./runtime-contract";
 import { runtimePreflight, type ReferenceDelivery } from "./execution-package";
 import { v3BodyHash, v3Digest } from "./identity";
-import { v3TransportConfig } from "./runtime-config";
 import type { RuntimeWorkspace, V3Store } from "./runtime-store";
 import { prepareVideoDelivery } from "./video-delivery";
 import { readSpool } from "./runtime-media";
@@ -19,9 +18,9 @@ export function refreshedVideoIntent(intent: PaidIntent, delivery: ReferenceDeli
   return paidIntentSchema.parse({ ...updated, hash: v3Digest("paid-intent", updated) });
 }
 
-// Explicit owner action only. This cannot submit, change spending authority, or create an execution.
+// Owner action or trusted worker preparation. Lease/CAS and receipt fences make
+// delivery renewal safe while the global switch stays ON. This never submits.
 export async function refreshQueuedVideoDelivery(store: V3Store, w: RuntimeWorkspace, runId: string, signal: AbortSignal) {
-  if (v3TransportConfig().enabled) throw new Error("V3_REFRESH_REQUIRES_VIDEO_DISABLED");
   const run = w.runs.find(r => r.id === runId), task = w.tasks.find(t => t.kind === "video" && t.input.runId === runId);
   if (!run || !task || run.state !== "queued" || run.observation || run.result || task.provider_started ||
     !["queued", "reconciliation_required"].includes(task.status) || task.lease_until && Date.parse(task.lease_until) > Date.now()) throw new Error("V3_UNSUBMITTED_REQUEST_REQUIRED");

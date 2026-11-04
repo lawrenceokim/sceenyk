@@ -1,5 +1,9 @@
 # Sceenyk
 
+## Automatic owned-project V3 video processing (2026-11-04)
+
+Source/offline support now covers authenticated owner access behind an explicit administrator owned-mode rollout and one supervised V3 queue worker. Users approve their current Generation Package and choose Generate once; independent projects process automatically, accepted requests recover without paid replay, and saved progress/Preview update through review. The paid switch stays administrator-controlled and may remain ON across eligible requests. [One-time deployment, security and verification boundaries](generation-v3-phase3.md#automatic-v3-processing-and-production-setup-2026-11-04). No real provider request, environment change, deployment or remote migration ran; public funded-budget/billing and hosted acceptance remain separate.
+
 ## Local approximate V3 video pricing (2026-10-31)
 
 Normal V3 package build/review/approval now uses the owner's versioned approximate Seedance rates locally: Text/Image $0.4701/sec and Reference $0.5641/sec. Resolution and aspect ratio do not affect this estimate. The current 30s package has a preserved-creative priced revision at ~$16.92; approved references/Storyboard and the original package remain unchanged. Price snapshots are immutable, actual provider cost stays separate and the editable suggested authorization maximum still needs explicit approval. Migration 086 follows installed 085; no provider request, video generation or deployment ran and Higgsfield remains disabled. [Current pricing/setup and repair evidence](generation-v3-phase3.md#local-approximate-pricing-2026-10-31).

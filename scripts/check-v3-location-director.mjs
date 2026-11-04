@@ -10,7 +10,8 @@ const require=createRequire(import.meta.url),builder=require('../lib/video-gener
 const normal=v=>JSON.parse(JSON.stringify(v)),hash=b=>createHash('sha256').update(b).digest('hex');
 let checks=0,networkCalls=0,mode='pass',saveFailure=false,storageFailure=false,deleteFailure=false,deleteAttempts=0;
 let estimateCalls=0,estimateMode='pass',packageSaveFailure=false;
-let fixtureVideo=false,videoPosts=0,videoPolls=0;
+let fixtureVideo=false,videoPosts=0,videoPolls=0,videoComplete=false;
+const fixtureVideoIds=new Set();
 let deliverySequence=0;
 const workerLogs=[];
 const fixtureVideoId=randomUUID();
@@ -18,10 +19,11 @@ let storyboardDurations=[5000,5000];
 let previousFunctionsPreserved=0;
 const equal=(a,b)=>{assert.deepEqual(normal(a),normal(b));checks++;},ok=v=>{assert.ok(v);checks++;};
 const pg=new PGlite(),owner=randomUUID(),oldEnv={...process.env},spool=new Map(),objects=new Map(),calls=[],deleted=[],sources=new Map();
+let actingOwner=owner;
 const master=await sharp({create:{width:1024,height:1024,channels:3,background:'#787878'}}).png().toBuffer();
 const oddImage=await sharp({create:{width:320,height:192,channels:3,background:'#cc2424'}}).png().toBuffer();
 const instruction={name:'Accessible vehicle studio',prompt:'A wide empty vehicle studio with a south entrance, north daylight and clear walkaround space for the saved BMW advertisement. Show the same architecture in all four views.'};
-const call=async(name,args)=>(await pg.query(`select public.${name}(${args.map((_,i)=>`$${i+1}`).join(',')}) value`,args)).rows[0].value;
+const call=async(name,args)=>{const parameters=args.map((_,i)=>`$${i+1}`).join(',');const result=await pg.query(name==='ugc_v3_worker_projects'?`select * from public.${name}(${parameters})`:`select public.${name}(${parameters}) value`,args);return name==='ugc_v3_worker_projects'?result.rows:result.rows[0].value;};
 const db={async rpc(name,args){try{return{data:await call(name,Object.values(args)),error:null};}catch(e){return{data:null,error:{code:e.code,message:e.message}};}},
  from(table){assert.ok(['projects','project_assets','ugc_v3_projects'].includes(table));let columns='*';const clauses=[],values=[];
  return{select(v){assert.match(v,/^[a-z_,]+$/);columns=v;return this;},eq(k,v){assert.match(k,/^[a-z_]+$/);values.push(v);clauses.push(`${k}=$${values.length}`);return this;},
@@ -37,7 +39,8 @@ const media={bytesHash:hash,readSpool:async(id,name)=>spool.get(`${id}:${name}`)
  deleteReferencePrivate:async(user,project,asset)=>{deleteAttempts++;equal(asset.storageKey,`users/${user}/projects/${project}/v3/${asset.id}.png`);if(deleteFailure)throw new Error('FIXTURE_DELETE_FAILED');if(objects.has(asset.storageKey))equal(objects.get(asset.storageKey).asset.etag,asset.etag);objects.delete(asset.storageKey);deleted.push(asset.id);},
  readPrivate:async key=>objects.get(key)?.bytes??master,
  inspectImage:async bytes=>{const b=await sharp(bytes).rotate().png().toBuffer(),m=await sharp(b).metadata();return{bytes:b,metadata:{mimeType:'image/png',width:m.width,height:m.height,durationMs:0,hasAudio:false}};},
- publishPrivate:async(user,project,id,bytes,meta)=>{if(storageFailure)throw new Error('FIXTURE_STORAGE');const asset={id,storageKey:`users/${user}/projects/${project}/v3/${id}.png`,etag:'fixture',sha256:hash(bytes),sizeBytes:bytes.length,...meta};objects.set(asset.storageKey,{asset,bytes});return asset;},
+ publishPrivate:async(user,project,id,bytes,meta)=>{if(storageFailure)throw new Error('FIXTURE_STORAGE');const asset={id,storageKey:`users/${user}/projects/${project}/v3/${id}.${meta.mimeType==='video/mp4'?'mp4':'png'}`,etag:'fixture',sha256:hash(bytes),sizeBytes:bytes.length,...meta};objects.set(asset.storageKey,{asset,bytes});return asset;},
+ inspectVideo:async(_id,_bytes,expected)=>({mimeType:'video/mp4',width:480,height:854,durationMs:expected.durationMs,hasAudio:true}),
  signPrivate:async a=>({url:`https://private.example.test/${a.id}?signature=${++deliverySequence}`,expiresAt:new Date(Date.now()+300000).toISOString()})};
 async function fixtureResponse(kind,body,options){
  const id=options.headers['X-Client-Request-Id'];
@@ -66,52 +69,53 @@ class FixtureOpenAI{constructor(config){equal(config.maxRetries,0);}
   return{asResponse:()=>fixtureResponse('plan',body,options)};
  }};
  images={generate:(body,options)=>({asResponse:()=>fixtureResponse('sheet',body,options)}),edit:()=>{throw new Error('LOCATION_AUTOMATIC_REPAIR_FORBIDDEN');}};}
-const load=typescriptLoader({'@/lib/auth/ensure-app-user':{ensureAppUser:async()=>({id:owner})},'@/lib/auth/require-user':{requireClerkUser:async()=>({userId:'fixture'})},
+const load=typescriptLoader({'@/lib/auth/ensure-app-user':{ensureAppUser:async()=>({id:actingOwner})},'@/lib/auth/require-user':{requireClerkUser:async()=>({userId:'fixture'})},
  '@/lib/db/server':{createDatabaseClient:()=>db},'./runtime-media':media,
  '@/lib/video-generation-package/builder':{...builder,packageDigest:(d,v)=>builder.packageDigest(d,normal(v)),canonicalJson:v=>builder.canonicalJson(normal(v))},
  './join':{joinV3Segments:async()=>{throw new Error('JOIN_FORBIDDEN');}},'next/navigation':{unstable_rethrow:()=>{}},
  openai:{__esModule:true,default:FixtureOpenAI,toFile:async bytes=>new File([bytes],'source.png',{type:'image/png'})}},
  {Error,Response,Request,File,AbortController,structuredClone:normal,fetch:async(url)=>{
   if(fixtureVideo&&String(url)==='https://api.higgsfield.ai/bytedance/seedance-2.5/reference-to-video'){
-   videoPosts++;return Response.json({request_id:fixtureVideoId,status:'queued',status_url:`https://api.higgsfield.ai/requests/${fixtureVideoId}/status`,cancel_url:`https://api.higgsfield.ai/requests/${fixtureVideoId}/cancel`});
+   videoPosts++;const requestId=videoPosts===1?fixtureVideoId:randomUUID();fixtureVideoIds.add(requestId);return Response.json({request_id:requestId,status:'queued',status_url:`https://api.higgsfield.ai/requests/${requestId}/status`,cancel_url:`https://api.higgsfield.ai/requests/${requestId}/cancel`});
   }
-  if(fixtureVideo&&String(url)===`https://api.higgsfield.ai/requests/${fixtureVideoId}/status`){videoPolls++;return Response.json({request_id:fixtureVideoId,status:'in_progress'});}
+  if(fixtureVideo&&String(url).startsWith('https://api.higgsfield.ai/requests/')){const requestId=String(url).split('/')[4];ok(fixtureVideoIds.has(requestId));videoPolls++;return Response.json({request_id:requestId,status:videoComplete?'completed':'in_progress',...(videoComplete?{video:{url:'https://cdn.example.test/final.mp4'}}:{})});}
+  if(fixtureVideo&&String(url)==='https://cdn.example.test/final.mp4')return new Response(new Uint8Array([1,2,3]));
   if(String(url).startsWith('https://api.higgsfield.ai/estimate/')){estimateCalls++;return estimateMode==='pass'?Response.json({usd:'1.25'}):Response.json({}, {status:503});}networkCalls++;throw new Error('NETWORK_FORBIDDEN');},console:{...console,info(value){if(typeof value==='string'&&value.startsWith('{'))workerLogs.push(JSON.parse(value));}}});
 const route=load('app/api/ugc/v3/route.ts'),{runV3Task}=load('lib/final-video-generation-v3/worker.ts'),{V3Store}=load('lib/final-video-generation-v3/runtime-store.ts');
 const contract=load('lib/final-video-generation-v3/location-contract.ts'),{runtimeDto}=load('lib/final-video-generation-v3/runtime-server.ts');
-const read=async p=>runtimeDto(await new V3Store(db).read(owner,p));
+const read=async p=>runtimeDto(await new V3Store(db).read(actingOwner,p));
 const post=async(project,payload)=>{const r=await route.POST(new Request('https://studio.example.test/api/ugc/v3',{method:'POST',headers:{origin:'https://studio.example.test','content-type':'application/json'},body:JSON.stringify({projectId:project,...payload})}));return{status:r.status,body:await r.json()};};
 const row=async p=>(await pg.query("select * from public.ugc_v3_tasks where project_id=$1 and kind='location' order by created_at desc,id desc limit 1",[p])).rows[0];
-const tick=p=>runV3Task(p,owner,new V3Store(db));
+const tick=p=>runV3Task(p,actingOwner,new V3Store(db));
 const cp=async p=>(await pg.query("select jsonb_build_object('tasks',(select jsonb_agg(to_jsonb(t) order by id) from public.ugc_v3_tasks t where project_id=$1 and kind in ('character','product')),'artifacts',(select jsonb_agg(to_jsonb(a) order by id) from public.ugc_v3_artifacts a where project_id=$1 and kind in ('character','product'))) data",[p])).rows[0].data;
 async function seedSheet(project,role,context,approved=true){
- await call('ugc_v3_runtime_action',[owner,project,'enqueue',{kind:role,requestKey:`${role}:${randomUUID()}`,input:{}}]);
+ await call('ugc_v3_runtime_action',[actingOwner,project,'enqueue',{kind:role,requestKey:`${role}:${randomUUID()}`,input:{}}]);
  const t=await call('ugc_v3_task_claim',[project]);equal(t.kind,role);
- const asset=await media.publishPrivate(owner,project,t.id,master,{mimeType:'image/png',width:1024,height:1024,durationMs:0,hasAudio:false});
+ const asset=await media.publishPrivate(actingOwner,project,t.id,master,{mimeType:'image/png',width:1024,height:1024,durationMs:0,hasAudio:false});
  await media.saveSpool(t.id,'image.png',master);await media.saveSpool(t.id,'openai-response.json',Buffer.from(JSON.stringify({image:master.toString('base64')})));
  await call('ugc_v3_task_checkpoint',[t.id,t.lease_token,'artifact',{id:t.id,document:{asset,original:{id:sources.get(`${project}:${role}`),sha256:hash(master)},input:{generationContext:context}}}]);
- if(approved)await call('ugc_v3_runtime_action',[owner,project,'review_artifact',{id:t.id,decision:'approve'}]);
+ if(approved)await call('ugc_v3_runtime_action',[actingOwner,project,'review_artifact',{id:t.id,decision:'approve'}]);
  return t;
 }
 async function fixture(optional=false,duration='10'){
  const project=randomUUID(),fields={title:'Simple Location fixture',category:'product-ad',prompt:'Present the BMW in an appropriate environment',ugcType:optional?'unboxing':'advertisement',settings:{duration,aspectRatio:'9:16',visualStyle:'Realistic',tone:'Professional'}};
- await call('ugc_v3_create_project',[owner,project,fields]);
+ await call('ugc_v3_create_project',[actingOwner,project,fields]);
  const context=load('lib/final-video-generation-v3/generation-context.ts').generationContext({prompt:fields.prompt,visual_style:'Realistic',creation_type:'ugc',ugc_type:fields.ugcType,tone:'Professional',category:fields.category});
  for(const role of optional?['character']:['character','product']){
   const source=randomUUID();sources.set(`${project}:${role}`,source);
-  await pg.query("insert into public.project_assets(id,owner_user_id,project_id,upload_request_id,storage_key,original_filename,mime_type,size_bytes,media_type,upload_status,verified_etag,studio_role,reference_id,reference_name) values($1,$2,$3,$4,$5,'fixture.png','image/png',$6,'image','uploaded','source-etag',$7,$1,$8)",[source,owner,project,randomUUID(),`users/${owner}/projects/${project}/${source}/fixture.png`,master.length,role,role==='product'?'bmw x6m competition':'Approved Character']);
+  await pg.query("insert into public.project_assets(id,owner_user_id,project_id,upload_request_id,storage_key,original_filename,mime_type,size_bytes,media_type,upload_status,verified_etag,studio_role,reference_id,reference_name) values($1,$2,$3,$4,$5,'fixture.png','image/png',$6,'image','uploaded','source-etag',$7,$1,$8)",[source,actingOwner,project,randomUUID(),`users/${actingOwner}/projects/${project}/${source}/fixture.png`,master.length,role,role==='product'?'bmw x6m competition':'Approved Character']);
   await seedSheet(project,role,context,true);if(role==='character')await seedSheet(project,role,context,true);
  }
  return{project,context};
 }
 async function generate(project){equal((await post(project,{action:'reference',kind:'location'})).status,200);await tick(project);await tick(project);const t=await row(project);assert.equal(t.status,'done',JSON.stringify({code:t.error_code,phase:t.output?.phase}));checks++;return t;}
 try{
- Object.assign(process.env,{NODE_ENV:'development',UGC_V3_ENABLED:'1',UGC_V3_OPENAI_ENABLED:'1',OPENAI_API_KEY:'fixture-only',OPENAI_V3_IMAGE_MODEL:'fixture-image',OPENAI_V3_DIRECTOR_MODEL:'fixture-director',UGC_V3_OPERATOR_USER_ID:owner,UGC_V3_HIGGSFIELD_ENABLED:'0',SCEENYK_LOCAL_JOBS_ONLY:'1',RENDER:'false',VERCEL:'0'});
+ Object.assign(process.env,{NODE_ENV:'development',UGC_V3_ENABLED:'1',UGC_V3_ACCESS_MODE:'operator',UGC_V3_OPENAI_ENABLED:'1',OPENAI_API_KEY:'fixture-only',OPENAI_V3_IMAGE_MODEL:'fixture-image',OPENAI_V3_DIRECTOR_MODEL:'fixture-director',UGC_V3_OPERATOR_USER_ID:owner,UGC_V3_HIGGSFIELD_ENABLED:'0',SCEENYK_LOCAL_JOBS_ONLY:'1',RENDER:'false',VERCEL:'0'});
  await pg.exec('create role anon;create role authenticated;create role service_role bypassrls;');
  const migrations=fs.readdirSync('supabase/migrations').filter(n=>n.endsWith('.sql')).sort();
  for(const file of migrations){
   let previous;
-  if(file.includes('08500')||file.includes('08600')||file.includes('09000'))previous=(await pg.query("select oid::regprocedure::text signature,prosrc,proacl::text grants,proconfig from pg_proc where pronamespace='public'::regnamespace order by oid")).rows;
+  if(file.includes('08500')||file.includes('08600')||file.includes('09000')||file.includes('09100'))previous=(await pg.query("select oid::regprocedure::text signature,prosrc,proacl::text grants,proconfig from pg_proc where pronamespace='public'::regnamespace order by oid")).rows;
   await pg.exec(fs.readFileSync(`supabase/migrations/${file}`,'utf8'));
   if(previous){const current=(await pg.query("select oid::regprocedure::text signature,prosrc,proacl::text grants,proconfig from pg_proc where pronamespace='public'::regnamespace order by oid")).rows;equal(current.filter(f=>previous.some(p=>p.signature===f.signature)),previous);previousFunctionsPreserved=previous.length;}
  }
@@ -122,6 +126,7 @@ try{
  // Replaying 086 above must not replace the installed precision guard from 089.
  await pg.exec(fs.readFileSync('supabase/migrations/20261103008900_ugc_v3_local_pricing_precision.sql','utf8'));
  await pg.exec(fs.readFileSync('supabase/migrations/20261104009000_ugc_v3_unsubmitted_video_delivery.sql','utf8'));
+ await pg.exec(fs.readFileSync('supabase/migrations/20261104009100_ugc_v3_background_processing.sql','utf8'));
  await pg.exec(fs.readFileSync('scripts/verify-v3-setup.sql','utf8'));checks++;
  await pg.query("insert into public.app_users(id,clerk_user_id) values($1,'fixture')",[owner]);
  const f=await fixture(),before=await cp(f.project),start=calls.length;
@@ -326,22 +331,19 @@ try{
  let bWorkspace=await new V3Store(db).read(owner,b.project);
  equal(bWorkspace.runs[0].state,'queued');equal(bWorkspace.tasks.find(t=>t.kind==='video').provider_started,false);equal(videoPosts,0);
  equal((await read(b.project)).runs[0].submissionBlocker,'PAID_V3_EXECUTION_DISABLED');
- ok(workerLogs.some(l=>l.runId===bWorkspace.runs[0].id&&l.stage==='V3_VIDEO_REQUEST_PAUSED'&&l.code==='PAID_V3_EXECUTION_DISABLED'));
+ equal(workerLogs.filter(l=>l.runId===bWorkspace.runs[0].id&&l.stage==='V3_FINAL_VIDEO_JOB_CLAIMED').length,0);
  const releaseB=()=>pg.query("update public.ugc_v3_tasks set available_at=now() where project_id=$1 and kind='video'",[b.project]);
  // Reproduce the actual incident: delivery expires while the worker's paid switch is OFF.
  const bRun=bWorkspace.runs[0],expiredIntent=normal(bRun.intent);expiredIntent.deliveryExpiresAt='2020-01-01T00:00:00Z';
  const {hash:expiredHash,...expiredBody}=expiredIntent;void expiredHash;expiredIntent.hash=load('lib/final-video-generation-v3/identity.ts').v3Digest('paid-intent',expiredBody);
  await pg.query('update public.ugc_v3_runs set intent=$2 where id=$1',[bRun.id,JSON.stringify(expiredIntent)]);
- process.env.UGC_V3_HIGGSFIELD_ENABLED='1';await releaseB();await tick(b.project);
- bWorkspace=await new V3Store(db).read(owner,b.project);
- equal(videoPosts,0);equal(bWorkspace.runs[0].state,'queued');equal(bWorkspace.tasks.find(t=>t.kind==='video').provider_started,false);
- equal(bWorkspace.tasks.find(t=>t.kind==='video').error_code,'V3_REFERENCE_DELIVERY_EXPIRED');
- const pausedDto=await read(b.project);equal(pausedDto.runs[0].submissionBlocker,'V3_REFERENCE_DELIVERY_EXPIRED');equal(pausedDto.processing,false);
+ process.env.UGC_V3_HIGGSFIELD_ENABLED='1';
+ const pausedDto=await read(b.project);equal(pausedDto.runs[0].submissionBlocker,'V3_REFERENCE_DELIVERY_EXPIRED');equal(pausedDto.runs[0].state,'queued');
  const presentation=load('components/creation/v3-final-video-state.ts').finalVideoPresentation(pausedDto,{dirty:false,busy:false,requestPending:false});
- equal(presentation.loading,false);ok(presentation.reason.includes('links expired'));
+ equal(presentation.loading,false);ok(presentation.reason.includes('reference links expired'));
  const refreshRequest={action:'refresh_video_delivery',id:bRun.id};
- equal((await post(b.project,refreshRequest)).body.code,'V3_REFRESH_REQUIRES_VIDEO_DISABLED');
- process.env.UGC_V3_HIGGSFIELD_ENABLED='0';
+ // Link renewal is safe with transport ON: SQL refuses claims/started requests, without toggling the global switch.
+
  spool.set(`${bRun.id}:acceptance.json`,Buffer.from('{}'));
  equal((await post(b.project,refreshRequest)).body.code,'V3_SAVED_PROVIDER_EVIDENCE_REQUIRES_RECOVERY');spool.delete(`${bRun.id}:acceptance.json`);
  const activeB=await call('ugc_v3_task_claim',[b.project]);
@@ -368,14 +370,89 @@ try{
  await pg.query("update public.ugc_v3_run_authorizations set document=jsonb_set(document,'{expiresAt}',to_jsonb('2020-01-01T00:00:00Z'::text)) where id=$1",[bAuthority.id]);
  await assert.rejects(call('ugc_v3_refresh_video_delivery',[owner,b.project,bRun.id,refreshedIntent.hash,refreshedIntent]),/V3_AUTHORIZATION_INVALID/);checks++;
  await pg.query('update public.ugc_v3_run_authorizations set document=$2 where id=$1',[bAuthority.id,JSON.stringify(bAuthority)]);
+ // A delay can expire delivery again. The worker refreshes the SAME run automatically with ON unchanged.
+ const delayedIntent=normal(refreshedIntent);delayedIntent.deliveryExpiresAt='2020-01-01T00:00:00Z';
+ const {hash:delayedHash,...delayedBody}=delayedIntent;void delayedHash;delayedIntent.hash=load('lib/final-video-generation-v3/identity.ts').v3Digest('paid-intent',delayedBody);
+ await pg.query('update public.ugc_v3_runs set intent=$2 where id=$1',[bRun.id,JSON.stringify(delayedIntent)]);
  process.env.UGC_V3_HIGGSFIELD_ENABLED='1';await releaseB();await tick(b.project);
  bWorkspace=await new V3Store(db).read(owner,b.project);
  equal(videoPosts,1);assert.equal(bWorkspace.runs[0].observation?.requestId,fixtureVideoId,JSON.stringify(bWorkspace.tasks.filter(t=>t.kind==='video')));checks++;equal(bWorkspace.runs[0].state,'provider_processing');
  const pollsBeforeOff=videoPolls;process.env.UGC_V3_HIGGSFIELD_ENABLED='0';await releaseB();await tick(b.project);
  equal(videoPosts,1);equal(videoPolls,pollsBeforeOff+1);
+ equal(bWorkspace.runs[0].intent.idempotencyKey,delayedIntent.idempotencyKey);
+ const progressLabel=load('lib/final-video-generation-v3/progress.ts').v3ProgressLabel;
+ equal(progressLabel(await read(b.project),false),'Processing');
+ for(let i=0;i<3;i++){await releaseB();await tick(b.project);}
+ equal(videoPosts,1);
+ equal(workerLogs.filter(l=>l.runId===bRun.id&&l.stage==='V3_FINAL_VIDEO_JOB_CLAIMED').length,1);
+ equal(workerLogs.filter(l=>l.runId===bRun.id&&l.stage==='HIGGSFIELD_PROCESSING').length,1);
+ // A process restart after a lease expires polls the persisted request; it never POSTs again.
+ await pg.query("update public.ugc_v3_tasks set status='running',lease_until=now()-interval '1 second' where id=(select id from public.ugc_v3_tasks where project_id=$1 and kind='video')",[b.project]);
+ await tick(b.project);equal(videoPosts,1);
+ await releaseB();const knownClaim=await call('ugc_v3_worker_claim',[b.project,false]);
+ await call('ugc_v3_task_checkpoint',[knownClaim.id,knownClaim.lease_token,'unknown',{code:'HIGGSFIELD_NETWORK_OUTCOME_UNKNOWN'}]);
+ await tick(b.project);bWorkspace=await new V3Store(db).read(owner,b.project);
+ equal(videoPosts,1);equal(bWorkspace.runs[0].observation.requestId,fixtureVideoId);equal(bWorkspace.runs[0].state,'provider_processing');
+ equal((await pg.query("select count(*)::int n from public.ugc_v3_runtime_events where entity_id=$1 and kind='known_request_resumed'",[bRun.id])).rows[0].n,1);
  equal((await post(b.project,refreshRequest)).body.code,'V3_UNSUBMITTED_REQUEST_REQUIRED');
  await assert.rejects(call('ugc_v3_refresh_video_delivery',[owner,b.project,bRun.id,refreshedIntent.hash,refreshedIntent]),/V3_UNSUBMITTED_REQUEST_REQUIRED/);checks++;
  equal((await new V3Store(db).read(owner,f.project)).runs.filter(r=>r.state==='queued').length,1);
+ // Unknown A outcome with no receipt is NOT automatically requeued or submitted.
+ const unknownA=await call('ugc_v3_worker_claim',[f.project,true]);equal(unknownA.kind,'video');
+ await call('ugc_v3_task_checkpoint',[unknownA.id,unknownA.lease_token,'intent',{}]);
+ await call('ugc_v3_task_checkpoint',[unknownA.id,unknownA.lease_token,'unknown',{code:'V3_PROVIDER_OUTCOME_UNKNOWN'}]);
+ await tick(f.project);equal(videoPosts,1);
+ equal((await new V3Store(db).read(owner,f.project)).runs.at(-1).state,'reconciliation_required');
+ // Completion while OFF automatically supplies the owner DTO/review/Preview; no Generate/Recover click.
+ videoComplete=true;await releaseB();await tick(b.project);
+ const completedB=await read(b.project);equal(completedB.runs[0].state,'awaiting_review');ok(completedB.runs[0].preview);
+ equal(progressLabel(completedB,false),'Ready for Review');
+ equal(load('components/creation/v3-final-video-state.ts').finalVideoPresentation(completedB,{dirty:false,busy:false,requestPending:false}).loading,false);
+ equal(workerLogs.filter(l=>l.runId===bRun.id&&l.stage==='V3_FINAL_VIDEO_SAVING').length,1);equal(videoPosts,1);
+ // A different authenticated owner works in explicit owned/production mode without operator UUID changes.
+ actingOwner=otherOwner;equal((await post(f.project,videoRequest)).body.code,'V3_ACCESS_UNAVAILABLE');
+ Object.assign(process.env,{NODE_ENV:'production',UGC_V3_ACCESS_MODE:'owned',UGC_V3_HIGGSFIELD_ENABLED:'1'});videoComplete=false;
+ const c=await fixture(),cLocation=await generate(c.project);
+ await post(c.project,{action:'review_artifact',id:cLocation.id,decision:'approve'});
+ await post(c.project,{action:'storyboard'});await tick(c.project);
+ const cBoard=(await read(c.project)).artifacts.find(a=>a.kind==='storyboard');
+ await post(c.project,{action:'review_artifact',id:cBoard.id,decision:'approve'});await post(c.project,{action:'build_package'});await tick(c.project);
+ const cPackage=(await read(c.project)).preflight,cRequest={action:'generate',packageId:cPackage.packageId,packageHash:cPackage.packageHash};
+ equal((await post(c.project,cRequest)).status,409);
+ equal((await post(c.project,{...approval,packageId:cPackage.packageId,packageHash:cPackage.packageHash,quoteId:cPackage.quoteId,maximumMicrousd:1})).status,409);
+ equal((await post(c.project,{...approval,packageId:cPackage.packageId,packageHash:cPackage.packageHash,quoteId:cPackage.quoteId})).status,200);
+ for(const response of await Promise.all(Array.from({length:4},()=>post(c.project,cRequest))))equal(response.status,200);
+ equal((await new V3Store(db).read(otherOwner,c.project)).runs.length,1);
+ equal((await post(f.project,{...cRequest,ownerId:owner})).body.code,'FRESH_V3_PROJECT_REQUIRED');
+ actingOwner=owner;equal((await post(c.project,cRequest)).body.code,'FRESH_V3_PROJECT_REQUIRED');actingOwner=otherOwner;
+ await tick(c.project);equal(videoPosts,2);
+ const cWorkspace=await new V3Store(db).read(otherOwner,c.project);ok(cWorkspace.runs[0].observation.requestId!==fixtureVideoId);
+ // Service discovery gets owner IDs from SQL; a bounded page walks both owners independently.
+ const found=[];let after=null;
+ await pg.query("update public.ugc_v3_tasks set available_at=now() where project_id=$1 and kind='video'",[c.project]);
+ do{const result=await load('lib/final-video-generation-v3/background-worker.ts').processV3QueueBatch(new V3Store(db),{after,ownerId:null,concurrency:2,signal:AbortSignal.timeout(30000)},async project=>{found.push(project);});after=result.after;}while(after);
+ ok(found.some(p=>p.project_id===c.project&&p.owner_user_id===otherOwner));
+ // A worker restart with only its local acceptance receipt restores SQL before polling, never POST.
+ const cRequestId=cWorkspace.runs[0].observation.requestId;
+ await pg.query("update public.ugc_v3_runs set observation=null,state='reconciliation_required',error_code='V3_RECEIPT_ACK_LOST' where id=$1",[cWorkspace.runs[0].id]);
+ await pg.query("update public.ugc_v3_tasks set status='reconciliation_required',lease_until=null,lease_token=null,available_at=now() where project_id=$1 and kind='video'",[c.project]);
+ await tick(c.project);const restoredC=await new V3Store(db).read(otherOwner,c.project);
+ equal(videoPosts,2);equal(restoredC.runs[0].observation.requestId,cRequestId);equal(restoredC.runs[0].state,'provider_processing');
+ await pg.query("update public.ugc_v3_tasks set available_at=now() where project_id=$1 and kind='video'",[c.project]);
+ const leaseC=await call('ugc_v3_worker_claim',[c.project,true]);
+ for(const duplicate of await Promise.all(Array.from({length:3},()=>call('ugc_v3_worker_claim',[c.project,true]))))equal(duplicate,null);
+ equal(await call('ugc_v3_video_stage',[leaseC.id,leaseC.lease_token,'HIGGSFIELD_PROCESSING']),false);
+ equal(await call('ugc_v3_video_stage',[leaseC.id,leaseC.lease_token,'V3_FINAL_VIDEO_JOB_CLAIMED']),false);
+ await assert.rejects(call('ugc_v3_video_stage',[leaseC.id,randomUUID(),'HIGGSFIELD_PROCESSING']),/V3_LEASE_LOST/);checks++;
+ await assert.rejects(call('ugc_v3_video_stage',[leaseC.id,leaseC.lease_token,'NOT_A_VIDEO_STAGE']),/INVALID_VIDEO_STAGE/);checks++;
+ await call('ugc_v3_task_checkpoint',[leaseC.id,leaseC.lease_token,'unknown',{code:'HIGGSFIELD_NETWORK_OUTCOME_UNKNOWN'}]);
+ equal(await call('ugc_v3_worker_resume_known',[otherOwner,c.project,restoredC.runs[0].id,randomUUID()]),false);
+ await assert.rejects(call('ugc_v3_worker_resume_known',[owner,c.project,restoredC.runs[0].id,cRequestId]),/FRESH_V3_PROJECT_REQUIRED/);checks++;
+ equal(await call('ugc_v3_worker_resume_known',[otherOwner,c.project,restoredC.runs[0].id,cRequestId]),true);equal(videoPosts,2);
+ for(const signature of ['ugc_v3_background_setup()','ugc_v3_worker_projects(uuid,uuid,integer,boolean)','ugc_v3_worker_claim(uuid,boolean)','ugc_v3_video_stage(uuid,uuid,text)','ugc_v3_worker_resume_known(uuid,uuid,uuid,uuid)']){
+  equal((await pg.query("select has_function_privilege('authenticated',$1,'EXECUTE') browser,has_function_privilege('service_role',$1,'EXECUTE') server",[`public.${signature}`])).rows[0],{browser:false,server:true});
+ }
+ actingOwner=owner;Object.assign(process.env,{NODE_ENV:'development',UGC_V3_ACCESS_MODE:'operator'});
  equal(networkCalls,0);fixtureVideo=false;
  process.env.UGC_V3_HIGGSFIELD_ENABLED='0';
  const videoMigration=fs.readFileSync('supabase/migrations/20261101008700_ugc_v3_controlled_video.sql','utf8');await pg.exec(videoMigration);

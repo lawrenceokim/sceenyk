@@ -21,6 +21,7 @@ export async function inspectRuntime(w: RuntimeWorkspace) {
   let deliveryReady = false;
   try { videoDeliveryBindings(w, doc); deliveryReady = true; } catch { issues.push("V3_DELIVERY_BINDING_INVALID"); }
   try { await new V3Store().rpc("ugc_v3_video_setup", {}); } catch { issues.push("V3_VIDEO_SETUP_REQUIRED"); }
+  try { await new V3Store().rpc("ugc_v3_background_setup", {}); } catch { issues.push("V3_BACKGROUND_SETUP_REQUIRED"); }
   const brief = await projectBrief(w.project.owner_user_id, w.project.project_id), originals = await referenceOriginals(w.project.owner_user_id, w.project.project_id);
   const config = v3TransportConfig(), currentIds = approvedArtifacts(w, brief, originals).map(a => a.id);
   if (!/^[^\s:]+:[^\s:]+$/.test(config.credentials) || !config.accountScope) issues.push("HIGGSFIELD_CREDENTIALS_REQUIRED");

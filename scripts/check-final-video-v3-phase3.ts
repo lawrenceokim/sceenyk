@@ -64,10 +64,10 @@ async function pureAndTransportChecks() {
       ok(prompt.includes(`"instructions":${JSON.stringify(context.instructions)}`)); ok(prompt.includes("identity")); ok(prompt.includes("same creative world"));
     }
   }
-  const oldEnv = { NODE_ENV: process.env.NODE_ENV, UGC_V3_ENABLED: process.env.UGC_V3_ENABLED, UGC_V3_OPERATOR_USER_ID: process.env.UGC_V3_OPERATOR_USER_ID,
+  const oldEnv = { NODE_ENV: process.env.NODE_ENV, UGC_V3_ENABLED: process.env.UGC_V3_ENABLED, UGC_V3_ACCESS_MODE: process.env.UGC_V3_ACCESS_MODE, UGC_V3_OPERATOR_USER_ID: process.env.UGC_V3_OPERATOR_USER_ID,
     UGC_V3_HIGGSFIELD_ENABLED: process.env.UGC_V3_HIGGSFIELD_ENABLED, UGC_V3_HIGGSFIELD_CREDENTIALS: process.env.UGC_V3_HIGGSFIELD_CREDENTIALS,
     UGC_V3_HIGGSFIELD_ACCOUNT_SCOPE: process.env.UGC_V3_HIGGSFIELD_ACCOUNT_SCOPE, UGC_V3_HIGGSFIELD_OUTPUT_HOSTS: process.env.UGC_V3_HIGGSFIELD_OUTPUT_HOSTS };
-  Object.assign(process.env, { NODE_ENV: "development", UGC_V3_ENABLED: "1", UGC_V3_OPERATOR_USER_ID: "operator" });
+  Object.assign(process.env, { NODE_ENV: "development", UGC_V3_ENABLED: "1", UGC_V3_ACCESS_MODE: "operator", UGC_V3_OPERATOR_USER_ID: "operator" });
   equal(eligibleForV3("operator", "ugc"), true); equal(eligibleForV3("operator", "freestyle"), false); equal(eligibleForV3("someone-else", "ugc"), false);
   process.env.UGC_V3_ENABLED = "0"; equal(eligibleForV3("operator", "ugc"), false);
   Object.assign(process.env, { UGC_V3_ENABLED: "1", UGC_V3_HIGGSFIELD_CREDENTIALS: "fixture:key", UGC_V3_HIGGSFIELD_ACCOUNT_SCOPE: "fixture", UGC_V3_HIGGSFIELD_OUTPUT_HOSTS: "" });

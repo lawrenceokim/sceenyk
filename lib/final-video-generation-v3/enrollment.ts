@@ -1,10 +1,10 @@
 import "server-only";
 import { z } from "zod";
 import { createDatabaseClient } from "@/lib/db/server";
-import { v3LocalEnabled } from "./runtime-config";
+import { v3UserAllowed } from "./runtime-config";
 
 export function eligibleForV3(ownerId: string, creationType: string) {
-  return creationType === "ugc" && v3LocalEnabled() && process.env.UGC_V3_OPERATOR_USER_ID === ownerId;
+  return creationType === "ugc" && v3UserAllowed(ownerId);
 }
 // Internal helper. Caller must resolve the authenticated owner independently.
 export async function enrolledV3(ownerId: string, projectId: string) {

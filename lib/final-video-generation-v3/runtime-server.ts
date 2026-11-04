@@ -12,7 +12,7 @@ import { packageContentHash, storyboardContentHash, v3Digest } from "./identity"
 import { readFrozenPackage } from "./package";
 import { createPaidIntent, createRuntimeAuthorization } from "./execution-package";
 import { V3Store, type RuntimeWorkspace } from "./runtime-store";
-import { assertV3Operator, assertV3Transport, v3LocalEnabled, v3TransportConfig, v3OpenAIConfig, v3ReferenceConfig } from "./runtime-config";
+import { assertV3Access, assertV3Transport, v3UserAllowed, v3TransportConfig, v3OpenAIConfig, v3ReferenceConfig } from "./runtime-config";
 import { prepareVideoDelivery } from "./video-delivery";
 import { outputHostname } from "./adapters/higgsfield-transport";
 import { refreshQueuedVideoDelivery } from "./refresh-video-delivery";
@@ -34,7 +34,7 @@ import { currentDisplayPricing } from "./pricing/display-pricing";
 export { inspectRuntime } from "./runtime-inspection";
 import { inspectRuntime } from "./runtime-inspection";
 function videoStage(output: unknown): { stage: string } | null {
-  const parsed = z.object({ stage: z.string().regex(/^(V3_FINAL_VIDEO_(JOB_CLAIMED|SAVED|READY_FOR_REVIEW)|HIGGSFIELD_(SUBMITTING|REQUEST_ACCEPTED|PROCESSING|RESULT_RECEIVED))$/) }).safeParse(output);
+  const parsed = z.object({ stage: z.string().regex(/^(V3_FINAL_VIDEO_(JOB_CLAIMED|SAVING|SAVED|READY_FOR_REVIEW)|HIGGSFIELD_(SUBMITTING|REQUEST_ACCEPTED|PROCESSING|RESULT_RECEIVED))$/) }).safeParse(output);
   return parsed.success ? parsed.data : null;
 }
 export async function runtimeDto(w: RuntimeWorkspace) {
@@ -60,9 +60,10 @@ export async function runtimeDto(w: RuntimeWorkspace) {
     estimatedCostMicrousd: r.intent.estimatedCostMicrousd, actualCostMicrousd: r.observation?.actualCostMicrousd ?? null,
     displayEstimatedCostMicrousd: displayPricing(r.package_id)?.segments.find(s => s.id === r.intent.segmentId)?.estimatedCostMicrousd ?? r.intent.estimatedCostMicrousd,
     stage: videoStage(w.tasks.find(t => t.kind === "video" && t.input.runId === r.id)?.output),
+    hasKnownRequest: !!r.observation,
     submissionBlocker: r.state === "queued" ? (Date.parse(r.intent.deliveryExpiresAt) <= Date.now() ? "V3_REFERENCE_DELIVERY_EXPIRED" :
       w.tasks.find(t => t.kind === "video" && t.input.runId === r.id)?.error_code ?? (!v3TransportConfig().enabled ? "PAID_V3_EXECUTION_DISABLED" : null)) : null,
-    outputHostname: v3LocalEnabled() && r.error_code === "OUTPUT_HOST_APPROVAL_REQUIRED" ? outputHostname(r.observation?.resultUrl ?? null) : null,
+    outputHostname: r.error_code === "OUTPUT_HOST_APPROVAL_REQUIRED" ? outputHostname(r.observation?.resultUrl ?? null) : null,
     current: r.current, completedAt: r.completed_at, errorCode: r.error_code, quality: r.quality, actualDurationMs: r.result?.durationMs ?? null, hasAudio: r.result?.hasAudio ?? null,
     preview: r.result && ["awaiting_review", "approved"].includes(r.state) ? await previewUrl(r.result) : null,
     expectedDialogue: w.packages.find(p => p.id === r.package_id) ? readFrozenPackage(w.packages.find(p => p.id === r.package_id)!.document).source.storyboardContent.scenes.flatMap(s => s.speech) : [],
@@ -74,7 +75,7 @@ export async function runtimeDto(w: RuntimeWorkspace) {
     const state: Run["state"] = a.approved_at ? "approved" : a.rejected_at ? deletion?.status === "done" ? "deleted" : "deleting" : "awaiting_review";
     return { id: a.id, packageId: doc.id, segmentId: "joined", state, completedAt: a.approved_at,
       provider: "higgsfield", model: "multiple segments", resolution: "480p", aspectRatio: doc.source.storyboardContent.aspectRatio,
-      estimatedCostMicrousd: doc.pricing.totalMicrousd, actualCostMicrousd: null, stage: null, outputHostname: null, submissionBlocker: null,
+      estimatedCostMicrousd: doc.pricing.totalMicrousd, actualCostMicrousd: null, stage: null, outputHostname: null, submissionBlocker: null, hasKnownRequest: false,
       displayEstimatedCostMicrousd: currentDisplayPricing(doc).totalMicrousd,
       current: !!w.source?.current && w.source.revision === doc.sourceRevision && w.runs.filter(r => r.package_id === doc.id).every(r => r.current),
       errorCode: deletion?.error_code ?? null, quality: null, actualDurationMs: asset.durationMs, hasAudio: asset.hasAudio,
@@ -127,7 +128,7 @@ export async function runtimeDto(w: RuntimeWorkspace) {
     referenceCleanup:{enabled:w.referenceCleanupPolicy,pendingCount:discardableReferences(w).length,
       ...(w.tasks.some(t=>t.input.referenceCleanup&&["queued","running"].includes(t.status))?{processing:true}:{})},
     tasks,
-    processing: w.tasks.some((t, i) => t.input.referenceCleanup||t.input.referenceCleanupHold ? false : ["character", "product", "location", "storyboard"].includes(t.kind) ? ["queued", "running"].includes(t.status) && taskBlocksGeneration(t, tasks[i].current) : t.status === "running" || t.status === "queued" && !["PAID_V3_EXECUTION_DISABLED", "V3_ACTIVATION_SCOPE_MISMATCH", "V3_REFERENCE_DELIVERY_EXPIRED"].includes(t.error_code ?? "")), localEnabled: v3LocalEnabled() };
+    processing: w.tasks.some((t, i) => t.input.referenceCleanup||t.input.referenceCleanupHold ? false : ["character", "product", "location", "storyboard"].includes(t.kind) ? ["queued", "running"].includes(t.status) && taskBlocksGeneration(t, tasks[i].current) : t.status === "running" || t.status === "queued" && !["PAID_V3_EXECUTION_DISABLED", "V3_ACTIVATION_SCOPE_MISMATCH", "V3_REFERENCE_DELIVERY_EXPIRED"].includes(t.error_code ?? "")), localEnabled: v3UserAllowed(w.project.owner_user_id) };
 }
 export type RuntimeDto = Awaited<ReturnType<typeof runtimeDto>>;
 export async function readOwnedV3(project: string) {
@@ -144,7 +145,7 @@ export async function isOwnedV3Project(project: string) {
 }
 const actionSchema = z.object({ action: z.enum(["reference", "cleanup_references", "discard_reference", "location_continue", "review_artifact", "storyboard", "build_package", "authorize", "generate", "refresh_video_delivery", "recover", "recover_task", "approve", "reject_delete"]), projectId: z.uuid() }).passthrough();
 export async function ownedV3Action(raw: unknown) {
-  const a = actionSchema.parse(raw), user = await ensureAppUser(); assertV3Operator(user.id);
+  const a = actionSchema.parse(raw), user = await ensureAppUser(); assertV3Access(user.id);
   const store = new V3Store(), signal = AbortSignal.timeout(120_000), now = new Date().toISOString();
   const w = await store.read(user.id, a.projectId), brief = await projectBrief(user.id, a.projectId), originals = await referenceOriginals(user.id, a.projectId);
   const context = generationContext(brief);

@@ -1,5 +1,6 @@
 "use client";
 
+import { newlyAvailableVideo } from "./studio-video-selection";
 import {
   useCallback,
   useEffect,
@@ -84,8 +85,16 @@ export function StudioLayout({
   const [workflowCollections, setWorkflowCollections] = useState<
     Record<string, StudioPreviewMedia[]>
   >({});
+  const [selectedId, setSelectedId] = useState<string | null | undefined>(
+    undefined,
+  );
+  const seenWorkflowVideos = useRef(new Set<string>());
   const setWorkflowMedia = useCallback(
-    (media: StudioPreviewMedia[], collection: string) => {
+    (media: StudioPreviewMedia[], collection: string, autoSelectVideo = false) => {
+      if (autoSelectVideo) {
+        const added = newlyAvailableVideo(media, seenWorkflowVideos.current);
+        if (added) setSelectedId(added);
+      }
       setWorkflowCollections((current) => ({
         ...current,
         [collection]: media,
@@ -94,9 +103,7 @@ export function StudioLayout({
     [],
   );
   const workflowMedia = Object.values(workflowCollections).flat();
-  const [selectedId, setSelectedId] = useState<string | null | undefined>(
-    undefined,
-  );
+
   const [mobileImageId, setMobileImageId] = useState<string | null>(null);
   const [modalContainer, setModalContainer] = useState<HTMLElement | null>(
     null,

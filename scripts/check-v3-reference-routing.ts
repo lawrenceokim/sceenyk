@@ -24,7 +24,7 @@ const ok = (a: unknown) => { assert.ok(a); checks++; };
 async function main() {
 const originalEnv = { ...process.env };
 const diagnosticsDir = mkdtempSync(join(tmpdir(), "sceenyk-v3-diagnostics-"));
-Object.assign(process.env, { NODE_ENV: "development", UGC_V3_ENABLED: "1", UGC_V3_OPENAI_ENABLED: "1", OPENAI_API_KEY: "fixture-only",
+Object.assign(process.env, { NODE_ENV: "development", UGC_V3_ENABLED: "1", UGC_V3_ACCESS_MODE: "operator", UGC_V3_OPENAI_ENABLED: "1", OPENAI_API_KEY: "fixture-only",
   UGC_V3_OPERATOR_USER_ID: v3Id(1), OPENAI_V3_IMAGE_MODEL: "fixture-openai-image", OPENAI_V3_DIRECTOR_MODEL: "", UGC_V3_HIGGSFIELD_ENABLED: "0", UGC_V3_RECOVERY_DIR: diagnosticsDir });
 try {
   // References require the image configuration only; director setup is independent.
@@ -135,7 +135,7 @@ try {
     const checkpoints: Record<string, unknown>[] = [];
     const store = new V3Store({ rpc: async (name, args) => {
       if (name === "ugc_v3_runtime_read") return { data: workspace, error: null };
-      if (name === "ugc_v3_task_claim") return { data: staleTask, error: null };
+      if (name === "ugc_v3_worker_claim") return { data: staleTask, error: null };
       if (name === "ugc_v3_task_checkpoint") { checkpoints.push(args); return { data: true, error: null }; }
       throw new Error("UNEXPECTED_RPC");
     } });
@@ -172,7 +172,7 @@ try {
         const checkpoints: Record<string, unknown>[] = [];
         const store = new V3Store({ rpc: async (name, args) => {
           if (name === "ugc_v3_runtime_read") return { data: workspace, error: null };
-          if (name === "ugc_v3_task_claim") return { data: queued, error: null };
+          if (name === "ugc_v3_worker_claim") return { data: queued, error: null };
           if (name === "ugc_v3_task_checkpoint") { checkpoints.push(args); return { data: true, error: null }; }
           throw new Error("UNEXPECTED_RPC");
         } });

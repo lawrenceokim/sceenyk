@@ -48,6 +48,7 @@ export async function executeV3Segment(run: Run, providerStarted: boolean, deps:
   await deps.stage?.("HIGGSFIELD_RESULT_RECEIVED", observation.requestId);
   let bytes = await deps.readSaved("result.bytes");
   if (!bytes) { bytes = await deps.provider.fetchCompletedResult(observation, signal); await deps.save("result.bytes", bytes); }
+  await deps.stage?.("V3_FINAL_VIDEO_SAVING", observation.requestId);
   const asset = await deps.validateAndPublish(bytes);
   await deps.stage?.("V3_FINAL_VIDEO_SAVED", observation.requestId);
   await deps.checkpoint("result", asset);

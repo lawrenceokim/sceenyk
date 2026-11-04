@@ -4,7 +4,8 @@ import { z } from "zod";
 import { createDatabaseClient } from "@/lib/db/server";
 import { OpenAICreativeDirectorProvider } from "./adapters/openai";
 import { HiggsfieldV3Transport, HiggsfieldTransportError } from "./adapters/higgsfield-transport";
-import { assertV3Operator, assertV3Transport, v3OpenAIConfig, v3ReferenceConfig, v3TransportConfig } from "./runtime-config";
+import { assertV3Access, assertV3Transport, v3OpenAIConfig, v3ReferenceConfig, v3TransportConfig } from "./runtime-config";
+import { prepareV3VideoRecovery } from "./worker-recovery";
 import { V3Store, type RuntimeWorkspace } from "./runtime-store";
 import { taskSchema, privateAssetSchema, type Task } from "./runtime-contract";
 import { executeV3Segment } from "./execution";
@@ -140,8 +141,8 @@ async function videoTask(store: V3Store, task: Task, w: RuntimeWorkspace, signal
   const config = v3TransportConfig(), transport = new HiggsfieldV3Transport(config);
   const doc = readFrozenPackage(w.packages.find(p => p.id === run.package_id)!.document), segment = doc.segments.find(s => s.id === run.intent.segmentId)!;
   const stage = async (value: string, requestId?: string) => {
-    console.info(JSON.stringify({ stage: value, projectId: task.project_id, packageId: run.package_id, runId: run.id, ...(requestId ? { requestId } : {}) }));
-    await store.checkpoint(task, "video_stage", { stage: value });
+    const changed = await store.rpc("ugc_v3_video_stage", { p_task: task.id, p_token: task.lease_token, p_stage: value });
+    if (changed) console.info(JSON.stringify({ stage: value, projectId: task.project_id, packageId: run.package_id, runId: run.id, ...(requestId ? { requestId } : {}) }));
   };
   await stage("V3_FINAL_VIDEO_JOB_CLAIMED");
   await executeV3Segment(run, task.provider_started, { provider: transport, beforeSubmit: async intent => {
@@ -171,7 +172,7 @@ async function deleteTask(store: V3Store, task: Task, w: RuntimeWorkspace, signa
   await store.checkpoint(task, "deleted");
 }
 export async function runV3Task(projectId: string, ownerId: string, store = new V3Store(), signal = AbortSignal.timeout(14 * 60_000)) {
-  assertV3Operator(ownerId);
+  assertV3Access(ownerId);
   let w = await store.read(ownerId, projectId);
   if (w.tasks.some(t => t.input.referenceCleanup && t.status !== "done" && w.referenceDeletions.some(d => d.id === (t.input.referenceCleanup as { id: string }).id && d.state === "completed"))) {
     await store.rpc("ugc_v3_reconcile_reference_cleanup", { p_owner: ownerId, p_project: projectId });
@@ -181,7 +182,8 @@ export async function runV3Task(projectId: string, ownerId: string, store = new 
     const queued=await store.rpc("ugc_v3_queue_reference_cleanup",{p_owner:ownerId,p_project:projectId,p_retry:false});
     if(queued)w=await store.read(ownerId,projectId);
   }
-  const claim = await store.rpc("ugc_v3_task_claim", { p_project: projectId }); if (!claim) return false;
+  w = await prepareV3VideoRecovery(store, w, signal);
+  const claim = await store.rpc("ugc_v3_worker_claim", { p_project: projectId, p_submit: v3TransportConfig().enabled }); if (!claim) return false;
   const task = taskSchema.parse(claim);
   try {
     if (isLocationDirectorTask(task)) await runLocationTask(store, task, w, signal);
@@ -220,7 +222,7 @@ export async function runV3Task(projectId: string, ownerId: string, store = new 
       ...(error instanceof ReferenceTaskError && (started || error.metadata.httpStatus !== null || error.metadata.requestId !== null) ?
         { httpStatus: error.metadata.httpStatus, correlationId: error.metadata.requestId, outcome: error.knownRejected ? "rejected" : "unknown" } : {}),
       ...(error instanceof HiggsfieldTransportError ? { httpStatus: error.httpStatus, correlationId: error.correlationId, outcome: error.outcome } : {}) });
-    if (task.kind === "video") console.info(JSON.stringify({ stage: paused ? "V3_VIDEO_REQUEST_PAUSED" : "V3_VIDEO_REQUEST_NEEDS_ATTENTION",
+    if (task.kind === "video" && task.error_code !== code) console.info(JSON.stringify({ stage: paused ? "V3_VIDEO_REQUEST_PAUSED" : "V3_VIDEO_REQUEST_NEEDS_ATTENTION",
       projectId, runId: run?.id ?? null, code, providerStarted: !!started }));
   }
   return true;

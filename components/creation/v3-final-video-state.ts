@@ -8,15 +8,19 @@ export function finalVideoPresentation(workspace: RuntimeDto | null, options: { 
   const blockedRun = runs.find(run => run.state === "queued" && run.submissionBlocker);
   const activeRuns = runs.filter(run => !run.preview && !run.errorCode && !run.submissionBlocker && ["queued", "submitting", "provider_processing", "result_saved"].includes(run.state));
   const joining = workspace?.tasks.some(task => task.kind === "join" && ["queued", "running"].includes(task.status)) ?? false;
+  const recovering = runs.some(run => run.state === "reconciliation_required" && run.hasKnownRequest &&
+    !["OUTPUT_HOST_APPROVAL_REQUIRED", "HIGGSFIELD_RESULT_EXPIRED"].includes(run.errorCode ?? ""));
   const ready = runs.some(run => !!run.preview && ["awaiting_review", "approved"].includes(run.state) && (p?.segmentCount === 1 || run.segmentId === "joined"));
   const hasExistingRun = runs.some(run => run.state !== "deleted");
-  const loading = !ready && (options.requestPending || activeRuns.length > 0 || joining);
+  const loading = !ready && (options.requestPending || activeRuns.length > 0 || joining || recovering);
   let reason: string | null = null;
   const issues = p?.issues ?? [];
   if (options.dirty) reason = "Save your changes before generating a video.";
   else if (options.requestPending) reason = "Preparing your video-generation request…";
   else if (blockedRun) reason = videoRequestBlocker(blockedRun.submissionBlocker) ?? `Video request paused: ${blockedRun.submissionBlocker}.`;
-  else if (activeRuns.length || joining) reason = "A video-generation request is already processing.";
+  else if (recovering) reason = "Recovering the accepted video request. No new generation is being submitted.";
+  else if (joining) reason = "Saving the final video.";
+  else if (activeRuns.length) reason = "A video-generation request is already processing.";
   else if (hasExistingRun) reason = runs.some(run => run.state === "awaiting_review")
     ? "Review your generated video below before starting another generation."
     : runs.some(run => ["reconciliation_required", "failed", "deleting"].includes(run.state))

@@ -1,5 +1,9 @@
 # UI Context
 
+## V3 saved video progress and automatic Preview (2026-11-04)
+
+Progress and Final Video share saved run/stage labels: Queued, Submitting, Processing, Downloading, Saving and Ready for Review. Requeued accepted-request polling does not show Waiting for generation worker. The existing workflow owner keeps polling pending/recoverable video states even if the generic processing flag is false. Saved review media replaces the skeleton automatically. V3 opts into selecting a newly available video once in central Preview without closing the review drawer; signed URL renewal preserves later manual selections. Legacy media collections retain their current selection behavior. Global disabling and blocked output trust are administrator concerns; normal users are not told to edit environment files or launch workers. Existing theme, primitives, layout, review actions, source/reference panels and styling remain unchanged.
+
 ## Studio reference cleanup and next-step guidance (2026-11-02)
 
 Current V3 generated Character/Product/Location Sources show a clean borderless image and a primary-purple Regenerate button below it, without visible version or Approved labels. Keep existing Approve/Reject, stale/error/recovery states, original uploads, confirmations and Location prerequisite feedback. Earlier-sheet disclosures omit version/approval copy. Preview labels also omit version copy.

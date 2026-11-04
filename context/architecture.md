@@ -1,5 +1,12 @@
 # Architecture Context
 
+## V3 automatic owned-project processing (2026-11-04)
+
+The administrator may opt into UGC_V3_ACCESS_MODE=owned with UGC_V3_ENABLED=1 to admit authenticated project owners in development or production. Default operator mode retains the original local/operator restriction; unknown access modes fail closed. Authentication, owner-scoped reads/RPCs, fresh V3 enrollment, exact current package approval and finite spending authority remain mandatory. This admission change does not alter OpenAI/reference/Storyboard/provider payloads or pricing. No historical project is enrolled or rewritten.
+
+A supervised V3 service wraps the existing SQL tasks, worker, Higgsfield execution and private storage. It discovers eligible registry projects with their database owner, runs a bounded pool, and leaves paused Inngest/legacy workflows untouched. A new additive service-only migration 091 supplies fair project discovery, submission-aware claims, known-request-only recovery and monotonic stage checkpoints. OFF excludes unsent video claims but admits accepted work. Expired signed inputs may be refreshed before claim on the SAME definitely unsubmitted run using 090's existing lease/CAS/receipt/authority fences, without turning transport OFF or creating another execution. Known requests may resume after a restart; unknown outcomes cannot submit again. Stage logs/checkpoints occur on actual forward transitions, including Saving; requeued polling tasks do not reset Progress to Waiting. Deployment requires the reviewed migrations, consistent server configuration, persistent private recovery storage, credentials and a supervised worker; no service or paid switch is enabled by this source change.
+
+
 ## V3 paused unsubmitted video recovery (2026-11-04)
 
 Saved worker task errors distinguish a submission pause from provider processing. The owner DTO publishes a queued run's task blocker and signed-delivery expiry; paused runs stop showing a preparation skeleton. Worker startup logs the effective paid switch without secrets, and catches log the persisted pause/failure code. Both worker commands still use the same V3 runner. Transport gating and lease/request checkpoints remain authoritative.

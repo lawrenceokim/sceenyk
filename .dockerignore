@@ -8,6 +8,10 @@
 !scripts/
 !scripts/media-preparation-worker.ts
 !scripts/build-renderer.mjs
+!scripts/ugc-v3-background-worker.ts
+!scripts/check-ugc-v3-worker-health.mjs
+!workers/ugc-v3/
+!workers/ugc-v3/Dockerfile
 !workers/
 !workers/media-preparation/
 !workers/media-preparation/Dockerfile
