@@ -1,5 +1,9 @@
 # AI Workflow Rules
 
+## Current authorization — minimal V3 Final Video controls (2026-11-04)
+
+Limit implementation to Final Video presentation and the minimum direct-approval handling required to remove its quality form. Remove the skeleton; use existing saved-state refresh for a subtle spinner, central Preview selection and essential review controls. Preserve confirmed deletion, short actionable failures/recovery and existing completion/segment joins. Keep diagnostics in Progress. Do not change providers, workers, payloads, Storyboard/packages, spending/pricing, storage, project state or environment values. Offline checks only; migration 092 remains manual, with no live database/provider/worker/media operation or deployment.
+
 ## Current authorization — automatic V3 processing (2026-11-04)
 
 Implement owner-authorized multi-user admission, an always-running service around the existing V3 SQL queue/worker, quieter stage logging, accepted-request restart recovery and synchronized saved-state UI. Preserve provider payloads, OpenAI/reference/Storyboard/pricing, spending approval, duplicate/unknown-outcome/storage protections and history. Keep default operator access unless an administrator explicitly chooses owned mode. Do not restore paused Inngest, deploy, apply remote migrations, change actual environment settings, run live workers or submit/provider-poll real requests. Verify with offline fixtures only; document one-time production setup and remaining acceptance separately.

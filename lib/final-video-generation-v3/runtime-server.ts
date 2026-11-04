@@ -323,16 +323,21 @@ export async function ownedV3Action(raw: unknown) {
     const run = w.runs.find(r => r.id === a.id), joined = w.artifacts.find(j => j.id === a.id && j.kind === "joined");
     const result = run?.result ?? (joined ? privateAssetSchema.parse(joined.document.asset) : null);
     if (!result) throw new Error("V3_RESULT_UNAVAILABLE");
-    const quality = qualitySchema.parse(a.quality);
+    const directApproval = a.action === "approve" && a.reviewMode === "direct";
+    const quality = directApproval ? null : qualitySchema.parse(a.quality);
     if (a.action === "approve") {
       const doc = readFrozenPackage(w.packages.find(p => p.id === (run?.package_id ?? joined?.document.packageId))!.document), speech = doc.source.storyboardContent.scenes.flatMap(s => s.speech);
-      if (Object.entries(quality).some(([k, v]) => k !== "notes" && (v === "fail" || v === "not_checked")) ||
+      if (quality && (Object.entries(quality).some(([k, v]) => k !== "notes" && (v === "fail" || v === "not_checked")) ||
         speech.length && [quality.dialoguePresence, quality.speechTiming].some(v => v !== "pass") ||
-        speech.some(s => s.speaker === "character") && quality.lipAudioSync !== "pass") throw new Error("V3_QUALITY_REVIEW_REQUIRED");
+        speech.some(s => s.speaker === "character") && quality.lipAudioSync !== "pass")) throw new Error("V3_QUALITY_REVIEW_REQUIRED");
       await readPrivate(result.storageKey, result.etag, result.sizeBytes, signal, result.sha256);
     }
-    await store.action(user.id, a.projectId, joined ? a.action === "approve" ? "approve_joined" : "reject_joined" : a.action, { id: run?.id ?? joined!.id, quality,
-      ...(a.action === "reject_delete" ? { confirmedDeletion: true } : {}) });
+    if (directApproval) {
+      await store.rpc("ugc_v3_approve_video", { p_owner: user.id, p_project: a.projectId, p_id: run?.id ?? joined!.id });
+    } else {
+      await store.action(user.id, a.projectId, joined ? a.action === "approve" ? "approve_joined" : "reject_joined" : a.action, { id: run?.id ?? joined!.id, quality,
+        ...(a.action === "reject_delete" ? { confirmedDeletion: true } : {}) });
+    }
     if (run && a.action === "approve") {
       const refreshed = await store.read(user.id, a.projectId), doc = readFrozenPackage(w.packages.find(p => p.id === run.package_id)!.document);
       if (doc.segments.length > 1 && doc.segments.every(s => refreshed.runs.some(r => r.package_id === doc.id && r.intent.segmentId === s.id && r.state === "approved")))

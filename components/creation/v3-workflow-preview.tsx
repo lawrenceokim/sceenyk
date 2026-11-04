@@ -3,9 +3,8 @@ import { V3LocationStatus } from "./v3-location-status";
 import { V3StoryboardContent } from "./v3-storyboard-content";
 import { V3StoryboardSkeleton } from "./v3-storyboard-skeleton";
 import { V3PackageSkeleton } from "./v3-package-skeleton";
-import { V3FinalVideoSkeleton } from "./v3-final-video-skeleton";
+import { FinalVideoGenerate, FinalVideoReview } from "./v3-final-video-controls";
 import { finalVideoPresentation } from "./v3-final-video-state";
-import { videoRequestBlocker } from "@/lib/final-video-generation-v3/video-request-status";
 import { videoExecutionLabel, shouldPollV3Video } from "@/lib/final-video-generation-v3/video-progress";
 import { StudioWorkflowGuidance } from "./studio-workflow-guidance";
 
@@ -19,20 +18,8 @@ import {
   type StudioPreviewMedia,
 } from "./studio-workspace-panels";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import type { ProjectAsset } from "@/lib/media/types";
 import type { RuntimeDto } from "@/lib/final-video-generation-v3/runtime-server";
-import {
-  uncheckedQuality,
-  type Quality,
-} from "@/lib/final-video-generation-v3/runtime-contract";
 import {
   referenceBusy,
   v3ProgressLabel,
@@ -46,24 +33,10 @@ import {
   packageBuildError,
 } from "@/lib/final-video-generation-v3/package-status";
 
-const field =
-  "w-full rounded-lg border border-border bg-background p-2 text-sm";
 const money = (amount: number | null) => {
   if (amount === null) return "Unavailable";
   const cents = (BigInt(amount) + BigInt(5000)) / BigInt(10000);
   return `$${cents / BigInt(100)}.${String(cents % BigInt(100)).padStart(2, "0")}`;
-};
-const videoStateLabels: Record<RuntimeDto["runs"][number]["state"], string> = {
-  queued: "Waiting to generate",
-  submitting: "Starting video",
-  provider_processing: "Generating video",
-  reconciliation_required: "Video needs attention",
-  result_saved: "Preparing preview",
-  awaiting_review: "Ready for review",
-  approved: "Approved video",
-  failed: "Video needs attention",
-  deleting: "Deleting video",
-  deleted: "Video deleted",
 };
 const taskLabels: Record<string, string> = {
   character: "Character",
@@ -155,263 +128,6 @@ function PackageStatus({
         </details>
       )}
     </div>
-  );
-}
-function VideoReview({
-  run,
-  act,
-  busy,
-  segmentCount,
-}: {
-  run: RuntimeDto["runs"][number];
-  act: Action;
-  busy: boolean;
-  segmentCount: number;
-}) {
-  const panels = useStudioPanels();
-  const [confirmDelete, setConfirmDelete] = useState(false);
-  const [quality, setQuality] = useState<Quality>({
-    ...uncheckedQuality,
-    ...(run.expectedDialogue.length
-      ? {}
-      : {
-          dialoguePresence: "not_applicable",
-          speechTiming: "not_applicable",
-          lipAudioSync: "not_applicable",
-        }),
-  });
-  const labels: Record<Exclude<keyof Quality, "notes">, string> = {
-    characterContinuity: "Character continuity",
-    productContinuity: "Product continuity",
-    locationContinuity: "Location continuity",
-    dialoguePresence: "Dialogue present",
-    speechTiming: "Rough speech timing",
-    lipAudioSync: "Visible lip/audio synchronization",
-    visualQuality: "Visual quality",
-  };
-  return (
-    <section
-      className="space-y-3 rounded-xl border border-border p-4"
-      aria-label="Final video review"
-    >
-      <h2 className="font-semibold">
-        {run.state === "awaiting_review"
-          ? segmentCount > 1 && run.segmentId !== "joined"
-            ? "Segment ready for review"
-            : "Final Video ready"
-          : videoStateLabels[run.state]}
-      </h2>
-      <p role="status" className="text-sm text-muted-foreground">
-        {videoRequestBlocker(run.submissionBlocker) ?? videoExecutionLabel(run)}
-      </p>
-      {run.preview && (
-        <Button
-          variant="outline"
-          onClick={() => panels?.selectMedia(`v3-video:${run.id}`)}
-        >
-          View in Preview
-        </Button>
-      )}
-      <p className="text-sm text-muted-foreground">
-        Actual duration:{" "}
-        {run.actualDurationMs === null
-          ? "Not measured"
-          : `${run.actualDurationMs / 1000}s`}
-        . Audio:{" "}
-        {run.hasAudio === null
-          ? "Not measured"
-          : run.hasAudio
-            ? "Present"
-            : "Absent"}
-        .
-      </p>
-      <p className="text-sm text-muted-foreground">
-        {run.aspectRatio} · {run.resolution} · {run.provider} · {run.model}
-      </p>
-      <p className="text-sm text-muted-foreground">
-        Estimated cost: ~
-        {money(run.displayEstimatedCostMicrousd ?? run.estimatedCostMicrousd)}.
-        Actual provider cost:{" "}
-        {run.actualCostMicrousd === null
-          ? "Unknown"
-          : money(run.actualCostMicrousd)}
-        .
-      </p>
-      <details className="text-sm">
-        <summary className="cursor-pointer">
-          Expected dialogue and shot timing
-        </summary>
-        <ul className="mt-2 space-y-1">
-          {run.expectedDialogue.map((line, i) => (
-            <li key={i}>
-              {line.startMs / 1000}–{line.endMs / 1000}s · {line.speaker}:{" "}
-              {line.text}
-            </li>
-          ))}
-        </ul>
-        <p className="mt-2">
-          {run.shotTimings
-            .map(
-              (s) => `Shot ${s.number}: ${s.startMs / 1000}–${s.endMs / 1000}s`,
-            )
-            .join("; ")}
-        </p>
-        <p className="mt-2 text-muted-foreground">
-          These are intended timings. Review the actual words, sound, visible
-          performance and continuity.
-        </p>
-      </details>
-      {run.state === "awaiting_review" && (
-        <>
-          <div className="grid gap-3 sm:grid-cols-2">
-            {Object.entries(labels).map(([key, label]) => (
-              <label key={key} className="space-y-1 text-sm">
-                {label}
-                <select
-                  className={field}
-                  value={quality[key as Exclude<keyof Quality, "notes">]}
-                  onChange={(e) =>
-                    setQuality((q) => ({ ...q, [key]: e.target.value }))
-                  }
-                >
-                  <option value="not_checked">Not checked</option>
-                  <option value="pass">Pass</option>
-                  <option value="fail">Fail</option>
-                  {[
-                    "productContinuity",
-                    "dialoguePresence",
-                    "speechTiming",
-                    "lipAudioSync",
-                  ].includes(key) && (
-                    <option value="not_applicable">Not applicable</option>
-                  )}
-                </select>
-              </label>
-            ))}
-          </div>
-          <label className="block space-y-1 text-sm">
-            Review notes
-            <textarea
-              className={field}
-              maxLength={4000}
-              value={quality.notes}
-              onChange={(e) =>
-                setQuality((q) => ({ ...q, notes: e.target.value }))
-              }
-            />
-          </label>
-          <div className="flex flex-wrap gap-2">
-            <Button
-              disabled={busy || !run.current}
-              onClick={() => void act("approve", { id: run.id, quality })}
-            >
-              {segmentCount > 1 && run.segmentId !== "joined"
-                ? "Approve Segment"
-                : "Approve Final Video"}
-            </Button>
-            <Button
-              variant="outline"
-              disabled={busy}
-              onClick={() => setConfirmDelete(true)}
-            >
-              Reject and Delete
-            </Button>
-          </div>
-          <Dialog
-            open={confirmDelete}
-            onOpenChange={(open) => {
-              if (!busy) setConfirmDelete(open);
-            }}
-          >
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Delete this Final Video?</DialogTitle>
-                <DialogDescription>
-                  This permanently deletes the saved video and local candidate
-                  copies. Generating another video requires a new approval and
-                  an explicit Generate action.
-                </DialogDescription>
-              </DialogHeader>
-              <DialogFooter>
-                <Button
-                  variant="outline"
-                  disabled={busy}
-                  onClick={() => setConfirmDelete(false)}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  disabled={busy}
-                  onClick={() =>
-                    void act("reject_delete", {
-                      id: run.id,
-                      quality,
-                      confirmedDeletion: true,
-                    }).then((ok) => {
-                      if (ok) setConfirmDelete(false);
-                    })
-                  }
-                >
-                  Reject and Delete
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-        </>
-      )}
-      {run.state === "deleted" && (
-        <p className="text-sm">
-          Video deleted. Review and approve the Generation Package again, then
-          choose Generate Final Video.
-        </p>
-      )}
-      {run.errorCode === "OUTPUT_HOST_APPROVAL_REQUIRED" && (
-        <div role="status" className="space-y-1 text-sm">
-          <p>
-            The video is generated. Its download host needs approval before
-            saving.
-          </p>
-          {run.outputHostname && (
-            <details>
-              <summary className="cursor-pointer">
-                Local output host approval
-              </summary>
-              <p className="break-all">Hostname: {run.outputHostname}</p>
-              <p>
-                The administrator must approve this exact download host.
-                The processing service will recover this same accepted request
-                after its configuration is updated.
-              </p>
-            </details>
-          )}
-          <p>Your saved request is preserved. Recovery does not submit another generation.</p>
-        </div>
-      )}
-      {run.state === "queued" && run.submissionBlocker === "V3_REFERENCE_DELIVERY_EXPIRED" && (
-        <Button variant="outline" disabled={busy}
-          onClick={() => void act("refresh_video_delivery", { id: run.id })}>
-          Refresh saved request links
-        </Button>
-      )}
-      {["reconciliation_required", "provider_processing", "deleting"].includes(
-        run.state,
-      ) && (
-        <Button
-          variant="outline"
-          disabled={busy}
-          onClick={() => void act("recover", { id: run.id })}
-        >
-          {run.state === "deleting" ? "Retry deletion" : "Recover saved work"}
-        </Button>
-      )}
-      {run.errorCode && run.errorCode !== "OUTPUT_HOST_APPROVAL_REQUIRED" && (
-        <p role="status" className="break-words text-sm text-muted-foreground">
-          {run.errorCode === "V3_PROVIDER_OUTCOME_UNKNOWN"
-            ? "Submission outcome is unknown. This request will not be submitted again automatically; reconcile its provider outcome before taking another paid action."
-            : "This saved work needs attention. Check status or recover the saved result."}
-        </p>
-      )}
-    </section>
   );
 }
 export function V3WorkflowPreview({
@@ -633,6 +349,7 @@ export function V3WorkflowPreview({
         (storyboardTask.current || storyboardTask.providerStarted)));
   const locked = busy || dirty || !!workspace?.processing;
   const finalVideo = finalVideoPresentation(workspace, { dirty, busy, requestPending: videoRequestPending });
+  const finalVideoGenerating = finalVideo.loading && (videoRequestPending || finalVideo.activeRuns.length > 0 || !!workspace?.tasks.some(t => t.kind === "join" && ["queued", "running"].includes(t.status)));
   const reference = (kind: "character" | "product") =>
     assets.find(
       (a) =>
@@ -1025,7 +742,7 @@ export function V3WorkflowPreview({
                 Save changes before generating or approving.
               </p>
             )}
-            {busy && actionArea === "workflow" && (
+            {busy && actionArea === "workflow" && view !== "final" && (
               <p role="status" className="text-sm text-muted-foreground">
                 Preparing your request…
               </p>
@@ -1035,7 +752,7 @@ export function V3WorkflowPreview({
                 role="alert"
                 className="break-words rounded-lg border border-destructive/30 p-3 text-sm"
               >
-                {/PACKAGE|STORYBOARD|APPROV/.test(error)
+                {view !== "final" && error !== "V3_DIRECT_APPROVAL_SETUP_REQUIRED" && /PACKAGE|STORYBOARD|APPROV/.test(error)
                   ? packageBuildError(error)
                   : v3ActionErrorMessage(error)}
               </p>
@@ -1366,13 +1083,31 @@ export function V3WorkflowPreview({
                     </dl>
                   </details>
                 )}
+                {view === "progress" && workspace.runs.length > 0 && (
+                  <details className="space-y-3 text-xs text-muted-foreground">
+                    <summary className="cursor-pointer">Final Video details</summary>
+                    {workspace.runs.map(run => <div key={run.id} className="space-y-1 break-words">
+                      <p>{videoExecutionLabel(run)} · {run.id}</p>
+                      <p>{run.aspectRatio} · {run.resolution} · {run.provider} · {run.model}</p>
+                      <p>Duration: {run.actualDurationMs === null ? "Not measured" : run.actualDurationMs / 1000 + "s"}. Audio: {run.hasAudio === null ? "Not measured" : run.hasAudio ? "Present" : "Absent"}.</p>
+                      <p>Estimated cost: ~{money(run.displayEstimatedCostMicrousd ?? run.estimatedCostMicrousd)}. Actual provider cost: {run.actualCostMicrousd === null ? "Unknown" : money(run.actualCostMicrousd)}.</p>
+                      {run.errorCode && <p>{run.errorCode}</p>}
+                      {run.submissionBlocker && <p>{run.submissionBlocker}</p>}
+                      {run.outputHostname && <p>Download host requiring administrator approval: {run.outputHostname}</p>}
+                      <details><summary className="cursor-pointer">Expected dialogue and shot timing</summary>
+                        {run.expectedDialogue.map((line, index) => <p key={index}>{line.startMs / 1000}–{line.endMs / 1000}s · {line.speaker}: {line.text}</p>)}
+                        <p>{run.shotTimings.map(shot => "Shot " + shot.number + ": " + shot.startMs / 1000 + "–" + shot.endMs / 1000 + "s").join("; ")}</p>
+                      </details>
+                    </div>)}
+                  </details>
+                )}
                 {view === "final" && (
-                  <section className="min-w-0 space-y-3">
+                  <section className="min-w-0 space-y-4">
                     <h2 className="font-semibold">Final Video</h2>
-                    <Button
-                      variant="default"
+                    <FinalVideoGenerate
+                      generating={finalVideoGenerating}
                       disabled={locked || !p?.canSubmit || finalVideo.hasExistingRun}
-                      onClick={() => {
+                      onGenerate={() => {
                         if (!p) return;
                         setVideoRequestPending(true);
                         void act("generate", {
@@ -1380,39 +1115,31 @@ export function V3WorkflowPreview({
                           packageHash: p.packageHash,
                         }).finally(() => setVideoRequestPending(false));
                       }}
-                    >
-                      Generate Final Video
-                    </Button>
-                    {finalVideo.reason && (
-                      <p role="status" className="text-sm text-muted-foreground">
-                        {finalVideo.loading && finalVideo.activeRuns[0]
-                          ? videoExecutionLabel(finalVideo.activeRuns[0])
-                          : finalVideo.reason}
-                      </p>
+                    />
+                    {!finalVideo.loading && !finalVideo.hasExistingRun && finalVideo.reason && (
+                      <p role="status" className="text-sm text-muted-foreground">{finalVideo.reason}</p>
                     )}
-                    {finalVideo.loading && <V3FinalVideoSkeleton />}
-                    {finalVideo.loading && finalVideo.activeRuns
-                      .filter(run => run.state === "provider_processing")
-                      .map(run => (
-                        <Button key={run.id} variant="outline" disabled={locked}
-                          onClick={() => void act("recover", { id: run.id })}>
-                          Recover saved work
-                        </Button>
-                      ))}
                     {finalVideo.runs
                     .filter(run => !finalVideo.loading || !finalVideo.activeRuns.some(active => active.id === run.id))
                     .map((r) => (
-                      <VideoReview
+                      <FinalVideoReview
                         key={r.id}
                         run={r}
                         act={act}
                         busy={locked}
                         segmentCount={p?.segmentCount ?? 1}
+                        generating={finalVideoGenerating}
                       />
+                    ))}
+                    {workspace.tasks.filter(task => task.kind === "join" && task.status === "failed").map(task => (
+                      <div key={task.id} className="space-y-2">
+                        <p role="alert" className="text-sm text-muted-foreground">The final video could not be joined. Recover the saved segments or see Progress.</p>
+                        <Button variant="outline" disabled={locked} onClick={() => void act("recover_task", { id: task.id })}>Recover local join</Button>
+                      </div>
                     ))}
                   </section>
                 )}
-                {view === "final" &&
+                {view === "progress" &&
                   p &&
                   workspace.runs.some((r) => r.packageId !== p.packageId) && (
                     <details className="space-y-3">
@@ -1422,12 +1149,13 @@ export function V3WorkflowPreview({
                       {workspace.runs
                         .filter((r) => r.packageId !== p.packageId)
                         .map((r) => (
-                          <VideoReview
+                          <FinalVideoReview
                             key={r.id}
                             run={r}
                             act={act}
                             busy={locked}
                             segmentCount={1}
+                            compact
                           />
                         ))}
                     </details>

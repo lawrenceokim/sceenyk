@@ -1,4 +1,9 @@
 const messages: Record<string, string> = {
+  V3_DIRECT_APPROVAL_SETUP_REQUIRED: "Video approval needs database migration 092 after 091. Ask the administrator to complete setup; your saved video is preserved.",
+  CURRENT_REVIEW_REQUIRED: "This video's package is no longer current. Review the current Generation Package before approving.",
+  JOINED_APPROVAL_INVALID: "The final video's package or approved segments changed. See Progress before approving.",
+  VIDEO_REVIEW_UNAVAILABLE: "This video is no longer ready for review. Check its saved state in Progress.",
+  JOINED_REVIEW_UNAVAILABLE: "This final video is no longer ready for review. Check its saved state in Progress.",
   V3_ACCESS_UNAVAILABLE: "V3 generation is not available for this account in the current server access mode.",
   V3_BACKGROUND_SETUP_REQUIRED: "Automatic video processing needs database migration 091 after 090. Ask the administrator to complete worker setup.",
   V3_VIDEO_DELIVERY_REFRESH_SETUP_REQUIRED: "Refreshing this unsubmitted request needs database migration 090 after 089. Ask the administrator to complete setup.",
