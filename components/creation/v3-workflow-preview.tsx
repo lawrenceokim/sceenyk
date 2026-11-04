@@ -7,6 +7,7 @@ import { StudioWorkflowGuidance } from "./studio-workflow-guidance";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
+import { CircleCheck, Clock3, Info, Layers2, Ratio, Smartphone } from "lucide-react";
 import {
   StudioPanelPortal,
   StudioWorkflowMedia,
@@ -604,6 +605,22 @@ export function V3WorkflowPreview({
     !buildActionFailure &&
     (packageRequestPending ||
       (!!packageTask && ["queued", "running"].includes(packageTask.status)));
+  const packageUpdating = packageRequestPending ||
+    (!!packageTask && ["queued", "running"].includes(packageTask.status));
+  const packageBuildFailed = !!buildActionFailure ||
+    (!!packageTask && ["failed", "reconciliation_required"].includes(packageTask.status));
+  // Presentation only: a saved estimate is distinct from video submission readiness.
+  const packageReady = !!p && p.currentness === "current" && !workspace?.packageStale &&
+    p.estimatedCostMicrousd !== null && !!p.quoteId && !packageUpdating && !packageBuildFailed &&
+    !packageTask?.packageBuild?.code &&
+    !p.issues.some(issue => ["COST_ESTIMATE_UNAVAILABLE", "V3_LOCAL_PRICING_SNAPSHOT_INVALID"].includes(issue));
+  const packageApproved = packageReady && p?.authorizationState === "bound" &&
+    !p.issues.some(issue => issue.startsWith("V3_AUTHORIZATION_") || issue === "V3_SEGMENT_AUTHORIZATION_REQUIRED");
+  const packageReviewLabel = packageReady
+    ? packageApproved ? "Approved" : "Ready for review"
+    : p?.currentness !== "current" || workspace?.packageStale ? "Needs rebuilding"
+    : packageUpdating ? "Updating package"
+    : packageBuildFailed ? "Build needs attention" : "Estimate unavailable";
   const storyboardTask = workspace?.tasks
     .filter((t) => t.kind === "storyboard")
     .at(-1);
@@ -1115,10 +1132,11 @@ export function V3WorkflowPreview({
                   </section>
                 )}
                 {view === "package" && (
-                  <section className="space-y-3">
+                  <section className="min-w-0 space-y-3">
                     <h2 className="font-semibold">Package &amp; Estimates</h2>
                     <Button
                       variant="default"
+                      className="w-full max-w-full whitespace-normal sm:w-auto"
                       disabled={locked || !currentApproved("storyboard")}
                       onClick={() => {
                         setPackageRequestPending(true);
@@ -1127,7 +1145,8 @@ export function V3WorkflowPreview({
                         }).finally(() => setPackageRequestPending(false));
                       }}
                     >
-                      Build package and estimate
+                      <Layers2 aria-hidden="true" className="size-4 shrink-0" />
+                      <span className="min-w-0">Build package and estimate</span>
                     </Button>
                     {packageLoading && <V3PackageSkeleton />}
                     {workspace.packageStale && (
@@ -1140,50 +1159,38 @@ export function V3WorkflowPreview({
                         direction first.
                       </p>
                     )}
-                    {buildActionFailure && workspace.localEnabled && (
-                      <details className="text-xs text-muted-foreground">
-                        <summary className="cursor-pointer">
-                          Build request technical details
-                        </summary>
-                        <p>
-                          Stage: validation · Code: {buildActionFailure.code} ·
-                          HTTP status:{" "}
-                          {buildActionFailure.httpStatus ?? "Not received"}
-                        </p>
-                        <p>
-                          Package ID: Not assigned · Segment ID: Not assigned ·
-                          Estimate status: Not requested · Recoverable: No
-                        </p>
-                      </details>
-                    )}
-                    {packageTask && (
+                    {packageTask && !packageLoading && !packageReady && (
                       <PackageStatus
                         task={packageTask}
-                        technical={workspace.localEnabled}
+                        technical={false}
                       />
                     )}
                     {p && (
-                      <div className="min-w-0 space-y-3 rounded-xl border border-border bg-card p-4">
-                        <p className="text-sm">
-                          {p.durationMs / 1000}s · {p.aspectRatio} ·{" "}
-                          {p.segmentCount}{" "}
-                          {p.segmentCount === 1 ? "generation segment" : "generation segments"} ·{" "}
-                          {p.currentness === "current"
-                            ? "Ready for review"
-                            : "Needs rebuilding"}
-                        </p>
-                        <p className="text-sm">
-                          Estimated video cost:{" "}
+                      <>
+                        <dl aria-label="Package overview" className="flex min-w-0 flex-wrap gap-2">
+                          <div className="inline-flex max-w-full items-center gap-1.5 rounded-lg bg-primary/10 px-2.5 py-1.5 text-xs font-medium text-primary">
+                            <Clock3 aria-hidden="true" className="size-4 shrink-0" /><dt className="sr-only">Video duration</dt><dd>{p.durationMs / 1000}s</dd>
+                          </div>
+                          <div className="inline-flex max-w-full items-center gap-1.5 rounded-lg bg-info-surface px-2.5 py-1.5 text-xs font-medium text-info-foreground">
+                            {p.aspectRatio === "9:16" ? <Smartphone aria-hidden="true" className="size-4 shrink-0" /> : <Ratio aria-hidden="true" className="size-4 shrink-0" />}<dt className="sr-only">Aspect ratio</dt><dd>{p.aspectRatio}</dd>
+                          </div>
+                          <div className="inline-flex max-w-full items-center gap-1.5 rounded-lg bg-warning-surface px-2.5 py-1.5 text-xs font-medium text-warning-foreground">
+                            <Layers2 aria-hidden="true" className="size-4 shrink-0" /><dt className="sr-only">Generation segments</dt><dd className="min-w-0">{p.segmentCount} {p.segmentCount === 1 ? "generation segment" : "generation segments"}</dd>
+                          </div>
+                          <div className={`inline-flex max-w-full items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium ${packageReady ? "bg-success-surface text-success-foreground" : "bg-warning-surface text-warning-foreground"}`}>
+                            {packageReady ? <CircleCheck aria-hidden="true" className="size-4 shrink-0" /> : <Info aria-hidden="true" className="size-4 shrink-0" />}<dt className="sr-only">Review state</dt><dd className="min-w-0">{packageReviewLabel}</dd>
+                          </div>
+                        </dl>
+                      <div className="min-w-0 space-y-3 rounded-xl border border-primary/20 bg-card p-4">
+                        <div className="flex min-w-0 flex-wrap items-baseline gap-x-4 gap-y-2">
+                          <h3 className="text-sm font-medium text-foreground">Estimated video cost</h3>
+                          <p className="break-words text-xl font-semibold tracking-tight text-primary">
                           {(p.displayEstimatedCostMicrousd ??
                             p.estimatedCostMicrousd) === null
                             ? "Unavailable"
                             : `~${money(p.displayEstimatedCostMicrousd ?? p.estimatedCostMicrousd)}`}
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          Approximate Sceenyk estimate based on the configured
-                          Higgsfield model rate. The real provider charge may
-                          differ.
-                        </p>
+                          </p>
+                        </div>
                         {p.segmentCount > 1 && (
                           <ul className="space-y-1 text-sm">
                             {p.segments.map((s, i) => (
@@ -1197,17 +1204,14 @@ export function V3WorkflowPreview({
                             ))}
                           </ul>
                         )}
-                        <p className="text-sm">
-                          Authorized maximum:{" "}
-                          {money(p.authorizedMaximumMicrousd)}
-                        </p>
-                        <label className="block space-y-1 text-sm">
-                          Maximum authorized USD
+                        <div className="space-y-2 border-t border-primary/15 pt-3">
+                        <label className="block w-full space-y-1 text-sm font-medium sm:w-1/2">
+                          <span className="block">Maximum authorized USD</span>
                           <input
                             type="number"
                             min="0"
                             step="0.01"
-                            className={field}
+                            className="h-11 w-full min-w-0 rounded-lg border border-primary/25 bg-background px-3 text-sm font-normal text-foreground outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30"
                             value={maximumValue}
                             onChange={(e) =>
                               setMaximum({
@@ -1217,15 +1221,16 @@ export function V3WorkflowPreview({
                             }
                           />
                         </label>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-xs leading-relaxed text-muted-foreground">
                           The suggested maximum includes a configurable{" "}
-                          {p.suggestedAuthorizationBufferPercent}% buffer.
-                          Review or edit it before approving; it is a spending
-                          limit, not a guaranteed charge.
+                          {p.suggestedAuthorizationBufferPercent}% buffer and can be edited before approving.
                         </p>
-                        <label className="flex items-start gap-2 text-sm">
+                        </div>
+                        <div className="space-y-3 border-t border-primary/15 pt-3">
+                        <label className="flex min-h-11 cursor-pointer items-start gap-2 text-sm leading-relaxed">
                           <input
                             type="checkbox"
+                            className="mt-0.5 size-4 shrink-0 accent-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
                             checked={approvedHash === p.packageHash}
                             onChange={(e) =>
                               setApprovedHash(
@@ -1237,8 +1242,10 @@ export function V3WorkflowPreview({
                           displayed request and cost limit.
                         </label>
                         <Button
-                          variant="outline"
+                          variant="default"
+                          className="w-full whitespace-normal"
                           disabled={
+                            packageApproved ||
                             locked ||
                             p.estimatedCostMicrousd === null ||
                             !p.quoteId ||
@@ -1259,13 +1266,13 @@ export function V3WorkflowPreview({
                         >
                           Approve Generation Package
                         </Button>
-                        {p.authorizationState === "bound" && (
-                          <p role="status" className="text-sm">
-                            Generation Package approved. Final Video is the next
-                            stage.
-                          </p>
-                        )}
-                        {p.issues.length > 0 && (
+                        <p className="flex items-start justify-center gap-2 text-center text-xs leading-relaxed text-muted-foreground">
+                          <Info aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
+                          {packageApproved ? "Package approved. Continue to Final Video." : "Final video unlocks after package approval."}
+                        </p>
+                        </div>
+                      </div>
+                        {p.transportEnabled && p.issues.some(issue => !["V3_AUTHORIZATION_REQUIRED", "V3_SEGMENT_AUTHORIZATION_REQUIRED"].includes(issue)) && (
                           <p
                             role="status"
                             className="text-sm text-muted-foreground"
@@ -1273,26 +1280,16 @@ export function V3WorkflowPreview({
                             Video generation is awaiting setup or approval.
                           </p>
                         )}
-                        {!p.transportEnabled && (
-                          <p className="text-sm text-muted-foreground">
-                            Video generation is currently unavailable. Your
-                            saved work is preserved.
-                          </p>
-                        )}
-                        <Button
-                          disabled={locked || !p.canSubmit}
-                          onClick={() =>
-                            void act("generate", {
-                              packageId: p.packageId,
-                              packageHash: p.packageHash,
-                            })
-                          }
-                        >
-                          Generate Final Video
-                        </Button>
-                      </div>
+                      </>
                     )}
                   </section>
+                )}
+                {view === "progress" && buildActionFailure && workspace.localEnabled && (
+                  <details className="text-xs text-muted-foreground">
+                    <summary className="cursor-pointer">Build request technical details</summary>
+                    <p>Stage: validation · Code: {buildActionFailure.code} · HTTP status: {buildActionFailure.httpStatus ?? "Not received"}</p>
+                    <p>Package ID: Not assigned · Segment ID: Not assigned · Estimate status: Not requested · Recoverable: No</p>
+                  </details>
                 )}
                 {view === "progress" && packageTask && (
                   <PackageStatus
