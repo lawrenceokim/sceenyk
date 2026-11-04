@@ -5,6 +5,7 @@ import { V3StoryboardSkeleton } from "./v3-storyboard-skeleton";
 import { V3PackageSkeleton } from "./v3-package-skeleton";
 import { V3FinalVideoSkeleton } from "./v3-final-video-skeleton";
 import { finalVideoPresentation } from "./v3-final-video-state";
+import { videoRequestBlocker } from "@/lib/final-video-generation-v3/video-request-status";
 import { StudioWorkflowGuidance } from "./studio-workflow-guidance";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -215,10 +216,10 @@ function VideoReview({
           : videoStateLabels[run.state]}
       </h2>
       <p role="status" className="text-sm text-muted-foreground">
-        {["queued", "submitting", "provider_processing"].includes(run.state)
+        {videoRequestBlocker(run.submissionBlocker) ?? (["queued", "submitting", "provider_processing"].includes(run.state)
           ? (videoProgressLabel(run.stage?.stage) ??
             videoStateLabels[run.state])
-          : videoStateLabels[run.state]}
+          : videoStateLabels[run.state])}
       </p>
       {run.preview && (
         <Button
@@ -402,6 +403,12 @@ function VideoReview({
           )}
           <p>Recovery will not submit another generation request.</p>
         </div>
+      )}
+      {run.state === "queued" && run.submissionBlocker === "V3_REFERENCE_DELIVERY_EXPIRED" && (
+        <Button variant="outline" disabled={busy}
+          onClick={() => void act("refresh_video_delivery", { id: run.id })}>
+          Refresh saved request links
+        </Button>
       )}
       {["reconciliation_required", "provider_processing", "deleting"].includes(
         run.state,
@@ -1369,7 +1376,7 @@ export function V3WorkflowPreview({
                       <div><dt className="inline font-medium">Package: </dt><dd className="inline">{p.packageId}</dd></div>
                       <div><dt className="inline font-medium">Currentness: </dt><dd className="inline">{p.currentness}</dd></div>
                       <div><dt className="inline font-medium">Authorization: </dt><dd className="inline">{p.authorizationState}</dd></div>
-                      <div><dt className="inline font-medium">Transport enabled for this project/package: </dt><dd className="inline">{p.transportEnabled ? "Yes" : "No"}</dd></div>
+                      <div><dt className="inline font-medium">Server paid-generation switch: </dt><dd className="inline">{p.transportEnabled ? "On" : "Off"}</dd></div>
                       <div><dt className="inline font-medium">Submission allowed: </dt><dd className="inline">{p.canSubmit ? "Yes" : "No"}</dd></div>
                       <div><dt className="inline font-medium">Prerequisite codes: </dt><dd className="inline">{p.issues.join(", ") || "None"}</dd></div>
                     </dl>

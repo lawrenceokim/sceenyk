@@ -7,7 +7,6 @@ export function assertV3Operator(ownerId: string) {
 }
 export function v3TransportConfig() {
   return { enabled: v3LocalEnabled() && process.env.UGC_V3_HIGGSFIELD_ENABLED === "1",
-    projectId: process.env.UGC_V3_ACTIVATION_PROJECT_ID ?? "", packageId: process.env.UGC_V3_ACTIVATION_PACKAGE_ID ?? "",
     credentials: process.env.UGC_V3_HIGGSFIELD_CREDENTIALS ?? "", accountScope: process.env.UGC_V3_HIGGSFIELD_ACCOUNT_SCOPE ?? "",
     outputHosts: (process.env.UGC_V3_HIGGSFIELD_OUTPUT_HOSTS ?? "").split(",").map(s => s.trim()).filter(Boolean) };
 }
@@ -16,9 +15,9 @@ export function exactOutputHosts(hosts: string[]) {
 }
 export function assertV3Transport(config: ReturnType<typeof v3TransportConfig>, scope: { projectId: string; packageId: string }) {
   if (!config.enabled) throw new Error("PAID_V3_EXECUTION_DISABLED");
-  if (config.projectId !== scope.projectId || config.packageId !== scope.packageId || !z.uuid().safeParse(scope.projectId).success ||
-    !z.uuid().safeParse(scope.packageId).success || !/^[^\s:]+:[^\s:]+$/.test(config.credentials)) throw new Error("V3_ACTIVATION_SCOPE_MISMATCH");
-  if (!config.accountScope) throw new Error("HIGGSFIELD_CREDENTIALS_REQUIRED");
+  // Scope comes from the owned database workspace and its frozen package, never an environment allowlist.
+  if (!z.uuid().safeParse(scope.projectId).success || !z.uuid().safeParse(scope.packageId).success) throw new Error("V3_SUBMISSION_SCOPE_INVALID");
+  if (!/^[^\s:]+:[^\s:]+$/.test(config.credentials) || !config.accountScope) throw new Error("HIGGSFIELD_CREDENTIALS_REQUIRED");
   if (config.outputHosts.length && !exactOutputHosts(config.outputHosts)) throw new Error("HIGGSFIELD_OUTPUT_ALLOWLIST_INVALID");
 }
 export function v3ReferenceConfig() {

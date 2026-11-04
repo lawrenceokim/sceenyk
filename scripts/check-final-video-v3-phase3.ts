@@ -18,6 +18,7 @@ import { generationContext, artifactCurrent, referencePrompt } from "../lib/fina
 import { eligibleForV3 } from "../lib/final-video-generation-v3/enrollment";
 import { approvedJoinInputs } from "../lib/final-video-generation-v3/join";
 import { inspectExecutionEnvelope } from "../lib/final-video-generation-v3/execution-inspector";
+import { v3TransportConfig, assertV3Transport } from "../lib/final-video-generation-v3/runtime-config";
 
 let checks = 0, realNetworkCalls = 0, fixtureHttpCalls = 0;
 globalThis.fetch = async () => { realNetworkCalls++; throw new Error("NETWORK_FORBIDDEN"); };
@@ -63,10 +64,24 @@ async function pureAndTransportChecks() {
       ok(prompt.includes(`"instructions":${JSON.stringify(context.instructions)}`)); ok(prompt.includes("identity")); ok(prompt.includes("same creative world"));
     }
   }
-  const oldEnv = { NODE_ENV: process.env.NODE_ENV, UGC_V3_ENABLED: process.env.UGC_V3_ENABLED, UGC_V3_OPERATOR_USER_ID: process.env.UGC_V3_OPERATOR_USER_ID };
+  const oldEnv = { NODE_ENV: process.env.NODE_ENV, UGC_V3_ENABLED: process.env.UGC_V3_ENABLED, UGC_V3_OPERATOR_USER_ID: process.env.UGC_V3_OPERATOR_USER_ID,
+    UGC_V3_HIGGSFIELD_ENABLED: process.env.UGC_V3_HIGGSFIELD_ENABLED, UGC_V3_HIGGSFIELD_CREDENTIALS: process.env.UGC_V3_HIGGSFIELD_CREDENTIALS,
+    UGC_V3_HIGGSFIELD_ACCOUNT_SCOPE: process.env.UGC_V3_HIGGSFIELD_ACCOUNT_SCOPE, UGC_V3_HIGGSFIELD_OUTPUT_HOSTS: process.env.UGC_V3_HIGGSFIELD_OUTPUT_HOSTS };
   Object.assign(process.env, { NODE_ENV: "development", UGC_V3_ENABLED: "1", UGC_V3_OPERATOR_USER_ID: "operator" });
   equal(eligibleForV3("operator", "ugc"), true); equal(eligibleForV3("operator", "freestyle"), false); equal(eligibleForV3("someone-else", "ugc"), false);
   process.env.UGC_V3_ENABLED = "0"; equal(eligibleForV3("operator", "ugc"), false);
+  Object.assign(process.env, { UGC_V3_ENABLED: "1", UGC_V3_HIGGSFIELD_CREDENTIALS: "fixture:key", UGC_V3_HIGGSFIELD_ACCOUNT_SCOPE: "fixture", UGC_V3_HIGGSFIELD_OUTPUT_HOSTS: "" });
+  for (const flag of ["0", "", "true", "2"]) {
+    process.env.UGC_V3_HIGGSFIELD_ENABLED = flag;
+    assert.throws(() => assertV3Transport(v3TransportConfig(), f.intent), /PAID_V3_EXECUTION_DISABLED/); checks++;
+  }
+  process.env.UGC_V3_HIGGSFIELD_ENABLED = "1";
+  assertV3Transport(v3TransportConfig(), f.intent); checks++;
+  assertV3Transport(v3TransportConfig(), { projectId: randomUUID(), packageId: randomUUID() }); checks++;
+  assert.throws(() => assertV3Transport(v3TransportConfig(), { projectId: "invalid", packageId: f.doc.id }), /V3_SUBMISSION_SCOPE_INVALID/); checks++;
+  process.env.UGC_V3_HIGGSFIELD_CREDENTIALS = "";
+  assert.throws(() => assertV3Transport(v3TransportConfig(), f.intent), /HIGGSFIELD_CREDENTIALS_REQUIRED/); checks++;
+  process.env.UGC_V3_ENABLED = "0"; equal(v3TransportConfig().enabled, false);
   for (const [key, value] of Object.entries(oldEnv)) { if (value === undefined) delete process.env[key]; else process.env[key] = value; }
 
   const { hash, ...intentContent } = f.intent; equal(hash, v3Digest("paid-intent", intentContent));
@@ -91,7 +106,7 @@ async function pureAndTransportChecks() {
   const other = fixture(v3Input(), v3Id(102));
   ok(runtimePreflight(other.doc, other.quote, f.auth, { current: true, transportEnabled: true, now, validityIssues: [] }).issues.includes("V3_AUTHORIZATION_BINDING_INVALID"));
   equal(exactBodyHash({ b: 2, a: 1 }), exactBodyHash({ a: 1, b: 2 }));
-  const config = { enabled: false, projectId: f.input.scope.projectId, packageId: f.doc.id, credentials: "fixture:key", accountScope: "fixture", outputHosts: ["cdn.example.test"] };
+  const config = { enabled: false, credentials: "fixture:key", accountScope: "fixture", outputHosts: ["cdn.example.test"] };
   const http: typeof fetch = async (url, init) => {
     fixtureHttpCalls++; const href = String(url);
     if (href.includes("/estimate/")) return Response.json({ usd: "1.25" });

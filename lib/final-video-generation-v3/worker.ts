@@ -146,6 +146,8 @@ async function videoTask(store: V3Store, task: Task, w: RuntimeWorkspace, signal
   await stage("V3_FINAL_VIDEO_JOB_CLAIMED");
   await executeV3Segment(run, task.provider_started, { provider: transport, beforeSubmit: async intent => {
     assertV3Transport(config, intent);
+    // Do not mark a request started when its signed inputs have already expired.
+    if (Date.parse(intent.deliveryExpiresAt) <= Date.now()) throw new Error("V3_REFERENCE_DELIVERY_EXPIRED");
     if (doc.pricing.source !== "manual_provider_estimate" && config.accountScope !== doc.accountScope) throw new Error("HIGGSFIELD_ESTIMATE_ACCOUNT_CHANGED");
     const quote = w.quotes.find(q => q.document.packageId === run.package_id)?.document;
     const issues = higgsfieldRequestIssues(intent.body, doc.source.references, quote?.validityEvidence, new Date().toISOString());
@@ -206,8 +208,9 @@ export async function runV3Task(projectId: string, ownerId: string, store = new 
     const started = refreshed.tasks.find(t => t.id === task.id)?.provider_started;
     const code = error instanceof Error && /^[A-Z0-9_]{1,100}$/.test(error.message) ? error.message : "V3_TASK_FAILED";
     const rejected = error instanceof HiggsfieldTransportError && error.outcome === "rejected" || error instanceof ReferenceTaskError && error.knownRejected;
-    const unknown = !rejected && (started || !!run?.observation) && !["PAID_V3_EXECUTION_DISABLED", "V3_ACTIVATION_SCOPE_MISMATCH"].includes(code);
-    const paused = ["PAID_V3_EXECUTION_DISABLED", "V3_ACTIVATION_SCOPE_MISMATCH"].includes(code) ||
+    const deliveryPaused = !started && !run?.observation && code === "V3_REFERENCE_DELIVERY_EXPIRED";
+    const unknown = !rejected && (started || !!run?.observation) && !["PAID_V3_EXECUTION_DISABLED", "V3_ACTIVATION_SCOPE_MISMATCH"].includes(code) && !deliveryPaused;
+    const paused = deliveryPaused || ["PAID_V3_EXECUTION_DISABLED", "V3_ACTIVATION_SCOPE_MISMATCH"].includes(code) ||
       !!task.input.referenceCleanup && ["V3_REFERENCE_CLEANUP_IN_PROGRESS", "V3_REFERENCE_CLEANUP_PENDING"].includes(code);
     if (error instanceof ReferenceTaskError && task.lease_token) {
       try { await store.rpc("ugc_v3_record_reference_diagnostic", { p_task: task.id, p_token: task.lease_token, p_document: error.metadata }); }
@@ -217,6 +220,8 @@ export async function runV3Task(projectId: string, ownerId: string, store = new 
       ...(error instanceof ReferenceTaskError && (started || error.metadata.httpStatus !== null || error.metadata.requestId !== null) ?
         { httpStatus: error.metadata.httpStatus, correlationId: error.metadata.requestId, outcome: error.knownRejected ? "rejected" : "unknown" } : {}),
       ...(error instanceof HiggsfieldTransportError ? { httpStatus: error.httpStatus, correlationId: error.correlationId, outcome: error.outcome } : {}) });
+    if (task.kind === "video") console.info(JSON.stringify({ stage: paused ? "V3_VIDEO_REQUEST_PAUSED" : "V3_VIDEO_REQUEST_NEEDS_ATTENTION",
+      projectId, runId: run?.id ?? null, code, providerStarted: !!started }));
   }
   return true;
 }

@@ -1,5 +1,18 @@
 # Architecture Context
 
+## V3 paused unsubmitted video recovery (2026-11-04)
+
+Saved worker task errors distinguish a submission pause from provider processing. The owner DTO publishes a queued run's task blocker and signed-delivery expiry; paused runs stop showing a preparation skeleton. Worker startup logs the effective paid switch without secrets, and catches log the persisted pause/failure code. Both worker commands still use the same V3 runner. Transport gating and lease/request checkpoints remain authoritative.
+
+An explicit owner-only Refresh saved request links action works only with paid transport OFF and a definitely unsubmitted queued run. It verifies current package, unexpired unchanged spending authority, exact ordered private bytes, and absence of local acceptance/result evidence. New manual migration 090 adds one service-only RPC using existing project/task/run locks. It rejects active leases/provider-started/accepted/result-bearing work, snapshots the entire previous intent in private audit history, and updates only signed image URLs, delivery expiry and matching hashes on the same run. IDs, idempotency, package/quote/authorization/cost/prompt/model/attempt remain unchanged. No provider request, new execution or authority extension occurs. Known accepted work uses the existing recovery path. The worker now refuses expired delivery before marking a provider intent started.
+
+
+## Automatic V3 paid activation (2026-11-04)
+
+New paid video submissions use the server-only `UGC_V3_HIGGSFIELD_ENABLED` switch plus existing owned database records. No Project/Package activation UUID environment variables are read or required. The authenticated local V3 operator must own the enrolled project; the server selects its latest frozen package and validates the displayed ID/hash against it. Existing explicit package/segment spending approval, hashes/currentness, expiry, cost ceilings, validity/account/delivery checks, project-wide unresolved-outcome exclusion, SQL project locks, unique active segments/consumed authorizations, worker leases and the provider-started fence remain authoritative. The global switch grants no package spending authority. Existing V3 USD budget authorization remains separate from the legacy credit wallet; this change adds no billing integration.
+
+`0` blocks every new paid submission, including queued work that has not reached the provider. `1` permits eligible owned V3 projects independently. Accepted requests continue polling, recovery and private saving while OFF, using the same request IDs without another paid POST. The existing local-development/operator and server credential/output-host restrictions remain. Ordinary users cannot edit the switch. No migration, historical-record rewrite, provider payload, model, pricing or result-handling change is required.
+
 ## Studio workflow attention and handoff (2026-11-02)
 
 The existing V3 owner publishes a presentation-only reference-complete/unfinished indication to StudioLayout. Required references are current, approved, active Character/Location plus Product only when its saved uploaded source is present. Final completion uses the existing authoritative runtimeDto.complete, which already distinguishes final joined/single-video approval from individual segment approval. No new persisted workflow flag, acknowledgement, state machine, provider call or database contract is added.

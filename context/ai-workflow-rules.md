@@ -1,5 +1,14 @@
 # AI Workflow Rules
 
+## Current authorization — stuck V3 video investigation (2026-11-04)
+
+Inspect saved DB/task/event/local receipt evidence read-only. Fix confirmed worker-pause feedback and safe continuation of the same unsubmitted run only. No provider/account requests, paid retry, new execution, live job/state repair, worker execution or migration application. A provider-free owner action may refresh expired signed references on the existing unsubmitted run with transport OFF, unchanged spending authority and database concurrency fences; 090 remains manual. Preserve accepted-request recovery and all other generation paths.
+
+
+## Current authorization — automatic V3 paid activation (2026-11-04)
+
+Remove manual Project/Package UUID activation only. Preserve all existing owner/operator, immutable package/spending authorization, cost, concurrency, provider/storage and recovery protections. Use offline fixtures only: no provider/account request, live worker, database/storage mutation, deployment or paid enabling. Existing environment values remain untouched. The server-only global Higgsfield switch controls NEW paid submissions for every eligible owned V3 project; accepted requests remain recoverable while OFF. No new credit-wallet integration or migration is part of this change. This supersedes exact-project/package environment setup in older controlled-test notes.
+
 ## Current authorization — controlled V3 video implementation (2026-11-01)
 
 Implement the existing approved project/package's first continuous Seedance video path and focused offline tests. Read-only current DB/R2 inspection is authorized; do not submit generation, estimates, run a live worker, rebuild creative work/package, deploy or enable paid transport. Finish with `UGC_V3_HIGGSFIELD_ENABLED=0`; the owner will manually activate the exact project/package after reviewing source and applying migration 087. The owner's later clarification permits submission with an empty output-host allowlist: persist request ID, poll completion, expose only its sanitized hostname, stop before untrusted download, and recover the same completed request after manual exact-host approval. Never guess the host, auto-trust it, follow redirects or replay a paid POST. Another video after confirmed deletion requires fresh explicit authorization and Generate. [Exact continuation](v3-controlled-video.md).

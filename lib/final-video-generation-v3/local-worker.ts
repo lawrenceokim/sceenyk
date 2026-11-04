@@ -2,7 +2,7 @@ import "server-only";
 import { z } from "zod";
 import { createDatabaseClient } from "@/lib/db/server";
 import { localJobsOnly } from "@/lib/workflows/execution-policy";
-import { assertV3Operator } from "./runtime-config";
+import { assertV3Operator, v3TransportConfig } from "./runtime-config";
 import { runV3Task } from "./worker";
 
 export function referenceContractDiagnostic() {
@@ -19,6 +19,8 @@ export async function runLocalV3Worker(args: string[]) {
   assertV3Operator(owner);
   console.info("V1_CHARACTER_CONTRACT", { active: false, reason: "V3_registry_only_use_legacy_flag_for_historical_work" });
   console.info("V3_REFERENCE_CONTRACT", referenceContractDiagnostic());
+  console.info("V3_VIDEO_SUBMISSION_POLICY", { enabled: v3TransportConfig().enabled, configuredSwitch: process.env.UGC_V3_HIGGSFIELD_ENABLED === "1" ? "1" : "0",
+    environmentLoadedAtStartup: true, acceptedRequestRecoveryEnabled: true });
   const shutdown = new AbortController();
   const stop = () => shutdown.abort();
   for (const signal of ["SIGINT", "SIGTERM"] as const) process.once(signal, stop);

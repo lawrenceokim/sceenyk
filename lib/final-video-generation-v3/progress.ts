@@ -26,6 +26,8 @@ export function v3ProgressLabel(state: ProgressState, productRequired: boolean, 
   const task = state.tasks.find(t => !t.referenceCleanup && ["queued", "running", "reconciliation_required"].includes(t.status) &&
     (t.current || t.providerStarted || ["package", "video", "join", "delete"].includes(t.kind)));
   if (task) {
+    if (task.kind === "video" && !task.providerStarted && task.errorCode === "PAID_V3_EXECUTION_DISABLED") return "Final Video paused: paid submissions are disabled in the worker";
+    if (task.kind === "video" && !task.providerStarted && task.errorCode === "V3_REFERENCE_DELIVERY_EXPIRED") return "Final Video paused: refresh the saved request's private reference links";
     if (task.status === "reconciliation_required") return `${subjects[task.kind]} recovery required`;
     if (task.location && task.location.requestCount > 0) return task.location.label;
     if (task.status === "queued") return now - Date.parse(task.createdAt) >= 90_000 ? "Waiting for generation worker" : `${subjects[task.kind]} queued`;

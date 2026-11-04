@@ -10,6 +10,10 @@ const require=createRequire(import.meta.url),builder=require('../lib/video-gener
 const normal=v=>JSON.parse(JSON.stringify(v)),hash=b=>createHash('sha256').update(b).digest('hex');
 let checks=0,networkCalls=0,mode='pass',saveFailure=false,storageFailure=false,deleteFailure=false,deleteAttempts=0;
 let estimateCalls=0,estimateMode='pass',packageSaveFailure=false;
+let fixtureVideo=false,videoPosts=0,videoPolls=0;
+let deliverySequence=0;
+const workerLogs=[];
+const fixtureVideoId=randomUUID();
 let storyboardDurations=[5000,5000];
 let previousFunctionsPreserved=0;
 const equal=(a,b)=>{assert.deepEqual(normal(a),normal(b));checks++;},ok=v=>{assert.ok(v);checks++;};
@@ -34,7 +38,7 @@ const media={bytesHash:hash,readSpool:async(id,name)=>spool.get(`${id}:${name}`)
  readPrivate:async key=>objects.get(key)?.bytes??master,
  inspectImage:async bytes=>{const b=await sharp(bytes).rotate().png().toBuffer(),m=await sharp(b).metadata();return{bytes:b,metadata:{mimeType:'image/png',width:m.width,height:m.height,durationMs:0,hasAudio:false}};},
  publishPrivate:async(user,project,id,bytes,meta)=>{if(storageFailure)throw new Error('FIXTURE_STORAGE');const asset={id,storageKey:`users/${user}/projects/${project}/v3/${id}.png`,etag:'fixture',sha256:hash(bytes),sizeBytes:bytes.length,...meta};objects.set(asset.storageKey,{asset,bytes});return asset;},
- signPrivate:async a=>({url:`https://private.example.test/${a.id}`,expiresAt:new Date(Date.now()+300000).toISOString()})};
+ signPrivate:async a=>({url:`https://private.example.test/${a.id}?signature=${++deliverySequence}`,expiresAt:new Date(Date.now()+300000).toISOString()})};
 async function fixtureResponse(kind,body,options){
  const id=options.headers['X-Client-Request-Id'];
  ok((await pg.query("select id from public.ugc_v3_tasks where output->'requests' @> $1::jsonb",[JSON.stringify([{id,status:'intent'}])])).rows[0]);
@@ -67,7 +71,12 @@ const load=typescriptLoader({'@/lib/auth/ensure-app-user':{ensureAppUser:async()
  '@/lib/video-generation-package/builder':{...builder,packageDigest:(d,v)=>builder.packageDigest(d,normal(v)),canonicalJson:v=>builder.canonicalJson(normal(v))},
  './join':{joinV3Segments:async()=>{throw new Error('JOIN_FORBIDDEN');}},'next/navigation':{unstable_rethrow:()=>{}},
  openai:{__esModule:true,default:FixtureOpenAI,toFile:async bytes=>new File([bytes],'source.png',{type:'image/png'})}},
- {Error,Response,Request,File,AbortController,structuredClone:normal,fetch:async(url)=>{if(String(url).startsWith('https://api.higgsfield.ai/estimate/')){estimateCalls++;return estimateMode==='pass'?Response.json({usd:'1.25'}):Response.json({}, {status:503});}networkCalls++;throw new Error('NETWORK_FORBIDDEN');},console:{...console,info(){}}});
+ {Error,Response,Request,File,AbortController,structuredClone:normal,fetch:async(url)=>{
+  if(fixtureVideo&&String(url)==='https://api.higgsfield.ai/bytedance/seedance-2.5/reference-to-video'){
+   videoPosts++;return Response.json({request_id:fixtureVideoId,status:'queued',status_url:`https://api.higgsfield.ai/requests/${fixtureVideoId}/status`,cancel_url:`https://api.higgsfield.ai/requests/${fixtureVideoId}/cancel`});
+  }
+  if(fixtureVideo&&String(url)===`https://api.higgsfield.ai/requests/${fixtureVideoId}/status`){videoPolls++;return Response.json({request_id:fixtureVideoId,status:'in_progress'});}
+  if(String(url).startsWith('https://api.higgsfield.ai/estimate/')){estimateCalls++;return estimateMode==='pass'?Response.json({usd:'1.25'}):Response.json({}, {status:503});}networkCalls++;throw new Error('NETWORK_FORBIDDEN');},console:{...console,info(value){if(typeof value==='string'&&value.startsWith('{'))workerLogs.push(JSON.parse(value));}}});
 const route=load('app/api/ugc/v3/route.ts'),{runV3Task}=load('lib/final-video-generation-v3/worker.ts'),{V3Store}=load('lib/final-video-generation-v3/runtime-store.ts');
 const contract=load('lib/final-video-generation-v3/location-contract.ts'),{runtimeDto}=load('lib/final-video-generation-v3/runtime-server.ts');
 const read=async p=>runtimeDto(await new V3Store(db).read(owner,p));
@@ -102,7 +111,7 @@ try{
  const migrations=fs.readdirSync('supabase/migrations').filter(n=>n.endsWith('.sql')).sort();
  for(const file of migrations){
   let previous;
-  if(file.includes('08500')||file.includes('08600'))previous=(await pg.query("select oid::regprocedure::text signature,prosrc,proacl::text grants,proconfig from pg_proc where pronamespace='public'::regnamespace order by oid")).rows;
+  if(file.includes('08500')||file.includes('08600')||file.includes('09000'))previous=(await pg.query("select oid::regprocedure::text signature,prosrc,proacl::text grants,proconfig from pg_proc where pronamespace='public'::regnamespace order by oid")).rows;
   await pg.exec(fs.readFileSync(`supabase/migrations/${file}`,'utf8'));
   if(previous){const current=(await pg.query("select oid::regprocedure::text signature,prosrc,proacl::text grants,proconfig from pg_proc where pronamespace='public'::regnamespace order by oid")).rows;equal(current.filter(f=>previous.some(p=>p.signature===f.signature)),previous);previousFunctionsPreserved=previous.length;}
  }
@@ -110,6 +119,9 @@ try{
  await pg.exec(fs.readFileSync('supabase/migrations/20261031008500_ugc_v3_package_flow.sql','utf8'));
  await pg.exec(fs.readFileSync('supabase/migrations/20261031008600_ugc_v3_local_pricing.sql','utf8'));
  await pg.exec(fs.readFileSync('supabase/migrations/20261102008800_ugc_v3_sheet_dependencies.sql','utf8'));
+ // Replaying 086 above must not replace the installed precision guard from 089.
+ await pg.exec(fs.readFileSync('supabase/migrations/20261103008900_ugc_v3_local_pricing_precision.sql','utf8'));
+ await pg.exec(fs.readFileSync('supabase/migrations/20261104009000_ugc_v3_unsubmitted_video_delivery.sql','utf8'));
  await pg.exec(fs.readFileSync('scripts/verify-v3-setup.sql','utf8'));checks++;
  await pg.query("insert into public.app_users(id,clerk_user_id) values($1,'fixture')",[owner]);
  const f=await fixture(),before=await cp(f.project),start=calls.length;
@@ -209,7 +221,7 @@ try{
  await pg.exec('drop trigger fixture_package_failure on public.ugc_v3_quotes;drop function public.fixture_package_failure();');
  equal((await post(f.project,{action:'build_package'})).status,200);
  await tick(f.project);let built=await read(f.project);assert.equal((await packageRow(f.project)).status,'done',JSON.stringify((await packageRow(f.project)).output));checks++;
- equal(await packageCount(f.project),1);equal(built.preflight.estimatedCostMicrousd,5641000);equal(built.preflight.segmentCount,1);equal(built.preflight.canSubmit,false);
+ equal(await packageCount(f.project),1);equal(built.preflight.estimatedCostMicrousd,2056670);equal(built.preflight.segmentCount,1);equal(built.preflight.canSubmit,false);
  equal(built.tasks.find(t=>t.kind==='package').packageBuild.estimateStatus,'available');
  equal((await read(f.project)).preflight.packageId,built.preflight.packageId);
  equal((await post(f.project,{action:'build_package',retryTaskId:taskBefore.id})).status,200);equal(await packageCount(f.project),1);
@@ -220,7 +232,7 @@ try{
  for(const stage of ['validation','planning','delivery','payload','estimate','persistence','ready'])ok(stages.includes(stage));
  // Delivery expiry does not expire local pricing or prevent explicit finite package approval.
  await pg.query("update public.ugc_v3_quotes set document=jsonb_set(document,'{deliveryExpiresAt}',to_jsonb('2020-01-01T00:00:00Z'::text)) where project_id=$1",[f.project]);
- built=await read(f.project);equal(built.preflight.estimatedCostMicrousd,5641000);equal(built.preflight.issues.includes('COST_ESTIMATE_UNAVAILABLE'),false);
+ built=await read(f.project);equal(built.preflight.estimatedCostMicrousd,2056670);equal(built.preflight.issues.includes('COST_ESTIMATE_UNAVAILABLE'),false);
  equal((await post(f.project,{action:'build_package',retryTaskId:taskBefore.id})).status,200);equal(await packageCount(f.project),1);
  const approval={action:'authorize',packageId:built.preflight.packageId,packageHash:built.preflight.packageHash,quoteId:built.preflight.quoteId,operatorApproved:true,maximumMicrousd:6770000};
  equal((await post(f.project,{...approval,maximumMicrousd:100})).status,409);
@@ -231,12 +243,25 @@ try{
  const videoRequest={action:'generate',packageId:built.preflight.packageId,packageHash:built.preflight.packageHash};
  equal((await post(f.project,videoRequest)).body.code,'PAID_V3_EXECUTION_DISABLED');
  Object.assign(process.env,{UGC_V3_HIGGSFIELD_ENABLED:'1',UGC_V3_HIGGSFIELD_CREDENTIALS:'fixture:key',UGC_V3_HIGGSFIELD_ACCOUNT_SCOPE:'fixture',
-  UGC_V3_HIGGSFIELD_OUTPUT_HOSTS:'cdn.example.test',UGC_V3_ACTIVATION_PROJECT_ID:f.project,UGC_V3_ACTIVATION_PACKAGE_ID:built.preflight.packageId});
+  UGC_V3_HIGGSFIELD_OUTPUT_HOSTS:'cdn.example.test'});
+ delete process.env.UGC_V3_ACTIVATION_PROJECT_ID;delete process.env.UGC_V3_ACTIVATION_PACKAGE_ID;
  equal((await read(f.project)).preflight.eligibleForPaidSubmission,true);
- process.env.UGC_V3_ACTIVATION_PACKAGE_ID=randomUUID();equal((await post(f.project,videoRequest)).body.code,'V3_ACTIVATION_SCOPE_MISMATCH');
- process.env.UGC_V3_ACTIVATION_PACKAGE_ID=built.preflight.packageId;
- const generated=await post(f.project,videoRequest);assert.equal(generated.status,200,JSON.stringify(generated.body));checks++;
+ equal((await read(f.project)).preflight.canSubmit,true);
+ equal((await post(f.project,{...videoRequest,packageId:randomUUID()})).body.code,'V3_REVIEW_SNAPSHOT_CHANGED');
+ equal((await post(f.project,{...videoRequest,packageHash:'f'.repeat(64)})).body.code,'V3_REVIEW_SNAPSHOT_CHANGED');
+ // A saved authorization cannot be expired or changed by a client, even with transport ON.
+ const savedAuthority=(await new V3Store(db).read(owner,f.project)).runtimeAuthorizations[0].document;
+ await pg.query("update public.ugc_v3_run_authorizations set document=jsonb_set(document,'{expiresAt}',to_jsonb('2020-01-01T00:00:00Z'::text)) where id=$1",[savedAuthority.id]);
+ equal((await read(f.project)).preflight.canSubmit,false);equal((await post(f.project,videoRequest)).status,409);
+ await pg.query('update public.ugc_v3_run_authorizations set document=$2 where id=$1',[savedAuthority.id,JSON.stringify(savedAuthority)]);
+ const originalPrompt=(await pg.query('select prompt from public.projects where id=$1',[f.project])).rows[0].prompt;
+ await pg.query("update public.projects set prompt='Changed direction' where id=$1",[f.project]);
+ equal(await call('ugc_v3_runtime_current',[built.preflight.packageId]),false);equal((await post(f.project,videoRequest)).status,409);
+ await pg.query('update public.projects set prompt=$2 where id=$1',[f.project,originalPrompt]);
+ const simultaneous=await Promise.all(Array.from({length:5},()=>post(f.project,videoRequest)));
+ for(const generated of simultaneous){assert.equal(generated.status,200,JSON.stringify(generated.body));checks++;}
  let videoWorkspace=await new V3Store(db).read(owner,f.project),videoRun=videoWorkspace.runs[0];equal(videoWorkspace.runs.length,1);
+ equal((await pg.query("select count(*)::int n from public.ugc_v3_tasks where project_id=$1 and kind='video'",[f.project])).rows[0].n,1);
  equal(videoRun.intent.body.prompt,videoWorkspace.quotes[0].document.segments[0].body.prompt);
  ok(Date.parse(videoRun.intent.deliveryExpiresAt)>Date.now());equal(videoRun.intent.authorization.maxRequests,1);
  process.env.UGC_V3_HIGGSFIELD_ENABLED='0';equal((await post(f.project,videoRequest)).status,200);
@@ -274,6 +299,84 @@ try{
  equal((await post(f.project,videoRequest)).status,200);equal((await post(f.project,videoRequest)).status,200);
  videoWorkspace=await new V3Store(db).read(owner,f.project);equal(videoWorkspace.runs.length,2);equal(videoWorkspace.runs.filter(r=>r.state==='queued').length,1);
  equal(videoWorkspace.packages,videoBefore);equal(await cp(f.project),videoCreative);equal(calls.length,providerCount);equal(networkCalls,0);
+ // Project B is independent of A's active paid intent, with no manual activation IDs.
+ mode='pass';const b=await fixture(),bLocation=await generate(b.project);
+ await post(b.project,{action:'review_artifact',id:bLocation.id,decision:'approve'});
+ await post(b.project,{action:'storyboard'});await tick(b.project);
+ const bStoryboard=(await read(b.project)).artifacts.find(a=>a.kind==='storyboard');
+ await post(b.project,{action:'review_artifact',id:bStoryboard.id,decision:'approve'});
+ await post(b.project,{action:'build_package'});await tick(b.project);
+ const bPackage=(await read(b.project)).preflight,bRequest={action:'generate',packageId:bPackage.packageId,packageHash:bPackage.packageHash};
+ equal((await post(b.project,bRequest)).status,409);equal((await new V3Store(db).read(owner,b.project)).runs.length,0);
+ equal((await post(b.project,{...approval,packageId:bPackage.packageId,packageHash:bPackage.packageHash,quoteId:bPackage.quoteId})).status,200);
+ equal((await read(b.project)).preflight.canSubmit,true);
+ equal((await post(b.project,videoRequest)).body.code,'V3_REVIEW_SNAPSHOT_CHANGED');
+ const otherOwner=randomUUID(),otherProject=randomUUID();
+ await pg.query("insert into public.app_users(id,clerk_user_id) values($1,'other-owner')",[otherOwner]);
+ await call('ugc_v3_create_project',[otherOwner,otherProject,{title:'Foreign',category:'product-ad',prompt:'',ugcType:'advertisement',settings:{duration:'10',aspectRatio:'9:16',visualStyle:'Realistic',tone:'Professional'}}]);
+ equal((await post(otherProject,bRequest)).body.code,'FRESH_V3_PROJECT_REQUIRED');
+ await assert.rejects(call('ugc_v3_runtime_action',[otherOwner,b.project,'generate',{intent:nextIntent}]),/FRESH_V3_PROJECT_REQUIRED/);checks++;
+ // Obsolete values cannot pin activation to another project, even if left in an old environment file.
+ process.env.UGC_V3_ACTIVATION_PROJECT_ID=randomUUID();process.env.UGC_V3_ACTIVATION_PACKAGE_ID=randomUUID();
+ equal((await read(b.project)).preflight.canSubmit,true);
+ equal((await post(b.project,bRequest)).status,200);
+ delete process.env.UGC_V3_ACTIVATION_PROJECT_ID;delete process.env.UGC_V3_ACTIVATION_PACKAGE_ID;
+ // The actual worker pauses unsubmitted B while OFF, submits once while ON, and polls while OFF.
+ fixtureVideo=true;process.env.UGC_V3_HIGGSFIELD_ENABLED='0';await tick(b.project);
+ let bWorkspace=await new V3Store(db).read(owner,b.project);
+ equal(bWorkspace.runs[0].state,'queued');equal(bWorkspace.tasks.find(t=>t.kind==='video').provider_started,false);equal(videoPosts,0);
+ equal((await read(b.project)).runs[0].submissionBlocker,'PAID_V3_EXECUTION_DISABLED');
+ ok(workerLogs.some(l=>l.runId===bWorkspace.runs[0].id&&l.stage==='V3_VIDEO_REQUEST_PAUSED'&&l.code==='PAID_V3_EXECUTION_DISABLED'));
+ const releaseB=()=>pg.query("update public.ugc_v3_tasks set available_at=now() where project_id=$1 and kind='video'",[b.project]);
+ // Reproduce the actual incident: delivery expires while the worker's paid switch is OFF.
+ const bRun=bWorkspace.runs[0],expiredIntent=normal(bRun.intent);expiredIntent.deliveryExpiresAt='2020-01-01T00:00:00Z';
+ const {hash:expiredHash,...expiredBody}=expiredIntent;void expiredHash;expiredIntent.hash=load('lib/final-video-generation-v3/identity.ts').v3Digest('paid-intent',expiredBody);
+ await pg.query('update public.ugc_v3_runs set intent=$2 where id=$1',[bRun.id,JSON.stringify(expiredIntent)]);
+ process.env.UGC_V3_HIGGSFIELD_ENABLED='1';await releaseB();await tick(b.project);
+ bWorkspace=await new V3Store(db).read(owner,b.project);
+ equal(videoPosts,0);equal(bWorkspace.runs[0].state,'queued');equal(bWorkspace.tasks.find(t=>t.kind==='video').provider_started,false);
+ equal(bWorkspace.tasks.find(t=>t.kind==='video').error_code,'V3_REFERENCE_DELIVERY_EXPIRED');
+ const pausedDto=await read(b.project);equal(pausedDto.runs[0].submissionBlocker,'V3_REFERENCE_DELIVERY_EXPIRED');equal(pausedDto.processing,false);
+ const presentation=load('components/creation/v3-final-video-state.ts').finalVideoPresentation(pausedDto,{dirty:false,busy:false,requestPending:false});
+ equal(presentation.loading,false);ok(presentation.reason.includes('links expired'));
+ const refreshRequest={action:'refresh_video_delivery',id:bRun.id};
+ equal((await post(b.project,refreshRequest)).body.code,'V3_REFRESH_REQUIRES_VIDEO_DISABLED');
+ process.env.UGC_V3_HIGGSFIELD_ENABLED='0';
+ spool.set(`${bRun.id}:acceptance.json`,Buffer.from('{}'));
+ equal((await post(b.project,refreshRequest)).body.code,'V3_SAVED_PROVIDER_EVIDENCE_REQUIRES_RECOVERY');spool.delete(`${bRun.id}:acceptance.json`);
+ const activeB=await call('ugc_v3_task_claim',[b.project]);
+ if(!activeB){await releaseB();}
+ const heldB=activeB??await call('ugc_v3_task_claim',[b.project]);
+ equal((await post(b.project,refreshRequest)).body.code,'V3_UNSUBMITTED_REQUEST_REQUIRED');
+ await call('ugc_v3_task_checkpoint',[heldB.id,heldB.lease_token,'pending',{code:'V3_REFERENCE_DELIVERY_EXPIRED'}]);
+ const refreshResult=await post(b.project,refreshRequest);assert.equal(refreshResult.status,200,JSON.stringify(refreshResult.body));checks++;
+ bWorkspace=await new V3Store(db).read(owner,b.project);const refreshedIntent=bWorkspace.runs[0].intent;
+ equal(bWorkspace.runs.length,1);equal(bWorkspace.tasks.filter(t=>t.kind==='video').length,1);equal(videoPosts,0);
+ for(const field of ['id','executionId','packageId','packageHash','authorization','idempotencyKey','attempt','createdAt','estimatedCostMicrousd'])equal(refreshedIntent[field],expiredIntent[field]);
+ equal(refreshedIntent.body.prompt,expiredIntent.body.prompt);ok(refreshedIntent.bodyHash!==expiredIntent.bodyHash);ok(Date.parse(refreshedIntent.deliveryExpiresAt)>Date.now());
+ equal((await pg.query("select document->'previousIntent' value from public.ugc_v3_runtime_events where entity_id=$1 and kind='video_delivery_refreshed' order by id desc limit 1",[bRun.id])).rows[0].value,expiredIntent);
+ equal((await pg.query("select has_function_privilege('authenticated','public.ugc_v3_refresh_video_delivery(uuid,uuid,uuid,text,jsonb)','EXECUTE') browser,has_function_privilege('service_role','public.ugc_v3_refresh_video_delivery(uuid,uuid,uuid,text,jsonb)','EXECUTE') server")).rows[0],{browser:false,server:true});
+ await assert.rejects(call('ugc_v3_refresh_video_delivery',[otherOwner,b.project,bRun.id,refreshedIntent.hash,refreshedIntent]),/FRESH_V3_PROJECT_REQUIRED/);checks++;
+ for(const property of ['idempotencyKey','authorization','body','reference']){
+  const altered=normal(refreshedIntent);if(property==='idempotencyKey')altered.idempotencyKey=randomUUID();else if(property==='authorization')altered.authorization.maxEstimatedCostMicrousd++;else if(property==='reference')altered.body.image_urls[0]='https://private.example.test/different-object';else altered.body.prompt+=' altered';
+  altered.bodyHash=load('lib/final-video-generation-v3/identity.ts').v3BodyHash(altered.body);
+  const {hash,...content}=altered;void hash;altered.hash=load('lib/final-video-generation-v3/identity.ts').v3Digest('paid-intent',content);
+  await assert.rejects(call('ugc_v3_refresh_video_delivery',[owner,b.project,bRun.id,refreshedIntent.hash,altered]),/V3_DELIVERY_BINDING_INVALID/);checks++;
+ }
+ await assert.rejects(call('ugc_v3_refresh_video_delivery',[owner,b.project,bRun.id,expiredIntent.hash,refreshedIntent]),/V3_REVIEW_SNAPSHOT_CHANGED/);checks++;
+ const bAuthority=refreshedIntent.authorization;
+ await pg.query("update public.ugc_v3_run_authorizations set document=jsonb_set(document,'{expiresAt}',to_jsonb('2020-01-01T00:00:00Z'::text)) where id=$1",[bAuthority.id]);
+ await assert.rejects(call('ugc_v3_refresh_video_delivery',[owner,b.project,bRun.id,refreshedIntent.hash,refreshedIntent]),/V3_AUTHORIZATION_INVALID/);checks++;
+ await pg.query('update public.ugc_v3_run_authorizations set document=$2 where id=$1',[bAuthority.id,JSON.stringify(bAuthority)]);
+ process.env.UGC_V3_HIGGSFIELD_ENABLED='1';await releaseB();await tick(b.project);
+ bWorkspace=await new V3Store(db).read(owner,b.project);
+ equal(videoPosts,1);assert.equal(bWorkspace.runs[0].observation?.requestId,fixtureVideoId,JSON.stringify(bWorkspace.tasks.filter(t=>t.kind==='video')));checks++;equal(bWorkspace.runs[0].state,'provider_processing');
+ const pollsBeforeOff=videoPolls;process.env.UGC_V3_HIGGSFIELD_ENABLED='0';await releaseB();await tick(b.project);
+ equal(videoPosts,1);equal(videoPolls,pollsBeforeOff+1);
+ equal((await post(b.project,refreshRequest)).body.code,'V3_UNSUBMITTED_REQUEST_REQUIRED');
+ await assert.rejects(call('ugc_v3_refresh_video_delivery',[owner,b.project,bRun.id,refreshedIntent.hash,refreshedIntent]),/V3_UNSUBMITTED_REQUEST_REQUIRED/);checks++;
+ equal((await new V3Store(db).read(owner,f.project)).runs.filter(r=>r.state==='queued').length,1);
+ equal(networkCalls,0);fixtureVideo=false;
  process.env.UGC_V3_HIGGSFIELD_ENABLED='0';
  const videoMigration=fs.readFileSync('supabase/migrations/20261101008700_ugc_v3_controlled_video.sql','utf8');await pg.exec(videoMigration);
  equal((await pg.query("select has_function_privilege('authenticated','public.ugc_v3_video_setup()','EXECUTE') browser,has_function_privilege('service_role','public.ugc_v3_video_setup()','EXECUTE') server")).rows[0],{browser:false,server:true});
@@ -287,11 +390,11 @@ try{
  const historical=load('lib/final-video-generation-v3/package.ts').buildFrozenPackage(repairSource.input,historicalProvider,historicalContext,{id:legacyTask.input.packageId,version:1,sourceRevision:repairSource.revision});
  await call('ugc_v3_write',[owner,repairFixture.project,'package',{document:historical,state:load('lib/final-video-generation-v3/recovery.ts').initialExecution(historical),eventId:legacyTask.id}]);
  await call('ugc_v3_task_checkpoint',[legacyTask.id,legacyTask.lease_token,'done',{}]);equal(historical.pricing.status,'unavailable');const repairApprovals=await cp(repairFixture.project),repairCalls=calls.length;
- const repairedTask=await call('ugc_v3_local_price_repair',[owner,repairFixture.project,historical.id,'seedance-2026-10-31']);
+ const repairedTask=await call('ugc_v3_local_price_repair',[owner,repairFixture.project,historical.id,'seedance-observed-2026-11-01']);
  await load('lib/final-video-generation-v3/package-task.ts').packageTask(new V3Store(db),repairedTask,await new V3Store(db).read(owner,repairFixture.project),AbortSignal.timeout(10000));
- const repaired=await read(repairFixture.project);equal(repaired.preflight.estimatedCostMicrousd,16923000);equal(repaired.preflight.pricingVersion,'seedance-2026-10-31');equal(await packageCount(repairFixture.project),2);equal(await cp(repairFixture.project),repairApprovals);equal(calls.length,repairCalls);equal(estimateCalls,0);
+ const repaired=await read(repairFixture.project);equal(repaired.preflight.estimatedCostMicrousd,6170010);equal(repaired.preflight.pricingVersion,'seedance-observed-2026-11-01');equal(await packageCount(repairFixture.project),2);equal(await cp(repairFixture.project),repairApprovals);equal(calls.length,repairCalls);equal(estimateCalls,0);
  equal((await pg.query('select document from public.ugc_v3_packages where id=$1',[historical.id])).rows[0].document,historical);
- equal((await call('ugc_v3_local_price_repair',[owner,repairFixture.project,historical.id,'seedance-2026-10-31'])).id,repairedTask.id);equal(await packageCount(repairFixture.project),2);
+ equal((await call('ugc_v3_local_price_repair',[owner,repairFixture.project,historical.id,'seedance-observed-2026-11-01'])).id,repairedTask.id);equal(await packageCount(repairFixture.project),2);
  const repairedWorkspace=await new V3Store(db).read(owner,repairFixture.project),pricedDoc=load('lib/final-video-generation-v3/package.ts').readFrozenPackage(repairedWorkspace.packages.at(-1).document),localQuote=repairedWorkspace.quotes.at(-1).document;
  const oversized=load('lib/final-video-generation-v3/execution-package.ts').createRuntimeAuthorization(pricedDoc,localQuote,localQuote.segments[0].segmentUuid,{operatorId:owner,approved:true,maximumMicrousd:20310000,now:new Date().toISOString()});
  oversized.expiresAt=new Date(Date.parse(oversized.approvedAt)+48*60*60*1000).toISOString();const {hash:oldAuthorizationHash,...oversizedBody}=oversized;void oldAuthorizationHash;oversized.hash=load('lib/final-video-generation-v3/identity.ts').v3Digest('runtime-authorization',oversizedBody);
@@ -303,7 +406,7 @@ try{
  await call('ugc_v3_write',[owner,repairFixture.project,'package',{document:legacyAgain,state:load('lib/final-video-generation-v3/recovery.ts').initialExecution(legacyAgain),eventId:randomUUID()}]);
  const beginArgs=[owner,repairFixture.project,repairSource.input,repairSource.private_bindings,null];
  const normalUpgrade=await call('ugc_v3_local_package_begin',beginArgs);equal(await call('ugc_v3_local_package_begin',beginArgs),normalUpgrade);
- await tick(repairFixture.project);equal((await read(repairFixture.project)).preflight.estimatedCostMicrousd,16923000);equal(await packageCount(repairFixture.project),4);equal(estimateCalls,0);
+ await tick(repairFixture.project);equal((await read(repairFixture.project)).preflight.estimatedCostMicrousd,6170010);equal(await packageCount(repairFixture.project),4);equal(estimateCalls,0);
  await pg.query("update public.ugc_v3_artifacts set approved_at=null where project_id=$1 and kind='product'",[repairFixture.project]);
  equal((await post(repairFixture.project,{action:'build_package'})).body.code,'V3_PRODUCT_APPROVAL_REQUIRED');
  // A worker collision with a completed deletion is reconciled locally, without touching media/providers.

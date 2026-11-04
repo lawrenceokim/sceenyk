@@ -5,10 +5,31 @@ import { V3LocationStatus } from "../components/creation/v3-location-status";
 import { v3ProgressLabel, referenceBusy } from "../lib/final-video-generation-v3/progress";
 import type { RuntimeDto } from "../lib/final-video-generation-v3/runtime-server";
 import { packageBuildLabel, packageBuildError, type PackageBuildDetails } from "../lib/final-video-generation-v3/package-status";
+import { finalVideoPresentation } from "../components/creation/v3-final-video-state";
+import { videoRequestBlocker } from "../lib/final-video-generation-v3/video-request-status";
 
 let checks=0;
 const equal=(a:unknown,b:unknown)=>{assert.deepEqual(a,b);checks++;};
 const ok=(v:unknown)=>{assert.ok(v);checks++;};
+// Submission explanations use the real server preflight and existing client operation fences.
+const videoWorkspace = { runs: [], tasks: [], processing: false, packageStale: false,
+  preflight: { packageId: "fixture-package", currentness: "current", authorizationState: "bound", transportEnabled: true, canSubmit: true, issues: [] } } as unknown as RuntimeDto;
+const videoOptions = { dirty: false, busy: false, requestPending: false };
+equal(finalVideoPresentation(videoWorkspace, videoOptions).reason, null);
+equal(finalVideoPresentation({ ...videoWorkspace, preflight: { ...videoWorkspace.preflight!, transportEnabled: false, canSubmit: false } }, videoOptions).reason,
+  "Paid video generation is disabled by the server.");
+equal(finalVideoPresentation({ ...videoWorkspace, preflight: { ...videoWorkspace.preflight!, canSubmit: false, issues: ["HIGGSFIELD_OUTPUT_ALLOWLIST_INVALID"] } }, videoOptions).reason,
+  "Video generation is blocked: HIGGSFIELD_OUTPUT_ALLOWLIST_INVALID.");
+equal(finalVideoPresentation({ ...videoWorkspace, preflight: { ...videoWorkspace.preflight!, canSubmit: false, issues: ["V3_AUTHORIZATION_EXPIRED"] } }, videoOptions).reason,
+  "Package authorization has expired. Review and approve it again.");
+equal(finalVideoPresentation(videoWorkspace, { ...videoOptions, dirty: true }).reason, "Save your changes before generating a video.");
+for (const code of ["PAID_V3_EXECUTION_DISABLED", "V3_REFERENCE_DELIVERY_EXPIRED", "V3_ACTIVATION_SCOPE_MISMATCH"]) {
+  const queued = { ...videoWorkspace, runs: [{ id: "same-run", packageId: "fixture-package", state: "queued", preview: null,
+    errorCode: null, submissionBlocker: code, stage: { stage: "V3_FINAL_VIDEO_JOB_CLAIMED" } }] } as unknown as RuntimeDto;
+  const state = finalVideoPresentation(queued, videoOptions);
+  equal(state.loading, false); equal(state.hasExistingRun, true); equal(state.reason, videoRequestBlocker(code));
+}
+equal(videoRequestBlocker(undefined), null);
 const packageDetails: PackageBuildDetails = { stage: "delivery", code: "V3_PACKAGE_BINDING_INVALID", httpStatus: null,
   packageId: "10000000-0000-4000-8000-000000000001", segmentId: null, estimateStatus: "not_requested", recoverable: false };
 equal(packageBuildLabel(packageDetails,"failed"),"Package build failed");

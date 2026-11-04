@@ -36,7 +36,7 @@ export async function inspectRuntime(w: RuntimeWorkspace) {
   const current = locationCurrent && !!w.source?.current && w.source.revision === doc.sourceRevision && doc.source.references.every(r => currentIds.includes(r.id)) &&
     !w.tasks.some(t => ["character", "product", "location", "storyboard"].includes(t.kind) && Date.parse(t.created_at) > Date.parse(w.source!.created_at)) &&
     latestArtifact(w, "storyboard")?.id === doc.source.storyboard.id && !!latestArtifact(w, "storyboard")?.approved_at;
-  const report = runtimePreflight(doc, quote, authority, { current, transportEnabled: config.enabled && config.projectId === w.project.project_id && config.packageId === doc.id,
+  const report = runtimePreflight(doc, quote, authority, { current, transportEnabled: config.enabled,
     now: new Date().toISOString(), validityIssues: issues, deliveryReady, existingIntent: w.runs.some(r => r.package_id === doc.id && r.state !== "deleted") });
   return { ...report, authorizedMaximumMicrousd: authority?.packageMaxEstimatedCostMicrousd ?? null };
 }

@@ -14,7 +14,7 @@ New eligible local UGC drafts use V3 behind the existing Studio and project save
 
 ## M10 V3 Phase 3 source status (2026-10-29)
 
-[V3 local runtime](generation-v3-phase3.md) implements the fresh-project reference/director/package/estimate/authorization/video/review path with manual 076→077 setup. Paid transport defaults off and requires explicit exact-project/package activation. Current official request-limit gaps still block the first real test until verified; native dialogue/lip-sync/shot quality is measured after generation. No historical data/provider authority is reused and no live provider/migration/worker/deployment ran. Runtime/visual/account acceptance is manual.
+[V3 local runtime](generation-v3-phase3.md) implements the fresh-project reference/director/package/estimate/authorization/video/review path with manual 076→077 setup. Paid transport defaults off and uses the global server switch plus automatic owned-current-package authorization; no activation UUID environment settings are required. Current official request-limit gaps still block the first real test until verified; native dialogue/lip-sync/shot quality is measured after generation. No historical data/provider authority is reused and no live provider/migration/worker/deployment ran. Runtime/visual/account acceptance is manual.
 
 ## M10 V3 Phase 2 source status (2026-10-29)
 
