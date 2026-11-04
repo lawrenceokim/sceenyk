@@ -1,5 +1,22 @@
 # M10 V3 Phase 3 — local runtime and first-test preparation
 
+## Final Video availability and drawer presentation (2026-11-04)
+
+Current read-only inspection concerns a different project/package than the original controlled test described below: **project `2e2fecce-f254-4c8e-b40b-ea8a90dce74d`, package `8e8a55cc-55e8-4c2e-adaf-dd1fea7cdb57`**. Its approved package is current, the saved authorization matches project/package/hash/quote/segment and is unexpired, native reference-to-video/480p/9:16/10s settings pass local request checks, credentials/account scope are configured, and no existing run or active task blocks submission. `eligibleForPaidSubmission=true`, `issues=[]`, but `canSubmit=false`: paid generation is globally enabled while both activation IDs still target another project/package. This is the intended scope safeguard, not a stale UI/package approval failure.
+
+The owner must explicitly configure these values, then restart the local app and worker to load them:
+
+```dotenv
+UGC_V3_ACTIVATION_PROJECT_ID=2e2fecce-f254-4c8e-b40b-ea8a90dce74d
+UGC_V3_ACTIVATION_PACKAGE_ID=8e8a55cc-55e8-4c2e-adaf-dd1fea7cdb57
+```
+
+The current `UGC_V3_HIGGSFIELD_ENABLED` and `UGC_V3_ENABLED` flags are already `1`; they were not changed. Credentials/account-scope values and output-host configuration were neither printed nor changed. Authorization expires **2026-11-05 01:01:55 WAT** (00:01:55 UTC); after expiry, review/approve the Package again through the existing controls. Do not rebuild creative work or invent an output hostname. Manual configuration is not a generation request: only the owner's later explicit Generate action may submit once all existing checks pass. No provider/account probe, actual generation or live write ran during investigation.
+
+Final Video now presents the standard heading, primary Generate action, one short actual-prerequisite explanation, and segmented loading placeholders based on existing request/run/task states. It preserves the current server `canSubmit`, same-package prior-run exclusion and operation locks. A scoped transport false result reads "Video generation is not enabled for this project." Expired/missing/stale/active/unknown-outcome cases use their existing state or issue evidence; raw prerequisite codes and package/project identity are available in Progress. No new backend state, automatic retry or polling system is introduced.
+
+The loader represents player/information/progress/review areas, retains reduced-motion behavior and yields to the unchanged existing VideoReview when ready or failed. Actual media stays in Studio Preview through the original media owner and View in Preview action. Quality checks, exact consent, approval, rejection/deletion confirmation and recovery stay on the existing handlers. The normal Final tab removes the generic package-ready/Check status row and separate package-review button; navigation tabs and other workflow panels are preserved. Verification evidence is in the progress tracker; manual visual/provider acceptance remains separate.
+
 ## Local pricing snapshot precision repair (2026-11-03)
 
 The locally calculated quote was rejected by the **first mismatching rate-string predicate** in `ugc_v3_local_quote_guard` (migration 086):

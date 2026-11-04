@@ -3,6 +3,8 @@ import { V3LocationStatus } from "./v3-location-status";
 import { V3StoryboardContent } from "./v3-storyboard-content";
 import { V3StoryboardSkeleton } from "./v3-storyboard-skeleton";
 import { V3PackageSkeleton } from "./v3-package-skeleton";
+import { V3FinalVideoSkeleton } from "./v3-final-video-skeleton";
+import { finalVideoPresentation } from "./v3-final-video-state";
 import { StudioWorkflowGuidance } from "./studio-workflow-guidance";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -463,6 +465,7 @@ export function V3WorkflowPreview({
   const [showLocationFeedback, setShowLocationFeedback] = useState(false);
   const [storyboardRequestPending, setStoryboardRequestPending] = useState(false);
   const [packageRequestPending, setPackageRequestPending] = useState(false);
+  const [videoRequestPending, setVideoRequestPending] = useState(false);
   const previewMedia = useMemo<StudioPreviewMedia[]>(
     () => [
       ...(workspace?.artifacts
@@ -638,6 +641,7 @@ export function V3WorkflowPreview({
         ["queued", "running"].includes(storyboardTask.status) &&
         (storyboardTask.current || storyboardTask.providerStarted)));
   const locked = busy || dirty || !!workspace?.processing;
+  const finalVideo = finalVideoPresentation(workspace, { dirty, busy, requestPending: videoRequestPending });
   const reference = (kind: "character" | "product") =>
     assets.find(
       (a) =>
@@ -1051,7 +1055,7 @@ export function V3WorkflowPreview({
               </p>
             ) : (
               <>
-                {view !== "storyboard" && view !== "package" && <div className="flex flex-wrap items-center justify-between gap-2">
+                {view === "progress" && <div className="flex flex-wrap items-center justify-between gap-2">
                   <p role="status" className="text-sm text-muted-foreground">
                     {v3ProgressLabel(workspace, !!reference("product"))}
                   </p>
@@ -1357,9 +1361,55 @@ export function V3WorkflowPreview({
                         )}
                       </div>
                     ))}
-                {view === "final" &&
-                  workspace.runs
-                    .filter((r) => !p || r.packageId === p.packageId)
+                {view === "progress" && p && (
+                  <details className="text-xs text-muted-foreground">
+                    <summary className="cursor-pointer">Final Video prerequisites</summary>
+                    <dl className="mt-2 space-y-1 break-words">
+                      <div><dt className="inline font-medium">Project: </dt><dd className="inline">{p.projectId}</dd></div>
+                      <div><dt className="inline font-medium">Package: </dt><dd className="inline">{p.packageId}</dd></div>
+                      <div><dt className="inline font-medium">Currentness: </dt><dd className="inline">{p.currentness}</dd></div>
+                      <div><dt className="inline font-medium">Authorization: </dt><dd className="inline">{p.authorizationState}</dd></div>
+                      <div><dt className="inline font-medium">Transport enabled for this project/package: </dt><dd className="inline">{p.transportEnabled ? "Yes" : "No"}</dd></div>
+                      <div><dt className="inline font-medium">Submission allowed: </dt><dd className="inline">{p.canSubmit ? "Yes" : "No"}</dd></div>
+                      <div><dt className="inline font-medium">Prerequisite codes: </dt><dd className="inline">{p.issues.join(", ") || "None"}</dd></div>
+                    </dl>
+                  </details>
+                )}
+                {view === "final" && (
+                  <section className="min-w-0 space-y-3">
+                    <h2 className="font-semibold">Final Video</h2>
+                    <Button
+                      variant="default"
+                      disabled={locked || !p?.canSubmit || finalVideo.hasExistingRun}
+                      onClick={() => {
+                        if (!p) return;
+                        setVideoRequestPending(true);
+                        void act("generate", {
+                          packageId: p.packageId,
+                          packageHash: p.packageHash,
+                        }).finally(() => setVideoRequestPending(false));
+                      }}
+                    >
+                      Generate Final Video
+                    </Button>
+                    {finalVideo.reason && (
+                      <p role="status" className="text-sm text-muted-foreground">
+                        {finalVideo.loading && finalVideo.activeRuns[0]
+                          ? videoProgressLabel(finalVideo.activeRuns[0].stage?.stage) ?? videoStateLabels[finalVideo.activeRuns[0].state]
+                          : finalVideo.reason}
+                      </p>
+                    )}
+                    {finalVideo.loading && <V3FinalVideoSkeleton />}
+                    {finalVideo.loading && finalVideo.activeRuns
+                      .filter(run => run.state === "provider_processing")
+                      .map(run => (
+                        <Button key={run.id} variant="outline" disabled={locked}
+                          onClick={() => void act("recover", { id: run.id })}>
+                          Recover saved work
+                        </Button>
+                      ))}
+                    {finalVideo.runs
+                    .filter(run => !finalVideo.loading || !finalVideo.activeRuns.some(active => active.id === run.id))
                     .map((r) => (
                       <VideoReview
                         key={r.id}
@@ -1369,32 +1419,8 @@ export function V3WorkflowPreview({
                         segmentCount={p?.segmentCount ?? 1}
                       />
                     ))}
-                {view === "final" &&
-                  p &&
-                  !workspace.runs.some(
-                    (r) => r.packageId === p.packageId && r.state !== "deleted",
-                  ) && (
-                    <div className="flex flex-wrap gap-2">
-                      <Button
-                        variant="outline"
-                        disabled={locked}
-                        onClick={() => setView("package")}
-                      >
-                        Review Generation Package
-                      </Button>
-                      <Button
-                        disabled={locked || !p.canSubmit}
-                        onClick={() =>
-                          void act("generate", {
-                            packageId: p.packageId,
-                            packageHash: p.packageHash,
-                          })
-                        }
-                      >
-                        Generate Final Video
-                      </Button>
-                    </div>
-                  )}
+                  </section>
+                )}
                 {view === "final" &&
                   p &&
                   workspace.runs.some((r) => r.packageId !== p.packageId) && (
