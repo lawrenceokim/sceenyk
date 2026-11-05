@@ -33,7 +33,7 @@ import { StudioInspectorSection } from "./studio-inspector-section";
 import { StudioAspectControl } from "./studio-aspect-control";
 import { StudioResolution } from "./studio-resolution";
 import { projectVideoResolution } from "@/lib/projects/video-resolution";
-import { GenerationSettings } from "./generation-settings";
+import { StudioGenerationProperties } from "./studio-generation-properties";
 import { MediaDropzone } from "./media-dropzone";
 import { PromptComposer } from "./prompt-composer";
 import { ProjectSaveControls, type SaveState } from "./project-save-controls";
@@ -564,9 +564,10 @@ function WorkspaceEditor({
           category={category}
           onChange={setPrompt}
         /></StudioInspectorSection>
-                    <StudioInspectorSection title="Style & pacing"><GenerationSettings settings={settings} onChange={setSettings}
-                      ugcType={creationType === "ugc" ? ugcType : undefined} onUgcTypeChange={setUgcType} /></StudioInspectorSection>
+                    <StudioGenerationProperties settings={settings} onChange={setSettings} studioMode={studioMode}
+                      ugcType={creationType === "ugc" ? ugcType : undefined} onUgcTypeChange={setUgcType} />
                     {(v3 || !initialProject && creationType === "ugc") && <StudioInspectorSection title="Resolution"><StudioResolution
+                      imageCards={studioMode === "pro"}
                       value={projectVideoResolution(settings.resolution)}
                       onChange={resolution => setSettings({ ...settings, resolution })} />
                     </StudioInspectorSection>}

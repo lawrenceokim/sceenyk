@@ -3,6 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "test:pro-properties": "node scripts/check-visual-style-gallery.mjs",
+    "test:visual-style-gallery": "node scripts/check-visual-style-gallery.mjs",
     "test:ugc-v3-project-saving": "node --conditions=react-server --import=tsx scripts/check-v3-project-saving.mjs",
     "test:ugc-v3-multiple-characters": "node --conditions=react-server --import=tsx scripts/check-v3-multiple-characters.mjs",
     "test:ugc-v3-multiple-characters-ui": "node scripts/check-v3-multiple-characters-ui.mjs",

@@ -133,7 +133,7 @@ export function ProCharacterSources({ references, onAdd, onRemoveLocal, onRemove
                   {local ? <LocalMediaThumbnail media={local} className="size-full" alt={filename} /> : asset?.status === "uploaded" ? <PersistentMediaPreview asset={asset} thumbnail passiveThumbnail /> : <span className="flex size-full items-center justify-center"><ImageIcon className="size-5 text-muted-foreground" aria-hidden="true" /></span>}
                   {uploading && <span className="absolute inset-0 flex items-center justify-center bg-background/40"><LoaderCircle className="size-4 motion-safe:animate-spin" aria-hidden="true" /></span>}
                 </span>
-                <span className="absolute inset-x-0 bottom-0 block truncate bg-card/90 px-1.5 py-1.5 text-center text-[11px] font-medium" title={name}>{name}</span>
+                <span className="absolute inset-x-0 bottom-0 block truncate bg-linear-to-t from-black/90 via-black/65 to-transparent px-2 pb-1.5 pt-5 text-center text-[11px] font-medium text-white" title={name}>{name}</span>
               </button>
               <button type="button" data-character-remove disabled={busy} aria-label={`Remove ${filename}`} className="absolute top-1 right-1 flex size-5 cursor-pointer items-center justify-center rounded-full border border-border bg-card text-foreground shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50 [@media(pointer:coarse)]:size-7"
                 onClick={() => { removedFocus.current = referenceId; if (local) onRemoveLocal(local.id); else if (asset) onRemoveAsset(asset); }}><X className="size-3" aria-hidden="true" /></button>

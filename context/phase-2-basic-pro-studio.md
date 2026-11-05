@@ -1,9 +1,182 @@
 # Phase 2: Basic & Pro Studio Modes
 
-**Status: In Progress. M1 and M2 complete in source/offline verification; M3–M7 Planned / Not Started.**
-**Decision date: 2026-11-05. Current implementation scope: mode metadata plus Pro multiple characters and minimum V3 integration.**
+**Status: In Progress. M1–M3 complete in source/offline verification; M4–M7 Planned / Not Started.**
+**Decision date: 2026-11-05. Current implementation scope: mode metadata, Pro multiple characters/minimum V3 integration and the Pro visual-style gallery.**
 
-This specification records the bounded M1/M2 implementation. M1 adds independent mode metadata; M2 extends existing V3 reference owners with independently reviewed Pro characters and frozen cast/speaker links. Neither authorizes real provider requests or live migrations. Existing setup, security, pricing and manual acceptance prerequisites remain. Style-gallery/duration/clip/merge extensions are future requirements.
+This specification records the bounded M1–M3 implementation. M1 adds independent mode metadata; M2 extends existing V3 reference owners with independently reviewed Pro characters and frozen cast/speaker links; M3 presents the same saved style as a compact Pro image gallery. Existing setup, security, pricing and manual acceptance prerequisites remain. Duration/clip/merge extensions are future requirements. Dated M1/M2 records below retain their original scope and evidence.
+
+## Pro Resolution cinematic flower cards (2026-11-05)
+
+Pro's existing Resolution accordion now uses `StudioResolution` with `imageCards={studioMode === "pro"}`. Its three current values remain **480p, 720p, 1080p**. The default compact Basic control is retained. Pro reuses `PropertyImageGallery` for the same 4:3 crop, centered white title over the dark bottom gradient, purple selected border/checkmark, accessible native radios and visible focus as Visual Style. The existing resolution hint is retained and linked to the gallery group. Cards grow to their content height and scroll only with Properties.
+
+Three static flower samples are generated with the built-in imagegen tool from the same existing cinematic pink lotus artwork (`public/images/ChatGPT Image Oct 17, 2026, 11_12_09 AM-7.png`). The reference composition, pink petals, golden lighting and pond are retained, with moderate full-frame softness for 480p, lighter softness for 720p and crisp central petal/dew detail for 1080p. These are deliberately illustrative blur examples, not measured provider exports or claims that resolution changes optical focus. Final local assets are `public/images/resolutions/{480p,720p,1080p}.webp`, optimized to 384×288. Only the Resolution control references these images; they never enter generation inputs or the Style/Tone/Type galleries.
+
+The same saved `settings.resolution`/`projects.video_resolution`, default 480p, save/refresh behavior, quote/package fingerprints, provider request fields and higher-resolution pricing/eligibility gates remain unchanged. No new output capability, pricing, provider prompt, worker, storage, schema, dependency or stylesheet. All prior project/history/approval boundaries remain. Static UI artwork generation alone is authorized; no Sceenyk provider workflow is run. M4–M7 remain unimplemented.
+
+**Assets:** [480p.webp](../public/images/resolutions/480p.webp) (15,314 bytes), [720p.webp](../public/images/resolutions/720p.webp) (21,182), [1080p.webp](../public/images/resolutions/1080p.webp) (29,758). All three are **384×288 WebP**, **66,254 bytes total**, with the softness baked into the generated images rather than runtime CSS filters. The generated set was visually inspected together for consistent scene and distinct detail/blur levels; the original lotus reference is untouched.
+
+**Changed:** `components/creation/studio-resolution.tsx` (Pro-only image presentation, compact default retained), `creation-workspace.tsx` (existing-mode presentation flag), `property-image-gallery.tsx` (optional accessible group-description link), three resolution WebPs, focused UI scripts `check-v3-resolution-ui.tsx` and `check-visual-style-gallery.mjs`, Phase 2/UI/design/workflow notes and progress tracker. No generation/backend source or data changes.
+
+**Verification:** `npm run test:pro-properties` passes **527 focused UI/asset/draft assertions** across all settings, including all three resolution callbacks, one checked resolution, Pro/Basic selection retention, no nested gallery scroll and confinement of flower images to Resolution. All 16 gallery WebPs decode at 384×288. `node --import=tsx scripts/check-v3-resolution-ui.tsx` passes **90 actual SSR assertions**, covering the unchanged compact Basic controls, Pro labels/images/default/selected state, shared caption/focus styling and saved resolution wiring. TypeScript, focused ESLint and whitespace/scope checks pass. Tests make zero real provider/network requests; no live DB/storage/worker, SQL suite, browser/screenshot suite, build or deployment ran. Only the static samples used built-in imagegen. Actual mobile/theme/keyboard/blur readability and hosted Save/refresh acceptance remain manual. No qualifying Next.js feedback candidates arose.
+
+<details>
+<summary>Resolution flower prompt set (built-in imagegen)</summary>
+
+Each prompt edits the same existing cinematic lotus artwork as reference. Final files are saved only under `public/images/resolutions/`.
+
+**480p.webp**
+
+```text
+Edit this reference for a cinematic Resolution selection thumbnail, retaining exactly the same beautiful pink lotus, petal arrangement, golden sunrise, dew drops, pond reflections, framing and color grade. Keep the composition and subject identical across versions. Landscape 4:3 image, no text, numbers, letters, logos, borders or UI. The only requested visual difference is full-image sharpness/blur; this is an illustrative sample, not an actual video export. Apply clear moderate full-frame optical softness, visibly softened lotus petal edges and softened dew-drop details, like a deliberately lower-detail preview. The flower must remain beautiful and recognizable. The softness must visibly affect the central lotus as well as its surroundings; avoid making the flower sharp. No motion blur or new subject.
+```
+
+**720p.webp**
+
+```text
+Edit this reference for a cinematic Resolution selection thumbnail, retaining exactly the same beautiful pink lotus, petal arrangement, golden sunrise, dew drops, pond reflections, framing and color grade. Keep the composition and subject identical across versions. Landscape 4:3 image, no text, numbers, letters, logos, borders or UI. The only requested visual difference is full-image sharpness/blur; this is an illustrative sample, not an actual video export. Apply light full-frame softness, a little softness in the lotus petal edges and dew drops but still readable detail. A visibly clearer middle level than a moderately blurred preview, still softer than a pristine sharp macro. Keep the same scene, lighting and composition. No motion blur or new subject.
+```
+
+**1080p.webp**
+
+```text
+Edit this reference for a cinematic Resolution selection thumbnail, retaining exactly the same beautiful pink lotus, petal arrangement, golden sunrise, dew drops, pond reflections, framing and color grade. Keep the composition and subject identical across versions. Landscape 4:3 image, no text, numbers, letters, logos, borders or UI. The only requested visual difference is full-image sharpness/blur; this is an illustrative sample, not an actual video export. Retain pristine crisp high-detail lotus petals and individual dew drops with the beautiful soft background depth of field. Sharp photographic central subject, fine luminous edges and detailed petal texture. Keep the exact reference scene and composition without additions.
+```
+
+</details>
+
+## Pro Properties — shared scrolling and cinematic cards (2026-11-05)
+
+This correction supersedes the bounded inner scrollports and SVG/described Tone/Type cards in the earlier refinement below. All Pro setting sections grow to their full content height. Duration, Visual Style, Tone and Type have no independent gallery height cap, vertical overflow or overscroll capture; the existing Properties content owns scrolling. The unchanged native details remain independently expandable and initially collapsed. This avoids trapping wheel/touch scrolling inside an expanded gallery while retaining the original Properties width and accordion owners.
+
+Visual Style, Tone and Type now use the same `PropertyImageGallery` renderer: compact responsive 4:3 image cards, a centered white title over the same bottom dark gradient, purple selected border/checkmark and separate keyboard focus ring. Tone/Type descriptions and their accessible description references are removed; native radio labels retain the exact option titles. Both Basic's original Select controls and every saved setting/callback remain unchanged. No stylesheet, dependency, generation service/prompt, schema or provider-pipeline change.
+
+Eight new cinematic images replace the illustrative Tone/Type SVGs under `public/images/pro-properties/`, using `tone-{funny,dramatic,professional,energetic,storytelling}.webp` and `type-{advertisement,explanation,unboxing}.webp`. They are generated with the built-in imagegen tool using the existing `public/images/visual-styles/cinematic.webp` as a **style/lighting reference only**, then optimized locally to 384×288 WebP. **189,792 bytes total** for the eight replacements; **315,812 bytes** including the five unchanged Visual Style samples. The obsolete SVG samples are removed. No sample is submitted as a character/product/reference generation input. Static artwork creation is explicitly authorized by this correction and does not invoke the working Sceenyk generation workflow. The exact prompt set is recorded below.
+
+Changed for this correction: `property-image-gallery.tsx` (shared title-only cards/content-height grid), `visual-style-gallery.tsx` (existing samples through the shared renderer), `studio-generation-properties.tsx` (remove descriptions/use cinematic WebPs), eight new WebPs replacing the obsolete SVG samples, focused UI checks and Phase 2/UI/design/workflow/progress notes. No Basic, duration, Describe, Resolution, accordion or layout component source change. Browser/device/theme/scroll-feel inspection remains manual under Fast UI Development Mode. M4–M7 remain unimplemented.
+
+**Verification:** `npm run test:pro-properties` passes **475 focused UI/asset/draft checks**, including all supported selections, Basic/Pro retention and serialized refresh, independent native accordion semantics, title labels with no paragraph/description references, 4:3 title-overlay styling, grids without max-height/overflow/overscroll capture and all 13 decoded local WebPs. Asset contact-sheet inspection confirms the cinematic treatment and distinct relevant scenes. TypeScript, focused ESLint, whitespace and scope checks pass. The fixture makes zero network requests. No Sceenyk provider request/media workflow, live database/storage/worker, browser/screenshot suite, build or deployment ran; only the eight static assets used the built-in imagegen tool. Actual Properties scroll feel/theme/mobile/keyboard acceptance remains manual. No qualifying Next.js feedback candidates arose.
+
+<details>
+<summary>Cinematic Tone/Type sample prompt set (built-in imagegen)</summary>
+
+Each prompt used the existing Cinematic WebP as a style/lighting reference. Final project assets are the eight local WebPs named below.
+
+**tone-funny.webp**
+
+```text
+Use case: ads-marketing. Asset type: premium cinematic sample image for a tiny 4:3 Sceenyk Studio selection card. Reference image is style/lighting reference only: match its photorealistic live-action film quality, warm amber highlights, deep teal shadows, subtle film grain, beautiful depth of field, rich natural textures and sophisticated Mediterranean atmosphere. Create a NEW scene, not a UI screenshot or illustration. A natural charismatic young woman with short dark curly hair and a cream linen blazer sharing a spontaneous warm laugh with someone just off-camera at a Mediterranean seaside terrace. Clearly playful amused expression and bright joyful warmth, candid comedic film moment. Landscape 4:3 composition, one clear central subject filling the small frame; the bottom edge will receive an overlaid UI title, so keep important details above the bottom 18 percent. Visually polished real film still, realistic anatomy and hands, natural detail. No text, no lettering, no logos, no watermark, no borders or card graphics.
+```
+
+**tone-dramatic.webp**
+
+```text
+Use case: ads-marketing. Asset type: premium cinematic sample image for a tiny 4:3 Sceenyk Studio selection card. Reference image is style/lighting reference only: match its photorealistic live-action film quality, warm amber highlights, deep teal shadows, subtle film grain, beautiful depth of field, rich natural textures and sophisticated Mediterranean atmosphere. Create a NEW scene, not a UI screenshot or illustration. A young woman with short dark curly hair and a cream linen blazer in a tense reflective moment at a Mediterranean seaside terrace at dusk. A dramatic intensely expressive face, sculpted side light, storm clouds over the sea, deep shadows, restrained emotional film scene. Landscape 4:3 composition, one clear central subject filling the small frame; the bottom edge will receive an overlaid UI title, so keep important details above the bottom 18 percent. Visually polished real film still, realistic anatomy and hands, natural detail. No text, no lettering, no logos, no watermark, no borders or card graphics.
+```
+
+**tone-professional.webp**
+
+```text
+Use case: ads-marketing. Asset type: premium cinematic sample image for a tiny 4:3 Sceenyk Studio selection card. Reference image is style/lighting reference only: match its photorealistic live-action film quality, warm amber highlights, deep teal shadows, subtle film grain, beautiful depth of field, rich natural textures and sophisticated Mediterranean atmosphere. Create a NEW scene, not a UI screenshot or illustration. A confident young woman with short dark curly hair in a beautifully tailored cream blazer presenting a thoughtful idea in a tasteful modern creative office overlooking a Mediterranean harbor. Composed assured expression, tasteful architecture, sophisticated clean presentation, cinematic business portrait. Landscape 4:3 composition, one clear central subject filling the small frame; the bottom edge will receive an overlaid UI title, so keep important details above the bottom 18 percent. Visually polished real film still, realistic anatomy and hands, natural detail. No text, no lettering, no logos, no watermark, no borders or card graphics.
+```
+
+**tone-energetic.webp**
+
+```text
+Use case: ads-marketing. Asset type: premium cinematic sample image for a tiny 4:3 Sceenyk Studio selection card. Reference image is style/lighting reference only: match its photorealistic live-action film quality, warm amber highlights, deep teal shadows, subtle film grain, beautiful depth of field, rich natural textures and sophisticated Mediterranean atmosphere. Create a NEW scene, not a UI screenshot or illustration. A young woman with short dark curly hair and a cream linen jacket moving briskly through a sunlit Mediterranean coastal street, spontaneous exuberant smile and wind in her hair. Dynamic sense of upbeat momentum, sharp readable central face, soft motion in the background. Landscape 4:3 composition, one clear central subject filling the small frame; the bottom edge will receive an overlaid UI title, so keep important details above the bottom 18 percent. Visually polished real film still, realistic anatomy and hands, natural detail. No text, no lettering, no logos, no watermark, no borders or card graphics.
+```
+
+**tone-storytelling.webp**
+
+```text
+Use case: ads-marketing. Asset type: premium cinematic sample image for a tiny 4:3 Sceenyk Studio selection card. Reference image is style/lighting reference only: match its photorealistic live-action film quality, warm amber highlights, deep teal shadows, subtle film grain, beautiful depth of field, rich natural textures and sophisticated Mediterranean atmosphere. Create a NEW scene, not a UI screenshot or illustration. A young woman with short dark curly hair and a cream linen jacket telling an engaging story to a friend just outside the frame at a seaside cafe. Expressive hand gesture close to her chest, captivating warm face, atmospheric evening lights and layered sea-town scenery, intimate narrative film still. Landscape 4:3 composition, one clear central subject filling the small frame; the bottom edge will receive an overlaid UI title, so keep important details above the bottom 18 percent. Visually polished real film still, realistic anatomy and hands, natural detail. No text, no lettering, no logos, no watermark, no borders or card graphics.
+```
+
+**type-advertisement.webp**
+
+```text
+Use case: ads-marketing. Asset type: premium cinematic sample image for a tiny 4:3 Sceenyk Studio selection card. Reference image is style/lighting reference only: match its photorealistic live-action film quality, warm amber highlights, deep teal shadows, subtle film grain, beautiful depth of field, rich natural textures and sophisticated Mediterranean atmosphere. Create a NEW scene, not a UI screenshot or illustration. Premium cinematic beauty-product advertising still: a single elegant unbranded amber glass perfume bottle with a sculptural dark cap on a warm travertine plinth overlooking a Mediterranean coastline at sunset. Highly crafted glass reflections, sophisticated product hero composition, natural coastal plants and defocused architectural lights. Landscape 4:3 composition, one clear central subject filling the small frame; the bottom edge will receive an overlaid UI title, so keep important details above the bottom 18 percent. Visually polished real film still, realistic anatomy and hands, natural detail. No text, no lettering, no logos, no watermark, no borders or card graphics.
+```
+
+**type-explanation.webp**
+
+```text
+Use case: ads-marketing. Asset type: premium cinematic sample image for a tiny 4:3 Sceenyk Studio selection card. Reference image is style/lighting reference only: match its photorealistic live-action film quality, warm amber highlights, deep teal shadows, subtle film grain, beautiful depth of field, rich natural textures and sophisticated Mediterranean atmosphere. Create a NEW scene, not a UI screenshot or illustration. A young woman with short dark curly hair wearing a cream linen blazer demonstrating how a compact unbranded camera works at a Mediterranean terrace table. She points to a clear camera control, her face and hands and the device are visible, accessible helpful teaching moment, premium cinematic creator tutorial film still. Landscape 4:3 composition, one clear central subject filling the small frame; the bottom edge will receive an overlaid UI title, so keep important details above the bottom 18 percent. Visually polished real film still, realistic anatomy and hands, natural detail. No text, no lettering, no logos, no watermark, no borders or card graphics.
+```
+
+**type-unboxing.webp**
+
+```text
+Use case: ads-marketing. Asset type: premium cinematic sample image for a tiny 4:3 Sceenyk Studio selection card. Reference image is style/lighting reference only: match its photorealistic live-action film quality, warm amber highlights, deep teal shadows, subtle film grain, beautiful depth of field, rich natural textures and sophisticated Mediterranean atmosphere. Create a NEW scene, not a UI screenshot or illustration. Premium cinematic creator unboxing film still: a young woman with short dark curly hair and a cream linen blazer opening a tasteful unbranded cream product box on a coastal terrace table. Both natural hands lift the box lid to reveal a small elegant camera nestled inside, delighted curious expression. Box, hands and face clearly readable, thoughtful composition. Landscape 4:3 composition, one clear central subject filling the small frame; the bottom edge will receive an overlaid UI title, so keep important details above the bottom 18 percent. Visually polished real film still, realistic anatomy and hands, natural detail. No text, no lettering, no logos, no watermark, no borders or card graphics.
+```
+
+</details>
+
+## Pro Properties accordion and card refinement (2026-11-05)
+
+**UI implementation and focused offline checks complete; hosted Save/refresh and actual responsive/theme/keyboard acceptance remain manual.** This refinement supersedes the original M3 Style & pacing placement below. Pro removes that combined accordion and uses the existing native Properties sections in order: **Describe your scene → Duration → Visual Style → Tone → Type → Resolution**. Describe and Resolution retain their original rendering/eligibility. Type retains its existing UGC-only eligibility and is distinct from Sources' UGC/Freestyle selector. Each section is independently expandable, initially collapsed, with no shared exclusive accordion group or new persisted open-state flag. Existing mounted native open states survive ordinary setting rerenders; mode switching never resets project settings. Basic keeps its original Style & pacing accordion and four existing Select controls.
+
+Duration uses native radio boxes with lightweight inline SVG clocks. Second-hand angles represent the supported **5s, 10s, 30s** values (30°, 60°, 180°); a saved legacy **15s** appears at 90° only while selected, matching the existing compatibility rule. Selecting a current duration removes the legacy choice. No 20s, 40–120s or new generation capability is introduced. Visual Style moves the existing five-card gallery unchanged into its own accordion and retains all five WebP samples.
+
+Tone uses the actual supported values **Funny, Dramatic, Professional, Energetic, Storytelling**; Type uses **advertisement, explanation, unboxing** with their existing displayed labels. Compact illustrated image cards include a name and short description, one checked value per group, purple border/checkmark and a distinct keyboard focus ring. Inputs use native radio keyboard semantics and explicit accessible labels/descriptions. Width-driven grids shrink within the unchanged panel width; image galleries have bounded native vertical scrolling without horizontal overflow. Existing theme/type/radius tokens control surfaces and text. Tailwind only; no stylesheet or dependency added.
+
+**New local artwork:** eight hand-authored, script-free **320×240 SVG illustrations** under `public/images/pro-properties/`: `tone-funny.svg`, `tone-dramatic.svg`, `tone-professional.svg`, `tone-energetic.svg`, `tone-storytelling.svg`, `type-advertisement.svg`, `type-explanation.svg`, `type-unboxing.svg`. Their scenes illustrate laughter, theatre, office presentation, running, a storybook, product display, explanation and opening a package. **10,916 bytes total**; no provider/image-generation call. The five earlier style WebPs are retained byte-for-byte. All eight SVGs and five WebPs total **136,936 bytes**. Images are display-only and never enter source uploads, AI requests or reference arrays. Clocks are inline vector markup with no image request. Referenced layout screenshots were not attached or present in repository artwork; exact screenshot matching is unverified.
+
+`StudioGenerationProperties` only chooses the Basic/Pro presentation. All four control groups update the same existing `settings.duration`, `settings.visualStyle`, `settings.tone` and top-level `ugcType`, through `setSettings`/`setUgcType`. The existing Save/read mapping, dirty guards, AI Director/Storyboard/Package/Final Video fields, style/source currentness, approvals, explicit regeneration and historical assets/videos are unchanged. No production service, OpenAI prompt, Higgsfield, Character Sheet, pricing/authority, duration capability, resolution, worker, recovery, storage, schema or configuration change. This is a presentation refinement of M3; **M4–M7 remain unimplemented**.
+
+Changed: new `components/creation/studio-generation-properties.tsx`, `duration-gallery.tsx`, `property-image-gallery.tsx`; `creation-workspace.tsx` (existing-state wiring), `generation-settings.tsx` (Basic-only original rendering); eight SVG assets; updated `scripts/check-visual-style-gallery.mjs` and `package.json` (`test:pro-properties`, retaining `test:visual-style-gallery`); Phase 2/UI/design/workflow notes and progress tracker. `StudioInspectorSection`, panel geometry, Resolution, Describe and `visual-style-gallery.tsx` remain unchanged by this refinement.
+
+**Verification:** `npm run test:pro-properties` passes **458 focused actual UI/asset/serialized-draft assertions**, covering every duration/style/tone/type callback, single selection, independent native details semantics/default collapse/order, no Pro dropdowns, Basic controls, both-direction mode retention, fresh-module draft refresh through the actual save-validation contract, legacy duration retention/removal and clock angles, accessible label/description links, shared theme/focus/responsive classes and all 13 decoded local images. TypeScript, focused ESLint and whitespace/scope checks pass. UI fixtures use synthetic hooks/geometry and block every network request; zero provider calls. No database/worker/provider suite, live project/storage access, browser/screenshot suite, full build or deployment ran. The UI fixture uses local esbuild file access outside the Windows sandbox. No qualifying Next.js feedback candidates arose.
+
+**Manual inspection:** expand several sections together and change each selection without closing siblings; inspect the fixed-width desktop panel and mobile layout in both themes; use Tab/arrow/Space and verify focus visibility. Save a project, refresh/reopen and switch Basic ↔ Pro to confirm the same Duration/Style/Tone/Type. Existing hosted Save acceptance and browser-native open-state/keyboard/layout behavior cannot be established by the isolated UI fixture. Follow the existing stale-reference/regeneration flow without deleting approved history. Stop after this UI refinement.
+
+## M3 implementation and assets (2026-11-05)
+
+**Complete in source and focused offline verification; hosted refresh and actual responsive/theme/keyboard visual acceptance remain manual.** Pro → Properties → Style & pacing replaces only Visual style's dropdown with five native labelled radio cards: Original, Cartoon, Cinematic, Anime and Realistic. Basic keeps its existing shared Select dropdown. Duration, Tone and Type retain their owners and callbacks. The controlled gallery has no state/effect, storage owner, generation action or provider import. `CreationWorkspace` passes its existing mode; both presentations update the existing `settings.visualStyle`. The existing new-draft default remains Original. Save/read maps the same value to/from `projects.visual_style`, then V3 `projectBrief` → `generationContext`; mode changes cannot reset it.
+
+Cards have a consistent 4:3 image, bottom white label over a dark gradient, existing small type/radius/theme tokens, purple selected border and small checkmark. Native radios supply one selection, Tab/arrow/Space behavior and checked semantics; a separate visible focus ring remains in both themes. An auto-fit grid (88px minimum tracks, shrinking to the available width when narrower) uses compact 8px gaps and a bounded native vertical scrollport, with no horizontal gallery scrolling. Sources, Preview and Properties geometry remain unchanged. Layout screenshots were not attached to the M3 request or present among repository artwork; arrangement follows the compact panel requirements and existing design system. Exact screenshot matching remains unverified.
+
+**Static local samples:** [original.webp](../public/images/visual-styles/original.webp) (20,814 bytes), [cartoon.webp](../public/images/visual-styles/cartoon.webp) (34,294), [cinematic.webp](../public/images/visual-styles/cinematic.webp) (20,194), [anime.webp](../public/images/visual-styles/anime.webp) (32,954), [realistic.webp](../public/images/visual-styles/realistic.webp) (17,764). All are 384×288 WebPs, **126,020 bytes total**, served through `next/image` with responsive sizes and default lazy loading. The built-in imagegen tool created five static illustrations/photos of a consistent seaside portrait subject; Sharp only resized/encoded the outputs. The prompt set is recorded below. These are visual examples, never uploaded/signed generation inputs or character/product references. There are no external runtime image URLs or thumbnail-generation requests on selection, save or render. Existing project artwork remains untouched.
+
+**V3 preservation:** no generation/prompt/compiler/provider/worker/storage/pricing/authorization/resolution/schema source changes. The existing style currentness fences still mark incompatible Character/Product sheets and downstream work stale, requiring explicit regeneration/reapproval. Selecting/saving a style does not generate, delete or change historical sheets, approvals, packages or videos. M3 adds no migration/configuration/dependency. M1/M2's manual setup and existing V3 gates remain prerequisites; M4–M7 are not implemented.
+
+**Verification:** `npm run test:visual-style-gallery` passes **290 actual controlled-UI/asset assertions** across all five values, immediate selection, Basic/Pro callbacks/retention, Original default, native radio grouping/checked/focus semantics, static responsive/theme classes, exact local decoded dimensions/format/size and five distinct assets. `npm run test:ugc-v3-project-saving` passes **1,701 actual Save/service/disposable SQL/route/worker assertions**, including new five-style restricted-role saves/readback/reopen, both persisted modes, exact server generation-context values, stale sheet eligibility and unchanged historical approved reference/task rows. All 96 migrations run only in the disposable database. Existing `test:ugc-v3-references` (**388**) verifies all-five-style Character/Product prompt substitution and source bindings; `test:ugc-final-v3` (**270**) covers foundation/pricing/compiler/V1/V2 compatibility. TypeScript, focused ESLint and whitespace/scope checks pass. Fixtures make **zero real network/provider requests**; no generation-pipeline media, live database/storage mutation, worker service, build, browser/screenshot suite or deployment ran. Only the five static UI assets were created with the built-in image tool. Offline UI bundling requires local esbuild file access outside the Windows sandbox. No qualifying Next.js feedback candidates arose.
+
+**Manual acceptance:** in Pro inspect all five cards at desktop/narrow/mobile widths and in both themes, use Tab/arrow/Space, select each style, Save, refresh and reopen; switch to Basic and back and confirm the same style. Confirm stale saved references require regeneration/approval while approved history and old video previews remain. Offline persistence uses the actual service/database, but cannot establish hosted browser acceptance. Stop after M3.
+
+<details>
+<summary>M3 static artwork prompt set (built-in imagegen)</summary>
+
+**Original**
+
+```text
+Use case: photorealistic-natural. Asset type: Original visual-style gallery sample. A beautifully composed unretouched natural travel portrait: young adult woman with short dark curls wearing a cream linen jacket, standing by a Mediterranean coastal town, soft daylight, natural muted colors, honest everyday appearance, no cinematic grade, no illustration. Chest-up framing, centered, square composition suitable for a tiny card crop. Premium editorial photography, no text, no logos or watermark. Single image.
+```
+
+**Cartoon**
+
+```text
+Use case: illustration-story. Asset type: Cartoon visual-style gallery sample. A cheerful young adult woman with short dark curls and a cream jacket at a Mediterranean coastal town, bold clean expressive outlines, simplified rounded shapes, vivid coral roofs and teal sea, cel-shaded colorful 2D cartoon illustration with clearly drawn shading, sophisticated charming animation art. Chest-up centered portrait square composition suitable for a tiny card crop. No text, no logos, no watermark. Single image.
+```
+
+**Cinematic**
+
+```text
+Use case: stylized-concept. Asset type: Cinematic visual-style gallery sample. A young adult woman with short dark curls wearing a cream jacket on a Mediterranean coastal terrace at dusk. Rich cinematic film-still portrait, warm amber rimlight, deep teal shadows, atmospheric depth, beautiful anamorphic-like bokeh, subtle film grain, dramatic but legible facial lighting, gorgeous detailed scene. Chest-up centered portrait square composition suitable for a tiny card crop. No text, logos or watermark. Single image.
+```
+
+**Anime**
+
+```text
+Use case: illustration-story. Asset type: Anime visual-style gallery sample. A young adult woman with short dark curly hair and a cream jacket at a Mediterranean seaside town in bright afternoon light. Beautiful original anime key visual, delicate precise ink linework, expressive anime eyes, crisp cel shading, luminous hand-painted blue sea and coral roofs, visually unmistakable Japanese anime illustration. Chest-up centered portrait, square composition suitable for tiny card crop. No text, logos or watermark. Single image.
+```
+
+**Realistic**
+
+```text
+Use case: photorealistic-natural. Asset type: Realistic visual-style gallery sample. Exceptionally lifelike photographic close portrait of a young adult woman with short dark curly hair wearing a cream linen jacket at a Mediterranean coastal town. Visible natural skin texture and fine hair detail, believable anatomy, true fabric detail, soft reflected daylight, realistic warm skin, shallow photographic depth of field, premium 85mm portrait photography. Chest-up centered framing, square composition suitable for tiny card crop. No text, logos or watermark. Single image.
+```
+
+</details>
 
 ## M2 Pro Characters presentation refinement (2026-11-05)
 
@@ -109,7 +282,7 @@ OpenAI must carry each approved character's identity into reference generation a
 
 The Pro visual-style gallery replaces only the Basic dropdown presentation. Each responsive image card has the existing style name and a clear selected state. Both controls write the same saved visual-style value. Apply that value consistently to every Character Sheet, Product Sheet, Location, Storyboard and final video. Preserve current stale-input detection and required regeneration/reapproval when a changed style makes saved creative work incompatible; keep unrelated valid approvals and historical bytes. Do not regenerate references merely because the user changes mode or sees a gallery.
 
-**Recommendation:** reuse approved static style imagery if suitable assets exist; confirm the five gallery assets before implementation. This task creates no images and adds no provider calls for thumbnails.
+**Implemented M3:** the five optimized local samples and their prompt provenance are documented in [M3 implementation and assets](#m3-implementation-and-assets-2026-11-05). No runtime thumbnail generation is added; manual artwork/visual acceptance remains pending.
 
 ### Full-story planning and clip boundaries
 
@@ -167,7 +340,7 @@ OpenAI remains the only reference-generation/creative-direction provider. Higgsf
 
 ## Expected database work and safeguards
 
-**M1 uses manual 094; M2 uses manual 095 as documented above. M3–M7 persistence remains planned.** Both migrations are transactional/rerunnable and guard prerequisite objects/contracts. M2 adds one receipt-subject column and reuses asset/task/artifact/source/package owners. Inspect the actual installed contract before applying; stop on guard failures rather than guessing. Retain named realtime/RLS behavior. Later feature relations/fields/RPCs remain undecided.
+**M1 uses manual 094; M2 uses manual 095/096 as documented above. M3 requires no migration; M4–M7 persistence remains planned.** Existing migrations are transactional/rerunnable and guard prerequisite objects/contracts. M2 adds one receipt-subject column and reuses asset/task/artifact/source/package owners. Inspect the actual installed contract before applying; stop on guard failures rather than guessing. Retain named realtime/RLS behavior. Later feature relations/fields/RPCs remain undecided.
 
 Expected responsibilities are: owner preferred mode and project saved mode; reversible retained Pro configuration and active Basic-compatible inputs; stable character-to-source/sheet/task/approval bindings; versioned full-story/clip plans; immutable selective attempts and fresh authorizations; current approved attempt selection; explicit deduplicated merge intents/manifests and final approval lineage. Reuse existing owners before adding persistence. A new UI list alone cannot implement these contracts. No destructive backfill, weakening of active-run/consumed-authority uniqueness, historical JSON/hash rewrite or automatic media cleanup is acceptable.
 
@@ -183,7 +356,7 @@ Follow [the design system](design-system.md) and [Styling Policy](code-standards
 
 ## Implementation roadmap
 
-**M1/M2: complete in source/offline verification; manual migrations and hosted/provider/visual acceptance pending. M3–M7: Planned / Not Started.** Dependencies are ordered; do not begin later milestones automatically. Acceptance must distinguish source/offline checks from remote migration, provider, worker, hosted and manual visual results.
+**M1–M3: complete in source/offline verification; existing manual migrations and hosted/provider/visual acceptance pending. M4–M7: Planned / Not Started.** M3 adds no migration. Dependencies are ordered; do not begin later milestones automatically. Acceptance must distinguish source/offline checks from remote migration, provider, worker, hosted and manual visual results.
 
 ### M1 — Studio mode selection and persistence
 
@@ -205,8 +378,9 @@ Follow [the design system](design-system.md) and [Styling Policy](code-standards
 
 ### M3 — Pro visual-style gallery
 
+- **Status:** Complete in source/focused offline verification; hosted and manual artwork/responsive/theme/keyboard acceptance pending. [Implementation, assets and evidence](#m3-implementation-and-assets-2026-11-05).
 - **Depends on:** M1; integrate M2's cast approvals for full acceptance; approved gallery artwork.
-- **Planned work/database:** five labelled image choices reuse the existing saved style; no separate style column/table is expected. Only a verified compatibility need may justify further persistence.
+- **Implemented/database:** five labelled image choices reuse the existing saved style. No new style state, column, table, migration or generation logic.
 - **Safeguards:** preserve the Basic dropdown, shared theme/accessibility, mode-switch data and current style-dependency checks; no thumbnail-generation calls.
 - **Acceptance:** all five styles select and reopen correctly through either presentation; multiple sheets, Product, Location, Storyboard and video bind the same style; incompatible changes require explicit regeneration/reapproval; selection/focus/layout work in both themes and responsive manual review.
 
@@ -242,10 +416,10 @@ Follow [the design system](design-system.md) and [Styling Policy](code-standards
 
 1. **Resolved for M1:** separate metadata columns/RPCs, project precedence, committed-preference inheritance, serialized mode writes/late-response guards and no generation invalidation. **Deferred to the feature milestones:** representation of reversible Pro-only configuration and compatibility restrictions once such features exist. Manual 094/hosted integration remains pending.
 2. **Resolved in source for M2:** stable source IDs, ordered cast/speaker schema, independent currentness/task/cleanup and complete reference mapping. **Needs confirmation before real Pro video use:** current selected-model/account limits through the existing evidence contract, followed by manual identity/speaker fidelity review. No unlimited-character promise or silent reference omission.
-3. **M3:** approved five-card artwork and exact gallery/timeline placement in the existing responsive Studio.
+3. **M3:** five local samples and Properties placement are implemented; actual artwork, responsive/theme and keyboard acceptance remains manual. Future clip timeline placement belongs to M5.
 4. **M4:** versioned Director/SQL validation for fixed clip boundaries and long-story speech/physical continuity; whether existing limits fit 120s and the selected cast. Do not raise shared historical limits blindly.
 5. **M5:** selective attempt/package lineage that preserves unchanged accepted clips without rebinding authority; cumulative replacement budgets, authorization expiry and concurrent selection/admission fences under current uniqueness constraints.
 6. **M6:** explicit merge action/manifest persistence and race protection; codec/sample-rate/frame-rate policy, permitted local normalization, output-duration tolerances and seam quality. Existing join source is a foundation, not proof of this acceptance.
 7. **M4–M7:** real account reference/native audio/voice/identity consistency and long-story provider quality; verified resolution-specific rates and hosted worker/resources/FFmpeg capacity for 120s. Retain existing blockers rather than inventing guarantees, rates or another provider.
 
-Advanced remains future/out of scope. These questions do not authorize further implementation. **M2 source/offline work stops here; M3–M7 are not started.** Apply/verify required manual migrations and review the character workflow before separately authorizing the next feature or live acceptance.
+Advanced remains future/out of scope. These questions do not authorize further implementation. **M3 source/offline work stops here; M4–M7 are not started.** Apply/verify existing required manual migrations and review the character/gallery workflows before separately authorizing the next feature or live acceptance.

@@ -1,5 +1,9 @@
 # Architecture Context
 
+## Phase 2 M3 — shared saved style, presentation only (2026-11-05)
+
+Pro's visual-style gallery and Basic's existing Select both read/write `CreationWorkspace.settings.visualStyle`. Existing Save/read maps it to `projects.visual_style`; V3 `projectBrief`/`generationContext` and all currentness/prompt/reference/director/package/video owners remain unchanged. The gallery is controlled and owns no persistent or secondary style state; its five public WebP samples are presentation-only and never enter generation inputs. No architecture, schema, provider, worker, storage, financial or history change. [M3 behavior, assets and offline evidence](phase-2-basic-pro-studio.md#m3-implementation-and-assets-2026-11-05). M4–M7 remain unimplemented; dated M1/M2 records below preserve their original scope.
+
 ## Phase 2 M2 — character-owned V3 reference slots (2026-11-05)
 
 **Save permission repair:** manual 096 after 095 adds the missing column-scoped server `UPDATE(video_resolution)` grant omitted by 093. The actual owner-filtered Save action otherwise fails with 42501 before persisting reference names. No RLS/function/row/provider behavior changes; existing browser denial and server ownership checks remain. [Reproduction, setup and restricted-role Save verification](phase-2-basic-pro-studio.md#m2-save-failure-and-manual-permission-repair-2026-11-05).

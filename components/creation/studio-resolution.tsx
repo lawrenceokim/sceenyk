@@ -3,9 +3,21 @@
 import { useId } from "react";
 import { Check, Circle, Info } from "lucide-react";
 import { videoResolutions, type VideoResolution } from "@/lib/projects/video-resolution";
+import { PropertyImageGallery } from "./property-image-gallery";
 
-export function StudioResolution({ value, onChange }: { value: VideoResolution; onChange: (value: VideoResolution) => void }) {
+// Illustrative UI previews only; these images never enter generation references.
+const resolutionOptions = videoResolutions.map(value => ({ value, label: value, image: `/images/resolutions/${value}.webp` }));
+
+export function StudioResolution({ value, onChange, imageCards = false }: {
+  value: VideoResolution;
+  onChange: (value: VideoResolution) => void;
+  imageCards?: boolean;
+}) {
   const id = useId();
+  if (imageCards) return <div className="min-w-0 space-y-3">
+    <PropertyImageGallery label="Video resolution" value={value} options={resolutionOptions} onChange={onChange} descriptionId={id} />
+    <p id={id} className="flex items-start gap-2 text-xs leading-relaxed text-muted-foreground"><Info aria-hidden="true" className="mt-0.5 size-4 shrink-0" />Higher resolutions may take longer to generate.</p>
+  </div>;
   return <fieldset aria-describedby={id} className="@container/resolution min-w-0 space-y-3 rounded-xl border border-border bg-card/40 p-3">
     <legend className="sr-only">Video resolution</legend>
     <div className="grid min-w-0 grid-cols-3 gap-2">

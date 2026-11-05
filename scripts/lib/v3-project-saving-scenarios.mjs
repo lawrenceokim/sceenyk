@@ -109,5 +109,24 @@ export async function projectSavingScenarios(h) {
  }
  injected=null;authFailure=true;ok((await saveProjectAction(named)).message.includes('account'));authFailure=false;
  const retained=await h.cp(project);equal(retained,snapshot);equal(calls.length,callCount);
+ // M3 gallery writes the existing style: actual restricted-role Save/read and
+ // SQL mode switches retain all five values and every approved historical byte.
+ const galleryHistory=await h.cp(project),galleryCalls=calls.length;
+ for(const visualStyle of ['Original','Cartoon','Cinematic','Anime','Realistic']){
+  const result=await saveProjectAction({...named,referenceNames:[],settings:{...named.settings,visualStyle}});
+  equal(result.ok,true);equal(result.project.settings.visualStyle,visualStyle);
+  equal((await getOwnedProject(project)).settings.visualStyle,visualStyle);
+  equal((await pg.query('select visual_style from public.projects where id=$1',[project])).rows[0].visual_style,visualStyle);
+  for(const studioMode of ['basic','pro']){
+   await call('studio_mode_save',[owner,project,studioMode]);
+   equal((await getOwnedProject(project)).settings.visualStyle,visualStyle);
+   equal(await h.cp(project),galleryHistory);
+  }
+  const savedGenerationBrief=await h.load('lib/final-video-generation-v3/creative-inputs.ts').projectBrief(owner,project);
+  equal(h.load('lib/final-video-generation-v3/generation-context.ts').generationContext(savedGenerationBrief).visualStyle,visualStyle);
+  const restored=await read(project);
+  equal(restored.artifacts.filter(x=>x.kind==='character'&&x.current&&x.approved).length,visualStyle==='Realistic'?2:0);
+  equal(calls.length,galleryCalls);
+ }
  h.setMode('pass');
 }
