@@ -2,7 +2,7 @@ import "server-only";
 import type { ResponseCreateParamsNonStreaming } from "openai/resources/responses/responses";
 import { zodTextFormat } from "openai/helpers/zod";
 import { z } from "zod";
-import { directorStoryboardSchema, V3_WORKFLOW, type CreativeDirectorProvider, type ImageGenerationProvider } from "../contract";
+import { directorStoryboardSchema, singleDirectorStoryboardSchema, V3_WORKFLOW, type CreativeDirectorProvider, type ImageGenerationProvider } from "../contract";
 import { storyboardDirectorInstructions } from "../storyboard-director";
 
 const model = z.string().regex(/^[a-zA-Z0-9._:-]{1,200}$/);
@@ -29,7 +29,7 @@ export class OpenAICreativeDirectorProvider implements CreativeDirectorProvider<
     const body: ResponseCreateParamsNonStreaming = { model: this.config.model, store: false, max_output_tokens: this.config.maxOutputTokens,
       instructions: storyboardDirectorInstructions,
       input: [{ role: "user", content: [{ type: "input_text", text: `${prompt.parse(input.instruction)}\nExact intended total: ${input.durationMs}ms.` }, ...input.referenceUrls.map(image)] }],
-      text: { format: zodTextFormat(directorStoryboardSchema, "director_storyboard_v3") } };
+      text: { format: zodTextFormat(singleDirectorStoryboardSchema, "director_storyboard_v3") } };
     return { workflow: V3_WORKFLOW, executable: false as const, providerId: "openai", body };
   }
   parseStoryboard(value: unknown) { return directorStoryboardSchema.parse(value); }

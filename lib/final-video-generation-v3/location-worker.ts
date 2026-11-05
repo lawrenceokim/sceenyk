@@ -66,7 +66,7 @@ export async function runLocationTask(store:V3Store,task:Task,w:RuntimeWorkspace
       if(key==="plan"){
         const bytes=await Promise.all(refs.map(r=>readPrivate(r.asset.storageKey,r.asset.etag,r.asset.sizeBytes,signal,r.asset.sha256)));
         const body={model:config.directorModel,store:false,max_output_tokens:3000,instructions:locationDirectorInstructions,
-          input:[{role:"user" as const,content:[{type:"input_text" as const,text:locationPlanInput(inputs.context,refs.map(r=>r.artifact.kind),task.input.names,inputs.brief.duration,inputs.brief.aspect_ratio)},...bytes.map(imageInput)]}],
+          input:[{role:"user" as const,content:[{type:"input_text" as const,text:locationPlanInput(inputs.context,refs.map(r=>r.artifact.kind),task.input.names,inputs.brief.duration,inputs.brief.aspect_ratio,task.input.cast)},...bytes.map(imageInput)]}],
           text:{format:zodTextFormat(locationInstructionSchema,"location_prompt_v2")}};
         invoke=()=>client.responses.create(body,{signal,headers:{"X-Client-Request-Id":id}}).asResponse();
       }else{

@@ -13,12 +13,14 @@ import { studioReferenceImages, type StudioReference } from "./studio-inputs";
 import { ugcV1LimitMessages } from "@/lib/projects/ugc-v1";
 import { referenceNameLimit } from "@/lib/projects/reference-names";
 import { StudioPanelTarget, useStudioPanels } from "./studio-workspace-panels";
+import { ProCharacterSources } from "./pro-character-sources";
 
-export function StudioReferenceSources({ label, addLabel, role, references, onAdd, onRemoveLocal, onRemoveAsset,
-  onUpload, onRecover, onNameChange, uploadStates, busy, signedIn, authReady }: {
+export type StudioReferenceSourcesProps = {
   label: string;
   addLabel: string;
   role: "character" | "product";
+  multiple?: boolean;
+  perCharacterSheets?: boolean;
   references: StudioReference[];
   onAdd: (files: File[]) => void;
   onRemoveLocal: (id: string) => void;
@@ -30,13 +32,22 @@ export function StudioReferenceSources({ label, addLabel, role, references, onAd
   busy: boolean;
   signedIn: boolean;
   authReady: boolean;
-}) {
+};
+
+export function StudioReferenceSources(props: StudioReferenceSourcesProps) {
+  return props.role === "character" && props.multiple
+    ? <ProCharacterSources {...props} />
+    : <StandardReferenceSources {...props} />;
+}
+
+function StandardReferenceSources({ label, addLabel, role, references, onAdd, onRemoveLocal, onRemoveAsset, multiple = false, perCharacterSheets = false,
+  onUpload, onRecover, onNameChange, uploadStates, busy, signedIn, authReady }: StudioReferenceSourcesProps) {
   const id = useId();
   const panels = useStudioPanels();
   const input = useRef<HTMLInputElement>(null);
   const add = useRef<HTMLButtonElement>(null);
   const images = studioReferenceImages(references);
-  const atLimit = images.length >= 1;
+  const atLimit = !multiple && images.length >= 1;
   const buttonClass = "h-8 min-h-8 cursor-pointer gap-1.5 rounded-lg px-2 text-xs [&&:disabled]:pointer-events-auto disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground disabled:opacity-50 disabled:hover:bg-muted [@media(pointer:coarse)]:min-h-11";
   return <section className="min-w-0" aria-labelledby={`${id}-heading`}>
     <h3 id={`${id}-heading`} className="mb-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{label}</h3>
@@ -82,11 +93,12 @@ export function StudioReferenceSources({ label, addLabel, role, references, onAd
               onBlur={event => onNameChange(asset, event.target.value.trim())}
               className="sceenyk-field h-8 min-h-8 w-full min-w-0 max-w-full rounded-lg border border-input bg-field px-2 py-1 text-xs text-foreground outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring [@media(pointer:coarse)]:min-h-11" />
           </div>}
+          {perCharacterSheets && !local && asset && <div className="mt-2"><StudioPanelTarget panel={`character:${asset.id}`} /></div>}
         </li>;
       })}
     </ul>}
-    <div className="mt-2"><StudioPanelTarget panel={role} /></div>
-    {images.length > 1 && <p role="alert" className="mt-2 text-xs text-destructive">{ugcV1LimitMessages[role]}</p>}
+    {!perCharacterSheets && <div className="mt-2"><StudioPanelTarget panel={role} /></div>}
+    {!multiple && images.length > 1 && <p role="alert" className="mt-2 text-xs text-muted-foreground">{role === "character" ? "Basic Studio supports one character. Your Pro characters and sheets are saved. Switch to Pro to continue." : ugcV1LimitMessages[role]}</p>}
     <div className="mt-2 space-y-2">
       {references.flatMap(reference => reference.images).map(({ local, asset }) => {
         const state = local ? uploadStates[local.id] : undefined;

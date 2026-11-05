@@ -58,7 +58,7 @@ export class HiggsfieldVideoGenerationProvider implements VideoGenerationProvide
       for (const [kind, field] of [["image", "image_urls"], ["audio", "audio_urls"], ["video", "video_urls"]]) {
         const refs = command.references.filter(ref => ref.kind === kind);
         if (refs.length) input[field] = refs.map(ref => urlFor(ref.id));
-        refs.forEach((ref, index) => mapping.push(`${kind} reference ${index + 1} defines ${ref.role}: ${ref.name}.`));
+        refs.forEach((ref, index) => mapping.push(`${kind} reference ${index + 1} defines ${ref.role}: ${ref.name}${ref.characterId ? ` [character ${ref.characterId}]` : ""}.`));
       }
       input.prompt = `${mapping.join("\n")}\n${command.direction.prompt}`;
     } else if (command.mode === "image") {

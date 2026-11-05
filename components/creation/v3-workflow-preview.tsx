@@ -11,7 +11,7 @@ import { StudioWorkflowGuidance } from "./studio-workflow-guidance";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
-import { CircleCheck, Clock3, Info, Layers2, Ratio, Smartphone } from "lucide-react";
+import { CircleCheck, Clock3, Info, Layers2, Ratio, RefreshCw, Smartphone } from "lucide-react";
 import {
   StudioPanelPortal,
   StudioWorkflowMedia,
@@ -24,6 +24,7 @@ import type { RuntimeDto } from "@/lib/final-video-generation-v3/runtime-server"
 import { referenceBusy } from "@/lib/final-video-generation-v3/progress";
 import { v3ActionErrorMessage } from "@/lib/final-video-generation-v3/reference-errors";
 import { ReferenceRegenerationDialog } from "./reference-regeneration-dialog";
+import { useStudioMode } from "@/components/workspace/studio-mode-provider";
 import { referenceFailureLabel } from "@/lib/final-video-generation-v3/reference-status";
 import { locationReferenceFeedback } from "@/lib/final-video-generation-v3/reference-prerequisites";
 import {
@@ -149,11 +150,16 @@ export function V3WorkflowPreview({
   const actionLock = useRef(false);
   const workspaceVersion = useRef(0);
   const [regeneration, setRegeneration] = useState<{
+    assetId?: string;
     kind: "character" | "product";
     id: string;
     version: number;
   } | null>(null);
   const panels = useStudioPanels();
+  const { mode: studioMode } = useStudioMode();
+  const characterAssets = assets.filter(a => a.studioRole === "character" && a.status === "uploaded" && !a.removedFromDraft);
+  const characterPanels = studioMode === "pro" || characterAssets.length > 1;
+  const proCharactersBlocked = studioMode !== "pro" && characterAssets.length > 1;
   const [actionArea, setActionArea] = useState<string>("workflow");
   const [view, setView] = useState<
     "progress" | "storyboard" | "package" | "final"
@@ -276,10 +282,11 @@ export function V3WorkflowPreview({
       payload.kind ??
       workspace?.artifacts.find((a) => a.id === payload.id)?.kind ??
       workspace?.tasks.find((t) => t.id === payload.id)?.kind;
+    const characterId = payload.assetId ?? workspace?.artifacts.find(a => a.id === payload.id)?.characterId ?? workspace?.tasks.find(t => t.id === payload.id)?.characterId;
     setActionArea(
       typeof area === "string" &&
         ["character", "product", "location"].includes(area)
-        ? area
+        ? area === "character" && characterPanels && characterId ? `character:${characterId}` : area
         : "workflow",
     );
     if (action === "build_package") setBuildActionFailure(null);
@@ -363,35 +370,35 @@ export function V3WorkflowPreview({
   const locked = busy || dirty || !!workspace?.processing;
   const finalVideo = finalVideoPresentation(workspace, { dirty, busy, requestPending: videoRequestPending });
   const finalVideoGenerating = finalVideo.loading && (videoRequestPending || finalVideo.activeRuns.length > 0 || !!workspace?.tasks.some(t => t.kind === "join" && ["queued", "running"].includes(t.status)));
-  const reference = (kind: "character" | "product") =>
+  const reference = (kind: "character" | "product", assetId?: string) =>
     assets.find(
       (a) =>
-        a.studioRole === kind && a.status === "uploaded" && !a.removedFromDraft,
+        a.studioRole === kind && (!assetId || a.id === assetId) && a.status === "uploaded" && !a.removedFromDraft,
     );
   const latest = workspace?.artifacts.filter((a) => a.activeSlot) ?? [];
-  const failedReference = (kind: "character" | "product") =>
-    workspace?.tasks.filter((t) => t.kind === kind).at(-1);
-  const referencePayload = (kind: "character" | "product") => {
-    const prior = failedReference(kind);
+  const failedReference = (kind: "character" | "product", assetId?: string) =>
+    workspace?.tasks.filter((t) => t.kind === kind && (!assetId || t.characterId === assetId)).at(-1);
+  const referencePayload = (kind: "character" | "product", assetId?: string) => {
+    const prior = failedReference(kind, assetId);
     return {
       kind,
-      assetId: reference(kind)?.id,
+      assetId: reference(kind, assetId)?.id,
       ...(prior?.canStartNew && prior.providerStarted
         ? { confirmNewRequest: true, failedTaskId: prior.id }
         : {}),
     };
   };
-  const requestReference = (kind: "character" | "product") => {
-    const current = latest.find((a) => a.kind === kind);
+  const requestReference = (kind: "character" | "product", assetId?: string) => {
+    const current = latest.find((a) => a.kind === kind && (!assetId || a.characterId === assetId));
     if (current) {
       setError("");
-      setRegeneration({ kind, id: current.id, version: current.version });
-    } else void act("reference", referencePayload(kind));
+      setRegeneration({ kind, id: current.id, version: current.version, ...(assetId ? { assetId } : {}) });
+    } else void act("reference", referencePayload(kind, assetId));
   };
   const continueRegeneration = async () => {
     if (!regeneration || busy || dirty || actionLock.current) return;
     const ok = await act("reference", {
-      ...referencePayload(regeneration.kind),
+      ...referencePayload(regeneration.kind, regeneration.assetId),
       confirmedDeletion: true,
       expectedId: regeneration.id,
       expectedVersion: regeneration.version,
@@ -403,25 +410,29 @@ export function V3WorkflowPreview({
       (a) => a.kind === kind && a.current && a.approved && !a.rejected,
     );
   const referencesComplete = !!workspace && !locationReferenceFeedback(workspace.artifacts, {
-    character: !!reference("character"), product: !!reference("product"),
+    character: !!reference("character"), product: !!reference("product"), characterIds: characterAssets.map(a => a.id),
   }) && currentApproved("location");
   const selectStoryboard = useCallback(() => setView("storyboard"), []);
   const locationFeedback = locationReferenceFeedback(workspace?.artifacts ?? [], {
-    character: !!reference("character"), product: !!reference("product"),
+    character: !!reference("character"), product: !!reference("product"), characterIds: characterAssets.map(a => a.id),
   });
-  const sourcePanel = (kind: "character" | "product" | "location") => {
+  const sourcePanel = (kind: "character" | "product" | "location", assetId?: string) => {
+    const proCharacterPanel = kind === "character" && !!assetId && studioMode === "pro";
+    const panel = kind === "character" && assetId ? `character:${assetId}` as const : kind;
+    const scopedLocked = assetId ? busy || dirty || proCharactersBlocked : locked;
     const label =
       kind === "character"
         ? "Character Sheet"
         : kind === "product"
           ? "Product Sheet"
           : "Location";
-    const task = workspace?.tasks.filter((t) => t.kind === kind).at(-1);
-    const current = latest.find((a) => a.kind === kind && !a.rejected);
+    const task = workspace?.tasks.filter((t) => t.kind === kind && (!assetId || t.characterId === assetId)).at(-1);
+    const current = latest.find((a) => a.kind === kind && (!assetId || a.characterId === assetId) && !a.rejected);
     const history =
       workspace?.artifacts.filter(
         (a) =>
           a.kind === kind &&
+          (!assetId || a.characterId === assetId) &&
           a.approved &&
           !a.rejected &&
           !latest.some((n) => n.id === a.id),
@@ -431,7 +442,9 @@ export function V3WorkflowPreview({
         <button
           type="button"
           aria-label={"Preview " + label + " version " + a.version}
-          className="block w-full cursor-zoom-in rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          data-character-swipe-preview={proCharacterPanel ? "" : undefined}
+          onDragStart={proCharacterPanel ? event => event.preventDefault() : undefined}
+          className={"block w-full cursor-zoom-in rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-ring " + (proCharacterPanel ? "aspect-square overflow-hidden border border-border bg-muted/30" : "")}
           onClick={() => panels?.selectMedia("v3-reference:" + a.id)}
         >
           <Image
@@ -440,7 +453,7 @@ export function V3WorkflowPreview({
             height={1024}
             src={a.preview}
             alt={label}
-            className="max-h-48 w-full rounded-lg object-contain"
+            className={proCharacterPanel ? "aspect-square size-full rounded-lg object-contain" : "max-h-48 w-full rounded-lg object-contain"}
           />
         </button>
       ) : null;
@@ -454,16 +467,16 @@ export function V3WorkflowPreview({
           const current = latest.find(a => a.kind === "location");
           void act("reference", { kind: "location", expectedId: current?.id, expectedVersion: current?.version });
         }}>{current ? "Regenerate Location" : "Generate Location"}</Button>
-    ) : <Button variant={current ? "default" : "outline"}
-      disabled={!workspace || busy || dirty || referenceBusy(workspace.tasks, kind) || !reference(kind)}
-      onClick={() => requestReference(kind)}>{current ? "Regenerate" : "Generate"} {label}</Button>;
+    ) : <Button variant={current || proCharacterPanel ? "default" : "outline"} className={proCharacterPanel ? "w-full" : undefined}
+      disabled={!workspace || busy || dirty || proCharactersBlocked || referenceBusy(workspace.tasks, kind, undefined, assetId) || !reference(kind, assetId)}
+      onClick={() => requestReference(kind, assetId)}>{proCharacterPanel && current && <RefreshCw className="size-3.5 shrink-0" aria-hidden="true" />}{current ? proCharacterPanel ? "Regenerate" : `Regenerate ${label}` : `Generate ${label}`}</Button>;
     return (
-      <StudioPanelPortal key={kind} panel={kind}>
+      <StudioPanelPortal key={panel} panel={panel}>
         <section
           className="space-y-2 text-xs [&_button]:max-w-full [&_button]:whitespace-normal [&_button]:text-xs [&_button]:h-auto [&_button]:min-h-8 [@media(pointer:coarse)]:[&_button]:min-h-11"
           aria-label={label}
           aria-busy={
-            (busy && actionArea === kind) ||
+            (busy && actionArea === panel) ||
             (!!task && ["queued", "running"].includes(task.status))
           }
         >
@@ -472,11 +485,12 @@ export function V3WorkflowPreview({
               Location
             </h3>
           )}
+          {proCharacterPanel && (!current || !current.preview) && <div className="flex aspect-square w-full items-center justify-center rounded-lg border border-dashed border-border bg-muted/30 text-[11px] text-muted-foreground">{current ? current.cleanupPending ? "Deletion pending" : "Loading sheet…" : "No sheet generated yet"}</div>}
           {!current && generationButton}
           {kind === "location" && showLocationFeedback && locationFeedback && (
             <p role="status" aria-live="polite" className="text-muted-foreground">{locationFeedback}</p>
           )}
-          {kind !== "location" && current && (
+          {kind !== "location" && current && !proCharacterPanel && (
             <h4 className="font-medium">{label}</h4>
           )}
           {dirty && (kind === "location" || reference(kind)) && (
@@ -489,12 +503,12 @@ export function V3WorkflowPreview({
               Loading references…
             </p>
           )}
-          {busy && actionArea === kind && (
+          {busy && actionArea === panel && (
             <p role="status" className="text-muted-foreground">
               Preparing your request…
             </p>
           )}
-          {error && actionArea === kind && (
+          {error && actionArea === panel && (
             <p role="alert" className="break-words text-destructive">
               {v3ActionErrorMessage(error)}
             </p>
@@ -567,7 +581,7 @@ export function V3WorkflowPreview({
                           current.kind === "product") &&
                         current.cleanupMode === "regenerate"
                       )
-                        requestReference(current.kind);
+                        requestReference(current.kind, assetId);
                       else
                         void act(
                           current.kind === "location"
@@ -612,14 +626,15 @@ export function V3WorkflowPreview({
                     </Button>
                   )}
                 </div>
-              ) : current.approved ? null : (
+              ) : current.approved ? proCharacterPanel ? <p role="status" className="flex items-center gap-1.5 text-success-foreground"><CircleCheck className="size-3.5" aria-hidden="true" />Approved</p> : null : (
                 <>
-                  <p role="status" className="text-muted-foreground">
+                  <p role="status" className={proCharacterPanel ? "flex items-center gap-1.5 text-muted-foreground" : "text-muted-foreground"}>
+                    {proCharacterPanel && <CircleCheck className="size-3.5 text-success-foreground" aria-hidden="true" />}
                     Ready for review
                   </p>
-                  <div className="flex flex-wrap gap-2">
+                  <div className={proCharacterPanel ? "grid grid-cols-2 gap-2" : "flex flex-wrap gap-2"}>
                     <Button
-                      disabled={locked || !current.current}
+                      disabled={scopedLocked || !current.current}
                       onClick={() =>
                         void act("review_artifact", {
                           id: current.id,
@@ -713,7 +728,9 @@ export function V3WorkflowPreview({
         onCancel={() => setRegeneration(null)}
         onContinue={continueRegeneration}
       />
-      {(["character", "product", "location"] as const).map(sourcePanel)}
+      {characterPanels ? characterAssets.map(a => sourcePanel("character", a.id)) : sourcePanel("character")}
+      {sourcePanel("product")}
+      {sourcePanel("location")}
       <StudioPanelPortal panel="workflow">
         <div
           className="flex min-h-0 min-w-0 flex-1 flex-col gap-3"
@@ -792,6 +809,7 @@ export function V3WorkflowPreview({
                       variant="default"
                       disabled={
                         locked ||
+                        proCharactersBlocked || !!locationFeedback ||
                         !currentApproved("character") ||
                         !currentApproved("location") ||
                         (!!reference("product") && !currentApproved("product"))

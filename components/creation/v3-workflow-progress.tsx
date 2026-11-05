@@ -59,7 +59,7 @@ export function V3WorkflowProgress({ workspace, productRequired, busy, locked, e
   const build = packageTask?.packageBuild;
   const latestProblems = workspace.tasks.filter((t, index, all) =>
     t.status !== "done" && t.errorCode !== "V3_REFERENCE_REQUEST_SUPERSEDED" &&
-    !all.slice(index + 1).some(n => n.kind === t.kind && !!n.referenceCleanup === !!t.referenceCleanup) &&
+    !all.slice(index + 1).some(n => n.kind === t.kind && (t.kind !== "character" || n.characterId === t.characterId) && !!n.referenceCleanup === !!t.referenceCleanup) &&
     (t.current || t.providerStarted || t.referenceCleanup || ["package", "join", "delete"].includes(t.kind)) &&
     ["failed", "reconciliation_required", "cleanup_pending"].includes(t.status));
   return <section aria-label="Workflow progress" className="@container/progress min-w-0 space-y-4">

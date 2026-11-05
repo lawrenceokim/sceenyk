@@ -2,13 +2,13 @@ import "server-only";
 import { z } from "zod";
 import type { V3Store, RuntimeWorkspace } from "./runtime-store";
 import { privateAssetSchema } from "./runtime-contract";
-import { latestArtifact } from "./generation-context";
+import { latestArtifact, characterSubject } from "./generation-context";
 import { deleteReferencePrivate, purgeReferenceSpool } from "./runtime-media";
 import { locationRequestId } from "./location-contract";
 
 export function discardableReferences(w:RuntimeWorkspace) {
   return w.artifacts.filter(a=>["character","product","location"].includes(a.kind)&&!a.approved_at&&
-    (a.rejected_at||latestArtifact(w,a.kind)?.id!==a.id||w.referenceDeletions.some(d=>d.id===a.id&&d.state==="prepared"&&d.mode!=="regenerate")));
+    (a.rejected_at||latestArtifact(w,a.kind,a.kind==="character"?characterSubject(a):undefined)?.id!==a.id||w.referenceDeletions.some(d=>d.id===a.id&&d.state==="prepared"&&d.mode!=="regenerate")));
 }
 const operation=z.object({id:z.uuid(),kind:z.enum(["character","product","location"]),state:z.enum(["prepared","completed"]),
   lease_token:z.uuid().nullable(),source_task_id:z.uuid().nullable(),asset:privateAssetSchema.nullable()});

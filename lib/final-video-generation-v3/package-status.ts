@@ -17,6 +17,8 @@ export function packageBuildLabel(d: PackageBuildDetails, status: string) {
     payload: "Preparing generation request", estimate: "Calculating approximate cost", persistence: "Saving Generation Package", ready: "Generation Package ready" }[d.stage];
 }
 export function packageBuildError(code: string) {
+  if (code === "V3_PRO_REFERENCE_LIMITS_UNVERIFIED") return "This multi-character video needs verified Higgsfield reference limits. Your characters and approved sheets are preserved; no video request was sent.";
+  if (code === "REFERENCE_COUNT_EXCEEDED" || code === "V3_PRO_REFERENCE_COUNT_EXCEEDED") return "The required sheets exceed the selected model or package reference limit. No character was omitted and no video request was sent.";
   if (code === "V3_RESOLUTION_PRICING_NOT_CONFIGURED") return "Pricing is not configured for this video resolution. Choose 480p or wait for a verified resolution-specific rate before approving paid generation.";
   if (code === "V3_APPROXIMATE_PRICING_NOT_CONFIGURED") return "Approximate pricing is not configured for this model.";
   if (code === "V3_LOCAL_PRICING_SETUP_REQUIRED") return "Local approximate pricing needs database migration 086 after 085.";

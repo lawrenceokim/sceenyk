@@ -5,6 +5,7 @@ import { HiggsfieldVideoGenerationProvider } from "./adapters/higgsfield";
 import { privateAssetSchema, privateBindingSchema, quoteSchema, type Task } from "./runtime-contract";
 import { buildFrozenPackage, restoreSegment, readFrozenPackage } from "./package";
 import { initialExecution } from "./recovery";
+import { higgsfieldRequestIssues } from "./adapters/higgsfield-validity";
 import { v3Digest, normalizeCapabilities, v3BodyHash as exactBodyHash } from "./identity";
 import type { PlanningContext } from "./contract";
 import { approvedArtifacts, projectBrief, referenceOriginals, validityEvidence } from "./creative-inputs";
@@ -59,6 +60,10 @@ export async function packageTask(store: V3Store, task: Task, w: RuntimeWorkspac
       for (const segment of provisional.segments) {
         details.segmentId = segment.id; await stage("payload");
         const restored = restoreSegment(provisional, segment.id), request = provider.prepareRequest(restored, media);
+        if (input.references.filter(r => r.role === "character").length > 1) {
+          const issues = higgsfieldRequestIssues(request.input, input.references, await validityEvidence(), context.now);
+          if (issues.length) throw new Error(issues[0]);
+        }
         await stage("estimate");
         const cost = segment.estimate;
         if (cost.estimatedCostMicrousd === null || !cost.pricing) throw new Error("V3_APPROXIMATE_PRICING_NOT_CONFIGURED");

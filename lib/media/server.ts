@@ -14,6 +14,7 @@ import { assetReferenceSchema, authorizeUploadSchema } from "./validation";
 import type { MediaResult, ProjectAsset, UploadAuthorization } from "./types";
 import { z } from "zod";
 import { ugcV1LimitMessages } from "@/lib/projects/ugc-v1";
+import { allowsProCharacters } from "@/lib/projects/pro-characters";
 import { readOwnedUgcV1References } from "@/lib/projects/ugc-v1-server";
 
 export class MediaAccessError extends Error {
@@ -133,7 +134,7 @@ export async function authorizeOwnedUpload(
     const references = await readOwnedUgcV1References(database, user.id, projectId);
     if (!references) throw unavailable();
     const count = (studioRole === "character" ? references.characters : references.products).length;
-    if (count > (asset && !asset.removed_from_draft ? 1 : 0))
+    if (count > (asset && !asset.removed_from_draft ? 1 : 0) && !(studioRole === "character" && await allowsProCharacters(database, user.id, projectId)))
       throw new MediaAccessError("INVALID_INPUT", ugcV1LimitMessages[studioRole]);
   }
   if (!asset) {
@@ -202,7 +203,8 @@ export async function finalizeOwnedUpload(
     if (asset.removed_from_draft) throw notFound();
     const references = await readOwnedUgcV1References(database, user.id, projectId);
     if (!references) throw unavailable();
-    if ((asset.studio_role === "character" ? references.characters : references.products).length > 1)
+    if ((asset.studio_role === "character" ? references.characters : references.products).length > 1 &&
+      !(asset.studio_role === "character" && await allowsProCharacters(database, user.id, projectId)))
       throw new MediaAccessError("INVALID_INPUT", ugcV1LimitMessages[asset.studio_role]);
   }
   if (asset.upload_status === "rejected")

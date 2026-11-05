@@ -6,6 +6,8 @@ import {createRequire} from 'node:module';
 import {PGlite} from '@electric-sql/pglite';
 import sharp from 'sharp';
 import {typescriptLoader} from './lib/load-typescript.mjs';
+import {multipleCharacterScenarios} from './lib/v3-multiple-character-scenarios.mjs';
+import {projectSavingScenarios} from './lib/v3-project-saving-scenarios.mjs';
 const require=createRequire(import.meta.url),builder=require('../lib/video-generation-package/builder.ts');
 const normal=v=>JSON.parse(JSON.stringify(v)),hash=b=>createHash('sha256').update(b).digest('hex');
 let checks=0,networkCalls=0,mode='pass',saveFailure=false,storageFailure=false,deleteFailure=false,deleteAttempts=0;
@@ -16,7 +18,9 @@ let deliverySequence=0;
 const workerLogs=[];
 const fixtureVideoId=randomUUID();
 let storyboardDurations=[5000,5000];
-let previousFunctionsPreserved=0;
+let previousFunctionsPreserved=0, m2FunctionsPreserved=0;
+const functionsSnapshot=async()=>(await pg.query("select oid::regprocedure::text signature,proname name,prosrc,proacl::text grants,proconfig from pg_proc where pronamespace='public'::regnamespace order by oid")).rows;
+const securitySnapshot=async()=>(await pg.query("select c.oid::regclass::text relation,c.relacl::text acl,c.relrowsecurity rls,c.relforcerowsecurity forced,(select jsonb_agg(jsonb_build_object('name',t.tgname,'definition',pg_get_triggerdef(t.oid)) order by t.tgname) from pg_trigger t where t.tgrelid=c.oid and not t.tgisinternal and t.tgname not in ('a_v3_character_receipt_subject','a_v3_cast_source','a_v3_cast_artifact','a_v3_cast_intent')) triggers from pg_class c where c.relnamespace='public'::regnamespace and c.relkind='r' order by c.oid")).rows;
 const equal=(a,b)=>{assert.deepEqual(normal(a),normal(b));checks++;},ok=v=>{assert.ok(v);checks++;};
 const pg=new PGlite(),owner=randomUUID(),oldEnv={...process.env},spool=new Map(),objects=new Map(),calls=[],deleted=[],sources=new Map();
 let actingOwner=owner;
@@ -61,14 +65,28 @@ async function fixtureResponse(kind,body,options){
 }
 class FixtureOpenAI{constructor(config){equal(config.maxRetries,0);}
  responses={create:(body,options)=>{
-  if(body.text.format.name==='director_storyboard_v3')return(async()=>{
+  if(['director_storyboard_v3','director_storyboard_cast_v1'].includes(body.text.format.name))return(async()=>{
    calls.push({kind:'storyboard',body:normal(body)});const storyboard=normal(load('scripts/final-video-v3-fixture.ts').v3Input(storyboardDurations).storyboardContent);storyboard.tone='Professional';
+   if(body.text.format.name==='director_storyboard_cast_v1'){
+    storyboard.cast=(await pg.query('select input from public.ugc_v3_tasks where id=$1',[options.headers['X-Client-Request-Id']])).rows[0].input.cast;
+    for(const [i,scene] of storyboard.scenes.entries()){
+     scene.characterIds=storyboard.cast.map(c=>c.characterId);const speaker=storyboard.cast[i%storyboard.cast.length];
+     scene.speech=[{speaker:'character',characterId:speaker.characterId,text:'Hello there.',startMs:scene.startMs+1000,endMs:scene.startMs+3000,delivery:load('lib/execution-v1/contract.ts').defaultDelivery(),deliveryNote:''}];
+    }
+   }
    assert.match(body.input[0].content[0].text,/Approved Location prompt and sheet binding/);assert.match(body.input[0].content[0].text,/Accessible vehicle studio/);checks+=2;
    return{_request_id:'req_storyboard',status:'completed',output:[{type:'message',content:[{type:'output_text',text:JSON.stringify(storyboard)}]}]};
   })();
   return{asResponse:()=>fixtureResponse('plan',body,options)};
  }};
- images={generate:(body,options)=>({asResponse:()=>fixtureResponse('sheet',body,options)}),edit:()=>{throw new Error('LOCATION_AUTOMATIC_REPAIR_FORBIDDEN');}};}
+ images={generate:(body,options)=>({asResponse:()=>fixtureResponse('sheet',body,options)}),edit:(body,options)=>({asResponse:async()=>{
+  if(mode!=='cast')throw new Error('LOCATION_AUTOMATIC_REPAIR_FORBIDDEN');
+  const task=(await pg.query('select * from public.ugc_v3_tasks where id=$1',[options.headers['X-Client-Request-Id']])).rows[0];
+  ok(task.provider_started);equal(body.n,1);equal(body.size,'1024x1024');ok(body.prompt.includes(task.input.referenceSubject.name));
+  ok(body.prompt.startsWith(load('lib/final-video-generation-v3/reference-sheet-templates.ts').CHARACTER_SHEET_TEMPLATE.replace('{{VISUAL_STYLE}}','Realistic')));
+  calls.push({kind:'character',subject:task.input.referenceSubject,inputHash:hash(Buffer.from(await body.image[0].arrayBuffer())),body:{prompt:body.prompt}});
+  return Response.json({data:[{b64_json:master.toString('base64')}]});
+ }})};}
 const load=typescriptLoader({'@/lib/auth/ensure-app-user':{ensureAppUser:async()=>({id:actingOwner})},'@/lib/auth/require-user':{requireClerkUser:async()=>({userId:'fixture'})},
  '@/lib/db/server':{createDatabaseClient:()=>db},'./runtime-media':media,
  '@/lib/video-generation-package/builder':{...builder,packageDigest:(d,v)=>builder.packageDigest(d,normal(v)),canonicalJson:v=>builder.canonicalJson(normal(v))},
@@ -114,9 +132,22 @@ try{
  await pg.exec('create role anon;create role authenticated;create role service_role bypassrls;');
  const migrations=fs.readdirSync('supabase/migrations').filter(n=>n.endsWith('.sql')).sort();
  for(const file of migrations){
+  if(process.argv.includes('--project-saving-only')&&file.includes('09600'))continue; // Reproduce the installed 095 grants before repair.
+  if(process.argv.includes('--project-saving-only')&&file.includes('09500')){
+   await assert.rejects(()=>pg.exec(fs.readFileSync('supabase/migrations/20261105009600_project_save_resolution_permission.sql','utf8')),/Apply 095 after 094/);checks++;
+   await pg.exec('rollback');
+  }
   let previous;
+  const m2Previous=file.includes('09500')?await functionsSnapshot():null, m2Security=m2Previous?await securitySnapshot():null;
   if(file.includes('08500')||file.includes('08600')||file.includes('09000')||file.includes('09100'))previous=(await pg.query("select oid::regprocedure::text signature,prosrc,proacl::text grants,proconfig from pg_proc where pronamespace='public'::regnamespace order by oid")).rows;
   await pg.exec(fs.readFileSync(`supabase/migrations/${file}`,'utf8'));
+  if(m2Previous){
+   const modified=new Set(['guard_ugc_v1_reference_limit','ugc_v3_artifact_current','ugc_v3_location_input_current','ugc_v3_runtime_action','ugc_v3_package_begin','ugc_v3_runtime_current','ugc_v3_regenerate_reference','ugc_v3_reference_delete_prepare','ugc_v3_preserve_approved_reference','ugc_v3_reference_cleanup_guard','ugc_v3_discard_reference_prepare','ugc_v3_queue_reference_cleanup','ugc_v3_replace_unusable_reference_task','ugc_v3_runtime_read']);
+   const current=await functionsSnapshot();
+   for(const before of m2Previous){const after=current.find(f=>f.signature===before.signature);ok(after);equal(after.grants,before.grants);equal(after.proconfig,before.proconfig);if(!modified.has(before.name)){equal(after,before);m2FunctionsPreserved++;}}
+   equal(await securitySnapshot(),m2Security);
+   await pg.exec(fs.readFileSync(`supabase/migrations/${file}`,'utf8'));equal(await functionsSnapshot(),current);equal(await securitySnapshot(),m2Security);
+  }
   if(previous){const current=(await pg.query("select oid::regprocedure::text signature,prosrc,proacl::text grants,proconfig from pg_proc where pronamespace='public'::regnamespace order by oid")).rows;equal(current.filter(f=>previous.some(p=>p.signature===f.signature)),previous);previousFunctionsPreserved=previous.length;}
  }
  await pg.exec(fs.readFileSync('supabase/migrations/20261031008400_ugc_v3_simple_location_retention.sql','utf8'));
@@ -127,8 +158,14 @@ try{
  await pg.exec(fs.readFileSync('supabase/migrations/20261103008900_ugc_v3_local_pricing_precision.sql','utf8'));
  await pg.exec(fs.readFileSync('supabase/migrations/20261104009000_ugc_v3_unsubmitted_video_delivery.sql','utf8'));
  await pg.exec(fs.readFileSync('supabase/migrations/20261104009100_ugc_v3_background_processing.sql','utf8'));
+ await pg.exec(fs.readFileSync('supabase/migrations/20261105009500_ugc_v3_multiple_characters.sql','utf8'));
  await pg.exec(fs.readFileSync('scripts/verify-v3-setup.sql','utf8'));checks++;
  await pg.query("insert into public.app_users(id,clerk_user_id) values($1,'fixture')",[owner]);
+ if(process.argv.includes('--project-saving-only')) {
+  await projectSavingScenarios({pg,db,owner,call,post,read,tick,media,master,oddImage,objects,calls,deleted,load,equal,ok,hash,V3Store,cp,setMode:value=>{mode=value;}});
+ } else if(process.argv.includes('--multiple-characters-only')) {
+  await multipleCharacterScenarios({pg,db,owner,call,post,read,tick,media,master,oddImage,objects,calls,deleted,load,equal,ok,hash,V3Store,cp,setMode:value=>{mode=value;}});
+ } else {
  const f=await fixture(),before=await cp(f.project),start=calls.length;
  equal((await post(f.project,{action:'reference',kind:'location'})).status,200);const task=await row(f.project);
  equal(task.input.locationDirector,{version:'location-prompt-v2',maxRequests:2,maxImageRequests:1});
@@ -512,5 +549,6 @@ try{
  equal(await call('ugc_v3_discard_reference_finish',[owner,collision.project,operation.id,operation.lease_token,null]),true);
  equal((await pg.query('select status,error_code from public.ugc_v3_tasks where id=$1',[waiting.id])).rows[0],{status:'done',error_code:null});
  equal((await pg.query('select id from public.ugc_v3_artifacts where id=$1',[unapproved.id])).rows.length,0);equal(objects.has(operation.asset.storageKey),false);equal(calls.length,beforeCollisionCalls);
- equal(networkCalls,0);console.info(JSON.stringify({scope:process.argv.includes('--references-only')?'references-and-location':'full',simpleLocationAndRetentionChecks:checks,migrations:migrations.length,previousFunctionsPreserved,fixtureProviderCalls:calls.length,fixtureEstimateCalls:estimateCalls,realNetworkCalls:networkCalls,automaticImageChecks:0}));
+ }
+ equal(networkCalls,0);console.info(JSON.stringify({scope:process.argv.includes('--project-saving-only')?'project-saving':process.argv.includes('--multiple-characters-only')?'multiple-characters':process.argv.includes('--references-only')?'references-and-location':'full',simpleLocationAndRetentionChecks:checks,migrations:migrations.length,previousFunctionsPreserved,m2FunctionsPreserved,fixtureProviderCalls:calls.length,fixtureEstimateCalls:estimateCalls,realNetworkCalls:networkCalls,automaticImageChecks:0}));
 }finally{await pg.close();for(const k of Object.keys(process.env))if(!(k in oldEnv))delete process.env[k];Object.assign(process.env,oldEnv);}

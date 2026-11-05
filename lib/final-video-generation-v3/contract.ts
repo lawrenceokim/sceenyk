@@ -16,7 +16,7 @@ export const referenceSchema = z.strictObject({ id: z.uuid(), projectId: z.uuid(
   role: z.enum(["character", "product", "location", "motion", "sound", "start_frame", "end_frame"]),
   kind: z.enum(["image", "audio", "video"]), name: text, version: positive,
   approvalId: z.uuid(), approvalVersion: positive, sha256: digestSchema, sizeBytes: positive,
-  mimeType: z.string().min(1), durationMs: ms.nullable() });
+  mimeType: z.string().min(1), durationMs: ms.nullable(), characterId: z.uuid().optional() });
 export const directorSceneSchema = packageSceneSchema.omit({ voice: true, bindings: true, generationPrompt: true, durationMs: true }).extend({
   id: z.string().min(1).max(120), number: positive.max(100), startMs: ms, endMs: ms,
   actions: z.array(packageSceneSchema.shape.actions.element.extend({ startMs: ms, endMs: ms })).min(1).max(8),
@@ -25,10 +25,15 @@ export const directorSceneSchema = packageSceneSchema.omit({ voice: true, bindin
   transition: transitionSchema, transitionNote: z.string().max(2000),
   audio: z.strictObject({ background: audioCueSchema, effects: audioCueSchema, music: audioCueSchema }),
 });
-export const directorStoryboardSchema = z.strictObject({ version: z.literal("director-storyboard-v3"), title: text, concept: text,
+export const singleDirectorStoryboardSchema = z.strictObject({ version: z.literal("director-storyboard-v3"), title: text, concept: text,
   durationMs: positive.max(600_000), aspectRatio: text, visualStyle: text, tone: text, voiceIntent: text,
   continuity: z.strictObject({ identity: text, appearance: text, outfit: text, product: text, location: text }),
   scenes: z.array(directorSceneSchema).min(1).max(100) });
+export const characterCastSchema = z.array(z.strictObject({ characterId: z.uuid(), referenceId: z.uuid(), name: z.string().trim().min(1).max(500) })).min(1);
+export const castDirectorStoryboardSchema = singleDirectorStoryboardSchema.extend({ cast: characterCastSchema,
+  scenes: z.array(directorSceneSchema.extend({ characterIds: z.array(z.uuid()),
+    speech: z.array(directorSceneSchema.shape.speech.element.extend({ characterId: z.uuid().nullable() })).max(8) })).min(1).max(100) });
+export const directorStoryboardSchema = z.union([singleDirectorStoryboardSchema, castDirectorStoryboardSchema]);
 export const planningInputSchema = z.strictObject({ workflow: z.literal(V3_WORKFLOW), profileId: text, scope: scopeSchema,
   // This evidence must later come from trusted owner/database reads, never a browser assertion.
   provenance: z.strictObject({ projectWorkflow: z.literal(V3_WORKFLOW), originalImageId: z.uuid(), originalImageHash: digestSchema }),

@@ -1,11 +1,16 @@
 import "server-only";
 import type { PlanningInput, CompiledDirection } from "./contract";
 import { STORYBOARD_DIRECTOR_VERSION, STORYBOARD_PROMPT_COMPILER_VERSION } from "./storyboard-director";
+import { CAST_PROMPT_COMPILER_VERSION, castCompilerInstructions } from "./character-cast";
 
 const seconds = (ms: number) => String(ms / 1000);
 export function compileDirectorInstructions(input: PlanningInput, from: number, to: number): CompiledDirection {
   let recipe: unknown;
   try { recipe = JSON.parse(input.direction)?.promptCompiler; } catch { /* Historical free-text direction. */ }
+  if (recipe === CAST_PROMPT_COMPILER_VERSION) {
+    const compiled = compileRefinedStoryboard(input, from, to);
+    return { ...compiled, prompt: `${castCompilerInstructions(input, from, to)}\n${compiled.prompt}` };
+  }
   if (recipe === STORYBOARD_PROMPT_COMPILER_VERSION) return compileRefinedStoryboard(input, from, to);
   return compileApprovedStoryboardV1(input, from, to);
 }

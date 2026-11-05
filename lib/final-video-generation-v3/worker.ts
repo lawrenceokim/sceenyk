@@ -1,6 +1,7 @@
 import "server-only";
 import OpenAI, { toFile } from "openai";
 import { z } from "zod";
+import { zodTextFormat } from "openai/helpers/zod";
 import { createDatabaseClient } from "@/lib/db/server";
 import { OpenAICreativeDirectorProvider } from "./adapters/openai";
 import { HiggsfieldV3Transport, HiggsfieldTransportError } from "./adapters/higgsfield-transport";
@@ -10,12 +11,13 @@ import { V3Store, type RuntimeWorkspace } from "./runtime-store";
 import { taskSchema, privateAssetSchema, type Task } from "./runtime-contract";
 import { executeV3Segment } from "./execution";
 import { joinV3Segments } from "./join";
-import { directorStoryboardSchema } from "./contract";
+import { directorStoryboardSchema, castDirectorStoryboardSchema } from "./contract";
 import { readFrozenPackage } from "./package";
 import { v3Digest } from "./identity";
 import { packageTask } from "./package-task";
 import { bytesHash, readPrivate, inspectImage, publishPrivate, saveSpool, readSpool, inspectVideo, deletePrivate, purgeVideoSpool } from "./runtime-media";
-import { generationContext, generationContextSchema, referenceSubjectSchema } from "./generation-context";
+import { generationContext, generationContextSchema, referenceSubjectSchema, originalCharacters, latestArtifact, characterSubject } from "./generation-context";
+import { validateCharacterCast } from "./character-cast";
 import { projectBrief, creativeBriefHash, referenceOriginals, approvedArtifacts } from "./creative-inputs";
 import { prepareOpenAIReference } from "./adapters/openai-reference";
 import { assertReferenceSheetPrompt, referenceSourceSchema } from "./reference-sheet-prompt";
@@ -30,7 +32,7 @@ async function approvedBytes(w: RuntimeWorkspace, ids: unknown, signal: AbortSig
   if (!Array.isArray(ids) || !ids.length || ids.some(v => typeof v !== "string")) throw new Error("V3_REFERENCES_REQUIRED");
   return Promise.all(ids.map(async id => {
     const a = w.artifacts.find(a => a.id === id);
-    if (!a?.approved_at || a.rejected_at || w.artifacts.some(n => n.kind === a.kind && n.version > a.version)) throw new Error("V3_REFERENCE_STALE");
+    if (!a?.approved_at || a.rejected_at || latestArtifact(w, a.kind, a.kind === "character" ? characterSubject(a) : undefined)?.id !== a.id) throw new Error("V3_REFERENCE_STALE");
     const asset = privateAssetSchema.parse(a.document.asset);
     return { asset, bytes: await readPrivate(asset.storageKey, asset.etag, asset.sizeBytes, signal, asset.sha256) };
   }));
@@ -43,12 +45,13 @@ async function imageTask(store: V3Store, task: Task, w: RuntimeWorkspace, signal
     const context = generationContextSchema.parse(task.input.generationContext);
     if (v3Digest("generation-context", context) !== v3Digest("generation-context", generationContext(brief))) throw new Error("V3_CREATIVE_INPUT_STALE");
     const originals = await referenceOriginals(w.project.owner_user_id, task.project_id);
-    if (task.kind !== "location" && task.input.originalId !== originals[task.kind as "character" | "product"]) throw new Error("CURRENT_STUDIO_REFERENCE_REQUIRED");
+    if (task.kind !== "location" && (task.kind === "character" ? !originalCharacters(originals).some(c => c.id === task.input.originalId) : task.input.originalId !== originals.product)) throw new Error("CURRENT_STUDIO_REFERENCE_REQUIRED");
     stage = "response_parse";
     let saved = await savedReferenceResult(task.id);
     httpStatus = saved.httpStatus; requestId = saved.requestId;
     const subject = task.input.referenceSubject === undefined ? undefined : referenceSubjectSchema.parse(task.input.referenceSubject);
-    if (subject && (subject.role !== task.kind || subject.originalId !== originals[subject.role] || subject.name !== (originals.names?.[subject.role] ?? ""))) throw new Error("V3_CREATIVE_INPUT_STALE");
+    if (subject && (subject.role !== task.kind || subject.originalId !== task.input.originalId || subject.name !==
+      (subject.role === "character" ? originalCharacters(originals).find(c => c.id === subject.originalId)?.name : originals.names?.product ?? ""))) throw new Error("V3_CREATIVE_INPUT_STALE");
     const hasSavedOutput = !!saved.raw || !!saved.imageBytes;
     if (!hasSavedOutput && (task.provider_started || task.input.recoveryOnly === true)) { stage = "recovery"; throw new Error("V3_REFERENCE_SAVED_RESPONSE_UNUSABLE"); }
     stage = "source";
@@ -117,8 +120,10 @@ async function storyboardTask(store: V3Store, task: Task, w: RuntimeWorkspace, s
     const config = v3OpenAIConfig(), provider = new OpenAICreativeDirectorProvider({ model, maxOutputTokens: 14_000 });
     const location = locationDocument(w.artifacts.find(a => a.kind === "location" && (task.input.references as string[]).includes(a.id)));
     if (location) await store.rpc("ugc_v3_location_input_current", { p_project: task.project_id, d: w.artifacts.find(a => a.id === location.artifactId)!.document.input }).then(current => { if (current !== true) throw new Error("V3_CREATIVE_INPUT_STALE"); });
-    const instruction = storyboardDirectorInput(brief, approved.map(a => a.kind), location);
+    const cast = task.input.cast;
+    const instruction = storyboardDirectorInput(brief, approved.map(a => a.kind), location, cast);
     const request = provider.prepareStoryboard({ instruction, durationMs: Number(brief.duration) * 1000, referenceUrls: [] });
+    if (cast) request.body.text = { format: zodTextFormat(castDirectorStoryboardSchema, "director_storyboard_cast_v1") };
     request.body.input = [{ role: "user", content: [{ type: "input_text", text: instruction },
       ...refs.map(r => ({ type: "input_image" as const, image_url: `data:image/png;base64,${r.bytes.toString("base64")}`, detail: "high" as const }))] }];
     const client = new OpenAI({ apiKey: config.apiKey, maxRetries: 0, timeout: 600_000, logLevel: "off" });
@@ -129,6 +134,12 @@ async function storyboardTask(store: V3Store, task: Task, w: RuntimeWorkspace, s
   const captured = JSON.parse(raw.toString("utf8")) as { response: { output?: { type: string; content?: { type: string; text?: string }[] }[] }; requestId: string | null }, response = captured.response;
   const text = response.output?.flatMap(o => o.type === "message" ? o.content?.filter(c => c.type === "output_text").map(c => c.text ?? "") ?? [] : []).join("");
   const storyboard = directorStoryboardSchema.parse(JSON.parse(text ?? ""));
+  if (task.input.cast) {
+    if (!("cast" in storyboard) || v3Digest("character-cast", storyboard.cast) !== v3Digest("character-cast", task.input.cast)) throw new Error("V3_CHARACTER_BINDINGS_CHANGED");
+    validateCharacterCast(storyboard, approved.filter(a => a.kind === "character").map(a => ({ id: a.id,
+      role: "character", characterId: characterSubject(a), name: (task.input.cast as { characterId: string; name: string }[]).find(c => c.characterId === characterSubject(a))?.name ?? "",
+    })));
+  }
   if (storyboard.durationMs !== Number(brief.duration) * 1000 || storyboard.aspectRatio !== brief.aspect_ratio) throw new Error("V3_DIRECTOR_TIMING_INVALID");
   if (storyboard.visualStyle !== brief.visual_style || storyboard.tone !== brief.tone) throw new Error("V3_DIRECTOR_STYLE_INVALID");
   if (task.input.directorVersion === STORYBOARD_DIRECTOR_VERSION) validateDirectedStoryboard(storyboard, {

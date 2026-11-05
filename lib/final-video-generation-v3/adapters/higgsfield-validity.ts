@@ -8,7 +8,7 @@ export const validityEvidenceSchema = z.strictObject({ model: z.literal(higgsfie
   expiresAt: z.iso.datetime({ offset: true }), sources: z.array(z.url().refine(v => ["docs.higgsfield.ai", "open.higgsfield.ai", "console.higgsfield.ai"].includes(new URL(v).hostname))).min(1),
   maxImageCount: z.number().int().positive(), maxImageBytes: z.number().int().positive(), imageMimeTypes: z.array(z.enum(["image/png", "image/jpeg", "image/webp"])).min(1),
   maxPromptBytes: z.number().int().positive(), maxBodyBytes: z.number().int().positive() });
-export function higgsfieldRequestIssues(body: Record<string, unknown>, references: { sizeBytes: number; mimeType: string }[], evidence: unknown, now: string): string[] {
+export function higgsfieldRequestIssues(body: Record<string, unknown>, references: { sizeBytes: number; mimeType: string; role?: string }[], evidence: unknown, now: string): string[] {
   const parsed = validityEvidenceSchema.safeParse(evidence);
   const bodyShape = z.strictObject({ prompt: z.string().min(1), duration: z.number().int().min(4).max(30), resolution: videoResolutionSchema,
     output_format: z.literal("mp4"), generate_audio: z.literal(true), aspect_ratio: z.enum(["16:9", "4:3", "1:1", "3:4", "9:16", "21:9"]),
@@ -18,7 +18,8 @@ export function higgsfieldRequestIssues(body: Record<string, unknown>, reference
   if (references.length !== (body.image_urls as string[]).length) errors.push("REFERENCE_COUNT_MISMATCH");
   if (references.some(r => !Number.isSafeInteger(r.sizeBytes) || r.sizeBytes <= 0 || !["image/png", "image/jpeg", "image/webp"].includes(r.mimeType))) errors.push("REFERENCE_FORMAT_OR_SIZE_INVALID");
   if ((body.image_urls as string[]).some(value => { const u = new URL(value); return u.protocol !== "https:" || !!u.username || !!u.password; })) errors.push("REFERENCE_DELIVERY_INVALID");
-  if (!parsed.success || Date.parse(parsed.data.verifiedAt) > Date.parse(now) || Date.parse(parsed.data.expiresAt) <= Date.parse(now)) return errors;
+  if (!parsed.success || Date.parse(parsed.data.verifiedAt) > Date.parse(now) || Date.parse(parsed.data.expiresAt) <= Date.parse(now))
+    return references.filter(r => r.role === "character").length > 1 ? [...errors, "V3_PRO_REFERENCE_LIMITS_UNVERIFIED"] : errors;
   const e = parsed.data;
   if (references.length > e.maxImageCount) errors.push("REFERENCE_COUNT_EXCEEDED");
   if (references.some(r => r.sizeBytes > e.maxImageBytes || !e.imageMimeTypes.includes(r.mimeType as "image/png"))) errors.push("REFERENCE_FORMAT_OR_SIZE_INVALID");

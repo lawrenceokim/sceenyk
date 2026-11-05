@@ -15,9 +15,10 @@ globalThis.__referenceReact=hooks;
 const bundled=await build({absWorkingDir:process.cwd(),stdin:{contents:'export {V3WorkflowPreview} from "./components/creation/v3-workflow-preview"; export {FinalVideoGenerate, FinalVideoReview} from "./components/creation/v3-final-video-controls";',resolveDir:process.cwd(),loader:'tsx'},tsconfig:resolve('tsconfig.json'),bundle:true,write:false,platform:'node',format:'cjs',packages:'external',plugins:[{
   name:'reference-ui-fixtures',setup(builder){
     builder.onResolve({filter:/^\.\/components\//},args=>({path:resolve(args.path+'.tsx')}));
-    builder.onResolve({filter:/^(react|next\/image|@\/components\/ui\/(button|dialog)|\.\/studio-workspace-panels)$/},args=>({path:args.path,namespace:'fixture'}));
+    builder.onResolve({filter:/^(react|next\/image|@\/components\/workspace\/studio-mode-provider|@\/components\/ui\/(button|dialog)|\.\/studio-workspace-panels)$/},args=>({path:args.path,namespace:'fixture'}));
     builder.onLoad({filter:/.*/,namespace:'fixture'},args=>{
       if(args.path==='react')return{contents:'const r=globalThis.__referenceReact;export const useState=r.useState,useRef=r.useRef,useEffect=r.useEffect,useCallback=r.useCallback,useMemo=r.useMemo;'};
+      if(args.path==='@/components/workspace/studio-mode-provider')return{contents:'export const useStudioMode=()=>({mode:"basic"});'};
       if(args.path==='./studio-workspace-panels')return{contents:'export const useStudioPanels=()=>globalThis.__studioPanels??null;export function StudioPanelPortal(props){return props.children;}export function StudioWorkflowMedia(){return null;}'};
       if(args.path==='next/image')return{contents:'export default function Image(props){return null;}'};
       const names=args.path.endsWith('/button')?['Button']:['Dialog','DialogContent','DialogDescription','DialogFooter','DialogHeader','DialogTitle'];

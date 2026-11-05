@@ -28,8 +28,24 @@ export function storyboardProgressError(code: string | null | undefined) {
 // A read-only projection of the owned DTO. No workflow flags or transitions are saved here.
 export function workflowProgress(workspace: RuntimeDto, productRequired: boolean) {
   const p = workspace.preflight;
-  const latest = (kind: string) => workspace.artifacts.find(a => a.kind === kind && a.activeSlot && !a.rejected && !a.cleanupPending);
-  const task = (kind: string) => workspace.tasks.filter(t => t.kind === kind && !t.referenceCleanup && t.errorCode !== "V3_REFERENCE_REQUEST_SUPERSEDED").at(-1);
+  const latest = (kind: string) => {
+    if (kind === "character" && workspace.characterIds && workspace.characterIds.length > 1) {
+      const sheets = workspace.characterIds.map(id => workspace.artifacts.find(a => a.kind === kind && a.characterId === id && a.activeSlot && !a.rejected && !a.cleanupPending));
+      if (sheets.some(a => !a)) return undefined;
+      return { ...sheets[0]!, current: sheets.every(a => a!.current), approved: sheets.every(a => a!.approved) };
+    }
+    return workspace.artifacts.find(a => a.kind === kind && a.activeSlot && !a.rejected && !a.cleanupPending);
+  };
+  const task = (kind: string) => {
+    const tasks = workspace.tasks.filter(t => t.kind === kind && !t.referenceCleanup && t.errorCode !== "V3_REFERENCE_REQUEST_SUPERSEDED");
+    if (kind === "character" && workspace.characterIds && workspace.characterIds.length > 1) {
+      const current = tasks.filter((t, i) => workspace.characterIds!.includes(t.characterId ?? "") &&
+        !tasks.slice(i + 1).some(n => n.characterId === t.characterId));
+      return current.find(t => ["queued", "running"].includes(t.status) && (t.current || t.providerStarted)) ??
+        current.find(t => ["failed", "reconciliation_required", "cleanup_pending"].includes(t.status)) ?? current.at(-1);
+    }
+    return tasks.at(-1);
+  };
   const active = (t: ReturnType<typeof task>) => !!t && ["queued", "running"].includes(t.status) && (t.current || t.providerStarted);
   const failed = (t: ReturnType<typeof task>) => !!t && ["failed", "reconciliation_required", "cleanup_pending"].includes(t.status);
   const required = ["character", ...(productRequired ? ["product"] : []), "location"];

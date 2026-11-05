@@ -8,7 +8,7 @@ import type { LocalMedia } from "./creation-options";
 import { LocalMediaPreview } from "./local-media-preview";
 import { PersistentMediaPreview } from "./persistent-media-preview";
 
-export type StudioPanel = "character" | "product" | "location" | "workflow";
+export type StudioPanel = "character" | `character:${string}` | "product" | "location" | "workflow";
 export type StudioPreviewMedia = { id: string; label: string } & (
   | { kind: "image" | "video"; src: string }
   | { kind: "local"; media: LocalMedia }

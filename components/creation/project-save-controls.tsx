@@ -138,7 +138,7 @@ export function ProjectSaveControls({
       />
     </section>
   );
-  const save = (<div className={"studio-save [.studio-toolbar_&&]:ml-[auto] [.studio-toolbar_&&]:shrink-0 container-max-359:[.studio-toolbar_&&_button:has(svg)]:w-[32px] container-max-359:[.studio-toolbar_&&_button:has(svg)]:pt-[0] container-max-359:[.studio-toolbar_&&_button:has(svg)]:pr-[0] container-max-359:[.studio-toolbar_&&_button:has(svg)]:pb-[0] container-max-359:[.studio-toolbar_&&_button:has(svg)]:pl-[0]"}>
+  const save = (<div className={"studio-save relative [.studio-toolbar_&&]:ml-[auto] [.studio-toolbar_&&]:shrink-0 container-max-359:[.studio-toolbar_&&_button:has(svg)]:w-[32px] container-max-359:[.studio-toolbar_&&_button:has(svg)]:pt-[0] container-max-359:[.studio-toolbar_&&_button:has(svg)]:pr-[0] container-max-359:[.studio-toolbar_&&_button:has(svg)]:pb-[0] container-max-359:[.studio-toolbar_&&_button:has(svg)]:pl-[0]"}>
         {signedIn ? (
           <Button
             type="button"
@@ -175,7 +175,8 @@ export function ProjectSaveControls({
           </AccountAction>
         )}
         <span role="status" aria-live="polite" className="sr-only">{signedIn ? label : "Sign in to save."}</span>
-        {description && <span id={`${id}-save-description`} role={error ? "alert" : undefined} className="sr-only">{description}</span>}
+        {description && <span id={`${id}-save-description`} role={error ? "alert" : undefined}
+          className={error ? "absolute right-0 top-full z-50 mt-2 w-64 max-w-[calc(100vw-2rem)] rounded-lg border border-destructive/30 bg-card px-3 py-2 text-xs leading-relaxed text-destructive shadow-md [overflow-wrap:anywhere]" : "sr-only"}>{description}</span>}
 </div>);
   return children({ project, save });
 }

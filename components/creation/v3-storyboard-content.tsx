@@ -9,11 +9,13 @@ function Detail({ label, children }: { label: string; children: React.ReactNode 
 }
 
 export function V3StoryboardContent({ storyboard }: { storyboard: DirectorStoryboard }) {
+  const cast = "cast" in storyboard ? storyboard.cast : [];
   return <div className="min-w-0 space-y-5 break-words">
     <header className="space-y-2">
       <p className="text-xs font-medium text-primary">{seconds(storyboard.durationMs)} · {storyboard.scenes.length} {storyboard.scenes.length === 1 ? "shot" : "shots"} · {storyboard.visualStyle}</p>
       <h3 className="text-base font-semibold text-foreground">{storyboard.title}</h3>
       <p className="text-sm leading-relaxed text-muted-foreground">{storyboard.concept}</p>
+      {cast.length > 0 && <p className="text-xs text-muted-foreground">Characters: {cast.map(c => c.name).join(", ")}</p>}
     </header>
     <details className="group rounded-lg bg-muted/40">
       <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 rounded-lg px-3 py-2 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-details-marker]:hidden">
@@ -44,7 +46,7 @@ export function V3StoryboardContent({ storyboard }: { storyboard: DirectorStoryb
             <Detail label="Product interaction">{shot.productInteraction}. Position: {shot.productPosition}.</Detail>
             <Detail label="Lighting & atmosphere">{shot.lighting.direction}. {shot.lighting.intensity}. {shot.lighting.colors}. {shot.lighting.atmosphere}.</Detail>
             <Detail label="Dialogue">{shot.speech.some(line => line.text.trim()) ? <ul className="space-y-3">{shot.speech.filter(line => line.text.trim()).map((line, i) => <li key={i}>
-              <p className="text-xs font-medium text-foreground">{line.speaker === "narration" ? "Narration" : "Character"} · {seconds(line.startMs)}–{seconds(line.endMs)}</p>
+              <p className="text-xs font-medium text-foreground">{line.speaker === "narration" ? "Narration" : "characterId" in line ? cast.find(c => c.characterId === line.characterId)?.name ?? "Character" : "Character"} · {seconds(line.startMs)}–{seconds(line.endMs)}</p>
               <p className="mt-1 text-foreground">“{line.text}”</p>
               <p className="mt-1">{line.delivery.pace} pace, {line.delivery.energy} energy, {line.delivery.tone} tone, {line.delivery.style} delivery{line.delivery.emphasis === "light" ? ", light emphasis" : ""}. {line.deliveryNote}</p>
             </li>)}</ul> : "No spoken dialogue."}</Detail>

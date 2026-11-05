@@ -39,6 +39,7 @@ export type ProjectFields = {
   tone: CreationSettings["tone"];
 };
 export type ProjectRow = ProjectFields & {
+  studio_mode?: import("@/lib/studio-mode/contract").StudioMode;
   id: string;
   owner_user_id: string;
   status: "draft" | "deleted";

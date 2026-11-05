@@ -5,6 +5,7 @@ import { unstable_rethrow } from "next/navigation";
 import { AppUserSyncError } from "@/lib/auth/ensure-app-user";
 import { deleteOwnedProject, getOwnedProject, renameOwnedProject, saveOwnedProject } from "@/lib/projects/server";
 import type { DeleteProjectResult, RenameProjectResult, SaveProjectResult } from "@/lib/projects/types";
+import { projectSaveFailure } from "@/lib/projects/save-errors";
 
 export async function projectAvailabilityAction(id: string): Promise<{ ok: true; available: boolean } | { ok: false }> {
   try {
@@ -26,14 +27,12 @@ export async function saveProjectAction(
     if (!(error instanceof AppUserSyncError)) {
       console.error("Project save failed.", {
         operation: "save",
-        code: "UNAVAILABLE",
+        code: error && typeof error === "object" && "code" in error && typeof error.code === "string" && /^[A-Z0-9_]{1,40}$/.test(error.code) ? error.code : "UNAVAILABLE",
       });
     }
-    return {
-      ok: false,
-      code: "UNAVAILABLE",
-      message: "Your draft couldn’t be saved. Please try again.",
-    };
+    return error instanceof AppUserSyncError
+      ? { ok: false, code: "UNAVAILABLE", message: "Your signed-in account couldn’t be verified. Reconnect your session and save again; your edits are preserved." }
+      : projectSaveFailure(error);
   }
   if (result.ok) {
     revalidatePath("/projects");

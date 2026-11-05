@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useMemo, useState, useSyncExternalStore, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useId, useMemo, useState, useSyncExternalStore, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
 import { useAuthAvailable } from "@/components/auth/auth-availability";
@@ -10,11 +10,16 @@ import { defaultStudioMode, needsBasicConfirmation, type StudioMode } from "@/li
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
-type ModeContext = { mode: StudioMode; ready: boolean; pending: boolean; error: string; select: (mode: StudioMode) => void; retry: () => void };
-const StudioModeContext = createContext<ModeContext>({ mode: defaultStudioMode, ready: false, pending: false, error: "", select: () => {}, retry: () => {} });
+type ModeContext = { mode: StudioMode; ready: boolean; pending: boolean; error: string; select: (mode: StudioMode) => void; retry: () => void;
+  reportFeatures: (id: string, projectId: string | null, features: string[]) => () => void };
+const StudioModeContext = createContext<ModeContext>({ mode: defaultStudioMode, ready: false, pending: false, error: "", select: () => {}, retry: () => {}, reportFeatures: () => () => {} });
 const guestKey = "sceenyk-guest-studio-mode";
 const noIncompatibleFeatures: readonly string[] = [];
 export const useStudioMode = () => useContext(StudioModeContext);
+export function useStudioModeIncompatibilities(projectId: string | null, features: readonly string[]) {
+  const { reportFeatures } = useStudioMode(), id = useId(), serialized = JSON.stringify(features);
+  useEffect(() => reportFeatures(id, projectId, JSON.parse(serialized)), [reportFeatures, id, projectId, serialized]);
+}
 
 export function StudioModeProvider({ children, incompatibleFeatures = noIncompatibleFeatures }: { children: ReactNode; incompatibleFeatures?: readonly string[] }) {
   const available = useAuthAvailable();
@@ -41,6 +46,15 @@ function ModeSession({ children, userId, incompatibleFeatures }: { children: Rea
   const current = snapshot.key === key;
   const mode = current ? snapshot.mode : defaultStudioMode;
   const [confirmation, setConfirmation] = useState<ModeSnapshot | null>(null);
+  const [reports, setReports] = useState<Record<string, { projectId: string | null; features: string[] }>>({});
+  const reportFeatures = useCallback((id: string, projectId: string | null, features: string[]) => {
+    setReports(current => ({ ...current, [id]: { projectId, features } }));
+    return () => setReports(current => {
+      if (current[id]?.features !== features) return current;
+      const next = { ...current }; delete next[id]; return next;
+    });
+  }, []);
+  const limitations = [...incompatibleFeatures, ...Object.values(reports).filter(r => r.projectId === projectId).flatMap(r => r.features)];
 
   useEffect(() => {
     void store.open(scope);
@@ -51,10 +65,11 @@ function ModeSession({ children, userId, incompatibleFeatures }: { children: Rea
   return <StudioModeContext value={{
     mode, ready: current && snapshot.ready, pending: current && snapshot.pending,
     error: current ? snapshot.error : "",
+    reportFeatures,
     retry: () => { void store.open(scope); },
     select: next => {
       if (!current || !snapshot.ready || snapshot.pending) return;
-      if (needsBasicConfirmation(mode, next, incompatibleFeatures)) setConfirmation(snapshot);
+      if (needsBasicConfirmation(mode, next, limitations)) setConfirmation(snapshot);
       else void store.select(next);
     },
   }}>
@@ -63,7 +78,7 @@ function ModeSession({ children, userId, incompatibleFeatures }: { children: Rea
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Switch to Basic Studio?</DialogTitle>
-          <DialogDescription>These Pro features will be hidden: {incompatibleFeatures.join(", ")}. All saved Pro data will be preserved. Switch back to Pro to use it again.</DialogDescription>
+          <DialogDescription>Basic Studio cannot generate with: {limitations.join(", ")}. All characters, uploads and saved sheets will be preserved. Switch back to Pro to continue.</DialogDescription>
         </DialogHeader>
         <DialogFooter>
           <Button variant="outline" onClick={() => setConfirmation(null)}>Cancel</Button>

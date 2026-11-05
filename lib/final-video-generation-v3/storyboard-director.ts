@@ -1,6 +1,6 @@
 import "server-only";
 import { projectVideoResolution } from "@/lib/projects/video-resolution";
-import { directorStoryboardSchema, type DirectorStoryboard } from "./contract";
+import { directorStoryboardSchema, characterCastSchema, type DirectorStoryboard } from "./contract";
 import { generationContext } from "./generation-context";
 import type { projectBrief } from "./creative-inputs";
 import { saveProjectSchema } from "@/lib/projects/validation";
@@ -44,12 +44,13 @@ const styleApproaches = {
 } as const;
 
 type Brief = Awaited<ReturnType<typeof projectBrief>>;
-export function storyboardDirectorInput(brief: Brief, roles: readonly string[], approvedLocation: unknown) {
+export function storyboardDirectorInput(brief: Brief, roles: readonly string[], approvedLocation: unknown, cast?: unknown) {
   saveProjectSchema.shape.settings.parse({ duration: brief.duration, aspectRatio: brief.aspect_ratio, visualStyle: brief.visual_style, tone: brief.tone });
-  if (!roles.includes("character") || !roles.includes("location") || new Set(roles).size !== roles.length || roles.some(role => !["character", "product", "location"].includes(role)))
+  if (!roles.includes("character") || !roles.includes("location") || (!cast && new Set(roles).size !== roles.length) || roles.some(role => !["character", "product", "location"].includes(role)))
     throw new Error("V3_REFERENCES_REQUIRED");
   const context = generationContext(brief);
   return [
+    ...(cast ? [`Exact approved cast, in image order: ${JSON.stringify(characterCastSchema.parse(cast))}. Return this exact cast. Every shot must include characterIds naming only characters visible in it; each dialogue line needs its characterId and narration needs null. Preserve separate faces, clothing, recognizable features and voices. Use the saved names in descriptions and stable IDs for bindings, even when names repeat. Never interchange speakers or references.`] : []),
     `Saved creative inputs: ${JSON.stringify({ title: brief.title, ...context, durationMs: Number(brief.duration) * 1000, aspectRatio: brief.aspect_ratio, resolution: projectVideoResolution(brief.video_resolution) })}`,
     "The following directing suggestions are subordinate to every explicit saved user preference; apply only the parts compatible with the brief.",
     `Creation Type (${context.creationType}): ${context.creationType === "ugc" ? "Use a credible subject-led or demonstration-led approach where requested; do not force on-camera speech or a sales persona." : "Let the requested visual scene and creative concept determine the performance and structure rather than defaulting to a presenter advertisement."}`,

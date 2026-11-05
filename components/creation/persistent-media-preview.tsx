@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { RefreshCw } from "lucide-react";
 import { MediaPreviewSkeleton } from "@/components/ui/skeleton";
 
-export function PersistentMediaPreview({ asset, thumbnail = false, onSelect }: { asset: ProjectAsset; thumbnail?: boolean; onSelect?: () => void }) {
+export function PersistentMediaPreview({ asset, thumbnail = false, passiveThumbnail = false, onSelect }: { asset: ProjectAsset; thumbnail?: boolean; passiveThumbnail?: boolean; onSelect?: () => void }) {
   const [source, setSource] = useState<{ url?: string; error?: string }>({});
   const [refresh, setRefresh] = useState(0);
   useEffect(() => {
@@ -34,6 +34,7 @@ export function PersistentMediaPreview({ asset, thumbnail = false, onSelect }: {
         "Your browser couldn’t play this file, or its private preview link expired.",
     });
   if (thumbnail) {
+    if (source.error && passiveThumbnail) return <span className="flex size-full items-center justify-center text-muted-foreground" title={source.error}><RefreshCw className="size-4" aria-hidden="true" /></span>;
     if (source.error) return <button type="button" className="flex size-full cursor-pointer items-center justify-center rounded-md text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
       aria-label={`Refresh preview for ${asset.filename}`} title={source.error}
       onClick={() => { setSource({}); setRefresh(value => value + 1); }}>

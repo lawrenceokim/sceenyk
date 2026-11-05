@@ -1,5 +1,6 @@
 "use client";
 import { V3WorkflowPreview } from "./v3-workflow-preview";
+import { useStudioMode, useStudioModeIncompatibilities } from "@/components/workspace/studio-mode-provider";
 import type { RuntimeDto } from "@/lib/final-video-generation-v3/runtime-server";
 import { StudioSkeleton } from "./studio-skeleton";
 import { StudioProjectGuard } from "./studio-project-guard";
@@ -180,6 +181,8 @@ function WorkspaceEditor({
   const [projectId, setProjectId] = useState(initialProject?.id ?? null);
   const [workflow, setWorkflow] = useState(initialProject?.workflow);
   const v3 = workflow === "final-video-v3";
+  const { mode: studioMode } = useStudioMode();
+  const proCharacters = studioMode === "pro" && (v3 || !projectId);
   const ugcProgress = useUgcProgress(projectId, signedIn && authReady && !v3);
   const showUgcProgress = creationType === "ugc" && (ugcProgress.loading || ugcProgress.error && !ugcProgress.job ||
     !!ugcProgress.job);
@@ -288,7 +291,7 @@ function WorkspaceEditor({
       if (!media.studioRole || media.studioRole === "freestyle") return null;
       const retained = collectStudioSources(selectedFiles, assets);
       const references = media.studioRole === "character" ? retained.characters : retained.products;
-      return studioReferenceImages(references).length > 1 ? ugcV1LimitMessages[media.studioRole] : null;
+      return studioReferenceImages(references).length > 1 && !(media.studioRole === "character" && proCharacters) ? ugcV1LimitMessages[media.studioRole] : null;
     },
     ensureProject: () =>
       persistedId.current ? Promise.resolve(persistedId.current) : saveDraft(),
@@ -310,9 +313,9 @@ function WorkspaceEditor({
     if (!signedIn || mediaUpload.busy) return;
     const retained = collectStudioSources(selectedFiles, mediaUpload.assets);
     const next = selectedFiles.find(file => file.studioRole && file.studioRole !== "freestyle" && !mediaUpload.uploadStates[file.id]
-      && studioReferenceImages(file.studioRole === "character" ? retained.characters : retained.products).length <= 1);
+      && (file.studioRole === "character" && proCharacters || studioReferenceImages(file.studioRole === "character" ? retained.characters : retained.products).length <= 1));
     if (next) void mediaUpload.upload(next);
-  }, [signedIn, selectedFiles, mediaUpload]);
+  }, [signedIn, selectedFiles, mediaUpload, proCharacters]);
   const pendingReferenceNames = mediaUpload.assets.flatMap(asset => {
     const edit = referenceNameEdits[asset.id];
     return !asset.removedFromDraft && asset.status === "uploaded" && (asset.studioRole === "character" || asset.studioRole === "product") && edit && edit.value !== edit.savedValue
@@ -351,7 +354,7 @@ function WorkspaceEditor({
       if (studioRole !== "freestyle") {
         const retained = collectStudioSources(current.files, mediaUpload.assets);
         const references = studioRole === "character" ? retained.characters : retained.products;
-        const limitError = ugcV1SelectionError(studioRole, studioReferenceImages(references).length, files.length);
+        const limitError = studioRole === "character" && proCharacters ? null : ugcV1SelectionError(studioRole, studioReferenceImages(references).length, files.length);
         if (limitError) {
           return { ...current, error: limitError };
         }
@@ -399,6 +402,8 @@ function WorkspaceEditor({
     }
   }
 
+  const characterCount = studioReferenceImages(collectStudioSources(selectedFiles, mediaUpload.assets).characters).length;
+  useStudioModeIncompatibilities(projectId, characterCount > 1 ? ["Multiple characters"] : []);
   return (
     <BeforeAccountAuth.Provider value={() => {
       if (!signedIn && !initialProject) rememberGuestDraft(brief, selectedFiles);
@@ -502,6 +507,7 @@ function WorkspaceEditor({
                     <CategorySelector selected={creationType} onChange={setCreationType} />
                     {studioInputs.creationType === "ugc" ? <>
                       <StudioReferenceSources label="Characters" addLabel="Add Character" role="character" references={studioInputs.characters}
+                        multiple={proCharacters} perCharacterSheets={v3 && (proCharacters || characterCount > 1)}
                         onAdd={files => addFiles(files, "character")} onRemoveLocal={removeFile} onRemoveAsset={removeReference} onNameChange={changeReferenceName}
                         onUpload={mediaUpload.upload} onRecover={mediaUpload.recover} uploadStates={mediaUpload.uploadStates}
                         busy={mediaUpload.busy || saveState.status === "saving"} signedIn={signedIn} authReady={authReady} />

@@ -20,7 +20,8 @@ import { outputHostname } from "./adapters/higgsfield-transport";
 import { refreshQueuedVideoDelivery } from "./refresh-video-delivery";
 import { privateAssetSchema, privateBindingSchema, qualitySchema, type Run, type PrivateAsset } from "./runtime-contract";
 import { enrolledV3 } from "./enrollment";
-import { generationContext, artifactCurrent, latestArtifact, referenceSubjectSchema, referenceDeletedVersion } from "./generation-context";
+import { generationContext, artifactCurrent, latestArtifact, referenceSubjectSchema, referenceDeletedVersion, characterSubject, originalCharacters, requiredReferenceArtifacts, characterCast, usesCharacterSlots } from "./generation-context";
+import { CAST_PROMPT_COMPILER_VERSION } from "./character-cast";
 export { latestArtifact } from "./generation-context";
 import { creativeTaskCurrent, taskBlocksGeneration } from "./reference-tasks";
 import { referenceSheetPromptSnapshot, referenceSourceSchema } from "./reference-sheet-prompt";
@@ -48,8 +49,11 @@ export async function runtimeDto(w: RuntimeWorkspace) {
   };
   const preflightPricing = preflight ? displayPricing(preflight.packageId) : null;
   const previewUrl = async (asset: PrivateAsset) => { try { return (await signPrivate(asset)).url; } catch { return null; } };
-  const visible=w.artifacts.filter(a=>!["character","product","location"].includes(a.kind)||a.approved_at||!a.rejected_at&&latestArtifact(w,a.kind)?.id===a.id);
-  const artifacts = await Promise.all(visible.map(async a => ({ id: a.id, kind: a.kind, version: a.version, activeSlot: latestArtifact(w, a.kind)?.id === a.id,
+  const scopedCharacters = usesCharacterSlots(w) || !!originals.characters;
+  const active = (a: RuntimeWorkspace["artifacts"][number]) => (!scopedCharacters || a.kind !== "character" || originalCharacters(originals).some(c => c.id === characterSubject(a))) && latestArtifact(w, a.kind, scopedCharacters && a.kind === "character" ? characterSubject(a) : undefined)?.id === a.id;
+  const visible=w.artifacts.filter(a=>!["character","product","location"].includes(a.kind)||a.approved_at||!a.rejected_at&&active(a));
+  const artifacts = await Promise.all(visible.map(async a => ({ id: a.id, kind: a.kind, version: a.version, activeSlot: active(a),
+    ...(a.kind === "character" ? { characterId: characterSubject(a) } : {}),
     ...(w.referenceDeletions.some(d=>d.id===a.id&&d.state==="prepared")?{cleanupPending:true,cleanupMode:w.referenceDeletions.find(d=>d.id===a.id)?.mode}:{}),
     current: artifactCurrent(a, w.artifacts, generationContext(brief), originals, creativeBriefHash(brief), w.referenceDeletions) &&
       (a.kind !== "location" || !isLocationDirectorTask({ kind: "location", input: (a.document.input ?? {}) as Record<string,unknown> }) ||
@@ -115,18 +119,19 @@ export async function runtimeDto(w: RuntimeWorkspace) {
     }
     const cleanupCompleted = !!t.input.referenceCleanup && w.referenceDeletions.some(d => d.id === (t.input.referenceCleanup as { id: string }).id && d.state === "completed");
     const current = creativeTaskCurrent(t, context, briefHash, originals) && (!isLocationDirectorTask(t) || v3Digest("location-names",t.input.names)===v3Digest("location-names",originals.names) &&
-      JSON.stringify(t.input.references) === JSON.stringify([latestArtifact(w,"character"),...(originals.product?[latestArtifact(w,"product")]:[])].filter(a=>a?.approved_at&&!a.rejected_at&&artifactCurrent(a,w.artifacts,context,originals,briefHash,w.referenceDeletions)).map(a=>a!.id)));
+      JSON.stringify(t.input.references) === JSON.stringify(requiredReferenceArtifacts(w,originals).filter(a=>a?.approved_at&&!a.rejected_at&&artifactCurrent(a,w.artifacts,context,originals,briefHash,w.referenceDeletions)).map(a=>a!.id)));
     const location = isLocationDirectorTask(t) ? await locationTaskStatus(t, current) : null;
     const diagnostics = !location && ["character", "product", "location"].includes(t.kind) && ["failed", "reconciliation_required"].includes(t.status) && !t.input.referenceCleanupHold
-      && t.error_code !== "V3_REFERENCE_REQUEST_SUPERSEDED" && !w.tasks.slice(index + 1).some(n => n.kind === t.kind)
+      && t.error_code !== "V3_REFERENCE_REQUEST_SUPERSEDED" && !w.tasks.slice(index + 1).some(n => n.kind === t.kind && (t.kind !== "character" || n.input.originalId === t.input.originalId))
       ? await referenceDiagnostics(t, current, w.referenceDiagnostics.find(d => d.taskId === t.id)) : null;
     return { id: t.id, kind: t.kind, status: cleanupCompleted ? "done" : t.input.referenceCleanupHold ? "cleanup_pending" : t.status, errorCode: cleanupCompleted ? null : t.error_code, providerStarted: t.provider_started,
-      packageBuild,
+      packageBuild, ...(t.kind === "character" ? { characterId: typeof t.input.originalId === "string" ? t.input.originalId : undefined } : {}),
       ...(t.input.referenceCleanup?{referenceCleanup:true}:{}),
       current, createdAt: t.created_at, leaseUntil: t.lease_until, diagnostics, location, recoveryAvailable: location?.recoveryAvailable ?? diagnostics?.recoveryAvailable ?? false,
       canStartNew: location?.canGenerate ?? diagnostics?.canStartNew ?? false };
   }));
   return { projectId: w.project.project_id, packageStale: w.packages.length > 0 && !preflight, artifacts, runs: [...runs, ...joined],
+    ...(originals.characters ? { characterIds: originals.characters.map(c => c.id) } : {}),
     ...(projectVideoResolution(brief.video_resolution) !== "480p" ? { selectedResolution: projectVideoResolution(brief.video_resolution),
       resolutionPricingAvailable: !!getEstimatedRate("higgsfield", "bytedance/seedance-2.5/reference-to-video", "reference-to-video", projectVideoResolution(brief.video_resolution)) } : {}),
     preflight: preflight ? { ...preflight, displayEstimatedCostMicrousd: preflightPricing?.totalMicrousd ?? preflight.estimatedCostMicrousd,
@@ -156,6 +161,8 @@ export async function ownedV3Action(raw: unknown) {
   const w = await store.read(user.id, a.projectId), brief = await projectBrief(user.id, a.projectId), originals = await referenceOriginals(user.id, a.projectId);
   const context = generationContext(brief);
   if (context.creationType !== "ugc") throw new Error("SELECT_UGC_CREATION_TYPE");
+  if (originals.characters && ["reference", "storyboard", "build_package", "authorize", "generate"].includes(a.action) && w.project.studio_mode !== "pro")
+    throw new Error("V3_PRO_CHARACTERS_RETAINED");
   if (a.action === "reference" && a.kind === "location") {
     const pending=w.tasks.filter(t=>t.kind==="location").at(-1);
     if(pending&&["queued","running"].includes(pending.status))return runtimeDto(w);
@@ -185,14 +192,18 @@ export async function ownedV3Action(raw: unknown) {
     kind, input, requestKey: `${kind}:${key}` });
   if (a.action === "reference") {
     const kind = z.enum(["character", "product", "location"]).parse(a.kind);
-    const previous = latestArtifact(w, kind);
+    const assetId = kind === "location" ? null : z.uuid().parse(a.assetId);
+    const character = kind === "character" ? originalCharacters(originals).find(c => c.id === assetId) : undefined;
+    const scopedCharacter = kind === "character" && (usesCharacterSlots(w) || !!originals.characters);
+    if (kind === "character" && !character) throw new Error("CURRENT_STUDIO_REFERENCE_REQUIRED");
+    if (scopedCharacter && !character!.name.trim()) throw new Error("V3_CHARACTER_NAME_REQUIRED");
+    const previous = latestArtifact(w, kind, scopedCharacter ? assetId! : undefined);
     if (kind === "location" && previous && !previous.rejected_at && !previous.approved_at && artifactCurrent(previous, w.artifacts, context, originals, creativeBriefHash(brief), w.referenceDeletions)) throw new Error("REVIEW_EXISTING_REFERENCE_FIRST");
     const refs = kind === "location" ? [latestArtifact(w, "character"), ...(originals.product ? [latestArtifact(w, "product")] : [])] : [];
     if (refs.some(ref => !ref?.approved_at || !artifactCurrent(ref, w.artifacts, context, originals, creativeBriefHash(brief), w.referenceDeletions))) throw new Error("APPROVE_CURRENT_REFERENCES_FIRST");
-    const assetId = kind === "location" ? null : z.uuid().parse(a.assetId);
-    if (kind !== "location" && assetId !== originals[kind]) throw new Error("CURRENT_STUDIO_REFERENCE_REQUIRED");
+    if (kind !== "location" && (kind === "character" ? !character : assetId !== originals.product)) throw new Error("CURRENT_STUDIO_REFERENCE_REQUIRED");
     const openai = v3ReferenceConfig();
-    const prior = w.tasks.filter(t => t.kind === kind).at(-1);
+    const prior = w.tasks.filter(t => t.kind === kind && (!scopedCharacter || t.input.originalId === assetId)).at(-1);
     const replacingUnusable = !!prior?.provider_started && ["failed", "reconciliation_required"].includes(prior.status) && kind !== "location";
     if (replacingUnusable) {
       const diagnostics = await referenceDiagnostics(prior!, creativeTaskCurrent(prior!, context, creativeBriefHash(brief), originals));
@@ -205,18 +216,19 @@ export async function ownedV3Action(raw: unknown) {
       // SQL locks/rechecks stale, unstarted work. Never cancels a paid/unknown outcome.
       await store.rpc("ugc_v3_retire_reference_task", { p_owner: user.id, p_project: a.projectId, p_task: prior.id });
     }
-    const subject = kind === "location" ? undefined : referenceSubjectSchema.parse({ role: kind, originalId: assetId, name: originals.names?.[kind] ?? "" });
+    const subject = kind === "location" ? undefined : referenceSubjectSchema.parse({ role: kind, originalId: assetId, name: character?.name ?? originals.names?.[kind] ?? "" });
     let sheetInput = {};
     if (kind !== "location" && subject) {
       const source = await createDatabaseClient().from("project_assets").select("id,verified_etag,size_bytes,mime_type")
         .eq("id", subject.originalId).eq("project_id", a.projectId).eq("owner_user_id", user.id)
         .eq("upload_status", "uploaded").eq("removed_from_draft", false).maybeSingle();
       if (source.error || !source.data) throw new Error("FRESH_PRIVATE_ORIGINAL_REQUIRED");
-      sheetInput = { referenceEpoch: referenceDeletedVersion(w.referenceDeletions, kind), referencePrompt: referenceSheetPromptSnapshot(kind, context, subject),
+      sheetInput = { referenceEpoch: referenceDeletedVersion(w.referenceDeletions, kind, kind === "character" ? assetId! : undefined), referencePrompt: referenceSheetPromptSnapshot(kind, context, subject),
         referenceSource: referenceSourceSchema.parse({ id: source.data.id, etag: source.data.verified_etag,
           sizeBytes: source.data.size_bytes, mimeType: source.data.mime_type }) };
     }
     const input = { provider: "openai", profile: HIGGSFIELD_V3_PROFILE,
+      ...(scopedCharacter ? { characterSlot: assetId } : {}),
       ...sheetInput,
       ...(subject ? { referenceSubject: subject } : {}),
       ...(prior && (!prior.provider_started || replacingUnusable) ? { previousTask: prior.id } : {}), brief, briefHash: creativeBriefHash(brief), generationContext: context, model: openai.imageModel, originalId: assetId,
@@ -250,7 +262,8 @@ export async function ownedV3Action(raw: unknown) {
     const changed = previous && (!oldInput.success || v3Digest("reference-ids", oldInput.data.references) !==
       v3Digest("reference-ids", refs.map(r => r.id)) || oldInput.data.briefHash !== creativeBriefHash(brief));
     if (previous && !previous.rejected_at && !changed) throw new Error("REVIEW_EXISTING_STORYBOARD_FIRST");
-    await enqueue("storyboard", { directorVersion: STORYBOARD_DIRECTOR_VERSION, brief, briefHash: creativeBriefHash(brief), generationContext: context, model: v3OpenAIConfig().directorModel, references: refs.map(r => r.id), previous: previous?.id ?? null });
+    await enqueue("storyboard", { directorVersion: STORYBOARD_DIRECTOR_VERSION, brief, briefHash: creativeBriefHash(brief), generationContext: context, model: v3OpenAIConfig().directorModel,
+      ...(originals.characters ? { cast: characterCast(w, originals) } : {}), references: refs.map(r => r.id), previous: previous?.id ?? null });
   } else if (a.action === "build_package") {
     const refs = approvedArtifacts(w, brief, originals), storyboard = latestArtifact(w, "storyboard");
     const locationArtifact = refs.find(r => r.kind === "location"), location = locationDocument(locationArtifact);
@@ -259,6 +272,8 @@ export async function ownedV3Action(raw: unknown) {
     const storyboardInput = z.object({ references: z.array(z.uuid()), briefHash: z.string() }).parse(storyboard.document.input);
     if (v3Digest("reference-ids", storyboardInput.references) !== v3Digest("reference-ids", refs.map(r => r.id)) || storyboardInput.briefHash !== creativeBriefHash(brief))
       throw new Error("STORYBOARD_STALE_REGENERATE");
+    if (originals.characters && refs.length > 100) throw new Error("V3_PRO_REFERENCE_COUNT_EXCEEDED");
+    if (originals.characters && v3Digest("character-cast", (storyboard.document.storyboard as { cast?: unknown }).cast ?? null) !== v3Digest("character-cast", characterCast(w, originals))) throw new Error("V3_CHARACTER_BINDINGS_CHANGED");
     const character = refs.find(r => r.kind === "character")!, original = z.object({ id: z.uuid(), sha256: z.string() }).parse(character.document.original);
     const input: PlanningInput = planningInputSchema.parse({ workflow: "final-video-v3", profileId: HIGGSFIELD_V3_PROFILE,
       scope: { ownerId: user.id, projectId: a.projectId, jobId: w.project.logical_job_id },
@@ -266,10 +281,11 @@ export async function ownedV3Action(raw: unknown) {
       package: { id: randomUUID(), version: w.packages.length + 1, hash: "0".repeat(64), approvedAt: now },
       storyboard: { id: storyboard.id, version: storyboard.version, hash: storyboardContentHash(directorStoryboardSchema.parse(storyboard.document.storyboard)), approvedAt: storyboard.approved_at },
       direction: JSON.stringify({ ...context, duration: brief.duration, aspectRatio: brief.aspect_ratio, narration: "Follows the saved scene instructions",
-        ...(storyboard.document.input && (storyboard.document.input as { directorVersion?: string }).directorVersion === STORYBOARD_DIRECTOR_VERSION ? { promptCompiler: STORYBOARD_PROMPT_COMPILER_VERSION } : {}),
+        ...(storyboard.document.input && (storyboard.document.input as { directorVersion?: string }).directorVersion === STORYBOARD_DIRECTOR_VERSION ? { promptCompiler: originals.characters ? CAST_PROMPT_COMPILER_VERSION : STORYBOARD_PROMPT_COMPILER_VERSION } : {}),
         ...(location ? { approvedLocation: location } : {}) }), storyboardContent: storyboard.document.storyboard, mode: "reference", resolution: projectVideoResolution(brief.video_resolution), format: "mp4", generateAudio: true,
       references: refs.map(r => { const asset = privateAssetSchema.parse(r.document.asset); return { id: r.id, projectId: a.projectId, originWorkflow: "final-video-v3", role: r.kind,
-        kind: "image", name: r.kind, version: r.version, approvalId: r.id, approvalVersion: r.version, sha256: asset.sha256,
+        kind: "image", name: originals.characters && r.kind === "character" ? originalCharacters(originals).find(c => c.id === characterSubject(r))!.name : r.kind,
+        ...(originals.characters && r.kind === "character" ? { characterId: characterSubject(r) } : {}), version: r.version, approvalId: r.id, approvalVersion: r.version, sha256: asset.sha256,
         sizeBytes: asset.sizeBytes, mimeType: asset.mimeType, durationMs: null }; }), requiredCapabilities: [] });
     input.package.hash = packageContentHash(input);
     const bindings: Record<string, unknown> = {};

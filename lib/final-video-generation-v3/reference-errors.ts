@@ -1,4 +1,13 @@
 const messages: Record<string, string> = {
+  V3_CHARACTER_NAME_REQUIRED: "Enter and save a name for this character before generating its sheet.",
+  V3_PRO_CHARACTERS_RETAINED: "Basic Studio supports one character. All your Pro characters and saved sheets are preserved. Switch to Pro to continue this project.",
+  V3_PRO_REFERENCE_LIMITS_UNVERIFIED: "This multi-character video needs verified reference limits for the selected Higgsfield model. All characters are preserved; no video request was sent.",
+  V3_PRO_REFERENCE_COUNT_EXCEEDED: "This cast exceeds the existing Generation Package reference capacity. No characters were omitted or generated again.",
+  REFERENCE_COUNT_EXCEEDED: "The approved sheets exceed the selected model's verified reference limit. No character was omitted and no video request was sent.",
+  V3_CHARACTER_BINDINGS_REQUIRED: "The Storyboard needs explicit character bindings. Review and regenerate its direction when ready; your approved sheets are preserved.",
+  V3_CHARACTER_BINDINGS_CHANGED: "The saved cast or approved Character Sheets changed. Review the affected Location, Storyboard and package before continuing.",
+  V3_CHARACTER_BINDINGS_INVALID: "A shot contains an unknown or duplicated character identity. No video request was sent.",
+  V3_CHARACTER_SPEAKER_INVALID: "A dialogue line is not bound to the character visible in its shot. Correct the Storyboard before continuing.",
   V3_RESOLUTION_PRICING_NOT_CONFIGURED: "Pricing is not configured for this video resolution. Choose 480p or ask the administrator to configure a verified rate before paid generation.",
   V3_DIRECT_APPROVAL_SETUP_REQUIRED: "Video approval needs database migration 092 after 091. Ask the administrator to complete setup; your saved video is preserved.",
   CURRENT_REVIEW_REQUIRED: "This video's package is no longer current. Review the current Generation Package before approving.",

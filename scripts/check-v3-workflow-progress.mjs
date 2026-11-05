@@ -15,9 +15,10 @@ globalThis.__progressReact = { ...React,
 const bundle = await build({ absWorkingDir: process.cwd(), stdin: { contents: 'export { workflowProgress } from "./components/creation/v3-progress-state"; export { V3WorkflowProgress } from "./components/creation/v3-workflow-progress"; export { V3WorkflowPreview } from "./components/creation/v3-workflow-preview";', resolveDir: process.cwd(), loader: "tsx" },
   tsconfig: resolve("tsconfig.json"), bundle: true, write: false, platform: "node", format: "cjs", packages: "external", plugins: [{ name: "offline-ui", setup(builder) {
     builder.onResolve({ filter: /^\.\/components\// }, args => ({ path: resolve(args.path + (args.path.endsWith("-state") ? ".ts" : ".tsx")) }));
-    builder.onResolve({ filter: /^(react|next\/image|@\/components\/ui\/(button|dialog)|\.\/studio-workspace-panels)$/ }, args => ({ path: args.path, namespace: "fixture" }));
+    builder.onResolve({ filter: /^(react|next\/image|@\/components\/workspace\/studio-mode-provider|@\/components\/ui\/(button|dialog)|\.\/studio-workspace-panels)$/ }, args => ({ path: args.path, namespace: "fixture" }));
     builder.onLoad({ filter: /.*/, namespace: "fixture" }, args => {
       if (args.path === "react") return { contents: "const r=globalThis.__progressReact; export const useState=r.useState,useRef=r.useRef,useEffect=r.useEffect,useCallback=r.useCallback,useMemo=r.useMemo;" };
+      if (args.path === "@/components/workspace/studio-mode-provider") return { contents: "export const useStudioMode=()=>({mode:'basic'});" };
       if (args.path === "./studio-workspace-panels") return { contents: "export const useStudioPanels=()=>null; export const StudioPanelPortal=props=>props.children; export const StudioWorkflowMedia=()=>null;" };
       if (args.path === "next/image") return { contents: "export default function Image(){return null;}" };
       const names = args.path.endsWith("/button") ? ["Button"] : ["Dialog", "DialogContent", "DialogDescription", "DialogFooter", "DialogHeader", "DialogTitle"];

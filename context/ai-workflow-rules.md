@@ -1,5 +1,11 @@
 # AI Workflow Rules
 
+## Current authorization — Phase 2 M2 Multiple Characters (2026-11-05)
+
+Implement only Pro multiple named characters, independent Character Sheets/review/regeneration and minimum integration with existing V3 Location, Director, Storyboard, package/reference mapping and model-limit checks. Reuse existing project/media/task/artifact owners, universal OpenAI 2×2 prompt, private storage and cleanup. Preserve Basic's one-character admission/single-character schemas, per-request consent/pricing/security, duplicate/lease/recovery behavior and historical data. Confirm incompatible Pro → Basic switches while retaining all data; never silently select/omit a character. No style-gallery, duration/resolution, clip/merge, pricing-formula or unrelated feature changes. M3–M7 remain unimplemented.
+
+Focused offline UI/persistence/TypeScript and disposable SQL/route/worker fixtures only. **No real provider calls, media generation, live migrations, live worker, browser suite, full build or deployment.** Migration 095 remains manual after 094; missing verified production model limits blocks Pro video use. [M2 implementation/setup/evidence](phase-2-basic-pro-studio.md#m2-implementation-and-setup). Prior dated scopes below record earlier requests; stop after M2.
+
 ## Current authorization — Phase 2 M1 Studio mode switch (2026-11-05)
 
 Implement only Basic/Pro selection, the active Studio indicator, authenticated preference/project metadata persistence and safe presentation-only switching. Both modes share the current working features. Keep all creative inputs, generation packages/currentness, V1/V2/V3 providers/workflows, pricing/authorization, worker/recovery/storage, duration and resolution behavior unchanged. No route revalidation/editor reset, data deletion, upgrade prompt or future Pro control. The new metadata migration remains manual; no hosted mutation, provider/media generation, worker, full build or deployment. Focused persistence/UI/TypeScript verification and documentation sync are authorized. [M1 source completion, setup and evidence](phase-2-basic-pro-studio.md#m1-implementation-and-setup). Stop after M1; M2–M7 remain Not Started. The earlier documentation-only scope below is the historical planning authorization.
