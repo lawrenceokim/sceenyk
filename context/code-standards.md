@@ -1,5 +1,13 @@
 # Code Standards
 
+## Planned Basic/Pro extension standards (2026-11-05)
+
+**Product Phase 2 — Planned / Not Started.** [Canonical requirements and safeguards](phase-2-basic-pro-studio.md). Extend existing Studio/project/V3 owners; keep product mode distinct from save-operation `mode`, Creation Type and provider input mode. Resolve persisted preferred/project modes and compatible inputs server-side; preserve retained Pro data on switches. Free mode access cannot bypass spending authorization or provider/ownership guards.
+
+Future Pro contracts need stable character IDs and explicit cast/speaker bindings, versioned immutable clip attempts and fresh scoped replacement authority, preserved accepted clip hashes, and explicit deduplicated merge intents over approved ordered attempt hashes. No paid replay for recovery, hidden adjacent regeneration, historical hash rewrite or weakened uniqueness. Validate actual schema/RLS/grants before additive transactional/rerunnable migrations; exact fields/relations remain undecided. Preserve existing pricing/resolution/currentness/storage/worker protections and historical workflows. OpenAI/Higgsfield remain the only AI providers; local FFmpeg joins multiple approved clips only.
+
+Reuse Tailwind/shared components and the single existing `app/globals.css` under the Styling Policy. The seven milestones include backend/financial acceptance; UI-only slices continue to follow Fast UI Development Mode. This documentation request creates no code, tests, migrations or runtime changes and starts no Phase 2 milestone.
+
 ## Canonical Studio V3 correction (2026-10-30)
 
 Read saved Studio inputs server-side into versioned generationContext; never trust a browser style assertion or infer style from prompt text. Freeze this context with generated references and validate current active Sources, context, approvals and dependency versions before package/submission. Manual 078 verifies columns and adds only V3 guards; preserve 076/077 and historical hashes/data. [Current contract](generation-v3-phase3.md).

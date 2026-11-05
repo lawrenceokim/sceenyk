@@ -1,5 +1,11 @@
 # Sceenyk project overview
 
+## Next planned milestone — product Phase 2 (2026-11-05)
+
+**Basic & Pro Studio Modes: Planned / Not Started.** The [Phase 2 specification](phase-2-basic-pro-studio.md) owns the confirmed requirements, source-verified reuse boundaries, expected database responsibilities, seven implementation milestones and unresolved questions. Preserve Basic; extend the same Studio and OpenAI → Higgsfield V3 pipeline for Pro character collections, style gallery, 10–120s planning, selective clip review/regeneration and explicit local FFmpeg merging/final approval. Both modes are freely accessible for the hackathon, while existing spending and security controls remain; Advanced is deferred.
+
+This is the next product roadmap, distinct from earlier V3 infrastructure phases. [Current V3 runtime status](generation-v3-phase3.md) and [progress](progress-tracker.md) supersede the original V3 Not Started snapshot below. Historical V1/V2/V3 projects and evidence remain unchanged; no implementation or data migration is part of this documentation update.
+
 ## Canonical V3 project direction (2026-10-29)
 
 [OpenAI + Higgsfield V3](generation-architecture-v3.md), **Planned / canonical architecture / Not Started**, replaces V1/V2 as the normal future generation design. OpenAI owns reference image creation/regeneration and cinematic Storyboard/direction; Higgsfield owns continuous audiovisual Generation Segments, preferably Seedance 2.5 where its verified capabilities support the approved plan. Target 480p for new development/testing. One segment goes directly to final review; multiple segments require segment review/approval before local FFmpeg joining and final review.

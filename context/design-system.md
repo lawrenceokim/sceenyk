@@ -1,5 +1,9 @@
 # Sceenyk design system
 
+## Planned Basic/Pro presentation boundary (2026-11-05)
+
+**Product Phase 2 — Planned / Not Started.** The [Basic/Pro UI plan](phase-2-basic-pro-studio.md#planned-studio-presentation) reuses this visual system: compact sidebar mode selection above Collapse, active header label, Pro character collection/style cards/duration controls and a minimal clip timeline with explicit Merge Videos/final review. Retain Basic's existing dropdown and single-video presentation, purple tokens, Inter, spacing, shared primitives, light/dark structure, keyboard/focus semantics and responsive containment. Tailwind plus the single existing `app/globals.css` remains mandatory. No new visual system, stylesheet, gallery artwork or UI implementation is added here; future Advanced features are undefined.
+
 ## Planned V3 presentation boundary (2026-10-29)
 
 [V3](generation-architecture-v3.md#ffmpeg-and-review-boundaries), **Planned / Not Started**, retains the existing visual system and reference/Storyboard review. A single generated audiovisual clip is reviewed directly as final; multiple clips require segment review/approval, then local joining and final review. Do not equate creative scene count, segment readiness or segment acceptance with final Complete, or add normal speech/lip-sync/provider-management controls.

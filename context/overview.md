@@ -1,5 +1,11 @@
 # Sceenyk
 
+## Next product phase — Basic & Pro Studio Modes (2026-11-05)
+
+**Phase 2: Basic & Pro Studio Modes — Planned / Not Started.** [Canonical specification and seven-milestone roadmap](phase-2-basic-pro-studio.md). Basic preserves the working one-character, style-dropdown, up-to-30s continuous-video experience. Pro extends the same Studio/V3 owners with multiple independently approved characters, five image-based style choices, 10–120s durations, individual clip review/regeneration and explicitly requested local merging before final approval.
+
+Basic and Pro are freely accessible through a mode switch for the hackathon MVP; no subscription or tier restriction is required. Existing generation estimates, finite spending authorization, resolution/provider gates and ownership protections remain. Advanced is future/out of scope. This product Phase 2 is distinct from historical M10 V3 Phase 2 infrastructure and visual redesign phases. This documentation update changes no application, schema, pipeline or existing project data; dated source/acceptance records below retain their own boundaries.
+
 ## Automatic owned-project V3 video processing (2026-11-04)
 
 Source/offline support now covers authenticated owner access behind an explicit administrator owned-mode rollout and one supervised V3 queue worker. Users approve their current Generation Package and choose Generate once; independent projects process automatically, accepted requests recover without paid replay, and saved progress/Preview update through review. The paid switch stays administrator-controlled and may remain ON across eligible requests. [One-time deployment, security and verification boundaries](generation-v3-phase3.md#automatic-v3-processing-and-production-setup-2026-11-04). No real provider request, environment change, deployment or remote migration ran; public funded-budget/billing and hosted acceptance remain separate.

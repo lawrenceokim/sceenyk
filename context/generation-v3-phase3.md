@@ -1,5 +1,11 @@
 # M10 V3 Phase 3 — local runtime and first-test preparation
 
+## Next product roadmap — Basic & Pro Studio Modes (2026-11-05)
+
+**Product Phase 2: Planned / Not Started.** The [Basic/Pro specification](phase-2-basic-pro-studio.md) defines an additive future extension of this working runtime, not a replacement pipeline or a repeat of M10 V3 Phase 2 preflight. Preserve Basic and all current approvals, estimates/resolution, immutable USD authority, worker/recovery/storage and ownership protections. Pro plans multiple independently approved characters, full-story 10–120s direction, clip review/selective regeneration and explicit local merge/final approval. Both modes are freely accessible for the hackathon; generation spending still requires existing consent.
+
+Current source resolves one reference per kind, admits package segments together and automatically enqueues joining after every segment is approved. Those are current foundations, **not completed Pro features**. Future Pro needs per-character currentness/cast/speaker bindings, immutable selective attempts/fresh authority and explicit Merge Videos admission with approved attempt hashes. Follow the [seven planned milestones](phase-2-basic-pro-studio.md#implementation-roadmap); no runtime, prompt/provider integration, schema, worker or project data changes in this documentation update. Existing setup and live acceptance limitations below remain.
+
 ## User-selectable video resolution (2026-11-04)
 
 V3 now routes the saved 480p/720p/1080p setting through Studio, new Director metadata, frozen output packages/segments, authorization/payload guards, worker/recovery validation and requested-versus-measured output displays. Resolution changes preserve approved references and the reusable creative Storyboard; prior output packages become stale without changing their saved bytes. Existing 480p hashes, prices, submitted requests and historical outputs remain compatible. Manual **093 after 092** is required. **720p/1080p paid authorization remains blocked until verified resolution-specific local rates are configured**; no price is invented or fetched from Higgsfield. [Routing, pricing evidence, setup, checks and changed files](v3-video-resolution.md) supersede dated 480p-only execution-profile statements below. No live project/provider/media/migration/configuration/deployment operation ran.

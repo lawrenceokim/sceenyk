@@ -1,5 +1,11 @@
 # AI Workflow Rules
 
+## Current authorization — Basic & Pro Studio planning (2026-11-05)
+
+**Documentation only. Product Phase 2: Basic & Pro Studio Modes is Planned / Not Started.** Review existing context/V3 source/design decisions, maintain one [canonical specification](phase-2-basic-pro-studio.md), and synchronize relevant context/roadmap links. No application implementation, schema/migration, existing project-data change, environment/provider operation, worker execution or deployment is authorized by this request. Earlier dated implementation authorizations below describe their own completed/bounded tasks and are not permission to start Phase 2 now.
+
+The next separately authorized implementation unit is Phase 2 M1, mode selection/persistence; follow the seven [dependency and acceptance milestones](phase-2-basic-pro-studio.md#implementation-roadmap) one bounded unit at a time. Keep confirmed owner requirements, recommendations and Needs confirmation questions separate. Preserve Basic, the existing UGC pipeline, historical V1/V2/V3 evidence and all security/spending/recovery protections. Advanced is deferred; free hackathon Basic/Pro access adds no subscription or tier gate and grants no additional paid authority. This product phase is distinct from M10 V3 Phase 2 preflight and previous UI phases.
+
 ## Current authorization — minimal V3 Final Video controls (2026-11-04)
 
 Limit implementation to Final Video presentation and the minimum direct-approval handling required to remove its quality form. Remove the skeleton; use existing saved-state refresh for a subtle spinner, central Preview selection and essential review controls. Preserve confirmed deletion, short actionable failures/recovery and existing completion/segment joins. Keep diagnostics in Progress. Do not change providers, workers, payloads, Storyboard/packages, spending/pricing, storage, project state or environment values. Offline checks only; migration 092 remains manual, with no live database/provider/worker/media operation or deployment.

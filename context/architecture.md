@@ -1,5 +1,13 @@
 # Architecture Context
 
+## Planned product Phase 2 — Basic & Pro Studio Modes (2026-11-05)
+
+**Planned / Not Started.** [The Phase 2 specification](phase-2-basic-pro-studio.md) owns this additive product roadmap, distinct from M10 V3's earlier infrastructure phases. One Studio and existing project/media/generation owners serve both modes. Persist preferred and project modes with server ownership enforcement, restore project mode on reopen, and retain all Pro state on confirmed incompatible downgrades. Free hackathon mode access adds no subscription gate and does not bypass finite generation authority.
+
+Pro requires versioned character-specific source/sheet/approval and cast/speaker bindings, mode-aware durations, full-story planning with compatible 30s clip boundaries, selective immutable attempts/authorization and ordered approved-attempt assembly manifests. Reuse existing project/preferences/assets, V3 planner, queue/worker, pricing, recovery and private storage after catalog verification. Current per-kind reference resolution and package/segment uniqueness need deliberate extensions; do not loosen duplicate fences or rewrite historical hashes. Exact persistence changes remain proposals, with no SQL created/applied here.
+
+OpenAI retains reference generation/creative direction; Higgsfield retains native audiovisual generation. Basic and Pro ≤30s use the existing single-video review path. Longer Pro projects review clips independently, then explicitly choose Merge Videos for local FFmpeg joining and final approval. Current V3 automatically schedules a join after all segment approvals; the future Pro branch must require an explicit merge intent while preserving historical behavior. No new provider, parallel Basic/Pro pipeline, separate mode pages or existing-data conversion is planned. [Dependencies, safeguards and acceptance](phase-2-basic-pro-studio.md#implementation-roadmap).
+
 ## V3 direct Final Video review (2026-11-04)
 
 Final Video uses the existing saved run/task projection and existing status refresh; its removed skeleton is replaced by a small button-adjacent spinner for pending submission, queued/submitting/processing/saving runs and active joins. Failure/reconciliation stops the spinner and exposes existing recovery actions. Ready candidates offer central Preview selection, direct owner approval and confirmed Reject and Delete. Diagnostics and earlier saved attempts remain in Progress. Existing automatic Preview selection, completion and segment/join scheduling are preserved.

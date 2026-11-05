@@ -1,5 +1,13 @@
 # UI Context
 
+## Planned Basic/Pro Studio presentation (2026-11-05)
+
+**Product Phase 2 — Planned / Not Started.** Follow the [canonical mode/UI specification](phase-2-basic-pro-studio.md#planned-studio-presentation). Plan a compact Basic/Pro segmented switch in the sidebar above Collapse plus an active-mode label in the Studio header for mobile visibility. Change controls in the existing mounted Studio without separate routes; preserve Sources, Preview, Properties, Workflow drawer, edits and selections. Confirm incompatible Pro-to-Basic changes and preserve every saved Pro character, clip and asset.
+
+Basic retains its controls. Pro adds named character inputs with independent Character Sheets, a five-card labelled style gallery, 10–120s duration choices, an ordered clip timeline with real saved status/review/regeneration, and Merge Videos after all required clips are approved. A single clip uses final review directly; multiple clips require explicit merging and final review in existing Preview/Workflow patterns. Keep ordinary controls free of provider/codec/hash details.
+
+Preserve purple accents, Inter, spacing, shared primitives, both themes, keyboard/focus/selection semantics, native scrolling and reduced motion. Use Tailwind and only existing `app/globals.css`. Both hackathon modes are freely selectable without upgrade/subscription UI; existing cost consent remains. [Milestones and future responsive/manual acceptance](phase-2-basic-pro-studio.md#implementation-roadmap) are plans; no interface or visual test is implemented by this update.
+
 ## V3 Workflow Progress reference layout (2026-11-04)
 
 Progress now presents a four-stage References → Storyboard → Package → Final Video timeline beside Current state when the drawer content is at least 30rem wide; narrower drawers stack them. Technical fields stack below 25rem and wrap long values. Native Package technical details, Final Video prerequisites and Final Video details disclosures start collapsed. Keep Workflow navigation and its active styling unchanged. Shared semantic tokens preserve purple accents and light/dark surfaces, distinct status icons/text, keyboard focus, 44px disclosure controls and reduced-motion behavior; no stylesheet or palette is added.

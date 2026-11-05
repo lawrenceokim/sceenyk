@@ -1,5 +1,27 @@
 # Progress Tracker
 
+## Next product milestone — Phase 2: Basic & Pro Studio Modes (2026-11-05)
+
+**Phase 2: Planned / Not Started. Documentation planning complete; no implementation milestone started.** The [canonical specification](phase-2-basic-pro-studio.md) defines freely accessible hackathon Basic/Pro modes in the existing Studio, preserves Basic and V1/V2/V3 history, and plans Pro multi-character references, a five-style gallery, 10–120s full-story/clip planning, selective clip review/regeneration, explicit local merging and final approval. Advanced remains future/out of scope. Existing finite generation authority, pricing/resolution gates, worker/recovery/private storage and ownership protections remain mandatory.
+
+| Milestone | Status | Dependencies |
+| --- | --- | --- |
+| M1 — Mode selection and persistence | Planned / Not Started | Existing project/preference/Studio owners; downgrade design |
+| M2 — Multiple characters | Planned / Not Started | M1; verified reference limits and cast/approval contracts |
+| M3 — Visual-style gallery | Planned / Not Started | M1; M2 integration; approved artwork |
+| M4 — Extended duration and multi-clip Storyboard | Planned / Not Started | M1–M3; verified capabilities and output pricing |
+| M5 — Per-clip generation, review and regeneration | Planned / Not Started | M2/M4; immutable attempts, estimates and fresh authority |
+| M6 — FFmpeg merging and final approval | Planned / Not Started | M5; explicit merge intent, compatible approved inputs/local runtime |
+| M7 — Workflow verification, responsive testing and docs | Planned / Not Started | M1–M6; separately approved setup/live testing |
+
+Each milestone's expected database responsibilities, safeguards and acceptance requirements live in the [roadmap](phase-2-basic-pro-studio.md#implementation-roadmap). Source review confirms existing preference/project/media owners, V3 boundary planning, segment review and FFmpeg joining. Required gaps are character-specific currentness/speaker bindings, scoped replacement attempts/authorization and explicit Pro merging: current V3 automatically joins after the last segment approval. Exact schema changes are undecided; no SQL is created/applied. This product Phase 2 is distinct from older M10 V3 preflight and visual phases, whose evidence remains below.
+
+**Next separately authorized implementation unit: Phase 2 M1 — Studio mode selection and persistence.** Open decisions include reversible downgrade/draft persistence, character/reference limits, cast/speaker contracts, gallery artwork/timeline placement, 30s boundary validation, selective attempt/cumulative budget lineage, merge compatibility/tolerances and live continuity/worker acceptance. [Full unresolved questions](phase-2-basic-pro-studio.md#unresolved-technical-questions). Existing V3 setup/provider/hosted acceptance remains separate and is not marked complete by this roadmap.
+
+Documentation created: `phase-2-basic-pro-studio.md`. Updated: `overview.md`, `project-overview.md`, `architecture.md`, `ui-context.md`, `design-system.md`, `code-standards.md`, `ai-workflow-rules.md`, `generation-architecture-v3.md`, `generation-v3-phase3.md` and this tracker. Documentation verification passed: 49 local links including 14 anchors, seven milestone headings, status/segmentation checks, whitespace and context-only file scope; existing tracked content is preserved. No application code, schema/migration, existing project data, generated media, provider/configuration, worker or deployment is changed; no build, runtime/provider/browser test or live acceptance is run. No qualifying Next.js feedback candidates arose in the reporting audit.
+
+Repository bookkeeping: the existing `/context/*` ignore rule ignores the new specification. Git rules and index are unchanged under this context-only request; force-add the specification when committing these documents so its links travel with the update.
+
 ## V3 saved resolution selection (2026-11-04)
 
 **Implemented; focused offline acceptance passed. Manual 093 and hosted/provider acceptance remain pending.** Studio replaces Narration with native 480p/720p/1080p selection using existing accordion/theme/control styles and a 480p default. The saved project setting flows through new Director metadata, frozen packages/segments, quote/authorization/intent binding, Higgsfield JSON, worker/join/recovery validation and requested-versus-actual output metadata. Resolution changes invalidate output packages through existing currentness while retaining approved images/Storyboard and immutable historical work. Existing 480p prices/hashes are preserved. Higher selections are saved but cannot authorize paid work without verified resolution-specific rates; no pricing/provider request is made. [Complete implementation, evidence, changed files and manual setup](v3-video-resolution.md).
@@ -2876,6 +2898,12 @@ This table describes the dashboard unit. Existing landing and creation page cont
 
 ## Next Up
 
+**Current next planned product milestone (2026-11-05): Phase 2 — Basic & Pro Studio Modes. Planned / Not Started.** Begin only with separately authorized [M1 mode selection and persistence](phase-2-basic-pro-studio.md#m1--studio-mode-selection-and-persistence), preserving existing Basic/V3 behavior and data. [The seven-milestone roadmap](phase-2-basic-pro-studio.md#implementation-roadmap) owns dependencies, expected persistence, safeguards and acceptance. Existing setup/security/provider acceptance remains a prerequisite where applicable; no implementation starts in this documentation task.
+
+### Historical next-step snapshots
+
+The dated entries below retain earlier development sequencing and do not replace the current product roadmap above. M10 V3 Phase 2 means the prior infrastructure stage, not Basic/Pro Studio Modes.
+
 **Current next eligible work: V3 Phase 2 trusted integration before the first paid fresh-project test.** Follow [the exact Phase 2 checklist](generation-architecture-v3.md#verification-and-exact-phase-2): resolve provider limits/controls/account contract, establish trusted fresh-project persistence/currentness and approvals/intents, capture estimates and explicit finite authority, implement fenced transport/private recovery and actual segment/final review. Nothing is activated automatically; do not reuse prior test state or return to the V2 master-audio phase. Earlier next-step snapshots below are superseded.
 
 **Current next eligible unit (V3, 2026-10-29): separately authorized Higgsfield/OpenAI contract verification and source planning for a brand-new project with a different image.** Establish actual Seedance 2.5 availability/modes/durations, native audio/dialogue/lip-sync, multi-reference/multi-shot support, 480p output and trusted segment pricing before V3 implementation/paid acceptance. Do not continue the old ElevenLabs master-audio phase or resume/migrate/reuse the previous test execution. Historical recommendations below remain evidence, not permission. [Fresh-cycle boundary](generation-architecture-v3.md#new-project-implementation-and-testing-cycle).
@@ -2921,6 +2949,8 @@ The older bounded-unit recommendation and roadmap below are historical snapshots
 | Optional future decision | Membership / auto-recharge | Neither is approved current scope or a required next unit. Membership benefits need a product decision; auto-recharge separately needs explicit payment authorization, threshold/pack consent and a failure/recovery contract. No monthly generation subscription is planned as a prerequisite. |
 
 ## Open Questions
+
+**Current product Phase 2 questions (2026-11-05):** [Basic/Pro technical questions](phase-2-basic-pro-studio.md#unresolved-technical-questions) cover reversible mode persistence, cast/reference limits and character bindings, gallery assets, long-story boundaries, selective attempts/fresh cumulative authority, explicit merge manifests/compatibility and real continuity/hosted acceptance. Confirmed requirements remain fixed; recommendations are not implemented decisions. Older V3 provider/setup questions below retain their verified/unverified boundaries; use current runtime/resolution docs for superseding source findings.
 
 **Current V3 technical prerequisites:** verify Higgsfield's exact Seedance endpoint/model/account contract, supported continuous/allowed durations, 480p and other output options, reference limits, native audiovisual speech/sync/ambience/SFX, multi-shot timing, pricing and recovery; verify the selected OpenAI reference-image/creative contracts. Preserve unsupported/unverified distinctions before paid admission. V2's supplied-external-speech/master-audio question below is historical, not a mandatory V3 native-audio requirement; fal.ai findings cannot be transferred. [V3 capability boundary](generation-architecture-v3.md#planned-capabilities-and-verification-boundary).
 
