@@ -2,11 +2,11 @@
 
 ## Planned Basic/Pro extension standards (2026-11-05)
 
-**Product Phase 2 — Planned / Not Started.** [Canonical requirements and safeguards](phase-2-basic-pro-studio.md). Extend existing Studio/project/V3 owners; keep product mode distinct from save-operation `mode`, Creation Type and provider input mode. Resolve persisted preferred/project modes and compatible inputs server-side; preserve retained Pro data on switches. Free mode access cannot bypass spending authorization or provider/ownership guards.
+**Product Phase 2 — M1 source implemented; M2–M7 Planned / Not Started.** [Canonical requirements, M1 setup and safeguards](phase-2-basic-pro-studio.md). M1 uses separate metadata services/columns while creative/save contracts remain unchanged. Keep product mode distinct from save-operation `mode`, Creation Type and provider input mode. Resolve persisted preferred/project modes server-side; preserve all existing inputs/approvals on switches. Free mode access cannot bypass spending authorization or provider/ownership guards.
 
 Future Pro contracts need stable character IDs and explicit cast/speaker bindings, versioned immutable clip attempts and fresh scoped replacement authority, preserved accepted clip hashes, and explicit deduplicated merge intents over approved ordered attempt hashes. No paid replay for recovery, hidden adjacent regeneration, historical hash rewrite or weakened uniqueness. Validate actual schema/RLS/grants before additive transactional/rerunnable migrations; exact fields/relations remain undecided. Preserve existing pricing/resolution/currentness/storage/worker protections and historical workflows. OpenAI/Higgsfield remain the only AI providers; local FFmpeg joins multiple approved clips only.
 
-Reuse Tailwind/shared components and the single existing `app/globals.css` under the Styling Policy. The seven milestones include backend/financial acceptance; UI-only slices continue to follow Fast UI Development Mode. This documentation request creates no code, tests, migrations or runtime changes and starts no Phase 2 milestone.
+Reuse Tailwind/shared components and the single existing `app/globals.css` under the Styling Policy. The seven milestones include backend/financial acceptance; UI-only slices continue to follow Fast UI Development Mode. M1 is complete within its source/offline boundary; its metadata migration remains manual and further Pro features are not started.
 
 ## Canonical Studio V3 correction (2026-10-30)
 

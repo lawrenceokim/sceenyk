@@ -10,6 +10,7 @@ import {
 } from "react";
 import { StudioPropertiesTarget } from "./studio-property-controls";
 import { StudioToolbarTarget } from "./studio-toolbar-actions";
+import { StudioModeBadge } from "@/components/workspace/studio-mode-selector";
 import { FolderOpen, Workflow, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -377,6 +378,7 @@ export function StudioLayout({
                       <FolderOpen className="size-4" aria-hidden="true" />
                       <span>Sources</span>
                     </Button>
+                    <StudioModeBadge />
                     {toolbar}
                     <div
                       ref={setToolbarTarget}

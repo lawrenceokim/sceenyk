@@ -3,6 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "test:studio-modes": "node scripts/check-studio-modes.mjs && node scripts/check-studio-mode-ui.mjs",
+    "test:studio-modes:layout": "node scripts/check-studio-mode-layout.mjs",
     "test:ugc-v3-resolution": "node --import=tsx scripts/check-v3-video-resolution.mjs && node --import=tsx scripts/check-v3-resolution-ui.tsx",
     "storage:probe-character-r2": "node --conditions=react-server --import=tsx scripts/probe-character-r2.ts",
     "recover:character-v5-candidate": "node --conditions=react-server --import=tsx scripts/recover-character-v5-candidate.ts",

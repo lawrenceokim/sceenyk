@@ -2,9 +2,9 @@
 
 ## Next planned milestone — product Phase 2 (2026-11-05)
 
-**Basic & Pro Studio Modes: Planned / Not Started.** The [Phase 2 specification](phase-2-basic-pro-studio.md) owns the confirmed requirements, source-verified reuse boundaries, expected database responsibilities, seven implementation milestones and unresolved questions. Preserve Basic; extend the same Studio and OpenAI → Higgsfield V3 pipeline for Pro character collections, style gallery, 10–120s planning, selective clip review/regeneration and explicit local FFmpeg merging/final approval. Both modes are freely accessible for the hackathon, while existing spending and security controls remain; Advanced is deferred.
+**Basic & Pro Studio Modes: In Progress. M1 complete in source/offline verification; M2–M7 Planned / Not Started.** The [Phase 2 specification](phase-2-basic-pro-studio.md) owns requirements, M1 setup/evidence and the remaining roadmap. M1 adds mode switching/visibility and independent owner/project metadata; manual 094 and hosted acceptance remain pending. Both modes currently use Basic's working features. Future Pro milestones extend the same Studio/V3 owners for character collections, style gallery, 10–120s planning, selective clip review/regeneration and explicit local FFmpeg merging/final approval. Free hackathon mode access retains existing spending/security controls; Advanced is deferred.
 
-This is the next product roadmap, distinct from earlier V3 infrastructure phases. [Current V3 runtime status](generation-v3-phase3.md) and [progress](progress-tracker.md) supersede the original V3 Not Started snapshot below. Historical V1/V2/V3 projects and evidence remain unchanged; no implementation or data migration is part of this documentation update.
+This product roadmap is distinct from earlier V3 infrastructure phases. [Current V3 runtime status](generation-v3-phase3.md) and [progress](progress-tracker.md) supersede the original V3 Not Started snapshot below. Historical V1/V2/V3 creative records and evidence remain unchanged; M1 changes metadata only and applies no live migration.
 
 ## Canonical V3 project direction (2026-10-29)
 

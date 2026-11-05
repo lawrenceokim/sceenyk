@@ -3,6 +3,7 @@
 import { useEffect, useSyncExternalStore, type CSSProperties, type ReactNode } from "react";
 import { WorkspaceSidebar } from "./workspace-sidebar";
 import { WorkspaceMobileNav } from "./workspace-mobile-nav";
+import { StudioModeProvider } from "./studio-mode-provider";
 
 const preferenceKey = "sceenyk-workspace-collapsed";
 let temporaryPreference: boolean | null = null;
@@ -35,7 +36,7 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
     targets.forEach(target => target.classList.add("scrollbar-hidden"));
     return () => targets.forEach(target => target.classList.remove("scrollbar-hidden"));
   }, []);
-  return <div className={`
+  return <StudioModeProvider><div className={`
       workspace-shell min-h-dvh flex-1 bg-background
       [&&:has(>_div_>_.workspace-gutter_>_.workspace-content_>_[data-workspace-page='studio'])]:h-dvh
       [&&:has(>_div_>_.workspace-gutter_>_.workspace-content_>_[data-workspace-page='studio'])]:min-h-0
@@ -99,5 +100,5 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
     `}>{children}</main>
       </div>
     </div>
-  </div>;
+  </div></StudioModeProvider>;
 }

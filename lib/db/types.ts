@@ -280,6 +280,8 @@ export type Database = {
     };
     Views: Record<string, never>;
     Functions: {
+      studio_mode_read: { Args: { p_owner: string; p_project: string | null }; Returns: import("@/lib/studio-mode/contract").StudioModeState | null };
+      studio_mode_save: { Args: { p_owner: string; p_project: string | null; p_mode: import("@/lib/studio-mode/contract").StudioMode }; Returns: import("@/lib/studio-mode/contract").StudioModeState | null };
       ugc_final_current: { Args: { p_execution: string }; Returns: boolean };
       ugc_final_record_approval_failure: { Args: { p_owner: string; p_execution: string; p_version: number; p_code: string }; Returns: undefined };
       ugc_final_retry_stage: { Args: { p_owner: string; p_execution: string; p_payload: Record<string, unknown> }; Returns: import("@/lib/final-video-generation/contract").FinalExecution | null };

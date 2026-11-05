@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetDescription, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { WorkspaceNavigation } from "./workspace-navigation";
 import { WorkspaceUserMenu } from "./workspace-user-menu";
+import { StudioModeSelector } from "./studio-mode-selector";
 
 export function WorkspaceMobileNav() {
   const [open, setOpen] = useState(false);
@@ -38,6 +39,7 @@ export function WorkspaceMobileNav() {
         <SheetTitle className="sr-only">Workspace navigation</SheetTitle>
         <SheetDescription className="sr-only">Open Studio, Projects, Templates, Marketplace, Documentation, Credits or Settings.</SheetDescription>
         <div className={"workspace-nav-scroll min-h-0 flex-1 overflow-y-auto [&&]:pt-[8px] [&&]:pr-[8px] [&&]:pb-[8px] [&&]:pl-[8px]"}><WorkspaceNavigation onNavigate={() => setOpen(false)} /></div>
+        <StudioModeSelector />
         <WorkspaceUserMenu onNavigate={() => setOpen(false)} />
       </SheetContent>
     </Sheet>

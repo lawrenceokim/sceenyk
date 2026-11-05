@@ -1,12 +1,18 @@
 # UI Context
 
+## Phase 2 M1 — Basic/Pro mode controls (2026-11-05)
+
+Current sizing refinement: expanded/mobile navigation segments occupy half the navigation content width, with 24px height and 11px labels. The caption beneath is screen-reader-only; the collapsed rail retains full-width B/P controls and the Studio toolbar retains its visible badge.
+
+**Complete in source/offline verification; manual 094 and full hosted/visual acceptance pending.** The existing sidebar now has compact Basic/Pro radio segments directly above Collapse, with a small active-mode status and purple Pro selection. A collapsed rail uses labelled B/P segments; existing mobile navigation has the full switch. The existing Studio toolbar shows a small Basic/Pro badge in both viewports, with truthful loading/unavailable state while metadata restores. Shared Tailwind tokens, typography, spacing, radio keyboard/focus semantics, themes, native scrolling, drawer/Preview and mounted editor state remain. No stylesheet or layout redesign. Both modes currently expose the exact working features; no upgrade/subscription prompt, gallery or other unfinished Pro feature is shown. [Persistence, dormant future downgrade confirmation and focused evidence](phase-2-basic-pro-studio.md#m1-implementation-and-setup).
+
 ## Planned Basic/Pro Studio presentation (2026-11-05)
 
-**Product Phase 2 — Planned / Not Started.** Follow the [canonical mode/UI specification](phase-2-basic-pro-studio.md#planned-studio-presentation). Plan a compact Basic/Pro segmented switch in the sidebar above Collapse plus an active-mode label in the Studio header for mobile visibility. Change controls in the existing mounted Studio without separate routes; preserve Sources, Preview, Properties, Workflow drawer, edits and selections. Confirm incompatible Pro-to-Basic changes and preserve every saved Pro character, clip and asset.
+**M1 source implemented above; M2–M7 Planned / Not Started.** Follow the [canonical mode/UI specification](phase-2-basic-pro-studio.md#planned-studio-presentation). M1 adds no separate route and preserves the mounted Studio. The remaining Pro controls and incompatible-feature downgrade behavior below are future feature requirements, not current UI.
 
 Basic retains its controls. Pro adds named character inputs with independent Character Sheets, a five-card labelled style gallery, 10–120s duration choices, an ordered clip timeline with real saved status/review/regeneration, and Merge Videos after all required clips are approved. A single clip uses final review directly; multiple clips require explicit merging and final review in existing Preview/Workflow patterns. Keep ordinary controls free of provider/codec/hash details.
 
-Preserve purple accents, Inter, spacing, shared primitives, both themes, keyboard/focus/selection semantics, native scrolling and reduced motion. Use Tailwind and only existing `app/globals.css`. Both hackathon modes are freely selectable without upgrade/subscription UI; existing cost consent remains. [Milestones and future responsive/manual acceptance](phase-2-basic-pro-studio.md#implementation-roadmap) are plans; no interface or visual test is implemented by this update.
+Preserve purple accents, Inter, spacing, shared primitives, both themes, keyboard/focus/selection semantics, native scrolling and reduced motion. Use Tailwind and only existing `app/globals.css`. Both hackathon modes are freely selectable without upgrade/subscription UI; existing cost consent remains. [M2–M7 and their future responsive/manual acceptance](phase-2-basic-pro-studio.md#implementation-roadmap) remain plans; M1's focused evidence is recorded above.
 
 ## V3 Workflow Progress reference layout (2026-11-04)
 

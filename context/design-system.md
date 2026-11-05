@@ -2,7 +2,7 @@
 
 ## Planned Basic/Pro presentation boundary (2026-11-05)
 
-**Product Phase 2 — Planned / Not Started.** The [Basic/Pro UI plan](phase-2-basic-pro-studio.md#planned-studio-presentation) reuses this visual system: compact sidebar mode selection above Collapse, active header label, Pro character collection/style cards/duration controls and a minimal clip timeline with explicit Merge Videos/final review. Retain Basic's existing dropdown and single-video presentation, purple tokens, Inter, spacing, shared primitives, light/dark structure, keyboard/focus semantics and responsive containment. Tailwind plus the single existing `app/globals.css` remains mandatory. No new visual system, stylesheet, gallery artwork or UI implementation is added here; future Advanced features are undefined.
+**Product Phase 2 — M1 source implemented; M2–M7 Planned / Not Started.** [M1 controls/setup/evidence](phase-2-basic-pro-studio.md#m1-implementation-and-setup) reuse the current sidebar with native Basic/Pro radio segments above Collapse, compact B/P labels in the collapsed rail, a full switch in mobile navigation and a small Studio toolbar badge. Pro selection uses existing purple tokens; Basic uses existing neutral selected surfaces. Keep typography, spacing, shared primitives, light/dark structure, keyboard/focus semantics and responsive containment. Both modes currently retain Basic's controls/single-video presentation. The [future Pro UI plan](phase-2-basic-pro-studio.md#planned-studio-presentation) remains unimplemented. Tailwind plus the single existing `app/globals.css` remains mandatory; no visual system, stylesheet or gallery artwork is added. Advanced remains undefined.
 
 ## Planned V3 presentation boundary (2026-10-29)
 

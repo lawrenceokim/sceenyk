@@ -1,5 +1,9 @@
 # AI Workflow Rules
 
+## Current authorization — Phase 2 M1 Studio mode switch (2026-11-05)
+
+Implement only Basic/Pro selection, the active Studio indicator, authenticated preference/project metadata persistence and safe presentation-only switching. Both modes share the current working features. Keep all creative inputs, generation packages/currentness, V1/V2/V3 providers/workflows, pricing/authorization, worker/recovery/storage, duration and resolution behavior unchanged. No route revalidation/editor reset, data deletion, upgrade prompt or future Pro control. The new metadata migration remains manual; no hosted mutation, provider/media generation, worker, full build or deployment. Focused persistence/UI/TypeScript verification and documentation sync are authorized. [M1 source completion, setup and evidence](phase-2-basic-pro-studio.md#m1-implementation-and-setup). Stop after M1; M2–M7 remain Not Started. The earlier documentation-only scope below is the historical planning authorization.
+
 ## Current authorization — Basic & Pro Studio planning (2026-11-05)
 
 **Documentation only. Product Phase 2: Basic & Pro Studio Modes is Planned / Not Started.** Review existing context/V3 source/design decisions, maintain one [canonical specification](phase-2-basic-pro-studio.md), and synchronize relevant context/roadmap links. No application implementation, schema/migration, existing project-data change, environment/provider operation, worker execution or deployment is authorized by this request. Earlier dated implementation authorizations below describe their own completed/bounded tasks and are not permission to start Phase 2 now.
