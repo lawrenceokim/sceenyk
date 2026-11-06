@@ -8,6 +8,7 @@ import sharp from 'sharp';
 import {typescriptLoader} from './lib/load-typescript.mjs';
 import {multipleCharacterScenarios} from './lib/v3-multiple-character-scenarios.mjs';
 import {projectSavingScenarios} from './lib/v3-project-saving-scenarios.mjs';
+import {connectedStoryScenarios, connectedFixtureStory} from './lib/v3-connected-story-scenarios.mjs';
 const require=createRequire(import.meta.url),builder=require('../lib/video-generation-package/builder.ts');
 const normal=v=>JSON.parse(JSON.stringify(v)),hash=b=>createHash('sha256').update(b).digest('hex');
 let checks=0,networkCalls=0,mode='pass',saveFailure=false,storageFailure=false,deleteFailure=false,deleteAttempts=0;
@@ -29,10 +30,12 @@ const oddImage=await sharp({create:{width:320,height:192,channels:3,background:'
 const instruction={name:'Accessible vehicle studio',prompt:'A wide empty vehicle studio with a south entrance, north daylight and clear walkaround space for the saved BMW advertisement. Show the same architecture in all four views.'};
 const call=async(name,args)=>{const parameters=args.map((_,i)=>`$${i+1}`).join(',');const result=await pg.query(name==='ugc_v3_worker_projects'?`select * from public.${name}(${parameters})`:`select public.${name}(${parameters}) value`,args);return name==='ugc_v3_worker_projects'?result.rows:result.rows[0].value;};
 const db={async rpc(name,args){try{return{data:await call(name,Object.values(args)),error:null};}catch(e){return{data:null,error:{code:e.code,message:e.message}};}},
- from(table){assert.ok(['projects','project_assets','ugc_v3_projects'].includes(table));let columns='*';const clauses=[],values=[];
- return{select(v){assert.match(v,/^[a-z_,]+$/);columns=v;return this;},eq(k,v){assert.match(k,/^[a-z_]+$/);values.push(v);clauses.push(`${k}=$${values.length}`);return this;},
+ from(table){assert.ok(['projects','project_assets','ugc_v3_projects'].includes(table));let columns='*',fields=null;const clauses=[],values=[];
+ return{select(v){assert.match(v,/^[a-z_,]+$/);columns=v;return this;},update(v){fields=v;return this;},eq(k,v){assert.match(k,/^[a-z_]+$/);values.push(v);clauses.push(`${k}=$${values.length}`);return this;},
  is(k,v){assert.equal(v,null);clauses.push(`${k} is null`);return this;},in(k,v){values.push(v);clauses.push(`${k}=any($${values.length}::text[])`);return this;},
- async execute(single=false){const rows=(await pg.query(`select ${columns} from public.${table} where ${clauses.join(' and ')}`,values)).rows;return{data:single?rows[0]??null:rows,error:null};},
+ async execute(single=false){let sql=`select ${columns} from public.${table} where ${clauses.join(' and ')}`;
+  if(fields){const assignments=Object.entries(fields).map(([k,v])=>{assert.match(k,/^[a-z_]+$/);values.push(v);return `${k}=$${values.length}`;});sql=`update public.${table} set ${assignments.join(',')} where ${clauses.join(' and ')} returning ${columns}`;}
+  try{const rows=(await pg.query(sql,values)).rows;return{data:single?rows[0]??null:rows,error:null};}catch(error){return{data:null,error:{code:error.code,message:error.message}};}},
  maybeSingle(){return this.execute(true);},then(resolve,reject){return this.execute().then(resolve,reject);}};}};
 const media={bytesHash:hash,readSpool:async(id,name)=>spool.get(`${id}:${name}`)??null,
  saveSpool:async(id,name,bytes)=>{const key=`${id}:${name}`;if(spool.has(key)&&hash(spool.get(key))!==hash(bytes))throw new Error('V3_SPOOL_CONFLICT');spool.set(key,bytes);
@@ -65,14 +68,18 @@ async function fixtureResponse(kind,body,options){
 }
 class FixtureOpenAI{constructor(config){equal(config.maxRetries,0);}
  responses={create:(body,options)=>{
-  if(['director_storyboard_v3','director_storyboard_cast_v1'].includes(body.text.format.name))return(async()=>{
+  if(['director_storyboard_v3','director_storyboard_cast_v1','director_storyboard_connected_v1','director_storyboard_connected_cast_v1'].includes(body.text.format.name))return(async()=>{
    calls.push({kind:'storyboard',body:normal(body)});const storyboard=normal(load('scripts/final-video-v3-fixture.ts').v3Input(storyboardDurations).storyboardContent);storyboard.tone='Professional';
-   if(body.text.format.name==='director_storyboard_cast_v1'){
+   if(body.text.format.name.includes('cast')){
     storyboard.cast=(await pg.query('select input from public.ugc_v3_tasks where id=$1',[options.headers['X-Client-Request-Id']])).rows[0].input.cast;
     for(const [i,scene] of storyboard.scenes.entries()){
      scene.characterIds=storyboard.cast.map(c=>c.characterId);const speaker=storyboard.cast[i%storyboard.cast.length];
      scene.speech=[{speaker:'character',characterId:speaker.characterId,text:'Hello there.',startMs:scene.startMs+1000,endMs:scene.startMs+3000,delivery:load('lib/execution-v1/contract.ts').defaultDelivery(),deliveryNote:''}];
     }
+   }
+   if(body.text.format.name.includes('connected')){
+    const input=(await pg.query('select input from public.ugc_v3_tasks where id=$1',[options.headers['X-Client-Request-Id']])).rows[0].input;
+    Object.assign(storyboard,connectedFixtureStory(storyboard,input.clipBoundaries));
    }
    assert.match(body.input[0].content[0].text,/Approved Location prompt and sheet binding/);assert.match(body.input[0].content[0].text,/Accessible vehicle studio/);checks+=2;
    return{_request_id:'req_storyboard',status:'completed',output:[{type:'message',content:[{type:'output_text',text:JSON.stringify(storyboard)}]}]};
@@ -159,9 +166,12 @@ try{
  await pg.exec(fs.readFileSync('supabase/migrations/20261104009000_ugc_v3_unsubmitted_video_delivery.sql','utf8'));
  await pg.exec(fs.readFileSync('supabase/migrations/20261104009100_ugc_v3_background_processing.sql','utf8'));
  await pg.exec(fs.readFileSync('supabase/migrations/20261105009500_ugc_v3_multiple_characters.sql','utf8'));
+ await pg.exec(fs.readFileSync('supabase/migrations/20261105009700_ugc_v3_connected_story_planning.sql','utf8'));
  await pg.exec(fs.readFileSync('scripts/verify-v3-setup.sql','utf8'));checks++;
  await pg.query("insert into public.app_users(id,clerk_user_id) values($1,'fixture')",[owner]);
- if(process.argv.includes('--project-saving-only')) {
+ if(process.argv.includes('--connected-story-only')) {
+  await connectedStoryScenarios({pg,db,owner,call,post,read,tick,fixture,generate,load,equal,ok,calls,cp,spool,setDurations:value=>{storyboardDurations=value;},getVideoPosts:()=>videoPosts});
+ } else if(process.argv.includes('--project-saving-only')) {
   await projectSavingScenarios({pg,db,owner,call,post,read,tick,media,master,oddImage,objects,calls,deleted,load,equal,ok,hash,V3Store,cp,setMode:value=>{mode=value;}});
  } else if(process.argv.includes('--multiple-characters-only')) {
   await multipleCharacterScenarios({pg,db,owner,call,post,read,tick,media,master,oddImage,objects,calls,deleted,load,equal,ok,hash,V3Store,cp,setMode:value=>{mode=value;}});
@@ -550,5 +560,5 @@ try{
  equal((await pg.query('select status,error_code from public.ugc_v3_tasks where id=$1',[waiting.id])).rows[0],{status:'done',error_code:null});
  equal((await pg.query('select id from public.ugc_v3_artifacts where id=$1',[unapproved.id])).rows.length,0);equal(objects.has(operation.asset.storageKey),false);equal(calls.length,beforeCollisionCalls);
  }
- equal(networkCalls,0);console.info(JSON.stringify({scope:process.argv.includes('--project-saving-only')?'project-saving':process.argv.includes('--multiple-characters-only')?'multiple-characters':process.argv.includes('--references-only')?'references-and-location':'full',simpleLocationAndRetentionChecks:checks,migrations:migrations.length,previousFunctionsPreserved,m2FunctionsPreserved,fixtureProviderCalls:calls.length,fixtureEstimateCalls:estimateCalls,realNetworkCalls:networkCalls,automaticImageChecks:0}));
+ equal(networkCalls,0);console.info(JSON.stringify({scope:process.argv.includes('--connected-story-only')?'connected-story':process.argv.includes('--project-saving-only')?'project-saving':process.argv.includes('--multiple-characters-only')?'multiple-characters':process.argv.includes('--references-only')?'references-and-location':'full',simpleLocationAndRetentionChecks:checks,migrations:migrations.length,previousFunctionsPreserved,m2FunctionsPreserved,fixtureProviderCalls:calls.length,fixtureEstimateCalls:estimateCalls,realNetworkCalls:networkCalls,automaticImageChecks:0}));
 }finally{await pg.close();for(const k of Object.keys(process.env))if(!(k in oldEnv))delete process.env[k];Object.assign(process.env,oldEnv);}

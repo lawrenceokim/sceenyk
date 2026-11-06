@@ -809,7 +809,7 @@ export function V3WorkflowPreview({
                       variant="default"
                       disabled={
                         locked ||
-                        proCharactersBlocked || !!locationFeedback ||
+                        proCharactersBlocked || workspace.proDurationRetained || !!locationFeedback ||
                         !currentApproved("character") ||
                         !currentApproved("location") ||
                         (!!reference("product") && !currentApproved("product"))
@@ -823,6 +823,7 @@ export function V3WorkflowPreview({
                     >
                       Generate Storyboard
                     </Button>
+                    {workspace.proDurationRetained && <p role="status" className="text-sm text-muted-foreground">Your Pro duration and story are preserved. Switch to Pro or choose a Basic duration to continue.</p>}
                     {storyboardLoading && <V3StoryboardSkeleton />}
                     {storyboards.map((a) => (
                         <article
@@ -839,11 +840,11 @@ export function V3WorkflowPreview({
                               current references.
                             </p>
                           ) : a.approved ? (
-                            <p className="text-sm">Storyboard approved</p>
+                            <p className="text-sm">{a.storyboard?.version === "director-storyboard-connected-v1" ? "Connected Storyboard approved. Clip generation is coming in Milestone 5." : "Storyboard approved"}</p>
                           ) : (
                             <div className="flex flex-wrap gap-2">
                               <Button
-                                disabled={locked || !a.current}
+                                disabled={locked || !a.current || workspace.proDurationRetained}
                                 onClick={() =>
                                   void act("review_artifact", {
                                     id: a.id,
@@ -874,12 +875,13 @@ export function V3WorkflowPreview({
                 {view === "package" && (
                   <section className="min-w-0 space-y-3">
                     <h2 className="font-semibold">Package &amp; Estimates</h2>
+                    {workspace.multiClipPlanningOnly && <p role="status" className="text-sm text-muted-foreground">Your connected story can be planned and approved. Video generation for stories over 30 seconds will be available in Milestone 5; merging follows in Milestone 6.</p>}
                     {workspace.selectedResolution && <p className="text-xs text-muted-foreground">Selected output: {workspace.selectedResolution}</p>}
                     {workspace.resolutionPricingAvailable === false && <p role="status" className="text-sm text-warning-foreground">Pricing for {workspace.selectedResolution} is not configured. Choose 480p or wait for a verified rate before approving paid generation.</p>}
                     <Button
                       variant="default"
                       className="w-full max-w-full whitespace-normal sm:w-auto"
-                      disabled={locked || !currentApproved("storyboard")}
+                      disabled={locked || workspace.multiClipPlanningOnly || workspace.proDurationRetained || !currentApproved("storyboard")}
                       onClick={() => {
                         setPackageRequestPending(true);
                         void act("build_package", {
@@ -907,7 +909,7 @@ export function V3WorkflowPreview({
                         technical={false}
                       />
                     )}
-                    {p && (
+                    {p && !workspace.multiClipPlanningOnly && !workspace.proDurationRetained && (
                       <>
                         <dl aria-label="Package overview" className="flex min-w-0 flex-wrap gap-2">
                           <div className="inline-flex max-w-full items-center gap-1.5 rounded-lg bg-primary/10 px-2.5 py-1.5 text-xs font-medium text-primary"><dt>Resolution</dt><dd>{p.resolution}</dd></div>
@@ -1033,9 +1035,10 @@ export function V3WorkflowPreview({
                 {view === "final" && (
                   <section className="min-w-0 space-y-4">
                     <h2 className="font-semibold">Final Video</h2>
+                    {workspace.multiClipPlanningOnly && <p role="status" className="text-sm text-muted-foreground">Storyboard planning only. Clip generation will be available in Milestone 5.</p>}
                     <FinalVideoGenerate
                       generating={finalVideoGenerating}
-                      disabled={locked || !p?.canSubmit || finalVideo.hasExistingRun}
+                      disabled={locked || workspace.multiClipPlanningOnly || workspace.proDurationRetained || !p?.canSubmit || finalVideo.hasExistingRun}
                       onGenerate={() => {
                         if (!p) return;
                         setVideoRequestPending(true);

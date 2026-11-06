@@ -4,6 +4,7 @@ import { ensureAppUser } from "@/lib/auth/ensure-app-user";
 import { createDatabaseClient } from "@/lib/db/server";
 import type { ProjectFields, ProjectRow } from "@/lib/db/types";
 import { legacyDuration, projectPageSize } from "./options";
+import { requiresProDuration } from "./pro-duration";
 import { projectVideoResolution } from "./video-resolution";
 import { ugcV1ReferenceLimitsSchema } from "./ugc-v1";
 import { readOwnedUgcV1References } from "./ugc-v1-server";
@@ -13,7 +14,7 @@ import { V3Store } from "@/lib/final-video-generation-v3/runtime-store";
 import {
   projectIdSchema,
   projectPageSchema,
-  saveProjectSchema,
+  saveStudioProjectSchema as saveProjectSchema,
   renameProjectSchema,
   deleteProjectSchema,
 } from "./validation";
@@ -117,6 +118,17 @@ export async function saveOwnedProject(
     tone: settings.tone,
   };
   const database = createDatabaseClient();
+  if (requiresProDuration(settings.duration)) {
+    // Read persisted metadata, never trust a browser's mode. SQL rechecks under
+    // the project row lock and permits an unchanged retained Pro value in Basic.
+    const existing = await database.from("projects").select("duration,studio_mode").eq("id", id).eq("owner_user_id", user.id).eq("status", "draft").maybeSingle();
+    const state = await database.rpc("studio_mode_read", { p_owner: user.id, p_project: existing.data ? id : null });
+    const pro = !state.error && (state.data?.projectMode ?? state.data?.preferredMode) === "pro";
+    const v3 = existing.data ? await enrolledV3(user.id, id) : mode === "create" && eligibleForV3(user.id, creationType);
+    if (existing.error || state.error || !state.data || !v3 || !pro && existing.data?.duration !== settings.duration) {
+      return { ok: false, code: "INVALID_INPUT", message: "Choose this duration in an owned Pro V3 project." };
+    }
+  }
   const finishSave = async (project: SavedProject): Promise<SaveProjectResult> => {
     if (referenceNames?.length) {
       const names = await database.rpc("ugc_save_reference_names", { p_owner_user_id: user.id, p_project_id: project.id, p_names: referenceNames });

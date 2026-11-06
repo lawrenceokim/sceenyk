@@ -1,5 +1,9 @@
 # UI Context
 
+## Phase 2 M4 — Pro duration and connected Storyboard (2026-11-05)
+
+Pro reuses Duration clock radio cards for 10,20,30,40,50,60,70,80,90,100,110,120s. Retain a saved 5/15s value until explicitly changed. Basic keeps existing choices and shows a retained Pro value as a disabled saved option, with mode-switch confirmation and generation guidance. Workflow Storyboard retains its summary, loading skeleton and one Approve/Reject pair for the whole story. Long stories show ordered clips with duration, global boundaries, purpose, expandable continuity/audio and shot details, including local shot timing. Use existing Tailwind/theme/native details/Properties scrolling; no new stylesheet or gallery artwork. Long stories are labelled planning-only; Package/Final actions remain disabled pending M5/M6. Manual visual acceptance remains separate from focused offline checks.
+
 ## Pro Resolution — cinematic flower previews (2026-11-05)
 
 Pro's existing Resolution accordion uses the shared 4:3 image/title cards with three local cinematic pink-lotus samples: softened 480p, lightly softened 720p and crisp 1080p. Match Visual Style's white bottom title/dark gradient, purple selection/checkmark and visible keyboard focus; retain content-height grids and the Properties scroll owner. Preserve the existing resolution hint and accessible group description. The compact Basic control remains unchanged. These are illustrative display-only blur examples, confined to Resolution; they do not enter generation references or change actual resolution capability, pricing, saving or generation. [Assets/prompts/verification](phase-2-basic-pro-studio.md#pro-resolution-cinematic-flower-cards-2026-11-05). Actual theme/mobile/blur readability remains manual.

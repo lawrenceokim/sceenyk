@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { saveProjectSchema } from "@/lib/projects/validation";
+import { saveProjectSchema, legacyProjectSettingsSchema } from "@/lib/projects/validation";
 
 export const listingStatuses = ["draft", "published", "unpublished", "archived"] as const;
 export const marketplacePageSize = 12;
@@ -26,7 +26,7 @@ export const adoptListingSchema = z.strictObject({ listingId: z.uuid(), requestI
 export const deleteTemplateSchema = z.strictObject({ id: z.uuid() });
 export const templateSnapshotSchema = z.strictObject({
   version: z.literal(1), category: saveProjectSchema.shape.category,
-  instructions: publicText(4000), settings: saveProjectSchema.shape.settings,
+  instructions: publicText(4000), settings: legacyProjectSettingsSchema,
   creationType: saveProjectSchema.shape.creationType.optional(), ugcType: saveProjectSchema.shape.ugcType.optional(),
 });
 export const browseSchema = z.strictObject({

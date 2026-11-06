@@ -33,7 +33,7 @@ const media={bytesHash:hash,
 class FixtureStore {
   async read(){return normal(workspace);}
   async rpc(name,args){
-    if(name==='ugc_v3_task_claim'){
+    if(name==='ugc_v3_worker_claim'){
       const task=workspace.tasks.find(t=>t.status==='queued');if(!task)return null;
       task.status='running';task.lease_token=randomUUID();return normal(task);
     }
@@ -79,7 +79,7 @@ const load=typescriptLoader({
   '@/lib/auth/ensure-app-user':{ensureAppUser:async()=>({id:owner})},
   './join':{joinV3Segments:async()=>{throw new Error('JOIN_FORBIDDEN');}},
   openai:{__esModule:true,default:FixtureOpenAI,toFile:async()=>{throw new Error('IMAGE_GENERATION_FORBIDDEN');}},
-  './runtime-config':{assertV3Operator(){},v3LocalEnabled:()=>true,v3OpenAIConfig:()=>({apiKey:'fixture-only',directorModel:'fixture-director'}),v3TransportConfig:()=>({enabled:false})},
+  './runtime-config':{assertV3Access(){},v3UserAllowed:()=>true,v3OpenAIConfig:()=>({apiKey:'fixture-only',directorModel:'fixture-director'}),v3TransportConfig:()=>({enabled:false})},
 }, {Error,structuredClone:normal,fetch:async()=>{networkCalls++;throw new Error('NETWORK_FORBIDDEN');}});
 const {generationContext}=load('lib/final-video-generation-v3/generation-context.ts');
 const {creativeBriefHash}=load('lib/final-video-generation-v3/creative-inputs.ts');

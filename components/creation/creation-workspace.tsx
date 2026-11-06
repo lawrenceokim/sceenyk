@@ -33,6 +33,7 @@ import { StudioInspectorSection } from "./studio-inspector-section";
 import { StudioAspectControl } from "./studio-aspect-control";
 import { StudioResolution } from "./studio-resolution";
 import { projectVideoResolution } from "@/lib/projects/video-resolution";
+import { requiresProDuration } from "@/lib/projects/pro-duration";
 import { StudioGenerationProperties } from "./studio-generation-properties";
 import { MediaDropzone } from "./media-dropzone";
 import { PromptComposer } from "./prompt-composer";
@@ -403,7 +404,7 @@ function WorkspaceEditor({
   }
 
   const characterCount = studioReferenceImages(collectStudioSources(selectedFiles, mediaUpload.assets).characters).length;
-  useStudioModeIncompatibilities(projectId, characterCount > 1 ? ["Multiple characters"] : []);
+  useStudioModeIncompatibilities(projectId, [...(characterCount > 1 ? ["Multiple characters"] : []), ...(requiresProDuration(settings.duration) ? ["Pro video duration"] : [])]);
   return (
     <BeforeAccountAuth.Provider value={() => {
       if (!signedIn && !initialProject) rememberGuestDraft(brief, selectedFiles);

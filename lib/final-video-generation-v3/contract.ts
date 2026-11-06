@@ -33,7 +33,26 @@ export const characterCastSchema = z.array(z.strictObject({ characterId: z.uuid(
 export const castDirectorStoryboardSchema = singleDirectorStoryboardSchema.extend({ cast: characterCastSchema,
   scenes: z.array(directorSceneSchema.extend({ characterIds: z.array(z.uuid()),
     speech: z.array(directorSceneSchema.shape.speech.element.extend({ characterId: z.uuid().nullable() })).max(8) })).min(1).max(100) });
-export const directorStoryboardSchema = z.union([singleDirectorStoryboardSchema, castDirectorStoryboardSchema]);
+// M4 is an additive planning contract. Historical Storyboards keep their exact shape.
+export const plannedClipBoundarySchema = z.strictObject({
+  id: z.string().regex(/^clip-[1-4]$/), number: positive.max(4), startMs: ms, endMs: ms,
+  durationMs: positive.max(30_000),
+});
+export const connectedClipSchema = plannedClipBoundarySchema.extend({
+  purpose: text, continuityIn: text, continuityOut: text, audioContinuity: text,
+});
+const clipShotTiming = { clipId: plannedClipBoundarySchema.shape.id, localStartMs: ms, localEndMs: ms };
+export const connectedDirectorStoryboardSchema = singleDirectorStoryboardSchema.extend({
+  version: z.literal("director-storyboard-connected-v1"),
+  clips: z.array(connectedClipSchema).min(2).max(4),
+  scenes: z.array(directorSceneSchema.extend(clipShotTiming)).min(2).max(100),
+});
+export const connectedCastDirectorStoryboardSchema = connectedDirectorStoryboardSchema.extend({
+  cast: characterCastSchema,
+  scenes: z.array(castDirectorStoryboardSchema.shape.scenes.element.extend(clipShotTiming)).min(2).max(100),
+});
+export const directorStoryboardSchema = z.union([singleDirectorStoryboardSchema, castDirectorStoryboardSchema,
+  connectedDirectorStoryboardSchema, connectedCastDirectorStoryboardSchema]);
 export const planningInputSchema = z.strictObject({ workflow: z.literal(V3_WORKFLOW), profileId: text, scope: scopeSchema,
   // This evidence must later come from trusted owner/database reads, never a browser assertion.
   provenance: z.strictObject({ projectWorkflow: z.literal(V3_WORKFLOW), originalImageId: z.uuid(), originalImageHash: digestSchema }),

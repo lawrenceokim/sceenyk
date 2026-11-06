@@ -1,6 +1,7 @@
 import { useId } from "react";
 import { Select } from "@/components/ui/select";
 import { legacyDuration, ugcTypes, type UgcType } from "@/lib/projects/options";
+import { requiresProDuration } from "@/lib/projects/pro-duration";
 import {
   durations,
   visualStyles,
@@ -14,7 +15,7 @@ export function SettingSelect<T extends string>({
   id: string;
   label: string;
   value: T;
-  choices: readonly { value: T; label: string }[];
+  choices: readonly { value: T; label: string; disabled?: boolean }[];
   onChange: (value: T) => void;
 }) {
   const instanceId = useId();
@@ -67,7 +68,7 @@ export function GenerationSettings({
           id="duration"
           label="Duration"
           value={settings.duration}
-          choices={settings.duration === legacyDuration.value ? [legacyDuration, ...durations] : durations}
+          choices={requiresProDuration(settings.duration) ? [{ value: settings.duration, label: `${settings.duration} seconds (saved Pro)`, disabled: true }, ...durations] : settings.duration === legacyDuration.value ? [legacyDuration, ...durations] : durations}
           onChange={(duration) => onChange({ ...settings, duration })}
         />
         <SettingSelect

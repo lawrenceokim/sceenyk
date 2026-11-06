@@ -1,5 +1,9 @@
 # Code Standards
 
+## Phase 2 M4 — connected planning standards (2026-11-05)
+
+Use additive versioned task/Storyboard JSON contracts under the existing V3 artifact owner. Freeze deterministic <=30s ordered clip boundaries and complete story/cast/continuity before one whole-story approval. Validate exact global/local timing and current saved ownership/mode/reference inputs; do not split or rewrite approved shots later. Keep historical schemas/compiler hashes and Basic/short generation intact. Long paid execution must fail server/worker/SQL admission until M5, independently of UI controls. Manual 097 after 096 preserves table security, pricing, authorization uniqueness and saved data. Approved reference reuse after duration edits must retain original provenance and check every other dependency. [Current M4 contract/setup](phase-2-basic-pro-studio.md#m4-implementation-and-setup-2026-11-05).
+
 ## Planned Basic/Pro extension standards (2026-11-05)
 
 **Product Phase 2 — M1 source implemented; M2–M7 Planned / Not Started.** [Canonical requirements, M1 setup and safeguards](phase-2-basic-pro-studio.md). M1 uses separate metadata services/columns while creative/save contracts remain unchanged. Keep product mode distinct from save-operation `mode`, Creation Type and provider input mode. Resolve persisted preferred/project modes server-side; preserve all existing inputs/approvals on switches. Free mode access cannot bypass spending authorization or provider/ownership guards.

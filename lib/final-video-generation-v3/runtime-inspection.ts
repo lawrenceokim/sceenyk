@@ -12,6 +12,7 @@ import { videoDeliveryBindings } from "./video-delivery";
 import { runtimePreflight } from "./execution-package";
 import { locationDocument } from "./location-runtime";
 import { latestArtifact } from "./generation-context";
+import { MULTI_CLIP_PLANNING_ONLY } from "@/lib/projects/pro-duration";
 
 export async function inspectRuntime(w: RuntimeWorkspace) {
   const docValue = w.packages.at(-1)?.document;
@@ -19,6 +20,7 @@ export async function inspectRuntime(w: RuntimeWorkspace) {
   const doc = readFrozenPackage(docValue), quote = w.quotes.find(q => q.document.packageId === doc.id)?.document;
   const authority = w.runtimeAuthorizations.filter(a => a.document.packageId === doc.id).at(-1)?.document;
   const issues = quote ? quote.segments.flatMap(s => higgsfieldRequestIssues(s.body, doc.source.references, quote.validityEvidence, new Date().toISOString())) : ["COST_ESTIMATE_UNAVAILABLE"];
+  if (doc.source.storyboardContent.durationMs > 30_000) issues.unshift(MULTI_CLIP_PLANNING_ONLY);
   let deliveryReady = false;
   try { videoDeliveryBindings(w, doc); deliveryReady = true; } catch { issues.push("V3_DELIVERY_BINDING_INVALID"); }
   try { await new V3Store().rpc("ugc_v3_video_setup", {}); } catch { issues.push("V3_VIDEO_SETUP_REQUIRED"); }

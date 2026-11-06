@@ -1,5 +1,9 @@
 # Architecture Context
 
+## Phase 2 M4 — versioned connected-story planning (2026-11-05)
+
+Pro duration extends the existing project duration owner, with persisted mode/enrollment validation in manual 097 after 096. Long stories use additive `director-storyboard-connected-v1` / `connected-story-director-v1` snapshots inside existing V3 task/artifact JSON: one full story, deterministic 30s clips with a short tail, stable logical clip IDs/sequence/boundaries/purpose/continuity, and exact global/local shot timing. Artifact ID/version/hash scopes logical clip IDs for future M5 attempts. Whole-story approval freezes the same document. No new table or historical hash rewrite. Server/worker/SQL block >30s package/video admission; M5/M6 remain separate. Approved Location reuse for duration-only edits validates original provenance and unchanged remaining inputs without modifying its sheet, hash or generator. Short/historical contracts and pricing/storage/recovery remain. [M4 contract/setup](phase-2-basic-pro-studio.md#m4-implementation-and-setup-2026-11-05).
+
 ## Phase 2 M3 — shared saved style, presentation only (2026-11-05)
 
 Pro's visual-style gallery and Basic's existing Select both read/write `CreationWorkspace.settings.visualStyle`. Existing Save/read maps it to `projects.visual_style`; V3 `projectBrief`/`generationContext` and all currentness/prompt/reference/director/package/video owners remain unchanged. The gallery is controlled and owns no persistent or secondary style state; its five public WebP samples are presentation-only and never enter generation inputs. No architecture, schema, provider, worker, storage, financial or history change. [M3 behavior, assets and offline evidence](phase-2-basic-pro-studio.md#m3-implementation-and-assets-2026-11-05). M4–M7 remain unimplemented; dated M1/M2 records below preserve their original scope.

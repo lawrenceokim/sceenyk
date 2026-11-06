@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { saveProjectSchema } from "@/lib/projects/validation";
+import { saveProjectSchema, legacyProjectSettingsSchema } from "@/lib/projects/validation";
 import { mediaKindForMime } from "@/lib/media/validation";
 import { referenceNameSchema, referenceNameLimit } from "@/lib/projects/reference-names";
 
@@ -56,7 +56,7 @@ const snapshotFields = {
   projectTitle: saveProjectSchema.shape.title,
   creationType: z.literal("ugc"), ugcType: saveProjectSchema.shape.ugcType.unwrap(),
   sceneDescription: saveProjectSchema.shape.prompt.trim().min(1),
-  settings: saveProjectSchema.shape.settings,
+  settings: legacyProjectSettingsSchema,
   narration: ugcNarrationSchema,
 };
 // Preserve the meaning of already-created v2 jobs; new requests always use v3.

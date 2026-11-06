@@ -1,14 +1,14 @@
 import "server-only";
 import { createHash } from "node:crypto";
 import { z } from "zod";
-import { saveProjectSchema } from "@/lib/projects/validation";
+import { saveProjectSchema, legacyDurationSchema } from "@/lib/projects/validation";
 import type { GenerationSnapshot } from "@/lib/generation/types";
 
 // Retail Sceenyk units only. No currency conversion or provider billing data.
 // Every rule matches the complete trusted workload; unknown workloads fail closed.
 const workloadSchema = z.strictObject({
   category: saveProjectSchema.shape.category,
-  duration: saveProjectSchema.shape.settings.shape.duration,
+  duration: legacyDurationSchema,
   operation: z.enum(["transformation", "new_generation"]),
   modelTier: z.string().min(1).max(80),
   quality: z.string().min(1).max(80),

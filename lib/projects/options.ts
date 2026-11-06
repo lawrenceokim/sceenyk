@@ -30,7 +30,12 @@ export const durations = [
 ] as const;
 // Read/save compatibility only; never offered for a new selection.
 export const legacyDuration = { value: "15", label: "15 seconds (legacy)" } as const;
+export const proDurations = ["10", "20", "30", "40", "50", "60", "70", "80", "90", "100", "110", "120"].map(
+  value => ({ value: value as ProDuration, label: `${value} seconds` }),
+);
+export type ProDuration = "10" | "20" | "30" | "40" | "50" | "60" | "70" | "80" | "90" | "100" | "110" | "120";
 export const storedDurationValues = [...durations.map(({ value }) => value), legacyDuration.value];
+export const studioDurationValues = [...new Set([...storedDurationValues, ...proDurations.map(({ value }) => value)])];
 export const visualStyles = [
   "Original",
   "Cartoon",
@@ -49,7 +54,7 @@ export const tones = [
 export interface CreationSettings {
   resolution?: import("./video-resolution").VideoResolution;
   aspectRatio: (typeof aspectRatios)[number]["value"];
-  duration: (typeof storedDurationValues)[number];
+  duration: (typeof studioDurationValues)[number];
   visualStyle: (typeof visualStyles)[number];
   tone: (typeof tones)[number];
 }

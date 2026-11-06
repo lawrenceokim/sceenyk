@@ -6,6 +6,7 @@ import {
   categoryIds,
   durations,
   storedDurationValues,
+  studioDurationValues,
   visualStyles,
   tones,
   projectTitleLimit,
@@ -40,11 +41,20 @@ export const saveProjectSchema = z.strictObject({
   settings: z.strictObject({
     resolution: videoResolutionSchema.optional(),
     aspectRatio: z.enum(aspectRatios.map(({ value }) => value)),
-    duration: z.enum(storedDurationValues),
+    duration: z.enum(studioDurationValues),
     visualStyle: z.enum(visualStyles),
     tone: z.enum(tones),
   }),
 });
+// Drafts may carry Pro settings. Execution/retail/template validators retain the
+// exact historical allowed values, without coercing an extended draft duration.
+export const legacyDurationSchema = z.enum(studioDurationValues).refine(
+  value => storedDurationValues.some(duration => duration === value), "Choose a supported duration for this workflow.",
+);
+export const legacyProjectSettingsSchema = saveProjectSchema.shape.settings.extend({
+  duration: legacyDurationSchema,
+});
+export const saveStudioProjectSchema = saveProjectSchema;
 export const projectPageSchema = z.number().int().min(1).max(100_000);
 // New UGC requests use current choices; stored projects/snapshots retain legacy reads.
 export const ugcSettingsSchema = saveProjectSchema.shape.settings.extend({

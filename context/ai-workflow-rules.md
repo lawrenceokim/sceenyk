@@ -1,5 +1,9 @@
 # AI Workflow Rules
 
+## Current authorization — Phase 2 M4 connected Storyboard planning (2026-11-05)
+
+Implement extended Pro duration and one full connected Director story through whole-story approval using existing V3 owners. Preserve Basic/short/historical generation, reference generators/sheets, pricing/authority, storage/recovery and unrelated Properties. Author manual transactional/rerunnable 097 after 096 with verified source/catalog prerequisites; no remote apply. Focused offline planning, actual route/worker/disposable SQL and restoration/approval/paid-blocking checks are authorized; no real provider/paid request/live worker/browser/build/deployment. Stop before M5 individual clip execution/replacement and M6 merging. [M4 setup/evidence](phase-2-basic-pro-studio.md#m4-implementation-and-setup-2026-11-05).
+
 ## Current correction — Pro Resolution flower imagery (2026-11-05)
 
 The owner authorizes three built-in imagegen cinematic flower samples with different illustrative blur levels for Pro's existing 480p/720p/1080p Resolution cards. Use the existing lotus artwork as reference and the shared Visual Style image/title presentation. Confine samples to Resolution, retain Basic's compact control, existing saved resolution/default/callback and all pricing/package/provider/eligibility/approval gates. No generation-workflow, schema, worker/storage, CSS or dependency change. Focused UI/asset/TypeScript/lint checks only; no Sceenyk provider request, live database/storage/worker, browser/screenshot suite, build or deployment. [Implementation/prompt/evidence record](phase-2-basic-pro-studio.md#pro-resolution-cinematic-flower-cards-2026-11-05).

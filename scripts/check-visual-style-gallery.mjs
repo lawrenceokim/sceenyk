@@ -48,7 +48,7 @@ try {
   const { StudioGenerationProperties, VisualStyleGallery, StudioResolution } = loadedModule.exports;
   const settings = { duration: '10', aspectRatio: '9:16', resolution: '480p', visualStyle: 'Original', tone: 'Professional' };
   const options = {
-    Duration: ['5', '10', '30'],
+    Duration: ['10','20','30','40','50','60','70','80','90','100','110','120'],
     'Visual Style': ['Original', 'Cartoon', 'Cinematic', 'Anime', 'Realistic'],
     Tone: ['Funny', 'Dramatic', 'Professional', 'Energetic', 'Storytelling'],
     Type: ['advertisement', 'explanation', 'unboxing'],
@@ -124,10 +124,10 @@ try {
   }
   current.duration = '15';
   equal(selected(section(render(), 'Duration')), ['15']);
-  equal(radios(section(render(), 'Duration')).map(e => e.props.value), ['15', '5', '10', '30']);
+  equal(radios(section(render(), 'Duration')).map(e => e.props.value), ['15', ...options.Duration]);
   radios(section(render(), 'Duration')).find(e => e.props.value === '10').props.onChange({ target: { checked: true } });
-  equal(radios(section(render(), 'Duration')).map(e => e.props.value), ['5', '10', '30']);
-  equal(section(render(), 'Duration').filter(e => e.type === 'path' && e.props.transform).map(e => e.props.transform), ['rotate(30 24 24)', 'rotate(60 24 24)', 'rotate(180 24 24)']);
+  equal(radios(section(render(), 'Duration')).map(e => e.props.value), options.Duration);
+  equal(section(render(), 'Duration').filter(e => e.type === 'path' && e.props.transform).map(e => e.props.transform), options.Duration.map(v => `rotate(${Number(v)*6} 24 24)`));
   equal(render('pro', { ugcType: undefined }).filter(e => e.type === 'summary').map(e => e.props.children[0]), ['Duration', 'Visual Style', 'Tone']);
   equal(paths.size, 13);
   for (const resolution of ['480p', '720p', '1080p']) {

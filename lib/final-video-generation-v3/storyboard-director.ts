@@ -3,8 +3,9 @@ import { projectVideoResolution } from "@/lib/projects/video-resolution";
 import { directorStoryboardSchema, characterCastSchema, type DirectorStoryboard } from "./contract";
 import { generationContext } from "./generation-context";
 import type { projectBrief } from "./creative-inputs";
-import { saveProjectSchema } from "@/lib/projects/validation";
+import { saveStudioProjectSchema as saveProjectSchema } from "@/lib/projects/validation";
 import { speechIntervalBudget } from "@/lib/storyboard/speech-budget";
+import { planStoryClips, clipBoundariesSchema, connectedStoryInstructions, validateConnectedStory } from "./connected-story";
 
 export const STORYBOARD_DIRECTOR_VERSION = "approved-storyboard-v1";
 // Keep the task/publication version stable. Frozen prompt recipes are independent.
@@ -44,12 +45,17 @@ const styleApproaches = {
 } as const;
 
 type Brief = Awaited<ReturnType<typeof projectBrief>>;
-export function storyboardDirectorInput(brief: Brief, roles: readonly string[], approvedLocation: unknown, cast?: unknown) {
+export function storyboardDirectorInput(brief: Brief, roles: readonly string[], approvedLocation: unknown, cast?: unknown, clipBoundaries?: unknown) {
   saveProjectSchema.shape.settings.parse({ duration: brief.duration, aspectRatio: brief.aspect_ratio, visualStyle: brief.visual_style, tone: brief.tone });
   if (!roles.includes("character") || !roles.includes("location") || (!cast && new Set(roles).size !== roles.length) || roles.some(role => !["character", "product", "location"].includes(role)))
     throw new Error("V3_REFERENCES_REQUIRED");
   const context = generationContext(brief);
+  const durationMs = Number(brief.duration) * 1000;
+  if (durationMs > 30_000 && clipBoundaries === undefined) throw new Error("V3_CONNECTED_STORY_REQUIRED");
+  const boundaries = clipBoundaries === undefined ? null : clipBoundariesSchema.parse(clipBoundaries);
+  if (boundaries && (durationMs <= 30_000 || JSON.stringify(boundaries) !== JSON.stringify(planStoryClips(durationMs)))) throw new Error("V3_CLIP_PLAN_CHANGED");
   return [
+    ...(boundaries ? [connectedStoryInstructions, `Exact ordered clip boundaries: ${JSON.stringify(boundaries)}`] : []),
     ...(cast ? [`Exact approved cast, in image order: ${JSON.stringify(characterCastSchema.parse(cast))}. Return this exact cast. Every shot must include characterIds naming only characters visible in it; each dialogue line needs its characterId and narration needs null. Preserve separate faces, clothing, recognizable features and voices. Use the saved names in descriptions and stable IDs for bindings, even when names repeat. Never interchange speakers or references.`] : []),
     `Saved creative inputs: ${JSON.stringify({ title: brief.title, ...context, durationMs: Number(brief.duration) * 1000, aspectRatio: brief.aspect_ratio, resolution: projectVideoResolution(brief.video_resolution) })}`,
     "The following directing suggestions are subordinate to every explicit saved user preference; apply only the parts compatible with the brief.",
@@ -93,5 +99,6 @@ export function validateDirectedStoryboard(value: unknown, expected: Pick<Direct
     if (Object.values(shot.audio).some(cue => cue.assetId !== null)) throw new Error("V3_DIRECTOR_AUDIO_BINDING_INVALID");
   }
   if (end !== expected.durationMs) throw new Error("V3_DIRECTOR_TIMING_INVALID");
+  validateConnectedStory(storyboard);
   return storyboard;
 }

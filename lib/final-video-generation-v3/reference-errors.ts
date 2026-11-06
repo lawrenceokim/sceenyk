@@ -1,4 +1,11 @@
 const messages: Record<string, string> = {
+  V3_MULTI_CLIP_PLANNING_ONLY: "Connected Storyboards over 30 seconds can be planned and approved. Clip generation will be available in Milestone 5; no video request was sent.",
+  V3_PRO_DURATION_REQUIRED: "Your saved Pro duration is preserved. Switch to Pro or choose a Basic duration to continue.",
+  V3_CLIP_PLAN_INVALID: "The Storyboard clip boundaries do not cover the selected duration. Reject this Storyboard and generate a new connected story.",
+  V3_CLIP_CONTINUITY_INVALID: "The Storyboard has mismatched continuity between clips. Reject it and generate a new connected story.",
+  V3_CONNECTED_STORY_REQUIRED: "This duration needs a connected Storyboard. Generate and review the complete story before continuing.",
+  V3_CLIP_PLAN_CHANGED: "The saved clip boundaries do not match this duration. Generate a new connected Storyboard; your approved sheets are preserved.",
+  V3_CLIP_SHOT_TIMING_INVALID: "A Storyboard shot crosses a clip boundary or has incorrect timing. Reject it and generate a new connected story.",
   V3_CHARACTER_NAME_REQUIRED: "Enter and save a name for this character before generating its sheet.",
   V3_PRO_CHARACTERS_RETAINED: "Basic Studio supports one character. All your Pro characters and saved sheets are preserved. Switch to Pro to continue this project.",
   V3_PRO_REFERENCE_LIMITS_UNVERIFIED: "This multi-character video needs verified reference limits for the selected Higgsfield model. All characters are preserved; no video request was sent.",

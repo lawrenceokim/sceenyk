@@ -1,13 +1,14 @@
 import { useId } from "react";
 import { Check } from "lucide-react";
-import { durations, legacyDuration, type CreationSettings } from "@/lib/projects/options";
+import { proDurations, type CreationSettings } from "@/lib/projects/options";
 
 export function DurationGallery({ value, onChange }: {
   value: CreationSettings["duration"];
   onChange: (value: CreationSettings["duration"]) => void;
 }) {
   const groupId = useId();
-  const choices = value === legacyDuration.value ? [legacyDuration, ...durations] : durations;
+  const retained = !proDurations.some(d => d.value === value);
+  const choices = retained ? [{ value, label: `${value} seconds (saved)` }, ...proDurations] : proDurations;
   return <fieldset className="min-w-0">
     <legend className="sr-only">Duration</legend>
     <div className="grid min-w-0 grid-cols-[repeat(auto-fit,minmax(min(100%,64px),1fr))] gap-2 p-1">
@@ -23,7 +24,7 @@ export function DurationGallery({ value, onChange }: {
             <circle cx="24" cy="24" r="2" fill="currentColor" stroke="none" />
           </svg>
           <span className="text-xs font-medium">{choice.value}s</span>
-          {choice.value === legacyDuration.value && <span className="text-[10px]">Legacy</span>}
+          {retained && choice.value === value && <span className="text-[10px]">Saved</span>}
           {value === choice.value && <span className="absolute right-1 top-1 flex size-4 items-center justify-center rounded-full bg-primary text-primary-foreground" aria-hidden="true">
             <Check className="size-3" strokeWidth={3} />
           </span>}

@@ -33,6 +33,8 @@ import { enqueueLocation, isLocationDirectorTask, locationTaskStatus, resumeLoca
 import { discardReference, discardableReferences } from "./reference-retention";
 import { packageBuildDetailsSchema } from "./package-status";
 import { currentDisplayPricing } from "./pricing/display-pricing";
+import { CONNECTED_STORY_DIRECTOR_VERSION, planStoryClips, validateConnectedStory } from "./connected-story";
+import { assertSingleVideoExecution, requiresProDuration } from "@/lib/projects/pro-duration";
 
 export { inspectRuntime } from "./runtime-inspection";
 import { inspectRuntime } from "./runtime-inspection";
@@ -57,7 +59,8 @@ export async function runtimeDto(w: RuntimeWorkspace) {
     ...(w.referenceDeletions.some(d=>d.id===a.id&&d.state==="prepared")?{cleanupPending:true,cleanupMode:w.referenceDeletions.find(d=>d.id===a.id)?.mode}:{}),
     current: artifactCurrent(a, w.artifacts, generationContext(brief), originals, creativeBriefHash(brief), w.referenceDeletions) &&
       (a.kind !== "location" || !isLocationDirectorTask({ kind: "location", input: (a.document.input ?? {}) as Record<string,unknown> }) ||
-        (a.document.input as Record<string,unknown>).briefHash === creativeBriefHash(brief) && v3Digest("location-names",(a.document.input as Record<string,unknown>).names) === v3Digest("location-names",originals.names)),
+        (a.document.input as Record<string,unknown>).briefHash === creativeBriefHash(brief) && v3Digest("location-names",(a.document.input as Record<string,unknown>).names) === v3Digest("location-names",originals.names) ||
+        !!a.approved_at && await new V3Store().rpc("ugc_v3_location_input_current", { p_project: w.project.project_id, d: a.document.input }) === true),
     location: a.kind === "location" ? locationDocument(a) : null,
     approved: !!a.approved_at, rejected: !!a.rejected_at, storyboard: a.kind === "storyboard" ? directorStoryboardSchema.parse(a.document.storyboard) : null,
     preview: a.document.asset && !w.referenceDeletions.some(d=>d.id===a.id&&d.state==="prepared") && (!a.rejected_at || ["character", "product", "location"].includes(a.kind)) ? await previewUrl(privateAssetSchema.parse(a.document.asset)) : null })));
@@ -131,6 +134,8 @@ export async function runtimeDto(w: RuntimeWorkspace) {
       canStartNew: location?.canGenerate ?? diagnostics?.canStartNew ?? false };
   }));
   return { projectId: w.project.project_id, packageStale: w.packages.length > 0 && !preflight, artifacts, runs: [...runs, ...joined],
+    ...(Number(brief.duration) > 30 ? { multiClipPlanningOnly: true as const } : {}),
+    ...(requiresProDuration(brief.duration) && w.project.studio_mode !== "pro" ? { proDurationRetained: true as const } : {}),
     ...(originals.characters ? { characterIds: originals.characters.map(c => c.id) } : {}),
     ...(projectVideoResolution(brief.video_resolution) !== "480p" ? { selectedResolution: projectVideoResolution(brief.video_resolution),
       resolutionPricingAvailable: !!getEstimatedRate("higgsfield", "bytedance/seedance-2.5/reference-to-video", "reference-to-video", projectVideoResolution(brief.video_resolution)) } : {}),
@@ -161,6 +166,8 @@ export async function ownedV3Action(raw: unknown) {
   const w = await store.read(user.id, a.projectId), brief = await projectBrief(user.id, a.projectId), originals = await referenceOriginals(user.id, a.projectId);
   const context = generationContext(brief);
   if (context.creationType !== "ugc") throw new Error("SELECT_UGC_CREATION_TYPE");
+  if (["build_package", "authorize", "generate"].includes(a.action)) assertSingleVideoExecution(Number(brief.duration) * 1000);
+  if (requiresProDuration(brief.duration) && w.project.studio_mode !== "pro" && ["storyboard", "build_package", "authorize", "generate"].includes(a.action)) throw new Error("V3_PRO_DURATION_REQUIRED");
   if (originals.characters && ["reference", "storyboard", "build_package", "authorize", "generate"].includes(a.action) && w.project.studio_mode !== "pro")
     throw new Error("V3_PRO_CHARACTERS_RETAINED");
   if (a.action === "reference" && a.kind === "location") {
@@ -253,6 +260,10 @@ export async function ownedV3Action(raw: unknown) {
       return runtimeDto(await store.read(user.id, a.projectId));
     }
     if (a.decision === "approve" && (!artifact || !artifactCurrent(artifact, w.artifacts, context, originals, creativeBriefHash(brief), w.referenceDeletions))) throw new Error("REFERENCE_STALE_REGENERATE");
+    if (a.decision === "approve" && artifact?.kind === "storyboard" && Number(brief.duration) > 30) {
+      if (w.project.studio_mode !== "pro") throw new Error("V3_PRO_DURATION_REQUIRED");
+      validateConnectedStory(directorStoryboardSchema.parse(artifact.document.storyboard), (artifact.document.input as Record<string, unknown>).clipBoundaries);
+    }
     await store.action(user.id, a.projectId, "review_artifact", { id: z.uuid().parse(a.id), decision: z.enum(["approve", "reject"]).parse(a.decision) });
   } else if (a.action === "storyboard") {
     const refs = approvedArtifacts(w, brief, originals), previous = latestArtifact(w, "storyboard");
@@ -262,8 +273,10 @@ export async function ownedV3Action(raw: unknown) {
     const changed = previous && (!oldInput.success || v3Digest("reference-ids", oldInput.data.references) !==
       v3Digest("reference-ids", refs.map(r => r.id)) || oldInput.data.briefHash !== creativeBriefHash(brief));
     if (previous && !previous.rejected_at && !changed) throw new Error("REVIEW_EXISTING_STORYBOARD_FIRST");
-    await enqueue("storyboard", { directorVersion: STORYBOARD_DIRECTOR_VERSION, brief, briefHash: creativeBriefHash(brief), generationContext: context, model: v3OpenAIConfig().directorModel,
-      ...(originals.characters ? { cast: characterCast(w, originals) } : {}), references: refs.map(r => r.id), previous: previous?.id ?? null });
+    const connected = Number(brief.duration) > 30;
+    await enqueue("storyboard", { directorVersion: connected ? CONNECTED_STORY_DIRECTOR_VERSION : STORYBOARD_DIRECTOR_VERSION,
+      ...(connected ? { clipBoundaries: planStoryClips(Number(brief.duration) * 1000) } : {}), brief, briefHash: creativeBriefHash(brief), generationContext: context, model: v3OpenAIConfig().directorModel,
+      ...(originals.characters || connected ? { cast: characterCast(w, originals) } : {}), references: refs.map(r => r.id), previous: previous?.id ?? null });
   } else if (a.action === "build_package") {
     const refs = approvedArtifacts(w, brief, originals), storyboard = latestArtifact(w, "storyboard");
     const locationArtifact = refs.find(r => r.kind === "location"), location = locationDocument(locationArtifact);
@@ -297,6 +310,7 @@ export async function ownedV3Action(raw: unknown) {
       p_retry_task: a.retryTaskId ? z.uuid().parse(a.retryTaskId) : null });
   } else if (a.action === "authorize") {
     const doc = readFrozenPackage(w.packages.at(-1)?.document), quote = w.quotes.find(q => q.document.packageId === doc.id)?.document;
+    assertSingleVideoExecution(doc.source.storyboardContent.durationMs);
     if (a.packageId !== doc.id || a.packageHash !== doc.hash || a.quoteId !== quote?.id) throw new Error("V3_REVIEW_SNAPSHOT_CHANGED");
     if (!quote || a.operatorApproved !== true) throw new Error("CURRENT_QUOTE_AND_OPERATOR_APPROVAL_REQUIRED");
     const maximum = z.number().int().nonnegative().safe().parse(a.maximumMicrousd);
@@ -311,6 +325,7 @@ export async function ownedV3Action(raw: unknown) {
   } else if (a.action === "generate") {
     // The web request records intent only. The separate local worker is the only submitter.
     const doc = readFrozenPackage(w.packages.at(-1)?.document);
+    assertSingleVideoExecution(doc.source.storyboardContent.durationMs);
     if (a.packageId !== doc.id || a.packageHash !== doc.hash) throw new Error("V3_REVIEW_SNAPSHOT_CHANGED");
     if (w.runs.some(r => r.package_id === doc.id && r.state !== "deleted")) return runtimeDto(w);
     assertV3Transport(v3TransportConfig(), { projectId: a.projectId, packageId: doc.id });

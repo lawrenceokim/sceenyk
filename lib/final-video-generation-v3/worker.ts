@@ -11,7 +11,9 @@ import { V3Store, type RuntimeWorkspace } from "./runtime-store";
 import { taskSchema, privateAssetSchema, type Task } from "./runtime-contract";
 import { executeV3Segment } from "./execution";
 import { joinV3Segments } from "./join";
-import { directorStoryboardSchema, castDirectorStoryboardSchema } from "./contract";
+import { directorStoryboardSchema, castDirectorStoryboardSchema, connectedDirectorStoryboardSchema, connectedCastDirectorStoryboardSchema } from "./contract";
+import { CONNECTED_STORY_DIRECTOR_VERSION, validateConnectedStory, connectedStoryInstructions } from "./connected-story";
+import { assertSingleVideoExecution, requiresProDuration } from "@/lib/projects/pro-duration";
 import { readFrozenPackage } from "./package";
 import { v3Digest } from "./identity";
 import { packageTask } from "./package-task";
@@ -109,6 +111,9 @@ async function imageTask(store: V3Store, task: Task, w: RuntimeWorkspace, signal
 async function storyboardTask(store: V3Store, task: Task, w: RuntimeWorkspace, signal: AbortSignal) {
   const model = z.string().min(1).parse(task.input.model), brief = await projectBrief(w.project.owner_user_id, task.project_id);
   if (creativeBriefHash(brief) !== task.input.briefHash) throw new Error("V3_CREATIVE_INPUT_STALE");
+  const connected = task.input.directorVersion === CONNECTED_STORY_DIRECTOR_VERSION;
+  if (requiresProDuration(brief.duration) && w.project.studio_mode !== "pro") throw new Error("V3_PRO_DURATION_REQUIRED");
+  if (Number(brief.duration) > 30 && (!connected || w.project.studio_mode !== "pro")) throw new Error("V3_PRO_DURATION_REQUIRED");
   const approved = approvedArtifacts({ ...w, tasks: w.tasks.filter(t => t.id !== task.id) }, brief, await referenceOriginals(w.project.owner_user_id, task.project_id));
   if (JSON.stringify(task.input.references) !== JSON.stringify(approved.map(a => a.id)) ||
     v3Digest("generation-context", generationContextSchema.parse(task.input.generationContext)) !== v3Digest("generation-context", generationContext(brief)))
@@ -117,13 +122,16 @@ async function storyboardTask(store: V3Store, task: Task, w: RuntimeWorkspace, s
   let raw = await readSpool(task.id, "openai-response.json");
   if (!raw) {
     if (task.provider_started) throw new Error("V3_OPENAI_OUTCOME_UNKNOWN");
-    const config = v3OpenAIConfig(), provider = new OpenAICreativeDirectorProvider({ model, maxOutputTokens: 14_000 });
+    const config = v3OpenAIConfig(), provider = new OpenAICreativeDirectorProvider({ model, maxOutputTokens: connected ? 28_000 : 14_000 });
     const location = locationDocument(w.artifacts.find(a => a.kind === "location" && (task.input.references as string[]).includes(a.id)));
     if (location) await store.rpc("ugc_v3_location_input_current", { p_project: task.project_id, d: w.artifacts.find(a => a.id === location.artifactId)!.document.input }).then(current => { if (current !== true) throw new Error("V3_CREATIVE_INPUT_STALE"); });
     const cast = task.input.cast;
-    const instruction = storyboardDirectorInput(brief, approved.map(a => a.kind), location, cast);
+    const instruction = storyboardDirectorInput(brief, approved.map(a => a.kind), location, cast, connected ? task.input.clipBoundaries : undefined);
     const request = provider.prepareStoryboard({ instruction, durationMs: Number(brief.duration) * 1000, referenceUrls: [] });
-    if (cast) request.body.text = { format: zodTextFormat(castDirectorStoryboardSchema, "director_storyboard_cast_v1") };
+    if (connected) {
+      request.body.instructions = String(request.body.instructions).replace("Shots are creative units in ONE continuous audiovisual generation, not individual provider requests.", "Shots are creative units in ONE connected story divided into the supplied planned clips.") + "\n" + connectedStoryInstructions;
+      request.body.text = { format: cast ? zodTextFormat(connectedCastDirectorStoryboardSchema, "director_storyboard_connected_cast_v1") : zodTextFormat(connectedDirectorStoryboardSchema, "director_storyboard_connected_v1") };
+    } else if (cast) request.body.text = { format: zodTextFormat(castDirectorStoryboardSchema, "director_storyboard_cast_v1") };
     request.body.input = [{ role: "user", content: [{ type: "input_text", text: instruction },
       ...refs.map(r => ({ type: "input_image" as const, image_url: `data:image/png;base64,${r.bytes.toString("base64")}`, detail: "high" as const }))] }];
     const client = new OpenAI({ apiKey: config.apiKey, maxRetries: 0, timeout: 600_000, logLevel: "off" });
@@ -142,7 +150,8 @@ async function storyboardTask(store: V3Store, task: Task, w: RuntimeWorkspace, s
   }
   if (storyboard.durationMs !== Number(brief.duration) * 1000 || storyboard.aspectRatio !== brief.aspect_ratio) throw new Error("V3_DIRECTOR_TIMING_INVALID");
   if (storyboard.visualStyle !== brief.visual_style || storyboard.tone !== brief.tone) throw new Error("V3_DIRECTOR_STYLE_INVALID");
-  if (task.input.directorVersion === STORYBOARD_DIRECTOR_VERSION) validateDirectedStoryboard(storyboard, {
+  if (connected) validateConnectedStory(storyboard, task.input.clipBoundaries);
+  if (task.input.directorVersion === STORYBOARD_DIRECTOR_VERSION || connected) validateDirectedStoryboard(storyboard, {
     durationMs: Number(brief.duration) * 1000, aspectRatio: brief.aspect_ratio, visualStyle: brief.visual_style, tone: brief.tone });
   await store.checkpoint(task, "artifact", { id: task.id, document: { storyboard, input: task.input, provider: "openai", model, responseHash: bytesHash(raw), requestId: captured.requestId } });
 }
@@ -151,6 +160,8 @@ async function videoTask(store: V3Store, task: Task, w: RuntimeWorkspace, signal
   if (run.result) { await store.checkpoint(task, "done"); return; }
   const config = v3TransportConfig(), transport = new HiggsfieldV3Transport(config);
   const doc = readFrozenPackage(w.packages.find(p => p.id === run.package_id)!.document), segment = doc.segments.find(s => s.id === run.intent.segmentId)!;
+  // M4 admits planning only. Keep accepted historical requests recoverable.
+  if (!run.observation && !run.result) assertSingleVideoExecution(doc.source.storyboardContent.durationMs);
   const stage = async (value: string, requestId?: string) => {
     const changed = await store.rpc("ugc_v3_video_stage", { p_task: task.id, p_token: task.lease_token, p_stage: value });
     if (changed) console.info(JSON.stringify({ stage: value, projectId: task.project_id, packageId: run.package_id, runId: run.id, ...(requestId ? { requestId } : {}) }));
