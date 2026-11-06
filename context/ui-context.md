@@ -1,5 +1,9 @@
 # UI Context
 
+## Phase 2 M5 — independent Final Video clip cards (2026-11-06)
+
+Long Pro Final Video shows ordered compact cards in one column, expanding to two at the existing small breakpoint. Use shared purple/theme tokens, wrapping buttons, semantic list/status, keyboard focus and existing Base UI confirmation dialogs. Each clip owns its small reduced-motion spinner and Generate/Preview/Approve/Reject/Regenerate/recovery actions. Replacement cost approval remains separate from Generate; deletion confirms only the selected unapproved output. Preview reuses the existing signed-media selector. Neighbor continuity notices preserve output/approval. All approved says ready for merging and never Complete. Basic/short controls and reference/Storyboard surfaces remain unchanged. Tailwind only; actual responsive/theme/keyboard visual review remains manual.
+
 ## Phase 2 M4 — Pro duration and connected Storyboard (2026-11-05)
 
 Pro reuses Duration clock radio cards for 10,20,30,40,50,60,70,80,90,100,110,120s. Retain a saved 5/15s value until explicitly changed. Basic keeps existing choices and shows a retained Pro value as a disabled saved option, with mode-switch confirmation and generation guidance. Workflow Storyboard retains its summary, loading skeleton and one Approve/Reject pair for the whole story. Long stories show ordered clips with duration, global boundaries, purpose, expandable continuity/audio and shot details, including local shot timing. Use existing Tailwind/theme/native details/Properties scrolling; no new stylesheet or gallery artwork. Long stories are labelled planning-only; Package/Final actions remain disabled pending M5/M6. Manual visual acceptance remains separate from focused offline checks.

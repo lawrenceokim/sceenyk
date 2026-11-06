@@ -1,5 +1,9 @@
 # Code Standards
 
+## Phase 2 M5 — immutable clip attempt standards (2026-11-06)
+
+Compile connected plans only at their exact approved boundaries using the versioned connected compiler; preserve historical recipes. Bind attempts to frozen package/Storyboard/clip identity and exact predecessor, retaining active-segment and consumed-authorization uniqueness. Reserve finite cumulative spend atomically; deleted media never restores authority. Require explicit new attempt approval and confirmed deletion; accepted/unknown work recovers receipts without paid replay. Save ordered merge inputs atomically with the last approval; connected-package joining stays blocked for M6. No parallel worker/storage/pricing architecture or new stylesheet.
+
 ## Phase 2 M4 — connected planning standards (2026-11-05)
 
 Use additive versioned task/Storyboard JSON contracts under the existing V3 artifact owner. Freeze deterministic <=30s ordered clip boundaries and complete story/cast/continuity before one whole-story approval. Validate exact global/local timing and current saved ownership/mode/reference inputs; do not split or rewrite approved shots later. Keep historical schemas/compiler hashes and Basic/short generation intact. Long paid execution must fail server/worker/SQL admission until M5, independently of UI controls. Manual 097 after 096 preserves table security, pricing, authorization uniqueness and saved data. Approved reference reuse after duration edits must retain original provenance and check every other dependency. [Current M4 contract/setup](phase-2-basic-pro-studio.md#m4-implementation-and-setup-2026-11-05).

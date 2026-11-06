@@ -9,6 +9,7 @@ import { videoResolutionSchema } from "@/lib/projects/video-resolution";
 
 export function createRuntimeAuthorization(doc: FrozenPackage, quote: RuntimeQuote, segmentUuid: string, approval: {
   operatorId: string; approved: boolean; maximumMicrousd: number; packageMaximumMicrousd?: number; now: string;
+  clipAttempt?: RuntimeAuthorization["clipAttempt"];
 }): RuntimeAuthorization {
   const cost = packageCost(doc, new HiggsfieldVideoGenerationProvider(), approval.now);
   if (cost.code) throw new Error(cost.code);
@@ -26,7 +27,8 @@ export function createRuntimeAuthorization(doc: FrozenPackage, quote: RuntimeQuo
     resolution: doc.source.resolution, durationMs: plan.durationMs, generateAudio: true as const, maxRequests: 1 as const,
     maxEstimatedCostMicrousd: approval.maximumMicrousd, operatorId: approval.operatorId, approvedAt: approval.now,
     expiresAt: manual ? new Date(Date.parse(approval.now) + pricingConfiguration.authorizationLifetimeMs).toISOString() : quote.expiresAt! };
-  const content = { ...body, packageMaxEstimatedCostMicrousd: approval.packageMaximumMicrousd ?? approval.maximumMicrousd };
+  const content = { ...body, packageMaxEstimatedCostMicrousd: approval.packageMaximumMicrousd ?? approval.maximumMicrousd,
+    ...(approval.clipAttempt ? { clipAttempt: approval.clipAttempt } : {}) };
   return runtimeAuthorizationSchema.parse({ ...content, hash: v3Digest("runtime-authorization", content) });
 }
 export type ReferenceDelivery = { body: Record<string, unknown>; expiresAt: string };

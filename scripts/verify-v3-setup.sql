@@ -1,4 +1,4 @@
--- Read-only, owner-run Supabase SQL Editor verification AFTER manual 076 through 086 in order.
+-- Read-only, owner-run Supabase SQL Editor verification AFTER manual 076 through 098 in order.
 -- No jobs, claims, quotes, authorizations or provider requests are created.
 with expected(name) as (values
  ('ugc_v3_projects'),('ugc_v3_sources'),('ugc_v3_packages'),('ugc_v3_authorizations'),('ugc_v3_events'),
@@ -10,6 +10,7 @@ select e.name, c.oid is not null as installed, coalesce(c.relrowsecurity,false) 
 from expected e left join pg_class c on c.oid=to_regclass('public.'||e.name) order by e.name;
 
 with expected(signature) as (values
+ ('public.ugc_v3_clip_retryable(uuid,uuid,uuid)'),('public.ugc_v3_clip_setup()'),('public.ugc_v3_clip_authorize(uuid,uuid,jsonb,uuid)'),('public.ugc_v3_clip_manifest(uuid,uuid,uuid)'),
  ('public.ugc_v3_create_project(uuid,uuid,jsonb)'),('public.ugc_v3_read(uuid,uuid)'),('public.ugc_v3_write(uuid,uuid,text,jsonb)'),
  ('public.ugc_v3_runtime_read(uuid,uuid)'),('public.ugc_v3_runtime_action(uuid,uuid,text,jsonb)'),
  ('public.ugc_v3_local_package_begin(uuid,uuid,jsonb,jsonb,uuid)'),('public.ugc_v3_local_price_repair(uuid,uuid,uuid,text)'),
@@ -33,11 +34,12 @@ from pg_constraint where conrelid in (to_regclass('public.ugc_v3_runs'),to_regcl
 
 select tgrelid::regclass as relation,tgname,pg_get_triggerdef(oid) as definition
 from pg_trigger where not tgisinternal and tgname in ('ugc_v3_isolation','ugc_v3_studio_approval','ugc_v3_studio_source','ugc_v3_studio_intent',
+ 'z_v3_connected_story_task','z_v3_connected_story_artifact','z_v3_connected_story_source','z_v3_connected_story_run','z_v3_connected_story_package','z_v3_clip_authority','z_v3_clip_review_manifest',
  'ugc_v3_reference_cleanup_approval','ugc_v3_reference_cleanup_version','ugc_v3_reference_cleanup_intent','ugc_v3_reference_cleanup_enqueue',
  'ugc_v3_location_artifact_validation','ugc_v3_location_storyboard_binding','ugc_v3_location_source_binding','ugc_v3_location_video_binding',
  'ugc_v3_location_version_floor','ugc_v3_reference_retention','ugc_v3_simple_location_intent','ugc_v3_preserve_approved_reference','ugc_v3_local_quote','ugc_v3_local_authorization') order by tgrelid;
 
-select indexname,indexdef from pg_indexes where schemaname='public' and indexname='ugc_v3_reference_deletion_pending';
+select indexname,indexdef from pg_indexes where schemaname='public' and indexname in ('ugc_v3_reference_deletion_pending','ugc_v3_runs_active_segment');
 
 -- Every count below must be zero. These are observational queries, never repairs.
 select (select count(*) from public.ugc_v3_projects v join public.ugc_final_executions f on f.project_id=v.project_id) as legacy_final_attachments,

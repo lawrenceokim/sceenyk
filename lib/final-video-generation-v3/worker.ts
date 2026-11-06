@@ -13,7 +13,8 @@ import { executeV3Segment } from "./execution";
 import { joinV3Segments } from "./join";
 import { directorStoryboardSchema, castDirectorStoryboardSchema, connectedDirectorStoryboardSchema, connectedCastDirectorStoryboardSchema } from "./contract";
 import { CONNECTED_STORY_DIRECTOR_VERSION, validateConnectedStory, connectedStoryInstructions } from "./connected-story";
-import { assertSingleVideoExecution, requiresProDuration } from "@/lib/projects/pro-duration";
+import { requiresProDuration } from "@/lib/projects/pro-duration";
+import { packageClips } from "./clip-runtime";
 import { readFrozenPackage } from "./package";
 import { v3Digest } from "./identity";
 import { packageTask } from "./package-task";
@@ -160,8 +161,7 @@ async function videoTask(store: V3Store, task: Task, w: RuntimeWorkspace, signal
   if (run.result) { await store.checkpoint(task, "done"); return; }
   const config = v3TransportConfig(), transport = new HiggsfieldV3Transport(config);
   const doc = readFrozenPackage(w.packages.find(p => p.id === run.package_id)!.document), segment = doc.segments.find(s => s.id === run.intent.segmentId)!;
-  // M4 admits planning only. Keep accepted historical requests recoverable.
-  if (!run.observation && !run.result) assertSingleVideoExecution(doc.source.storyboardContent.durationMs);
+  if (doc.source.storyboardContent.durationMs > 30_000 && !packageClips(doc)) throw new Error("V3_CONNECTED_STORY_REQUIRED");
   const stage = async (value: string, requestId?: string) => {
     const changed = await store.rpc("ugc_v3_video_stage", { p_task: task.id, p_token: task.lease_token, p_stage: value });
     if (changed) console.info(JSON.stringify({ stage: value, projectId: task.project_id, packageId: run.package_id, runId: run.id, ...(requestId ? { requestId } : {}) }));
@@ -221,6 +221,7 @@ export async function runV3Task(projectId: string, ownerId: string, store = new 
     else if (task.kind === "delete") await deleteTask(store, task, w, signal);
     else {
       const doc = readFrozenPackage(w.packages.find(p => p.id === task.input.packageId)?.document);
+      if (packageClips(doc)) throw new Error("V3_CLIP_MERGE_NOT_IMPLEMENTED");
       if (!w.source?.current || w.source.revision !== doc.sourceRevision) throw new Error("PACKAGE_STALE");
       const document = await joinV3Segments(task.id, doc, w.runs, signal);
       await store.checkpoint(task, "artifact", { id: task.id, document });

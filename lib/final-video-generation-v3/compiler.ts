@@ -2,11 +2,28 @@ import "server-only";
 import type { PlanningInput, CompiledDirection } from "./contract";
 import { STORYBOARD_DIRECTOR_VERSION, STORYBOARD_PROMPT_COMPILER_VERSION } from "./storyboard-director";
 import { CAST_PROMPT_COMPILER_VERSION, castCompilerInstructions } from "./character-cast";
+import { validateConnectedStory } from "./connected-story";
+
+export const CLIP_PROMPT_COMPILER_VERSION = "connected-clip-compiler-v1";
 
 const seconds = (ms: number) => String(ms / 1000);
 export function compileDirectorInstructions(input: PlanningInput, from: number, to: number): CompiledDirection {
   let recipe: unknown;
   try { recipe = JSON.parse(input.direction)?.promptCompiler; } catch { /* Historical free-text direction. */ }
+  if (recipe === CLIP_PROMPT_COMPILER_VERSION) {
+    const story = input.storyboardContent;
+    validateConnectedStory(story);
+    if (story.version !== "director-storyboard-connected-v1") throw new Error("V3_CONNECTED_STORY_REQUIRED");
+    const clip = story.clips.find(c => c.startMs === story.scenes[from]?.startMs && c.endMs === story.scenes[to - 1]?.endMs);
+    if (!clip) throw new Error("V3_CLIP_PLAN_CHANGED");
+    const compiled = compileRefinedStoryboard(input, from, to);
+    return { ...compiled, prompt: [
+      `Clip ${clip.number} of ${story.clips.length}, ${clip.id}; project ${seconds(clip.startMs)}–${seconds(clip.endMs)}s. Generate ONLY this ${seconds(clip.durationMs)}s clip.`,
+      `Purpose: ${clip.purpose}. Start state: ${clip.continuityIn}. End state: ${clip.continuityOut}.`,
+      `Audio continuity: ${clip.audioContinuity}. Continue the same voices and ambience; no repeated introduction, dialogue, conclusion or audio restart at a handoff.`,
+      ...("cast" in story ? [castCompilerInstructions(input, from, to)] : []), compiled.prompt,
+    ].join("\n") };
+  }
   if (recipe === CAST_PROMPT_COMPILER_VERSION) {
     const compiled = compileRefinedStoryboard(input, from, to);
     return { ...compiled, prompt: `${castCompilerInstructions(input, from, to)}\n${compiled.prompt}` };

@@ -25,7 +25,7 @@ export async function connectedStoryScenarios(h) {
  const sheets=await cp(project),locationDoc=(await pg.query('select document from public.ugc_v3_artifacts where id=$1',[location.id])).rows[0].document;
  const migration=fs.readFileSync('supabase/migrations/20261105009700_ugc_v3_connected_story_planning.sql','utf8');
  const security=async()=>(await pg.query("select oid,relacl::text,relrowsecurity,relforcerowsecurity from pg_class where relnamespace='public'::regnamespace and relkind='r' order by oid")).rows;
- const secured=await security();await pg.exec(migration);await pg.exec(migration);equal(await security(),secured);
+ const secured=await security();await pg.exec(migration);await pg.exec(migration);equal(await security(),secured);await pg.exec(fs.readFileSync("supabase/migrations/20261106009800_ugc_v3_individual_clips.sql","utf8"));
  for(const duration of [10,20,30,40,70,90,120]) {
   const saved=await getOwnedProject(project);
   const input={id:project,mode:'update',title:saved.title,prompt:saved.prompt,category:saved.category,creationType:'ugc',ugcType:saved.ugcType,settings:{...saved.settings,duration:String(duration)}};
@@ -50,20 +50,22 @@ export async function connectedStoryScenarios(h) {
   const restored=(await read(project)).artifacts.find(a=>a.id===story.id);equal(restored.approved,true);equal(restored.storyboard,document);
   equal(load('lib/final-video-generation-v3/identity.ts').storyboardContentHash(restored.storyboard),hash);
   if(duration>30) {
-   equal(document.version,'director-storyboard-connected-v1');equal(dto.multiClipPlanningOnly,true);
+   equal(document.version,'director-storyboard-connected-v1');ok(!dto.multiClip || dto.multiClip.clips.every(c=>!c.canGenerate));
    equal(await call('ugc_v3_validate_connected_story',[document,duration*1000]),true);
    await assert.rejects(()=>pg.query("update public.ugc_v3_artifacts set document=jsonb_set(document,'{storyboard,clips,0,purpose}',to_jsonb('Changed after approval'::text)) where id=$1",[story.id]),/V3_CONNECTED_STORY_IMMUTABLE/);ok(true);
    ok(request.instructions.includes('ONE complete professional story'));ok(!request.instructions.includes('ONE continuous audiovisual generation'));
    const task=(await pg.query('select input from public.ugc_v3_tasks where id=$1',[story.id])).rows[0].input;
    equal(task.clipBoundaries,boundaries);
-   for(const action of ['build_package','authorize','generate'])equal((await post(project,{action})).body.code,'V3_MULTI_CLIP_PLANNING_ONLY');
+   equal((await post(project,{action:'build_package'})).status,200);await tick(project);
+   equal((await read(project)).preflight.segmentCount,boundaries.length);
+   for(const action of ['authorize','generate'])equal((await post(project,{action})).body.code,'V3_REVIEW_SNAPSHOT_CHANGED');
    const variants=[
     d=>{d.clips[0].endMs-=1000;},d=>{d.clips[1].id='clip-1';},d=>{d.clips[1].continuityIn='Reset the story';},
     d=>{d.scenes[2].localStartMs=1000;},d=>{d.scenes[1].endMs+=1000;},d=>{d.scenes[0].clipId='clip-4';},
     d=>{d.scenes[0].actions[0].endMs=40001;},d=>{d.scenes[1].id=d.scenes[0].id;}
    ];
    for(const mutate of variants){const invalid=structuredClone(document);mutate(invalid);assert.throws(()=>validateDirectedStoryboard(invalid,document));ok(true);equal(await call('ugc_v3_validate_connected_story',[invalid,duration*1000]),false);}
-   await assert.rejects(()=>call('ugc_v3_runtime_action',[owner,project,'enqueue',{kind:'video',requestKey:randomUUID(),input:{}}]),/V3_MULTI_CLIP_PLANNING_ONLY|INVALID_TASK/);ok(true);
+   await assert.rejects(()=>call('ugc_v3_runtime_action',[owner,project,'enqueue',{kind:'video',requestKey:randomUUID(),input:{}}]),/V3_CLIP_PLAN_INVALID|INVALID_TASK/);ok(true);
    // A downgrade preserves the exact approved story and all reference bytes.
    await call('studio_mode_save',[owner,project,'basic']);
    equal((await saveOwnedProject(input)).ok,true);equal((await read(project)).proDurationRetained,true);
@@ -73,7 +75,7 @@ export async function connectedStoryScenarios(h) {
    equal((await read(project)).artifacts.find(a=>a.id===story.id).storyboard,document);
    await call('studio_mode_save',[owner,project,'pro']);
   } else {
-   equal(document.version,'director-storyboard-v3');ok(dto.multiClipPlanningOnly===undefined);
+   equal(document.version,'director-storyboard-v3');ok(dto.multiClip===null);
    equal(request.text.format.name,'director_storyboard_v3');
    equal((await post(project,{action:'build_package'})).status,200);await tick(project);
    const short=(await read(project)).preflight;ok(short);equal(short.segmentCount,1);

@@ -1,4 +1,10 @@
 const messages: Record<string, string> = {
+  V3_CLIP_SETUP_REQUIRED: "Individual clip generation needs database migration 098. Ask your administrator to apply it after 097; your saved work is preserved.",
+  V3_CLIP_ATTEMPT_CHANGED: "This clip attempt changed. Refresh and review the current clip before approving a new attempt.",
+  V3_CLIP_DELETE_OR_RECOVER_FIRST: "Delete the unapproved clip with confirmation, or recover its existing request before approving another attempt.",
+  V3_CLIP_ATTEMPT_APPROVAL_REQUIRED: "Approve the additional cost for the selected clip in Final Video. Existing approved clips remain saved.",
+  V3_CLIP_SELECTION_REQUIRED: "Choose an individual clip in Final Video to generate this connected story.",
+  V3_CLIP_MERGE_NOT_IMPLEMENTED: "All approved clips are preserved. Video merging will be available in Milestone 6.",
   V3_MULTI_CLIP_PLANNING_ONLY: "Connected Storyboards over 30 seconds can be planned and approved. Clip generation will be available in Milestone 5; no video request was sent.",
   V3_PRO_DURATION_REQUIRED: "Your saved Pro duration is preserved. Switch to Pro or choose a Basic duration to continue.",
   V3_CLIP_PLAN_INVALID: "The Storyboard clip boundaries do not cover the selected duration. Reject this Storyboard and generate a new connected story.",

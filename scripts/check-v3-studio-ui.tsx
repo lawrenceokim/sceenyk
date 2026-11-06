@@ -7,7 +7,7 @@ import type { RuntimeDto } from "../lib/final-video-generation-v3/runtime-server
 let checks = 0;
 const ok = (value: unknown) => { assert.ok(value); checks++; };
 globalThis.fetch = async () => { throw new Error("NETWORK_FORBIDDEN"); };
-const initial: RuntimeDto = { projectId: "00000000-0000-4000-8000-000000000001", packageStale: true,
+const initial: RuntimeDto = { projectId: "00000000-0000-4000-8000-000000000001", packageStale: true, multiClip: null,
   referenceCleanup:{enabled:false,pendingCount:0},
   artifacts: [
     { id: "old", kind: "character", version: 1, activeSlot: false, current: false, approved: true, rejected: false, storyboard: null, preview: null, location: null },

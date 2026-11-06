@@ -1,5 +1,9 @@
 # AI Workflow Rules
 
+## Current authorization — Phase 2 M5 individual clips (2026-11-06)
+
+Implement independent generation/review/replacement for approved connected Pro stories using existing V3 owners. Preserve Basic/short/historical flows and verified prices. Offline verification only; no real providers, remote migrations or deployment. Add manual 098 after 097. M6 merging and subscription/provider changes are outside scope. This authorization supersedes older M4 planning-only restrictions for this unit.
+
 ## Current authorization — Phase 2 M4 connected Storyboard planning (2026-11-05)
 
 Implement extended Pro duration and one full connected Director story through whole-story approval using existing V3 owners. Preserve Basic/short/historical generation, reference generators/sheets, pricing/authority, storage/recovery and unrelated Properties. Author manual transactional/rerunnable 097 after 096 with verified source/catalog prerequisites; no remote apply. Focused offline planning, actual route/worker/disposable SQL and restoration/approval/paid-blocking checks are authorized; no real provider/paid request/live worker/browser/build/deployment. Stop before M5 individual clip execution/replacement and M6 merging. [M4 setup/evidence](phase-2-basic-pro-studio.md#m4-implementation-and-setup-2026-11-05).

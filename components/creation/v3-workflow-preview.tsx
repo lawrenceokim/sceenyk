@@ -4,6 +4,7 @@ import { V3StoryboardContent } from "./v3-storyboard-content";
 import { V3StoryboardSkeleton } from "./v3-storyboard-skeleton";
 import { V3PackageSkeleton } from "./v3-package-skeleton";
 import { V3WorkflowProgress } from "./v3-workflow-progress";
+import { V3ClipManager } from "./v3-clip-manager";
 import { FinalVideoGenerate, FinalVideoReview } from "./v3-final-video-controls";
 import { finalVideoPresentation } from "./v3-final-video-state";
 import { shouldPollV3Video } from "@/lib/final-video-generation-v3/video-progress";
@@ -195,7 +196,7 @@ export function V3WorkflowPreview({
         )
         .map((r) => ({
           id: "v3-video:" + r.id,
-          label: r.segmentId === "joined" ? "Final Video" : "Generated Video",
+          label: r.segmentId === "joined" ? "Final Video" : workspace?.multiClip?.clips.find(c => c.runId === r.id) ? `Clip ${workspace.multiClip.clips.find(c => c.runId === r.id)!.number}` : "Generated Video",
           kind: "video" as const,
           src: r.preview!,
         })) ?? []),
@@ -840,7 +841,7 @@ export function V3WorkflowPreview({
                               current references.
                             </p>
                           ) : a.approved ? (
-                            <p className="text-sm">{a.storyboard?.version === "director-storyboard-connected-v1" ? "Connected Storyboard approved. Clip generation is coming in Milestone 5." : "Storyboard approved"}</p>
+                            <p className="text-sm">{a.storyboard?.version === "director-storyboard-connected-v1" ? "Connected Storyboard approved. Build and approve its Generation Package, then generate clips in Final Video." : "Storyboard approved"}</p>
                           ) : (
                             <div className="flex flex-wrap gap-2">
                               <Button
@@ -875,13 +876,12 @@ export function V3WorkflowPreview({
                 {view === "package" && (
                   <section className="min-w-0 space-y-3">
                     <h2 className="font-semibold">Package &amp; Estimates</h2>
-                    {workspace.multiClipPlanningOnly && <p role="status" className="text-sm text-muted-foreground">Your connected story can be planned and approved. Video generation for stories over 30 seconds will be available in Milestone 5; merging follows in Milestone 6.</p>}
                     {workspace.selectedResolution && <p className="text-xs text-muted-foreground">Selected output: {workspace.selectedResolution}</p>}
                     {workspace.resolutionPricingAvailable === false && <p role="status" className="text-sm text-warning-foreground">Pricing for {workspace.selectedResolution} is not configured. Choose 480p or wait for a verified rate before approving paid generation.</p>}
                     <Button
                       variant="default"
                       className="w-full max-w-full whitespace-normal sm:w-auto"
-                      disabled={locked || workspace.multiClipPlanningOnly || workspace.proDurationRetained || !currentApproved("storyboard")}
+                      disabled={locked || workspace.proDurationRetained || !currentApproved("storyboard")}
                       onClick={() => {
                         setPackageRequestPending(true);
                         void act("build_package", {
@@ -909,7 +909,7 @@ export function V3WorkflowPreview({
                         technical={false}
                       />
                     )}
-                    {p && !workspace.multiClipPlanningOnly && !workspace.proDurationRetained && (
+                    {p && !workspace.proDurationRetained && (
                       <>
                         <dl aria-label="Package overview" className="flex min-w-0 flex-wrap gap-2">
                           <div className="inline-flex max-w-full items-center gap-1.5 rounded-lg bg-primary/10 px-2.5 py-1.5 text-xs font-medium text-primary"><dt>Resolution</dt><dd>{p.resolution}</dd></div>
@@ -930,10 +930,10 @@ export function V3WorkflowPreview({
                         <div className="flex min-w-0 flex-wrap items-baseline gap-x-4 gap-y-2">
                           <h3 className="text-sm font-medium text-foreground">Estimated video cost</h3>
                           <p className="break-words text-xl font-semibold tracking-tight text-primary">
-                          {(p.displayEstimatedCostMicrousd ??
+                          {((workspace.multiClip ? p.estimatedCostMicrousd : p.displayEstimatedCostMicrousd) ??
                             p.estimatedCostMicrousd) === null
                             ? "Unavailable"
-                            : `~${money(p.displayEstimatedCostMicrousd ?? p.estimatedCostMicrousd)}`}
+                            : `~${money(workspace.multiClip ? p.estimatedCostMicrousd : p.displayEstimatedCostMicrousd ?? p.estimatedCostMicrousd)}`}
                           </p>
                         </div>
                         {p.segmentCount > 1 && (
@@ -942,7 +942,7 @@ export function V3WorkflowPreview({
                               <li key={s.id}>
                                 Segment {i + 1} · {s.durationMs / 1000}s: ~
                                 {money(
-                                  s.displayEstimatedCostMicrousd ??
+                                  workspace.multiClip ? s.estimatedCostMicrousd : s.displayEstimatedCostMicrousd ??
                                     s.estimatedCostMicrousd,
                                 )}
                               </li>
@@ -1035,10 +1035,10 @@ export function V3WorkflowPreview({
                 {view === "final" && (
                   <section className="min-w-0 space-y-4">
                     <h2 className="font-semibold">Final Video</h2>
-                    {workspace.multiClipPlanningOnly && <p role="status" className="text-sm text-muted-foreground">Storyboard planning only. Clip generation will be available in Milestone 5.</p>}
+                    {Number(p?.durationMs ?? storyboards[0]?.storyboard?.durationMs ?? 0) > 30_000 ? <V3ClipManager workspace={workspace} act={act} disabled={busy || dirty} /> : <>
                     <FinalVideoGenerate
                       generating={finalVideoGenerating}
-                      disabled={locked || workspace.multiClipPlanningOnly || workspace.proDurationRetained || !p?.canSubmit || finalVideo.hasExistingRun}
+                      disabled={locked || workspace.proDurationRetained || !p?.canSubmit || finalVideo.hasExistingRun}
                       onGenerate={() => {
                         if (!p) return;
                         setVideoRequestPending(true);
@@ -1063,6 +1063,7 @@ export function V3WorkflowPreview({
                         generating={finalVideoGenerating}
                       />
                     ))}
+                    </>}
                     {workspace.tasks.filter(task => task.kind === "join" && task.status === "failed").map(task => (
                       <div key={task.id} className="space-y-2">
                         <p role="alert" className="text-sm text-muted-foreground">The final video could not be joined. Recover the saved segments or see Progress.</p>

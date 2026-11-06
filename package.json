@@ -94,7 +94,8 @@
     "test:workspace-internal": "node scripts/check-workspace-internal.mjs",
     "test:studio": "node scripts/check-studio-draft.mjs && node scripts/check-studio-ui.mjs",
     "test:studio-browser": "node scripts/check-studio-browser.mjs",
-    "preflight:ugc-v3-video": "node --conditions=react-server --import=tsx scripts/preflight-v3-controlled-video.ts"
+    "preflight:ugc-v3-video": "node --conditions=react-server --import=tsx scripts/preflight-v3-controlled-video.ts",
+    "test:ugc-v3-clips": "node --conditions=react-server --import=tsx scripts/check-v3-individual-clips.mjs && node --import=tsx scripts/check-v3-individual-clips-ui.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1148.0",

@@ -8,6 +8,7 @@ import { compileDirectorInstructions } from "./compiler";
 import { validateManualSnapshot } from "./pricing/higgsfield-pricing";
 import { estimateHiggsfieldCost } from "./adapters/higgsfield-pricing";
 import { videoResolutions } from "@/lib/projects/video-resolution";
+import { validateConnectedStory } from "./connected-story";
 
 export const localV3Profile = Object.freeze({ id: "v3-local-480p-preflight", defaultResolution: "480p", supportedResolutions: videoResolutions,
   workflowEnabled: true, planningOnly: true, paidTransportEnabled: false } as const);
@@ -63,6 +64,12 @@ export function readFrozenPackage(value: unknown): FrozenPackage {
   if (hash !== v3Digest("frozen-package", body) || doc.inputHash !== v3Digest("input", doc.source) ||
     doc.capabilityHash !== v3Digest("capabilities", normalizeCapabilities(doc.capabilitySnapshot))) throw new Error("PACKAGE_INTEGRITY_INVALID");
   let end = 0, scene = 1;
+  const story = doc.source.storyboardContent;
+  if (story.version === "director-storyboard-connected-v1") {
+    validateConnectedStory(story);
+    if (story.clips.length !== doc.segments.length || story.clips.some((c, i) => c.startMs !== doc.segments[i].startMs || c.endMs !== doc.segments[i].endMs))
+      throw new Error("V3_CLIP_PLAN_CHANGED");
+  }
   for (const [index, segment] of doc.segments.entries()) {
     const command = restoreSegment(doc, segment.id).command;
     if (segment.id !== `segment-${index + 1}-${segment.fingerprint.slice(0, 16)}` ||

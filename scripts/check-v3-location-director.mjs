@@ -8,14 +8,16 @@ import sharp from 'sharp';
 import {typescriptLoader} from './lib/load-typescript.mjs';
 import {multipleCharacterScenarios} from './lib/v3-multiple-character-scenarios.mjs';
 import {projectSavingScenarios} from './lib/v3-project-saving-scenarios.mjs';
+import {individualClipScenarios} from './lib/v3-individual-clip-scenarios.mjs';
 import {connectedStoryScenarios, connectedFixtureStory} from './lib/v3-connected-story-scenarios.mjs';
 const require=createRequire(import.meta.url),builder=require('../lib/video-generation-package/builder.ts');
 const normal=v=>JSON.parse(JSON.stringify(v)),hash=b=>createHash('sha256').update(b).digest('hex');
 let checks=0,networkCalls=0,mode='pass',saveFailure=false,storageFailure=false,deleteFailure=false,deleteAttempts=0;
 let estimateCalls=0,estimateMode='pass',packageSaveFailure=false;
-let fixtureVideo=false,videoPosts=0,videoPolls=0,videoComplete=false;
+let fixtureVideo=false,videoPosts=0,videoPolls=0,videoComplete=false,videoTerminal=null,videoSubmissionRejected=false;
 const fixtureVideoIds=new Set();
 let deliverySequence=0;
+const videoBodies=[];
 const workerLogs=[];
 const fixtureVideoId=randomUUID();
 let storyboardDurations=[5000,5000];
@@ -37,7 +39,9 @@ const db={async rpc(name,args){try{return{data:await call(name,Object.values(arg
   if(fields){const assignments=Object.entries(fields).map(([k,v])=>{assert.match(k,/^[a-z_]+$/);values.push(v);return `${k}=$${values.length}`;});sql=`update public.${table} set ${assignments.join(',')} where ${clauses.join(' and ')} returning ${columns}`;}
   try{const rows=(await pg.query(sql,values)).rows;return{data:single?rows[0]??null:rows,error:null};}catch(error){return{data:null,error:{code:error.code,message:error.message}};}},
  maybeSingle(){return this.execute(true);},then(resolve,reject){return this.execute().then(resolve,reject);}};}};
-const media={bytesHash:hash,readSpool:async(id,name)=>spool.get(`${id}:${name}`)??null,
+const media={bytesHash:hash,
+ deletePrivate:async(user,project,asset)=>{if(deleteFailure)throw new Error("FIXTURE_DELETE_FAILED");equal(asset.storageKey,`users/${user}/projects/${project}/v3/${asset.id}.mp4`);objects.delete(asset.storageKey);deleted.push(asset.id);},
+ purgeVideoSpool:async id=>{for(const key of [...spool.keys()])if(key.startsWith(`${id}:`))spool.delete(key);},readSpool:async(id,name)=>spool.get(`${id}:${name}`)??null,
  saveSpool:async(id,name,bytes)=>{const key=`${id}:${name}`;if(spool.has(key)&&hash(spool.get(key))!==hash(bytes))throw new Error('V3_SPOOL_CONFLICT');spool.set(key,bytes);
   if(packageSaveFailure&&name==='package-local-pricing.json'){packageSaveFailure=false;throw new Error('V3_LOCAL_SAVE_ACK_LOST');}
   if(saveFailure&&name==='openai-response.json'){saveFailure=false;throw new Error('FIXTURE_LOST_SAVE_ACK');}},
@@ -99,11 +103,11 @@ const load=typescriptLoader({'@/lib/auth/ensure-app-user':{ensureAppUser:async()
  '@/lib/video-generation-package/builder':{...builder,packageDigest:(d,v)=>builder.packageDigest(d,normal(v)),canonicalJson:v=>builder.canonicalJson(normal(v))},
  './join':{joinV3Segments:async()=>{throw new Error('JOIN_FORBIDDEN');}},'next/navigation':{unstable_rethrow:()=>{}},
  openai:{__esModule:true,default:FixtureOpenAI,toFile:async bytes=>new File([bytes],'source.png',{type:'image/png'})}},
- {Error,Response,Request,File,AbortController,structuredClone:normal,fetch:async(url)=>{
+ {Error,Response,Request,File,AbortController,structuredClone:normal,fetch:async(url,options)=>{
   if(fixtureVideo&&String(url)==='https://api.higgsfield.ai/bytedance/seedance-2.5/reference-to-video'){
-   videoPosts++;const requestId=videoPosts===1?fixtureVideoId:randomUUID();fixtureVideoIds.add(requestId);return Response.json({request_id:requestId,status:'queued',status_url:`https://api.higgsfield.ai/requests/${requestId}/status`,cancel_url:`https://api.higgsfield.ai/requests/${requestId}/cancel`});
+   videoBodies.push(JSON.parse(options.body));videoPosts++;if(videoSubmissionRejected)return Response.json({error:"fixture-rejection"},{status:429});const requestId=videoPosts===1?fixtureVideoId:randomUUID();fixtureVideoIds.add(requestId);return Response.json({request_id:requestId,status:'queued',status_url:`https://api.higgsfield.ai/requests/${requestId}/status`,cancel_url:`https://api.higgsfield.ai/requests/${requestId}/cancel`});
   }
-  if(fixtureVideo&&String(url).startsWith('https://api.higgsfield.ai/requests/')){const requestId=String(url).split('/')[4];ok(fixtureVideoIds.has(requestId));videoPolls++;return Response.json({request_id:requestId,status:videoComplete?'completed':'in_progress',...(videoComplete?{video:{url:'https://cdn.example.test/final.mp4'}}:{})});}
+  if(fixtureVideo&&String(url).startsWith('https://api.higgsfield.ai/requests/')){const requestId=String(url).split('/')[4];ok(fixtureVideoIds.has(requestId));videoPolls++;return Response.json({request_id:requestId,status:videoTerminal??(videoComplete?'completed':'in_progress'),...(videoComplete?{video:{url:'https://cdn.example.test/final.mp4'}}:{})});}
   if(fixtureVideo&&String(url)==='https://cdn.example.test/final.mp4')return new Response(new Uint8Array([1,2,3]));
   if(String(url).startsWith('https://api.higgsfield.ai/estimate/')){estimateCalls++;return estimateMode==='pass'?Response.json({usd:'1.25'}):Response.json({}, {status:503});}networkCalls++;throw new Error('NETWORK_FORBIDDEN');},console:{...console,info(value){if(typeof value==='string'&&value.startsWith('{'))workerLogs.push(JSON.parse(value));}}});
 const route=load('app/api/ugc/v3/route.ts'),{runV3Task}=load('lib/final-video-generation-v3/worker.ts'),{V3Store}=load('lib/final-video-generation-v3/runtime-store.ts');
@@ -145,9 +149,11 @@ try{
    await pg.exec('rollback');
   }
   let previous;
+  const m5Previous=file.includes("09800")?await functionsSnapshot():null;
   const m2Previous=file.includes('09500')?await functionsSnapshot():null, m2Security=m2Previous?await securitySnapshot():null;
   if(file.includes('08500')||file.includes('08600')||file.includes('09000')||file.includes('09100'))previous=(await pg.query("select oid::regprocedure::text signature,prosrc,proacl::text grants,proconfig from pg_proc where pronamespace='public'::regnamespace order by oid")).rows;
   await pg.exec(fs.readFileSync(`supabase/migrations/${file}`,'utf8'));
+  if(m5Previous){const current=await functionsSnapshot();for(const before of m5Previous){const after=current.find(f=>f.signature===before.signature);ok(after);equal(after.grants,before.grants);equal(after.proconfig,before.proconfig);if(!["ugc_v3_connected_story_guard","ugc_v3_runtime_action"].includes(before.name))equal(after,before);}}
   if(m2Previous){
    const modified=new Set(['guard_ugc_v1_reference_limit','ugc_v3_artifact_current','ugc_v3_location_input_current','ugc_v3_runtime_action','ugc_v3_package_begin','ugc_v3_runtime_current','ugc_v3_regenerate_reference','ugc_v3_reference_delete_prepare','ugc_v3_preserve_approved_reference','ugc_v3_reference_cleanup_guard','ugc_v3_discard_reference_prepare','ugc_v3_queue_reference_cleanup','ugc_v3_replace_unusable_reference_task','ugc_v3_runtime_read']);
    const current=await functionsSnapshot();
@@ -167,9 +173,13 @@ try{
  await pg.exec(fs.readFileSync('supabase/migrations/20261104009100_ugc_v3_background_processing.sql','utf8'));
  await pg.exec(fs.readFileSync('supabase/migrations/20261105009500_ugc_v3_multiple_characters.sql','utf8'));
  await pg.exec(fs.readFileSync('supabase/migrations/20261105009700_ugc_v3_connected_story_planning.sql','utf8'));
+ await pg.exec(fs.readFileSync('supabase/migrations/20261106009800_ugc_v3_individual_clips.sql','utf8'));
  await pg.exec(fs.readFileSync('scripts/verify-v3-setup.sql','utf8'));checks++;
  await pg.query("insert into public.app_users(id,clerk_user_id) values($1,'fixture')",[owner]);
- if(process.argv.includes('--connected-story-only')) {
+ if(process.argv.includes('--individual-clips-only')) {
+  await individualClipScenarios({pg,db,owner,call,post,read,tick,fixture,generate,load,equal,ok,calls,cp,spool,objects,videoBodies,
+   setDurations:value=>{storyboardDurations=value;},getVideoPosts:()=>videoPosts,setVideo:complete=>{fixtureVideo=true;videoComplete=complete;},setVideoFailure:value=>{videoTerminal=value?"failed":null;},setSubmissionRejected:value=>{videoSubmissionRejected=value;},setDeleteFailure:value=>{deleteFailure=value;}});
+ } else if(process.argv.includes('--connected-story-only')) {
   await connectedStoryScenarios({pg,db,owner,call,post,read,tick,fixture,generate,load,equal,ok,calls,cp,spool,setDurations:value=>{storyboardDurations=value;},getVideoPosts:()=>videoPosts});
  } else if(process.argv.includes('--project-saving-only')) {
   await projectSavingScenarios({pg,db,owner,call,post,read,tick,media,master,oddImage,objects,calls,deleted,load,equal,ok,hash,V3Store,cp,setMode:value=>{mode=value;}});
@@ -560,5 +570,5 @@ try{
  equal((await pg.query('select status,error_code from public.ugc_v3_tasks where id=$1',[waiting.id])).rows[0],{status:'done',error_code:null});
  equal((await pg.query('select id from public.ugc_v3_artifacts where id=$1',[unapproved.id])).rows.length,0);equal(objects.has(operation.asset.storageKey),false);equal(calls.length,beforeCollisionCalls);
  }
- equal(networkCalls,0);console.info(JSON.stringify({scope:process.argv.includes('--connected-story-only')?'connected-story':process.argv.includes('--project-saving-only')?'project-saving':process.argv.includes('--multiple-characters-only')?'multiple-characters':process.argv.includes('--references-only')?'references-and-location':'full',simpleLocationAndRetentionChecks:checks,migrations:migrations.length,previousFunctionsPreserved,m2FunctionsPreserved,fixtureProviderCalls:calls.length,fixtureEstimateCalls:estimateCalls,realNetworkCalls:networkCalls,automaticImageChecks:0}));
+ equal(networkCalls,0);console.info(JSON.stringify({scope:process.argv.includes('--individual-clips-only')?'individual-clips':process.argv.includes('--connected-story-only')?'connected-story':process.argv.includes('--project-saving-only')?'project-saving':process.argv.includes('--multiple-characters-only')?'multiple-characters':process.argv.includes('--references-only')?'references-and-location':'full',simpleLocationAndRetentionChecks:checks,migrations:migrations.length,previousFunctionsPreserved,m2FunctionsPreserved,fixtureProviderCalls:calls.length,fixtureEstimateCalls:estimateCalls,realNetworkCalls:networkCalls,automaticImageChecks:0}));
 }finally{await pg.close();for(const k of Object.keys(process.env))if(!(k in oldEnv))delete process.env[k];Object.assign(process.env,oldEnv);}

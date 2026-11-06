@@ -165,6 +165,10 @@ export function workflowProgress(workspace: RuntimeDto, productRequired: boolean
     final.status = "completed";
     final.description = "Your project is complete.";
     final.guidance = "Your video has been approved and your project is complete.";
+  } else if (workspace.multiClip?.readyForMerging) {
+    final.status = "waiting_approval";
+    final.description = "All clips are approved and ready for merging.";
+    final.guidance = "Ordered private clips are saved. Merge Videos follows in Milestone 6; the final video is not complete yet.";
   } else if (review && !working) {
     final.status = review.preview ? "waiting_approval" : "needs_attention";
     final.description = review.preview ? "Your video is ready for review." : "Your video is saved, but its preview is unavailable.";
@@ -186,6 +190,13 @@ export function workflowProgress(workspace: RuntimeDto, productRequired: boolean
     final.status = "failed";
     final.description = "Your final video could not be joined.";
     final.guidance = "Use Recover local join below to finish with your saved approved segments.";
+  } else if (workspace.multiClip) {
+    const ready = runs.some(r => r.state === "awaiting_review");
+    final.status = ready ? "waiting_approval" : "not_started";
+    final.description = ready ? "Your generated clips are ready for independent review."
+      : `${runs.filter(r => r.state === "approved").length} of ${workspace.multiClip.clips.length} clips approved.`;
+    final.guidance = packageStage.status === "completed" ? "Open Final Video to generate, review or approve the remaining clips. Merging does not start automatically."
+      : "Approve the current Generation Package before generating clips.";
   } else if (runs.some(r => r.state === "awaiting_review")) {
     final.status = "waiting_approval";
     final.description = "Your generated segments are ready for review.";

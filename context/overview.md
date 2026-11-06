@@ -1,5 +1,9 @@
 # Sceenyk
 
+## Phase 2 M5 — individual clip generation (2026-11-06)
+
+Long Pro stories now have independent clip generation/review/confirmed replacement through existing V3 packages, finite one-use approval and workers. Saved approved clips and exact order survive other failures; all approved shows ready for merging without completing the project. Basic/Pro <=30s retain the single-video workflow. Manual 098 and hosted/provider/manual acceptance remain pending. [Contract/setup](phase-2-basic-pro-studio.md#m5-implementation-and-setup-2026-11-06). M6 merging remains planned.
+
 ## Next product phase — Basic & Pro Studio Modes (2026-11-05)
 
 **Phase 2: Basic & Pro Studio Modes — In Progress. M1–M4 complete in source/focused offline verification. M5–M7 Planned / Not Started.** [Canonical specification, setup and roadmap](phase-2-basic-pro-studio.md). M1 adds saved modes; M2 adds independent Pro characters and cast/speaker bindings; M3 adds saved-setting galleries. M4 adds Pro 10–120s duration and one connected Storyboard with exact <=30s planned clips and whole-story approval. Basic retains its current maximum 30s and existing pipeline. Long paid video/package execution is blocked until M5; merging belongs to M6. Existing 094–096 and new 097 manual setup, actual model-limit evidence and hosted/provider/visual acceptance remain pending. No real provider or deployment work is part of M4.
