@@ -35,7 +35,7 @@ ok(storyboardDirectorInput(brief, ["character", "location"], null).includes("No 
 fails(() => storyboardDirectorInput(brief, ["character", "character"], null), "V3_REFERENCES_REQUIRED");
 fails(() => storyboardDirectorInput({ ...brief, duration: "7" } as unknown as typeof brief, ["character", "location"], null));
 fails(() => storyboardDirectorInput({ ...brief, aspect_ratio: "2:1" } as unknown as typeof brief, ["character", "location"], null));
-for (const word of ["no fixed count", "beginning", "unboxing", "gaming", "emotional", "left/right hand", "before composing", "silence", "2.3 words/sec"]) ok(storyboardDirectorInstructions.includes(word));
+for (const word of ["no fixed count", "beginning", "unboxing", "gaming", "emotional", "left/right hand", "before composing", "silence", "2.3 words/sec"]) ok(storyboardDirectorInstructions.toLowerCase().includes(word));
 
 for (const durations of [[5000], [2000, 3000], [10000], [3000, 2000, 5000], [30000], [4000, 7000, 9000, 10000]]) {
   const input = v3Input(durations), storyboard = input.storyboardContent;
@@ -109,10 +109,10 @@ equal(restoreSegment(approvedV1Package, approvedV1Package.segments[0].id).comman
 // and verbatim prohibitions, without interpreting natural-language preferences.
 const typeInputs = ["advertisement", "explanation", "unboxing"].map(ugc_type => storyboardDirectorInput({ ...brief, ugc_type } as typeof brief, ["character", "product", "location"], location));
 equal(new Set(typeInputs).size, 3);
-ok(typeInputs[0].includes("evidenced benefit")); ok(typeInputs[1].includes("ordered visible evidence")); ok(typeInputs[2].includes("preserving packaging state"));
+ok(typeInputs[0].includes("evidenced benefit")); ok(typeInputs[1].includes("useful explanations or demonstrations")); ok(typeInputs[2].includes("preserving packaging state"));
 ok(storyboardDirectorInput({ ...brief, creation_type: "freestyle", category: "gaming" }, ["character", "location"], location).includes("spatial goals"));
 ok(storyboardDirectorInput({ ...brief, creation_type: "freestyle" }, ["character", "location"], location).includes("rather than defaulting to a presenter advertisement"));
-for (const text of ["USER PREFERENCES GOVERN", "speech must be []", "Narration-only", "character-dialogue-only", "requirement none and an empty description", "same cue description", "visible cause", "one legible main action", "frame-perfect", "no requirement for equal or unequal", "unsupported branding", "not photorealistic footage with an Anime label"]) ok(storyboardDirectorInstructions.includes(text));
+for (const text of ["USER PREFERENCES GOVERN", "speech must be []", "Narration-only", "character-dialogue-only", "requirement none and an empty description", "same cue description", "visible cause", "a readable action or performance", "frame-perfect", "no requirement for equal or unequal", "unsupported branding", "not photorealistic footage with an Anime label"]) ok(storyboardDirectorInstructions.includes(text));
 
 const count = (value: string, text: string) => value.split(text).length - 1;
 const refined = v3Input(Array(6).fill(5000));
