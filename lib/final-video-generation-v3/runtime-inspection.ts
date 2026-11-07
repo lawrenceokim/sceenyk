@@ -20,7 +20,7 @@ export async function inspectRuntime(w: RuntimeWorkspace, segmentId?: string) {
   const doc = readFrozenPackage(docValue), quote = w.quotes.find(q => q.document.packageId === doc.id)?.document;
   const clips = packageClips(doc);
   const authority = clips && segmentId ? clipAuthority(w, doc, segmentId) : w.runtimeAuthorizations.filter(a => a.document.packageId === doc.id).at(-1)?.document;
-  const issues = quote ? quote.segments.flatMap(s => higgsfieldRequestIssues(s.body, doc.source.references, quote.validityEvidence, new Date().toISOString())) : ["COST_ESTIMATE_UNAVAILABLE"];
+  const issues = quote ? quote.segments.flatMap(s => higgsfieldRequestIssues(s.body, doc.source.references, quote.validityEvidence, new Date().toISOString(), s.model)) : ["COST_ESTIMATE_UNAVAILABLE"];
   if (clips) {
     try { await new V3Store().rpc("ugc_v3_clip_setup", {}); } catch { issues.push("V3_CLIP_SETUP_REQUIRED"); }
   }

@@ -6,6 +6,7 @@ import {createRequire} from 'node:module';
 import {PGlite} from '@electric-sql/pglite';
 import sharp from 'sharp';
 import {typescriptLoader} from './lib/load-typescript.mjs';
+import {referenceLimitScenarios} from './lib/v3-reference-limit-scenarios.mjs';
 import {multipleCharacterScenarios} from './lib/v3-multiple-character-scenarios.mjs';
 import {projectSavingScenarios} from './lib/v3-project-saving-scenarios.mjs';
 import {individualClipScenarios} from './lib/v3-individual-clip-scenarios.mjs';
@@ -61,7 +62,8 @@ async function fixtureResponse(kind,body,options){
  if(mode==='rejected'){const e=new Error('sk-proj-FAKE_SECRET');Object.assign(e,{status:429,requestID:'req_rejected',code:'insufficient_quota'});throw e;}
  if(kind==='plan'){
   equal(body.model,'fixture-director');equal(body.text.format.name,'location_prompt_v2');
-  equal(body.input[0].content.filter(c=>c.type==='input_image').length,mode==='optional'?1:2);
+  const expected=process.argv.includes('--reference-limits-only')?(await pg.query("select input from public.ugc_v3_tasks where output->'requests' @> $1::jsonb",[JSON.stringify([{id,status:'intent'}])])).rows[0].input.references.length:mode==='optional'?1:2;
+  equal(body.input[0].content.filter(c=>c.type==='input_image').length,expected);
   assert.match(body.input[0].content[0].text,/"visualStyle":"Realistic"/);assert.match(body.instructions,/user will judge the generated image/);checks+=2;
   return new Response(JSON.stringify({id:'resp_prompt',status:'completed',output:[{type:'message',content:[{type:'output_text',text:JSON.stringify(instruction)}]}],usage:{input_tokens:10,output_tokens:20,total_tokens:30}}),{status:200,headers:{'x-request-id':'req_prompt'}});
  }
@@ -176,7 +178,10 @@ try{
  await pg.exec(fs.readFileSync('supabase/migrations/20261106009800_ugc_v3_individual_clips.sql','utf8'));
  await pg.exec(fs.readFileSync('scripts/verify-v3-setup.sql','utf8'));checks++;
  await pg.query("insert into public.app_users(id,clerk_user_id) values($1,'fixture')",[owner]);
- if(process.argv.includes('--individual-clips-only')) {
+ if(process.argv.includes('--reference-limits-only')) {
+  await referenceLimitScenarios({pg,db,owner,call,post,read,tick,fixture,generate,load,equal,ok,calls,cp,spool,objects,media,master,sources,seedSheet,V3Store,
+   setDurations:value=>{storyboardDurations=value;},getVideoPosts:()=>videoPosts,getEstimateCalls:()=>estimateCalls});
+ } else if(process.argv.includes('--individual-clips-only')) {
   await individualClipScenarios({pg,db,owner,call,post,read,tick,fixture,generate,load,equal,ok,calls,cp,spool,objects,videoBodies,
    setDurations:value=>{storyboardDurations=value;},getVideoPosts:()=>videoPosts,setVideo:complete=>{fixtureVideo=true;videoComplete=complete;},setVideoFailure:value=>{videoTerminal=value?"failed":null;},setSubmissionRejected:value=>{videoSubmissionRejected=value;},setDeleteFailure:value=>{deleteFailure=value;}});
  } else if(process.argv.includes('--connected-story-only')) {
@@ -570,5 +575,5 @@ try{
  equal((await pg.query('select status,error_code from public.ugc_v3_tasks where id=$1',[waiting.id])).rows[0],{status:'done',error_code:null});
  equal((await pg.query('select id from public.ugc_v3_artifacts where id=$1',[unapproved.id])).rows.length,0);equal(objects.has(operation.asset.storageKey),false);equal(calls.length,beforeCollisionCalls);
  }
- equal(networkCalls,0);console.info(JSON.stringify({scope:process.argv.includes('--individual-clips-only')?'individual-clips':process.argv.includes('--connected-story-only')?'connected-story':process.argv.includes('--project-saving-only')?'project-saving':process.argv.includes('--multiple-characters-only')?'multiple-characters':process.argv.includes('--references-only')?'references-and-location':'full',simpleLocationAndRetentionChecks:checks,migrations:migrations.length,previousFunctionsPreserved,m2FunctionsPreserved,fixtureProviderCalls:calls.length,fixtureEstimateCalls:estimateCalls,realNetworkCalls:networkCalls,automaticImageChecks:0}));
+ equal(networkCalls,0);console.info(JSON.stringify({scope:process.argv.includes('--reference-limits-only')?'reference-limits':process.argv.includes('--individual-clips-only')?'individual-clips':process.argv.includes('--connected-story-only')?'connected-story':process.argv.includes('--project-saving-only')?'project-saving':process.argv.includes('--multiple-characters-only')?'multiple-characters':process.argv.includes('--references-only')?'references-and-location':'full',simpleLocationAndRetentionChecks:checks,migrations:migrations.length,previousFunctionsPreserved,m2FunctionsPreserved,fixtureProviderCalls:calls.length,fixtureEstimateCalls:estimateCalls,realNetworkCalls:networkCalls,automaticImageChecks:0}));
 }finally{await pg.close();for(const k of Object.keys(process.env))if(!(k in oldEnv))delete process.env[k];Object.assign(process.env,oldEnv);}

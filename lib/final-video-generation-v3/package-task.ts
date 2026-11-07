@@ -57,13 +57,12 @@ export async function packageTask(store: V3Store, task: Task, w: RuntimeWorkspac
         const signed = await signPrivate(binding); media.set(ref.id, signed.url); expiry = Math.min(expiry, Date.parse(signed.expiresAt) - 30_000);
       }
       const segments = [];
+      const limits = await validityEvidence();
       for (const segment of provisional.segments) {
         details.segmentId = segment.id; await stage("payload");
         const restored = restoreSegment(provisional, segment.id), request = provider.prepareRequest(restored, media);
-        if (input.references.filter(r => r.role === "character").length > 1) {
-          const issues = higgsfieldRequestIssues(request.input, input.references, await validityEvidence(), context.now);
-          if (issues.length) throw new Error(issues[0]);
-        }
+        const issues = higgsfieldRequestIssues(request.input, input.references, limits, context.now, request.model);
+        if (issues.length) throw new Error(issues[0]);
         await stage("estimate");
         const cost = segment.estimate;
         if (cost.estimatedCostMicrousd === null || !cost.pricing) throw new Error("V3_APPROXIMATE_PRICING_NOT_CONFIGURED");
@@ -74,7 +73,7 @@ export async function packageTask(store: V3Store, task: Task, w: RuntimeWorkspac
       details.estimateStatus = "available";
       const document = provisional;
       const quote = quoteSchema.parse({ id: randomUUID(), projectId: task.project_id, packageId: document.id,
-        packageHash: document.hash, currency: "USD", validityEvidence: await validityEvidence(), observedAt: context.now,
+        packageHash: document.hash, currency: "USD", validityEvidence: limits, observedAt: context.now,
         pricingSource: "manual_provider_estimate", expiresAt: null, deliveryExpiresAt: new Date(expiry).toISOString(),
         segments, totalMicrousd: document.pricing.totalMicrousd });
       envelope = { document, quote };

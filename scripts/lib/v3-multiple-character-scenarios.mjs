@@ -96,10 +96,11 @@ export async function multipleCharacterScenarios(h) {
  equal(board.storyboard.cast,cast);equal(board.storyboard.scenes.flatMap(s=>s.speech.map(l=>l.characterId)),[a,b]);
  const storyRequest=calls.filter(c=>c.kind==='storyboard').at(-1).body;equal(storyRequest.text.format.name,'director_storyboard_cast_v1');equal(storyRequest.input[0].content.filter(c=>c.type==='input_image').length,3);
  equal((await post(project,{action:'review_artifact',id:board.id,decision:'approve'})).status,200);
+ const file=path.join(os.tmpdir(),'sceenyk-cast-limits-'+randomUUID()+'.json'),oldFile=process.env.UGC_V3_HIGGSFIELD_LIMITS_FILE;
+ process.env.UGC_V3_HIGGSFIELD_LIMITS_FILE=file; // Explicit unavailable override still blocks; unset now uses reviewed public defaults.
  const firstBuild=await post(project,{action:'build_package'});assert.equal(firstBuild.status,200,JSON.stringify(firstBuild.body));ok(true);await tick(project);
  let task=(await pg.query("select * from public.ugc_v3_tasks where project_id=$1 and kind='package' order by created_at desc limit 1",[project])).rows[0];
- equal(task.status,'failed');equal(task.error_code,'V3_PRO_REFERENCE_LIMITS_UNVERIFIED');
- const file=path.join(os.tmpdir(),'sceenyk-cast-limits-'+randomUUID()+'.json'),oldFile=process.env.UGC_V3_HIGGSFIELD_LIMITS_FILE;
+ equal(task.status,'failed');equal(task.error_code,'V3_HIGGSFIELD_REFERENCE_LIMITS_UNAVAILABLE');
  const evidence={model:'bytedance/seedance-2.5/reference-to-video',verifiedAt:new Date(Date.now()-60000).toISOString(),expiresAt:new Date(Date.now()+3600000).toISOString(),sources:['https://docs.higgsfield.ai/fixture-only'],maxImageCount:2,maxImageBytes:10_000_000,imageMimeTypes:['image/png'],maxPromptBytes:500_000,maxBodyBytes:600_000};
  try{
   fs.writeFileSync(file,JSON.stringify(evidence));process.env.UGC_V3_HIGGSFIELD_LIMITS_FILE=file;

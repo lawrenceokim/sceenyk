@@ -1,3 +1,4 @@
+import { packageBuildError } from "./package-status";
 const messages: Record<string, string> = {
   V3_CLIP_SETUP_REQUIRED: "Individual clip generation needs database migration 098. Ask your administrator to apply it after 097; your saved work is preserved.",
   V3_CLIP_ATTEMPT_CHANGED: "This clip attempt changed. Refresh and review the current clip before approving a new attempt.",
@@ -14,9 +15,7 @@ const messages: Record<string, string> = {
   V3_CLIP_SHOT_TIMING_INVALID: "A Storyboard shot crosses a clip boundary or has incorrect timing. Reject it and generate a new connected story.",
   V3_CHARACTER_NAME_REQUIRED: "Enter and save a name for this character before generating its sheet.",
   V3_PRO_CHARACTERS_RETAINED: "Basic Studio supports one character. All your Pro characters and saved sheets are preserved. Switch to Pro to continue this project.",
-  V3_PRO_REFERENCE_LIMITS_UNVERIFIED: "This multi-character video needs verified reference limits for the selected Higgsfield model. All characters are preserved; no video request was sent.",
   V3_PRO_REFERENCE_COUNT_EXCEEDED: "This cast exceeds the existing Generation Package reference capacity. No characters were omitted or generated again.",
-  REFERENCE_COUNT_EXCEEDED: "The approved sheets exceed the selected model's verified reference limit. No character was omitted and no video request was sent.",
   V3_CHARACTER_BINDINGS_REQUIRED: "The Storyboard needs explicit character bindings. Review and regenerate its direction when ready; your approved sheets are preserved.",
   V3_CHARACTER_BINDINGS_CHANGED: "The saved cast or approved Character Sheets changed. Review the affected Location, Storyboard and package before continuing.",
   V3_CHARACTER_BINDINGS_INVALID: "A shot contains an unknown or duplicated character identity. No video request was sent.",
@@ -110,6 +109,7 @@ const messages: Record<string, string> = {
   APPROVE_CURRENT_REFERENCES_FIRST: "Regenerate and approve references for the current saved inputs before continuing.",
 };
 export function v3ActionErrorMessage(code: string) {
+  if (/REFERENCE_LIMITS_(UNVERIFIED|EXPIRED|INVALID|UNAVAILABLE)$/.test(code) || ["REFERENCE_COUNT_EXCEEDED", "REFERENCE_FORMAT_OR_SIZE_INVALID", "REQUEST_SIZE_EXCEEDED"].includes(code)) return packageBuildError(code);
   if (code.startsWith("V3_STORAGE_DELETE_")) return `The unwanted image could not be deleted (${code}). Its saved metadata is preserved for retry.`;
   return messages[code] ?? "This request couldn’t finish. Check your saved inputs and local generation setup, then check status.";
 }

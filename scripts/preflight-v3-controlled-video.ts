@@ -53,7 +53,7 @@ async function main() {
   const issues = [...(report?.issues ?? ["V3_PREFLIGHT_REQUIRED"]), ...(!delivery.verified ? ["V3_REFERENCE_READBACK_FAILED"] : []),
     ...(schemaChecks.some(c => !c.verified) ? ["V3_SCHEMA_UNVERIFIED"] : []), ...(current !== true ? ["PACKAGE_STALE"] : [])];
   const segment = quote.segments[0];
-  const payloadIssues = quote.segments.flatMap(s => higgsfieldRequestIssues(s.body, doc.source.references, quote.validityEvidence, now));
+  const payloadIssues = quote.segments.flatMap(s => higgsfieldRequestIssues(s.body, doc.source.references, quote.validityEvidence, now, s.model));
   console.log(JSON.stringify({ inspectedAt: now, projectId, packageId, packageVersion: doc.version, packageHash: doc.hash,
     current: report?.currentness === "current" && current === true, segmentCount: doc.segments.length,
     packageApproved: !!auth && auth.packageId === doc.id && auth.packageHash === doc.hash,

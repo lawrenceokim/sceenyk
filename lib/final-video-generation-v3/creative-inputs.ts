@@ -5,11 +5,22 @@ import { v3Digest } from "./identity";
 import { generationContext, artifactCurrent, requiredReferenceArtifacts, type ReferenceOriginals } from "./generation-context";
 import type { RuntimeWorkspace } from "./runtime-store";
 import type { Artifact } from "./runtime-contract";
+import { seedanceReferenceLimits } from "./adapters/higgsfield-reference-limits";
 
 export async function validityEvidence() {
   const file = process.env.UGC_V3_HIGGSFIELD_LIMITS_FILE;
-  if (!file) return null;
-  try { if ((await fs.stat(file)).size > 32768) return null; return JSON.parse(await fs.readFile(file, "utf8")) as unknown; } catch { return null; }
+  if (!file) return seedanceReferenceLimits;
+  // An explicitly configured account restriction must not silently disappear.
+  let bytes;
+  try {
+    if ((await fs.stat(file)).size > 32768) return { configurationError: "V3_HIGGSFIELD_REFERENCE_LIMITS_INVALID" };
+    bytes = await fs.readFile(file, "utf8");
+  } catch { return { configurationError: "V3_HIGGSFIELD_REFERENCE_LIMITS_UNAVAILABLE" }; }
+  try {
+    const evidence: unknown = JSON.parse(bytes);
+    return evidence !== null && typeof evidence === "object" && !Array.isArray(evidence) ? evidence : { configurationError: "V3_HIGGSFIELD_REFERENCE_LIMITS_INVALID" };
+  }
+  catch { return { configurationError: "V3_HIGGSFIELD_REFERENCE_LIMITS_INVALID" }; }
 }
 export function approvedArtifacts(w: RuntimeWorkspace, brief: Awaited<ReturnType<typeof projectBrief>>, originals: ReferenceOriginals) {
   if (w.tasks.some(t => ["character", "product", "location", "storyboard"].includes(t.kind) && ["queued", "running", "reconciliation_required"].includes(t.status)))

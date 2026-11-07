@@ -174,7 +174,7 @@ async function videoTask(store: V3Store, task: Task, w: RuntimeWorkspace, signal
     if (Date.parse(intent.deliveryExpiresAt) <= Date.now()) throw new Error("V3_REFERENCE_DELIVERY_EXPIRED");
     if (doc.pricing.source !== "manual_provider_estimate" && config.accountScope !== doc.accountScope) throw new Error("HIGGSFIELD_ESTIMATE_ACCOUNT_CHANGED");
     const quote = w.quotes.find(q => q.document.packageId === run.package_id)?.document;
-    const issues = higgsfieldRequestIssues(intent.body, doc.source.references, quote?.validityEvidence, new Date().toISOString());
+    const issues = higgsfieldRequestIssues(intent.body, doc.source.references, quote?.validityEvidence, new Date().toISOString(), intent.model);
     if (!quote) issues.push("V3_QUOTE_REQUIRED");
     if (issues.length) throw new Error(issues[0]);
   },
