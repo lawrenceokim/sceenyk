@@ -16,6 +16,7 @@
 # context
 !/context/
 /context/*
+!/context/pro-clip-approval-lock.md
 !/context/higgsfield-reference-limits.md
 !/context/m6-final-operation-reliability.md
 !/context/ugc-v1-workflow.md

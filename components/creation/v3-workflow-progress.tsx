@@ -89,13 +89,16 @@ export function V3WorkflowProgress({ workspace, productRequired, busy, locked, e
                 : t.kind === "storyboard" ? storyboardProgressError(t.errorCode)
                   : t.kind === "join" ? "Your final video could not be joined." : "Saved video deletion needs attention. Open Final Video to retry."}</p>
           {((!t.location && t.recoveryAvailable) || t.status === "reconciliation_required" && t.kind === "storyboard" || t.packageBuild?.recoverable) &&
-            <Button variant="outline" disabled={busy} onClick={() => void act("recover_task", { id: t.id })}>Recover saved response</Button>}
+            <Button variant="outline" disabled={busy || !!workspace.creativeLock && ["character", "product", "location", "storyboard", "package"].includes(t.kind)} onClick={() => void act("recover_task", { id: t.id })}>Recover saved response</Button>}
           {t.kind === "join" && t.status === "failed" && <Button variant="outline" disabled={busy} onClick={() => void act("recover_task", { id: t.id })}>Recover local join</Button>}
         </div>)}
       </div>
     </div>
     <div className="space-y-3">
       <TechnicalSection title="Package technical details" icon={<Layers2 aria-hidden="true" className="size-4" />}>
+        {workspace.creativeLock && <Fields values={{ "Creative inputs": workspace.creativeLock.state === "locked" ? "Locked after first clip approval" : "Locked · administrator review required",
+          "Snapshot captured": workspace.creativeLock.capturedAt, "First source clip approved": workspace.creativeLock.firstApprovedAt }} />}
+        {workspace.creativeLock && workspace.creativeLock.state !== "locked" && <p role="alert">{v3ActionErrorMessage(workspace.creativeLock.state === "setup_required" ? "V3_CREATIVE_LOCK_SETUP_REQUIRED" : "V3_CREATIVE_LOCK_EVIDENCE_REQUIRED")}</p>}
         {!p && !build && !buildFailure && <p>No Generation Package has been saved yet.</p>}
         <Fields values={{ "Package state": progress.stages[2].description, Stage: buildFailure ? null : build?.stage,
           Code: buildFailure?.code ?? build?.code, "HTTP status": buildFailure?.httpStatus ?? build?.httpStatus,

@@ -1,5 +1,9 @@
 # UI Context
 
+## Pro creative inputs after first source approval (2026-11-09)
+
+Display a small muted purple lock notice in the existing Sources panel. Keep saved prompts, original references/names, sheets, settings, Storyboard and package visible; disable creative editing, removal, regeneration/review and rebuilding after the persisted first-source lock. Inspector accordion summaries, reference navigation and Preview remain available. New first-source approval updates the surrounding Studio once per actual saved lock change; equivalent status DTOs cannot restart notifications/polling. Progress contains capture/approval timestamps and actionable setup/evidence issues. Remaining clip actions and M6 loading/recovery/approval UI remain unchanged. Reuse tokens, shared controls, disabled fieldsets inside expandable sections and the sole existing stylesheet. [Contract](pro-clip-approval-lock.md).
+
 ## Phase 2 M6 — merged final review (2026-11-08)
 
 Keep M5 clip cards and their handlers. A wrapping compact section below the cards uses existing purple Buttons, semantic surfaces/type/spacing, native Preview selection, polite persisted status, a small reduced-motion spinner and the shared confirmation Dialog. Ready to merge → Merge Videos → Merging videos... → Final video ready for review exposes View in Preview / Approve Final Video / Reject and Delete. Incomplete/stale inputs disable merging/approval. Errors offer retry; technical stage/error data stays in Progress. Rejection preserves approved clip cards and approvals. No new stylesheet, panel, duration/resolution setting or Basic layout. An isolated offline Chrome fixture verifies desktop/mobile/narrow-drawer layout, both themes, Preview/approval handlers, dialog Escape, keyboard merge activation and reduced motion. Hosted Studio/real-device visual acceptance remains manual. [M6 behavior/setup](phase-2-basic-pro-studio.md#m6-implementation-and-setup-2026-11-08).

@@ -1,9 +1,9 @@
 import "server-only";
 import { v3Digest } from "./identity";
-import type { FrozenPackage } from "./package";
+import { isApprovedPackageSnapshot, type FrozenPackage } from "./package";
 import { privateAssetSchema, type Artifact, type Run } from "./runtime-contract";
 import type { RuntimeWorkspace } from "./runtime-store";
-import { assertV3VideoMetadata } from "./video-metadata";
+import { assertLockedVideoMetadataV1, assertV3VideoMetadata } from "./video-metadata";
 
 // Same ordered contract as M5's saved preparation event. No paid authority is read.
 export function mergeManifest(doc: FrozenPackage, runs: Run[]) {
@@ -17,7 +17,9 @@ export function mergeManifest(doc: FrozenPackage, runs: Run[]) {
       clip.number !== i + 1 || clip.startMs !== s.startMs || clip.endMs !== s.endMs || clip.durationMs !== s.durationMs)
       throw new Error("V3_MERGE_REQUIRES_APPROVED_CLIPS");
     const asset = privateAssetSchema.parse(run.result);
-    assertV3VideoMetadata(asset, { durationMs: s.durationMs, aspectRatio: story.aspectRatio, resolution: doc.source.resolution, generateAudio: true });
+    // Accepted immutable assets are not reinterpreted by later admission policy.
+    // The merge worker still validates the actual source bytes/streams before use.
+    (isApprovedPackageSnapshot(doc) ? assertLockedVideoMetadataV1 : assertV3VideoMetadata)(asset, { durationMs: s.durationMs, aspectRatio: story.aspectRatio, resolution: doc.source.resolution, generateAudio: true });
     if (asset.id !== run.id || asset.mimeType !== "video/mp4" || !asset.hasAudio ||
       asset.storageKey !== `users/${doc.source.scope.ownerId}/projects/${doc.source.scope.projectId}/v3/${run.id}.mp4`)
       throw new Error("V3_MERGE_SOURCE_INVALID");

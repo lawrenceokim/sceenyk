@@ -7,6 +7,8 @@ import path from 'node:path';
 // check-v3-merge-media.ts independently exercises native FFmpeg with 2/4/7/9 files.
 export async function finalMergeScenarios(h,project,initial,doc) {
  const {pg,owner,call,post,read,tick,load,equal,ok,objects,V3Store}=h;
+ // Explicit offline corruption injection: normal writes must fail the new lock.
+ const corruptRun=async(sql,args)=>{await pg.exec('alter table public.ugc_v3_runs disable trigger a_v3_creative_lock');try{await pg.query(sql,args);}finally{await pg.exec('alter table public.ugc_v3_runs enable trigger a_v3_creative_lock');}};
  const store=new V3Store(),posts=h.getVideoPosts(),before=await store.read(owner,project);
  const approved=JSON.stringify(before.runs),grants=JSON.stringify(before.runtimeAuthorizations),quote=JSON.stringify(before.quotes);
  const manifest=load('lib/final-video-generation-v3/merge-runtime.ts').mergeManifest(doc,before.runs);
@@ -15,14 +17,15 @@ export async function finalMergeScenarios(h,project,initial,doc) {
  equal(await call('ugc_v3_merge_setup',[]),true);
  equal(await call('ugc_v3_merge_manifest',[owner,project,doc.id]),manifest);
  const last=before.runs.find(r=>r.id===manifest.clips.at(-1).runId);
- await pg.query("update public.ugc_v3_runs set state='awaiting_review' where id=$1",[last.id]);
+ await assert.rejects(()=>pg.query("update public.ugc_v3_runs set state='awaiting_review' where id=$1",[last.id]),/V3_APPROVED_CLIP_PRESERVED/);ok(true);
+ await corruptRun("update public.ugc_v3_runs set state='awaiting_review' where id=$1",[last.id]);
  equal((await read(project)).multiClip.readyForMerging,false);
  equal((await post(project,payload)).body.code,'V3_MERGE_REQUIRES_APPROVED_CLIPS');
- await pg.query("update public.ugc_v3_runs set state='approved' where id=$1",[last.id]);
- await pg.query("update public.ugc_v3_runs set result=jsonb_set(result,'{width}','1'::jsonb) where id=$1",[last.id]);
+ await corruptRun("update public.ugc_v3_runs set state='approved' where id=$1",[last.id]);
+ await corruptRun("update public.ugc_v3_runs set result=jsonb_set(result,'{width}','1'::jsonb) where id=$1",[last.id]);
  equal((await read(project)).multiClip.readyForMerging,false);
  equal((await post(project,payload)).body.code,'V3_MERGE_SOURCE_INVALID');
- await pg.query('update public.ugc_v3_runs set result=$2 where id=$1',[last.id,last.result]);
+ await corruptRun('update public.ugc_v3_runs set result=$2 where id=$1',[last.id,last.result]);
  await assert.rejects(()=>call('ugc_v3_merge_manifest',[randomUUID(),project,doc.id]),/V3_PROJECT_NOT_OWNED/);ok(true);
  equal((await post(project,{...payload,manifestHash:'0'.repeat(64)})).body.code,'V3_MERGE_INPUTS_CHANGED');
  h.setOwner(randomUUID());ok((await post(project,payload)).status!==200);h.setOwner(owner);
@@ -94,16 +97,14 @@ export async function finalMergeScenarios(h,project,initial,doc) {
  equal(JSON.stringify((await store.read(owner,project)).runtimeAuthorizations),grants);equal(JSON.stringify((await store.read(owner,project)).quotes),quote);
  // If a source identity changes, the old final cannot be current or approved again.
  const source=before.runs.find(r=>r.id===manifest.clips[0].runId);
- await pg.query("update public.ugc_v3_runs set result=jsonb_set(result,'{sha256}',to_jsonb($2::text)) where id=$1",[source.id,'f'.repeat(64)]);
+ await corruptRun("update public.ugc_v3_runs set result=jsonb_set(result,'{sha256}',to_jsonb($2::text)) where id=$1",[source.id,'f'.repeat(64)]);
  dto=await read(project);equal(dto.complete,false);equal(dto.runs.find(r=>r.id===next).current,false);equal(dto.multiClip.merge.outdated,true);
  await assert.rejects(()=>call('ugc_v3_approve_video',[owner,project,next]),/V3_MERGE_INPUTS_CHANGED|JOINED_APPROVAL_INVALID/);ok(true);
- await pg.query('update public.ugc_v3_runs set result=$2 where id=$1',[source.id,source.result]);
+ await corruptRun('update public.ugc_v3_runs set result=$2 where id=$1',[source.id,source.result]);
  equal((await read(project)).complete,true);
- // Settings edits invalidate the final without destroying access or changing historical approvals.
- await pg.query("update public.projects set prompt=prompt||' merge changed' where id=$1",[project]);
- dto=await read(project);equal(dto.complete,false);ok(dto.runs.find(r=>r.id===next).preview);equal(dto.runs.find(r=>r.id===next).current,false);
- equal((await post(project,payload)).status,409);
- await pg.query("update public.projects set prompt=replace(prompt,' merge changed','') where id=$1",[project]);
+ // Locked settings cannot invalidate an already approved merged output.
+ await assert.rejects(()=>pg.query("update public.projects set prompt=prompt||' merge changed' where id=$1",[project]),/V3_CREATIVE_INPUTS_LOCKED/);ok(true);
+ dto=await read(project);equal(dto.complete,true);ok(dto.runs.find(r=>r.id===next).preview);equal(dto.runs.find(r=>r.id===next).current,true);
  equal(JSON.stringify((await store.read(owner,project)).runs),approved);equal(h.getVideoPosts(),posts);
  process.env.UGC_V3_HIGGSFIELD_ENABLED='1';
 }

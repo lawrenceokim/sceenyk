@@ -32,6 +32,7 @@ export type StudioReferenceSourcesProps = {
   busy: boolean;
   signedIn: boolean;
   authReady: boolean;
+  readOnly?: boolean;
 };
 
 export function StudioReferenceSources(props: StudioReferenceSourcesProps) {
@@ -41,13 +42,13 @@ export function StudioReferenceSources(props: StudioReferenceSourcesProps) {
 }
 
 function StandardReferenceSources({ label, addLabel, role, references, onAdd, onRemoveLocal, onRemoveAsset, multiple = false, perCharacterSheets = false,
-  onUpload, onRecover, onNameChange, uploadStates, busy, signedIn, authReady }: StudioReferenceSourcesProps) {
+  onUpload, onRecover, onNameChange, uploadStates, busy, signedIn, authReady, readOnly = false }: StudioReferenceSourcesProps) {
   const id = useId();
   const panels = useStudioPanels();
   const input = useRef<HTMLInputElement>(null);
   const add = useRef<HTMLButtonElement>(null);
   const images = studioReferenceImages(references);
-  const atLimit = !multiple && images.length >= 1;
+  const atLimit = readOnly || !multiple && images.length >= 1;
   const buttonClass = "h-8 min-h-8 cursor-pointer gap-1.5 rounded-lg px-2 text-xs [&&:disabled]:pointer-events-auto disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground disabled:opacity-50 disabled:hover:bg-muted [@media(pointer:coarse)]:min-h-11";
   return <section className="min-w-0" aria-labelledby={`${id}-heading`}>
     <h3 id={`${id}-heading`} className="mb-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{label}</h3>
@@ -75,7 +76,7 @@ function StandardReferenceSources({ label, addLabel, role, references, onAdd, on
           {uploading && <span aria-hidden="true" className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-lg bg-background/40">
             <LoaderCircle className="size-5 text-foreground motion-safe:animate-spin" />
           </span>}
-          <button type="button" disabled={busy} aria-label={`Remove ${filename}`}
+          <button type="button" disabled={readOnly || busy} aria-label={`Remove ${filename}`}
             className="absolute -top-1 -right-1 flex size-5 cursor-pointer items-center justify-center rounded-full border border-border bg-card text-foreground shadow-sm outline-none transition-colors duration-[var(--motion-micro)] ease-[var(--motion-ease)] hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none [@media(pointer:coarse)]:size-7"
             onClick={() => { if (local) onRemoveLocal(local.id); else if (asset) onRemoveAsset(asset); add.current?.focus(); }}>
             <X className="size-3" aria-hidden="true" />
@@ -86,7 +87,7 @@ function StandardReferenceSources({ label, addLabel, role, references, onAdd, on
             <label htmlFor={`${id}-${asset.id}-name`} className="block text-[11px] font-medium text-foreground">
               {role === "character" ? "Character name" : "Product / Prop name"}
             </label>
-            <input id={`${id}-${asset.id}-name`} name={`${role}-name`} type="text" autoComplete="off" aria-required="true"
+            <input id={`${id}-${asset.id}-name`} name={`${role}-name`} type="text" autoComplete="off" aria-required="true" readOnly={readOnly}
               value={asset.referenceName ?? ""} maxLength={referenceNameLimit}
               placeholder={role === "character" ? "e.g. Maya" : "e.g. Nova Watch"}
               onChange={event => onNameChange(asset, event.target.value)}
@@ -105,13 +106,13 @@ function StandardReferenceSources({ label, addLabel, role, references, onAdd, on
         if (local) return <div key={local.id} className="min-w-0 text-[11px] text-muted-foreground">
           <p className="truncate">{local.file.name}</p>
           {state?.status === "failed" ? <><p role="status" className="break-words text-destructive">{state.message}</p>
-            <Button type="button" variant="ghost" disabled={busy} className={buttonClass} onClick={() => onUpload(local)}>Retry upload</Button></>
+            <Button type="button" variant="ghost" disabled={readOnly || busy} className={buttonClass} onClick={() => onUpload(local)}>Retry upload</Button></>
             : <p role="status">{state?.status === "uploading" ? `Uploading${state.progress === undefined ? "…" : ` · ${state.progress}%`}`
               : state?.status === "verifying" ? "Verifying…" : signedIn ? "Preparing upload…" : "Local preview"}</p>}
         </div>;
         if (asset && asset.status !== "uploaded") return <div key={asset.id} className="min-w-0 text-[11px] text-muted-foreground">
           <p className="truncate">{asset.filename}</p>
-          {asset.status === "pending" ? <Button type="button" variant="ghost" disabled={busy} className={buttonClass} onClick={() => onRecover(asset)}>Check upload</Button>
+          {asset.status === "pending" ? <Button type="button" variant="ghost" disabled={readOnly || busy} className={buttonClass} onClick={() => onRecover(asset)}>Check upload</Button>
             : <p role="status" className="text-destructive">Upload rejected. Remove and select again.</p>}
         </div>;
         return null;

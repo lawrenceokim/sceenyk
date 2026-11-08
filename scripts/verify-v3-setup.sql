@@ -1,8 +1,8 @@
--- Read-only, owner-run Supabase SQL Editor verification AFTER manual 076 through 098 in order.
+-- Read-only, owner-run Supabase SQL Editor verification AFTER manual 076 through 100 in order.
 -- No jobs, claims, quotes, authorizations or provider requests are created.
 with expected(name) as (values
  ('ugc_v3_projects'),('ugc_v3_sources'),('ugc_v3_packages'),('ugc_v3_authorizations'),('ugc_v3_events'),
- ('ugc_v3_tasks'),('ugc_v3_artifacts'),('ugc_v3_quotes'),('ugc_v3_run_authorizations'),('ugc_v3_runs'),('ugc_v3_runtime_events'),('ugc_v3_reference_deletions'))
+ ('ugc_v3_tasks'),('ugc_v3_artifacts'),('ugc_v3_quotes'),('ugc_v3_run_authorizations'),('ugc_v3_runs'),('ugc_v3_runtime_events'),('ugc_v3_reference_deletions'),('ugc_v3_creative_locks'))
 select e.name, c.oid is not null as installed, coalesce(c.relrowsecurity,false) as rls_enabled,
  coalesce(has_table_privilege('authenticated',c.oid,'SELECT'),false) as browser_can_read_should_be_false,
  coalesce(has_table_privilege('service_role',c.oid,'SELECT'),false) as server_can_read,
@@ -10,6 +10,7 @@ select e.name, c.oid is not null as installed, coalesce(c.relrowsecurity,false) 
 from expected e left join pg_class c on c.oid=to_regclass('public.'||e.name) order by e.name;
 
 with expected(signature) as (values
+ ('public.ugc_v3_clip_lock_setup()'),('public.ugc_v3_recover_clip_lock(uuid,uuid)'),
  ('public.ugc_v3_clip_retryable(uuid,uuid,uuid)'),('public.ugc_v3_clip_setup()'),('public.ugc_v3_clip_authorize(uuid,uuid,jsonb,uuid)'),('public.ugc_v3_clip_manifest(uuid,uuid,uuid)'),
  ('public.ugc_v3_create_project(uuid,uuid,jsonb)'),('public.ugc_v3_read(uuid,uuid)'),('public.ugc_v3_write(uuid,uuid,text,jsonb)'),
  ('public.ugc_v3_runtime_read(uuid,uuid)'),('public.ugc_v3_runtime_action(uuid,uuid,text,jsonb)'),
@@ -41,6 +42,15 @@ from pg_trigger where not tgisinternal and tgname in ('ugc_v3_isolation','ugc_v3
  'ugc_v3_location_version_floor','ugc_v3_reference_retention','ugc_v3_simple_location_intent','ugc_v3_preserve_approved_reference','ugc_v3_local_quote','ugc_v3_local_authorization') order by tgrelid;
 
 select indexname,indexdef from pg_indexes where schemaname='public' and indexname in ('ugc_v3_reference_deletion_pending','ugc_v3_runs_active_segment');
+
+-- Lock rows are private evidence. needs_review is actionable; never repair it
+-- by inventing approval timestamps or changing accepted package/media data.
+select state,origin,count(*) from public.ugc_v3_creative_locks group by state,origin;
+select exists(select 1 from information_schema.columns where table_schema='public' and table_name='ugc_v3_creative_locks'
+ and column_name='snapshot_hash' and is_generated='ALWAYS') as lock_generated_hash,
+ exists(select 1 from pg_trigger where tgrelid=to_regclass('public.ugc_v3_creative_locks') and tgname='ugc_v3_lock_immutable' and tgenabled='O') as lock_immutable,
+ exists(select 1 from pg_trigger where tgrelid=to_regclass('public.ugc_v3_runs') and tgname='a_v3_first_clip_lock' and tgenabled='O') as first_clip_capture,
+ (select count(*)=11 from pg_trigger where tgname='a_v3_creative_lock' and tgenabled='O' and not tgisinternal) as creative_fences;
 
 -- Every count below must be zero. These are observational queries, never repairs.
 -- M5/M6 installed-body audit: all flags should be true. Setup-marker RPCs alone

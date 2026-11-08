@@ -1,0 +1,42 @@
+# Pro clip approval locking (2026-11-09)
+
+Implemented through the existing V3 project, artifact, package, run, authorization, storage and Studio owners. This lifecycle supersedes earlier descriptions of creative currentness after a Pro source clip is approved. Basic and historical non-V3 generation are unchanged. There is no unlock, implicit project version, regeneration requirement or additional payment.
+
+## Lifecycle
+
+1. Before the first source approval, creative editing remains available, including after package/estimate approval. Existing currentness, reapproval, quote binding and finite spending authorization still apply. Editing cannot reuse stale authority for different inputs or erase prior spending history.
+2. The first Pro source run approval atomically captures `v3-creative-lock-v1`. A failed capture rolls back the approval, preserving the generated clip for review. Pending original uploads must finish or be removed before capture. A joined/final artifact approval never initiates a lock. A retained connected Pro Storyboard remains protected even when viewed in Basic mode.
+3. The snapshot freezes the exact historical brief, source revision and private bindings, reference/Storyboard IDs, versions, content and approvals, original asset metadata, generation package, quote, source intent/result and existing authorization/review evidence. `captured_at` records capture time separately from genuine saved source approval times. Missing reviewer identity or an absent review event is never fabricated.
+4. Creative editing, reference removal/replacement/regeneration/review, Storyboard/package rebuilding and whole-package authorization are blocked on the server and database as well as the UI. Already accepted creative responses may be preserved as unapproved history; they cannot replace the frozen inputs. Approved source intent/results cannot be modified or deleted.
+5. Unapproved clips still use existing finite `authorize_clip`, generation, rejection, retry and receipt recovery. New attempt authority remains explicit and cumulative; locking grants no paid authority. M6 local merge/recovery, merged-output rejection/deletion, Preview and final approval retain their current owners. Only final approval completes a multi-clip project.
+
+## Persistence and integrity
+
+Manual migration **100**, `supabase/migrations/20261108010000_ugc_v3_clip_approval_lock.sql`, adds the private append-only `ugc_v3_creative_locks` evidence table, stored generated digest, owned recovery RPC, atomic first-approval trigger, scoped creative mutation guards and versioned currentness wrappers. It is transactional and rerunnable. Table/RPC grants prevent browser writes and direct service mutation of snapshots. Internal pre-lock implementations remain inaccessible through service RPCs. All existing payment/authorization uniqueness, leases, ownership and private storage boundaries remain required.
+
+Valid locked reads select the saved package/source and exact captured reference IDs, not the latest artifact or a later edited draft. Studio restores the recorded brief and original reference names without changing live historical rows. A process-local package brand comes only from the database snapshot reader; client JSON cannot supply it. Frozen package/input hashes, saved segment geometry and quote/request bindings still validate. The reader does not rebuild accepted prompts, reinterpret their creative policy or reprice their estimate through today's compiler/capabilities/pricing configuration. The v1 evidence and video-metadata compatibility contracts must remain supported; future validation changes require new versions instead of changing accepted semantics.
+
+SQL validates snapshot bindings against actual saved records. Actual private object hash/size/readback, media decoding/streams, source order and merge manifests remain mandatory at their existing generation/approval/merge boundaries. Locking cannot make a missing or damaged asset valid. Frozen package display remains readable when another bound asset needs repair, but its separate currentness/submission checks fail. No polling, router refresh or worker scheduler is added. Snapshot hashing is stored once in SQL; full snapshots are not repeatedly canonicalized for each SQL currentness check.
+
+## Existing approved projects and recovery
+
+Migration 100 adds lock/evidence rows for existing approved Pro source runs; it does not rewrite original inputs, timestamps, approvals, package/quote/authorization documents, clips or merged output. Historical brief recovery uses the package-bound Storyboard's saved `input.brief`. A current project brief is a fallback only if its original saved brief digest matches exactly. Resolution and Creation Type must agree with the package's known output/workflow evidence. Historical original assets can remain visible from their retained rows even when removed from the later draft; storage ownership/signing checks still apply.
+
+Missing references, approvals, private bindings, original asset rows, quotes or conflicting approved package lineage create **`needs_review`**, not a synthetic valid snapshot. A locked snapshot whose bindings are later damaged reports **`damaged`**. Both keep inputs read-only, preserve existing work and block new authority until the actual evidence/assets are investigated. Missing migration 100 is **`setup_required`**. Progress reports the capture/first-approval timestamps and administrator-review requirement. No automatic repair, reference regeneration, repricing or new provider request is attempted.
+
+After an administrator has verified and restored genuine original evidence through an audited repair, the service-only `ugc_v3_recover_clip_lock(p_owner,p_project)` may append a valid recovery revision. Earlier `needs_review` rows remain immutable. It is owned, idempotent and never rewrites creative/media/approval records. A valid existing lock is never replaced. Do not fabricate approval data, bypass guards or disable production triggers to make a project appear consistent. Unrecoverable evidence remains explicitly unresolved.
+
+## Manual setup and verification
+
+Apply **100 after 099** in a coordinated application/worker rollout, with a database backup and normal migration review. Then run the read-only `scripts/verify-v3-setup.sql` audit to check grants/RLS, generated hash, capture/guard triggers and any `needs_review` counts. Restart application and worker on matching source. No new environment variable, dependency or pricing configuration is required. This implementation did not apply a remote migration or modify production data.
+
+`npm run test:ugc-v3-clip-lock` runs the disposable SQL/action/worker M5/M6 suite, readonly input renders and saved-state/effect tests. `node --conditions=react-server --import=tsx scripts/check-v3-location-director.mjs` covers the existing full V3/Basic flow. Providers, storage and worker restarts are injected fixtures; historical corruption/repair simulations occur only in rollback-only disposable transactions. No paid requests or browser regression suite is used. Hosted database, storage and manual visual acceptance remain separate from offline verification. Current results are in [the progress tracker](progress-tracker.md).
+
+## Changed owners
+
+- Persistence: migration 100 and `scripts/verify-v3-setup.sql`.
+- Snapshot/read model: new `lib/final-video-generation-v3/creative-lock{,-contract,-view}.ts`; existing `runtime-store.ts`, `runtime-server.ts`, `runtime-inspection.ts`, `creative-inputs.ts`, `package.ts`, `clip-runtime.ts`, `merge-runtime.ts`, `video-metadata.ts` and `reference-errors.ts`. Generation/provider/FFmpeg worker implementations are unchanged.
+- Studio: existing `creation-workspace`, `v3-workflow-preview`, `v3-workflow-progress`, `pro-character-sources`, `studio-reference-sources`, `studio-generation-properties`, `studio-aspect-control`, `prompt-composer` and `project-save-controls` components. No stylesheet or layout redesign.
+- Errors: existing `lib/media/server.ts` and `lib/projects/save-errors.ts` preserve clear lock conflicts.
+- Checks: new `scripts/lib/v3-clip-lock-scenarios.mjs` and `scripts/check-v3-clip-lock-ui.mjs`; existing V3 SQL, individual-clip, merge and Progress fixtures; `package.json` adds the focused test command.
+- Documentation: this contract, Phase 2 specification, overview, architecture, UI context, code standards, AI workflow rules, tracker and `.gitignore` allowlist.

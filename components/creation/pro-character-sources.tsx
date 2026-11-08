@@ -15,7 +15,7 @@ const smallButton = "h-8 min-h-8 min-w-0 cursor-pointer gap-1 rounded-lg px-2 te
 const interactive = "input,textarea,select,a,summary,[contenteditable=true],[role=button],button:not([data-character-swipe-preview])";
 
 export function ProCharacterSources({ references, onAdd, onRemoveLocal, onRemoveAsset, onNameChange, onUpload, onRecover,
-  uploadStates, busy, signedIn, authReady, perCharacterSheets }: StudioReferenceSourcesProps) {
+  uploadStates, busy, signedIn, authReady, perCharacterSheets, readOnly = false }: StudioReferenceSourcesProps) {
   const id = useId(), panels = useStudioPanels();
   // reference_id is persisted unchanged when a local upload receives its asset ID.
   // All generation/review portals still use the actual saved asset ID.
@@ -83,14 +83,14 @@ export function ProCharacterSources({ references, onAdd, onRemoveLocal, onRemove
       <span className="ml-auto text-[11px] text-muted-foreground">{entries.length} {entries.length === 1 ? "character" : "characters"}</span>
     </div>
     <div className="grid min-w-0 grid-cols-2 gap-2">
-      <input ref={single} type="file" accept="image/*" aria-label="Add Character" tabIndex={-1} className="sr-only" onChange={event => {
+      <input ref={single} type="file" accept="image/*" disabled={readOnly} aria-label="Add Character" tabIndex={-1} className="sr-only" onChange={event => {
         const files = Array.from(event.currentTarget.files ?? []); if (files.length) onAdd(files.slice(0, 1)); event.currentTarget.value = "";
       }} />
-      <input ref={multiple} type="file" accept="image/*" multiple aria-label="Add Multiple" tabIndex={-1} className="sr-only" onChange={event => {
+      <input ref={multiple} type="file" accept="image/*" disabled={readOnly} multiple aria-label="Add Multiple" tabIndex={-1} className="sr-only" onChange={event => {
         const files = Array.from(event.currentTarget.files ?? []); if (files.length) onAdd(files); event.currentTarget.value = "";
       }} />
-      <Button ref={addButton} type="button" variant="outline" className={smallButton} title="Add Character" onClick={() => single.current?.click()}><Plus className="size-3.5 shrink-0" aria-hidden="true" /><span className="truncate">Add Character</span></Button>
-      <Button type="button" variant="outline" className={smallButton} title="Add Multiple" onClick={() => multiple.current?.click()}><Images className="size-3.5 shrink-0" aria-hidden="true" /><span className="truncate">Add Multiple</span></Button>
+      <Button ref={addButton} disabled={readOnly} type="button" variant="outline" className={smallButton} title="Add Character" onClick={() => single.current?.click()}><Plus className="size-3.5 shrink-0" aria-hidden="true" /><span className="truncate">Add Character</span></Button>
+      <Button type="button" variant="outline" className={smallButton} title="Add Multiple" disabled={readOnly} onClick={() => multiple.current?.click()}><Images className="size-3.5 shrink-0" aria-hidden="true" /><span className="truncate">Add Multiple</span></Button>
     </div>
     {!!entries.length && <>
         <ul ref={strip} className="scrollbar-hidden relative flex w-full min-w-0 max-w-full snap-x snap-proximity gap-2 overflow-x-auto overscroll-x-contain scroll-smooth px-1 py-2 select-none motion-reduce:scroll-auto data-[dragging=true]:cursor-grabbing data-[dragging=true]:snap-none data-[dragging=true]:scroll-auto" aria-label="Choose a character"
@@ -135,7 +135,7 @@ export function ProCharacterSources({ references, onAdd, onRemoveLocal, onRemove
                 </span>
                 <span className="absolute inset-x-0 bottom-0 block truncate bg-linear-to-t from-black/90 via-black/65 to-transparent px-2 pb-1.5 pt-5 text-center text-[11px] font-medium text-white" title={name}>{name}</span>
               </button>
-              <button type="button" data-character-remove disabled={busy} aria-label={`Remove ${filename}`} className="absolute top-1 right-1 flex size-5 cursor-pointer items-center justify-center rounded-full border border-border bg-card text-foreground shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50 [@media(pointer:coarse)]:size-7"
+              <button type="button" data-character-remove disabled={readOnly || busy} aria-label={`Remove ${filename}`} className="absolute top-1 right-1 flex size-5 cursor-pointer items-center justify-center rounded-full border border-border bg-card text-foreground shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50 [@media(pointer:coarse)]:size-7"
                 onClick={() => { removedFocus.current = referenceId; if (local) onRemoveLocal(local.id); else if (asset) onRemoveAsset(asset); }}><X className="size-3" aria-hidden="true" /></button>
             </li>;
           })}
@@ -156,7 +156,7 @@ export function ProCharacterSources({ references, onAdd, onRemoveLocal, onRemove
         {entries.map(({ referenceId, asset, local }, i) => <div key={referenceId} id={`${id}-${referenceId}-details`} data-character-detail={referenceId} hidden={i !== activeIndex} className={i === activeIndex ? "min-w-0 space-y-3" : "hidden"}>
           <div className="space-y-2">
             <label htmlFor={`${id}-${referenceId}-name`} className="flex items-center gap-2 text-xs font-medium"><UserRound className="size-4 text-primary" aria-hidden="true" />Character name</label>
-            <input id={`${id}-${referenceId}-name`} name="character-name" type="text" autoComplete="off" aria-required="true" disabled={!asset || asset.status !== "uploaded" || !!local}
+            <input id={`${id}-${referenceId}-name`} name="character-name" type="text" autoComplete="off" aria-required="true" disabled={readOnly || !asset || asset.status !== "uploaded" || !!local}
               value={asset?.referenceName ?? ""} maxLength={referenceNameLimit} placeholder="Character name"
               onChange={event => { if (asset) onNameChange(asset, event.target.value); }} onBlur={event => { if (asset) onNameChange(asset, event.target.value.trim()); }}
               className="sceenyk-field h-8 min-h-8 w-full min-w-0 rounded-lg border border-input bg-field px-2 py-1 text-xs text-foreground outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50 [@media(pointer:coarse)]:min-h-11" />
@@ -166,9 +166,9 @@ export function ProCharacterSources({ references, onAdd, onRemoveLocal, onRemove
             {perCharacterSheets && !local && asset?.status === "uploaded" ? <StudioPanelTarget panel={`character:${asset.id}`} /> : <div className="flex aspect-square w-full items-center justify-center rounded-lg border border-dashed border-border bg-muted/30 text-[11px] text-muted-foreground">No sheet generated yet</div>}
           </div>
           {local && <div className="space-y-1 text-[11px] text-muted-foreground">
-            {uploadStates[local.id]?.status === "failed" ? <><p role="status" className="break-words text-destructive">{uploadStates[local.id].message}</p><Button type="button" variant="ghost" disabled={busy} className={smallButton} onClick={() => onUpload(local)}>Retry upload</Button></> : <p role="status">{uploadStates[local.id]?.status === "verifying" ? "Verifying…" : signedIn ? "Uploading…" : "Local preview"}</p>}
+            {uploadStates[local.id]?.status === "failed" ? <><p role="status" className="break-words text-destructive">{uploadStates[local.id].message}</p><Button type="button" variant="ghost" disabled={readOnly || busy} className={smallButton} onClick={() => onUpload(local)}>Retry upload</Button></> : <p role="status">{uploadStates[local.id]?.status === "verifying" ? "Verifying…" : signedIn ? "Uploading…" : "Local preview"}</p>}
           </div>}
-          {!local && asset && asset.status !== "uploaded" && <div className="text-[11px] text-muted-foreground">{asset.status === "pending" ? <Button type="button" variant="ghost" disabled={busy} className={smallButton} onClick={() => onRecover(asset)}>Check upload</Button> : <p role="status" className="text-destructive">Upload rejected. Remove and select again.</p>}</div>}
+          {!local && asset && asset.status !== "uploaded" && <div className="text-[11px] text-muted-foreground">{asset.status === "pending" ? <Button type="button" variant="ghost" disabled={readOnly || busy} className={smallButton} onClick={() => onRecover(asset)}>Check upload</Button> : <p role="status" className="text-destructive">Upload rejected. Remove and select again.</p>}</div>}
         </div>)}
       </div>
     </>}

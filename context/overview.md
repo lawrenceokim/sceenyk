@@ -1,5 +1,9 @@
 # Sceenyk
 
+## Pro clip approval locking (2026-11-09)
+
+Package and estimate approval do not permanently lock creative editing. First approval of a Pro source clip freezes its exact approved creative inputs/package/estimate, while remaining clip generation/retries and M6 merging/final approval retain their existing finite authorization and recovery flows. Studio keeps frozen inputs viewable and read-only. Existing approved projects recover from real saved evidence; incomplete/conflicting history requires review without paid regeneration or invented approvals. Manual migration 100 follows 099. [Lifecycle and setup](pro-clip-approval-lock.md).
+
 ## Phase 2 M6 — Video Merging & Final Approval (2026-11-08)
 
 Connected Pro projects can explicitly merge every approved clip locally, review the private result in Studio Preview, and approve it as the completed output. Rejection safely deletes only the merged output and permits a new merge using the same approved clips, without paid generation. Background progress, duplicate prevention, restart recovery and outdated-result guards reuse V3 owners. M5 clips, Basic/short Pro, paid authorization/pricing, providers and historical projects retain their existing behavior. [M6 contract and manual 099 setup](phase-2-basic-pro-studio.md#m6-implementation-and-setup-2026-11-08); source/offline verification is complete. The connection investigation verified 098/099 API markers/signatures read-only; full catalog and hosted/device acceptance remain pending.

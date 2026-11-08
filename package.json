@@ -99,6 +99,7 @@
     "test:ugc-v3-clips": "node --conditions=react-server --import=tsx scripts/check-v3-individual-clips.mjs && node --import=tsx scripts/check-v3-individual-clips-ui.mjs",
     "test:ugc-v3-reference-limits": "node --conditions=react-server --import=tsx scripts/check-v3-reference-limits.mjs",
     "test:ugc-v3-merge": "node --conditions=react-server --import=tsx scripts/check-v3-final-merge.mjs && node --conditions=react-server --import=tsx scripts/check-v3-merge-media.ts && node --import=tsx scripts/check-v3-final-merge-ui.mjs",
+    "test:ugc-v3-clip-lock": "node --conditions=react-server --import=tsx scripts/check-v3-final-merge.mjs --clip-lock-only && node scripts/check-v3-clip-lock-ui.mjs && node scripts/check-v3-workflow-progress.mjs",
     "test:ugc-v3-merge:layout": "node --import=tsx scripts/check-v3-merge-layout.mjs",
     "test:ugc-v3-connections": "node --conditions=react-server --import=tsx scripts/check-v3-connection-recovery.mjs",
     "test:ugc-v3-final-operation": "node scripts/check-v3-final-operation.mjs && node scripts/check-v3-final-merge-ui.mjs",

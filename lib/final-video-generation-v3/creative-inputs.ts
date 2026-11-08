@@ -7,6 +7,7 @@ import { generationContext, artifactCurrent, requiredReferenceArtifacts, type Re
 import type { RuntimeWorkspace } from "./runtime-store";
 import type { Artifact } from "./runtime-contract";
 import { seedanceReferenceLimits } from "./adapters/higgsfield-reference-limits";
+import { lockDocument } from "./creative-lock";
 
 export async function validityEvidence() {
   const file = process.env.UGC_V3_HIGGSFIELD_LIMITS_FILE;
@@ -24,6 +25,13 @@ export async function validityEvidence() {
   catch { return { configurationError: "V3_HIGGSFIELD_REFERENCE_LIMITS_INVALID" }; }
 }
 export function approvedArtifacts(w: RuntimeWorkspace, brief: Awaited<ReturnType<typeof projectBrief>>, originals: ReferenceOriginals) {
+  const snapshot = lockDocument(w);
+  if (w.creativeLock) {
+    if (!snapshot || !w.creativeLock.valid) throw new Error("V3_LOCKED_INPUTS_NEED_REVIEW");
+    return (snapshot.references as { id: string }[]).map(({ id }) => {
+      const artifact = w.artifacts.find(a => a.id === id); if (!artifact) throw new Error("V3_LOCKED_INPUTS_DAMAGED"); return artifact;
+    });
+  }
   if (w.tasks.some(t => ["character", "product", "location", "storyboard"].includes(t.kind) && ["queued", "running", "reconciliation_required"].includes(t.status)))
     throw new Error("V3_CREATIVE_REQUEST_STILL_ACTIVE");
   const required = requiredReferenceArtifacts(w, originals, true);

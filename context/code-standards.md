@@ -1,5 +1,9 @@
 # Code Standards
 
+## Pro first-source approval invariant (2026-11-09)
+
+Package/estimate approval is spending authority, not a permanent creative lock. Capture immutable evidence atomically with the first Pro source approval through migration 100; enforce creative write protection in SQL and authenticated service actions. Preserve Basic, finite per-clip spending, unknown-outcome recovery and M6 output handling. Version accepted snapshot readers/currentness/metadata rules; never recompile, reprice or revalidate accepted creative semantics through unrelated new policy. Hashes, exact bindings, owned private byte checks and genuine corruption errors remain mandatory. Historical recovery must use authentic package-bound evidence and append explicit unresolved states instead of inventing approvals. No automatic production repair or unlock. [Lifecycle and setup](pro-clip-approval-lock.md).
+
 ## Connection diagnostics and retries (2026-11-08)
 
 Keep upstream error text/URLs/secrets out of logs and client responses. Use the shared service diagnostic at the V3, account and media boundaries; preserve fixed SQL business exceptions, ownership checks, setup errors and integrity guards. Only known temporary infrastructure failures admit supervisor backoff. Do not retry a mutating RPC/provider call in isolation, convert a database outage into stale creative inputs, or turn identity failures into storage errors. Preserve leases, immutable receipts and unknown-outcome reconciliation. Permanent global errors stop; permanent project errors remain explicitly paused until operator repair/restart. Read-only probes must never claim queued work, submit paid work or apply migrations. [Verified investigation](m6-connection-recovery.md).

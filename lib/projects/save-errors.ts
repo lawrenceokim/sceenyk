@@ -7,6 +7,7 @@ export function projectSaveFailure(error: unknown, fallback = "Your draft couldn
   const code = typeof record.code === "string" ? record.code : "";
   const message = typeof record.message === "string" ? record.message : "";
   let detail = fallback;
+  if (message === "V3_CREATIVE_INPUTS_LOCKED") return { ok: false, code: "UNAVAILABLE", message: "Creative inputs are locked because a source clip was approved. Your approved inputs, clips and final video are preserved." };
   if (code === "42501") detail = "Project saving is blocked by database permissions (42501). Ask an administrator to verify the server’s project update grants, including migration 096. Your edits and uploaded images are preserved.";
   else if (["42703", "PGRST204"].includes(code)) detail = "The database is missing a required project field. Ask an administrator to check migrations 093–096. Your edits and uploaded images are preserved.";
   else if (["42883", "PGRST202"].includes(code)) detail = "A required project-saving database function is unavailable. Ask an administrator to check the installed migrations and API schema cache. Your edits are preserved.";

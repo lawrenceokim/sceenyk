@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { randomUUID } from 'node:crypto';
 import { connectedFixtureStory } from './v3-connected-story-scenarios.mjs';
+import { clipLockChecks } from './v3-clip-lock-scenarios.mjs';
 
 export async function individualClipScenarios(h) {
  const {pg,owner,call,post,read,tick,fixture,generate,load,equal,ok,cp,videoBodies}=h;
@@ -33,6 +34,7 @@ export async function individualClipScenarios(h) {
  const security=async()=>(await pg.query("select oid,relacl::text,relrowsecurity,relforcerowsecurity from pg_class where relnamespace='public'::regnamespace and relkind='r' order by oid")).rows;
  const baseline=await security();await pg.exec(migration);await pg.exec(migration);equal(await security(),baseline);
  await pg.exec(fs.readFileSync('supabase/migrations/20261108009900_ugc_v3_final_merge.sql','utf8'));
+ await pg.exec(fs.readFileSync('supabase/migrations/20261108010000_ugc_v3_clip_approval_lock.sql','utf8'));
  for(const signature of ['ugc_v3_clip_authorize(uuid,uuid,jsonb,uuid)','ugc_v3_clip_manifest(uuid,uuid,uuid)','ugc_v3_clip_setup()','ugc_v3_clip_retryable(uuid,uuid,uuid)']) {
   equal((await pg.query("select has_function_privilege('authenticated',$1,'EXECUTE') browser,has_function_privilege('service_role',$1,'EXECUTE') server",['public.'+signature])).rows[0],{browser:false,server:true});
  }
@@ -40,8 +42,8 @@ export async function individualClipScenarios(h) {
  delete process.env.UGC_V3_HIGGSFIELD_LIMITS_FILE;
  const makeCurrent=async project=>{await pg.query("update public.ugc_v3_tasks set available_at=now() where project_id=$1 and status='queued'",[project]);};
  const runWorker=async project=>{await makeCurrent(project);await tick(project);};
- for(const duration of [10,30,40,70,90,120]) {
-  await call('studio_mode_save',[owner,null,duration>30?'pro':'basic']);
+ for(const duration of process.argv.includes('--clip-lock-only')?[10,30,40]:[10,30,40,70,90,120]) {
+  await call('studio_mode_save',[owner,null,duration===10||duration>30?'pro':'basic']);
   const f=await fixture(false,String(duration)),project=f.project;
   await generate(project);let dto=await read(project),location=dto.artifacts.find(a=>a.kind==='location');
   equal((await post(project,{action:'review_artifact',id:location.id,decision:'approve'})).status,200);
@@ -63,6 +65,14 @@ export async function individualClipScenarios(h) {
   equal((await post(project,{action:'authorize',...snapshot,operatorApproved:true,maximumMicrousd:p.estimatedCostMicrousd-1})).status,409);
   equal((await post(project,{action:'authorize',...snapshot,operatorApproved:true,maximumMicrousd:p.suggestedMaximumMicrousd})).status,200);
   equal((await post(project,{action:'authorize',...snapshot,operatorApproved:true,maximumMicrousd:p.suggestedMaximumMicrousd})).status,200);
+  if(duration===40) await clipLockChecks(h,'before',project,doc);
+  // Simulate an old finite grant before the first approval freezes history.
+  if(duration===40) {
+   const current=await store.read(owner,project),grant=current.runtimeAuthorizations.find(a=>a.document.segmentId===doc.segments[1].id);
+   const body={...grant.document,approvedAt:new Date(Date.now()-25*3600000).toISOString(),expiresAt:new Date(Date.now()-1000).toISOString()};delete body.hash;
+   const expired={...body,hash:load('lib/final-video-generation-v3/identity.ts').v3Digest('runtime-authorization',body)};
+   await pg.query('update public.ugc_v3_run_authorizations set document=$1 where id=$2',[expired,grant.document.id]);
+  }
   const countBefore=h.getVideoPosts();h.setVideo(true);
   for(const [index,boundary] of boundaries.entries()) {
    dto=await read(project);const clip=dto.multiClip?.clips[index];
@@ -72,10 +82,6 @@ export async function individualClipScenarios(h) {
     equal((await post(project,{action:'generate',packageId:p.packageId,packageHash:p.packageHash})).body.code,'V3_CLIP_SELECTION_REQUIRED');
    }
    if(duration===40 && index===1) {
-    const current=await store.read(owner,project),grant=current.runtimeAuthorizations.find(a=>a.document.segmentId===clip.segmentId);
-    const body={...grant.document,approvedAt:new Date(Date.now()-25*3600000).toISOString(),expiresAt:new Date(Date.now()-1000).toISOString()};delete body.hash;
-    const expired={...body,hash:load('lib/final-video-generation-v3/identity.ts').v3Digest('runtime-authorization',body)};
-    await pg.query('update public.ugc_v3_run_authorizations set document=$1 where id=$2',[expired,grant.document.id]);
     equal((await post(project,request)).status,409);
     const renew={action:'authorize_clip',...snapshot,segmentId:clip.segmentId,previousRunId:null,operatorApproved:true,maximumMicrousd:clip.suggestedMaximumMicrousd,cumulativeMaximumMicrousd:Math.max(p.estimatedCostMicrousd,load('lib/final-video-generation-v3/clip-runtime.ts').clipSpending(await store.read(owner,project),doc).committedMicrousd+clip.suggestedMaximumMicrousd)};
     equal((await post(project,{...renew,operatorApproved:false})).status,409);
@@ -100,6 +106,7 @@ export async function individualClipScenarios(h) {
    equal(run.shotTimings.length,doc.segments[index].includedSceneNumbers.length);
    // Keep the middle 70s clip unapproved to exercise selective replacement below.
    if(!(duration===70&&index===1))equal((await post(project,{action:'approve',id:run.id,reviewMode:'direct'})).status,200);
+   if(duration===40 && index===0) await clipLockChecks(h,'first',project,doc);
    equal((await read(project)).complete,duration<=30);
   }
   equal(h.getVideoPosts()-countBefore,boundaries.length);
@@ -157,14 +164,15 @@ export async function individualClipScenarios(h) {
    equal(manifests.length,1);
    const approvals=(await pg.query("select document from public.ugc_v3_runtime_events where project_id=$1 and kind='clip_spending_approval'",[project])).rows;
    for(const approval of approvals) for(const auth of approval.document.authorizations) ok((await store.read(owner,project)).runtimeAuthorizations.some(a=>a.document.id===auth.id));
-   // Stale settings still permit read-only access to saved clips and their Preview.
-   await pg.query("update public.projects set prompt=prompt||' changed' where id=$1",[project]);
-   const stale=await read(project);ok(stale.multiClip.clips.every(c=>!c.canGenerate));ok(stale.runs.every(r=>!r.current));equal(stale.complete,false);
-   await pg.query("update public.projects set prompt=replace(prompt,' changed','') where id=$1",[project]);equal(manifests[0].document.clips.map(c=>c.clipId),boundaries.map(c=>c.id));ok(manifests[0].document.clips.every(c=>c.asset.storageKey&&c.asset.sha256));
+   // First source approval now freezes creative settings; historical records stay intact.
+   await assert.rejects(()=>pg.query("update public.projects set prompt=prompt||' changed' where id=$1",[project]),/V3_CREATIVE_INPUTS_LOCKED/);ok(true);
+   const locked=await read(project);equal(locked.creativeLock.state,'locked');ok(locked.runs.every(r=>r.current));equal(locked.complete,false);
+   equal(manifests[0].document.clips.map(c=>c.clipId),boundaries.map(c=>c.id));ok(manifests[0].document.clips.every(c=>c.asset.storageKey&&c.asset.sha256));
    equal(await call('ugc_v3_clip_manifest',[owner,project,p.packageId]),true);
    await assert.rejects(()=>call('ugc_v3_runtime_action',[owner,project,'enqueue',{kind:'join',requestKey:randomUUID(),input:{packageId:p.packageId,packageHash:p.packageHash}}]),/V3_MERGE_INPUTS_CHANGED/);ok(true);
    await assert.rejects(()=>call('ugc_v3_clip_manifest',[randomUUID(),project,p.packageId]),/V3_PROJECT_NOT_OWNED/);ok(true);
    if(h.onMergeReady)await h.onMergeReady(project,dto,doc);
-  } else equal(dto.multiClip,null);
+   if(duration===40) await clipLockChecks(h,'historical',project,doc);
+  } else { equal(dto.multiClip,null); equal(dto.creativeLock?.state ?? null,duration===10?'locked':null); }
  }
 }

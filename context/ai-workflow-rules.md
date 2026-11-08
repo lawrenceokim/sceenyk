@@ -1,5 +1,9 @@
 # AI Workflow Rules
 
+## Current authorization — Pro clip approval lock (2026-11-09)
+
+Implement first-source approval locking and conservative historical recovery through existing V3 owners. Package approval remains editable until the first source approval; preserve remaining attempts, finite authorization, M5/M6 recovery/merge and Basic behavior. Use offline disposable SQL, injected provider/storage I/O, focused component/effect tests and static verification. No paid generation, production data change, remote migration, environment edit or deployment. Report manual migration 100 after 099. Do not fabricate missing evidence or disable production safety checks. [Contract](pro-clip-approval-lock.md).
+
 ## Current authorization — M6 connection failure correction (2026-11-08)
 
 Trace/fix worker, database, API, identity and media connection failures while preserving M5/M6 and paid-request safety. Configuration and bounded read-only live service/metadata checks are authorized; no production migration/data change, queue claim, live merge/deletion, paid generation, environment edit or deployment. Distinguish sandbox restrictions from actual service failures. Preserve explicit unknowns when old logs discarded the original cause. Add offline fault injection and existing regressions plus static/build checks. [Findings and manual audit](m6-connection-recovery.md).

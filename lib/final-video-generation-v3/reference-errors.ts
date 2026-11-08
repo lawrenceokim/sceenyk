@@ -1,5 +1,12 @@
 import { packageBuildError } from "./package-status";
 const messages: Record<string, string> = {
+  V3_CREATIVE_LOCK_SETUP_REQUIRED: "Clip approval locking needs database migration 100. Your generated clip is preserved; ask your administrator to complete setup.",
+  V3_LOCKED_INPUTS_DAMAGED: "A saved creative input is missing or damaged. Your videos are preserved; ask your administrator to check its original stored asset.",
+  V3_LOCK_PACKAGE_DAMAGED: "The saved creative package failed its integrity check. Your videos are preserved; ask your administrator to check the original package evidence.",
+  V3_CREATIVE_INPUTS_LOCKED: "Creative inputs are locked after the first source clip approval. You can continue reviewing and generating the remaining clips with these saved inputs.",
+  V3_LOCKED_INPUTS_NEED_REVIEW: "The saved creative lock needs review. Your original inputs and videos are preserved; ask your administrator to check the saved evidence.",
+  V3_CREATIVE_CHANGES_PENDING: "Finish or remove pending reference uploads before approving the first clip and locking its inputs.",
+  V3_CREATIVE_LOCK_EVIDENCE_REQUIRED: "The original approval evidence could not be verified. Your clip remains available for review; check the project details before locking.",
   V3_MERGE_SETUP_REQUIRED: "Video merging needs database setup. Ask your administrator to review migration 099 in Progress; your approved clips stay saved.",
   V3_MERGE_INPUTS_CHANGED: "The approved clips changed. Refresh and merge the current approved clips again.",
   V3_MERGE_REQUIRES_APPROVED_CLIPS: "Approve every required clip before merging. Your saved approvals are preserved.",

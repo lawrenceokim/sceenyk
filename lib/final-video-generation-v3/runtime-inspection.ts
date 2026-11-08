@@ -14,6 +14,8 @@ import { locationDocument } from "./location-runtime";
 import { latestArtifact } from "./generation-context";
 import { packageClips, clipAuthority } from "./clip-runtime";
 import { ServiceOperationError } from "@/lib/diagnostics/service-failure";
+import { lockDocument, lockedOriginals } from "./creative-lock";
+import { lockedBriefSchema } from "./creative-lock-contract";
 
 // Request-local only. Common prerequisites must not fan out once per planned clip.
 export function runtimeInspectionReads(brief: Awaited<ReturnType<typeof projectBrief>>, originals: Awaited<ReturnType<typeof referenceOriginals>>) {
@@ -42,19 +44,21 @@ export async function inspectRuntime(w: RuntimeWorkspace, segmentId?: string, sh
   catch (error) { if (error instanceof ServiceOperationError && error.code !== "V3_VIDEO_SETUP_REQUIRED") throw error; issues.push("V3_VIDEO_SETUP_REQUIRED"); }
   try { if (await reads.rpc("ugc_v3_background_setup", {}) !== true) issues.push("V3_BACKGROUND_SETUP_REQUIRED"); }
   catch (error) { if (error instanceof ServiceOperationError && error.code !== "V3_BACKGROUND_SETUP_REQUIRED") throw error; issues.push("V3_BACKGROUND_SETUP_REQUIRED"); }
-  const { brief, originals } = reads;
+  const snapshot = lockDocument(w), locked = !!w.creativeLock?.valid && !!snapshot;
+  const savedBrief = lockedBriefSchema.safeParse(snapshot?.brief);
+  const brief = savedBrief.success ? savedBrief.data as typeof reads.brief : reads.brief, originals = lockedOriginals(w, reads.originals);
   const config = v3TransportConfig(), currentIds = approvedArtifacts(w, brief, originals).map(a => a.id);
   if (!/^[^\s:]+:[^\s:]+$/.test(config.credentials) || !config.accountScope) issues.push("HIGGSFIELD_CREDENTIALS_REQUIRED");
   if (doc.pricing.source !== "manual_provider_estimate" && config.accountScope !== doc.accountScope) issues.push("HIGGSFIELD_ESTIMATE_ACCOUNT_CHANGED");
   if (config.outputHosts.length && !exactOutputHosts(config.outputHosts)) issues.push("HIGGSFIELD_OUTPUT_ALLOWLIST_INVALID");
   if (w.runs.some(r => r.package_id !== doc.id && !["approved", "failed", "deleted"].includes(r.state))) issues.push("V3_PRIOR_OUTCOME_REQUIRES_RECONCILIATION");
-  if (doc.capabilityHash !== v3Digest("capabilities", normalizeCapabilities(new HiggsfieldVideoGenerationProvider().capabilities()))) issues.push("PROVIDER_CAPABILITIES_CHANGED");
+  if (!locked && doc.capabilityHash !== v3Digest("capabilities", normalizeCapabilities(new HiggsfieldVideoGenerationProvider().capabilities()))) issues.push("PROVIDER_CAPABILITIES_CHANGED");
   if (!clips && quote && quote.segments.some(s => !w.runtimeAuthorizations.some(a => a.document.packageId === doc.id && a.document.segmentUuid === s.segmentUuid &&
     !w.runs.some(r => r.intent.authorization.id === a.document.id) && Date.parse(a.document.expiresAt) > Date.now()))) issues.push("V3_SEGMENT_AUTHORIZATION_REQUIRED");
   const approvedLocation = w.artifacts.find(a => a.kind === "location" && currentIds.includes(a.id));
-  const locationCurrent = !locationDocument(approvedLocation) || await reads.rpc("ugc_v3_location_input_current", { p_project: w.project.project_id, d: approvedLocation!.document.input }) === true;
+  const locationCurrent = locked || !locationDocument(approvedLocation) || await reads.rpc("ugc_v3_location_input_current", { p_project: w.project.project_id, d: approvedLocation!.document.input }) === true;
   if (!locationCurrent) issues.push("REFERENCE_STALE_REGENERATE");
-  const current = locationCurrent && doc.source.resolution === projectVideoResolution(brief.video_resolution) && !!w.source?.current && w.source.revision === doc.sourceRevision && doc.source.references.every(r => currentIds.includes(r.id)) &&
+  const current = locked || !w.creativeLock && locationCurrent && doc.source.resolution === projectVideoResolution(brief.video_resolution) && !!w.source?.current && w.source.revision === doc.sourceRevision && doc.source.references.every(r => currentIds.includes(r.id)) &&
     !w.tasks.some(t => ["character", "product", "location", "storyboard"].includes(t.kind) && Date.parse(t.created_at) > Date.parse(w.source!.created_at)) &&
     latestArtifact(w, "storyboard")?.id === doc.source.storyboard.id && !!latestArtifact(w, "storyboard")?.approved_at;
   const report = runtimePreflight(doc, quote, authority, { current, transportEnabled: config.enabled,

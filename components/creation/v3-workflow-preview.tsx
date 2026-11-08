@@ -7,6 +7,7 @@ import { V3WorkflowProgress } from "./v3-workflow-progress";
 import { V3ClipManager } from "./v3-clip-manager";
 import { useV3FinalOperation } from "./use-v3-final-operation";
 import { V3StatusReadError, type FinalOperationAction } from "@/lib/final-video-generation-v3/final-operation";
+import { creativeMutationActions, type CreativeLockSummary } from "@/lib/final-video-generation-v3/creative-lock-contract";
 import { FinalVideoGenerate, FinalVideoReview } from "./v3-final-video-controls";
 import { finalVideoPresentation } from "./v3-final-video-state";
 import { shouldPollV3Video } from "@/lib/final-video-generation-v3/video-progress";
@@ -128,12 +129,14 @@ export function V3WorkflowPreview({
   assets,
   dirty,
   revision,
+  onCreativeLock,
 }: {
   initial?: RuntimeDto;
   projectId: string;
   assets: ProjectAsset[];
   dirty: boolean;
   revision: string;
+  onCreativeLock?: (lock: CreativeLockSummary | null) => void;
 }) {
   const [workspace, setWorkspace] = useState(initial ?? null),
     [busy, setBusy] = useState(false),
@@ -145,6 +148,13 @@ export function V3WorkflowPreview({
   const [statusPaused, setStatusPaused] = useState(false);
   const [pageVisible, setPageVisible] = useState(true);
   const statusFailures = useRef(0);
+  const lockKey = JSON.stringify(workspace?.creativeLock ?? null);
+  const notifiedLock = useRef<string | null>(null);
+  useEffect(() => {
+    const key = `${projectId}:${lockKey}`;
+    if (!onCreativeLock || notifiedLock.current === key) return;
+    notifiedLock.current = key; onCreativeLock(JSON.parse(lockKey));
+  }, [onCreativeLock, projectId, lockKey]);
   const [buildActionFailure, setBuildActionFailure] = useState<{
     code: string;
     httpStatus: number | null;
@@ -317,6 +327,7 @@ export function V3WorkflowPreview({
   }, [projectId, processing, pollingInterval, refresh, statusEnabled, statusPaused]);
   const act: Action = async (action, payload = {}) => {
     if (actionLock.current) return false;
+    if (workspace?.creativeLock && creativeMutationActions.has(action)) return false;
     const finalAction = !!workspace?.multiClip && (action === "merge" ||
       ["approve", "reject_delete", "recover"].includes(action) && workspace.runs.some(r => r.segmentId === "joined" && r.id === payload.id));
     if (finalAction) {
@@ -418,6 +429,7 @@ export function V3WorkflowPreview({
         ["queued", "running"].includes(storyboardTask.status) &&
         (storyboardTask.current || storyboardTask.providerStarted)));
   const locked = busy || dirty || !!workspace?.processing || finalOperation.presentation.blocked;
+  const creativeLocked = !!workspace?.creativeLock;
   const finalVideo = finalVideoPresentation(workspace, { dirty, busy, requestPending: videoRequestPending });
   const finalVideoGenerating = finalVideo.loading && (videoRequestPending || finalVideo.activeRuns.length > 0 || !!workspace?.tasks.some(t => t.kind === "join" && ["queued", "running"].includes(t.status)));
   const reference = (kind: "character" | "product", assetId?: string) =>
@@ -469,7 +481,7 @@ export function V3WorkflowPreview({
   const sourcePanel = (kind: "character" | "product" | "location", assetId?: string) => {
     const proCharacterPanel = kind === "character" && !!assetId && studioMode === "pro";
     const panel = kind === "character" && assetId ? `character:${assetId}` as const : kind;
-    const scopedLocked = assetId ? busy || dirty || proCharactersBlocked : locked;
+    const scopedLocked = creativeLocked || (assetId ? busy || dirty || proCharactersBlocked : locked);
     const label =
       kind === "character"
         ? "Character Sheet"
@@ -509,7 +521,7 @@ export function V3WorkflowPreview({
       ) : null;
     const generationButton = kind === "location" ? (
       <Button variant={current ? "default" : "outline"}
-        disabled={locked || (!!workspace && referenceBusy(workspace.tasks, "location"))}
+        disabled={creativeLocked || locked || (!!workspace && referenceBusy(workspace.tasks, "location"))}
         aria-disabled={!!locationFeedback}
         className="aria-disabled:cursor-not-allowed aria-disabled:bg-muted aria-disabled:text-muted-foreground aria-disabled:opacity-60"
         onClick={() => {
@@ -518,7 +530,7 @@ export function V3WorkflowPreview({
           void act("reference", { kind: "location", expectedId: current?.id, expectedVersion: current?.version });
         }}>{current ? "Regenerate Location" : "Generate Location"}</Button>
     ) : <Button variant={current || proCharacterPanel ? "default" : "outline"} className={proCharacterPanel ? "w-full" : undefined}
-      disabled={!workspace || busy || dirty || proCharactersBlocked || referenceBusy(workspace.tasks, kind, undefined, assetId) || !reference(kind, assetId)}
+      disabled={creativeLocked || !workspace || busy || dirty || proCharactersBlocked || referenceBusy(workspace.tasks, kind, undefined, assetId) || !reference(kind, assetId)}
       onClick={() => requestReference(kind, assetId)}>{proCharacterPanel && current && <RefreshCw className="size-3.5 shrink-0" aria-hidden="true" />}{current ? proCharacterPanel ? "Regenerate" : `Regenerate ${label}` : `Generate ${label}`}</Button>;
     return (
       <StudioPanelPortal key={panel} panel={panel}>
@@ -601,7 +613,7 @@ export function V3WorkflowPreview({
               {task.recoveryAvailable && (
                 <Button
                   variant="outline"
-                  disabled={busy || !task.current}
+                  disabled={creativeLocked || busy || !task.current}
                   onClick={() => void act("recover_task", { id: task.id })}
                 >
                   Recover saved response
@@ -624,7 +636,7 @@ export function V3WorkflowPreview({
                   <p role="status">Deletion pending</p>
                   <Button
                     variant="outline"
-                    disabled={busy}
+                    disabled={creativeLocked || busy}
                     onClick={() => {
                       if (
                         (current.kind === "character" ||
@@ -657,14 +669,14 @@ export function V3WorkflowPreview({
                       : "Stale — regenerate and approve."}
                   </p>
                   {(current.kind === "character" || current.kind === "product") && (
-                    <Button variant="outline" disabled={busy} onClick={() => void act("review_artifact", {
+                    <Button variant="outline" disabled={creativeLocked || busy} onClick={() => void act("review_artifact", {
                       id: current.id, kind: current.kind, expectedVersion: current.version, decision: "reject",
                     })}>Reject and Delete</Button>
                   )}
                   {current.kind === "location" && !current.approved && (
                     <Button
                       variant="outline"
-                      disabled={busy}
+                      disabled={creativeLocked || busy}
                       onClick={() =>
                         void act("discard_reference", {
                           id: current.id,
@@ -696,7 +708,7 @@ export function V3WorkflowPreview({
                     </Button>
                     <Button
                       variant="outline"
-                      disabled={busy}
+                      disabled={creativeLocked || busy}
                       onClick={() =>
                         void act("review_artifact", {
                           id: current.id,
@@ -748,7 +760,7 @@ export function V3WorkflowPreview({
                   ))}
                 <Button
                   variant="outline"
-                  disabled={busy || !workspace.referenceCleanup.enabled}
+                  disabled={creativeLocked || busy || !workspace.referenceCleanup.enabled}
                   onClick={() => void act("cleanup_references")}
                 >
                   Retry image cleanup
@@ -767,7 +779,7 @@ export function V3WorkflowPreview({
       <ReferenceRegenerationDialog
         kind={regeneration?.kind ?? null}
         busy={busy}
-        blocked={dirty}
+        blocked={dirty || creativeLocked}
         error={
           error
             ? v3ActionErrorMessage(error)
@@ -858,7 +870,7 @@ export function V3WorkflowPreview({
                     <Button
                       variant="default"
                       disabled={
-                        locked ||
+                        creativeLocked || locked ||
                         proCharactersBlocked || workspace.proDurationRetained || !!locationFeedback ||
                         !currentApproved("character") ||
                         !currentApproved("location") ||
@@ -894,7 +906,7 @@ export function V3WorkflowPreview({
                           ) : (
                             <div className="flex flex-wrap gap-2">
                               <Button
-                                disabled={locked || !a.current || workspace.proDurationRetained}
+                                disabled={creativeLocked || locked || !a.current || workspace.proDurationRetained}
                                 onClick={() =>
                                   void act("review_artifact", {
                                     id: a.id,
@@ -906,7 +918,7 @@ export function V3WorkflowPreview({
                               </Button>
                               <Button
                                 variant="outline"
-                                disabled={busy}
+                                disabled={creativeLocked || busy}
                                 onClick={() =>
                                   void act("review_artifact", {
                                     id: a.id,
@@ -930,7 +942,7 @@ export function V3WorkflowPreview({
                     <Button
                       variant="default"
                       className="w-full max-w-full whitespace-normal sm:w-auto"
-                      disabled={locked || workspace.proDurationRetained || !currentApproved("storyboard")}
+                      disabled={creativeLocked || locked || workspace.proDurationRetained || !currentApproved("storyboard")}
                       onClick={() => {
                         setPackageRequestPending(true);
                         void act("build_package", {
@@ -1043,7 +1055,7 @@ export function V3WorkflowPreview({
                             workspace.resolutionPricingAvailable === false ||
                             p.issues.includes("V3_RESOLUTION_PRICING_NOT_CONFIGURED") ||
                             packageApproved ||
-                            locked ||
+                            creativeLocked || locked ||
                             p.estimatedCostMicrousd === null ||
                             !p.quoteId ||
                             approvedHash !== p.packageHash ||

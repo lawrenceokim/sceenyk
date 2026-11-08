@@ -7,7 +7,10 @@ import { StudioProjectGuard } from "./studio-project-guard";
 
 import { BeforeAccountAuth } from "@/components/auth/before-account-auth";
 import { clearGuestDraft, readGuestDraft, rememberGuestDraft } from "./guest-draft";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { LockKeyhole } from "lucide-react";
+import type { CreativeLockSummary } from "@/lib/final-video-generation-v3/creative-lock-contract";
+import { lockedProjectDraft } from "@/lib/final-video-generation-v3/creative-lock-view";
 import { creationPreferencesAction } from "@/app/actions/settings";
 import { defaultCreationPreferences, type CreationPreferences } from "@/lib/settings/contract";
 import { useAuth } from "@clerk/nextjs";
@@ -168,16 +171,19 @@ function WorkspaceEditor({
   authReady: boolean;
   onProjectSaved?: (id: string) => void;
 }) {
-  const [selectedCategory] = useState<CategoryId>(
-    initialProject?.category ?? restoredDraft?.brief.category ?? initialPreferences.category,
+  const [creativeLock, setCreativeLock] = useState<CreativeLockSummary | null>(initialV3?.creativeLock ?? null);
+  const lockedDraft = lockedProjectDraft(initialV3?.creativeLock);
+  const creativeLocked = !!creativeLock;
+  const [selectedCategory, setSelectedCategory] = useState<CategoryId>(
+    lockedDraft?.category ?? initialProject?.category ?? restoredDraft?.brief.category ?? initialPreferences.category,
   );
-  const [prompt, setPrompt] = useState(initialProject?.prompt ?? restoredDraft?.brief.prompt ?? "");
+  const [prompt, setPrompt] = useState(lockedDraft?.prompt ?? initialProject?.prompt ?? restoredDraft?.brief.prompt ?? "");
   const [creationType, setCreationType] = useState<CreationType>(
-    initialProject ? initialProject.creationType ?? "freestyle" : restoredDraft?.brief.creationType ?? "ugc",
+    lockedDraft?.creationType ?? (initialProject ? initialProject.creationType ?? "freestyle" : restoredDraft?.brief.creationType ?? "ugc"),
   );
-  const [ugcType, setUgcType] = useState<UgcType>(initialProject?.ugcType ?? restoredDraft?.brief.ugcType ?? "advertisement");
+  const [ugcType, setUgcType] = useState<UgcType>(lockedDraft?.ugcType ?? initialProject?.ugcType ?? restoredDraft?.brief.ugcType ?? "advertisement");
   const [title, setTitle] = useState(
-    initialProject?.title ?? restoredDraft?.brief.title ?? "Untitled Project",
+    lockedDraft?.title ?? initialProject?.title ?? restoredDraft?.brief.title ?? "Untitled Project",
   );
   const [projectId, setProjectId] = useState(initialProject?.id ?? null);
   const [workflow, setWorkflow] = useState(initialProject?.workflow);
@@ -194,7 +200,7 @@ function WorkspaceEditor({
     initialProject ? { status: "saved" } : { status: "idle" },
   );
   const [savedBrief, setSavedBrief] = useState<ProjectDraft | null>(
-    initialProject ?? null,
+    lockedDraft ?? initialProject ?? null,
   );
   const [selection, setSelection] = useState<{ files: LocalMedia[]; error: string }>({ files: restoredDraft?.files ?? [], error: "" });
   const [referenceNameEdits, setReferenceNameEdits] = useState<Record<string, { value: string; savedValue: string }>>({});
@@ -202,7 +208,7 @@ function WorkspaceEditor({
   const [selectedFileId, setSelectedFileId] = useState<string | null>(null);
   const mediaError = selection.error;
   const [settings, setSettings] = useState<CreationSettings>(
-    initialProject?.settings ?? restoredDraft?.brief.settings ?? {
+    lockedDraft?.settings ?? initialProject?.settings ?? restoredDraft?.brief.settings ?? {
       aspectRatio: initialPreferences.aspectRatio,
       duration: "10",
       visualStyle: "Original",
@@ -234,6 +240,7 @@ function WorkspaceEditor({
       projectVideoResolution(settings.resolution) !== projectVideoResolution(savedBrief.settings.resolution));
 
   function saveDraft(): Promise<string | null> {
+    if (creativeLocked) return Promise.resolve(projectId);
     if (saveInFlight.current) return saveInFlight.current;
     if (!signedIn) return Promise.resolve(null);
     setSaveState({ status: "saving" });
@@ -311,12 +318,12 @@ function WorkspaceEditor({
   // Upload UGC images sequentially using the same private project-first service.
   // Failed files wait for explicit retry; changing type never cancels/clears them.
   useEffect(() => {
-    if (!signedIn || mediaUpload.busy) return;
+    if (creativeLocked || !signedIn || mediaUpload.busy) return;
     const retained = collectStudioSources(selectedFiles, mediaUpload.assets);
     const next = selectedFiles.find(file => file.studioRole && file.studioRole !== "freestyle" && !mediaUpload.uploadStates[file.id]
       && (file.studioRole === "character" && proCharacters || studioReferenceImages(file.studioRole === "character" ? retained.characters : retained.products).length <= 1));
     if (next) void mediaUpload.upload(next);
-  }, [signedIn, selectedFiles, mediaUpload, proCharacters]);
+  }, [creativeLocked, signedIn, selectedFiles, mediaUpload, proCharacters]);
   const pendingReferenceNames = mediaUpload.assets.flatMap(asset => {
     const edit = referenceNameEdits[asset.id];
     return !asset.removedFromDraft && asset.status === "uploaded" && (asset.studioRole === "character" || asset.studioRole === "product") && edit && edit.value !== edit.savedValue
@@ -324,7 +331,10 @@ function WorkspaceEditor({
   });
   const dirty = briefDirty || pendingReferenceNames.length > 0;
   const referenceNameValues = Object.fromEntries(Object.entries(referenceNameEdits).map(([id, edit]) => [id, edit.value]));
-  const sources = collectStudioSources(selectedFiles, mediaUpload.assets, referenceNameValues);
+  const sourceAssets = creativeLock?.originalIds.length ? mediaUpload.assets.map(asset =>
+    asset.studioRole === "character" || asset.studioRole === "product" ? { ...asset, removedFromDraft: !creativeLock.originalIds.includes(asset.id),
+      referenceName: creativeLock.originalNames?.[asset.id] ?? asset.referenceName } : asset) : mediaUpload.assets;
+  const sources = collectStudioSources(selectedFiles, sourceAssets, referenceNameValues);
   const studioInputs = prepareStudioInputs(brief, sources);
   const freestyle = sources.projectMedia;
   const activeMedia = creationType === "freestyle"
@@ -339,7 +349,7 @@ function WorkspaceEditor({
       : undefined) : undefined;
 
   function addFiles(files: File[], studioRole: StudioMediaRole = "freestyle") {
-    if (!files.length) return;
+    if (creativeLocked || !files.length) return;
     const accepted: LocalMedia[] = [];
     const rejected: string[] = [];
     for (const file of files) {
@@ -382,7 +392,7 @@ function WorkspaceEditor({
   }
 
   async function removeFile(id: string) {
-    if (mediaUpload.busy) return;
+    if (creativeLocked || mediaUpload.busy) return;
     const media = selectedFiles.find(file => file.id === id);
     if (media?.studioRole && media.studioRole !== "freestyle" && !(await mediaUpload.removeLocalReference(media))) return;
     setSelection(current => ({ files: current.files.filter(media => media.id !== id), error: "" }));
@@ -390,10 +400,12 @@ function WorkspaceEditor({
   }
 
   function changeReferenceName(asset: ProjectAsset, value: string) {
+    if (creativeLocked) return;
     setReferenceNameEdits(current => ({ ...current, [asset.id]: { value, savedValue: current[asset.id]?.savedValue ?? asset.referenceName ?? "" } }));
   }
 
   async function removeReference(asset: ProjectAsset) {
+    if (creativeLocked) return;
     if (await mediaUpload.removeReference(asset)) {
       setReferenceNameEdits(current => {
         const next = { ...current };
@@ -404,12 +416,20 @@ function WorkspaceEditor({
   }
 
   const characterCount = studioReferenceImages(collectStudioSources(selectedFiles, mediaUpload.assets).characters).length;
+  const receiveCreativeLock = useCallback((next: CreativeLockSummary | null) => {
+    setCreativeLock(next);
+    const saved = lockedProjectDraft(next); if (!saved) return;
+    setTitle(saved.title); setPrompt(saved.prompt); setCreationType(saved.creationType ?? "ugc"); setUgcType(saved.ugcType ?? "advertisement");
+    setSelectedCategory(saved.category); setSettings(saved.settings); setSavedBrief(saved);
+    setReferenceNameEdits({}); setSelection({ files: [], error: "" });
+  }, [setCreativeLock, setTitle, setPrompt, setCreationType, setUgcType, setSelectedCategory, setSettings, setSavedBrief, setReferenceNameEdits, setSelection]);
   useStudioModeIncompatibilities(projectId, [...(characterCount > 1 ? ["Multiple characters"] : []), ...(requiresProDuration(settings.duration) ? ["Pro video duration"] : [])]);
   return (
     <BeforeAccountAuth.Provider value={() => {
       if (!signedIn && !initialProject) rememberGuestDraft(brief, selectedFiles);
     }}>
       <ProjectSaveControls
+          readOnly={creativeLocked}
           title={title}
           onTitleChange={setTitle}
           onSave={saveDraft}
@@ -453,7 +473,7 @@ function WorkspaceEditor({
                 media={studioInputs.creationType === "ugc" ? [...studioReferenceImages(studioInputs.characters), ...studioReferenceImages(studioInputs.products)].flatMap(({ local, asset }): StudioPreviewMedia[] =>
                   local ? [{ id: local.id, label: local.file.name, kind: "local", media: local }]
                     : asset?.status === "uploaded" ? [{ id: asset.id, label: asset.filename, kind: "asset", asset }] : []) : undefined}
-                workflow={creationType === "ugc" ? v3 && projectId ? <V3WorkflowPreview key={projectId} projectId={projectId} initial={initialV3} assets={mediaUpload.assets}
+                workflow={creationType === "ugc" ? v3 && projectId ? <V3WorkflowPreview key={projectId} projectId={projectId} initial={initialV3} assets={sourceAssets} onCreativeLock={receiveCreativeLock}
                   dirty={dirty || saveState.status === "saving" || mediaUpload.busy || selectedFiles.some(file => file.studioRole === "character" || file.studioRole === "product")}
                   revision={JSON.stringify([savedBrief, mediaUpload.assets])} /> : <><StudioPanelPortal panel="workflow">{controls}</StudioPanelPortal><UgcWorkflowPreview key={projectId ?? "new"} projectId={projectId ?? ""} progress={ugcProgress} /></> : undefined}
                 sources={
@@ -505,14 +525,17 @@ function WorkspaceEditor({
                       </section>
                     )}
                     {project}
-                    <CategorySelector selected={creationType} onChange={setCreationType} />
+                    {creativeLocked && <p role="status" data-creative-lock={creativeLock.state} className="flex items-start gap-2 rounded-lg border border-primary/20 bg-primary/5 p-2 text-xs text-muted-foreground"><LockKeyhole aria-hidden="true" className="mt-0.5 size-3.5 shrink-0 text-primary" /><span>{creativeLock.state === "locked" ? "Creative inputs locked after the first clip approval. Continue with the remaining clips in Workflow." : "Saved creative inputs are read-only and need review. Your clips and videos are preserved; see Workflow for details."}</span></p>}
+                    <fieldset disabled={creativeLocked} className="min-w-0"><CategorySelector selected={creationType} onChange={value => { if (!creativeLocked) setCreationType(value); }} /></fieldset>
                     {studioInputs.creationType === "ugc" ? <>
                       <StudioReferenceSources label="Characters" addLabel="Add Character" role="character" references={studioInputs.characters}
+                        readOnly={creativeLocked}
                         multiple={proCharacters} perCharacterSheets={v3 && (proCharacters || characterCount > 1)}
                         onAdd={files => addFiles(files, "character")} onRemoveLocal={removeFile} onRemoveAsset={removeReference} onNameChange={changeReferenceName}
                         onUpload={mediaUpload.upload} onRecover={mediaUpload.recover} uploadStates={mediaUpload.uploadStates}
                         busy={mediaUpload.busy || saveState.status === "saving"} signedIn={signedIn} authReady={authReady} />
                       <StudioReferenceSources label="Product / Props" addLabel="Add Product / Prop" role="product" references={studioInputs.products}
+                        readOnly={creativeLocked}
                         onAdd={files => addFiles(files, "product")} onRemoveLocal={removeFile} onRemoveAsset={removeReference} onNameChange={changeReferenceName}
                         onUpload={mediaUpload.upload} onRecover={mediaUpload.recover} uploadStates={mediaUpload.uploadStates}
                         busy={mediaUpload.busy || saveState.status === "saving"} signedIn={signedIn} authReady={authReady} />
@@ -539,6 +562,7 @@ function WorkspaceEditor({
                 toolbar={
                   <>
                     <StudioAspectControl value={settings.aspectRatio}
+                      disabled={creativeLocked}
                       onChange={aspectRatio => setSettings({ ...settings, aspectRatio })} />
                     <span className={`
       studio-toolbar-status [&&]:block [&&]:max-w-[calc(50%_-_70px)] [&&]:min-w-[0] [&&]:overflow-hidden [&&]:text-ellipsis
@@ -561,17 +585,19 @@ function WorkspaceEditor({
                 properties={
                   <>
                     <StudioInspectorSection title="Describe your scene"><PromptComposer
+          readOnly={creativeLocked}
           prompt={prompt}
           category={category}
           onChange={setPrompt}
         /></StudioInspectorSection>
                     <StudioGenerationProperties settings={settings} onChange={setSettings} studioMode={studioMode}
+                      readOnly={creativeLocked}
                       ugcType={creationType === "ugc" ? ugcType : undefined} onUgcTypeChange={setUgcType} />
-                    {(v3 || !initialProject && creationType === "ugc") && <StudioInspectorSection title="Resolution"><StudioResolution
+                    {(v3 || !initialProject && creationType === "ugc") && <StudioInspectorSection title="Resolution"><fieldset disabled={creativeLocked} className="min-w-0"><StudioResolution
                       imageCards={studioMode === "pro"}
                       value={projectVideoResolution(settings.resolution)}
                       onChange={resolution => setSettings({ ...settings, resolution })} />
-                    </StudioInspectorSection>}
+                    </fieldset></StudioInspectorSection>}
                     <div className="md:hidden">{status}</div>
                     {creationType !== "ugc" && controls}
                   </>

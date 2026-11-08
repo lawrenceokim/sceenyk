@@ -45,30 +45,37 @@ import { requiresProDuration } from "@/lib/projects/pro-duration";
 export { inspectRuntime } from "./runtime-inspection";
 import { inspectRuntime, runtimeInspectionReads } from "./runtime-inspection";
 import { finalActionUser } from "./final-operation-server";
+import { creativeLockSummary, lockDocument, lockedArtifactCurrent, lockedOriginals } from "./creative-lock";
+import { creativeMutationActions, lockedBriefSchema } from "./creative-lock-contract";
 function videoStage(output: unknown): { stage: string } | null {
   const parsed = z.object({ stage: z.string().regex(/^(V3_FINAL_VIDEO_(JOB_CLAIMED|SAVING|SAVED|READY_FOR_REVIEW)|HIGGSFIELD_(SUBMITTING|REQUEST_ACCEPTED|PROCESSING|RESULT_RECEIVED))$/) }).safeParse(output);
   return parsed.success ? parsed.data : null;
 }
 export async function runtimeDto(w: RuntimeWorkspace) {
-  const [brief, originals] = await Promise.all([projectBrief(w.project.owner_user_id, w.project.project_id), referenceOriginals(w.project.owner_user_id, w.project.project_id)]);
+  const [liveBrief, liveOriginals] = await Promise.all([projectBrief(w.project.owner_user_id, w.project.project_id), referenceOriginals(w.project.owner_user_id, w.project.project_id)]);
+  const savedBrief = lockedBriefSchema.safeParse(lockDocument(w)?.brief);
+  const brief = savedBrief.success ? savedBrief.data as typeof liveBrief : liveBrief, originals = lockedOriginals(w, liveOriginals);
+  const creativeLock = creativeLockSummary(w);
   const inspection = runtimeInspectionReads(brief, originals);
   let preflight = null; try { preflight = await inspectRuntime(w, undefined, inspection); } catch (error) { if (error instanceof ServiceOperationError) throw error; /* Stale/partial creative inputs preserve previous previews. */ }
   const displayPricing = (packageId: string) => {
     const saved = w.packages.find(p => p.id === packageId);
+    if (saved && creativeLock?.packageId === packageId) { const doc = readFrozenPackage(saved.document); return {
+      totalMicrousd: doc.pricing.totalMicrousd!, segments: doc.segments.map(s => ({ id: s.id, estimatedCostMicrousd: s.estimate.estimatedCostMicrousd! })) }; }
     return saved ? currentDisplayPricing(readFrozenPackage(saved.document)) : null;
   };
   const preflightPricing = preflight ? displayPricing(preflight.packageId) : null;
   const previewUrl = async (asset: PrivateAsset) => { try { return (await signPrivate(asset)).url; } catch { return null; } };
   const scopedCharacters = usesCharacterSlots(w) || !!originals.characters;
-  const active = (a: RuntimeWorkspace["artifacts"][number]) => (!scopedCharacters || a.kind !== "character" || originalCharacters(originals).some(c => c.id === characterSubject(a))) && latestArtifact(w, a.kind, scopedCharacters && a.kind === "character" ? characterSubject(a) : undefined)?.id === a.id;
+  const active = (a: RuntimeWorkspace["artifacts"][number]) => creativeLock ? creativeLock.referenceIds.includes(a.id) : (!scopedCharacters || a.kind !== "character" || originalCharacters(originals).some(c => c.id === characterSubject(a))) && latestArtifact(w, a.kind, scopedCharacters && a.kind === "character" ? characterSubject(a) : undefined)?.id === a.id;
   const visible=w.artifacts.filter(a=>!["character","product","location"].includes(a.kind)||a.approved_at||!a.rejected_at&&active(a));
   const artifacts = await Promise.all(visible.map(async a => ({ id: a.id, kind: a.kind, version: a.version, activeSlot: active(a),
     ...(a.kind === "character" ? { characterId: characterSubject(a) } : {}),
     ...(w.referenceDeletions.some(d=>d.id===a.id&&d.state==="prepared")?{cleanupPending:true,cleanupMode:w.referenceDeletions.find(d=>d.id===a.id)?.mode}:{}),
-    current: artifactCurrent(a, w.artifacts, generationContext(brief), originals, creativeBriefHash(brief), w.referenceDeletions) &&
+    current: lockedArtifactCurrent(w, a) ?? (artifactCurrent(a, w.artifacts, generationContext(brief), originals, creativeBriefHash(brief), w.referenceDeletions) &&
       (a.kind !== "location" || !isLocationDirectorTask({ kind: "location", input: (a.document.input ?? {}) as Record<string,unknown> }) ||
         (a.document.input as Record<string,unknown>).briefHash === creativeBriefHash(brief) && v3Digest("location-names",(a.document.input as Record<string,unknown>).names) === v3Digest("location-names",originals.names) ||
-        !!a.approved_at && await inspection.rpc("ugc_v3_location_input_current", { p_project: w.project.project_id, d: a.document.input }) === true),
+        !!a.approved_at && await inspection.rpc("ugc_v3_location_input_current", { p_project: w.project.project_id, d: a.document.input }) === true)),
     location: a.kind === "location" ? locationDocument(a) : null,
     approved: !!a.approved_at, rejected: !!a.rejected_at, storyboard: a.kind === "storyboard" ? directorStoryboardSchema.parse(a.document.storyboard) : null,
     preview: a.document.asset && !w.referenceDeletions.some(d=>d.id===a.id&&d.state==="prepared") && (!a.rejected_at || ["character", "product", "location"].includes(a.kind)) ? await previewUrl(privateAssetSchema.parse(a.document.asset)) : null })));
@@ -100,7 +107,7 @@ export async function runtimeDto(w: RuntimeWorkspace) {
       provider: "higgsfield", model: "multiple segments", resolution: doc.source.resolution, aspectRatio: doc.source.storyboardContent.aspectRatio,
       ...(asset ? { actualDimensions: { width: asset.width, height: asset.height } } : {}),
       estimatedCostMicrousd: doc.pricing.totalMicrousd, actualCostMicrousd: null, stage: null, outputHostname: null, submissionBlocker: null, hasKnownRequest: false,
-      displayEstimatedCostMicrousd: currentDisplayPricing(doc).totalMicrousd,
+      displayEstimatedCostMicrousd: creativeLock?.packageId === doc.id ? doc.pricing.totalMicrousd : currentDisplayPricing(doc).totalMicrousd,
       current: packageClips(doc) ? mergedArtifactCurrent(w, doc, a) : !!w.source?.current && w.source.revision === doc.sourceRevision && w.runs.filter(r => r.package_id === doc.id).every(r => r.current),
       errorCode: deletion?.error_code ?? null, quality: null, actualDurationMs: asset.durationMs, hasAudio: asset.hasAudio,
       preview: !a.rejected_at ? await previewUrl(asset) : null, expectedDialogue: doc.source.storyboardContent.scenes.flatMap(s => s.speech),
@@ -180,6 +187,7 @@ export async function runtimeDto(w: RuntimeWorkspace) {
     ...clipSpending(w, clipDoc), clips: clipPlans, ...(merge ? { merge } : {}),
     readyForMerging: !!manifestHash && preflight?.currentness === "current" && clipPlans.every(c => runs.some(r => r.id === c.runId && r.current && r.state === "approved")) } : null;
   return { projectId: w.project.project_id, packageStale: w.packages.length > 0 && !preflight, artifacts, runs: [...runs, ...joined],
+    ...(creativeLock ? { creativeLock } : {}),
     multiClip,
     ...(requiresProDuration(brief.duration) && w.project.studio_mode !== "pro" ? { proDurationRetained: true as const } : {}),
     ...(originals.characters ? { characterIds: originals.characters.map(c => c.id) } : {}),
@@ -216,7 +224,12 @@ export async function ownedV3Action(raw: unknown, acknowledge = false) {
   const finalRequest = acknowledge && ["merge", "approve", "reject_delete", "recover"].includes(a.action);
   const user = finalRequest ? await finalActionUser() : await ensureAppUser(); assertV3Access(user.id);
   const store = new V3Store(), signal = AbortSignal.timeout(120_000), now = new Date().toISOString();
-  const w = await store.read(user.id, a.projectId), brief = await projectBrief(user.id, a.projectId), originals = await referenceOriginals(user.id, a.projectId);
+  const w = await store.read(user.id, a.projectId), liveBrief = await projectBrief(user.id, a.projectId), liveOriginals = await referenceOriginals(user.id, a.projectId);
+  const savedBrief = lockedBriefSchema.safeParse(lockDocument(w)?.brief);
+  const brief = savedBrief.success ? savedBrief.data as typeof liveBrief : liveBrief, originals = lockedOriginals(w, liveOriginals);
+  const creativeLock = creativeLockSummary(w);
+  if (creativeLock && (creativeMutationActions.has(a.action) || a.action === "recover_task" && w.tasks.some(t => t.id === a.id && ["character", "product", "location", "storyboard", "package"].includes(t.kind))))
+    throw new Error("V3_CREATIVE_INPUTS_LOCKED");
   const context = generationContext(brief);
   if (context.creationType !== "ugc") throw new Error("SELECT_UGC_CREATION_TYPE");
   if (requiresProDuration(brief.duration) && w.project.studio_mode !== "pro" && ["storyboard", "build_package", "authorize", "authorize_clip", "generate", "generate_clip"].includes(a.action)) throw new Error("V3_PRO_DURATION_REQUIRED");
@@ -453,6 +466,9 @@ export async function ownedV3Action(raw: unknown, acknowledge = false) {
     const directApproval = a.action === "approve" && a.reviewMode === "direct";
     const quality = directApproval ? null : qualitySchema.parse(a.quality);
     if (a.action === "approve") {
+      if (run && !w.creativeLock && (w.project.studio_mode === "pro" || (w.packages.find(p => p.id === run.package_id)?.document as { source?: { storyboardContent?: { version?: string } } })?.source?.storyboardContent?.version === "director-storyboard-connected-v1")) {
+        if (await store.rpc("ugc_v3_clip_lock_setup", {}) !== true) throw new Error("V3_CREATIVE_LOCK_SETUP_REQUIRED");
+      }
       const doc = readFrozenPackage(w.packages.find(p => p.id === (run?.package_id ?? joined?.document.packageId))!.document), speech = doc.source.storyboardContent.scenes.flatMap(s => s.speech);
       if (quality && (Object.entries(quality).some(([k, v]) => k !== "notes" && (v === "fail" || v === "not_checked")) ||
         speech.length && [quality.dialoguePresence, quality.speechTiming].some(v => v !== "pass") ||

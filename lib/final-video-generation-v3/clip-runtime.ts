@@ -1,13 +1,13 @@
 import "server-only";
 import type { RuntimeWorkspace } from "./runtime-store";
-import type { FrozenPackage } from "./package";
+import { isApprovedPackageSnapshot, type FrozenPackage } from "./package";
 import type { RuntimeAuthorization } from "./runtime-contract";
 import { validateConnectedStory } from "./connected-story";
 
 export function packageClips(doc: FrozenPackage) {
   const story = doc.source.storyboardContent;
   if (story.version !== "director-storyboard-connected-v1") return null;
-  validateConnectedStory(story);
+  if (!isApprovedPackageSnapshot(doc)) validateConnectedStory(story);
   return story.clips.map((clip, i) => {
     const segment = doc.segments[i];
     if (!segment || segment.startMs !== clip.startMs || segment.endMs !== clip.endMs) throw new Error("V3_CLIP_PLAN_CHANGED");

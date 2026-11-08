@@ -2,6 +2,11 @@ import { projectVideoResolution, type VideoResolution } from "@/lib/projects/vid
 
 export type VideoExpectation = { durationMs: number; aspectRatio: string; generateAudio: boolean; resolution?: VideoResolution };
 export function assertV3VideoMetadata(meta: { width: number; height: number; durationMs: number; hasAudio: boolean }, expected: VideoExpectation) {
+  return assertLockedVideoMetadataV1(meta, expected);
+}
+// Persisted approval compatibility contract. Introduce a new version rather
+// than reinterpret assets already approved against these exact tolerances.
+export function assertLockedVideoMetadataV1(meta: { width: number; height: number; durationMs: number; hasAudio: boolean }, expected: VideoExpectation) {
   const [w, h] = expected.aspectRatio.split(":").map(Number);
   const edge = Number.parseInt(projectVideoResolution(expected.resolution), 10);
   // Retain the existing technical tolerances; only the requested output edge changes.

@@ -39,7 +39,7 @@ const instruction={name:'Accessible vehicle studio',prompt:'A wide empty vehicle
 const call=async(name,args)=>{const parameters=args.map((_,i)=>`$${i+1}`).join(',');const result=await pg.query(name==='ugc_v3_worker_projects'?`select * from public.${name}(${parameters})`:`select public.${name}(${parameters}) value`,args);return name==='ugc_v3_worker_projects'?result.rows:result.rows[0].value;};
 const db={async rpc(name,args){try{return{data:await call(name,Object.values(args)),error:null};}catch(e){return{data:null,error:{code:e.code,message:e.message}};}},
  from(table){assert.ok(['projects','project_assets','ugc_v3_projects'].includes(table));let columns='*',fields=null;const clauses=[],values=[];
- return{select(v){assert.match(v,/^[a-z_,]+$/);columns=v;return this;},update(v){fields=v;return this;},eq(k,v){assert.match(k,/^[a-z_]+$/);values.push(v);clauses.push(`${k}=$${values.length}`);return this;},
+ return{select(v){assert.match(v,/^(\*|[a-z_,]+)$/);columns=v;return this;},update(v){fields=v;return this;},eq(k,v){assert.match(k,/^[a-z_]+$/);values.push(v);clauses.push(`${k}=$${values.length}`);return this;},
  is(k,v){assert.equal(v,null);clauses.push(`${k} is null`);return this;},in(k,v){values.push(v);clauses.push(`${k}=any($${values.length}::text[])`);return this;},
  async execute(single=false){let sql=`select ${columns} from public.${table} where ${clauses.join(' and ')}`;
   if(fields){const assignments=Object.entries(fields).map(([k,v])=>{assert.match(k,/^[a-z_]+$/);values.push(v);return `${k}=$${values.length}`;});sql=`update public.${table} set ${assignments.join(',')} where ${clauses.join(' and ')} returning ${columns}`;}
@@ -157,6 +157,7 @@ try{
  await pg.exec('create role anon;create role authenticated;create role service_role bypassrls;');
  const migrations=fs.readdirSync('supabase/migrations').filter(n=>n.endsWith('.sql')).sort();
  for(const file of migrations){
+  if(file==='20261108010000_ugc_v3_clip_approval_lock.sql')continue; // Install the new wrapper after legacy rerun checks below.
   if(process.argv.includes('--project-saving-only')&&file.includes('09600'))continue; // Reproduce the installed 095 grants before repair.
   if(process.argv.includes('--project-saving-only')&&file.includes('09500')){
    await assert.rejects(()=>pg.exec(fs.readFileSync('supabase/migrations/20261105009600_project_save_resolution_permission.sql','utf8')),/Apply 095 after 094/);checks++;
@@ -193,6 +194,8 @@ try{
  await pg.exec(fs.readFileSync('supabase/migrations/20261105009700_ugc_v3_connected_story_planning.sql','utf8'));
  await pg.exec(fs.readFileSync('supabase/migrations/20261106009800_ugc_v3_individual_clips.sql','utf8'));
  await pg.exec(fs.readFileSync('supabase/migrations/20261108009900_ugc_v3_final_merge.sql','utf8'));
+ await pg.exec(fs.readFileSync('supabase/migrations/20261108010000_ugc_v3_clip_approval_lock.sql','utf8'));
+ await pg.exec(fs.readFileSync('supabase/migrations/20261108010000_ugc_v3_clip_approval_lock.sql','utf8'));
  await pg.exec(fs.readFileSync('scripts/verify-v3-setup.sql','utf8'));checks++;
  await pg.query("insert into public.app_users(id,clerk_user_id) values($1,'fixture')",[owner]);
  if(process.argv.includes('--reference-limits-only')) {

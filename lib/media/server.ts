@@ -27,7 +27,9 @@ export class MediaAccessError extends Error {
     this.name = "MediaAccessError";
   }
 }
-const unavailable = (error?: unknown) => error ? new ServiceOperationError(error, "database", "project_media") : new MediaAccessError(
+const unavailable = (error?: unknown) => error && typeof error === "object" && "code" in error && error.code === "P0001" &&
+  "message" in error && error.message === "V3_CREATIVE_INPUTS_LOCKED" ? new MediaAccessError("CONFLICT",
+    "Creative inputs are locked after the first source clip approval. Existing references remain available to view.") : error ? new ServiceOperationError(error, "database", "project_media") : new MediaAccessError(
     "UNAVAILABLE",
     "Your project media couldn’t be loaded. Please try again.",
   );

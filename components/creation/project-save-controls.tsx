@@ -24,6 +24,7 @@ export function ProjectSaveControls({
   authReady,
   hasLocalMedia,
   children,
+  readOnly = false,
 }: {
   title: string;
   onTitleChange: (value: string) => void;
@@ -36,6 +37,7 @@ export function ProjectSaveControls({
   authReady: boolean;
   hasLocalMedia: boolean;
   children: (parts: { project: ReactNode; save: ReactNode }) => ReactNode;
+  readOnly?: boolean;
 }) {
   const saving = state.status === "saving" || mediaBusy;
   const error = state.status === "error" ? state.message : mediaError;
@@ -86,7 +88,7 @@ export function ProjectSaveControls({
       >
         Project title
       </label>
-      <input
+      <input readOnly={readOnly}
         id={`${id}-title`}
         name="title"
         className={`
@@ -143,7 +145,7 @@ export function ProjectSaveControls({
           <Button
             type="button"
             variant="outline"
-            disabled={saving || !title.trim()}
+            disabled={readOnly || saving || !title.trim()}
             aria-busy={saving}
             aria-label={saving ? "Saving project" : clean ? "Project saved" : "Save project"}
             aria-describedby={description ? `${id}-save-description` : undefined}

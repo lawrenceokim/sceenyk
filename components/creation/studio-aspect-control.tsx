@@ -12,9 +12,10 @@ const formats = {
   "9:16": { label: "Portrait", icon: RectangleVertical },
 };
 
-export function StudioAspectControl({ value, onChange }: {
+export function StudioAspectControl({ value, onChange, disabled = false }: {
   value: CreationSettings["aspectRatio"];
   onChange: (value: CreationSettings["aspectRatio"]) => void;
+  disabled?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   return <Popover.Root open={open} onOpenChange={setOpen}>
@@ -36,9 +37,9 @@ export function StudioAspectControl({ value, onChange }: {
       {aspectRatios.map(({ value: ratio }) => {
         const Icon = formats[ratio].icon;
         return <button key={ratio} type="button" aria-label={`${formats[ratio].label} ${ratio}`}
-          aria-pressed={value === ratio} onClick={() => onChange(ratio)}><Icon aria-hidden="true" /></button>;
+          aria-pressed={value === ratio} disabled={disabled} onClick={() => { if (!disabled) onChange(ratio); }}><Icon aria-hidden="true" /></button>;
       })}
-      <Popover.Trigger aria-label={`Aspect ratio options, current ${value}`} className={"studio-aspect-trigger [&&[data-popup-open]]:[background:var(--muted)] [&&[data-popup-open]]:text-[color:var(--foreground)]"}>
+      <Popover.Trigger disabled={disabled} aria-label={`Aspect ratio options, current ${value}`} className={"studio-aspect-trigger [&&[data-popup-open]]:[background:var(--muted)] [&&[data-popup-open]]:text-[color:var(--foreground)]"}>
         <MoreHorizontal aria-hidden="true" />
       </Popover.Trigger>
     </div>
@@ -62,7 +63,7 @@ export function StudioAspectControl({ value, onChange }: {
             <legend className="sr-only">Choose an aspect ratio</legend>
             {aspectRatios.map(({ value: ratio }) => <label key={ratio}>
               <span>{formats[ratio].label}</span>
-              <input className="sr-only" type="radio" name="studio-aspect-ratio" value={ratio} checked={value === ratio}
+              <input disabled={disabled} className="sr-only" type="radio" name="studio-aspect-ratio" value={ratio} checked={value === ratio}
                 onChange={() => onChange(ratio)} />
               <span className={`
       studio-aspect-choice [&&]:grid [&&]:[place-items:center] [&&]:h-[32px] [&&]:[border:1px_solid_#d7d7dc]

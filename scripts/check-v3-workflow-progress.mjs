@@ -126,7 +126,8 @@ try {
 
   // Exercise the existing owner: polling results, saved-action results, lifecycle refresh and stale-read fencing.
   let initial = { ...packaged, processing: true, runs: [run("provider_processing")] };
-  const owner = () => { cursor = 0; effects = []; return V3WorkflowPreview({ initial, projectId: initial.projectId, assets: [], dirty: false, revision: "saved" }); };
+  const receivedLocks = [];
+  const owner = () => { cursor = 0; effects = []; return V3WorkflowPreview({ initial, projectId: initial.projectId, assets: [], dirty: false, revision: "saved", onCreativeLock: value => receivedLocks.push(value) }); };
   const progressProps = tree => find(tree, n => n.type === V3WorkflowProgress).props;
   slots = []; let tree = owner(); equal(state(progressProps(tree).workspace).current.status, "in_progress");
   const listeners = new Map(), timers = new Map(); let timerId = 0;
@@ -239,6 +240,17 @@ try {
     initial = { ...refs, processing: true, tasks: [task('character','running')] }; slots=[]; lifecycleCalls=[];
     globalThis.__progressPanels = { workflowOpen: false };syncEffects();await fire(0);syncEffects();equal(lifecycleCalls.length,1);ok([...timers.values()].some(timer=>timer.delay===3000));
     initial = { ...refs, processing: false };await fire(3000);syncEffects();equal(timers.size,0);leave();delete globalThis.__progressPanels;
+    // A newly approved source clip updates the surrounding Studio exactly once.
+    // Equivalent DTOs and parent callback identity changes cannot cause a loop.
+    const creativeLock = { state: 'locked', packageId: 'package', capturedAt: '2026-11-09T00:00:00Z', firstApprovedAt: '2026-11-09T00:00:00Z', originalIds: [], referenceIds: [] };
+    initial = { ...videoReady, creativeLock };slots=[];lifecycleCalls=[];
+    globalThis.fetch=async(url,options)=>{lifecycleCalls.push({url,options});return Response.json({ok:true,workspace:initial});};
+    const beforeLock = receivedLocks.length;syncEffects();await fire(0);syncEffects();equal(receivedLocks.length,beforeLock+1);equal(receivedLocks.at(-1),creativeLock);
+    for(let i=0;i<25;i++){syncEffects();await fire(0);}equal(receivedLocks.length,beforeLock+1);equal(lifecycleCalls.length,1);equal(timers.size,0);
+    equal(await progressProps(tree).act('storyboard'),false);equal(lifecycleCalls.length,1);
+    ok(render(initial).includes('Locked after first clip approval'));
+    ok(render({...initial,creativeLock:{...creativeLock,state:'needs_review'}}).includes('administrator review required'));
+    leave();
   } finally { Object.assign(globalThis, originals); }
   // Reload/reopen takes the persisted approval rather than a local visited-tab flag.
   initial = complete; slots = []; equal(state(progressProps(owner()).workspace).complete, true);
