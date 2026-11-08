@@ -1034,8 +1034,8 @@ export function V3WorkflowPreview({
                 )}
                 {view === "final" && (
                   <section className="min-w-0 space-y-4">
+                    {Number(p?.durationMs ?? storyboards[0]?.storyboard?.durationMs ?? 0) > 30_000 ? <V3ClipManager workspace={workspace} act={act} disabled={busy || dirty} studioMode={studioMode} /> : <>
                     <h2 className="font-semibold">Final Video</h2>
-                    {Number(p?.durationMs ?? storyboards[0]?.storyboard?.durationMs ?? 0) > 30_000 ? <V3ClipManager workspace={workspace} act={act} disabled={busy || dirty} /> : <>
                     <FinalVideoGenerate
                       generating={finalVideoGenerating}
                       disabled={locked || workspace.proDurationRetained || !p?.canSubmit || finalVideo.hasExistingRun}
