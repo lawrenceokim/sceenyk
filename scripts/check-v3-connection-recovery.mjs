@@ -18,6 +18,7 @@ const stubs={
  '@clerk/nextjs/server':{clerkClient:async()=>({users:{getUser:async()=>{if(clerkFailure)throw clerkFailure;return{id:'fixture-user',emailAddresses:[]};}}})},
  './require-user':{requireClerkUser:async()=>({userId:'fixture-user'})},'next/server':{connection:async()=>{}},'next/navigation':{unstable_rethrow:e=>{if(e?.digest==='NEXT_REDIRECT')throw e;}},
  '@/lib/final-video-generation-v3/runtime-server':{readOwnedV3:(...args)=>readImpl(...args),ownedV3Action:(...args)=>readImpl(...args)},
+ '@/lib/final-video-generation-v3/final-operation-server':{readOwnedV3FinalStatus:()=>{throw Error('UNEXPECTED_FINAL_STATUS');}},
  '@/lib/media/server':{MediaAccessError,listOwnedAssets:()=>mediaImpl()},
 };
 const load=typescriptLoader(stubs,{Error,Response,Request,AbortController,setInterval,clearInterval,fetch:async()=>{networkCalls++;throw Error('NETWORK_FORBIDDEN');},console:{info:(...args)=>logs.push(args),error:(...args)=>logs.push(args)}});

@@ -215,7 +215,7 @@ export function StudioLayout({
   }, [restoreScroll]);
   return (
     <StudioPanelsContext.Provider
-      value={{ targets, register, selectMedia, setWorkflowMedia, setWorkflowAttention, openWorkflow }}
+      value={{ targets, register, selectMedia, setWorkflowMedia, setWorkflowAttention, openWorkflow, workflowOpen }}
     >
       <DialogPortalContainer.Provider value={modalContainer}>
         <StudioPropertiesTarget.Provider value={propertiesTarget}>

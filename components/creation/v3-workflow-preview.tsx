@@ -5,6 +5,8 @@ import { V3StoryboardSkeleton } from "./v3-storyboard-skeleton";
 import { V3PackageSkeleton } from "./v3-package-skeleton";
 import { V3WorkflowProgress } from "./v3-workflow-progress";
 import { V3ClipManager } from "./v3-clip-manager";
+import { useV3FinalOperation } from "./use-v3-final-operation";
+import { V3StatusReadError, type FinalOperationAction } from "@/lib/final-video-generation-v3/final-operation";
 import { FinalVideoGenerate, FinalVideoReview } from "./v3-final-video-controls";
 import { finalVideoPresentation } from "./v3-final-video-state";
 import { shouldPollV3Video } from "@/lib/final-video-generation-v3/video-progress";
@@ -137,6 +139,12 @@ export function V3WorkflowPreview({
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
   const [statusError, setStatusError] = useState("");
+  const [refreshing, setRefreshing] = useState(false);
+  const [retryFinalRead, setRetryFinalRead] = useState(false);
+  const [statusRetryable, setStatusRetryable] = useState(false);
+  const [statusPaused, setStatusPaused] = useState(false);
+  const [pageVisible, setPageVisible] = useState(true);
+  const statusFailures = useRef(0);
   const [buildActionFailure, setBuildActionFailure] = useState<{
     code: string;
     httpStatus: number | null;
@@ -146,8 +154,8 @@ export function V3WorkflowPreview({
       value: string;
     } | null>(null),
     [approvedHash, setApprovedHash] = useState<string | null>(null);
-  const refreshLock = useRef(false),
-    refreshRequested = useRef(false);
+  const refreshLock = useRef(false);
+  const initialRead = useRef<string | null>(null);
   const actionLock = useRef(false);
   const workspaceVersion = useRef(0);
   const [regeneration, setRegeneration] = useState<{
@@ -157,6 +165,18 @@ export function V3WorkflowPreview({
     version: number;
   } | null>(null);
   const panels = useStudioPanels();
+  const workflowVisible = panels?.workflowOpen ?? true;
+  // Source cards live outside the drawer. Keep their existing active-job
+  // updates, while closed Final Video work has no polling timer.
+  const referenceProcessing = !!workspace?.referenceCleanup?.processing || !!workspace?.tasks.some(task =>
+    ["character", "product", "location"].includes(task.kind) && ["queued", "running"].includes(task.status));
+  const statusEnabled = pageVisible && (workflowVisible || referenceProcessing);
+  useEffect(() => {
+    const sync = () => setPageVisible(document.visibilityState !== "hidden");
+    const timer = setTimeout(sync, 0);
+    document.addEventListener("visibilitychange", sync);
+    return () => { clearTimeout(timer); document.removeEventListener("visibilitychange", sync); };
+  }, []);
   const { mode: studioMode } = useStudioMode();
   const characterAssets = assets.filter(a => a.studioRole === "character" && a.status === "uploaded" && !a.removedFromDraft);
   const characterPanels = studioMode === "pro" || characterAssets.length > 1;
@@ -204,45 +224,66 @@ export function V3WorkflowPreview({
     [workspace],
   );
   const refresh = useCallback(
-    async (signal?: AbortSignal) => {
-      if (!projectId) return;
+    async (signal?: AbortSignal, rethrowFailure = false) => {
+      if (!projectId) return null;
       if (refreshLock.current) {
-        refreshRequested.current = true;
-        return;
+        return null;
       }
       refreshLock.current = true;
+      setRefreshing(true);
+      let saved: RuntimeDto | null = null;
       try {
-        do {
-          refreshRequested.current = false;
-          const version = workspaceVersion.current;
-          const response = await fetch(
-            `/api/ugc/v3?project=${encodeURIComponent(projectId)}`,
-            { cache: "no-store", signal },
-          );
-          const body = await response.json();
-          if (!body.ok) throw new Error(body.code);
-          // An older status read must not overwrite a just-saved approval/action.
-          if (!signal?.aborted && !actionLock.current && version === workspaceVersion.current) {
-            setWorkspace(body.workspace);
-            setStatusError("");
-          }
-        } while (refreshRequested.current && !signal?.aborted);
+        const version = workspaceVersion.current;
+        const response = await fetch(
+          `/api/ugc/v3?project=${encodeURIComponent(projectId)}`,
+          { cache: "no-store", redirect: "error", signal },
+        );
+        const body = await response.json();
+        if (!response.ok || !body.ok) throw new V3StatusReadError(body.code ?? "V3_STATUS_UNAVAILABLE", body.retryable === true);
+        // An older status read must not overwrite a just-saved approval/action.
+        if (!signal?.aborted && !actionLock.current && version === workspaceVersion.current) {
+          setWorkspace(body.workspace);
+          setStatusError("");
+          saved = body.workspace;
+          statusFailures.current = 0;
+          setRetryFinalRead(false);
+          setStatusRetryable(false);
+          setStatusPaused(false);
+        }
       } catch (e) {
-        if (!signal?.aborted)
+        if (!signal?.aborted) {
           setStatusError(e instanceof Error ? e.message : "V3_STATUS_UNAVAILABLE");
+          const temporary = e instanceof TypeError || !!e && typeof e === "object" && "retryable" in e && e.retryable === true;
+          setStatusRetryable(temporary);
+          const retry = temporary && ++statusFailures.current < 6;
+          setRetryFinalRead(retry);
+          setStatusPaused(!retry);
+          if (rethrowFailure) throw e instanceof V3StatusReadError ? e : new V3StatusReadError(e instanceof Error ? e.message : "V3_STATUS_UNAVAILABLE", temporary);
+        }
       } finally {
         refreshLock.current = false;
+        setRefreshing(false);
       }
+      return saved;
     },
     [projectId],
   );
+  const refreshFinal = useCallback((signal?: AbortSignal) => refresh(signal, true), [refresh]);
+  const finalOperation = useV3FinalOperation(projectId ?? null, workspace, refreshFinal, workflowVisible && pageVisible);
   useEffect(() => {
+    // One project/revision bootstrap is also needed for the separate Source
+    // cards. Closing the drawer must not start another read.
+    const fingerprint = `${projectId}:${revision}`;
+    if (!pageVisible || !workflowVisible && initialRead.current === fingerprint) return;
+    const controller = new AbortController();
     const timer = setTimeout(() => {
-      void refresh();
+      initialRead.current = fingerprint;
+      void refresh(controller.signal);
     }, 0);
-    return () => clearTimeout(timer);
-  }, [refresh, revision]);
+    return () => { clearTimeout(timer); controller.abort(); };
+  }, [refresh, revision, projectId, pageVisible, workflowVisible]);
   useEffect(() => {
+    if (!statusEnabled) return;
     // Review/terminal states have no polling timer. Returning to a retained page
     // still reads saved approvals or recoveries made in another window.
     const onReturn = () => {
@@ -256,12 +297,12 @@ export function V3WorkflowPreview({
       window.removeEventListener("pageshow", onReturn);
       document.removeEventListener("visibilitychange", onReturn);
     };
-  }, [refresh]);
+  }, [refresh, statusEnabled]);
   const processing =
-    !!workspace?.processing || !!workspace?.referenceCleanup?.processing || shouldPollV3Video(workspace?.runs ?? []);
-  const pollingInterval = workspace?.runs.some(run => run.state === "reconciliation_required" || run.submissionBlocker) ? 10_000 : 3000;
+    (!!workspace?.processing || !!workspace?.referenceCleanup?.processing || shouldPollV3Video(workspace?.runs ?? []) || !!workspace?.multiClip && retryFinalRead) && !finalOperation.presentation.blocked;
+  const pollingInterval = !!workspace?.multiClip && retryFinalRead || workspace?.runs.some(run => run.state === "reconciliation_required" || run.submissionBlocker) ? 10_000 : 3000;
   useEffect(() => {
-    if (!projectId || !processing) return;
+    if (!statusEnabled || statusPaused || !projectId || !processing) return;
     const controller = new AbortController();
     let timer: ReturnType<typeof setTimeout>;
     const tick = async () => {
@@ -273,9 +314,16 @@ export function V3WorkflowPreview({
       clearTimeout(timer);
       controller.abort();
     };
-  }, [projectId, processing, pollingInterval, refresh]);
+  }, [projectId, processing, pollingInterval, refresh, statusEnabled, statusPaused]);
   const act: Action = async (action, payload = {}) => {
     if (actionLock.current) return false;
+    const finalAction = !!workspace?.multiClip && (action === "merge" ||
+      ["approve", "reject_delete", "recover"].includes(action) && workspace.runs.some(r => r.segmentId === "joined" && r.id === payload.id));
+    if (finalAction) {
+      workspaceVersion.current++; setError(""); setActionArea("workflow");
+      return finalOperation.submit(action as FinalOperationAction, payload);
+    }
+    if (finalOperation.presentation.blocked) return false;
     actionLock.current = true;
     setBusy(true);
     setError("");
@@ -321,7 +369,8 @@ export function V3WorkflowPreview({
     }
   };
   const p = workspace?.preflight;
-  const workflowError = error || statusError;
+  const transientFinalRead = !!workspace?.multiClip && (retryFinalRead || finalOperation.presentation.active) && statusRetryable;
+  const workflowError = error || (transientFinalRead ? "" : statusError);
   const maximumValue =
     p && maximum?.packageHash === p.packageHash
       ? maximum.value
@@ -368,7 +417,7 @@ export function V3WorkflowPreview({
       (!!storyboardTask &&
         ["queued", "running"].includes(storyboardTask.status) &&
         (storyboardTask.current || storyboardTask.providerStarted)));
-  const locked = busy || dirty || !!workspace?.processing;
+  const locked = busy || dirty || !!workspace?.processing || finalOperation.presentation.blocked;
   const finalVideo = finalVideoPresentation(workspace, { dirty, busy, requestPending: videoRequestPending });
   const finalVideoGenerating = finalVideo.loading && (videoRequestPending || finalVideo.activeRuns.length > 0 || !!workspace?.tasks.some(t => t.kind === "join" && ["queued", "running"].includes(t.status)));
   const reference = (kind: "character" | "product", assetId?: string) =>
@@ -1034,7 +1083,7 @@ export function V3WorkflowPreview({
                 )}
                 {view === "final" && (
                   <section className="min-w-0 space-y-4">
-                    {Number(p?.durationMs ?? storyboards[0]?.storyboard?.durationMs ?? 0) > 30_000 ? <V3ClipManager workspace={workspace} act={act} disabled={busy || dirty} studioMode={studioMode} /> : <>
+                    {Number(p?.durationMs ?? storyboards[0]?.storyboard?.durationMs ?? 0) > 30_000 ? <V3ClipManager workspace={workspace} act={act} disabled={busy || dirty || finalOperation.presentation.blocked} studioMode={studioMode} finalOperation={finalOperation.presentation} refreshingFinal={refreshing || retryFinalRead} /> : <>
                     <h2 className="font-semibold">Final Video</h2>
                     <FinalVideoGenerate
                       generating={finalVideoGenerating}

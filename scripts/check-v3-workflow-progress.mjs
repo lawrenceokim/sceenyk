@@ -7,10 +7,12 @@ import { createRequire } from "node:module";
 import { resolve } from "node:path";
 const require = createRequire(import.meta.url);
 let slots = [], cursor = 0, effects = [];
+const sameDependencies = (a,b) => a?.length === b?.length && a.every((value,i) => Object.is(value,b[i]));
 globalThis.__progressReact = { ...React,
   useState(initial) { const i = cursor++; if (!(i in slots)) slots[i] = initial; return [slots[i], value => { slots[i] = typeof value === "function" ? value(slots[i]) : value; }]; },
   useRef(initial) { const i = cursor++; if (!(i in slots)) slots[i] = { current: initial }; return slots[i]; },
-  useEffect(effect, deps) { effects.push({ effect, deps }); }, useCallback: value => value, useMemo: value => value(),
+  useEffect(effect, deps) { effects.push({ effect, deps }); },
+  useCallback(value, deps) { const i = cursor++; if (!slots[i] || !sameDependencies(slots[i].deps, deps)) slots[i] = { value, deps }; return slots[i].value; }, useMemo: value => value(),
 };
 const bundle = await build({ absWorkingDir: process.cwd(), stdin: { contents: 'export { workflowProgress } from "./components/creation/v3-progress-state"; export { V3WorkflowProgress } from "./components/creation/v3-workflow-progress"; export { V3WorkflowPreview } from "./components/creation/v3-workflow-preview";', resolveDir: process.cwd(), loader: "tsx" },
   tsconfig: resolve("tsconfig.json"), bundle: true, write: false, platform: "node", format: "cjs", packages: "external", plugins: [{ name: "offline-ui", setup(builder) {
@@ -19,7 +21,7 @@ const bundle = await build({ absWorkingDir: process.cwd(), stdin: { contents: 'e
     builder.onLoad({ filter: /.*/, namespace: "fixture" }, args => {
       if (args.path === "react") return { contents: "const r=globalThis.__progressReact; export const useState=r.useState,useRef=r.useRef,useEffect=r.useEffect,useCallback=r.useCallback,useMemo=r.useMemo;" };
       if (args.path === "@/components/workspace/studio-mode-provider") return { contents: "export const useStudioMode=()=>({mode:'basic'});" };
-      if (args.path === "./studio-workspace-panels") return { contents: "export const useStudioPanels=()=>null; export const StudioPanelPortal=props=>props.children; export const StudioWorkflowMedia=()=>null;" };
+      if (args.path === "./studio-workspace-panels") return { contents: "export const useStudioPanels=()=>globalThis.__progressPanels??null; export const StudioPanelPortal=props=>props.children; export const StudioWorkflowMedia=()=>null;" };
       if (args.path === "next/image") return { contents: "export default function Image(){return null;}" };
       const names = args.path.endsWith("/button") ? ["Button"] : ["Dialog", "DialogClose", "DialogTrigger", "DialogContent", "DialogDescription", "DialogFooter", "DialogHeader", "DialogTitle"];
       return { contents: names.map(name => `export function ${name}(props){return props.children;}`).join("\n") };
@@ -129,7 +131,9 @@ try {
   slots = []; let tree = owner(); equal(state(progressProps(tree).workspace).current.status, "in_progress");
   const listeners = new Map(), timers = new Map(); let timerId = 0;
   const originals = { window: globalThis.window, document: globalThis.document, setTimeout: globalThis.setTimeout, clearTimeout: globalThis.clearTimeout };
-  const addEventListener = (name, handler) => listeners.set(name, handler), removeEventListener = name => listeners.delete(name);
+  const handlers = new Map();
+  const addEventListener = (name, handler) => { const group = handlers.get(name) ?? new Set(); group.add(handler); handlers.set(name, group); listeners.set(name, () => [...group].forEach(fn => fn())); };
+  const removeEventListener = (name, handler) => { const group = handlers.get(name); group?.delete(handler); if (!group?.size) { handlers.delete(name); listeners.delete(name); } };
   globalThis.window = { addEventListener, removeEventListener };
   globalThis.document = { visibilityState: "visible", addEventListener, removeEventListener };
   globalThis.setTimeout = (callback, delay) => { const id = ++timerId; timers.set(id, { callback, delay }); return id; };
@@ -160,9 +164,84 @@ try {
     tree = owner(); equal(state(progressProps(tree).workspace).complete, true);
     setups.forEach(cleanup => cleanup?.()); equal(listeners.size, 0);
     ok(requests.every(r => r.options.method !== "POST"));
+    // M6 retries a temporary initial status read even before a saved task is known.
+    initial = { ...packaged, multiClip: { packageId: 'package', packageHash: 'a'.repeat(64), clips: [], merge: { manifestHash: 'b'.repeat(64), taskId: null, status: null, deleting: false } } };
+    slots = []; timers.clear(); tree = owner();
+    const m6Setups = effects.map(({ effect }) => effect());
+    globalThis.fetch = async () => Response.json({ ok: false, code: "V3_DATABASE_TIMEOUT", retryable: true }, { status: 503 });
+    const initialRefresh = [...timers.values()].filter(t => t.delay === 0).at(-1); ok(initialRefresh);
+    await initialRefresh.callback(); await flush(); tree = owner();
+    equal(progressProps(tree).error, "");
+    const retryEffect = effects.find(e => e.deps?.[0] === initial.projectId && e.deps?.[1] === true && e.deps?.[2] === 10000); ok(retryEffect);
+    const stopRetry = retryEffect.effect();
+    globalThis.fetch = async () => Response.json({ ok: true, workspace: { ...complete, multiClip: initial.multiClip } });
+    await [...timers.values()].find(t => t.delay === 10000).callback(); tree = owner();
+    equal(progressProps(tree).workspace.complete, true); equal(progressProps(tree).error, "");
+    // A permanent infrastructure failure stays visible even with saved merge work.
+    initial = { ...initial, multiClip: { ...initial.multiClip, merge: { ...initial.multiClip.merge, status: "running", taskId: "merge-task" } } };
+    stopRetry?.(); m6Setups.forEach(cleanup => cleanup?.()); slots = []; timers.clear(); tree = owner();
+    const permanentSetups = effects.map(({ effect }) => effect());
+    globalThis.fetch = async () => Response.json({ ok: false, code: "V3_DATABASE_PERMISSION_DENIED", retryable: false }, { status: 503 });
+    await [...timers.values()].filter(t => t.delay === 0).at(-1).callback(); await flush(); tree = owner();
+    equal(progressProps(tree).error, "V3_DATABASE_PERMISSION_DENIED");
+    permanentSetups.forEach(cleanup => cleanup?.());
+    // Reconcile actual dependency identities across retained renders instead of
+    // reinstalling every effect. Idle state must stay idle after hydration.
+    let installed = [], lifecycleCalls = [];
+    const syncEffects = () => {
+      tree = owner();
+      effects.forEach((next, i) => {
+        if (!installed[i] || !sameDependencies(installed[i].deps, next.deps)) {
+          installed[i]?.cleanup?.(); installed[i] = { deps: next.deps, cleanup: next.effect() };
+        }
+      });
+      return tree;
+    };
+    const leave = () => { installed.forEach(item => item?.cleanup?.()); installed = []; timers.clear(); };
+    const fire = async delay => {
+      for (const [id, timer] of [...timers]) if (timer.delay === delay && timers.has(id)) { timers.delete(id); await timer.callback(); await flush(); }
+    };
+    initial = videoReady; slots = []; timers.clear();
+    globalThis.fetch = async (url, options) => { lifecycleCalls.push({ url, options }); return Response.json({ ok: true, workspace: initial }); };
+    syncEffects(); await fire(0); syncEffects();
+    equal(lifecycleCalls.length, 1);
+    for (let i=0;i<25;i++) { syncEffects(); await fire(0); }
+    equal(lifecycleCalls.length, 1); equal(timers.size, 0);
+    // Many focus events during one read coalesce; they cannot drain a queue
+    // through an immediate do/while loop after the response.
+    let finishFocus;
+    globalThis.fetch = (url, options) => { lifecycleCalls.push({ url, options }); return new Promise(resolveRead => { finishFocus = resolveRead; }); };
+    const beforeFocus = lifecycleCalls.length;
+    for (let i=0;i<15;i++) listeners.get("focus")();
+    equal(lifecycleCalls.length, beforeFocus + 1);
+    finishFocus(Response.json({ ok: true, workspace: initial })); await flush(); syncEffects();
+    equal(lifecycleCalls.length, beforeFocus + 1); equal(timers.size, 0); leave();
+    // An old processing snapshot must not keep polling after a permanent error.
+    initial = { ...packaged, processing: true, runs: [run("provider_processing")] }; slots = []; lifecycleCalls = [];
+    globalThis.fetch = async (url, options) => { lifecycleCalls.push({ url, options }); return Response.json({ ok: false, code: "V3_DATABASE_PERMISSION_DENIED", retryable: false }, { status: 503 }); };
+    syncEffects(); await fire(0); syncEffects();
+    equal(progressProps(tree).error, "V3_DATABASE_PERMISSION_DENIED"); equal(lifecycleCalls.length, 1); equal(timers.size, 0); leave();
+    // The owner stays mounted with its saved data when Workflow closes, but
+    // status timers/reads stop. Reopening and visibility return do one read.
+    slots = []; lifecycleCalls = []; globalThis.__progressPanels = { workflowOpen: false };
+    globalThis.fetch = async (url, options) => { lifecycleCalls.push({ url, options }); return Response.json({ ok: true, workspace: initial }); };
+    syncEffects(); await fire(0); syncEffects(); equal(lifecycleCalls.length, 1); equal(timers.size, 0);
+    for(let i=0;i<10;i++){syncEffects();await fire(0);}equal(lifecycleCalls.length,1);
+    globalThis.__progressPanels = { workflowOpen: true }; syncEffects(); await fire(0); syncEffects(); equal(lifecycleCalls.length, 2); ok([...timers.values()].some(timer => timer.delay === 3000));
+    globalThis.__progressPanels = { workflowOpen: false }; syncEffects(); equal(timers.size, 0); equal(progressProps(tree).workspace.processing, true);
+    globalThis.__progressPanels = { workflowOpen: true }; syncEffects(); await fire(0); syncEffects();
+    globalThis.document.visibilityState = "hidden"; listeners.get("visibilitychange")(); syncEffects(); equal(timers.size, 0);
+    const hiddenCalls = lifecycleCalls.length; globalThis.document.visibilityState = "visible"; listeners.get("visibilitychange")(); syncEffects(); await fire(0); syncEffects(); equal(lifecycleCalls.length, hiddenCalls + 1);
+    ok(lifecycleCalls.every(call => call.url.startsWith('/api/ugc/v3?') && call.options.redirect === 'error' && call.options.method !== 'POST'));
+    leave();
+    // Reference generation is displayed in separate Source cards, so its
+    // necessary status updates survive closing the Final Video drawer.
+    initial = { ...refs, processing: true, tasks: [task('character','running')] }; slots=[]; lifecycleCalls=[];
+    globalThis.__progressPanels = { workflowOpen: false };syncEffects();await fire(0);syncEffects();equal(lifecycleCalls.length,1);ok([...timers.values()].some(timer=>timer.delay===3000));
+    initial = { ...refs, processing: false };await fire(3000);syncEffects();equal(timers.size,0);leave();delete globalThis.__progressPanels;
   } finally { Object.assign(globalThis, originals); }
   // Reload/reopen takes the persisted approval rather than a local visited-tab flag.
   initial = complete; slots = []; equal(state(progressProps(owner()).workspace).complete, true);
   equal(realNetworkCalls, 0);
   console.log(JSON.stringify({ checks, realNetworkCalls, scope: "V3 Progress saved states, disclosures, recovery and automatic synchronization" }));
-} finally { globalThis.fetch = originalFetch; delete globalThis.__progressReact; }
+} finally { globalThis.fetch = originalFetch; delete globalThis.__progressReact; delete globalThis.__progressPanels; }

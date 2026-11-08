@@ -30,6 +30,7 @@ import { videoExecutionLabel } from "@/lib/final-video-generation-v3/video-progr
 import { videoRequestBlocker } from "@/lib/final-video-generation-v3/video-request-status";
 import type { StudioMode } from "@/lib/studio-mode/contract";
 import { V3MergeReview } from "./v3-merge-review";
+import type { FinalOperationPresentation } from "@/lib/final-video-generation-v3/final-operation";
 import { useStudioPanels } from "./studio-workspace-panels";
 
 type Action = (
@@ -95,11 +96,15 @@ export function V3ClipManager({
   act,
   disabled,
   studioMode,
+  finalOperation,
+  refreshingFinal,
 }: {
   workspace: RuntimeDto;
   act: Action;
   disabled: boolean;
   studioMode: StudioMode;
+  finalOperation?: FinalOperationPresentation;
+  refreshingFinal?: boolean;
 }) {
   const group = workspace.multiClip;
   const panels = useStudioPanels();
@@ -566,7 +571,7 @@ export function V3ClipManager({
           );
         })}
       </ol>
-      <V3MergeReview workspace={workspace} act={act} disabled={disabled || !!pending || !!workspace.proDurationRetained} />
+      <V3MergeReview workspace={workspace} act={act} disabled={disabled || !!pending || !!workspace.proDurationRetained} operation={finalOperation} refreshing={refreshingFinal} />
       <Dialog
         open={!!confirmation}
         onOpenChange={(open) => {

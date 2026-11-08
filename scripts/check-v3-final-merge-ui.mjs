@@ -66,6 +66,10 @@ try {
  workspace.runs[0].state='deleting';workspace.runs[0].errorCode='DELETE_FAILED';tree=render();ok(text(tree).includes('Deleting merged video...'));find(tree,'Retry deletion').props.onClick();await new Promise(resolve=>setImmediate(resolve));equal(calls.at(-1),{action:'recover',payload:{id:'merged'}});
  workspace.runs[0].state='deleted';group.merge.deleted=true;tree=render();equal(find(tree,'Merge Videos').props.disabled,false);
  props.disabled=true;tree=render();equal(find(tree,'Merge Videos').props.disabled,true);
+ props.disabled=false;props.operation={active:true,blocked:true,message:'Checking final approval...',detail:'The response was interrupted. Checking saved status...',error:'',checkStatus(){}};
+ workspace.runs[0].state='awaiting_review';tree=render();ok(text(tree).includes('Checking final approval...'));equal(find(tree,'Approving...').props.disabled,true);equal(find(tree,'Reject and Delete').props.disabled,true);equal(tree.props['aria-busy'],true);ok(text(tree).includes('Checking saved status'));
+ props.operation={active:false,blocked:true,message:null,detail:null,error:'The service needs administrator attention.',checkStatus(){calls.push({action:'check-status'});}};tree=render();find(tree,'Check status').props.onClick();equal(calls.at(-1).action,'check-status');equal(find(tree,'Approve Final Video').props.disabled,true);
+ props.operation=undefined;props.refreshing=true;tree=render();ok(text(tree).includes('Refreshing final status...'));equal(find(tree,'Approve Final Video').props.disabled,true);props.refreshing=false;
  const source=await readFile('components/creation/v3-merge-review.tsx','utf8');
  for(const token of ['flex-wrap','min-w-0','max-w-full','whitespace-normal','bg-primary/5','border-primary/20','role="status"','aria-live="polite"'])ok(source.includes(token));
  ok(!calls.some(c=>['generate','generate_clip','authorize','authorize_clip'].includes(c.action)));equal(networkCalls,0);

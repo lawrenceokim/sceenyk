@@ -109,6 +109,7 @@ class FixtureOpenAI{constructor(config){equal(config.maxRetries,0);}
   return Response.json({data:[{b64_json:master.toString('base64')}]});
  }})};}
 const load=typescriptLoader({'@/lib/auth/ensure-app-user':{ensureAppUser:async()=>({id:actingOwner})},'@/lib/auth/require-user':{requireClerkUser:async()=>({userId:'fixture'})},
+ './final-operation-server':{finalActionUser:async()=>({id:actingOwner})},
  '@/lib/db/server':{createDatabaseClient:()=>db},'./runtime-media':media,
  '@/lib/video-generation-package/builder':{...builder,packageDigest:(d,v)=>builder.packageDigest(d,normal(v)),canonicalJson:v=>builder.canonicalJson(normal(v))},
  './merge-media':{

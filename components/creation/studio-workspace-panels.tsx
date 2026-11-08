@@ -23,6 +23,7 @@ export const StudioPanelsContext = createContext<{
   setWorkflowMedia: (media: StudioPreviewMedia[], collection: string, autoSelectVideo?: boolean) => void;
   setWorkflowAttention: (attention: boolean) => void;
   openWorkflow: () => void;
+  workflowOpen?: boolean;
 } | null>(null);
 
 export function useStudioPanels() { return useContext(StudioPanelsContext); }

@@ -91,6 +91,11 @@ async function main() {
     const projects = await rest(`/rest/v1/projects?select=id,duration&owner_user_id=eq.${encodeURIComponent(owner)}&deleted_at=is.null&studio_mode=eq.pro&order=updated_at.desc&limit=5`) as { id: string; duration: string }[];
     const project = projects.find(p => Number(p.duration) > 30);
     if (!project) return { skipped: "No recent connected project for configured diagnostic owner." };
+    const statusStarted = Date.now();
+    const taskRows = await rest(`/rest/v1/ugc_v3_tasks?select=id,status&project_id=eq.${project.id}&kind=eq.join&order=created_at.desc&limit=1`) as { id: string; status: string }[];
+    const joinedRows = taskRows[0] ? await rest(`/rest/v1/ugc_v3_artifacts?select=approved_at,rejected_at&project_id=eq.${project.id}&kind=eq.joined&id=eq.${taskRows[0].id}`) as { approved_at: string | null; rejected_at: string | null }[] : [];
+    const compactStatusElapsedMs = Date.now() - statusStarted;
+    const workspaceStarted = Date.now();
     const workspace = await rest("/rest/v1/rpc/ugc_v3_runtime_read", { p_owner: owner, p_project: project.id }) as {
       runs: { state: string; result?: (typeof approvedAssets)[number] }[]; tasks: { kind: string; status: string }[];
     };
@@ -99,6 +104,8 @@ async function main() {
       approvedAssets.push(run.result);
     }
     return { durationSeconds: Number(project.duration), approvedClips: approvedAssets.length,
+      compactStatusElapsedMs, workspaceElapsedMs: Date.now() - workspaceStarted,
+      finalOutputPresent: !!joinedRows[0], finalOutputApproved: !!joinedRows[0]?.approved_at,
       mergeStatuses: workspace.tasks.filter(t => t.kind === "join").map(t => t.status) };
   });
   for (const [index, asset] of approvedAssets.slice(0, 10).entries()) await probe(`approved_clip_head_${index + 1}`, "storage", async () => {

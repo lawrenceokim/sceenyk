@@ -27,6 +27,16 @@ export async function finalMergeScenarios(h,project,initial,doc) {
  equal((await post(project,{...payload,manifestHash:'0'.repeat(64)})).body.code,'V3_MERGE_INPUTS_CHANGED');
  h.setOwner(randomUUID());ok((await post(project,payload)).status!==200);h.setOwner(owner);
  const denied=(await pg.query("select has_function_privilege('authenticated','public.ugc_v3_merge_begin(uuid,uuid,uuid,text,text)','execute') as allowed")).rows[0];equal(denied.allowed,false);
+ // A committed action must acknowledge before a full workspace read can time out.
+ const savedRead=V3Store.prototype.read,savedRpc=V3Store.prototype.rpc;
+ const acknowledge=async request=>{
+  let committed=false;
+  V3Store.prototype.rpc=async function(name,args){const value=await savedRpc.call(this,name,args);if(['ugc_v3_merge_begin','ugc_v3_approve_video'].includes(name))committed=true;return value;};
+  V3Store.prototype.read=async function(...args){if(committed)throw new(load('lib/final-video-generation-v3/database-errors.ts').V3DatabaseError)({code:'57014'},'ugc_v3_runtime_read');return savedRead.apply(this,args);};
+  try{const response=await post(project,{...request,response:'acknowledge'});equal(response.status,200);equal(response.body.receipt.accepted,true);equal(response.body.receipt.action,request.action);ok(!('workspace' in response.body));return response.body.receipt;}
+  finally{V3Store.prototype.read=savedRead;V3Store.prototype.rpc=savedRpc;}
+ };
+ await acknowledge(payload);
  for(const response of await Promise.all([post(project,payload),post(project,payload),post(project,payload)]))equal(response.status,200);
  let dto=await read(project),id=dto.multiClip.merge.taskId;ok(id);equal(dto.multiClip.merge.status,'queued');equal(dto.complete,false);
  equal(dto.tasks.filter(t=>t.kind==='join').length,1);
@@ -77,7 +87,7 @@ export async function finalMergeScenarios(h,project,initial,doc) {
  await worker(project,owner,interrupted);equal((await read(project)).multiClip.merge.status,'failed');
  const savedCalls=h.getMergeCalls();equal((await post(project,payload)).status,200);await tick(project);equal(h.getMergeCalls(),savedCalls);
  dto=await read(project);equal(dto.multiClip.merge.taskId,next);result=dto.runs.find(r=>r.id===next);equal(result.state,'awaiting_review');ok(result.preview);
- equal((await post(project,{action:'approve',id:next,reviewMode:'direct'})).status,200);
+ equal((await acknowledge({action:'approve',id:next,reviewMode:'direct'})).id,next);
  equal((await post(project,{action:'approve',id:next,reviewMode:'direct'})).status,200);
  dto=await read(project);equal(dto.complete,true);equal(dto.runs.find(r=>r.id===next).state,'approved');ok(dto.runs.find(r=>r.id===next).preview);
  equal(JSON.stringify((await store.read(owner,project)).runs),approved);

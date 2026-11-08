@@ -43,14 +43,16 @@ import { CONNECTED_STORY_DIRECTOR_VERSION, planStoryClips, validateConnectedStor
 import { requiresProDuration } from "@/lib/projects/pro-duration";
 
 export { inspectRuntime } from "./runtime-inspection";
-import { inspectRuntime } from "./runtime-inspection";
+import { inspectRuntime, runtimeInspectionReads } from "./runtime-inspection";
+import { finalActionUser } from "./final-operation-server";
 function videoStage(output: unknown): { stage: string } | null {
   const parsed = z.object({ stage: z.string().regex(/^(V3_FINAL_VIDEO_(JOB_CLAIMED|SAVING|SAVED|READY_FOR_REVIEW)|HIGGSFIELD_(SUBMITTING|REQUEST_ACCEPTED|PROCESSING|RESULT_RECEIVED))$/) }).safeParse(output);
   return parsed.success ? parsed.data : null;
 }
 export async function runtimeDto(w: RuntimeWorkspace) {
-  const brief = await projectBrief(w.project.owner_user_id, w.project.project_id), originals = await referenceOriginals(w.project.owner_user_id, w.project.project_id);
-  let preflight = null; try { preflight = await inspectRuntime(w); } catch (error) { if (error instanceof ServiceOperationError) throw error; /* Stale/partial creative inputs preserve previous previews. */ }
+  const [brief, originals] = await Promise.all([projectBrief(w.project.owner_user_id, w.project.project_id), referenceOriginals(w.project.owner_user_id, w.project.project_id)]);
+  const inspection = runtimeInspectionReads(brief, originals);
+  let preflight = null; try { preflight = await inspectRuntime(w, undefined, inspection); } catch (error) { if (error instanceof ServiceOperationError) throw error; /* Stale/partial creative inputs preserve previous previews. */ }
   const displayPricing = (packageId: string) => {
     const saved = w.packages.find(p => p.id === packageId);
     return saved ? currentDisplayPricing(readFrozenPackage(saved.document)) : null;
@@ -66,7 +68,7 @@ export async function runtimeDto(w: RuntimeWorkspace) {
     current: artifactCurrent(a, w.artifacts, generationContext(brief), originals, creativeBriefHash(brief), w.referenceDeletions) &&
       (a.kind !== "location" || !isLocationDirectorTask({ kind: "location", input: (a.document.input ?? {}) as Record<string,unknown> }) ||
         (a.document.input as Record<string,unknown>).briefHash === creativeBriefHash(brief) && v3Digest("location-names",(a.document.input as Record<string,unknown>).names) === v3Digest("location-names",originals.names) ||
-        !!a.approved_at && await new V3Store().rpc("ugc_v3_location_input_current", { p_project: w.project.project_id, d: a.document.input }) === true),
+        !!a.approved_at && await inspection.rpc("ugc_v3_location_input_current", { p_project: w.project.project_id, d: a.document.input }) === true),
     location: a.kind === "location" ? locationDocument(a) : null,
     approved: !!a.approved_at, rejected: !!a.rejected_at, storyboard: a.kind === "storyboard" ? directorStoryboardSchema.parse(a.document.storyboard) : null,
     preview: a.document.asset && !w.referenceDeletions.some(d=>d.id===a.id&&d.state==="prepared") && (!a.rejected_at || ["character", "product", "location"].includes(a.kind)) ? await previewUrl(privateAssetSchema.parse(a.document.asset)) : null })));
@@ -148,7 +150,7 @@ export async function runtimeDto(w: RuntimeWorkspace) {
   const planned = clipDoc && packageClips(clipDoc);
   const clipPlans = planned && clipDoc ? await Promise.all(planned.map(async clip => {
     const attempts = w.runs.filter(r => r.package_id === clipDoc.id && r.intent.segmentId === clip.segmentId), run = attempts.at(-1);
-    let report = null; try { report = await inspectRuntime(w, clip.segmentId); } catch (error) { if (error instanceof ServiceOperationError) throw error; /* Preserve saved clips when creative prerequisites become stale. */ }
+    let report = null; try { report = await inspectRuntime(w, clip.segmentId, inspection); } catch (error) { if (error instanceof ServiceOperationError) throw error; /* Preserve saved clips when creative prerequisites become stale. */ }
     let retryableFailure = false;
     if (run?.state === "failed") { try { retryableFailure = await new V3Store().rpc("ugc_v3_clip_retryable", { p_owner: w.project.owner_user_id, p_project: w.project.project_id, p_run: run.id }) === true; } catch (error) { if (error instanceof ServiceOperationError && error.code !== "V3_CLIP_SETUP_REQUIRED") throw error; /* Setup may still be pending. */ } }
     const needsContinuityReview = !!run && planned.slice(0, clip.number - 1).some(prior => {
@@ -206,8 +208,13 @@ export async function isOwnedV3Project(project: string) {
   return enrolledV3(user.data.id, project);
 }
 const actionSchema = z.object({ action: z.enum(["reference", "cleanup_references", "discard_reference", "location_continue", "review_artifact", "storyboard", "build_package", "authorize", "authorize_clip", "merge", "generate", "generate_clip", "refresh_video_delivery", "recover", "recover_task", "approve", "reject_delete"]), projectId: z.uuid() }).passthrough();
-export async function ownedV3Action(raw: unknown) {
-  const a = actionSchema.parse(raw), user = await ensureAppUser(); assertV3Access(user.id);
+export type V3ActionReceipt = { accepted: true; action: string; id: string };
+export function ownedV3Action(raw: unknown): Promise<RuntimeDto>;
+export function ownedV3Action(raw: unknown, acknowledge: true): Promise<RuntimeDto | V3ActionReceipt>;
+export async function ownedV3Action(raw: unknown, acknowledge = false) {
+  const a = actionSchema.parse(raw);
+  const finalRequest = acknowledge && ["merge", "approve", "reject_delete", "recover"].includes(a.action);
+  const user = finalRequest ? await finalActionUser() : await ensureAppUser(); assertV3Access(user.id);
   const store = new V3Store(), signal = AbortSignal.timeout(120_000), now = new Date().toISOString();
   const w = await store.read(user.id, a.projectId), brief = await projectBrief(user.id, a.projectId), originals = await referenceOriginals(user.id, a.projectId);
   const context = generationContext(brief);
@@ -414,14 +421,17 @@ export async function ownedV3Action(raw: unknown) {
       await store.action(user.id, a.projectId, "generate", { intent: createPaidIntent(doc, quote, auth, new Date().toISOString(), delivery) });
     }
   } else if (a.action === "merge") {
-    await store.rpc("ugc_v3_merge_begin", { p_owner: user.id, p_project: a.projectId,
+    const taskId = await store.rpc("ugc_v3_merge_begin", { p_owner: user.id, p_project: a.projectId,
       p_package: z.uuid().parse(a.packageId), p_hash: z.string().regex(/^[a-f0-9]{64}$/).parse(a.packageHash),
       p_manifest: z.string().regex(/^[a-f0-9]{64}$/).parse(a.manifestHash) });
+    if (acknowledge) return { accepted: true as const, action: a.action, id: z.uuid().parse(taskId) };
   } else if (a.action === "refresh_video_delivery") {
     await refreshQueuedVideoDelivery(store, w, z.uuid().parse(a.id), signal);
   } else if (a.action === "recover") {
     const joined = w.artifacts.some(j => j.id === a.id && j.kind === "joined");
     await store.action(user.id, a.projectId, joined ? "recover_delete" : "recover", { id: z.uuid().parse(a.id) });
+    if (acknowledge && w.artifacts.some(j => j.id === a.id && j.kind === "joined" && j.document.manifestHash))
+      return { accepted: true as const, action: a.action, id: z.uuid().parse(a.id) };
   } else if (a.action === "recover_task") {
     const task = w.tasks.find(t => t.id === a.id);
     if (task && ["character", "product", "location"].includes(task.kind)) {
@@ -457,6 +467,8 @@ export async function ownedV3Action(raw: unknown) {
       await store.action(user.id, a.projectId, joined ? a.action === "approve" ? "approve_joined" : "reject_joined" : a.action, { id: run?.id ?? joined!.id, quality,
         ...(a.action === "reject_delete" ? { confirmedDeletion: true } : {}) });
     }
+    if (acknowledge && joined?.document.manifestHash)
+      return { accepted: true as const, action: a.action, id: joined.id };
     if (run && a.action === "approve") {
       const refreshed = await store.read(user.id, a.projectId), doc = readFrozenPackage(w.packages.find(p => p.id === run.package_id)!.document);
       if (!packageClips(doc) && doc.segments.length > 1 && doc.segments.every(s => refreshed.runs.some(r => r.package_id === doc.id && r.intent.segmentId === s.id && r.state === "approved")))
