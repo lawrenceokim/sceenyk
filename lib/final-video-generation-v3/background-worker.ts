@@ -5,6 +5,8 @@ import path from "node:path";
 import { V3Store } from "./runtime-store";
 import { runV3Task } from "./worker";
 import { assertV3Access, v3OwnedAccessEnabled, v3RuntimeEnabled, v3TransportConfig } from "./runtime-config";
+import { withV3ConnectionRecovery } from "./connection-recovery";
+import { ServiceOperationError, type ServiceDiagnostic } from "@/lib/diagnostics/service-failure";
 
 const projectSchema = z.object({ project_id: z.uuid(), owner_user_id: z.uuid() });
 export type WorkerProject = z.infer<typeof projectSchema>;
@@ -27,22 +29,24 @@ export class V3ProjectPool {
 
 // Keyset pages and a bounded pool prevent one user's long task from owning the queue.
 export async function processV3QueueBatch(store: V3Store, options: {
-  after: string | null; ownerId: string | null; concurrency: number; signal: AbortSignal;
+  after: string | null; ownerId: string | null; concurrency: number; signal: AbortSignal; pausedProjects?: Set<string>;
 }, processProject: ProcessProject = (p, signal) => runV3Task(p.project_id, p.owner_user_id, store, AbortSignal.any([signal, AbortSignal.timeout(14 * 60_000)]))) {
   const projects = z.array(projectSchema).parse(await store.rpc("ugc_v3_worker_projects", {
     p_owner: options.ownerId, p_after: options.after, p_limit: 32, p_submit: v3TransportConfig().enabled,
   }));
   let cursor = 0;
-  const failures: { projectId: string; code: string }[] = [];
+  const failures: { projectId: string; code: string; diagnostic?: ServiceDiagnostic }[] = [];
   await Promise.all(Array.from({ length: Math.min(Math.max(1, options.concurrency), projects.length) }, async () => {
     while (cursor < projects.length && !options.signal.aborted) {
       const project = projects[cursor++];
+      if (options.pausedProjects?.has(project.project_id)) continue;
       try {
         assertV3Access(project.owner_user_id);
         await processProject(project, options.signal);
       } catch (error) {
         const code = error instanceof Error && /^[A-Z0-9_]{1,100}$/.test(error.message) ? error.message : "V3_WORKER_PROJECT_UNAVAILABLE";
-        failures.push({ projectId: project.project_id, code });
+        if (error instanceof ServiceOperationError && !error.diagnostic.retryable) options.pausedProjects?.add(project.project_id);
+        failures.push({ projectId: project.project_id, code, ...(error instanceof ServiceOperationError ? { diagnostic: error.diagnostic } : {}) });
       }
     }
   }));
@@ -65,22 +69,26 @@ export async function runV3BackgroundWorker(args: string[]) {
   const lastFailure = new Map<string, string>();
   console.info("V3_BACKGROUND_WORKER_READY", { access: "owned", concurrency, newPaidSubmissions: v3TransportConfig().enabled, recovery: true });
   const store = new V3Store();
+  const pausedProjects = new Set<string>();
   const pool = new V3ProjectPool(concurrency, (project, signal) => runV3Task(project.project_id, project.owner_user_id, store, signal), (project, error) => {
     const code = error instanceof Error && /^[A-Z0-9_]{1,100}$/.test(error.message) ? error.message : "V3_WORKER_PROJECT_UNAVAILABLE";
-    if (lastFailure.get(project.project_id) !== code) console.error("V3_BACKGROUND_PROJECT_PAUSED", { projectId: project.project_id, code });
+    if (error instanceof ServiceOperationError && !error.diagnostic.retryable) pausedProjects.add(project.project_id);
+    if (lastFailure.get(project.project_id) !== code) console.error("V3_BACKGROUND_PROJECT_PAUSED", JSON.stringify({ projectId: project.project_id, code,
+      ...(error instanceof ServiceOperationError ? { diagnostic: error.diagnostic } : {}) }));
     if (lastFailure.size >= 1024) lastFailure.delete(lastFailure.keys().next().value!);
     lastFailure.set(project.project_id, code);
   });
   let after: string | null = null;
   try {
     do {
-      const result = await processV3QueueBatch(store, { after, ownerId: null, concurrency, signal: shutdown.signal }, async project => {
+      const result = await withV3ConnectionRecovery(() => processV3QueueBatch(store, { after, ownerId: null, concurrency, signal: shutdown.signal, pausedProjects }, async project => {
         if (pool.size >= concurrency) return;
         pool.schedule(project, AbortSignal.any([shutdown.signal, AbortSignal.timeout(14 * 60_000)]));
-      });
+      }), { signal: shutdown.signal, once: args.includes("--once") });
+      if (!result) break;
       after = result.after;
       for (const failure of result.failures) {
-        if (lastFailure.get(failure.projectId) !== failure.code) console.error("V3_BACKGROUND_PROJECT_PAUSED", failure);
+        if (lastFailure.get(failure.projectId) !== failure.code) console.error("V3_BACKGROUND_PROJECT_PAUSED", JSON.stringify(failure));
         if (lastFailure.size >= 1024) lastFailure.delete(lastFailure.keys().next().value!);
         lastFailure.set(failure.projectId, failure.code);
       }

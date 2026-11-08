@@ -67,12 +67,13 @@ export async function publishPrivate(owner: string, project: string, id: string,
   const extension = metadata.mimeType === "image/png" ? "png" : "mp4", key = `${v3Prefix(owner, project)}${id}.${extension}`;
   const { bucket, sdk } = client();
   let head = await headR2CharacterObject(key, signal);
+  let publicationError: unknown;
   if (!head) {
     try { await sdk.send(new PutObjectCommand({ Bucket: bucket, Key: key, Body: bytes, ContentType: metadata.mimeType, ContentLength: bytes.length, IfNoneMatch: "*" }), { abortSignal: signal }); }
-    catch { /* Inspect this exact immutable key after a lost acknowledgement. */ }
+    catch (error) { publicationError = error; /* Inspect this exact immutable key after a lost acknowledgement. */ }
     head = await headR2CharacterObject(key, signal);
   }
-  if (!head || head.sizeBytes !== bytes.length || head.mimeType !== metadata.mimeType) throw new Error("V3_PRIVATE_SAVE_FAILED");
+  if (!head || head.sizeBytes !== bytes.length || head.mimeType !== metadata.mimeType) throw new Error("V3_PRIVATE_SAVE_FAILED", { cause: publicationError });
   const asset = privateAssetSchema.parse({ ...metadata, id, storageKey: key, etag: head.etag, sha256: bytesHash(bytes), sizeBytes: bytes.length });
   await readPrivate(key, asset.etag, asset.sizeBytes, signal, asset.sha256); return asset;
 }

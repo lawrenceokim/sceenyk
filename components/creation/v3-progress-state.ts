@@ -165,10 +165,18 @@ export function workflowProgress(workspace: RuntimeDto, productRequired: boolean
     final.status = "completed";
     final.description = "Your project is complete.";
     final.guidance = "Your video has been approved and your project is complete.";
-  } else if (workspace.multiClip?.readyForMerging) {
+  } else if (workspace.multiClip?.merge && ["queued", "running"].includes(workspace.multiClip.merge.status ?? "")) {
+    final.status = "in_progress";
+    final.description = "Merging videos...";
+    final.guidance = "Your approved clips are being merged locally. You can return later.";
+  } else if (workspace.multiClip?.merge && ["failed", "reconciliation_required"].includes(workspace.multiClip.merge.status ?? "")) {
+    final.status = "failed";
+    final.description = "Your approved clips could not be merged.";
+    final.guidance = "Open Final Video and choose Retry merging. Your approved clips stay saved.";
+  } else if (workspace.multiClip?.readyForMerging && !review && !working) {
     final.status = "waiting_approval";
     final.description = "All clips are approved and ready for merging.";
-    final.guidance = "Ordered private clips are saved. Merge Videos follows in Milestone 6; the final video is not complete yet.";
+    final.guidance = "Open Final Video and choose Merge Videos, then review and approve the merged output.";
   } else if (review && !working) {
     final.status = review.preview ? "waiting_approval" : "needs_attention";
     final.description = review.preview ? "Your video is ready for review." : "Your video is saved, but its preview is unavailable.";

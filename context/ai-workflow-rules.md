@@ -1,5 +1,13 @@
 # AI Workflow Rules
 
+## Current authorization — M6 connection failure correction (2026-11-08)
+
+Trace/fix worker, database, API, identity and media connection failures while preserving M5/M6 and paid-request safety. Configuration and bounded read-only live service/metadata checks are authorized; no production migration/data change, queue claim, live merge/deletion, paid generation, environment edit or deployment. Distinguish sandbox restrictions from actual service failures. Preserve explicit unknowns when old logs discarded the original cause. Add offline fault injection and existing regressions plus static/build checks. [Findings and manual audit](m6-connection-recovery.md).
+
+## Current authorization — Phase 2 M6 (2026-11-08)
+
+Implement explicit local merging/final approval for approved connected Pro clips through existing V3 owners. Preserve M5 paid clip generation, review, regeneration, pricing/authorization/recovery and Basic/short/historical behavior. Local synthetic FFmpeg, mocked external I/O, disposable SQL and relevant regression/static/build verification are authorized. Apply no remote migration; report manual 099 after 098. Make no real paid provider request or deployment. M7 remains outside scope. [M6 contract/setup](phase-2-basic-pro-studio.md#m6-implementation-and-setup-2026-11-08).
+
 ## V3 Storyboard creative direction refinement (2026-11-07)
 
 Future Director requests privately synthesize the user's intended audience experience, saved settings/duration, approved cast/relationships, product/location facts and audio preferences before choosing shots. Explicit creative direction governs interpretation of conflicting tone/type/category suggestions. Use request-specific progression, pace, action density, dialogue, performances, camera work and sound; neither sparse activity nor high energy is a universal default. Genre examples are possibilities, not required templates. Preserve purposeful silence and avoid forcing promotional language. Multiple characters need motivated reciprocal responses with distinct identities/voices; approved spatial references constrain background activity and sound.

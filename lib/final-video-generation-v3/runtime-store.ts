@@ -1,11 +1,12 @@
 import "server-only";
 import { z } from "zod";
+import { V3DatabaseError } from "./database-errors";
 import { createDatabaseClient } from "@/lib/db/server";
 import { planningInputSchema } from "./contract";
 import { artifactSchema, quoteSchema, runSchema, runtimeAuthorizationSchema, taskSchema } from "./runtime-contract";
 
-export type V3RpcName = "ugc_v3_clip_retryable" | "ugc_v3_clip_authorize" | "ugc_v3_clip_manifest" | "ugc_v3_clip_setup" | "ugc_v3_approve_video" | "ugc_v3_background_setup" | "ugc_v3_worker_projects" | "ugc_v3_worker_claim" | "ugc_v3_video_stage" | "ugc_v3_worker_resume_known" | "ugc_v3_refresh_video_delivery" | "ugc_v3_runtime_current" | "ugc_v3_video_setup" | "ugc_v3_local_package_begin" | "ugc_v3_local_price_repair" | "ugc_v3_regenerate_approved_reference" | "ugc_v3_package_begin" | "ugc_v3_package_checkpoint" | "ugc_v3_package_commit" | "ugc_v3_reconcile_reference_cleanup" | "ugc_v3_discard_reference_prepare" | "ugc_v3_discard_reference_finish" | "ugc_v3_queue_reference_cleanup" | "ugc_v3_location_action" | "ugc_v3_location_checkpoint" | "ugc_v3_location_input_current" | "ugc_v3_create_project" | "ugc_v3_write" | "ugc_v3_runtime_read" | "ugc_v3_runtime_action" | "ugc_v3_task_claim" | "ugc_v3_task_checkpoint" | "ugc_v3_retire_reference_task" | "ugc_v3_regenerate_reference" | "ugc_v3_reference_delete_prepare" | "ugc_v3_reference_delete_finish" | "ugc_v3_recover_reference_task" | "ugc_v3_replace_unusable_reference_task" | "ugc_v3_record_reference_diagnostic";
-export type V3RpcPort = { rpc(name: V3RpcName, args: Record<string, unknown>): PromiseLike<{ data: unknown; error: unknown }> };
+export type V3RpcName = "ugc_v3_merge_begin" | "ugc_v3_merge_stage" | "ugc_v3_merge_setup" | "ugc_v3_clip_retryable" | "ugc_v3_clip_authorize" | "ugc_v3_clip_manifest" | "ugc_v3_clip_setup" | "ugc_v3_approve_video" | "ugc_v3_background_setup" | "ugc_v3_worker_projects" | "ugc_v3_worker_claim" | "ugc_v3_video_stage" | "ugc_v3_worker_resume_known" | "ugc_v3_refresh_video_delivery" | "ugc_v3_runtime_current" | "ugc_v3_video_setup" | "ugc_v3_local_package_begin" | "ugc_v3_local_price_repair" | "ugc_v3_regenerate_approved_reference" | "ugc_v3_package_begin" | "ugc_v3_package_checkpoint" | "ugc_v3_package_commit" | "ugc_v3_reconcile_reference_cleanup" | "ugc_v3_discard_reference_prepare" | "ugc_v3_discard_reference_finish" | "ugc_v3_queue_reference_cleanup" | "ugc_v3_location_action" | "ugc_v3_location_checkpoint" | "ugc_v3_location_input_current" | "ugc_v3_create_project" | "ugc_v3_write" | "ugc_v3_runtime_read" | "ugc_v3_runtime_action" | "ugc_v3_task_claim" | "ugc_v3_task_checkpoint" | "ugc_v3_retire_reference_task" | "ugc_v3_regenerate_reference" | "ugc_v3_reference_delete_prepare" | "ugc_v3_reference_delete_finish" | "ugc_v3_recover_reference_task" | "ugc_v3_replace_unusable_reference_task" | "ugc_v3_record_reference_diagnostic";
+export type V3RpcPort = { rpc(name: V3RpcName, args: Record<string, unknown>): PromiseLike<{ data: unknown; error: unknown; status?: number }> };
 export const runtimeWorkspaceSchema = z.object({ project: z.object({ project_id: z.uuid(), owner_user_id: z.uuid(), logical_job_id: z.uuid(), studio_mode: z.enum(["basic", "pro"]).optional() }),
   source: z.object({ revision: z.number().int(), input: planningInputSchema, private_bindings: z.record(z.string(), z.unknown()), current: z.boolean(), created_at: z.string() }).nullable(),
   packages: z.array(z.object({ id: z.uuid(), document: z.unknown() })), tasks: z.array(taskSchema), artifacts: z.array(artifactSchema),
@@ -19,28 +20,33 @@ export type RuntimeWorkspace = z.infer<typeof runtimeWorkspaceSchema>;
 export class V3Store {
   constructor(private readonly database: V3RpcPort = createDatabaseClient() as unknown as V3RpcPort) {}
   async rpc(name: V3RpcName, args: Record<string, unknown>) {
-    const { data, error } = await this.database.rpc(name, args);
+    let result;
+    try { result = await this.database.rpc(name, args); } catch (error) { throw new V3DatabaseError(error, name); }
+    const { data, error } = result;
     if (error) {
-      if (name.startsWith("ugc_v3_clip_") && typeof error === "object" && "code" in error && ["PGRST202", "42883"].includes(String(error.code))) throw new Error("V3_CLIP_SETUP_REQUIRED");
-      if (name === "ugc_v3_approve_video" && typeof error === "object" && "code" in error && ["PGRST202", "42883"].includes(String(error.code))) throw new Error("V3_DIRECT_APPROVAL_SETUP_REQUIRED");
-      if (["ugc_v3_background_setup", "ugc_v3_worker_projects", "ugc_v3_worker_claim", "ugc_v3_video_stage", "ugc_v3_worker_resume_known"].includes(name) && typeof error === "object" && "code" in error && ["PGRST202", "42883"].includes(String(error.code))) throw new Error("V3_BACKGROUND_SETUP_REQUIRED");
-      if (name === "ugc_v3_refresh_video_delivery" && typeof error === "object" && "code" in error && ["PGRST202", "42883"].includes(String(error.code))) throw new Error("V3_VIDEO_DELIVERY_REFRESH_SETUP_REQUIRED");
-      if (name.startsWith("ugc_v3_local_") && typeof error === "object" && "code" in error && ["PGRST202", "42883"].includes(String(error.code))) throw new Error("V3_LOCAL_PRICING_SETUP_REQUIRED");
+      if (name === "ugc_v3_video_setup" && typeof error === "object" && "code" in error && ["PGRST202", "42883"].includes(String(error.code))) throw new V3DatabaseError(error, name, "V3_VIDEO_SETUP_REQUIRED", result.status);
+      if (name.startsWith("ugc_v3_merge_") && typeof error === "object" && "code" in error && ["PGRST202", "42883"].includes(String(error.code))) throw new V3DatabaseError(error, name, "V3_MERGE_SETUP_REQUIRED", result.status);
+      if (name.startsWith("ugc_v3_clip_") && typeof error === "object" && "code" in error && ["PGRST202", "42883"].includes(String(error.code))) throw new V3DatabaseError(error, name, "V3_CLIP_SETUP_REQUIRED", result.status);
+      if (name === "ugc_v3_approve_video" && typeof error === "object" && "code" in error && ["PGRST202", "42883"].includes(String(error.code))) throw new V3DatabaseError(error, name, "V3_DIRECT_APPROVAL_SETUP_REQUIRED", result.status);
+      if (["ugc_v3_background_setup", "ugc_v3_worker_projects", "ugc_v3_worker_claim", "ugc_v3_video_stage", "ugc_v3_worker_resume_known"].includes(name) && typeof error === "object" && "code" in error && ["PGRST202", "42883"].includes(String(error.code))) throw new V3DatabaseError(error, name, "V3_BACKGROUND_SETUP_REQUIRED", result.status);
+      if (name === "ugc_v3_refresh_video_delivery" && typeof error === "object" && "code" in error && ["PGRST202", "42883"].includes(String(error.code))) throw new V3DatabaseError(error, name, "V3_VIDEO_DELIVERY_REFRESH_SETUP_REQUIRED", result.status);
+      if (name.startsWith("ugc_v3_local_") && typeof error === "object" && "code" in error && ["PGRST202", "42883"].includes(String(error.code))) throw new V3DatabaseError(error, name, "V3_LOCAL_PRICING_SETUP_REQUIRED", result.status);
       if ((name.startsWith("ugc_v3_package_") || name === "ugc_v3_reconcile_reference_cleanup" || name === "ugc_v3_regenerate_approved_reference") && typeof error === "object" && "code" in error && ["PGRST202", "42883"].includes(String(error.code)))
-        throw new Error("V3_PACKAGE_SETUP_REQUIRED");
+        throw new V3DatabaseError(error, name, "V3_PACKAGE_SETUP_REQUIRED", result.status);
       if (["ugc_v3_discard_reference_prepare","ugc_v3_discard_reference_finish","ugc_v3_queue_reference_cleanup"].includes(name) && typeof error === "object" && "code" in error && ["PGRST202","42883"].includes(String(error.code)))
-        throw new Error("V3_REFERENCE_RETENTION_SETUP_REQUIRED");
+        throw new V3DatabaseError(error, name, "V3_REFERENCE_RETENTION_SETUP_REQUIRED", result.status);
       if (name.startsWith("ugc_v3_location_") && typeof error === "object" && "code" in error && ["PGRST202", "42883"].includes(String(error.code)))
-        throw new Error("V3_LOCATION_SETUP_REQUIRED");
+        throw new V3DatabaseError(error, name, "V3_LOCATION_SETUP_REQUIRED", result.status);
       if (["ugc_v3_recover_reference_task", "ugc_v3_replace_unusable_reference_task"].includes(name) && typeof error === "object" && "code" in error && ["PGRST202", "42883"].includes(String(error.code)))
-        throw new Error("V3_REFERENCE_RECOVERY_SETUP_REQUIRED");
+        throw new V3DatabaseError(error, name, "V3_REFERENCE_RECOVERY_SETUP_REQUIRED", result.status);
       if (["ugc_v3_reference_delete_prepare", "ugc_v3_reference_delete_finish"].includes(name) && typeof error === "object" && "code" in error && ["PGRST202", "42883"].includes(String(error.code)))
-        throw new Error("V3_REFERENCE_DELETE_SETUP_REQUIRED");
+        throw new V3DatabaseError(error, name, "V3_REFERENCE_DELETE_SETUP_REQUIRED", result.status);
       if (name === "ugc_v3_regenerate_reference" && typeof error === "object" && "code" in error && ["PGRST202", "42883"].includes(String(error.code)))
-        throw new Error("V3_REFERENCE_REGENERATION_SETUP_REQUIRED");
+        throw new V3DatabaseError(error, name, "V3_REFERENCE_REGENERATION_SETUP_REQUIRED", result.status);
       const message = error && typeof error === "object" && "message" in error && typeof error.message === "string" && /^[A-Z0-9_]{1,100}$/.test(error.message)
         ? error.message : "V3_DATABASE_UNAVAILABLE";
-      throw new Error(message);
+      if (message !== "V3_DATABASE_UNAVAILABLE" && (typeof error === "object" && "code" in error && error.code === "P0001" || /^(V3_|PACKAGE_|APPROV|CURRENT_|FRESH_|PAID_|INVALID_|REFERENCE_|QUOTE_|VIDEO_|JOINED_|COST_|SUBMISSION_)/.test(message))) throw new Error(message);
+      throw new V3DatabaseError(error, name, undefined, result.status);
     }
     return data;
   }

@@ -1,5 +1,8 @@
 // Actual route/action/worker + disposable PostgreSQL/Sharp. Providers and private storage are fixtures.
 import assert from 'node:assert/strict';
+import os from 'node:os';
+import path from 'node:path';
+import {finalMergeScenarios} from './lib/v3-final-merge-scenarios.mjs';
 import fs from 'node:fs';
 import {randomUUID,createHash} from 'node:crypto';
 import {createRequire} from 'node:module';
@@ -13,6 +16,8 @@ import {individualClipScenarios} from './lib/v3-individual-clip-scenarios.mjs';
 import {connectedStoryScenarios, connectedFixtureStory} from './lib/v3-connected-story-scenarios.mjs';
 const require=createRequire(import.meta.url),builder=require('../lib/video-generation-package/builder.ts');
 const normal=v=>JSON.parse(JSON.stringify(v)),hash=b=>createHash('sha256').update(b).digest('hex');
+const mergeRoot=fs.mkdtempSync(path.join(os.tmpdir(),'sceenyk-v3-merge-runtime-'));
+let mergeCalls=0,mergeFailure=false,mergeSaveFailure=false;
 let checks=0,networkCalls=0,mode='pass',saveFailure=false,storageFailure=false,deleteFailure=false,deleteAttempts=0;
 let estimateCalls=0,estimateMode='pass',packageSaveFailure=false;
 let fixtureVideo=false,videoPosts=0,videoPolls=0,videoComplete=false,videoTerminal=null,videoSubmissionRejected=false;
@@ -41,9 +46,12 @@ const db={async rpc(name,args){try{return{data:await call(name,Object.values(arg
   try{const rows=(await pg.query(sql,values)).rows;return{data:single?rows[0]??null:rows,error:null};}catch(error){return{data:null,error:{code:error.code,message:error.message}};}},
  maybeSingle(){return this.execute(true);},then(resolve,reject){return this.execute().then(resolve,reject);}};}};
 const media={bytesHash:hash,
+ spoolFile:async(id,name)=>{const dir=path.join(mergeRoot,id);fs.mkdirSync(dir,{recursive:true});return path.join(dir,name);},
  deletePrivate:async(user,project,asset)=>{if(deleteFailure)throw new Error("FIXTURE_DELETE_FAILED");equal(asset.storageKey,`users/${user}/projects/${project}/v3/${asset.id}.mp4`);objects.delete(asset.storageKey);deleted.push(asset.id);},
  purgeVideoSpool:async id=>{for(const key of [...spool.keys()])if(key.startsWith(`${id}:`))spool.delete(key);},readSpool:async(id,name)=>spool.get(`${id}:${name}`)??null,
  saveSpool:async(id,name,bytes)=>{const key=`${id}:${name}`;if(spool.has(key)&&hash(spool.get(key))!==hash(bytes))throw new Error('V3_SPOOL_CONFLICT');spool.set(key,bytes);
+  if(mergeSaveFailure==='processing'&&name==='merge-processing.json'){mergeSaveFailure=false;throw new Error('FIXTURE_MERGE_PROCESSING_ACK_LOST');}
+  if(mergeSaveFailure===true&&name==='video.mp4'){mergeSaveFailure=false;throw new Error('FIXTURE_MERGE_SAVE_ACK_LOST');}
   if(packageSaveFailure&&name==='package-local-pricing.json'){packageSaveFailure=false;throw new Error('V3_LOCAL_SAVE_ACK_LOST');}
   if(saveFailure&&name==='openai-response.json'){saveFailure=false;throw new Error('FIXTURE_LOST_SAVE_ACK');}},
  writeReferenceDiagnostics:async(id,value)=>spool.set(`${id}:reference-diagnostics.json`,Buffer.from(JSON.stringify(value))),
@@ -103,6 +111,9 @@ class FixtureOpenAI{constructor(config){equal(config.maxRetries,0);}
 const load=typescriptLoader({'@/lib/auth/ensure-app-user':{ensureAppUser:async()=>({id:actingOwner})},'@/lib/auth/require-user':{requireClerkUser:async()=>({userId:'fixture'})},
  '@/lib/db/server':{createDatabaseClient:()=>db},'./runtime-media':media,
  '@/lib/video-generation-package/builder':{...builder,packageDigest:(d,v)=>builder.packageDigest(d,normal(v)),canonicalJson:v=>builder.canonicalJson(normal(v))},
+ './merge-media':{
+ mergeLocalFiles:async(inputs,output,list,expected)=>{mergeCalls++;if(mergeFailure)throw new Error('V3_MERGE_SOURCE_INVALID');fs.writeFileSync(output,Buffer.from('local-merged-output'));return{metadata:{mimeType:'video/mp4',width:480,height:854,durationMs:expected.durationMs,hasAudio:true},mode:'copy-video',inputDurationMs:expected.durationMs};},
+ validateMergedFile:async(file,expected)=>({mimeType:'video/mp4',width:480,height:854,durationMs:expected.durationMs,hasAudio:true})},
  './join':{joinV3Segments:async()=>{throw new Error('JOIN_FORBIDDEN');}},'next/navigation':{unstable_rethrow:()=>{}},
  openai:{__esModule:true,default:FixtureOpenAI,toFile:async bytes=>new File([bytes],'source.png',{type:'image/png'})}},
  {Error,Response,Request,File,AbortController,structuredClone:normal,fetch:async(url,options)=>{
@@ -154,7 +165,11 @@ try{
   const m5Previous=file.includes("09800")?await functionsSnapshot():null;
   const m2Previous=file.includes('09500')?await functionsSnapshot():null, m2Security=m2Previous?await securitySnapshot():null;
   if(file.includes('08500')||file.includes('08600')||file.includes('09000')||file.includes('09100'))previous=(await pg.query("select oid::regprocedure::text signature,prosrc,proacl::text grants,proconfig from pg_proc where pronamespace='public'::regnamespace order by oid")).rows;
+  const m6Previous=file.includes('09900')?await functionsSnapshot():null;
   await pg.exec(fs.readFileSync(`supabase/migrations/${file}`,'utf8'));
+  if(m6Previous){const current=await functionsSnapshot();for(const before of m6Previous){const after=current.find(f=>f.signature===before.signature);ok(after);equal(after.grants,before.grants);equal(after.proconfig,before.proconfig);if(!['ugc_v3_connected_story_guard','ugc_v3_approve_video'].includes(before.name))equal(after,before);}
+   await pg.exec(fs.readFileSync(`supabase/migrations/${file}`,'utf8'));equal(await functionsSnapshot(),current);}
+
   if(m5Previous){const current=await functionsSnapshot();for(const before of m5Previous){const after=current.find(f=>f.signature===before.signature);ok(after);equal(after.grants,before.grants);equal(after.proconfig,before.proconfig);if(!["ugc_v3_connected_story_guard","ugc_v3_runtime_action"].includes(before.name))equal(after,before);}}
   if(m2Previous){
    const modified=new Set(['guard_ugc_v1_reference_limit','ugc_v3_artifact_current','ugc_v3_location_input_current','ugc_v3_runtime_action','ugc_v3_package_begin','ugc_v3_runtime_current','ugc_v3_regenerate_reference','ugc_v3_reference_delete_prepare','ugc_v3_preserve_approved_reference','ugc_v3_reference_cleanup_guard','ugc_v3_discard_reference_prepare','ugc_v3_queue_reference_cleanup','ugc_v3_replace_unusable_reference_task','ugc_v3_runtime_read']);
@@ -176,6 +191,7 @@ try{
  await pg.exec(fs.readFileSync('supabase/migrations/20261105009500_ugc_v3_multiple_characters.sql','utf8'));
  await pg.exec(fs.readFileSync('supabase/migrations/20261105009700_ugc_v3_connected_story_planning.sql','utf8'));
  await pg.exec(fs.readFileSync('supabase/migrations/20261106009800_ugc_v3_individual_clips.sql','utf8'));
+ await pg.exec(fs.readFileSync('supabase/migrations/20261108009900_ugc_v3_final_merge.sql','utf8'));
  await pg.exec(fs.readFileSync('scripts/verify-v3-setup.sql','utf8'));checks++;
  await pg.query("insert into public.app_users(id,clerk_user_id) values($1,'fixture')",[owner]);
  if(process.argv.includes('--reference-limits-only')) {
@@ -183,6 +199,8 @@ try{
    setDurations:value=>{storyboardDurations=value;},getVideoPosts:()=>videoPosts,getEstimateCalls:()=>estimateCalls});
  } else if(process.argv.includes('--individual-clips-only')) {
   await individualClipScenarios({pg,db,owner,call,post,read,tick,fixture,generate,load,equal,ok,calls,cp,spool,objects,videoBodies,
+   onMergeReady:process.argv.includes('--final-merge-only')?async(project,dto,doc)=>finalMergeScenarios({pg,owner,call,post,read,tick,load,equal,ok,spool,objects,V3Store,media,
+     getVideoPosts:()=>videoPosts,getMergeCalls:()=>mergeCalls,setMergeFailure:value=>{mergeFailure=value;},setMergeSaveFailure:value=>{mergeSaveFailure=value;},setDeleteFailure:value=>{deleteFailure=value;},setOwner:value=>{actingOwner=value;}},project,dto,doc):null,
    setDurations:value=>{storyboardDurations=value;},getVideoPosts:()=>videoPosts,setVideo:complete=>{fixtureVideo=true;videoComplete=complete;},setVideoFailure:value=>{videoTerminal=value?"failed":null;},setSubmissionRejected:value=>{videoSubmissionRejected=value;},setDeleteFailure:value=>{deleteFailure=value;}});
  } else if(process.argv.includes('--connected-story-only')) {
   await connectedStoryScenarios({pg,db,owner,call,post,read,tick,fixture,generate,load,equal,ok,calls,cp,spool,setDurations:value=>{storyboardDurations=value;},getVideoPosts:()=>videoPosts});
@@ -576,4 +594,4 @@ try{
  equal((await pg.query('select id from public.ugc_v3_artifacts where id=$1',[unapproved.id])).rows.length,0);equal(objects.has(operation.asset.storageKey),false);equal(calls.length,beforeCollisionCalls);
  }
  equal(networkCalls,0);console.info(JSON.stringify({scope:process.argv.includes('--reference-limits-only')?'reference-limits':process.argv.includes('--individual-clips-only')?'individual-clips':process.argv.includes('--connected-story-only')?'connected-story':process.argv.includes('--project-saving-only')?'project-saving':process.argv.includes('--multiple-characters-only')?'multiple-characters':process.argv.includes('--references-only')?'references-and-location':'full',simpleLocationAndRetentionChecks:checks,migrations:migrations.length,previousFunctionsPreserved,m2FunctionsPreserved,fixtureProviderCalls:calls.length,fixtureEstimateCalls:estimateCalls,realNetworkCalls:networkCalls,automaticImageChecks:0}));
-}finally{await pg.close();for(const k of Object.keys(process.env))if(!(k in oldEnv))delete process.env[k];Object.assign(process.env,oldEnv);}
+}finally{fs.rmSync(mergeRoot,{recursive:true,force:true});await pg.close();for(const k of Object.keys(process.env))if(!(k in oldEnv))delete process.env[k];Object.assign(process.env,oldEnv);}

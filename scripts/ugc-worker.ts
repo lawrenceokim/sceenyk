@@ -1,5 +1,6 @@
 import { loadEnvConfig } from "@next/env";
 import { workerLane } from "../lib/final-video-generation-v3/worker-command";
+import { v3WorkerFailure } from "../lib/final-video-generation-v3/connection-recovery";
 
 async function main() {
   loadEnvConfig(process.cwd(), true, { info() {}, error() {} });
@@ -14,6 +15,5 @@ async function main() {
   }
 }
 void main().catch(error => {
-  const code = error instanceof Error && /^[A-Z0-9_]{1,100}$/.test(error.message) ? error.message : "UGC_WORKER_STARTUP_FAILED";
-  console.error(code); process.exitCode = 1;
+  console.error("UGC_WORKER_STOPPED", JSON.stringify(v3WorkerFailure(error))); process.exitCode = 1;
 });

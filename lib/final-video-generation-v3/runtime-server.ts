@@ -8,6 +8,10 @@ import { requireClerkUser } from "@/lib/auth/require-user";
 import { createDatabaseClient } from "@/lib/db/server";
 import { planningInputSchema, directorStoryboardSchema, type PlanningInput } from "./contract";
 import { CLIP_PROMPT_COMPILER_VERSION } from "./compiler";
+import { mergeManifest, mergedArtifactCurrent } from "./merge-runtime";
+import { v3DatabaseFailure } from "./database-errors";
+import { mergeStorageOperation } from "./merge-storage";
+import { ServiceOperationError } from "@/lib/diagnostics/service-failure";
 import { packageClips, clipAuthority, clipSpending, clipAttemptBinding } from "./clip-runtime";
 import { STORYBOARD_DIRECTOR_VERSION, STORYBOARD_PROMPT_COMPILER_VERSION } from "./storyboard-director";
 import { HIGGSFIELD_V3_PROFILE } from "./adapters/higgsfield";
@@ -46,7 +50,7 @@ function videoStage(output: unknown): { stage: string } | null {
 }
 export async function runtimeDto(w: RuntimeWorkspace) {
   const brief = await projectBrief(w.project.owner_user_id, w.project.project_id), originals = await referenceOriginals(w.project.owner_user_id, w.project.project_id);
-  let preflight = null; try { preflight = await inspectRuntime(w); } catch { /* Stale/partial creative inputs preserve previous previews. */ }
+  let preflight = null; try { preflight = await inspectRuntime(w); } catch (error) { if (error instanceof ServiceOperationError) throw error; /* Stale/partial creative inputs preserve previous previews. */ }
   const displayPricing = (packageId: string) => {
     const saved = w.packages.find(p => p.id === packageId);
     return saved ? currentDisplayPricing(readFrozenPackage(saved.document)) : null;
@@ -95,7 +99,7 @@ export async function runtimeDto(w: RuntimeWorkspace) {
       ...(asset ? { actualDimensions: { width: asset.width, height: asset.height } } : {}),
       estimatedCostMicrousd: doc.pricing.totalMicrousd, actualCostMicrousd: null, stage: null, outputHostname: null, submissionBlocker: null, hasKnownRequest: false,
       displayEstimatedCostMicrousd: currentDisplayPricing(doc).totalMicrousd,
-      current: !!w.source?.current && w.source.revision === doc.sourceRevision && w.runs.filter(r => r.package_id === doc.id).every(r => r.current),
+      current: packageClips(doc) ? mergedArtifactCurrent(w, doc, a) : !!w.source?.current && w.source.revision === doc.sourceRevision && w.runs.filter(r => r.package_id === doc.id).every(r => r.current),
       errorCode: deletion?.error_code ?? null, quality: null, actualDurationMs: asset.durationMs, hasAudio: asset.hasAudio,
       preview: !a.rejected_at ? await previewUrl(asset) : null, expectedDialogue: doc.source.storyboardContent.scenes.flatMap(s => s.speech),
       shotTimings: doc.source.storyboardContent.scenes.map(s => ({ number: s.number, startMs: s.startMs, endMs: s.endMs })) };
@@ -135,7 +139,7 @@ export async function runtimeDto(w: RuntimeWorkspace) {
       && t.error_code !== "V3_REFERENCE_REQUEST_SUPERSEDED" && !w.tasks.slice(index + 1).some(n => n.kind === t.kind && (t.kind !== "character" || n.input.originalId === t.input.originalId))
       ? await referenceDiagnostics(t, current, w.referenceDiagnostics.find(d => d.taskId === t.id)) : null;
     return { id: t.id, kind: t.kind, status: cleanupCompleted ? "done" : t.input.referenceCleanupHold ? "cleanup_pending" : t.status, errorCode: cleanupCompleted ? null : t.error_code, providerStarted: t.provider_started,
-      packageBuild, ...(t.kind === "character" ? { characterId: typeof t.input.originalId === "string" ? t.input.originalId : undefined } : {}),
+      packageBuild, ...(t.kind === "join" ? { mergeStage: (t.output as { mergeStage?: string } | null)?.mergeStage ?? null } : {}), ...(t.kind === "character" ? { characterId: typeof t.input.originalId === "string" ? t.input.originalId : undefined } : {}),
       ...(t.input.referenceCleanup?{referenceCleanup:true}:{}),
       current, createdAt: t.created_at, leaseUntil: t.lease_until, diagnostics, location, recoveryAvailable: location?.recoveryAvailable ?? diagnostics?.recoveryAvailable ?? false,
       canStartNew: location?.canGenerate ?? diagnostics?.canStartNew ?? false };
@@ -144,9 +148,9 @@ export async function runtimeDto(w: RuntimeWorkspace) {
   const planned = clipDoc && packageClips(clipDoc);
   const clipPlans = planned && clipDoc ? await Promise.all(planned.map(async clip => {
     const attempts = w.runs.filter(r => r.package_id === clipDoc.id && r.intent.segmentId === clip.segmentId), run = attempts.at(-1);
-    let report = null; try { report = await inspectRuntime(w, clip.segmentId); } catch { /* Preserve saved clips when creative prerequisites become stale. */ }
+    let report = null; try { report = await inspectRuntime(w, clip.segmentId); } catch (error) { if (error instanceof ServiceOperationError) throw error; /* Preserve saved clips when creative prerequisites become stale. */ }
     let retryableFailure = false;
-    if (run?.state === "failed") { try { retryableFailure = await new V3Store().rpc("ugc_v3_clip_retryable", { p_owner: w.project.owner_user_id, p_project: w.project.project_id, p_run: run.id }) === true; } catch { /* Setup may still be pending. */ } }
+    if (run?.state === "failed") { try { retryableFailure = await new V3Store().rpc("ugc_v3_clip_retryable", { p_owner: w.project.owner_user_id, p_project: w.project.project_id, p_run: run.id }) === true; } catch (error) { if (error instanceof ServiceOperationError && error.code !== "V3_CLIP_SETUP_REQUIRED") throw error; /* Setup may still be pending. */ } }
     const needsContinuityReview = !!run && planned.slice(0, clip.number - 1).some(prior => {
       const priorAttempts = w.runs.filter(r => r.package_id === clipDoc.id && r.intent.segmentId === prior.segmentId);
       return priorAttempts.length > 1 && Date.parse(priorAttempts.at(-1)!.intent.createdAt) > Date.parse(run.intent.createdAt);
@@ -159,9 +163,20 @@ export async function runtimeDto(w: RuntimeWorkspace) {
       canRegenerate: !!run && (run.state === "deleted" || retryableFailure),
       canRenewAuthorization: !run && w.runtimeAuthorizations.some(a => a.document.packageId === clipDoc.id && a.document.segmentId === clip.segmentId) && !clipAuthority(w, clipDoc, clip.segmentId) };
   })) : null;
+  let manifestHash: string | null = null;
+  if (clipDoc && planned) { try { manifestHash = mergeManifest(clipDoc, w.runs).hash; } catch { /* Remaining clips need approval. */ } }
+  const mergeTask = manifestHash ? w.tasks.filter(t => t.kind === "join" && t.input.manifestHash === manifestHash).at(-1) : null;
+  const mergedRun = mergeTask ? joined.find(r => r.id === mergeTask.id) : null;
+  const merge = planned ? { manifestHash,
+    canMerge: !!manifestHash && preflight?.currentness === "current" && w.project.studio_mode === "pro",
+    taskId: mergeTask?.id ?? null, status: mergeTask?.status ?? null,
+    stage: typeof (mergeTask?.output as { mergeStage?: unknown } | null)?.mergeStage === "string" ? (mergeTask!.output as { mergeStage: string }).mergeStage : null,
+    errorCode: mergeTask?.error_code ?? null, resultId: mergedRun?.id ?? null,
+    outdated: joined.some(r => r.packageId === clipDoc?.id && !r.current && r.state !== "deleted"),
+    deleting: mergedRun?.state === "deleting", deleted: mergedRun?.state === "deleted" } : null;
   const multiClip = clipDoc && clipPlans ? { packageId: clipDoc.id, packageHash: clipDoc.hash,
-    ...clipSpending(w, clipDoc), clips: clipPlans,
-    readyForMerging: preflight?.currentness === "current" && clipPlans.every(c => runs.some(r => r.id === c.runId && r.current && r.state === "approved")) } : null;
+    ...clipSpending(w, clipDoc), clips: clipPlans, ...(merge ? { merge } : {}),
+    readyForMerging: !!manifestHash && preflight?.currentness === "current" && clipPlans.every(c => runs.some(r => r.id === c.runId && r.current && r.state === "approved")) } : null;
   return { projectId: w.project.project_id, packageStale: w.packages.length > 0 && !preflight, artifacts, runs: [...runs, ...joined],
     multiClip,
     ...(requiresProDuration(brief.duration) && w.project.studio_mode !== "pro" ? { proDurationRetained: true as const } : {}),
@@ -179,16 +194,18 @@ export type RuntimeDto = Awaited<ReturnType<typeof runtimeDto>>;
 export async function readOwnedV3(project: string) {
   const { userId } = await requireClerkUser(), db = createDatabaseClient();
   const user = await db.from("app_users").select("id").eq("clerk_user_id", userId).maybeSingle();
-  if (user.error || !user.data) throw new Error("V3_ACCOUNT_UNAVAILABLE");
+  if (user.error) v3DatabaseFailure(user.error, "read_account", user.status);
+  if (!user.data) throw new Error("V3_ACCOUNT_UNAVAILABLE");
   return runtimeDto(await new V3Store().read(user.data.id, z.uuid().parse(project)));
 }
 export async function isOwnedV3Project(project: string) {
   const { userId } = await requireClerkUser(), db = createDatabaseClient();
   const user = await db.from("app_users").select("id").eq("clerk_user_id", userId).maybeSingle();
-  if (user.error || !user.data) throw new Error("V3_ACCOUNT_UNAVAILABLE");
+  if (user.error) v3DatabaseFailure(user.error, "read_account", user.status);
+  if (!user.data) throw new Error("V3_ACCOUNT_UNAVAILABLE");
   return enrolledV3(user.data.id, project);
 }
-const actionSchema = z.object({ action: z.enum(["reference", "cleanup_references", "discard_reference", "location_continue", "review_artifact", "storyboard", "build_package", "authorize", "authorize_clip", "generate", "generate_clip", "refresh_video_delivery", "recover", "recover_task", "approve", "reject_delete"]), projectId: z.uuid() }).passthrough();
+const actionSchema = z.object({ action: z.enum(["reference", "cleanup_references", "discard_reference", "location_continue", "review_artifact", "storyboard", "build_package", "authorize", "authorize_clip", "merge", "generate", "generate_clip", "refresh_video_delivery", "recover", "recover_task", "approve", "reject_delete"]), projectId: z.uuid() }).passthrough();
 export async function ownedV3Action(raw: unknown) {
   const a = actionSchema.parse(raw), user = await ensureAppUser(); assertV3Access(user.id);
   const store = new V3Store(), signal = AbortSignal.timeout(120_000), now = new Date().toISOString();
@@ -396,6 +413,10 @@ export async function ownedV3Action(raw: unknown) {
       const delivery = await prepareVideoDelivery(w, doc, segment, signal);
       await store.action(user.id, a.projectId, "generate", { intent: createPaidIntent(doc, quote, auth, new Date().toISOString(), delivery) });
     }
+  } else if (a.action === "merge") {
+    await store.rpc("ugc_v3_merge_begin", { p_owner: user.id, p_project: a.projectId,
+      p_package: z.uuid().parse(a.packageId), p_hash: z.string().regex(/^[a-f0-9]{64}$/).parse(a.packageHash),
+      p_manifest: z.string().regex(/^[a-f0-9]{64}$/).parse(a.manifestHash) });
   } else if (a.action === "refresh_video_delivery") {
     await refreshQueuedVideoDelivery(store, w, z.uuid().parse(a.id), signal);
   } else if (a.action === "recover") {
@@ -426,7 +447,9 @@ export async function ownedV3Action(raw: unknown) {
       if (quality && (Object.entries(quality).some(([k, v]) => k !== "notes" && (v === "fail" || v === "not_checked")) ||
         speech.length && [quality.dialoguePresence, quality.speechTiming].some(v => v !== "pass") ||
         speech.some(s => s.speaker === "character") && quality.lipAudioSync !== "pass")) throw new Error("V3_QUALITY_REVIEW_REQUIRED");
-      await readPrivate(result.storageKey, result.etag, result.sizeBytes, signal, result.sha256);
+      const readback = () => readPrivate(result.storageKey, result.etag, result.sizeBytes, signal, result.sha256);
+      if (joined?.document.manifestHash) await mergeStorageOperation("merge_approval_readback", readback);
+      else await readback();
     }
     if (directApproval) {
       await store.rpc("ugc_v3_approve_video", { p_owner: user.id, p_project: a.projectId, p_id: run?.id ?? joined!.id });

@@ -21,7 +21,7 @@ const bundled=await build({absWorkingDir:process.cwd(),stdin:{contents:'export {
       if(args.path==='@/components/workspace/studio-mode-provider')return{contents:'export const useStudioMode=()=>({mode:"basic"});'};
       if(args.path==='./studio-workspace-panels')return{contents:'export const useStudioPanels=()=>globalThis.__studioPanels??null;export function StudioPanelPortal(props){return props.children;}export function StudioWorkflowMedia(){return null;}'};
       if(args.path==='next/image')return{contents:'export default function Image(props){return null;}'};
-      const names=args.path.endsWith('/button')?['Button']:['Dialog','DialogContent','DialogDescription','DialogFooter','DialogHeader','DialogTitle'];
+      const names=args.path.endsWith('/button')?['Button']:['Dialog','DialogClose','DialogTrigger','DialogContent','DialogDescription','DialogFooter','DialogHeader','DialogTitle'];
       return{contents:names.map(name=>`export function ${name}(props){return props.children;}`).join('\n')};
     });
   },

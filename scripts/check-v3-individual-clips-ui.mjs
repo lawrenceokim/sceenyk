@@ -124,7 +124,7 @@ try {
  // A changed selection requires a fresh confirmation, including while a dialog is open.
  slots=[];tree=render();find(tree,'Regenerate').props.onClick();group.clips=[{...group.clips[0],runId:'run-2'}];tree=render();equal(find(tree,'Approve regeneration cost').props.disabled,true);
  slots=[];group.clips=[{...clip,runId:'run-1',needsContinuityReview:true}];workspace.runs=[{...base,state:'approved'}];group.readyForMerging=true;tree=render();
- ok(text(tree).includes('ready for merging'));ok(text(tree).includes('final video is not complete yet'));ok(text(tree).includes('approval are preserved'));
+ ok(elements(tree).some(n=>n.type?.name==='V3MergeReview'));ok(elements(tree).some(n=>n.type?.name==='V3MergeReview'&&n.props.workspace===workspace));ok(text(tree).includes('approval are preserved'));
  ok(!elements(tree).some(n=>n.type?.name==='Button'&&text(n)==='Merge Videos'));
  // Busy independent workers do not disable a different waiting clip.
  workspace.processing=true;workspace.runs=[];group.clips=[clip];tree=render();equal(find(tree,'Generate Clip').props.disabled,false);

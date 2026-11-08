@@ -1,5 +1,13 @@
 # Code Standards
 
+## Connection diagnostics and retries (2026-11-08)
+
+Keep upstream error text/URLs/secrets out of logs and client responses. Use the shared service diagnostic at the V3, account and media boundaries; preserve fixed SQL business exceptions, ownership checks, setup errors and integrity guards. Only known temporary infrastructure failures admit supervisor backoff. Do not retry a mutating RPC/provider call in isolation, convert a database outage into stale creative inputs, or turn identity failures into storage errors. Preserve leases, immutable receipts and unknown-outcome reconciliation. Permanent global errors stop; permanent project errors remain explicitly paused until operator repair/restart. Read-only probes must never claim queued work, submit paid work or apply migrations. [Verified investigation](m6-connection-recovery.md).
+
+## Phase 2 M6 — local merge lineage (2026-11-08)
+
+Reuse V3 join task/artifact/review/deletion owners. Every connected merge binds a content-addressed ordered approved-input manifest under the project lock; admission/publication/final approval revalidate it. Failed/expired-lease recovery reuses the task, local immutable bytes and conditional private publication. New attempt IDs follow completed rejection cleanup. No paid authority/provider call, source clip mutation, historical backfill or M5 execution refactor. Probe/decode/check private files before processing; preserve compatible video, concatenate audio samples continuously, normalize video only for compatibility, and keep actual lengths without inserted padding/footage. Temporary copies belong to the merge task; deletion cannot traverse source spools or symlinks. [M6 contract](phase-2-basic-pro-studio.md#m6-implementation-and-setup-2026-11-08).
+
 ## Phase 2 M5 — immutable clip attempt standards (2026-11-06)
 
 Compile connected plans only at their exact approved boundaries using the versioned connected compiler; preserve historical recipes. Bind attempts to frozen package/Storyboard/clip identity and exact predecessor, retaining active-segment and consumed-authorization uniqueness. Reserve finite cumulative spend atomically; deleted media never restores authority. Require explicit new attempt approval and confirmed deletion; accepted/unknown work recovers receipts without paid replay. Save ordered merge inputs atomically with the last approval; connected-package joining stays blocked for M6. No parallel worker/storage/pricing architecture or new stylesheet.

@@ -1064,7 +1064,7 @@ export function V3WorkflowPreview({
                       />
                     ))}
                     </>}
-                    {workspace.tasks.filter(task => task.kind === "join" && task.status === "failed").map(task => (
+                    {workspace.tasks.filter(task => !workspace.multiClip && task.kind === "join" && task.status === "failed").map(task => (
                       <div key={task.id} className="space-y-2">
                         <p role="alert" className="text-sm text-muted-foreground">The final video could not be joined. Recover the saved segments or see Progress.</p>
                         <Button variant="outline" disabled={locked} onClick={() => void act("recover_task", { id: task.id })}>Recover local join</Button>

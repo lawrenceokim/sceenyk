@@ -21,7 +21,7 @@ const bundle = await build({ absWorkingDir: process.cwd(), stdin: { contents: 'e
       if (args.path === "@/components/workspace/studio-mode-provider") return { contents: "export const useStudioMode=()=>({mode:'basic'});" };
       if (args.path === "./studio-workspace-panels") return { contents: "export const useStudioPanels=()=>null; export const StudioPanelPortal=props=>props.children; export const StudioWorkflowMedia=()=>null;" };
       if (args.path === "next/image") return { contents: "export default function Image(){return null;}" };
-      const names = args.path.endsWith("/button") ? ["Button"] : ["Dialog", "DialogContent", "DialogDescription", "DialogFooter", "DialogHeader", "DialogTitle"];
+      const names = args.path.endsWith("/button") ? ["Button"] : ["Dialog", "DialogClose", "DialogTrigger", "DialogContent", "DialogDescription", "DialogFooter", "DialogHeader", "DialogTitle"];
       return { contents: names.map(name => `export function ${name}(props){return props.children;}`).join("\n") };
     });
   } }] });

@@ -32,6 +32,7 @@ export async function individualClipScenarios(h) {
  const migration=fs.readFileSync('supabase/migrations/20261106009800_ugc_v3_individual_clips.sql','utf8');
  const security=async()=>(await pg.query("select oid,relacl::text,relrowsecurity,relforcerowsecurity from pg_class where relnamespace='public'::regnamespace and relkind='r' order by oid")).rows;
  const baseline=await security();await pg.exec(migration);await pg.exec(migration);equal(await security(),baseline);
+ await pg.exec(fs.readFileSync('supabase/migrations/20261108009900_ugc_v3_final_merge.sql','utf8'));
  for(const signature of ['ugc_v3_clip_authorize(uuid,uuid,jsonb,uuid)','ugc_v3_clip_manifest(uuid,uuid,uuid)','ugc_v3_clip_setup()','ugc_v3_clip_retryable(uuid,uuid,uuid)']) {
   equal((await pg.query("select has_function_privilege('authenticated',$1,'EXECUTE') browser,has_function_privilege('service_role',$1,'EXECUTE') server",['public.'+signature])).rows[0],{browser:false,server:true});
  }
@@ -161,8 +162,9 @@ export async function individualClipScenarios(h) {
    const stale=await read(project);ok(stale.multiClip.clips.every(c=>!c.canGenerate));ok(stale.runs.every(r=>!r.current));equal(stale.complete,false);
    await pg.query("update public.projects set prompt=replace(prompt,' changed','') where id=$1",[project]);equal(manifests[0].document.clips.map(c=>c.clipId),boundaries.map(c=>c.id));ok(manifests[0].document.clips.every(c=>c.asset.storageKey&&c.asset.sha256));
    equal(await call('ugc_v3_clip_manifest',[owner,project,p.packageId]),true);
-   await assert.rejects(()=>call('ugc_v3_runtime_action',[owner,project,'enqueue',{kind:'join',requestKey:randomUUID(),input:{packageId:p.packageId,packageHash:p.packageHash}}]),/V3_CLIP_MERGE_NOT_IMPLEMENTED/);ok(true);
+   await assert.rejects(()=>call('ugc_v3_runtime_action',[owner,project,'enqueue',{kind:'join',requestKey:randomUUID(),input:{packageId:p.packageId,packageHash:p.packageHash}}]),/V3_MERGE_INPUTS_CHANGED/);ok(true);
    await assert.rejects(()=>call('ugc_v3_clip_manifest',[randomUUID(),project,p.packageId]),/V3_PROJECT_NOT_OWNED/);ok(true);
+   if(h.onMergeReady)await h.onMergeReady(project,dto,doc);
   } else equal(dto.multiClip,null);
  }
 }

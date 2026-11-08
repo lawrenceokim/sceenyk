@@ -1,5 +1,11 @@
 import { packageBuildError } from "./package-status";
 const messages: Record<string, string> = {
+  V3_MERGE_SETUP_REQUIRED: "Video merging needs database setup. Ask your administrator to review migration 099 in Progress; your approved clips stay saved.",
+  V3_MERGE_INPUTS_CHANGED: "The approved clips changed. Refresh and merge the current approved clips again.",
+  V3_MERGE_REQUIRES_APPROVED_CLIPS: "Approve every required clip before merging. Your saved approvals are preserved.",
+  V3_MERGE_SOURCE_INVALID: "A saved clip could not be validated for merging. Your approved clips are preserved; see Progress for details.",
+  V3_MERGE_DELETE_PENDING: "The rejected merged video is still being deleted. Finish or retry deletion before merging again.",
+  V3_MERGE_AUDIO_INCOMPATIBLE: "The saved audio formats could not be safely joined. Your approved clips stay saved; see Progress for details.",
   V3_CLIP_SETUP_REQUIRED: "Individual clip generation needs database migration 098. Ask your administrator to apply it after 097; your saved work is preserved.",
   V3_CLIP_ATTEMPT_CHANGED: "This clip attempt changed. Refresh and review the current clip before approving a new attempt.",
   V3_CLIP_DELETE_OR_RECOVER_FIRST: "Delete the unapproved clip with confirmation, or recover its existing request before approving another attempt.",
@@ -109,6 +115,12 @@ const messages: Record<string, string> = {
   APPROVE_CURRENT_REFERENCES_FIRST: "Regenerate and approve references for the current saved inputs before continuing.",
 };
 export function v3ActionErrorMessage(code: string) {
+  const service = /^(?:V3_)?(DATABASE|CLERK|STORAGE)_(CONNECTION_UNAVAILABLE|TIMEOUT|CAPACITY_UNAVAILABLE|RATE_LIMITED|UNAVAILABLE|AUTHENTICATION_FAILED|PERMISSION_DENIED|SCHEMA_MISMATCH|CONFIGURATION_INVALID|NETWORK_BLOCKED|TLS_INVALID|OPERATION_FAILED|NOT_FOUND|CONSTRAINT_REJECTED)$/.exec(code);
+  if (service) {
+    const name = service[1] === "CLERK" ? "Your account profile" : service[1] === "DATABASE" ? "The application database" : "Media storage";
+    if (["CONNECTION_UNAVAILABLE", "TIMEOUT", "CAPACITY_UNAVAILABLE", "RATE_LIMITED", "UNAVAILABLE"].includes(service[2])) return `${name} is temporarily unavailable. Your approved clips and saved work are preserved. Wait briefly, then check status before retrying.`;
+    return `${name} needs attention. Your approved clips and saved work are preserved. Ask the administrator to check the service diagnostics in Progress and the worker logs.`;
+  }
   if (/REFERENCE_LIMITS_(UNVERIFIED|EXPIRED|INVALID|UNAVAILABLE)$/.test(code) || ["REFERENCE_COUNT_EXCEEDED", "REFERENCE_FORMAT_OR_SIZE_INVALID", "REQUEST_SIZE_EXCEEDED"].includes(code)) return packageBuildError(code);
   if (code.startsWith("V3_STORAGE_DELETE_")) return `The unwanted image could not be deleted (${code}). Its saved metadata is preserved for retry.`;
   return messages[code] ?? "This request couldn’t finish. Check your saved inputs and local generation setup, then check status.";

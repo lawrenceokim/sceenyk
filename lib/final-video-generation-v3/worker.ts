@@ -10,6 +10,9 @@ import { prepareV3VideoRecovery } from "./worker-recovery";
 import { V3Store, type RuntimeWorkspace } from "./runtime-store";
 import { taskSchema, privateAssetSchema, type Task } from "./runtime-contract";
 import { executeV3Segment } from "./execution";
+import { mergeApprovedClips } from "./merge-worker";
+import { purgeMergeSpool } from "./merge-spool";
+import { ServiceOperationError } from "@/lib/diagnostics/service-failure";
 import { joinV3Segments } from "./join";
 import { directorStoryboardSchema, castDirectorStoryboardSchema, connectedDirectorStoryboardSchema, connectedCastDirectorStoryboardSchema } from "./contract";
 import { CONNECTED_STORY_DIRECTOR_VERSION, validateConnectedStory, connectedStoryInstructions } from "./connected-story";
@@ -104,6 +107,9 @@ async function imageTask(store: V3Store, task: Task, w: RuntimeWorkspace, signal
       responseHash: bytesHash(saved.raw ?? image.bytes), requestId, httpStatus, recoveredFrom: hasSavedOutput ? saved.recoveredFrom : null } });
     await recordReferenceStage(task.id, { stage: "complete", httpStatus, requestId, errorCode: null });
   } catch (error) {
+    // Do not turn an infrastructure outage or a lost SQL acknowledgement into
+    // a terminal job failure. Leave leases, source clips and receipts untouched.
+    if (error instanceof ServiceOperationError) throw error;
     const failure = referenceStageError(error, stage, httpStatus, requestId);
     await recordReferenceStage(task.id, failure.metadata);
     throw failure;
@@ -192,6 +198,7 @@ async function deleteTask(store: V3Store, task: Task, w: RuntimeWorkspace, signa
   if (!asset) throw new Error("V3_DELETE_UNAVAILABLE");
   await deletePrivate(w.project.owner_user_id, task.project_id, asset, signal);
   await purgeVideoSpool(asset.id);
+  if (joined?.document.manifestHash) await purgeMergeSpool(asset.id);
   await store.checkpoint(task, "deleted");
 }
 export async function runV3Task(projectId: string, ownerId: string, store = new V3Store(), signal = AbortSignal.timeout(14 * 60_000)) {
@@ -221,12 +228,12 @@ export async function runV3Task(projectId: string, ownerId: string, store = new 
     else if (task.kind === "delete") await deleteTask(store, task, w, signal);
     else {
       const doc = readFrozenPackage(w.packages.find(p => p.id === task.input.packageId)?.document);
-      if (packageClips(doc)) throw new Error("V3_CLIP_MERGE_NOT_IMPLEMENTED");
       if (!w.source?.current || w.source.revision !== doc.sourceRevision) throw new Error("PACKAGE_STALE");
-      const document = await joinV3Segments(task.id, doc, w.runs, signal);
+      const document = packageClips(doc) ? await mergeApprovedClips(store, task, doc, w, signal) : await joinV3Segments(task.id, doc, w.runs, signal);
       await store.checkpoint(task, "artifact", { id: task.id, document });
     }
   } catch (error) {
+    if (error instanceof ServiceOperationError) throw error;
     const refreshed = await store.read(ownerId, projectId), run = refreshed.runs.find(r => r.id === task.input.runId);
     if(task.input.referenceCleanup&&refreshed.referenceDeletions.some(d=>d.id===(task.input.referenceCleanup as {id:string}).id&&d.state==="completed")){
       await store.checkpoint(task,"done");return true;

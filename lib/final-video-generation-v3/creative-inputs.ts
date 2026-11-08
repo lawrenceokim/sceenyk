@@ -1,6 +1,7 @@
 import "server-only";
 import { promises as fs } from "node:fs";
 import { createDatabaseClient } from "@/lib/db/server";
+import { v3DatabaseFailure } from "./database-errors";
 import { v3Digest } from "./identity";
 import { generationContext, artifactCurrent, requiredReferenceArtifacts, type ReferenceOriginals } from "./generation-context";
 import type { RuntimeWorkspace } from "./runtime-store";
@@ -38,7 +39,7 @@ export function approvedArtifacts(w: RuntimeWorkspace, brief: Awaited<ReturnType
 export async function referenceOriginals(owner: string, project: string): Promise<ReferenceOriginals> {
   const r = await createDatabaseClient().from("project_assets").select("id,studio_role,reference_name,created_at")
     .eq("owner_user_id", owner).eq("project_id", project).eq("upload_status", "uploaded").eq("removed_from_draft", false).in("studio_role", ["character", "product"]);
-  if (r.error) throw new Error("V3_REFERENCES_UNAVAILABLE");
+  if (r.error) v3DatabaseFailure(r.error, "read_references", r.status);
   if (r.data.filter(a => a.studio_role === "product").length > 1) throw new Error("V3_REFERENCE_LIMIT_EXCEEDED");
   const characters = r.data.filter(a => a.studio_role === "character")
     .sort((a, b) => String(a.created_at ?? "").localeCompare(String(b.created_at ?? "")) || a.id.localeCompare(b.id))
@@ -57,5 +58,6 @@ export function creativeBriefHash(brief: Awaited<ReturnType<typeof projectBrief>
 export async function projectBrief(owner: string, project: string) {
   const r = await createDatabaseClient().from("projects").select("id,title,prompt,aspect_ratio,duration,visual_style,tone,category,ugc_type,creation_type,video_resolution")
     .eq("id", project).eq("owner_user_id", owner).is("deleted_at", null).maybeSingle();
-  if (r.error || !r.data) throw new Error("FRESH_V3_PROJECT_REQUIRED"); return r.data;
+  if (r.error) v3DatabaseFailure(r.error, "read_project", r.status);
+  if (!r.data) throw new Error("FRESH_V3_PROJECT_REQUIRED"); return r.data;
 }

@@ -97,7 +97,11 @@
     "test:studio-browser": "node scripts/check-studio-browser.mjs",
     "preflight:ugc-v3-video": "node --conditions=react-server --import=tsx scripts/preflight-v3-controlled-video.ts",
     "test:ugc-v3-clips": "node --conditions=react-server --import=tsx scripts/check-v3-individual-clips.mjs && node --import=tsx scripts/check-v3-individual-clips-ui.mjs",
-    "test:ugc-v3-reference-limits": "node --conditions=react-server --import=tsx scripts/check-v3-reference-limits.mjs"
+    "test:ugc-v3-reference-limits": "node --conditions=react-server --import=tsx scripts/check-v3-reference-limits.mjs",
+    "test:ugc-v3-merge": "node --conditions=react-server --import=tsx scripts/check-v3-final-merge.mjs && node --conditions=react-server --import=tsx scripts/check-v3-merge-media.ts && node --import=tsx scripts/check-v3-final-merge-ui.mjs",
+    "test:ugc-v3-merge:layout": "node --import=tsx scripts/check-v3-merge-layout.mjs",
+    "test:ugc-v3-connections": "node --conditions=react-server --import=tsx scripts/check-v3-connection-recovery.mjs",
+    "diagnose:ugc-v3-connections": "node --conditions=react-server --import=tsx scripts/diagnose-v3-connections.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1148.0",

@@ -113,6 +113,7 @@ export function V3WorkflowProgress({ workspace, productRequired, busy, locked, e
         </> : <p>{workspace.packageStale ? "The saved package is out of date. Rebuild it after approving current inputs." : "Build a Generation Package to inspect its video prerequisites."}</p>}
       </TechnicalSection>
       <TechnicalSection title="Final Video details" icon={<Video aria-hidden="true" className="size-4" />}>
+        {workspace.tasks.filter(t => t.kind === "join").map(t => <Fields key={t.id} values={{ "Merge task": t.status, "Merge stage": t.mergeStage, "Merge error": t.errorCode }} />)}
         {!workspace.runs.length && <p>No video-generation request has been saved yet.</p>}
         {workspace.runs.map((run, index) => <article key={run.id} className="min-w-0 space-y-3 border-border [&+article]:border-t [&+article]:pt-3">
           <h3 className="text-xs font-semibold text-foreground">{run.segmentId === "joined" ? "Joined final video" : `Video attempt ${index + 1}`}{run.packageId !== p?.packageId || !run.current ? " · Previous saved work" : ""}</h3>

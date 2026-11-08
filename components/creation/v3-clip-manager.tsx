@@ -29,6 +29,7 @@ import { uncheckedQuality } from "@/lib/final-video-generation-v3/runtime-contra
 import { videoExecutionLabel } from "@/lib/final-video-generation-v3/video-progress";
 import { videoRequestBlocker } from "@/lib/final-video-generation-v3/video-request-status";
 import type { StudioMode } from "@/lib/studio-mode/contract";
+import { V3MergeReview } from "./v3-merge-review";
 import { useStudioPanels } from "./studio-workspace-panels";
 
 type Action = (
@@ -565,23 +566,7 @@ export function V3ClipManager({
           );
         })}
       </ol>
-      {group.readyForMerging && (
-        <div
-          role="status"
-          className="flex items-start gap-2 rounded-xl border border-primary/20 bg-primary/5 p-3 text-sm text-primary"
-        >
-          <Check aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
-          <div>
-            <p className="font-medium">
-              All clips approved — ready for merging.
-            </p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Ordered clips are saved for Milestone 6. The final video is not
-              complete yet.
-            </p>
-          </div>
-        </div>
-      )}
+      <V3MergeReview workspace={workspace} act={act} disabled={disabled || !!pending || !!workspace.proDurationRetained} />
       <Dialog
         open={!!confirmation}
         onOpenChange={(open) => {

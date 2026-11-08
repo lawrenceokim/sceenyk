@@ -13,6 +13,7 @@ import { runtimePreflight } from "./execution-package";
 import { locationDocument } from "./location-runtime";
 import { latestArtifact } from "./generation-context";
 import { packageClips, clipAuthority } from "./clip-runtime";
+import { ServiceOperationError } from "@/lib/diagnostics/service-failure";
 
 export async function inspectRuntime(w: RuntimeWorkspace, segmentId?: string) {
   const docValue = w.packages.at(-1)?.document;
@@ -22,12 +23,15 @@ export async function inspectRuntime(w: RuntimeWorkspace, segmentId?: string) {
   const authority = clips && segmentId ? clipAuthority(w, doc, segmentId) : w.runtimeAuthorizations.filter(a => a.document.packageId === doc.id).at(-1)?.document;
   const issues = quote ? quote.segments.flatMap(s => higgsfieldRequestIssues(s.body, doc.source.references, quote.validityEvidence, new Date().toISOString(), s.model)) : ["COST_ESTIMATE_UNAVAILABLE"];
   if (clips) {
-    try { await new V3Store().rpc("ugc_v3_clip_setup", {}); } catch { issues.push("V3_CLIP_SETUP_REQUIRED"); }
+    try { if (await new V3Store().rpc("ugc_v3_clip_setup", {}) !== true) issues.push("V3_CLIP_SETUP_REQUIRED"); }
+    catch (error) { if (error instanceof ServiceOperationError && error.code !== "V3_CLIP_SETUP_REQUIRED") throw error; issues.push("V3_CLIP_SETUP_REQUIRED"); }
   }
   let deliveryReady = false;
   try { videoDeliveryBindings(w, doc); deliveryReady = true; } catch { issues.push("V3_DELIVERY_BINDING_INVALID"); }
-  try { await new V3Store().rpc("ugc_v3_video_setup", {}); } catch { issues.push("V3_VIDEO_SETUP_REQUIRED"); }
-  try { await new V3Store().rpc("ugc_v3_background_setup", {}); } catch { issues.push("V3_BACKGROUND_SETUP_REQUIRED"); }
+  try { if (await new V3Store().rpc("ugc_v3_video_setup", {}) !== true) issues.push("V3_VIDEO_SETUP_REQUIRED"); }
+  catch (error) { if (error instanceof ServiceOperationError && error.code !== "V3_VIDEO_SETUP_REQUIRED") throw error; issues.push("V3_VIDEO_SETUP_REQUIRED"); }
+  try { if (await new V3Store().rpc("ugc_v3_background_setup", {}) !== true) issues.push("V3_BACKGROUND_SETUP_REQUIRED"); }
+  catch (error) { if (error instanceof ServiceOperationError && error.code !== "V3_BACKGROUND_SETUP_REQUIRED") throw error; issues.push("V3_BACKGROUND_SETUP_REQUIRED"); }
   const brief = await projectBrief(w.project.owner_user_id, w.project.project_id), originals = await referenceOriginals(w.project.owner_user_id, w.project.project_id);
   const config = v3TransportConfig(), currentIds = approvedArtifacts(w, brief, originals).map(a => a.id);
   if (!/^[^\s:]+:[^\s:]+$/.test(config.credentials) || !config.accountScope) issues.push("HIGGSFIELD_CREDENTIALS_REQUIRED");

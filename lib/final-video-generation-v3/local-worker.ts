@@ -6,6 +6,8 @@ import { assertV3Access, v3OwnedAccessEnabled, v3TransportConfig } from "./runti
 import { runV3Task } from "./worker";
 import { V3Store } from "./runtime-store";
 import { processV3QueueBatch } from "./background-worker";
+import { withV3ConnectionRecovery } from "./connection-recovery";
+import { v3DatabaseFailure } from "./database-errors";
 
 export function referenceContractDiagnostic() {
   return { active: process.env.UGC_V3_ENABLED === "1", provider: "openai", model: process.env.OPENAI_V3_IMAGE_MODEL?.trim() || null,
@@ -29,18 +31,20 @@ export async function runLocalV3Worker(args: string[]) {
   try {
     console.info("UGC_LOCAL_V3_WORKER_READY");
     let after: string | null = null;
+    const pausedProjects = new Set<string>();
     do {
+      const completed = await withV3ConnectionRecovery(async () => {
       if (!projectId) {
-        const result = await processV3QueueBatch(new V3Store(), { after, ownerId: owner, concurrency: 2, signal: shutdown.signal });
+        const result = await processV3QueueBatch(new V3Store(), { after, ownerId: owner, concurrency: 2, signal: shutdown.signal, pausedProjects });
         after = result.after;
-        for (const failure of result.failures) console.error("V3_WORKER_PROJECT_PAUSED", failure);
+        for (const failure of result.failures) console.error("V3_WORKER_PROJECT_PAUSED", JSON.stringify(failure));
       } else {
         const db = createDatabaseClient() as unknown as { from(table: string): {
           select(columns: string): { eq(column: string, value: string): PromiseLike<{ data: unknown; error: unknown }> & { eq(column: string, value: string): PromiseLike<{ data: unknown; error: unknown }> } };
         } };
         const query = db.from("ugc_v3_projects").select("project_id,owner_user_id").eq("project_id", projectId);
         const result = await (owner ? query.eq("owner_user_id", owner) : query);
-        if (result.error) throw new Error("V3_WORKER_REGISTRY_UNAVAILABLE");
+        if (result.error) v3DatabaseFailure(result.error, "worker_registry");
         const projects = z.array(z.object({ project_id: z.uuid(), owner_user_id: z.uuid() })).parse(result.data);
         if (projectId && !projects.length) throw new Error("FRESH_V3_PROJECT_REQUIRED");
         for (const project of projects) {
@@ -48,6 +52,9 @@ export async function runLocalV3Worker(args: string[]) {
           await runV3Task(project.project_id, project.owner_user_id, undefined, AbortSignal.any([shutdown.signal, AbortSignal.timeout(14 * 60_000)]));
         }
       }
+      return true;
+      }, { signal: shutdown.signal, once: args.includes("--once") });
+      if (!completed) break;
       if (args.includes("--once") || shutdown.signal.aborted) break;
       await new Promise<void>(resolve => {
         const done = () => { clearTimeout(timer); shutdown.signal.removeEventListener("abort", done); resolve(); };

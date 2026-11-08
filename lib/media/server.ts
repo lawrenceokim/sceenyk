@@ -16,6 +16,7 @@ import { z } from "zod";
 import { ugcV1LimitMessages } from "@/lib/projects/ugc-v1";
 import { allowsProCharacters } from "@/lib/projects/pro-characters";
 import { readOwnedUgcV1References } from "@/lib/projects/ugc-v1-server";
+import { ServiceOperationError } from "@/lib/diagnostics/service-failure";
 
 export class MediaAccessError extends Error {
   constructor(
@@ -26,8 +27,7 @@ export class MediaAccessError extends Error {
     this.name = "MediaAccessError";
   }
 }
-const unavailable = () =>
-  new MediaAccessError(
+const unavailable = (error?: unknown) => error ? new ServiceOperationError(error, "database", "project_media") : new MediaAccessError(
     "UNAVAILABLE",
     "Your project media couldn’t be loaded. Please try again.",
   );
@@ -62,7 +62,7 @@ async function ownedContext(projectId: string) {
     .eq("owner_user_id", user.id)
     .eq("status", "draft")
     .maybeSingle();
-  if (error) throw unavailable();
+  if (error) throw unavailable(error);
   if (!data) throw notFound();
   return { user, database };
 }
@@ -75,7 +75,7 @@ async function ownedAsset(projectId: string, assetId: string) {
     .eq("project_id", projectId)
     .eq("owner_user_id", context.user.id)
     .maybeSingle();
-  if (error) throw unavailable();
+  if (error) throw unavailable(error);
   if (!data) throw notFound();
   return { ...context, asset: data };
 }
@@ -99,7 +99,8 @@ export async function listOwnedAssets(input: unknown): Promise<ProjectAsset[]> {
     .eq("owner_user_id", user.id)
     .order("created_at")
     .order("id");
-  if (error || !data) throw unavailable();
+  if (error) throw unavailable(error);
+  if (!data) throw unavailable();
   return data.map(toAsset);
 }
 export async function authorizeOwnedUpload(
@@ -129,7 +130,7 @@ export async function authorizeOwnedUpload(
       .eq("upload_request_id", requestId)
       .maybeSingle();
   let { data: asset, error } = await findRequest();
-  if (error) throw unavailable();
+  if (error) throw unavailable(error);
   if (studioRole !== "freestyle") {
     const references = await readOwnedUgcV1References(database, user.id, projectId);
     if (!references) throw unavailable();
@@ -166,7 +167,8 @@ export async function authorizeOwnedUpload(
       asset = inserted.data;
       error = inserted.error;
     }
-    if (error || !asset) throw unavailable();
+    if (error) throw unavailable(error);
+    if (!asset) throw unavailable();
   }
   if (
     asset.original_filename !== filename ||
@@ -239,7 +241,7 @@ export async function finalizeOwnedUpload(
   if (error) {
     if (asset.studio_role !== "freestyle" && error.code === "23514" && error.message === ugcV1LimitMessages[asset.studio_role])
       throw new MediaAccessError("INVALID_INPUT", ugcV1LimitMessages[asset.studio_role]);
-    throw unavailable();
+    throw unavailable(error);
   }
   // Concurrent finalizers may already have committed the same verified result.
   const result = data ?? (await ownedAsset(projectId, assetId)).asset;
@@ -270,7 +272,7 @@ export async function removeOwnedStudioReference(input: unknown): Promise<Projec
     .eq("id", assetId).eq("project_id", projectId).eq("owner_user_id", user.id)
     .in("studio_role", ["character", "product"])
     .select("*").maybeSingle();
-  if (error) throw unavailable();
+  if (error) throw unavailable(error);
   if (!data) throw notFound();
   return toAsset(data);
 }
