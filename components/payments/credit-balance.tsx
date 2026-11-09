@@ -6,18 +6,30 @@ import { useAuth } from "@clerk/nextjs";
 import { useAuthAvailable } from "@/components/auth/auth-availability";
 import { creditSummaryAction } from "@/app/actions/payments";
 import { creditRefreshKey } from "@/lib/accounting/client-events";
+import { generationCreditsFromMicrousd } from "@/lib/payments/credit-pricing";
+import { CreditTopUp } from "./credit-top-up";
+
+export function GenerationCreditEstimate({ costMicrousd }: { costMicrousd: number | null }) {
+  const configured = useAuthAvailable();
+  if (costMicrousd === null) return <p className="text-xs text-muted-foreground">Generation credit estimate unavailable.</p>;
+  const requiredCredits = generationCreditsFromMicrousd(costMicrousd);
+  return <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2 text-xs">
+    <p>Estimated paid generation requirement: <strong>{requiredCredits.toLocaleString()} credits</strong>.</p>
+    {configured && <AccountBalance compact requiredCredits={requiredCredits} />}
+  </div>;
+}
 
 export function CreditBalance({ compact = false }: { compact?: boolean }) {
   const configured = useAuthAvailable();
   return configured ? <AccountBalance compact={compact} /> : <span>—</span>;
 }
 
-function AccountBalance({ compact }: { compact: boolean }) {
+function AccountBalance({ compact, requiredCredits }: { compact: boolean; requiredCredits?: number }) {
   const { userId, isLoaded, isSignedIn } = useAuth();
-  return isLoaded && isSignedIn ? <BalanceRead key={userId} compact={compact} /> : compact ? null : <span>—</span>;
+  return isLoaded && isSignedIn ? <BalanceRead key={userId} compact={compact} requiredCredits={requiredCredits} /> : compact ? null : <span>—</span>;
 }
 
-function BalanceRead({ compact }: { compact: boolean }) {
+function BalanceRead({ compact, requiredCredits }: { compact: boolean; requiredCredits?: number }) {
   const [summary, setSummary] = useState<{ available: number; lowBalance: boolean } | null>(null);
   const [loaded, setLoaded] = useState(false);
   useEffect(() => {
@@ -46,7 +58,7 @@ function BalanceRead({ compact }: { compact: boolean }) {
     };
   }, []);
   const balance = summary?.available.toLocaleString() ?? (compact ? loaded ? "Unavailable" : "Loading…" : "—");
-  return compact ? <Link href="/credits" className={`
+  return compact ? <><Link href="/credits" className={`
       [@layer_components]:inline-flex [@layer_components]:min-h-[var(--control-height)] [@layer_components]:items-center
       [@layer_components]:gap-[var(--space-1)] [@layer_components]:text-[color:var(--muted-foreground)]
       [@layer_components]:text-[length:var(--text-body-sm)] [@layer_components]:font-[500]
@@ -65,5 +77,10 @@ function BalanceRead({ compact }: { compact: boolean }) {
     `} aria-label={`Paid credits: ${balance}. Buy credits`}>
     <span aria-live="polite">Paid credits: {!loaded && !summary ? <Skeleton className="inline-block h-4 w-10 align-middle" /> : balance}</span>
     {summary?.lowBalance && <span className="text-warning-foreground">Low balance</span>}
-  </Link> : <span aria-live="polite">{!loaded && !summary ? <Skeleton className="inline-block h-4 w-10 align-middle" /> : balance}</span>;
+  </Link>
+    {requiredCredits !== undefined && summary && summary.available < requiredCredits && <>
+      <span className="text-warning-foreground">Insufficient paid credits. Free allowance stays separate.</span>
+      <CreditTopUp />
+    </>}
+  </> : <span aria-live="polite">{!loaded && !summary ? <Skeleton className="inline-block h-4 w-10 align-middle" /> : balance}</span>;
 }

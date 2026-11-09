@@ -1,8 +1,8 @@
 import "server-only";
 import type { CreditPack } from "./types";
 
-// Temporary hackathon test values, never approved production economics.
-// Change IDs when changing values; existing purchases retain their snapshot.
+// Historical fixed-pack identifiers retained for compatibility fixtures.
+// New checkout uses custom USD pricing; saved purchases keep their own snapshot.
 export const sandboxCreditPacks: readonly CreditPack[] = Object.freeze([
   Object.freeze({ id: "sandbox-small-v1", name: "Small Test Pack", amount: "1.00", currency: "USD", credits: 100 }),
   Object.freeze({ id: "sandbox-medium-v1", name: "Medium Test Pack", amount: "3.00", currency: "USD", credits: 350 }),

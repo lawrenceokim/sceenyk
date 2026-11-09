@@ -1,5 +1,23 @@
 # Commercial cost contract
 
+## Stage 1 custom credit pricing (2026-11-09)
+
+**Implemented in source; manual migration 101 and Sandbox/visual acceptance pending.** This owner-approved Stage 1 refines the earlier hackathon roadmap to deliver custom USD credit purchases without changing Pro or video execution. **100 Sceenyk credits = $1 of generation cost.** This supersedes earlier statements that no conversion is approved and new fixed Sandbox packs are required. Historical purchases keep their frozen values.
+
+For payment `P` in USD cents, calculate estimated PayPal fee `round-half-up(P × paypal_bps / 10000) + fixed_cents`, then Sceenyk payment commission `round-half-up(P × commission_bps / 10000)`. Both percentage fees use the total payment independently. Generation funds are `P − PayPal fee − commission`; credits are `floor(generation_funds_cents × 100 / 100)`. Reject purchases yielding fewer than one credit. Shared integer-only preview and independent server/SQL calculation avoid floating-point rounding; the immutable purchase retains rates, total, both fees, net and credits.
+
+Server-only settings are `SCEENYK_CREDIT_PAYPAL_FEE_BPS` (default **349**), `SCEENYK_CREDIT_PAYPAL_FIXED_FEE_CENTS` (**49**) and `SCEENYK_CREDIT_COMMISSION_BPS` (**100**). Explicit invalid/empty configuration fails closed. Defaults are an estimated US domestic PayPal Checkout rate, not measured processor settlement or a worldwide fee guarantee: [PayPal US merchant fees](https://www.paypal.com/us/business/paypal-business-fees). They can be changed for merchant-specific rates without repricing saved purchases. The payment commission is independent of Marketplace's existing 10% share.
+
+Examples: **$1.00 → 47 credits** ($0.52 estimated PayPal fee + $0.01 commission); **$5.00 → 429 credits** ($0.66 + $0.05); **$10.00 → 906 credits** ($0.84 + $0.10). Under defaults, $0.53 buys one credit and $0.52 buys none. The existing database maximum remains **$1,000 per purchase**, a technical safeguard rather than new production economics. Users see exact credits and total before checkout; there is no additional fee added to their entered payment.
+
+Generation displays convert the existing provider/workflow estimate using `ceil(microUSD × 100 / 1000000)` whole credits: **$2.06 → 206 credits**; a linear five-second **$1.03 → 103 credits** is illustrative. Prefer the saved provider/package/clip estimate; no provider request or fabricated flat video tariff is added. Higher actual estimates show their corresponding credits. V3's estimate/approval/worker/settlement flow remains unchanged: displaying credits and an insufficient-paid-balance top-up is not implementation of V3 wallet reservation/debit, demo enforcement, Pro access or global caps. Those remain separately scoped pending work.
+
+## Hackathon pricing boundary (2026-11-09)
+
+**Original hackathon planning boundary; Stage 1 above now implements custom purchases and approves the conversion.** Follow the [canonical policy](overview.md#paypal-ai-hackathon-commercial-policy-2026-11-09): two lifetime free 5-second/480p generations, purchased credits thereafter, and a separate one-month Pro pass without included credits or unlimited usage. Demo mode restricts every user to 5 seconds/480p. Earlier 10-second free limits and exclusions of Pro membership below are superseded policy retained as dated source history.
+
+Keep provider USD estimates/actual charges, Sceenyk retail credit prices and Pro access prices distinct. V3 estimates/ceilings do not prove wallet integration. Before paid-credit admission, approve a versioned measured cost-to-credit tariff, explicitly include any charged preparation stages and show exact server-owned credits before consent. Missing/unverified rates block new spend despite a positive wallet or Pro pass. Preserve five-minute quote expiry, immutable inputs, independent provider ceilings and Sandbox pack snapshots. Pro price, normal production limits/rates and spending-cap values remain Needs confirmation. [Accounting](accounting.md#hackathon-accounting-and-spending-protection-2026-11-09) and [payment rollout](payments.md#hackathon-pro-pass-and-production-transition-2026-11-09) own the detailed plan.
+
 ## V3 Phase 3 authenticated quotes (2026-10-29)
 
 [V3 runtime pricing](generation-v3-phase3.md#exact-transport-and-cost-lifecycle) captures a quote UUID, exact canonical request body/hash, reviewed account scope, authenticated provider USD amount/response hash, timestamp and five-minute local expiry. Freeze estimates independently from separate reviewed segment/package ceilings; sum segment prices and allocate authority without increasing the aggregate limit. Unknown/expired prices block generation. OpenAI upstream charges are separate from the displayed Higgsfield estimate; no new customer-credit tariff, provider receipt or actual charge is fabricated. No real estimate was requested during implementation.
@@ -73,9 +91,9 @@ Server-only SCEENYK_MARKETPLACE_DEMO_FEE_BPS defaults to 0 (0%) and accepts inte
 Cards/detail/payment review label creator adoption price separately from estimated Sceenyk generation credits. A purchase unlocks the reusable template and one adopted project; it includes no future generation usage and grants no AI credits. Generation estimates remain informational, may be unavailable, and never authorize a job. Actual generation still requires the existing server-issued quote and ordinary free/paid entitlement. Final rendering remains deferred.
 
 
-Approved 2026-10-11. Credits are internal Sceenyk usage units, separate from money, PayPal balances and provider billing units. No fixed dollar conversion exists. Every application user retains two lifetime free generations of at most ten seconds, under the unchanged [accounting contract](accounting.md).
+Credits remain Sceenyk usage units, distinct from money, PayPal balances and provider billing units. Stage 1 above now approves 100 credits per $1 of generation cost; earlier no-conversion statements are superseded. The hackathon free rule remains two separate lifetime 5-second/480p generations, with runtime enforcement still pending.
 
-**Commercial decision approved 2026-10-13:** the primary model is [pay-as-you-go credits](overview.md#approved-commercial-model--pay-as-you-go-2026-10-13). Users buy one-time packs and top up when they need more. Purchased credits do not expire unless a future explicit product decision changes this; they are not monthly allowances or a month of access. Monthly subscriptions and recurring plans are outside current scope. Larger packs may eventually offer better value, but no production discount schedule or tariff is approved. This supersedes earlier monthly-price/allocation assumptions without changing the implemented quote/admission contract.
+Pay-as-you-go packs, manual top-ups and non-expiring purchased credits remain under the [current hackathon policy](overview.md#paypal-ai-hackathon-commercial-policy-2026-11-09). A separate finite Pro pass is now approved as planned work; it supplies no credits or unlimited usage. Production pack values, larger-pack discounts, tariffs and Pro price remain unresolved. Recurring billing and monthly allocations remain outside scope.
 
 ## Server boundary and flow
 
@@ -109,7 +127,7 @@ Development and hackathon payment testing uses **PayPal Sandbox only**. The impl
 
 - Production credit-pack prices and any larger-pack value/discount schedule.
 - Exact production credits per generation/type/duration/model/resolution/feature.
-- Model multipliers, provider-cost markup and conversion policy.
+- Any future model multipliers or provider-cost markup; Stage 1 conversion is now fixed at 100 credits/$1 generation cost, with no extra generation markup approved here.
 - Production Marketplace listing-price bounds and detailed payout/dispute/liability operations. Fee/share 10%/90%, USD minimum withdrawal $5 and seven-day request-based hold are approved above; implementation remains separate.
 
 ## Marketplace price display and unresolved economics (approved product model, 2026-10-13)
@@ -118,4 +136,4 @@ The creator's listing adoption price and Sceenyk's estimated generation credits 
 
 Production Marketplace listing-price bounds remain unresolved. Fee/share 10%/90%, USD earnings/withdrawals, minimum withdrawal $5, immediate reservation and a seven-day hold from withdrawal request are approved above. The server must enforce them in the future implementation; no money/AI-credit conversion is introduced. Production generation tariffs and credit-pack prices remain independently unresolved. The first Marketplace unit covers free/template adoption and does not change the existing pricing service or credit accounting.
 
-Remaining commercial work: measure full-pipeline costs and approve production pack prices and retail generation credit rules. Sandbox one-time purchases are already Complete within their recorded acceptance; monthly subscriptions are not a prerequisite or next commercial unit. Membership and auto-recharge remain optional future decisions. No new implementation begins here.
+Remaining commercial work follows the [hackathon implementation stages](progress-tracker.md#paypal-ai-hackathon-credits-and-pro-plan-2026-11-09): approve measured tariffs, Pro terms and caps, then connect wallet and provider admission securely. Existing Sandbox purchase acceptance remains distinct. Recurring billing and auto-recharge are unapproved; no implementation begins here.

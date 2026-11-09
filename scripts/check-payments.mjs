@@ -1,4 +1,5 @@
-// Actual SQL and payment service/REST adapter; explicit PayPal/Clerk fixtures.
+// Legacy fixed-pack purchase recovery compatibility, actual SQL/REST adapter.
+// New custom-purchase coverage: node scripts/check-custom-credit-purchases.mjs
 // No hosted writes, real payment, browser approval or multi-connection claim.
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -79,6 +80,16 @@ const fetchFixture = async (url, init) => {
 const load = typescriptLoader({ '@/lib/db/server': { createDatabaseClient: () => db }, '@/lib/auth/ensure-app-user': { ensureAppUser: async () => { if (!owner) throw new Error('Unauthenticated'); return { id: owner }; } } }, { fetch: fetchFixture, Headers, Request, Response });
 const service = load('lib/payments/server.ts'), client = load('lib/payments/paypal/client.ts'), config = load('lib/payments/paypal/config.ts');
 const wallet = () => service.getCreditWallet();
+// Seed historical terms through the trusted old RPC, then exercise the current
+// owned-ID resume API. Fixed packs are no longer accepted for new checkout.
+async function createLegacyOrder(packId) {
+  if (!owner) throw new Error('Unauthenticated');
+  const pack = load('lib/payments/packs.ts').getSandboxPack(packId);
+  const purchase = await call('prepare_credit_purchase', { p_owner_user_id: owner,
+    p_pack_id: pack.id, p_pack_name: pack.name, p_amount_minor: Math.round(Number(pack.amount) * 100),
+    p_currency: pack.currency, p_credits: pack.credits });
+  return service.createCreditOrder({ purchaseId: purchase.id });
+}
 const prepare = async (user = owner, pack = 'fixture', credits = 100) => call('prepare_credit_purchase', { p_owner_user_id: user, p_pack_id: pack, p_pack_name: pack, p_amount_minor: 100, p_currency: 'USD', p_credits: credits });
 const fulfil = (p, capture = 'CAPTURE1234567890', changes = {}) => call('fulfil_paypal_purchase', { p_owner_user_id: p.owner_user_id, p_order_id: p.paypal_order_id, p_capture_id: capture, p_amount_minor: p.amount_minor, p_currency: p.currency, ...changes });
 async function denied(name, sql, args = [], role = 'authenticated') {
@@ -105,10 +116,10 @@ try {
   check('zero paid balance has central low-credit notice and empty activity', (await wallet()).lowBalance && (await wallet()).activity.length === 0);
   for (const claim of [{ packId: 'sandbox-small-v1', amount: '0.01' }, { packId: 'sandbox-small-v1', credits: 99999 }, { packId: 'sandbox-small-v1', owner: b }, { packId: 'unknown' }]) await rejects('browser commercial/owner tampering rejected', () => service.createCreditOrder(claim));
   check('invalid input causes no PayPal HTTP', httpCalls === 0);
-  owner = null; await rejects('signed out create denied', () => service.createCreditOrder({ packId: 'sandbox-small-v1' })); owner = a;
-  const created = await service.createCreditOrder({ packId: 'sandbox-small-v1' });
+  owner = null; await rejects('signed out create denied', () => createLegacyOrder('sandbox-small-v1')); owner = a;
+  const created = await createLegacyOrder('sandbox-small-v1');
   check('Sandbox order redirects to Sandbox and grants nothing', created.approvalUrl.startsWith('https://www.sandbox.paypal.com/') && (await wallet()).available === 0);
-  check('repeat create reuses order/request/snapshot', (await service.createCreditOrder({ packId: 'sandbox-small-v1' })).orderId === created.orderId && creates === 1);
+  check('repeat create reuses order/request/snapshot', (await createLegacyOrder('sandbox-small-v1')).orderId === created.orderId && creates === 1);
   check('unapproved reconciliation grants nothing', (await service.completeCreditOrder({ orderId: created.orderId })).status === 'pending' && captures === 0);
   owner = b; const beforeB = httpCalls;
   await rejects('B cannot capture A order', () => service.completeCreditOrder({ orderId: created.orderId }));
@@ -145,21 +156,21 @@ try {
   await denied('ledger immutable even to SQL owner', 'delete from credit_ledger where id=$1', [ledger.id], 'postgres');
   await denied('completed purchase immutable even to SQL owner', "update credit_purchases set status='failed' where id=$1", [p.id], 'postgres');
   await denied('purchase snapshot immutable', 'update credit_purchases set amount_minor=1 where id=$1', [p.id], 'postgres');
-  const cancelled = await service.createCreditOrder({ packId: 'sandbox-medium-v1' });
+  const cancelled = await createLegacyOrder('sandbox-medium-v1');
   check('cancelled unapproved payment grants zero', (await service.completeCreditOrder({ orderId: cancelled.orderId }, true)).status === 'cancelled' && (await wallet()).available === 100);
   orders.get(cancelled.orderId).status = 'APPROVED';
   check('cancelled order not newly captured by reconciliation', (await service.completeCreditOrder({ orderId: cancelled.orderId })).status === 'cancelled' && captures === 1);
-  const failed = await service.createCreditOrder({ packId: 'sandbox-large-v1' }); orders.get(failed.orderId).status = 'VOIDED';
+  const failed = await createLegacyOrder('sandbox-large-v1'); orders.get(failed.orderId).status = 'VOIDED';
   check('verified failed order grants zero', (await service.completeCreditOrder({ orderId: failed.orderId })).status === 'failed' && (await wallet()).available === 100);
-  const declined = await service.createCreditOrder({ packId: 'sandbox-large-v1' });
+  const declined = await createLegacyOrder('sandbox-large-v1');
   const declinedOrder = orders.get(declined.orderId); declinedOrder.status = 'COMPLETED';
   declinedOrder.purchase_units[0].payments = { captures: [{ id: 'CAPTURE5555555555', status: 'DECLINED', final_capture: true, amount: declinedOrder.purchase_units[0].amount }] };
   check('completed order with declined capture fails without credit', (await service.completeCreditOrder({ orderId: declined.orderId })).status === 'failed' && (await wallet()).available === 100);
-  const recover = await service.createCreditOrder({ packId: 'sandbox-small-v1' }); orders.get(recover.orderId).status = 'APPROVED'; lostCapture = true;
+  const recover = await createLegacyOrder('sandbox-small-v1'); orders.get(recover.orderId).status = 'APPROVED'; lostCapture = true;
   check('lost capture response recovers verified order once', (await service.completeCreditOrder({ orderId: recover.orderId })).status === 'completed' && (await wallet()).available === 200 && captures === 2);
   lostCreate = true;
-  await rejects('lost create response remains pending', () => service.createCreditOrder({ packId: 'sandbox-small-v1' }));
-  const createRecovered = await service.createCreditOrder({ packId: 'sandbox-small-v1' });
+  await rejects('lost create response remains pending', () => createLegacyOrder('sandbox-small-v1'));
+  const createRecovered = await createLegacyOrder('sandbox-small-v1');
   check('create retry uses original request ID without second order', creates === 6 && !!createRecovered.orderId);
   orders.get(createRecovered.orderId).status = 'APPROVED';
   const event = { id: 'WH-fixture', event_type: 'CHECKOUT.ORDER.APPROVED', resource: { id: createRecovered.orderId } };
@@ -179,7 +190,7 @@ try {
   check('actual webhook handler refuses unsigned event', (await route.POST(new Request('http://localhost/api/payments/paypal/webhook', { method: 'POST', body: raw }))).status === 400);
   check('actual verified webhook retries are idempotent', (await route.POST(new Request('http://localhost/api/payments/paypal/webhook', { method: 'POST', headers, body: raw }))).status === 200 && (await wallet()).available === 300);
   check('oversized webhook refused', (await route.POST(new Request('http://localhost/api/payments/paypal/webhook', { method: 'POST', headers, body: 'x'.repeat(262145) }))).status === 503);
-  const notYetApproved = await service.createCreditOrder({ packId: 'sandbox-large-v1' });
+  const notYetApproved = await createLegacyOrder('sandbox-large-v1');
   const delayedEvent = { id: 'WH-delayed', event_type: 'CHECKOUT.ORDER.APPROVED', resource: { id: notYetApproved.orderId } };
   check('authentic approval with not-yet-visible order state requests redelivery', (await route.POST(new Request('http://localhost/api/payments/paypal/webhook', { method: 'POST', headers, body: JSON.stringify(delayedEvent) }))).status === 503 && (await wallet()).available === 300);
   const previousFulfil = db.rpc;
@@ -196,7 +207,7 @@ try {
   }
   const unsafe = structuredClone(actualOrder); unsafe.links[0].href = 'https://www.paypal.com/checkoutnow?token=' + unsafe.id;
   assert.throws(() => client.approvalUrl(unsafe)); count++;
-  const approved = await service.createCreditOrder({ packId: 'sandbox-small-v1' }); orders.get(approved.orderId).status = 'APPROVED';
+  const approved = await createLegacyOrder('sandbox-small-v1'); orders.get(approved.orderId).status = 'APPROVED';
   const recovered = await service.reconcileOwnedCreditOrders();
   check('owned on-demand reconciliation recovers approved payment', recovered.recovered === 1 && (await wallet()).available === 1050);
   check('recovery identifies the verified owned purchase for exact success copy', recovered.recoveredOrders.length === 1 && recovered.recoveredOrders[0] === approved.orderId);
@@ -208,7 +219,7 @@ try {
   const paidReservation = await one('select * from generation_reservations where job_id=$1', [paidJob]);
   const paidLedger = await one('select * from credit_ledger where job_id=$1', [paidJob]);
   check('purchased credits fund future existing quote admission', (await wallet()).available === 1040 && (await wallet()).reserved === 10 && paidLedger.type === 'reservation');
-  const alongside = await service.createCreditOrder({ packId: 'sandbox-medium-v1' }); orders.get(alongside.orderId).status = 'APPROVED';
+  const alongside = await createLegacyOrder('sandbox-medium-v1'); orders.get(alongside.orderId).status = 'APPROVED';
   await service.completeCreditOrder({ orderId: alongside.orderId });
   check('purchase leaves paid reservation and original movement immutable', (await wallet()).available === 1390 && (await wallet()).reserved === 10 && JSON.stringify(await one('select * from generation_reservations where job_id=$1', [paidJob])) === JSON.stringify(paidReservation) && JSON.stringify(await one('select * from credit_ledger where job_id=$1', [paidJob])) === JSON.stringify(paidLedger));
   await call('claim_generation_job', { p_job_id: paidJob, p_run_id: 'fixture-run' });
@@ -218,7 +229,7 @@ try {
   check('activity includes authoritative reservation and restoration movements', (await wallet()).activity.some(entry => entry.type === 'reservation' && entry.availableDelta === -10) && (await wallet()).activity.some(entry => entry.type === 'release' && entry.availableDelta === 10));
   const totals = await one('select sum(available_delta) as available,sum(reserved_delta) as reserved from credit_ledger where owner_user_id=$1', [a]);
   check('all purchase and generation ledger movements reconcile to balance', Number(totals.available) === 1400 && Number(totals.reserved) === 0);
-  const cancelledPaid = await service.createCreditOrder({ packId: 'sandbox-small-v1' });
+  const cancelledPaid = await createLegacyOrder('sandbox-small-v1');
   await service.completeCreditOrder({ orderId: cancelledPaid.orderId }, true);
   // Trusted completion can race cancellation, but never produces two effects.
   const cancelledRow = await one('select * from credit_purchases where paypal_order_id=$1', [cancelledPaid.orderId]);
@@ -230,7 +241,7 @@ try {
   check('authentic early webhook attaches lost-create identity then fulfils', (await wallet()).available === 1600 && (await one('select paypal_order_id from credit_purchases where id=$1', [early.id])).paypal_order_id === earlyOrderId);
   // Explicit provider fixtures: exercise verified PENDING/DENIED semantics,
   // which a successful real buyer payment does not naturally generate.
-  const pendingCapture = await service.createCreditOrder({ packId: 'sandbox-large-v1' });
+  const pendingCapture = await createLegacyOrder('sandbox-large-v1');
   const pendingOrder = orders.get(pendingCapture.orderId); pendingOrder.status = 'COMPLETED';
   pendingOrder.purchase_units[0].payments = { captures: [{ id: 'CAPTURE2222222222', status: 'PENDING', final_capture: true, amount: pendingOrder.purchase_units[0].amount }] };
   const pendingEvent = { id: 'WH-pending-fixture', event_type: 'PAYMENT.CAPTURE.PENDING', resource: { id: 'CAPTURE2222222222', supplementary_data: { related_ids: { order_id: pendingCapture.orderId } } } };
@@ -241,13 +252,13 @@ try {
   const deniedEvent = { ...pendingEvent, id: 'WH-denied-fixture', event_type: 'PAYMENT.CAPTURE.DENIED' };
   const deniedResponse = await route.POST(new Request('http://localhost/api/payments/paypal/webhook', { method: 'POST', headers, body: JSON.stringify(deniedEvent) }));
   check('verified denied notification persists failed purchase with zero credits', deniedResponse.status === 200 && (await wallet()).available === 1600 && (await one('select status from credit_purchases where id=$1', [pendingPurchase.id])).status === 'failed');
-  const completedOnly = await service.createCreditOrder({ packId: 'sandbox-large-v1' });
+  const completedOnly = await createLegacyOrder('sandbox-large-v1');
   const completedOrder = orders.get(completedOnly.orderId); completedOrder.status = 'COMPLETED';
   completedOrder.purchase_units[0].payments = { captures: [{ id: 'CAPTURE3333333333', status: 'COMPLETED', final_capture: true, amount: completedOrder.purchase_units[0].amount }] };
   const completedEvent = { id: 'WH-completed-only-fixture', event_type: 'PAYMENT.CAPTURE.COMPLETED', resource: { id: 'CAPTURE3333333333', supplementary_data: { related_ids: { order_id: completedOnly.orderId } } } };
   const completeDelivery = () => route.POST(new Request('http://localhost/api/payments/paypal/webhook', { method: 'POST', headers, body: JSON.stringify(completedEvent) }));
   check('completed capture alone fulfils once without any ORDER.COMPLETED notification', (await completeDelivery()).status === 200 && (await completeDelivery()).status === 200 && (await wallet()).available === 2250);
-  process.env.PAYPAL_ENVIRONMENT = 'live'; check('Live rejected explicitly', !config.isPayPalConfigured()); await rejects('Live cannot call PayPal', () => service.createCreditOrder({ packId: 'sandbox-small-v1' }));
+  process.env.PAYPAL_ENVIRONMENT = 'live'; check('Live rejected explicitly', !config.isPayPalConfigured()); await rejects('Live cannot call PayPal', () => createLegacyOrder('sandbox-small-v1'));
   process.env.PAYPAL_ENVIRONMENT = 'sandbox'; process.env.PAYPAL_RETURN_ORIGIN = 'http://attacker.invalid'; check('insecure nonlocal return URL rejected', !config.isPayPalConfigured());
   process.env.PAYPAL_RETURN_ORIGIN = 'http://localhost:3000';
   const savedPublicSecret = process.env.NEXT_PUBLIC_PAYPAL_CLIENT_SECRET;

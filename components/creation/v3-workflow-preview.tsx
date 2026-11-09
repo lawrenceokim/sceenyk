@@ -12,6 +12,7 @@ import { FinalVideoGenerate, FinalVideoReview } from "./v3-final-video-controls"
 import { finalVideoPresentation } from "./v3-final-video-state";
 import { shouldPollV3Video } from "@/lib/final-video-generation-v3/video-progress";
 import { StudioWorkflowGuidance } from "./studio-workflow-guidance";
+import { GenerationCreditEstimate } from "@/components/payments/credit-balance";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
@@ -1005,6 +1006,7 @@ export function V3WorkflowPreview({
                             : `~${money(workspace.multiClip ? p.estimatedCostMicrousd : p.displayEstimatedCostMicrousd ?? p.estimatedCostMicrousd)}`}
                           </p>
                         </div>
+                        <GenerationCreditEstimate costMicrousd={workspace.multiClip ? p.estimatedCostMicrousd : p.displayEstimatedCostMicrousd ?? p.estimatedCostMicrousd} />
                         {p.segmentCount > 1 && (
                           <ul className="space-y-1 text-sm">
                             {p.segments.map((s, i) => (

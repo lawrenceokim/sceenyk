@@ -1,5 +1,17 @@
 # UI Context
 
+## Credits & Billing main-content reference (2026-11-09)
+
+The supplied November 9 billing screenshot is the visual reference for the main region only: existing header with shortened subtitle, three-stat purple-tinted banner and original wallet illustration, compact amount/fee purchase card with highlighted credit row/right CTA, paired minimal history/activity cards, and a simple free-allowance footer. Keep 13px body/history rows with 12px timestamps, 16px card headings and 22px summary values within the existing 32px workspace heading hierarchy. Use semantic purple/border/card/status tokens, 14px card radii and container-based column changes. Preserve both left navigations and existing native scroll owners exactly; no shared shell geometry or stylesheet edits.
+
+The custom form has a billing-only presentation; its default editor/dialog presentation and shared integer math remain unchanged. All balances/allowances/history are real, with loading/error/retry states retained; sample screenshot numbers are not data. Sandbox/real-provider-cost disclosure stays in a short purchase footer. Details preserves saved fee information without repeated explanatory text. Source implementation is complete; actual responsive/theme/keyboard/payment-flow acceptance remains manual under Fast UI Development Mode. See the current tracker.
+
+## Stage 1 custom credit purchase UI (2026-11-09)
+
+**Source implemented; manual visual/workflow acceptance pending.** The existing Credits & Billing composition keeps its balance/free-allowance summary, history/activity, light/dark tokens, artwork and native page scrolling. A shared compact custom-USD form replaces fixed pack selection in both billing and the existing scrollbar-hidden top-up dialog. It shows total, independently rounded estimated PayPal fee, separate payment commission, net funds and exact whole credits before checkout; it rejects zero-credit amounts. Saved purchases show their frozen fee breakdown and resume by owned purchase ID, including legacy packs. Editor top-up still opens checkout separately and keeps the draft mounted. No new CSS or scroll owner is added.
+
+V3 package/clip estimates also show their 100-credits/$1 equivalent. The package shows owned paid balance and contextual top-up when insufficient, with free allowance separate. This is presentation only for generation: no change to provider/approval/locking/Pro/workers, no new wallet debit and no claim that pending demo enforcement is complete. [Canonical arithmetic](pricing.md#stage-1-custom-credit-pricing-2026-11-09) and [setup/acceptance limits](payments.md#stage-1-custom-usd-credit-checkout-2026-11-09) remain authoritative.
+
 ## Phase 2 M7 — consistent saved workflow presentation (2026-11-09)
 
 Keep the mounted Studio and existing layout. Reconcile retained workflow flags after a committed Basic/Pro switch even when the drawer is closed. Current saved executions retain the Package Approved label after authority is consumed/expired; that label never grants another submission. Frozen Package maximum/consent inputs are disabled. Retained multi-character Basic controls match existing server restrictions. Existing tokens, controls, Preview and lock disclosures remain; responsive/theme/keyboard/visual acceptance is manual. [M7 checklist](m7-workflow-verification.md).
@@ -62,9 +74,9 @@ Current sizing refinement: expanded/mobile navigation segments occupy half the n
 
 **M1/M2 source implemented above; M3–M7 Planned / Not Started.** Follow the [canonical mode/UI specification](phase-2-basic-pro-studio.md#planned-studio-presentation). Independent character controls and their downgrade confirmation are implemented; style/duration/clip/merge controls below remain future requirements.
 
-Basic retains its controls. Pro adds named character inputs with independent Character Sheets, a five-card labelled style gallery, 10–120s duration choices, an ordered clip timeline with real saved status/review/regeneration, and Merge Videos after all required clips are approved. A single clip uses final review directly; multiple clips require explicit merging and final review in existing Preview/Workflow patterns. Keep ordinary controls free of provider/codec/hash details.
+Basic retains its controls. Pro adds named character inputs with independent Character Sheets, a five-card labelled style gallery, 10–120s duration choices, an ordered clip timeline with real saved status/review/regeneration, and Merge Videos after all required clips are approved. A single clip uses final review directly; multiple clips require explicit merging and final review in existing Preview/Workflow patterns. Keep ordinary controls free of provider/codec/hash details. These describe normal Studio capabilities; planned demo enforcement limits newly generated output in both modes to 5 seconds/480p under the current hackathon policy.
 
-Preserve purple accents, Inter, spacing, shared primitives, both themes, keyboard/focus/selection semantics, native scrolling and reduced motion. Use Tailwind and only existing `app/globals.css`. Both hackathon modes are freely selectable without upgrade/subscription UI; existing cost consent remains. [M3–M7 and their future responsive/manual acceptance](phase-2-basic-pro-studio.md#implementation-roadmap) remain plans; M1/M2 evidence is recorded separately.
+Preserve purple accents, Inter, spacing, shared primitives, both themes, keyboard/focus/selection semantics, native scrolling and reduced motion. Use Tailwind and only existing `app/globals.css`. The historical free Pro access assumption is superseded by the [current hackathon policy](overview.md#paypal-ai-hackathon-commercial-policy-2026-11-09); planned Pro access and demo controls must reflect server eligibility while preserving existing cost consent. [M3–M7 and their future responsive/manual acceptance](phase-2-basic-pro-studio.md#implementation-roadmap) remain plans; M1/M2 evidence is recorded separately.
 
 ## V3 Workflow Progress reference layout (2026-11-04)
 
@@ -640,7 +652,7 @@ Use a strong short headline, very short support copy and at most two primary CTA
 
 A limited number of major storytelling moments may layer/stack, reveal the preceding section or appear to move over it in depth. Suggested conceptual sequence: **Idea → Scene**, **Scene → Story / Production**, **Create → Publish → Earn**. Do not animate every section. Return to normal document scrolling for Pricing, final CTA and Footer. Preserve normal navigation and scrolling without scroll trapping; keep a readable reduced-motion/static alternative.
 
-Pricing retains the approved pay-as-you-go message, two separate lifetime free generations and one-time manual top-ups. Do not invent production prices, subscriptions or Live payment availability. Marketing aspirations must not imply that the deferred final renderer or other unavailable features are complete.
+Pricing follows the [current hackathon policy](overview.md#paypal-ai-hackathon-commercial-policy-2026-11-09): separate free usage, credit packs and finite Pro access, with truthful Sandbox/real-provider-cost disclosures. Do not invent prices or imply planned enforcement/Live readiness is implemented.
 
 ### Documentation education
 
@@ -848,9 +860,9 @@ Creator earnings uses the existing responsive cards and light/dark tokens for pe
 
 ## Approved commercial messaging (2026-10-13)
 
-Use **"Buy credits. Create what you need. Top up when you need more."** Current product intent is pay-as-you-go: two lifetime free generations remain, then users buy one-time credit packs and manually top up as needed. Credits are usage units, not monthly allowances or a month of access; purchased credits do not expire unless explicitly changed by a future product decision. Keep pre-confirmation generation cost and server-authoritative pricing. Larger-pack value differences remain an unapproved production pricing decision; existing Sandbox packs stay clearly labeled as test values.
+Use the [current hackathon policy](overview.md#paypal-ai-hackathon-commercial-policy-2026-11-09) for planned billing copy: clearly separate lifetime-free allowance, purchased-credit balance/activity and finite Pro access/expiry. Expose 5 seconds/480p for all demo users and explain restrictions before checkout/generation. Preserve pre-confirmation cost review, same-project top-up continuation and mounted creative state. Reuse existing tokens/primitives and app/globals.css; no screen or styling changes occur here.
 
-Monthly plans, recurring billing and monthly credit allocations are outside current scope. Illustrative subscription cards/navigation in design references are not current product requirements. Membership benefits and threshold-based auto-recharge are optional, unapproved future ideas. This documentation contract does not change application screens, copy, navigation or payment behavior.
+A one-month Pro pass is now approved as planned access, without included credits/unlimited generation or demo exemption. Recurring billing, monthly credit allocations and auto-recharge remain unapproved. UI must match server-owned entitlement/expiry and disable incompatible new operations without deleting existing work. Historical reference cards/navigation do not establish prices or implemented capabilities.
 
 ## Sandbox credits extension (2026-10-13)
 

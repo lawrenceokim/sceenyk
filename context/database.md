@@ -1,5 +1,11 @@
 # Development application identity
 
+## Stage 1 custom-credit purchase migration 101 (2026-11-09)
+
+**Source migration authored and disposable payment SQL checked; hosted application remains manual.** Apply [101](../supabase/migrations/20261109010100_custom_credit_purchases.sql) after existing migrations, before deploying custom purchase creation. It verifies its actual table/column/function prerequisites, adds nullable immutable credit_purchases.pricing_snapshot and the service-only prepare_custom_credit_purchase RPC, and reuses existing account locking and purchase/hour limits. Snapshot updates are denied by a separate guard; the existing purchase identity/completion guard remains unchanged. The migration is transactional and rerunnable, including trigger recreation and explicit function grants.
+
+Historical purchases retain null snapshots and their original amounts/credits; no balance, ledger, free counter, transaction, Marketplace or payout row is backfilled or repriced. Existing RLS/direct-write restrictions, unique order/capture/ledger references and fulfil_paypal_purchase remain intact. SQL computes fees/credits from trusted server rates before inserting; creation never grants credits. [Pricing](pricing.md#stage-1-custom-credit-pricing-2026-11-09) owns the formula and [payments](payments.md#stage-1-custom-usd-credit-checkout-2026-11-09) owns verification/recovery. No new table, extension, remote database write or live catalog acceptance is claimed.
+
 ## V3 Phase 3 manual runtime extension 077 (2026-10-29)
 
 Apply unchanged 076, then new 077, only after inspecting prerequisites. [Setup and verification](generation-v3-phase3.md#manual-database-setup) includes a read-only SQL script. New V3 task/artifact/quote/authorization/run/event tables have no browser/direct-service-write grants. Owner-scoped RPCs, immutable inputs/bodies/quotes, segment/authorization uniqueness, budget checks, leases, private-result/review gates and project-wide reconciliation fences govern runtime. Two new insert guards prevent only enrolled V3 projects entering legacy queues; no historical row or prior function body/grant is rewritten. Nothing is applied remotely here.

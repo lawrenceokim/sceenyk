@@ -1,5 +1,11 @@
 # Phase 2: Basic & Pro Studio Modes
 
+## Hackathon access and output policy amendment (2026-11-09)
+
+**Approved product change; enforcement Not Implemented.** The [canonical policy](overview.md#paypal-ai-hackathon-commercial-policy-2026-11-09) replaces the original free Pro assumption: a verified Sandbox one-month Pro pass unlocks advanced features without included credits or unlimited generation. Mode metadata is not entitlement. Planned `HACKATHON_DEMO_MODE=true` restricts Basic and Pro to 5 seconds/480p in UI and server. Existing Pro 10–120s/higher-resolution capabilities remain preserved for normal paid operation after intentional demo deactivation, subject to provider/pricing/credit gates.
+
+Do not delete saved long projects/clips/approvals, retime locked content or weaken first-clip locking and M5/M6 review/recovery/merge/final approval. Block incompatible new provider work; recover accepted attempts without resubmission. Expiry preserves saved work and safe read/recovery/local merge paths while denying new advanced mutations. Historical free-mode and duration acceptance below is source evidence, not current hackathon eligibility. [Implementation stages](progress-tracker.md#paypal-ai-hackathon-credits-and-pro-plan-2026-11-09) supplement M1–M7 without marking billing/enforcement complete.
+
 **Status: In Progress. M1–M6 complete in source/focused offline verification. M7 source review and scoped fixes complete; full manual acceptance pending.**
 **Decision date: 2026-11-05. Current implementation scope: M1–M7 source review/corrections, including independent clip attempts and explicit local final merging.**
 
@@ -351,7 +357,7 @@ Reproduce: `npm run test:ugc-v3-multiple-characters`, `npm run test:ugc-v3-multi
 **Complete in source and focused offline verification. Manual migration 094 and full hosted/manual visual acceptance remain pending.** The actual repository filename is `phase-2-basic-pro-studio.md`; this is the specification referenced as `phase2-basic-pro-studio.md` in the M1 request.
 
 - The expanded sidebar has compact Basic/Pro native-radio segments immediately above Collapse, occupying 50% of the navigation content width with 24px-high segments and 11px labels. The active-mode caption is screen-reader-only. The collapsed rail retains full-width labelled B/P controls; existing mobile navigation has the same compact switch. A small active-mode badge in the existing Studio toolbar remains visible when mobile navigation is closed. Shared Tailwind tokens preserve purple Pro selection and both themes; no stylesheet is added.
-- At M1 completion both modes exposed the same working features. M2 now adds the bounded character extension above. There is no subscription/payment gate, upgrade prompt or unfinished future control.
+- At M1 completion both modes exposed the same working features. M2 now adds the bounded character extension above. This historical source implementation has no entitlement gate; the hackathon amendment above plans verified Pro access without adding it in this task.
 - `components/workspace/studio-mode-provider.tsx` owns presentation state outside the mounted editor. Its independent store waits for submitted writes across navigation, ignores late/wrong-account responses, and preserves the current mode on failed saves. Metadata actions return values without route revalidation, cookie changes or navigation. The loading/error badge does not claim a mode before it has been restored.
 - `lib/studio-mode/server.ts` independently resolves Clerk/application identity and calls new service-only owner-scoped read/save RPCs. No owner ID is accepted from the browser. Per-project mode wins over preference; simply opening a project changes neither. An explicit selection atomically saves the current project mode (when present) and the owner's preference.
 - Apply [094](../supabase/migrations/20261105009400_studio_modes.sql) **manually after 093** before using authenticated persistence. It adds checked `studio_mode` text columns, default Basic, to existing `projects` and `creation_preferences`. Old projects become Basic without a creative-data backfill. A new insert-only metadata trigger makes both ordinary and atomic V3 new projects inherit the owner's current committed preference. Existing Settings upserts preserve mode and mode upserts preserve Settings. No new table or historical function replacement; existing RLS/grants/triggers remain.
@@ -370,7 +376,7 @@ Reproduce: `npm run test:studio-modes`, `npm run test:studio-modes:layout`, `npm
 
 Product **Phase 2: Basic & Pro Studio Modes** is distinct from the older [M10 V3 Phase 2 persistent preflight](generation-v3-phase2.md) and the earlier visual redesign phases. It does not reset their status or replace their historical evidence. This specification owns the planned Basic/Pro behavior; [V3 architecture](generation-architecture-v3.md), [current runtime/workflow](generation-v3-phase3.md), [resolution contract](v3-video-resolution.md) and [UI context](ui-context.md) retain their existing responsibilities. Older claims that V3 is entirely Not Started are dated snapshots; consult the runtime and tracker for source status and remaining acceptance.
 
-There are three future product tiers: **Basic, Pro and Advanced**. This phase delivers only Basic and Pro. Both modes are freely accessible through a switch for the hackathon MVP, without subscription payments or tier entitlements. Free mode access does not waive existing finite generation spending authorization, cost estimates, administrator provider controls or ownership checks. No new credit-wallet/payment integration is implied. Advanced is reserved for future development; no Advanced features, paid restrictions or implementation are defined here.
+This phase defines Basic and Pro Studio capabilities; Advanced remains future/out of scope. The original freely accessible Pro assumption is superseded by the [current hackathon policy](overview.md#paypal-ai-hackathon-commercial-policy-2026-11-09): verified finite Pro access and universal demo output limits are planned. Preserve existing estimates, finite authority, provider switches and ownership; the new billing work extends these safeguards.
 
 ## Confirmed product requirements
 
@@ -380,12 +386,12 @@ There are three future product tiers: **Basic, Pro and Advanced**. This phase de
 | Characters | One uploaded character and its existing reference flow | Multiple uploaded characters, individual names and separate Character Sheets |
 | Reference review | Preserve existing approval/regeneration | Independent approval/regeneration for each character |
 | Visual style | Existing dropdown | Selectable image cards: Original, Cartoon, Cinematic, Anime, Realistic |
-| Duration | Preserve current choices up to 30 seconds | 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120 seconds |
+| Duration | Normal supported paid choices up to 30 seconds; demo: 5 seconds | Normal supported paid choices: 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120 seconds; demo: 5 seconds |
 | Video generation | One continuous video, then final review/approval | Up to 30s uses the same single-video path; longer projects use sequential clips of up to 30s |
 | Multi-clip review | No added clip workflow | Saved preview, status, approval and selective regeneration for every clip |
 | Composition | No merge stage for one clip | Explicit **Merge Videos** after every required clip is approved; final merged-video review |
 
-Existing Basic duration choices are currently 5, 10 and 30 seconds, with 15 seconds retained for historical read/save compatibility in [project options](../lib/projects/options.ts). Preserve those behaviors; the new Pro list does not remove historical values or change historical execution eligibility. Existing optional Product behavior, Creation Type, resolution selection and other working controls remain. Multiple products and a Freestyle generation redesign are not Phase 2 requirements.
+Existing Basic duration choices are currently 5, 10 and 30 seconds, with 15 seconds retained for historical read/save compatibility in [project options](../lib/projects/options.ts). Preserve those behaviors; the new Pro list does not remove historical values or change historical execution eligibility. Existing optional Product behavior, Creation Type, resolution selection and other working controls remain. Multiple products and a Freestyle generation redesign are not Phase 2 requirements. These are source/normal paid capability descriptions: the planned hackathon policy overrides newly generated output to 5 seconds/480p for every mode, without changing historical saved data.
 
 ### Mode selection and persistence
 

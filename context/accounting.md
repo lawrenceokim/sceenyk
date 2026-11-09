@@ -1,5 +1,33 @@
 # Generation accounting contract
 
+## Stage 1 custom purchase accounting (2026-11-09)
+
+**Source implemented; manual 101 pending.** [Custom pricing](pricing.md#stage-1-custom-credit-pricing-2026-11-09) approves 100 Sceenyk credits per $1 of generation cost, with independently rounded estimated PayPal and Sceenyk payment fees deducted from a custom USD total. This replaces earlier unresolved conversion/fixed-pack assumptions for new purchases only. Nullable immutable purchase pricing snapshots retain rates, both fees, net and credit quantity; historical purchases/ledger/balances/free counters are not rewritten. Existing verified-capture fulfilment and purchase/order/capture uniqueness still grant the frozen amount once. The payment commission and purchased credits never enter Marketplace's 10%/90% money ledger. V3 wallet debit integration and other hackathon enforcement below remain planned; the new generation credit equivalent/top-up display adds no settlement or provider authority.
+
+## Hackathon accounting and spending protection (2026-11-09)
+
+**Planned / Not Implemented.** Apply the [canonical policy](overview.md#paypal-ai-hackathon-commercial-policy-2026-11-09) across every generation entry point and worker. Earlier 10-second/no-quality-restriction eligibility below is historical behavior, not the new free contract. Preserve balances, consumed allowance, jobs, quotes and immutable history; no account reset or retroactive charge.
+
+### Admission and activity
+
+Reuse existing `generation_accounts`, `generation_reservations` and append-only `credit_ledger` boundaries where appropriate, after inspecting the actual catalog and runtime. V3 provider USD estimates/finite authorization do not establish a customer-credit tariff or wallet debit; connecting these is pending. Do not invent tables/columns or equate provider credits with Sceenyk credits.
+
+Initialize two lifetime free entitlements once, eligible only for 5 seconds/480p. Quote the selected free/paid funding source explicitly; exhausted allowance requires purchased credits. Pro purchases neither replenish free usage nor grant credits. Validate ownership, package/clip currentness, Pro feature entitlement where applicable, demo limits, approved tariff, sufficient balance, user quotas and global budget. Revalidate at confirmation and before new provider submission. Stale policy/quotes require renewed review, never silent edits to locked inputs or automatic additional consent.
+
+Serialize competing admissions and reserve the exact free/credit amount, user in-flight capacity and global provider exposure as one fail-closed admission decision before dispatch. Persist idempotency and database constraints against concurrent overspend/double deductions. Expose owner-only balances and purchase/generation activity with amounts, signed deltas, reasons, timestamps and payment/job references. Browser roles cannot mutate grants, balances or Pro access.
+
+### User limits and real provider budget
+
+Plan configurable per-user generation-attempt limits per defined time window and concurrent in-flight limits, including free, paid, Pro and explicitly authorized replacements. Numeric limits/window and failed-attempt quota treatment are **Needs confirmation**. Missing/invalid required safety configuration blocks new provider spend. Replays/reconciliation of an existing attempt never receive fresh authority or count as a new generation.
+
+Plan a shared global Higgsfield monetary cap with explicit currency, amount, budget window/reset policy and owner-controlled kill switch; values are **Needs confirmation**. Include incurred real spend, reserved worst-case exposure and accepted/unknown provider work across all users/workers. Atomically reject new spend if its conservative reservation would exceed the cap; unknown/unbounded prices fail closed. Retain existing finite package/attempt cumulative ceilings. Sandbox credit/pass purchases cannot raise real funding. OpenAI creative/reference costs remain separately visible under their existing funding controls.
+
+### Completion, failure and recovery
+
+Reserve before execution and settle against a verified usable stored result through existing ownership/claim/receipt fences. Define the V3 attempt/result settlement point before implementation so clip approval, local merge, final approval, polling and recovery cannot debit twice. On definitive failure without a usable result, release the hold or append one compensating credit restoration if already deducted; restore a free entitlement only when that was the funding source. Preserve original history and unique restoration references.
+
+Accepted/unknown provider outcomes retain holds and reconcile the same immutable request/receipt/lease without a new charge/submission. Failed attempts can still cost the platform real money: customer restoration must not erase incurred spend or release uncertain exposure. User rejection of usable output, voluntary regeneration and cash refunds are separate decisions; do not promise automatic refunds or invoke PayPal refund APIs. Credit-pack/pass cash refund/dispute/revocation policy remains pending. Preserve Marketplace lot/FIFO reversals, creator deficits, payout holds and reconciliation unchanged.
+
 ## Planned V3 segment accounting and fresh-run authority (2026-10-29)
 
 [V3](generation-architecture-v3.md#private-persistence-cost-authority-and-recovery), **Planned / Not Started**, accounts for Higgsfield audiovisual video work per Generation Segment plus the actual authorized OpenAI reference/creative operations. No normal separate TTS/Kling/master-audio spend is required. Preserve finite request/spend limits, immutable intents/receipts/fingerprints, reviewed failed-segment retries/amendments, preserved successes and unknown-outcome reconciliation before repurchase. Segment approval is not final completion/settlement.
@@ -143,7 +171,7 @@ Marketplace adoption is distinct from generation. Free adoption creates an adopt
 
 Creator earnings represent money from paid Marketplace sales, separate from nonwithdrawable Sceenyk AI credits. Dedicated original-sale, availability and proportional-adjustment history extends through migration024's explicit withdrawal allocations and immutable payout/deficit/offset events. The implemented flow is valid verified sale → available90% net → withdrawal request of at least$5 → reserved Pending Payout →168-hour hold from request → eligible after trusted recheck → trusted Sandbox payout → Paid only after matched provider success. Historical pending-sale events retain their original policy and are not pending payouts. Adoption, sale/refund/withdrawal and PayPal credit-pack accounting stay separate; see the acceptance evidence/limits above.
 
-**Commercial model approved 2026-10-13:** credits support user-initiated pay-as-you-go pack purchases and repeat top-ups, not monthly allowances or a month of access. Purchased credits do not expire unless a future explicit product decision changes this. The two lifetime free generations remain separate and never reset on purchase. Generation cost is shown before confirmation and is server-authoritative; existing reservation, verified-result consumption and failure restoration remain unchanged. Quote expiry is not credit expiry. Monthly subscriptions are outside current scope. Possible membership benefits and optional threshold-based auto-recharge require separate future approval. See [overview.md](overview.md#approved-commercial-model--pay-as-you-go-2026-10-13).
+The credit-pack/non-expiry rules remain valid under the [current hackathon policy](overview.md#paypal-ai-hackathon-commercial-policy-2026-11-09); Pro access is now a separate planned finite purchase. Free counters never reset on purchase. Quotes, reservation/consumption/restoration and immutable activity remain server-authoritative. Recurring billing, monthly credit allocation and auto-recharge remain outside scope.
 
 **PayPal Sandbox extension (2026-10-13):** [payments.md](payments.md) specifies temporary server-owned packs, verified capture and applied migration017. The existing append-only ledger supports `purchase` entries with purchase/order/capture IDs and unique provider references. Actual USD1.00 Sandbox buyer approval/capture increases only `credit_available`0→100 once, with exactly one ledger row, browser-independent recovery and duplicate/replay/persistence checks. Free counters remain2/0/0 and paid reserved0; existing reservations/history stay unchanged. Hosted direct-write probes are denied. Merchant acceptance is Complete within documented limits; funded pending/denied states are fixture-tested. This supersedes historical statements below that no purchase/grant service exists.
 
@@ -151,7 +179,7 @@ Creator earnings represent money from paid Marketplace sales, separate from nonw
 
 **Commercial quote extension (2026-10-11):** [pricing.md](pricing.md) adds owner/input-bound cost review and confirmation before the unchanged reservation/execute/consume-or-restore model. New migration 007 restricts direct admission and adds immutable quote/version provenance; existing 006 jobs/history and settlement are preserved. Paid production rates remain unresolved and default unavailable.
 
-Approved 2026-10-11. Every user receives **two lifetime free video generations, each at most ten seconds**. Free generations are entitlements, not credits. Eligibility depends only on authentication, duration and available entitlement. Current duration choices are 10/15/30, so only 10 qualifies. No model, quality or commercial-use restriction is added.
+**Historical 006 accounting baseline; free eligibility is superseded by the 5-second/480p plan above.** Approved 2026-10-11. Every user receives **two lifetime free video generations, each at most ten seconds**. Free generations are entitlements, not credits. Eligibility depends only on authentication, duration and available entitlement. Current duration choices are 10/15/30, so only 10 qualifies. No model, quality or commercial-use restriction is added.
 
 ## Admission
 
@@ -181,6 +209,6 @@ The isolated suites pass 115 accounting, 96 generation and 55 dispatch checks, i
 
 - Production credit-pack pricing and any larger-pack value schedule.
 - Credits required by generation type/duration.
-- Provider-cost-to-credit formula.
+- Per-workload provider cost evidence and V3 settlement integration; Stage 1 above approves the conversion of 100 credits per $1 generation cost.
 
-Monthly subscriptions and recurring plans are outside current scope. Membership and auto-recharge are unapproved optional future features, not accounting prerequisites. Sandbox one-time purchase acceptance is Complete; production economics, future payment capabilities and the deferred hosted renderer require separate authorization. This product-contract update changes no accounting code or historical ledger.
+The [current hackathon policy](overview.md#paypal-ai-hackathon-commercial-policy-2026-11-09) approves finite Pro feature access alongside credit packs. Production economics and pass/refund terms remain pending; recurring billing and auto-recharge remain unapproved. Historical purchase acceptance does not establish new demo/Pro/global-cap enforcement.

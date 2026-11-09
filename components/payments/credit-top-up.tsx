@@ -20,7 +20,7 @@ export function CreditTopUp() {
     <DialogTrigger render={<Button type="button" variant="outline" />}>Top up credits</DialogTrigger>
     <DialogContent className="scrollbar-hidden sm:max-w-3xl">
       <DialogTitle className="pr-8 text-xl font-semibold">Buy credits</DialogTitle>
-      <DialogDescription>One-time PayPal Sandbox purchases with test funds. Temporary demo prices are not production pricing. Checkout opens in a separate tab so your current draft stays here.</DialogDescription>
+      <DialogDescription>Choose a custom USD amount and review the credits after estimated fees. PayPal Sandbox uses test money; Higgsfield uses real funded API balance. Checkout opens in a separate tab so your current draft stays here.</DialogDescription>
       {open && <CheckoutOptions />}
     </DialogContent>
   </Dialog>;
@@ -43,7 +43,7 @@ function CheckoutOptions() {
     <CreditPurchases {...options} checkoutInNewTab />
     <FreeAllowanceSummary />
   </> : error ? <div role="alert" className="space-y-3">
-    <p>Credit packs couldn’t be loaded.</p>
-    <Button variant="outline" onClick={() => setRevision(value => value + 1)}>Check credit packs</Button>
+    <p>Credit pricing couldn’t be loaded.</p>
+    <Button variant="outline" onClick={() => setRevision(value => value + 1)}>Reload credit pricing</Button>
   </div> : <CreditAccountSkeleton />;
 }

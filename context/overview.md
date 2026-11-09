@@ -1,5 +1,24 @@
 # Sceenyk
 
+## Stage 1 custom credit purchases (2026-11-09)
+
+**Implemented in source; migration 101 and manual acceptance pending.** New purchases use a custom USD total instead of fixed packs. 100 credits cover $1 of generation cost; configurable estimated PayPal fees (default 3.49% + $0.49) and a separate Sceenyk payment commission (default 1% of total) reduce the credits purchased. Exact credits/total are reviewed before Sandbox checkout; verified capture still grants once. Existing balances/history/free usage and Marketplace's 10% commission are preserved. [Pricing and examples](pricing.md#stage-1-custom-credit-pricing-2026-11-09), [database/payment setup](payments.md#stage-1-custom-usd-credit-checkout-2026-11-09) and the current tracker own details. Generation UI adds the credit equivalent/top-up; Pro and generation execution remain unchanged. Other hackathon enforcement below is still planned.
+
+## PayPal AI Hackathon commercial policy (2026-11-09)
+
+**Approved policy; custom purchases are source-implemented above, with other enforcement pending.** This is the canonical product policy for credits, billing and Pro access. It supersedes earlier 10-second free limits, freely accessible Pro mode and statements excluding subscriptions from scope. Dated source/acceptance records retain their original evidence boundaries. This section records the original documentation-only policy approval; Stage 1 delivery is recorded above.
+
+- **Free:** every new account receives **2 lifetime free video generations**, each limited to **5 seconds at 480p**. These are separate entitlements, never purchased credits. Login, top-up, Pro purchase/expiry and demo-mode changes do not reset them. Preserve existing consumption/history.
+- **Credits:** after free generations are exhausted, users must purchase credits through PayPal Sandbox. Stage 1 now supports a custom USD total under the pricing contract above. Paid generation requires sufficient available credits and reviewed server cost; purchased credits remain non-expiring, with private persistent purchases, deductions and activity. V3 wallet enforcement remains separately planned.
+- **Hackathon Demo Mode:** plan server-only **`HACKATHON_DEMO_MODE=true`**. When enabled, **all users, including Pro subscribers**, may generate only **5-second, 480p** videos. Enforce this in UI and server before reservation/provider spend. Credits, Pro status and administrator/provider switches cannot bypass it. Packages/clips cannot evade the restriction by splitting a longer newly generated output.
+- **Pro subscription:** a separately purchased **one-month Pro pass**, paid through PayPal Sandbox, unlocks advanced Pro Studio features. It includes **no unlimited generation, bundled credits or exemption from demo limits**. Pro access alone never funds generation; paid generation still requires sufficient credits, with lifetime-free eligibility accounted separately. Basic remains available without Pro. No automatic renewal or recurring charge is approved.
+- **Payment safety:** grant credits and Pro access only after trusted server verification of completed PayPal payment. Redirects, browser success and unverified webhooks grant nothing. Sandbox checkout uses **test money**, while Higgsfield generation consumes **real funded API balance**. Sandbox purchases must never increase the platform's real provider budget.
+- **Spending protection:** require per-user generation/concurrency limits and a global Higgsfield spending cap across free, paid and Pro requests. Prevent duplicate payments, grants, deductions and submissions. Restore free/credit holds exactly once after definitive failure without a usable result; retain uncertain holds until reconciliation. [Accounting](accounting.md#hackathon-accounting-and-spending-protection-2026-11-09) owns these controls.
+
+Preserve existing generation workflows, finite package/clip consent, first-approved-clip creative locking, immutable approvals, selective retry/recovery, private outputs and explicit local merge/final approval. Preserve Marketplace earnings, withdrawals, payouts, reversals and payment protections; creator money, generation credits and Pro access remain separate. Existing longer/higher-resolution projects and approved clips remain readable and recoverable without silently editing locked inputs; block incompatible new provider submissions.
+
+**Future production:** intentionally disabling demo mode restores normal supported paid duration/resolution limits, subject to entitlement, verified provider capabilities/rates, sufficient credits and spending caps. Free eligibility remains 5 seconds/480p. PayPal Live requires a separate secure implementation/configuration rollout; disabling demo mode must not select Live or remove spending controls. No flag, credential or application behavior changes here. [Payments](payments.md#hackathon-pro-pass-and-production-transition-2026-11-09) owns confirmation and production transition; [the tracker](progress-tracker.md#paypal-ai-hackathon-credits-and-pro-plan-2026-11-09) owns pending stages and decisions.
+
 ## Phase 2 M7 — workflow source review (2026-11-09)
 
 Basic, short Pro and connected Pro workflows have been reviewed through final approval and recovery. Scoped Studio fixes reconcile saved status after mode changes, preserve Package approval display after one-use authority expires/is consumed, keep frozen package consent read-only and match retained-cast Basic controls to existing server guards. Source review and focused checks are complete; full end-to-end, hosted/provider and visual acceptance remain manual. No new schema, pricing or paid authority. [Setup, source review and manual checklist](m7-workflow-verification.md).
@@ -20,7 +39,7 @@ Long Pro stories now have independent clip generation/review/confirmed replaceme
 
 **Phase 2: Basic & Pro Studio Modes — In Progress. M1–M4 complete in source/focused offline verification. M5–M7 Planned / Not Started.** [Canonical specification, setup and roadmap](phase-2-basic-pro-studio.md). M1 adds saved modes; M2 adds independent Pro characters and cast/speaker bindings; M3 adds saved-setting galleries. M4 adds Pro 10–120s duration and one connected Storyboard with exact <=30s planned clips and whole-story approval. Basic retains its current maximum 30s and existing pipeline. Long paid video/package execution is blocked until M5; merging belongs to M6. Existing 094–096 and new 097 manual setup, actual model-limit evidence and hosted/provider/visual acceptance remain pending. No real provider or deployment work is part of M4.
 
-Basic and Pro are freely accessible through a mode switch for the hackathon MVP; no subscription or tier restriction is required. Existing generation estimates, finite spending authorization, resolution/provider gates and ownership protections remain. Advanced is future/out of scope. This product Phase 2 is distinct from historical M10 V3 Phase 2 infrastructure and visual redesign phases. M1 changes presentation/metadata only; generation workflows and existing creative records remain unchanged. Dated source/acceptance records below retain their own boundaries.
+**Historical Phase 2 access assumption, superseded 2026-11-09:** The source mode switch has no entitlement gate. The new hackathon policy above requires a verified one-month Pro pass and universal demo limits; enforcement is pending. Existing generation estimates, finite spending authorization, resolution/provider gates and ownership protections remain. Advanced is future/out of scope. This product Phase 2 is distinct from historical M10 V3 Phase 2 infrastructure and visual redesign phases. M1 changes presentation/metadata only; generation workflows and existing creative records remain unchanged. Dated source/acceptance records below retain their own boundaries.
 
 ## Automatic owned-project V3 video processing (2026-11-04)
 
@@ -419,7 +438,7 @@ Authentication is required for generation, project management, credit purchases 
 
 ### Free Generations, Credits, and Payments
 
-Every user receives **2 lifetime free video generations, each limited to 10 seconds**. Free generations are separate entitlements, not paid credits. Eligibility requires authentication, duration at most 10 seconds, and remaining allowance. Reservation precedes execution; a verified stored result consumes it and a Sceenyk failure without a usable result restores it once. Additional/longer generations require paid credits under the server's configured pricing. Production credit-pack prices, credits by type/duration, and the provider-cost-to-credit formula remain unresolved. See [accounting.md](accounting.md) and [pricing.md](pricing.md).
+Every new account is entitled to **2 lifetime free video generations, each 5 seconds at 480p**, separate from purchased credits. Reservation, verified-result consumption and exactly-once failure restoration remain required. Existing 10-second source eligibility must be updated without resetting usage. Use the canonical hackathon policy above and [accounting plan](accounting.md#hackathon-accounting-and-spending-protection-2026-11-09); production retail pricing remains unresolved.
 
 Hackathon purchases use PayPal Sandbox only; Live is prohibited during development. The one-time purchase unit is **Complete within Merchant Sandbox acceptance**, including a real verified purchase and exactly-once crediting. Temporary demo packs and acceptance limits are described in [payments.md](payments.md). Production pricing remains unresolved. Paid Marketplace Sandbox purchases and settlement have their own completed scoped acceptance. Creator withdrawals/PayPal Payouts remain unimplemented under the approved future contract above.
 
@@ -433,11 +452,11 @@ Credits are usage units, not monthly allowances. Buying a pack does not buy acce
 
 Generation cost must be shown before explicit confirmation. Pricing, free eligibility, available balance and reservation amounts remain server-authoritative. Existing reserve/consume/restore rules remain unchanged; this product decision adds no per-provider charge or new billing trigger. Larger packs may eventually offer better value per credit, but no production discount schedule, pack price or conversion rate is approved here. Existing Sandbox values remain test configuration only.
 
-**Monthly subscriptions are not current scope or the next required commercial feature.** A possible future membership could offer discounted credit pricing, priority generation, premium models, larger uploads or higher-quality exports. Those examples are not approved entitlements or a committed roadmap; membership requires a separate product decision and authorization.
+The 2026-11-09 hackathon policy above now approves a separate one-month Pro pass for advanced Studio features. It includes no credits or unlimited generation and does not waive demo limits. Other membership benefits, recurring billing and auto-recharge remain unapproved; earlier exclusions of all membership are superseded.
 
 **Auto-recharge is a separate optional future feature, not a monthly subscription:** a user chooses a balance threshold and predefined credit pack, and crossing the threshold could trigger a purchase using a payment method the user has explicitly authorized for that purpose. Payment-method authorization, consent, limits, failure handling and implementation need a future specification. Current top-ups remain user-initiated one-time purchases; this task adds no automatic charge.
 
-This approved contract supersedes earlier documentation and illustrative design references that implied monthly generation plans, monthly credit allocations or recurring PayPal billing were required next. It changes product documentation only.
+The pay-as-you-go credit rules in this section remain valid. Its earlier exclusion of Pro access purchases is superseded by the canonical hackathon policy above; no recurring billing or monthly credit allocation is approved. Documentation changes do not implement payment or generation behavior.
 
 ### Creator Templates and Marketplace
 
@@ -451,7 +470,7 @@ The authorized first Marketplace unit provides UI, explicit publishing/listing p
 
 ### Persistent Product Data
 
-Supabase PostgreSQL stores users, projects, generations, generation jobs, credit balances, credit transactions, payments, Marketplace listings and free-adoption provenance. Dedicated paid Marketplace purchase, entitlement, earning and adjustment records exist in the scoped Sandbox implementation. Withdrawal reservation and payout persistence remain future capabilities. No subscription data model is required for the current credit/top-up contract.
+Supabase PostgreSQL stores users, projects, generations, generation jobs, credit balances, credit transactions, payments, Marketplace listings and free-adoption provenance. Dedicated paid Marketplace purchase, entitlement, earning and adjustment records exist in the scoped Sandbox implementation. Existing withdrawal/payout persistence is documented in accounting.md and payments.md. Finite Pro purchase/access persistence is now planned; inspect existing schema before designing changes.
 
 Large video, image, and audio files are stored outside PostgreSQL. Database records retain the references and metadata needed to associate that media with the relevant project or generation. The media storage service is not specified by this overview.
 
@@ -474,8 +493,8 @@ Creation forms, project access, generation progress, and result preview/download
 - Preview and download of completed videos.
 - Supabase persistence for the user, project, generation/job, free-usage, credit, and payment data needed by the MVP.
 - Media references and metadata in PostgreSQL, with large media files stored separately.
-- Two free short generations per new user, credit eligibility checks, and usage accounting.
-- One-time PayPal credit-pack purchases and a clear Buy credits / top-up entry point when generation capacity is insufficient.
+- Two lifetime free 5-second/480p generations per new user, separate credit accounting, universal hackathon demo limits, per-user quotas and a global Higgsfield spending cap.
+- Verified PayPal Sandbox credit-pack purchases and a separate one-month Pro feature-access pass, with visible top-up and private activity/history.
 - A responsive interface aligned with the existing light and dark design system and customized shadcn tokens.
 
 The first supported category, AI provider, and media storage service remain implementation decisions. Supporting fewer paths is acceptable when the selected flow works completely.
@@ -488,8 +507,8 @@ The first supported category, AI provider, and media storage service remain impl
 - A full professional timeline editor.
 - Native mobile applications.
 - New creator withdrawal/PayPal payout implementation in this documentation task. Existing Sandbox Marketplace purchasing/earnings/settlement are accepted separately; the approved production policy above is not yet deployed.
-- Monthly generation subscriptions, monthly credit allocations and recurring plans.
-- Membership benefits and auto-recharge unless separately approved in a future product decision.
+- Recurring generation subscriptions, monthly credit allocations and automatic renewals. The finite one-month Pro pass is in scope as planned work.
+- Additional unapproved membership benefits and auto-recharge.
 - Large-scale enterprise features.
 
 ## Success Criteria
@@ -505,9 +524,9 @@ These are acceptance conditions for the MVP, not claims about the current implem
 7. The supported production flow produces a finished video matching the submitted creation type and instructions sufficiently to demonstrate the core use case.
 8. A completed video can be played in the project view and downloaded as an accessible video file.
 9. Reloading or revisiting a project retrieves its saved generation state and completed result from persisted records. Large media files are referenced rather than stored directly in PostgreSQL.
-10. A new account receives two lifetime free generations, each limited to 10 seconds. A third generation cannot use exhausted allowance; retries/concurrent requests cannot overspend it.
-11. A request that requires credits can proceed only when sufficient generation capacity is available. Longer or more expensive configured requests consume more credits than the baseline short request, and the requirement is shown before submission.
+10. A new account receives two lifetime free 5-second/480p generations. A third generation requires purchased credits; retries/concurrent requests cannot overspend free usage, credits or provider caps.
+11. A paid request requires sufficient credits and reviewed server cost, including for Pro users. Demo mode restricts every user to 5 seconds/480p in UI and server; disabling it restores only supported/priced normal paid limits.
 12. Completed generation usage updates the user's free allowance or credit balance and leaves an appropriate usage/transaction record. Revisiting the project shows the updated allowance or balance.
-13. When capacity is insufficient, the user can enter the PayPal credit-purchase flow. A successful purchase increases available credits, and those credits can fund a subsequent generation.
+13. Insufficient credits lead to Sandbox top-up. Only verified payment grants credits or a finite one-month Pro pass; duplicate events never grant twice. Pro unlocks advanced features without unlimited usage or a demo exemption.
 14. Creation, project, progress, and result views follow the documented Sceenyk tokens in both themes, with readable text and visible interactive states. Theme switching preserves the current content and generation state.
 15. The core flow can be completed on desktop and mobile: creation controls, Clerk authentication, uploads, progress, preview/download, and credit-purchase actions remain accessible without page-level horizontal overflow.

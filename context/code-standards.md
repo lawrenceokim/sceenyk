@@ -448,7 +448,7 @@ The Gemini understanding/planning unit introduces `lib/ai/` with a server-only s
 
 ## Payments and Credits
 
-**PayPal Sandbox one-time purchases are Complete within Merchant Sandbox acceptance;** see [payments.md](payments.md). The approved primary model is pay-as-you-go credits and manual top-ups, not monthly plans; purchased credits do not expire unless a future explicit product decision changes this. The accounting contract retains two lifetime free generations of at most ten seconds with atomic reservation and exactly-once failure restoration. The commercial quote boundary is implemented in `lib/pricing/`; see [pricing.md](pricing.md). Never scatter tariffs or accept browser cost/tier/free/version claims. Show a server-issued quote before explicit confirmation and reserve its validated server cost before dispatch. Production retail prices remain unresolved; optional rates are visibly development/test-only.
+**Existing PayPal Sandbox purchase acceptance is preserved; new hackathon enforcement is pending.** Follow the [current hackathon policy](overview.md#paypal-ai-hackathon-commercial-policy-2026-11-09) and accounting/payment plans: two separate lifetime 5-second/480p free generations, non-expiring purchased credits and separate verified one-month Pro access. Reuse server quotes and atomic reservation/restoration; never accept client cost/tier/free/version claims. Stage 1 approves the 100-credits/$1 conversion and configurable estimated payment fees in pricing.md; provider USD authority alone is not a retail-credit debit, and V3 wallet enforcement remains pending.
 
 Development and testing must use **PayPal Sandbox only**. Do not use Live credentials or real-money transactions. Keep eventual environment/credential selection behind the payment service; production switching is a later explicitly scoped task.
 
@@ -457,7 +457,7 @@ Development and testing must use **PayPal Sandbox only**. Do not use Live creden
 - Payment finalization must be idempotent: repeating a payment/webhook request must not credit the user twice. Enforce this persistently, including concurrent callbacks/events; an in-memory flag is insufficient.
 - Prevent double-spending/free-allowance reuse when concurrent generations start. Use an atomic reservation/debit strategy consistent with the approved settlement policy, with safe reconciliation after failures.
 - Failed generations follow the documented refund/credit-restoration rule. Never invent pricing, credit costs, subscription limits, creator shares, marketplace fees, or refund behavior; PNG pricing is illustrative.
-- Keep one-time credit purchases separate from marketplace purchases and creator payouts. Monthly subscriptions are outside current scope; membership and auto-recharge are unapproved future options requiring separate product decisions and authorization, not the next required commercial feature.
+- Keep credit purchases, finite Pro access, Marketplace purchases and creator payouts distinct. Grant credits/access only after verified payment with persistent exactly-once fulfilment. Enforce demo limits, Pro feature entitlement, user quotas and the global provider cap server-side; UI gates alone are insufficient. Recurring billing/auto-recharge remain unapproved.
 
 ## Error Handling and Logging
 

@@ -3,12 +3,14 @@ import { CreditAccountSkeleton, FinancialRowsSkeleton } from "./financial-skelet
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useAuth } from "@clerk/nextjs";
-import { Coins, ExternalLink } from "lucide-react";
+import { ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cancelCreditOrderAction, completeCreditOrderAction, createCreditOrderAction, creditWalletAction, reconcileCreditOrdersAction } from "@/app/actions/payments";
-import type { CreditPack, CreditWallet, PurchaseStatus } from "@/lib/payments/types";
+import type { CreditWallet, PurchaseStatus } from "@/lib/payments/types";
 import { creditRefreshKey, notifyCreditsChanged } from "@/lib/accounting/client-events";
 import { CreditBillingDashboard } from "./credit-billing-dashboard";
+import { CustomCreditPurchase } from "./custom-credit-purchase";
+import type { CreditPurchasePricing } from "@/lib/payments/credit-pricing";
 
 const statusCopy: Record<PurchaseStatus, string> = {
   pending: "Awaiting PayPal approval. No credits have been added.",
@@ -18,7 +20,7 @@ const statusCopy: Record<PurchaseStatus, string> = {
   failed: "Payment failed. No credits were added.",
 };
 
-type Props = { clerkUserId: string; packs: CreditPack[]; configured: boolean; checkoutInNewTab?: boolean; dashboard?: boolean };
+type Props = { clerkUserId: string; pricing: CreditPurchasePricing; configured: boolean; checkoutInNewTab?: boolean; dashboard?: boolean };
 
 export function CreditPurchases(props: Props) {
   const { userId, isLoaded, isSignedIn } = useAuth();
@@ -27,7 +29,7 @@ export function CreditPurchases(props: Props) {
   return <PurchaseAccount key={userId} {...props} />;
 }
 
-function PurchaseAccount({ packs, configured, checkoutInNewTab = false, dashboard = false }: Props) {
+function PurchaseAccount({ pricing, configured, checkoutInNewTab = false, dashboard = false }: Props) {
   const [wallet, setWallet] = useState<CreditWallet | null>(null);
   const [walletLoaded, setWalletLoaded] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -119,7 +121,7 @@ function PurchaseAccount({ packs, configured, checkoutInNewTab = false, dashboar
     };
   }, [configured, reload, run, checkPurchases]);
 
-  function checkout(packId: string) {
+  function checkout(input: { amountUsd: string; pricingVersion: string } | { purchaseId: string }) {
     if (running.current) return;
     // Open during the click gesture; keep the editor and local Files mounted.
     const popup = checkoutInNewTab ? window.open("about:blank", "_blank") : null;
@@ -128,7 +130,7 @@ function PurchaseAccount({ packs, configured, checkoutInNewTab = false, dashboar
       let opened = false;
       try {
         setCompletedOrder(null); setApprovalLink(null);
-        const result = await createCreditOrderAction({ packId });
+        const result = await createCreditOrderAction(input);
         if (!active.current) return;
         if (!result.ok) { setError(result.message); await reload(); return; }
         if (result.data.approvalUrl) {
@@ -151,8 +153,9 @@ function PurchaseAccount({ packs, configured, checkoutInNewTab = false, dashboar
 
   const completedPurchase = wallet?.purchases.find(purchase => purchase.orderId === completedOrder && purchase.status === "completed");
   const activityCopy = { purchase: "Credits purchased", reservation: "Generation reservation", consumption: "Generation completed", release: "Reservation restored" };
-  if (dashboard) return <CreditBillingDashboard packs={packs} wallet={wallet} walletLoaded={walletLoaded} busy={busy} configured={configured} statusCopy={statusCopy}
-    onCheckPurchases={() => void checkPurchases()} onCheckout={checkout}
+  const purchaseForm = <CustomCreditPurchase pricing={pricing} presentation={dashboard ? "billing" : "default"} disabled={!configured || busy || !wallet} onCheckout={amountUsd => checkout({ amountUsd, pricingVersion: pricing.version })} />;
+  if (dashboard) return <CreditBillingDashboard purchaseForm={purchaseForm} wallet={wallet} walletLoaded={walletLoaded} busy={busy} configured={configured} statusCopy={statusCopy}
+    onCheckPurchases={() => void checkPurchases()} onResumeCheckout={purchaseId => checkout({ purchaseId })}
     onCancelCheckout={orderId => void run(async () => {
       const result = await cancelCreditOrderAction({ orderId });
       if (!active.current) return;
@@ -160,13 +163,13 @@ function PurchaseAccount({ packs, configured, checkoutInNewTab = false, dashboar
       await reload();
     })}
     notices={<>
-      {wallet?.lowBalance && <p className="rounded-lg bg-warning-surface p-3 text-warning-foreground">You’re running low on paid credits. Top up when you need more. Your free allowance stays separate.</p>}
-      {!configured && <p className="rounded-lg border border-border bg-muted p-4" role="status">Sandbox checkout is awaiting configuration. Your existing balance is preserved.</p>}
-      {message && <p className={`rounded-lg p-4 ${completedPurchase ? "bg-success-surface text-success-foreground" : "bg-info-surface text-info-foreground"}`} role="status" aria-live="polite">
+      {wallet?.lowBalance && <p className="text-warning-foreground">Low paid credit balance. Top up when you need more.</p>}
+      {!configured && <p className="rounded-lg border border-border bg-muted px-3 py-2" role="status">Sandbox checkout is awaiting configuration. Your existing balance is preserved.</p>}
+      {message && <p className={`rounded-lg px-3 py-2 ${completedPurchase ? "bg-success-surface text-success-foreground" : "bg-info-surface text-info-foreground"}`} role="status" aria-live="polite">
         {completedPurchase ? `${completedPurchase.credits.toLocaleString()} credits added. Current paid balance: ${wallet!.available.toLocaleString()} credits.` : message}
       </p>}
       {approvalLink && <Button nativeButton={false} variant="outline" render={<a href={approvalLink} target="_blank" rel="noopener noreferrer" />}>Continue to PayPal Sandbox <ExternalLink className="size-4" aria-hidden="true" /></Button>}
-      {error && <p className="rounded-lg bg-destructive-surface p-4 text-destructive" role="alert">{error}</p>}
+      {error && <p className="rounded-lg bg-destructive-surface px-3 py-2 text-destructive" role="alert">{error}</p>}
     </>} />;
   return <div className="space-y-6" aria-busy={busy}>
     <section className={`
@@ -197,31 +200,7 @@ function PurchaseAccount({ packs, configured, checkoutInNewTab = false, dashboar
     </p>}
     {approvalLink && <Button nativeButton={false} variant="outline" render={<a href={approvalLink} target="_blank" rel="noopener noreferrer" />}>Continue to PayPal Sandbox <ExternalLink className="size-4" aria-hidden="true" /></Button>}
     {error && <p className="rounded-lg bg-destructive-surface p-4 text-body-sm text-destructive" role="alert">{error}</p>}
-    <section aria-label="Sandbox demo credit packs" className="grid gap-4 md:grid-cols-3">
-      {packs.map(pack => <article key={pack.id} className={`
-      [@layer_components]:[border:1px_solid_var(--border)] [@layer_components]:rounded-[var(--radius-xl)]
-      [@layer_components]:[background:var(--card)] [@layer_components]:text-[color:var(--card-foreground)]
-      [@layer_components]:[box-shadow:var(--elevation-card)] sceenyk-card flex min-w-0 flex-col gap-4 p-5 sm:p-6
-      [.marketplace-configuration_>_&&]:[border:0] [.marketplace-configuration_>_&&]:rounded-[0]
-      [.marketplace-configuration_>_&&]:[background:transparent] [.marketplace-configuration_>_&&]:pt-[16px]
-      [.marketplace-configuration_>_&&]:pr-[0] [.marketplace-configuration_>_&&]:pb-[0]
-      [.marketplace-configuration_>_&&]:pl-[0] [[data-workspace-shell]_&&]:[box-shadow:none]
-      [.workspace-settings-inner_label&&]:min-h-[0] [.workspace-settings-inner_label&&]:gap-[8px]
-      [.workspace-settings-inner_label&&]:pt-[12px] [.workspace-settings-inner_label&&]:pr-[12px]
-      [.workspace-settings-inner_label&&]:pb-[12px] [.workspace-settings-inner_label&&]:pl-[12px]
-      [.workspace-settings-inner_label&&_svg]:w-[18px] [.workspace-settings-inner_label&&_svg]:h-[18px]
-    `}>
-        <span className="w-fit rounded-full bg-accent px-3 py-1 text-caption font-medium text-accent-foreground">Sandbox test pack</span>
-        <Coins className="size-6 text-link" aria-hidden="true" />
-        <h2 className="text-lg font-semibold">{pack.name}</h2>
-        <p className="text-3xl font-bold">{pack.credits.toLocaleString()} <span className="text-body-sm font-normal text-muted-foreground">credits</span></p>
-        <p className="text-body font-medium">${pack.amount} {pack.currency} <span className="text-caption text-muted-foreground">test funds</span></p>
-        <p className="text-caption text-muted-foreground">One-time Sandbox purchase. Temporary demo values. Credits stay available until you use them.</p>
-        <Button className="mt-auto h-auto min-h-11 whitespace-normal" disabled={!configured || busy || !wallet} onClick={() => checkout(pack.id)}>
-          Pay with PayPal Sandbox <ExternalLink className="size-4 shrink-0" aria-hidden="true" />
-        </Button>
-      </article>)}
-    </section>
+    {purchaseForm}
     <section className={`
       [@layer_components]:[border:1px_solid_var(--border)] [@layer_components]:rounded-[var(--radius-xl)]
       [@layer_components]:[background:var(--card)] [@layer_components]:text-[color:var(--card-foreground)]
@@ -240,9 +219,10 @@ function PurchaseAccount({ packs, configured, checkoutInNewTab = false, dashboar
         <ul className="divide-y divide-border">{wallet.purchases.map((purchase, index) => <li key={purchase.orderId ?? `${purchase.created_at}-${index}`} className="space-y-2 py-4">
           <div className="flex flex-wrap justify-between gap-2 text-body-sm"><p className="font-medium">{purchase.pack_name} · {purchase.credits} credits</p><p>${purchase.amount} {purchase.currency} · {purchase.status}</p></div>
           <p className="text-caption text-muted-foreground">{statusCopy[purchase.status]}</p>
+          {purchase.pricing && <p className="text-caption text-muted-foreground">Estimated PayPal fee ${(purchase.pricing.paypalFeeMinor / 100).toFixed(2)} · Sceenyk commission ${(purchase.pricing.commissionMinor / 100).toFixed(2)}</p>}
           <p className="text-caption text-muted-foreground"><time dateTime={purchase.created_at}>{new Date(purchase.created_at).toLocaleString()}</time></p>
           {purchase.status === "pending" && <div className="flex flex-wrap gap-2">
-            <Button variant="outline" disabled={busy || !configured || !packs.some(pack => pack.id === purchase.pack_id)} onClick={() => checkout(purchase.pack_id)}>Continue checkout</Button>
+            <Button variant="outline" disabled={busy || !configured} onClick={() => checkout({ purchaseId: purchase.id })}>Continue checkout</Button>
             {purchase.orderId && <Button variant="ghost" disabled={busy || !configured} onClick={() => void run(async () => {
               const result = await cancelCreditOrderAction({ orderId: purchase.orderId });
               if (!active.current) return;

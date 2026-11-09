@@ -467,7 +467,7 @@ Use `bg-popover text-popover-foreground border-border shadow-popover`, 16–24 p
 
 ## Pricing cards
 
-**Product contract approved 2026-10-13:** the Free/Creator/Pro cards and Subscriptions sidebar label in this document are historical reference-image observations, not current billing or navigation requirements. Sceenyk uses pay-as-you-go credit packs and manual top-ups; monthly subscriptions/allocations are outside current scope. Preserve these visual observations and their confidence labels, but use the approved contract in [overview.md](overview.md#approved-commercial-model--pay-as-you-go-2026-10-13) for product decisions. No application artwork, styling or UI is changed in this documentation task.
+**Commercial policy updated 2026-11-09:** reference Free/Creator/Pro cards and Subscriptions labels remain historical visual evidence, not authoritative prices or implemented billing. Use the [current hackathon policy](overview.md#paypal-ai-hackathon-commercial-policy-2026-11-09) for separate free usage, credit packs, finite Pro feature access and universal demo limits. Preserve visual observations/confidence labels; no artwork, styling or UI changes occur here.
 
 **Exact observation:** three cards (Free, Creator, Pro), plan/features above a bold price, action at the bottom. Creator has a purple outline and floating “MOST POPULAR” pill. Paid actions are purple; Free has an outline treatment.
 

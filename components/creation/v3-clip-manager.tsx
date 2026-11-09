@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { generationCreditsFromMicrousd } from "@/lib/payments/credit-pricing";
 import {
   Check,
   Clapperboard,
@@ -369,7 +370,7 @@ export function V3ClipManager({
                     Estimate{" "}
                     {clip.estimatedCostMicrousd === null
                       ? "unavailable"
-                      : `~${usd(clip.estimatedCostMicrousd)}`}
+                      : `~${usd(clip.estimatedCostMicrousd)} · ${generationCreditsFromMicrousd(clip.estimatedCostMicrousd).toLocaleString()} credits`}
                   </span>
                 </span>
               </div>
