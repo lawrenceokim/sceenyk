@@ -11,6 +11,7 @@ type AllowanceProps = {
   signedIn?: boolean;
   refreshKey?: string;
   compact?: boolean;
+  presentation?: "billing-balance" | "billing-footer";
 };
 
 export function FreeAllowanceSummary(props: AllowanceProps) {
@@ -18,11 +19,11 @@ export function FreeAllowanceSummary(props: AllowanceProps) {
   return configured ? (
     <AccountAllowance {...props} />
   ) : (
-    <AllowanceRead signedIn={false} compact={props.compact} />
+    <AllowanceRead signedIn={false} compact={props.compact} presentation={props.presentation} />
   );
 }
 
-function AccountAllowance({ signedIn = true, refreshKey, compact }: AllowanceProps) {
+function AccountAllowance({ signedIn = true, refreshKey, compact, presentation }: AllowanceProps) {
   const { userId, isLoaded, isSignedIn } = useAuth();
   return (
     <AllowanceRead
@@ -30,11 +31,12 @@ function AccountAllowance({ signedIn = true, refreshKey, compact }: AllowancePro
       signedIn={signedIn && isLoaded && !!isSignedIn}
       refreshKey={refreshKey}
       compact={compact}
+      presentation={presentation}
     />
   );
 }
 
-function AllowanceRead({ signedIn = false, refreshKey = "", compact = false }: AllowanceProps) {
+function AllowanceRead({ signedIn = false, refreshKey = "", compact = false, presentation }: AllowanceProps) {
   const [allowance, setAllowance] = useState<FreeAllowance | null>(null);
   const [error, setError] = useState("");
   const [revision, setRevision] = useState(0);
@@ -84,6 +86,15 @@ function AllowanceRead({ signedIn = false, refreshKey = "", compact = false }: A
         : remaining === 0
           ? "No free generations remaining"
           : `${remaining} free generation${remaining === 1 ? "" : "s"} remaining`;
+  if (presentation) return <div className="grid min-w-0 gap-1">
+    <div role="status" aria-live="polite" className={presentation === "billing-balance" ? "text-lg leading-6 font-semibold tabular-nums text-foreground" : "text-[13px] leading-5 font-semibold text-foreground"}>
+      {signedIn && !allowance && !error ? <Skeleton className="h-5 w-20 max-w-full" /> : allowance
+        ? presentation === "billing-balance" ? `${allowance.available} / ${allowance.total}` : `${allowance.available} lifetime free video generation${allowance.available === 1 ? "" : "s"} remaining`
+        : label}
+    </div>
+    {allowance && allowance.reserved > 0 && <span className="text-xs text-muted-foreground">{allowance.reserved} reserved in progress</span>}
+    {error && <Button type="button" variant="outline" size="sm" onClick={() => setRevision(current => current + 1)}>Check allowance</Button>}
+  </div>;
   return (
     <div className="space-y-2 text-caption leading-relaxed text-muted-foreground">
       <p role="status" aria-live="polite" className="font-medium text-foreground">

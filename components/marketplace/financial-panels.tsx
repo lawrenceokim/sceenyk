@@ -8,8 +8,7 @@ import { Button } from "@/components/ui/button";
 import { creatorEarningsAction, marketplacePurchasesAction, recoverMarketplacePurchaseAction, createMarketplaceOrderAction } from "@/app/actions/marketplace-payments";
 import { usd, type CreatorEarnings, type MarketplacePurchaseSummary } from "@/lib/marketplace/payments/contract";
 import { MarketplacePagination } from "./pagination";
-import { EarningsHistory } from "./earnings-history";
-import { WithdrawalPanel } from "./withdrawal-panel";
+import { EarningsDashboard } from "./earnings-dashboard";
 import { withdrawalAccountAction } from "@/app/actions/creator-withdrawals";
 import type { WithdrawalAccount } from "@/lib/marketplace/withdrawals/contract";
 import { EarningsSkeleton, PurchasesSkeleton } from "@/components/payments/financial-skeletons";
@@ -77,8 +76,9 @@ function Panel(props: Props) {
     finally { inFlight.current = false; if (alive.current) setBusy(false); }
     await refresh(true);
   }
-  const total = earnings?.total ?? purchases?.total ?? 0;
-  return <div className="space-y-6"><div className="flex flex-wrap items-center gap-4"><Button variant="outline" disabled={busy} onClick={() => void refresh(true)}>{busy ? "Checking…" : earnings ? "Refresh earnings" : "Check purchases"}</Button><p role="status" className={`text-body-sm ${error ? "text-destructive" : "text-muted-foreground"}`}>{error || message}</p></div>{earnings ? <>{withdrawals && <WithdrawalPanel account={withdrawals} page={props.page} clerkUserId={props.clerkUserId} onChanged={() => refresh()} />}<EarningsHistory earnings={{ ...earnings, available: withdrawals?.available ?? earnings.available }} /></> : <><p className="text-body-sm text-muted-foreground">PayPal Sandbox template purchases include no AI credits or generation usage. Check saved purchases to recover payment and your project without paying again.</p>{purchases?.items.map(p => <article key={p.id} className={`
+  if (earnings) return <EarningsDashboard earnings={earnings} account={withdrawals} page={props.page} clerkUserId={props.clerkUserId} busy={busy} error={error} message={message} onRefresh={() => refresh()} />;
+  const total = purchases?.total ?? 0;
+  return <div className="space-y-6"><div className="flex flex-wrap items-center gap-4"><Button variant="outline" disabled={busy} onClick={() => void refresh(true)}>{busy ? "Checking…" : "Check purchases"}</Button><p role="status" className={`text-body-sm ${error ? "text-destructive" : "text-muted-foreground"}`}>{error || message}</p></div><><p className="text-body-sm text-muted-foreground">PayPal Sandbox template purchases include no AI credits or generation usage. Check saved purchases to recover payment and your project without paying again.</p>{purchases?.items.map(p => <article key={p.id} className={`
       [@layer_components]:[border:1px_solid_var(--border)] [@layer_components]:rounded-[var(--radius-xl)]
       [@layer_components]:[background:var(--card)] [@layer_components]:text-[color:var(--card-foreground)]
       [@layer_components]:[box-shadow:var(--elevation-card)] sceenyk-card space-y-3 p-5
@@ -90,7 +90,7 @@ function Panel(props: Props) {
       [.workspace-settings-inner_label&&]:pt-[12px] [.workspace-settings-inner_label&&]:pr-[12px]
       [.workspace-settings-inner_label&&]:pb-[12px] [.workspace-settings-inner_label&&]:pl-[12px]
       [.workspace-settings-inner_label&&_svg]:w-[18px] [.workspace-settings-inner_label&&_svg]:h-[18px]
-    `}><h2 className="break-words font-semibold">{p.title}</h2><p>{usd(p.amountMinor)} USD · {p.financialStatus.replaceAll("_", " ")}</p><p className="text-caption text-muted-foreground">{new Date(p.createdAt).toLocaleDateString()}</p>{p.refundedMinor > 0 && <p className="text-body-sm text-muted-foreground">Refunded: {usd(p.refundedMinor)}. Your adopted project remains available.</p>}{p.projectId ? <Button nativeButton={false} render={<Link href={`/projects/${p.projectId}`} />}>Open adopted project</Button> : p.status !== "failed" ? <Button variant="outline" disabled={busy} onClick={() => void continueCheckout(p)}>{p.status === "completed" ? "Recover adopted project" : "Continue saved Sandbox checkout"}</Button> : <p className="text-body-sm text-muted-foreground">Payment failed. Reconciliation is required before another charge.</p>}</article>)}</>}{!total && <p className={`
+    `}><h2 className="break-words font-semibold">{p.title}</h2><p>{usd(p.amountMinor)} USD · {p.financialStatus.replaceAll("_", " ")}</p><p className="text-caption text-muted-foreground">{new Date(p.createdAt).toLocaleDateString()}</p>{p.refundedMinor > 0 && <p className="text-body-sm text-muted-foreground">Refunded: {usd(p.refundedMinor)}. Your adopted project remains available.</p>}{p.projectId ? <Button nativeButton={false} render={<Link href={`/projects/${p.projectId}`} />}>Open adopted project</Button> : p.status !== "failed" ? <Button variant="outline" disabled={busy} onClick={() => void continueCheckout(p)}>{p.status === "completed" ? "Recover adopted project" : "Continue saved Sandbox checkout"}</Button> : <p className="text-body-sm text-muted-foreground">Payment failed. Reconciliation is required before another charge.</p>}</article>)}</>{!total && <p className={`
       [@layer_components]:[border:1px_solid_var(--border)] [@layer_components]:rounded-[var(--radius-xl)]
       [@layer_components]:[background:var(--card)] [@layer_components]:text-[color:var(--card-foreground)]
       [@layer_components]:[box-shadow:var(--elevation-card)] sceenyk-card p-6 text-muted-foreground
@@ -102,5 +102,5 @@ function Panel(props: Props) {
       [.workspace-settings-inner_label&&]:pt-[12px] [.workspace-settings-inner_label&&]:pr-[12px]
       [.workspace-settings-inner_label&&]:pb-[12px] [.workspace-settings-inner_label&&]:pl-[12px]
       [.workspace-settings-inner_label&&_svg]:w-[18px] [.workspace-settings-inner_label&&_svg]:h-[18px]
-    `}>{earnings ? "No Marketplace sales yet." : "No paid Marketplace purchases yet."}</p>}<MarketplacePagination total={total} page={props.page} pageSize={12} href={page => `${earnings ? "/credits/earnings" : "/marketplace/purchases"}?page=${page}`} /></div>;
+    `}>No paid Marketplace purchases yet.</p>}<MarketplacePagination total={total} page={props.page} pageSize={12} href={page => `/marketplace/purchases?page=${page}`} /></div>;
 }

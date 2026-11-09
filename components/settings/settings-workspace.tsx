@@ -4,7 +4,7 @@ import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { SettingsNavigation } from "./settings-navigation";
 
-export function SettingsWorkspace({ children, title = "Settings", description = "Make Sceenyk feel like a creative home.", navigation, regionLabel = "Selected settings section" }: { children: ReactNode; title?: string; description?: string; navigation?: ReactNode; regionLabel?: string }) {
+export function SettingsWorkspace({ children, title = "Settings", description = "Make Sceenyk feel like a creative home.", navigation, regionLabel = "Selected settings section", wideContent = false }: { children: ReactNode; title?: string; description?: string; navigation?: ReactNode; regionLabel?: string; wideContent?: boolean }) {
   const pathname = usePathname();
   return <div className={`
       workspace-documentation workspace-settings [&&]:grid [&&]:[grid-template-rows:auto_minmax(0,_1fr)] [&&]:gap-[16px]
@@ -122,6 +122,7 @@ export function SettingsWorkspace({ children, title = "Settings", description = 
       [&&_[data-slot='button']_svg]:w-[14px] [&&_[data-slot='button']_svg]:h-[14px] [&&_dl_dd]:text-[length:13px]
       [&&_dl_dd]:leading-[20px] [@media_(pointer:_coarse)]:[&&_[data-slot='button']]:min-h-[44px]
       [@media_(pointer:_coarse)]:[&&_:is(.sceenyk-field,_.sceenyk-input,_input:not([type='radio']):not([type='checkbox']),_select)]:min-h-[44px]
+      ${wideContent ? "[&&&]:max-w-none" : ""}
     `}>{children}</div>
       </div>
     </div>

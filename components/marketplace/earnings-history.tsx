@@ -3,23 +3,7 @@ import { usd, type CreatorEarnings } from "@/lib/marketplace/payments/contract";
 const historyLabels = { sale: "Sale recorded", available: "Moved to available", refund: "Refund adjustment", capture_reversed: "Payment reversal" } as const;
 export function EarningsHistory({ earnings }: { earnings: CreatorEarnings }) {
   return <>
-    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-      {[["Pending earnings", earnings.pending], ["Available earnings", earnings.available], ["Lifetime gross sales", earnings.lifetimeGross], ["Lifetime net after reversals", earnings.lifetime], ["Creator net reversed", earnings.reversedNet], ["Platform fees reversed", earnings.reversedFee]].map(([label, value]) =>
-        <section key={label} className={`
-      [@layer_components]:[border:1px_solid_var(--border)] [@layer_components]:rounded-[var(--radius-xl)]
-      [@layer_components]:[background:var(--card)] [@layer_components]:text-[color:var(--card-foreground)]
-      [@layer_components]:[box-shadow:var(--elevation-card)] sceenyk-card space-y-2 p-5
-      [.marketplace-configuration_>_&&]:[border:0] [.marketplace-configuration_>_&&]:rounded-[0]
-      [.marketplace-configuration_>_&&]:[background:transparent] [.marketplace-configuration_>_&&]:pt-[16px]
-      [.marketplace-configuration_>_&&]:pr-[0] [.marketplace-configuration_>_&&]:pb-[0]
-      [.marketplace-configuration_>_&&]:pl-[0] [[data-workspace-shell]_&&]:[box-shadow:none]
-      [.workspace-settings-inner_label&&]:min-h-[0] [.workspace-settings-inner_label&&]:gap-[8px]
-      [.workspace-settings-inner_label&&]:pt-[12px] [.workspace-settings-inner_label&&]:pr-[12px]
-      [.workspace-settings-inner_label&&]:pb-[12px] [.workspace-settings-inner_label&&]:pl-[12px]
-      [.workspace-settings-inner_label&&_svg]:w-[18px] [.workspace-settings-inner_label&&_svg]:h-[18px]
-    `}><h2 className="text-body-sm text-muted-foreground">{label}</h2><p className="text-2xl font-semibold">{usd(Number(value))}</p></section>)}
-    </div>
-    <p className="text-body-sm text-muted-foreground">Creator money is separate from AI credits. New verified sales use a 10% Marketplace fee and 90% creator share, with valid earnings available immediately. Historical Sandbox sales retain their original terms. Withdrawals reserve earnings and are held for 7 days before payout. Refunded gross sales: {usd(earnings.reversedGross)}.</p>
+    <details className="rounded-lg border border-border p-3"><summary className="cursor-pointer text-xs font-medium focus-visible:outline-2 focus-visible:outline-ring">Sales accounting details</summary><div className="grid gap-2 pt-2"><p className="text-muted-foreground">Creator money is separate from AI credits. New verified sales use a 10% Marketplace fee and 90% creator share, with valid earnings available immediately. Historical Sandbox sales retain their original terms.</p><p className="text-muted-foreground">Lifetime net after reversals: {usd(earnings.lifetime)} · Refunded gross sales: {usd(earnings.reversedGross)}</p></div></details>
     <div className="space-y-4">{earnings.sales.map((sale, i) => <article key={i} className={`
       [@layer_components]:[border:1px_solid_var(--border)] [@layer_components]:rounded-[var(--radius-xl)]
       [@layer_components]:[background:var(--card)] [@layer_components]:text-[color:var(--card-foreground)]

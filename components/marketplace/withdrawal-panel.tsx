@@ -1,13 +1,15 @@
 "use client";
-import { useRef, useState } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { payoutDestinationAction, withdrawalRequestAction } from "@/app/actions/creator-withdrawals";
 import { usd } from "@/lib/marketplace/payments/contract";
 import type { WithdrawalAccount } from "@/lib/marketplace/withdrawals/contract";
 import { MarketplacePagination } from "./pagination";
+import { Landmark, Mail, ReceiptText } from "lucide-react";
+import { EarningsCard, EarningsEmptyState, EarningsIcon, PayPalMark } from "./earnings-ui";
 
-export function WithdrawalPanel({ account, page, clerkUserId, onChanged }: { account: WithdrawalAccount; page: number; clerkUserId: string; onChanged: () => Promise<void> }) {
+export function WithdrawalPanel({ account, page, clerkUserId, onChanged, marketplaceSales }: { account: WithdrawalAccount; page: number; clerkUserId: string; onChanged: () => Promise<void>; marketplaceSales: ReactNode }) {
   const router = useRouter();
   const [email, setEmail] = useState(account.email ?? "");
   const [amount, setAmount] = useState("");
@@ -53,72 +55,47 @@ export function WithdrawalPanel({ account, page, clerkUserId, onChanged }: { acc
     } catch { setMessage("The result is uncertain. Refresh your history, then retry the same amount to recover the saved request."); }
     finally { inFlight.current = false; setBusy(false); }
   }
-  return <section className="space-y-5" aria-label="Creator withdrawals">
-    <div className="grid gap-4 sm:grid-cols-3">{[["Available Earnings", account.available], ["Pending Payout", account.pending], ["Paid", account.paid]].map(([label, value]) => <div className={`
-      [@layer_components]:[border:1px_solid_var(--border)] [@layer_components]:rounded-[var(--radius-xl)]
-      [@layer_components]:[background:var(--card)] [@layer_components]:text-[color:var(--card-foreground)]
-      [@layer_components]:[box-shadow:var(--elevation-card)] sceenyk-card p-5 [.marketplace-configuration_>_&&]:[border:0]
-      [.marketplace-configuration_>_&&]:rounded-[0] [.marketplace-configuration_>_&&]:[background:transparent]
-      [.marketplace-configuration_>_&&]:pt-[16px] [.marketplace-configuration_>_&&]:pr-[0]
-      [.marketplace-configuration_>_&&]:pb-[0] [.marketplace-configuration_>_&&]:pl-[0]
-      [[data-workspace-shell]_&&]:[box-shadow:none] [.workspace-settings-inner_label&&]:min-h-[0]
-      [.workspace-settings-inner_label&&]:gap-[8px] [.workspace-settings-inner_label&&]:pt-[12px]
-      [.workspace-settings-inner_label&&]:pr-[12px] [.workspace-settings-inner_label&&]:pb-[12px]
-      [.workspace-settings-inner_label&&]:pl-[12px] [.workspace-settings-inner_label&&_svg]:w-[18px]
-      [.workspace-settings-inner_label&&_svg]:h-[18px]
-    `} key={label}><p className="text-body-sm text-muted-foreground">{label}</p><p className="mt-2 text-2xl font-semibold">{usd(Number(value))}</p></div>)}</div>
+  return <>
     {account.deficit > 0 && <p className="rounded-xl bg-warning-surface p-4 text-warning-foreground">Creator earnings deficit: {usd(account.deficit)}. Future Marketplace earnings will offset this amount before becoming available. New withdrawals are blocked.</p>}
-    <div className={`
-      [@layer_components]:[border:1px_solid_var(--border)] [@layer_components]:rounded-[var(--radius-xl)]
-      [@layer_components]:[background:var(--card)] [@layer_components]:text-[color:var(--card-foreground)]
-      [@layer_components]:[box-shadow:var(--elevation-card)] sceenyk-card space-y-5 p-5
-      [.marketplace-configuration_>_&&]:[border:0] [.marketplace-configuration_>_&&]:rounded-[0]
-      [.marketplace-configuration_>_&&]:[background:transparent] [.marketplace-configuration_>_&&]:pt-[16px]
-      [.marketplace-configuration_>_&&]:pr-[0] [.marketplace-configuration_>_&&]:pb-[0]
-      [.marketplace-configuration_>_&&]:pl-[0] [[data-workspace-shell]_&&]:[box-shadow:none]
-      [.workspace-settings-inner_label&&]:min-h-[0] [.workspace-settings-inner_label&&]:gap-[8px]
-      [.workspace-settings-inner_label&&]:pt-[12px] [.workspace-settings-inner_label&&]:pr-[12px]
-      [.workspace-settings-inner_label&&]:pb-[12px] [.workspace-settings-inner_label&&]:pl-[12px]
-      [.workspace-settings-inner_label&&_svg]:w-[18px] [.workspace-settings-inner_label&&_svg]:h-[18px]
-    `}>
-      <h2 className="text-xl font-semibold">Withdraw creator earnings</h2>
-      <p className="text-body-sm text-muted-foreground">Minimum withdrawal: $5 USD. Withdrawals are held for 7 days before payout. The requested amount is reserved immediately. Refunds may reduce or cancel a pending withdrawal. AI credits are separate. Payouts use PayPal Sandbox.</p>
-      <form className="space-y-3" onSubmit={event => { event.preventDefault(); void submit(true); }}>
-        <label className="block text-body-sm font-medium" htmlFor="payout-email">Private PayPal payout email</label>
-        <input id="payout-email" type="email" autoComplete="email" maxLength={254} required value={email} onChange={event => setEmail(event.target.value)} disabled={busy} className="min-h-11 w-full rounded-lg border border-input bg-field px-3 text-foreground focus-visible:outline-2 focus-visible:outline-ring" />
-        <Button type="submit" variant="outline" disabled={busy}>Save payout email</Button>
-        <p className="text-caption text-muted-foreground">Each withdrawal keeps the payout email saved when it was requested.</p>
-      </form>
-      <form className="space-y-3" onSubmit={event => { event.preventDefault(); void submit(false); }}>
-        <label htmlFor="withdrawal-amount" className="block text-body-sm font-medium">Requested amount (USD)</label>
-        <input id="withdrawal-amount" inputMode="decimal" value={amount} required disabled={busy} onChange={event => setAmount(event.target.value)} placeholder="5.00" className="min-h-11 w-full rounded-lg border border-input bg-field px-3 text-foreground focus-visible:outline-2 focus-visible:outline-ring" />
-        <Button type="submit" disabled={busy || confirmed || account.available < 500 || account.deficit > 0 || !account.email}>Withdraw</Button>
-        {confirmed && <Button type="button" variant="outline" disabled={busy} onClick={() => { try { localStorage.removeItem(`sceenyk-withdrawal:${clerkUserId}`); } catch { /* Storage is advisory. */ } request.current = null; setConfirmed(false); setAmount(""); setMessage(""); }}>Request another withdrawal</Button>}
-      </form>
-      <p role="status" className="text-body-sm text-muted-foreground">{message}</p>
+    <div className="grid min-w-0 gap-4 @min-[680px]/earnings:grid-cols-2">
+      <EarningsCard label="PayPal Payout Account" className="grid content-start gap-3">
+        <div className="flex items-start gap-3"><EarningsIcon><PayPalMark /></EarningsIcon><div className="grid min-w-0 gap-0.5"><h2>PayPal Payout Account</h2><p className="text-muted-foreground">Required before requesting a withdrawal.</p></div><span className="ml-auto shrink-0 rounded-full bg-accent px-2 py-0.5 text-[11px] leading-4 font-medium text-link">Required</span></div>
+        <p id="payout-description" className="text-muted-foreground">Enter the PayPal email where you want to receive your earnings.</p>
+        <form className="grid gap-3" onSubmit={event => { event.preventDefault(); void submit(true); }}>
+          <label className="sr-only" htmlFor="payout-email">Private PayPal payout email</label>
+          <div className="relative"><Mail className="pointer-events-none absolute top-1/2 left-3 size-3.5 -translate-y-1/2 text-muted-foreground" aria-hidden="true" /><input id="payout-email" type="email" autoComplete="email" aria-describedby="payout-description" maxLength={254} required value={email} onChange={event => setEmail(event.target.value)} disabled={busy} placeholder="your-paypal-email@example.com" className="w-full rounded-lg border border-input bg-field pr-3 text-foreground placeholder:text-muted-foreground focus-visible:outline-2 focus-visible:outline-ring disabled:opacity-60" /></div>
+          <Button type="submit" className="w-fit shadow-none" disabled={busy}>Save PayPal Account</Button>
+        </form>
+        {account.email && <p className="text-muted-foreground">Each withdrawal keeps the payout email saved when it was requested.</p>}
+      </EarningsCard>
+      <EarningsCard label="Withdraw Earnings" className="grid content-start gap-3">
+        <div className="flex items-start gap-3"><EarningsIcon><Landmark /></EarningsIcon><div className="grid gap-0.5"><h2>Withdraw Earnings</h2><p className="text-muted-foreground">Minimum withdrawal: $5.00 USD</p></div></div>
+        <p id="withdrawal-description" className="text-muted-foreground">Withdrawals are held for 7 days before payout. The requested amount is reserved immediately and sent to your PayPal account after the hold and payment checks.</p>
+        <form className="grid gap-3" onSubmit={event => { event.preventDefault(); void submit(false); }}>
+          <label htmlFor="withdrawal-amount" className="sr-only">Requested amount (USD)</label>
+          <div className="relative"><span className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 border-r border-border pr-2 text-[13px] text-muted-foreground" aria-hidden="true">$</span><input id="withdrawal-amount" inputMode="decimal" value={amount} required disabled={busy} aria-describedby="withdrawal-description" onChange={event => setAmount(event.target.value)} placeholder="0.00" className="w-full rounded-lg border border-input bg-field pr-3 text-foreground placeholder:text-muted-foreground focus-visible:outline-2 focus-visible:outline-ring disabled:opacity-60" /></div>
+          <Button type="submit" className="w-fit shadow-none disabled:bg-muted disabled:bg-none disabled:text-muted-foreground disabled:opacity-100" disabled={busy || confirmed || account.available < 500 || account.deficit > 0 || !account.email}>Request Withdrawal</Button>
+          {confirmed && <Button type="button" variant="outline" className="w-fit" disabled={busy} onClick={() => { try { localStorage.removeItem(`sceenyk-withdrawal:${clerkUserId}`); } catch { /* Storage is advisory. */ } request.current = null; setConfirmed(false); setAmount(""); setMessage(""); }}>Request another withdrawal</Button>}
+        </form>
+        <p className="text-muted-foreground">Refunds may reduce or cancel a pending withdrawal. Payouts use PayPal Sandbox.</p>
+      </EarningsCard>
     </div>
-    <h2 className="text-xl font-semibold">Withdrawal history</h2>
-    {!account.history.length && <p className="text-muted-foreground">No withdrawals yet.</p>}
-    {account.history.map(w => <article key={w.id} className={`
-      [@layer_components]:[border:1px_solid_var(--border)] [@layer_components]:rounded-[var(--radius-xl)]
-      [@layer_components]:[background:var(--card)] [@layer_components]:text-[color:var(--card-foreground)]
-      [@layer_components]:[box-shadow:var(--elevation-card)] sceenyk-card space-y-2 p-5
-      [.marketplace-configuration_>_&&]:[border:0] [.marketplace-configuration_>_&&]:rounded-[0]
-      [.marketplace-configuration_>_&&]:[background:transparent] [.marketplace-configuration_>_&&]:pt-[16px]
-      [.marketplace-configuration_>_&&]:pr-[0] [.marketplace-configuration_>_&&]:pb-[0]
-      [.marketplace-configuration_>_&&]:pl-[0] [[data-workspace-shell]_&&]:[box-shadow:none]
-      [.workspace-settings-inner_label&&]:min-h-[0] [.workspace-settings-inner_label&&]:gap-[8px]
-      [.workspace-settings-inner_label&&]:pt-[12px] [.workspace-settings-inner_label&&]:pr-[12px]
-      [.workspace-settings-inner_label&&]:pb-[12px] [.workspace-settings-inner_label&&]:pl-[12px]
-      [.workspace-settings-inner_label&&_svg]:w-[18px] [.workspace-settings-inner_label&&_svg]:h-[18px]
-    `}>
-      <p className="font-semibold">{usd(w.amount)} · {w.status.charAt(0).toUpperCase() + w.status.slice(1)}</p>
-      <p className="text-body-sm text-muted-foreground">Requested {usd(w.requested)} on {new Date(w.requestedAt).toLocaleString()}</p>
-      <p className="text-body-sm text-muted-foreground">Hold until {new Date(w.holdUntil).toLocaleString()}</p>
-      {w.paidAt && <p className="text-body-sm">Paid {new Date(w.paidAt).toLocaleString()}</p>}
-      {w.reviewRequired && <p className="text-body-sm text-warning">PayPal reported a return after payout. Contact support to reconcile it; the original paid record is preserved.</p>}
-      {w.failureMessage && <p className="text-body-sm text-muted-foreground">{w.failureMessage}</p>}
-    </article>)}
-    <MarketplacePagination total={account.total} page={page} pageSize={12} itemLabel="withdrawal" href={value => `/credits/earnings?page=${value}`} />
-  </section>;
+    {message && <p role="status" aria-live="polite" className="rounded-lg border border-border bg-muted p-3 text-muted-foreground">{message}</p>}
+    <div className="grid min-w-0 items-start gap-4 @min-[680px]/earnings:grid-cols-2">
+      <EarningsCard label="Payout History" className="grid content-start gap-3">
+        <div className="flex items-center gap-3"><EarningsIcon small><ReceiptText /></EarningsIcon><h2>Payout History</h2></div>
+        {!account.history.length && (account.total === 0 ? <EarningsEmptyState kind="payout" /> : <p className="text-muted-foreground">No withdrawals on this page.</p>)}
+        {account.history.map(w => <article key={w.id} className="grid gap-1 border-t border-border pt-3">
+          <div className="font-semibold tabular-nums">{usd(w.amount)} · {w.status.charAt(0).toUpperCase() + w.status.slice(1)}</div>
+          <p className="text-muted-foreground">Requested {usd(w.requested)} on {new Date(w.requestedAt).toLocaleString()}</p>
+          <p className="text-muted-foreground">Hold until {new Date(w.holdUntil).toLocaleString()}</p>
+          {w.paidAt && <p>Paid {new Date(w.paidAt).toLocaleString()}</p>}
+          {w.reviewRequired && <p className="text-warning-foreground">PayPal reported a return after payout. Contact support to reconcile it; the original paid record is preserved.</p>}
+          {w.failureMessage && <p className="text-muted-foreground">{w.failureMessage}</p>}
+        </article>)}
+        {(account.total > 0 || page > 1) && <MarketplacePagination total={account.total} page={page} pageSize={12} itemLabel="withdrawal" href={value => `/credits/earnings?page=${value}`} />}
+      </EarningsCard>
+      {marketplaceSales}
+    </div>
+  </>;
 }
