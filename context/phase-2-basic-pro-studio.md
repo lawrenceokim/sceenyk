@@ -1,9 +1,13 @@
 # Phase 2: Basic & Pro Studio Modes
 
-**Status: In Progress. M1–M6 complete in source/focused offline verification. M7 Planned / Not Started.**
-**Decision date: 2026-11-05. Current implementation scope: M1–M6, including independent clip attempts and explicit local final merging.**
+**Status: In Progress. M1–M6 complete in source/focused offline verification. M7 source review and scoped fixes complete; full manual acceptance pending.**
+**Decision date: 2026-11-05. Current implementation scope: M1–M7 source review/corrections, including independent clip attempts and explicit local final merging.**
 
-This specification records the bounded M1–M6 implementation. M1 adds independent mode metadata; M2 extends existing V3 reference owners with independently reviewed Pro characters and frozen cast/speaker links; M3 presents the same saved style as a compact Pro image gallery. M4 adds extended duration and one connected story with planned clip boundaries. M5 implements independent clip execution, review and replacement. M6 explicitly merges approved clips locally and adds final review/approval. Existing setup, security, pricing and manual acceptance prerequisites remain. Dated earlier records retain their original scope and evidence.
+This specification records M1–M6 implementation plus M7 source review and scoped corrections. M1 adds independent mode metadata; M2 extends existing V3 reference owners with independently reviewed Pro characters and frozen cast/speaker links; M3 presents the same saved style as a compact Pro image gallery. M4 adds extended duration and one connected story with planned clip boundaries. M5 implements independent clip execution, review and replacement. M6 explicitly merges approved clips locally and adds final review/approval. Existing setup, security, pricing and manual acceptance prerequisites remain. Dated earlier records retain their original scope and evidence.
+
+## M7 source review and scoped fixes (2026-11-09)
+
+[Workflow source map, evidence, setup and complete Basic/Pro manual checklist](m7-workflow-verification.md). Fixed separately persisted mode/status reconciliation, saved Package approval display after authority expires/is consumed, frozen Package consent controls and retained-cast Basic generation controls. Existing saved inputs, lock evidence, approved clips/finals, ownership and finite payment authority retain their owners. Passed 290 focused workflow presentation/effect checks and 48 read-only lock checks, TypeScript, focused lint and whitespace checks. No large suite, browser automation, build, SQL/worker/media suite, paid request, production mutation or remote setup ran. No new migration/configuration; verify existing 100 after 099 and prerequisites. Full hosted/provider/end-to-end/visual acceptance remains with the owner; earlier dated scope records below are historical.
 
 ## M6 implementation and setup (2026-11-08)
 
@@ -459,7 +463,7 @@ OpenAI remains the only reference-generation/creative-direction provider. Higgsf
 
 ## Expected database work and safeguards
 
-**M1 uses manual 094; M2 uses manual 095/096; M3 requires no migration; M4 uses manual 097. M5 uses manual 098 and existing V3 owners; M6 uses manual 099 with the same join task/artifact owners; M7 remains planned.** Existing migrations are transactional/rerunnable and guard prerequisite objects/contracts. M2 adds one receipt-subject column; M4 reuses existing task/artifact JSON without new columns/tables. Inspect the actual installed contract before applying; stop on guard failures rather than guessing. Retain named realtime/RLS behavior. Later feature relations/fields/RPCs remain undecided.
+**M1 uses manual 094; M2 uses manual 095/096; M3 requires no migration; M4 uses manual 097. M5 uses manual 098 and existing V3 owners; M6 uses manual 099 with the same join task/artifact owners; the approval lock uses manual 100. M7 adds no migration and awaits manual acceptance.** Existing migrations are transactional/rerunnable and guard prerequisite objects/contracts. M2 adds one receipt-subject column; M4 reuses existing task/artifact JSON without new columns/tables. Inspect the actual installed contract before applying; stop on guard failures rather than guessing. Retain named realtime/RLS behavior. Later feature relations/fields/RPCs remain undecided.
 
 Expected responsibilities are: owner preferred mode and project saved mode; reversible retained Pro configuration and active Basic-compatible inputs; stable character-to-source/sheet/task/approval bindings; versioned full-story/clip plans; immutable selective attempts and fresh authorizations; current approved attempt selection; explicit deduplicated merge intents/manifests and final approval lineage. Reuse existing owners before adding persistence. A new UI list alone cannot implement these contracts. No destructive backfill, weakening of active-run/consumed-authority uniqueness, historical JSON/hash rewrite or automatic media cleanup is acceptable.
 
@@ -475,7 +479,7 @@ Follow [the design system](design-system.md) and [Styling Policy](code-standards
 
 ## Implementation roadmap
 
-**M1–M4 complete in source/focused offline verification; M5 complete in source/focused offline verification. Manual migrations and hosted/provider/visual acceptance pending. M6 complete in source/offline verification; M7 Planned / Not Started.** M3 adds no migration; M4 uses manual 097. Dependencies are ordered; do not begin later milestones automatically. Acceptance must distinguish source/offline checks from remote migration, provider, worker, hosted and manual visual results.
+**M1–M6 complete in source/focused offline verification; M7 source review and scoped fixes complete, full manual acceptance pending.** Manual migrations and hosted/provider/visual acceptance remain pending. M3/M7 add no migration; the approval lock uses manual 100 after 099. Dependencies are ordered; do not begin later milestones automatically. Acceptance must distinguish source/offline checks from remote migration, provider, worker, hosted and manual visual results.
 
 ### M1 — Studio mode selection and persistence
 
@@ -532,10 +536,12 @@ Follow [the design system](design-system.md) and [Styling Policy](code-standards
 
 ### M7 — Full workflow verification, responsive testing and documentation
 
+**Source review and scoped corrections complete (2026-11-09); full manual acceptance pending.** [Current source map, focused evidence, setup and Basic/Pro checklist](m7-workflow-verification.md). The current owner-authorized implementation replaces the earlier documentation-only boundary. No paid/provider/live acceptance is inferred.
+
 - **Depends on:** M1–M6 plus approved setup and scoped live testing authorization.
 - **Planned work/database:** no new schema expected solely for verification; inspect/apply only separately reviewed required migrations. Update architecture, workflow, UI, standards and tracker to actual accepted behavior.
 - **Safeguards:** use isolated new test projects and fresh explicit paid authority; do not convert historical executions or reset balances; do not infer hosted/provider acceptance from fixtures. Preserve commercial/access/worker rollout controls.
-- **Acceptance:** complete Basic regression and Pro short/long workflows through final approval; verify two-owner isolation, save/reopen/downgrade restoration, per-character/per-clip failure/recovery, financial concurrency and merge behavior. Record responsive/mobile/keyboard/light-dark/reduced-motion review and real continuity/audio/format observations separately. The future full workflow phase includes backend/financial work; UI-only slices still follow Fast UI Development Mode. No tests, provider calls or responsive suites are run by this documentation task.
+- **Manual acceptance remaining:** complete Basic regression and Pro short/long workflows through final approval; verify two-owner isolation, save/reopen/downgrade restoration, per-character/per-clip failure/recovery, financial concurrency and merge behavior. Record responsive/mobile/keyboard/light-dark/reduced-motion review and real continuity/audio/format observations separately. The current M7 source review ran only the focused offline checks recorded above; end-to-end/visual testing remains with the owner. No provider call, production mutation or responsive suite ran.
 
 ## Unresolved technical questions
 
@@ -547,4 +553,4 @@ Follow [the design system](design-system.md) and [Styling Policy](code-standards
 6. **M6 resolved in source:** explicit merge admission/manifests, duplicate/recovery guards, local compatibility processing and final review/approval/rejection. Actual hosted/device acceptance and source-generated seam quality remain manual.
 7. **M4–M7:** real account reference/native audio/voice/identity consistency and long-story provider quality; verified resolution-specific rates and hosted worker/resources/FFmpeg capacity for 120s. Retain existing blockers rather than inventing guarantees, rates or another provider.
 
-Advanced remains future/out of scope. These questions do not authorize further implementation. **M6 implements local merging and final review; M7 remains planned.** Apply/verify required manual migrations and review the offline result before separately authorizing live acceptance.
+Advanced remains future/out of scope. These questions do not authorize further implementation. **M6 implements local merging and final review; M7 source review and scoped corrections are complete, with full manual acceptance pending.** Apply/verify required manual migrations and review the offline result before separately authorizing live acceptance.

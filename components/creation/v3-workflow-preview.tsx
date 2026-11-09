@@ -283,7 +283,9 @@ export function V3WorkflowPreview({
   useEffect(() => {
     // One project/revision bootstrap is also needed for the separate Source
     // cards. Closing the drawer must not start another read.
-    const fingerprint = `${projectId}:${revision}`;
+    // Mode is saved separately from the brief. Reconcile retained Pro settings
+    // after a committed switch without remounting Studio or replaying actions.
+    const fingerprint = `${projectId}:${revision}:${studioMode}`;
     if (!pageVisible || !workflowVisible && initialRead.current === fingerprint) return;
     const controller = new AbortController();
     const timer = setTimeout(() => {
@@ -291,7 +293,7 @@ export function V3WorkflowPreview({
       void refresh(controller.signal);
     }, 0);
     return () => { clearTimeout(timer); controller.abort(); };
-  }, [refresh, revision, projectId, pageVisible, workflowVisible]);
+  }, [refresh, revision, projectId, pageVisible, workflowVisible, studioMode]);
   useEffect(() => {
     if (!statusEnabled) return;
     // Review/terminal states have no polling timer. Returning to a retained page
@@ -383,7 +385,9 @@ export function V3WorkflowPreview({
   const transientFinalRead = !!workspace?.multiClip && (retryFinalRead || finalOperation.presentation.active) && statusRetryable;
   const workflowError = error || (transientFinalRead ? "" : statusError);
   const maximumValue =
-    p && maximum?.packageHash === p.packageHash
+    workspace?.creativeLock && p?.authorizedMaximumMicrousd != null
+      ? (p.authorizedMaximumMicrousd / 1_000_000).toFixed(2)
+      : p && maximum?.packageHash === p.packageHash
       ? maximum.value
       : p?.suggestedMaximumMicrousd
         ? (p.suggestedMaximumMicrousd / 1_000_000).toFixed(2)
@@ -405,10 +409,14 @@ export function V3WorkflowPreview({
     p.estimatedCostMicrousd !== null && !!p.quoteId && !packageUpdating && !packageBuildFailed &&
     !packageTask?.packageBuild?.code &&
     !p.issues.some(issue => ["COST_ESTIMATE_UNAVAILABLE", "V3_LOCAL_PRICING_SNAPSHOT_INVALID", "V3_RESOLUTION_PRICING_NOT_CONFIGURED"].includes(issue));
-  const packageApproved = packageReady && p?.authorizationState === "bound" &&
+  // A saved execution proves approval of this exact package, even after its
+  // one-use authority is consumed or expires. It grants no future submission.
+  const savedPackageApproval = !!p && p.currentness === "current" && !workspace?.packageStale &&
+    !!workspace?.runs.some(run => run.packageId === p.packageId && run.current && run.state !== "deleted");
+  const packageApproved = savedPackageApproval || packageReady && p?.authorizationState === "bound" &&
     !p.issues.some(issue => issue.startsWith("V3_AUTHORIZATION_") || issue === "V3_SEGMENT_AUTHORIZATION_REQUIRED");
-  const packageReviewLabel = packageReady
-    ? packageApproved ? "Approved" : "Ready for review"
+  const packageReviewLabel = packageApproved ? "Approved" : packageReady
+    ? "Ready for review"
     : p?.currentness !== "current" || workspace?.packageStale ? "Needs rebuilding"
     : packageUpdating ? "Updating package"
     : packageBuildFailed ? "Build needs attention" : "Estimate unavailable";
@@ -942,7 +950,7 @@ export function V3WorkflowPreview({
                     <Button
                       variant="default"
                       className="w-full max-w-full whitespace-normal sm:w-auto"
-                      disabled={creativeLocked || locked || workspace.proDurationRetained || !currentApproved("storyboard")}
+                      disabled={creativeLocked || locked || proCharactersBlocked || workspace.proDurationRetained || !currentApproved("storyboard")}
                       onClick={() => {
                         setPackageRequestPending(true);
                         void act("build_package", {
@@ -983,8 +991,8 @@ export function V3WorkflowPreview({
                           <div className="inline-flex max-w-full items-center gap-1.5 rounded-lg bg-warning-surface px-2.5 py-1.5 text-xs font-medium text-warning-foreground">
                             <Layers2 aria-hidden="true" className="size-4 shrink-0" /><dt className="sr-only">Generation segments</dt><dd className="min-w-0">{p.segmentCount} {p.segmentCount === 1 ? "generation segment" : "generation segments"}</dd>
                           </div>
-                          <div className={`inline-flex max-w-full items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium ${packageReady ? "bg-success-surface text-success-foreground" : "bg-warning-surface text-warning-foreground"}`}>
-                            {packageReady ? <CircleCheck aria-hidden="true" className="size-4 shrink-0" /> : <Info aria-hidden="true" className="size-4 shrink-0" />}<dt className="sr-only">Review state</dt><dd className="min-w-0">{packageReviewLabel}</dd>
+                          <div className={`inline-flex max-w-full items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium ${packageReady || packageApproved ? "bg-success-surface text-success-foreground" : "bg-warning-surface text-warning-foreground"}`}>
+                            {packageReady || packageApproved ? <CircleCheck aria-hidden="true" className="size-4 shrink-0" /> : <Info aria-hidden="true" className="size-4 shrink-0" />}<dt className="sr-only">Review state</dt><dd className="min-w-0">{packageReviewLabel}</dd>
                           </div>
                         </dl>
                       <div className="min-w-0 space-y-3 rounded-xl border border-primary/20 bg-card p-4">
@@ -1015,6 +1023,7 @@ export function V3WorkflowPreview({
                           <span className="block">Maximum authorized USD</span>
                           <input
                             type="number"
+                            disabled={creativeLocked}
                             min="0"
                             step="0.01"
                             className="h-11 w-full min-w-0 rounded-lg border border-primary/25 bg-background px-3 text-sm font-normal text-foreground outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30"
@@ -1036,8 +1045,9 @@ export function V3WorkflowPreview({
                         <label className="flex min-h-11 cursor-pointer items-start gap-2 text-sm leading-relaxed">
                           <input
                             type="checkbox"
+                            disabled={creativeLocked}
                             className="mt-0.5 size-4 shrink-0 accent-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-                            checked={approvedHash === p.packageHash}
+                            checked={creativeLocked ? savedPackageApproval : approvedHash === p.packageHash}
                             onChange={(e) =>
                               setApprovedHash(
                                 e.target.checked ? p.packageHash : null,
@@ -1055,7 +1065,7 @@ export function V3WorkflowPreview({
                             workspace.resolutionPricingAvailable === false ||
                             p.issues.includes("V3_RESOLUTION_PRICING_NOT_CONFIGURED") ||
                             packageApproved ||
-                            creativeLocked || locked ||
+                            creativeLocked || locked || proCharactersBlocked ||
                             p.estimatedCostMicrousd === null ||
                             !p.quoteId ||
                             approvedHash !== p.packageHash ||
@@ -1099,7 +1109,7 @@ export function V3WorkflowPreview({
                     <h2 className="font-semibold">Final Video</h2>
                     <FinalVideoGenerate
                       generating={finalVideoGenerating}
-                      disabled={locked || workspace.proDurationRetained || !p?.canSubmit || finalVideo.hasExistingRun}
+                      disabled={locked || proCharactersBlocked || workspace.proDurationRetained || !p?.canSubmit || finalVideo.hasExistingRun}
                       onGenerate={() => {
                         if (!p) return;
                         setVideoRequestPending(true);

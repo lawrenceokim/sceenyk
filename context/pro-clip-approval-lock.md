@@ -1,5 +1,7 @@
 # Pro clip approval locking (2026-11-09)
 
+**M7 follow-up:** the [workflow source review and manual checklist](m7-workflow-verification.md) covers Basic, short/connected Pro, existing approved projects and refresh/restart. Frozen Package maximum/consent controls now stay read-only; saved execution approval display survives expired/consumed authority without granting new spending. Mode switches reconcile retained status. Migration 100 and all lock evidence/guards are unchanged; hosted/backend/provider acceptance was not rerun.
+
 Implemented through the existing V3 project, artifact, package, run, authorization, storage and Studio owners. This lifecycle supersedes earlier descriptions of creative currentness after a Pro source clip is approved. Basic and historical non-V3 generation are unchanged. There is no unlock, implicit project version, regeneration requirement or additional payment.
 
 ## Lifecycle

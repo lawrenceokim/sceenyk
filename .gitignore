@@ -16,6 +16,7 @@
 # context
 !/context/
 /context/*
+!/context/m7-workflow-verification.md
 !/context/pro-clip-approval-lock.md
 !/context/higgsfield-reference-limits.md
 !/context/m6-final-operation-reliability.md

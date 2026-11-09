@@ -1,5 +1,9 @@
 # Architecture Context
 
+## Phase 2 M7 — reviewed workflow handoffs (2026-11-09)
+
+The existing owners continue to enforce saved inputs, private ownership, frozen source approval, finite spending authorization, per-clip attempts, explicit local merging and final completion. Studio now includes separately committed mode metadata in its status bootstrap, without remounting or mutation replay. Package approval display uses current saved execution evidence independently of unused submission authority; eligibility remains server/database authoritative. No architecture/schema/payment/worker change. [Source map and manual acceptance boundary](m7-workflow-verification.md).
+
 ## Pro first-source-clip creative lock
 
 Package/estimate approval preserves its immutable spending records but does not lock editable creative inputs. The first approved Pro source run atomically captures an append-only, versioned creative lock with the exact source/package/quote, reference and Storyboard records, original brief evidence and approval provenance. That snapshot is the permanent currentness authority for this project version; later paid clip attempts retain existing finite spending approval, lease, recovery and immutable request checks. Final joined approval cannot create this lock. Basic remains unchanged.

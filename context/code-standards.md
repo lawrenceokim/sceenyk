@@ -1,5 +1,9 @@
 # Code Standards
 
+## Phase 2 M7 — approval evidence versus submission authority (2026-11-09)
+
+Display saved package approval from current non-deleted execution evidence independently of unused finite authority. Never turn an approval label or mode change into a grant, retry or workflow mutation. Mode metadata changes must reconcile status without resetting saved work; frozen package inputs stay read-only. Preserve existing server/database guards. M7 verification remains focused; do not infer hosted/backend/payment/provider acceptance from UI fixtures. [Source review and manual checks](m7-workflow-verification.md).
+
 ## Pro first-source approval invariant (2026-11-09)
 
 Package/estimate approval is spending authority, not a permanent creative lock. Capture immutable evidence atomically with the first Pro source approval through migration 100; enforce creative write protection in SQL and authenticated service actions. Preserve Basic, finite per-clip spending, unknown-outcome recovery and M6 output handling. Version accepted snapshot readers/currentness/metadata rules; never recompile, reprice or revalidate accepted creative semantics through unrelated new policy. Hashes, exact bindings, owned private byte checks and genuine corruption errors remain mandatory. Historical recovery must use authentic package-bound evidence and append explicit unresolved states instead of inventing approvals. No automatic production repair or unlock. [Lifecycle and setup](pro-clip-approval-lock.md).

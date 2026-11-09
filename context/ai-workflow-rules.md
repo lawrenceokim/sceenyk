@@ -1,5 +1,9 @@
 # AI Workflow Rules
 
+## Current authorization — Phase 2 M7 (2026-11-09)
+
+Review the complete Basic/Pro workflow and Pro first-source approval lock; implement only confirmed gaps through existing owners and update context. Prioritize implementation and essential focused checks. No large suites, browser automation, repeated builds, paid provider requests or production data changes. Leave end-to-end and visual acceptance to the owner. The completed source review and scoped Studio fixes introduce no schema or paid authority; [M7 evidence/setup/manual checklist](m7-workflow-verification.md) distinguishes traced source safeguards and offline checks from unperformed hosted/provider/manual acceptance. Earlier M6/lock scopes below retain their dated history.
+
 ## Current authorization — Pro clip approval lock (2026-11-09)
 
 Implement first-source approval locking and conservative historical recovery through existing V3 owners. Package approval remains editable until the first source approval; preserve remaining attempts, finite authorization, M5/M6 recovery/merge and Basic behavior. Use offline disposable SQL, injected provider/storage I/O, focused component/effect tests and static verification. No paid generation, production data change, remote migration, environment edit or deployment. Report manual migration 100 after 099. Do not fabricate missing evidence or disable production safety checks. [Contract](pro-clip-approval-lock.md).

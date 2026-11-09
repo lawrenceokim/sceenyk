@@ -20,7 +20,7 @@ const bundle = await build({ absWorkingDir: process.cwd(), stdin: { contents: 'e
     builder.onResolve({ filter: /^(react|next\/image|@\/components\/workspace\/studio-mode-provider|@\/components\/ui\/(button|dialog)|\.\/studio-workspace-panels)$/ }, args => ({ path: args.path, namespace: "fixture" }));
     builder.onLoad({ filter: /.*/, namespace: "fixture" }, args => {
       if (args.path === "react") return { contents: "const r=globalThis.__progressReact; export const useState=r.useState,useRef=r.useRef,useEffect=r.useEffect,useCallback=r.useCallback,useMemo=r.useMemo;" };
-      if (args.path === "@/components/workspace/studio-mode-provider") return { contents: "export const useStudioMode=()=>({mode:'basic'});" };
+      if (args.path === "@/components/workspace/studio-mode-provider") return { contents: "export const useStudioMode=()=>({mode:globalThis.__progressMode??'basic'});" };
       if (args.path === "./studio-workspace-panels") return { contents: "export const useStudioPanels=()=>globalThis.__progressPanels??null; export const StudioPanelPortal=props=>props.children; export const StudioWorkflowMedia=()=>null;" };
       if (args.path === "next/image") return { contents: "export default function Image(){return null;}" };
       const names = args.path.endsWith("/button") ? ["Button"] : ["Dialog", "DialogClose", "DialogTrigger", "DialogContent", "DialogDescription", "DialogFooter", "DialogHeader", "DialogTitle"];
@@ -251,9 +251,49 @@ try {
     ok(render(initial).includes('Locked after first clip approval'));
     ok(render({...initial,creativeLock:{...creativeLock,state:'needs_review'}}).includes('administrator review required'));
     leave();
+    // Mode commits are independent of the brief revision. A closed drawer still
+    // reconciles once, preserving approved outputs and the mounted editor.
+    globalThis.__progressMode = 'pro'; globalThis.__progressPanels = { workflowOpen: false };
+    initial = { ...complete, creativeLock }; slots=[]; lifecycleCalls=[];
+    globalThis.fetch = async (url, options) => {
+      lifecycleCalls.push({url,options});
+      return Response.json({ok:true,workspace:{...initial,...(globalThis.__progressMode==='basic'?{proDurationRetained:true}:{})}});
+    };
+    syncEffects(); await fire(0); syncEffects(); equal(lifecycleCalls.length,1);
+    globalThis.__progressMode = 'basic'; syncEffects(); await fire(0); syncEffects();
+    equal(lifecycleCalls.length,2); equal(progressProps(tree).workspace.proDurationRetained,true);
+    equal(progressProps(tree).workspace.runs,initial.runs); equal(progressProps(tree).workspace.creativeLock,creativeLock);
+    globalThis.__progressMode = 'pro'; syncEffects(); await fire(0); syncEffects();
+    equal(lifecycleCalls.length,3); equal(progressProps(tree).workspace.proDurationRetained,undefined);
+    equal(progressProps(tree).workspace.complete,true);
+    syncEffects(); await fire(0); equal(lifecycleCalls.length,3); equal(timers.size,0);
+    ok(lifecycleCalls.every(call=>call.options.method!=='POST')); leave();
+    delete globalThis.__progressMode; delete globalThis.__progressPanels;
+
+    // Package approval evidence and unused paid authority have separate lives.
+    const packageTree = workspace => {
+      initial=workspace;slots=[];let result=owner();
+      find(result,n=>n.type==='button'&&text(n)==='Package').props.onClick();
+      return owner();
+    };
+    const approvalButton = result => find(result,n=>n.type?.name==='Button'&&text(n)==='Approve Generation Package');
+    for(const savedState of ['awaiting_review','approved']) {
+      const result=packageTree({...packaged,runs:[run(savedState)],preflight:{...preflight,issues:['V3_AUTHORIZATION_EXPIRED','V3_SEGMENT_AUTHORIZATION_REQUIRED']}});
+      equal(text(find(result,n=>n.props?.['aria-label']==='Package overview')).includes('Approved'),true);
+      equal(approvalButton(result).props.disabled,true);
+    }
+    const frozen=packageTree({...complete,creativeLock,preflight:{...preflight,authorizedMaximumMicrousd:3000000}});
+    equal(find(frozen,n=>n.type==='input'&&n.props.type==='number').props.disabled,true);
+    equal(find(frozen,n=>n.type==='input'&&n.props.type==='number').props.value,'3.00');
+    equal(find(frozen,n=>n.type==='input'&&n.props.type==='checkbox').props.disabled,true);
+    equal(find(frozen,n=>n.type==='input'&&n.props.type==='checkbox').props.checked,true);
+    equal(approvalButton(frozen).props.disabled,true);
+    const rejected=packageTree({...packaged,runs:[run('deleted')],preflight:{...preflight,authorizationState:'missing',issues:['V3_AUTHORIZATION_REQUIRED']}});
+    equal(text(find(rejected,n=>n.props?.['aria-label']==='Package overview')).includes('Ready for review'),true);
+    equal(find(rejected,n=>n.type==='input'&&n.props.type==='number').props.disabled,false);
   } finally { Object.assign(globalThis, originals); }
   // Reload/reopen takes the persisted approval rather than a local visited-tab flag.
   initial = complete; slots = []; equal(state(progressProps(owner()).workspace).complete, true);
   equal(realNetworkCalls, 0);
   console.log(JSON.stringify({ checks, realNetworkCalls, scope: "V3 Progress saved states, disclosures, recovery and automatic synchronization" }));
-} finally { globalThis.fetch = originalFetch; delete globalThis.__progressReact; delete globalThis.__progressPanels; }
+} finally { globalThis.fetch = originalFetch; delete globalThis.__progressReact; delete globalThis.__progressPanels; delete globalThis.__progressMode; }

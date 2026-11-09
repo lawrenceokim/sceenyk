@@ -1,5 +1,9 @@
 # UI Context
 
+## Phase 2 M7 — consistent saved workflow presentation (2026-11-09)
+
+Keep the mounted Studio and existing layout. Reconcile retained workflow flags after a committed Basic/Pro switch even when the drawer is closed. Current saved executions retain the Package Approved label after authority is consumed/expired; that label never grants another submission. Frozen Package maximum/consent inputs are disabled. Retained multi-character Basic controls match existing server restrictions. Existing tokens, controls, Preview and lock disclosures remain; responsive/theme/keyboard/visual acceptance is manual. [M7 checklist](m7-workflow-verification.md).
+
 ## Pro creative inputs after first source approval (2026-11-09)
 
 Display a small muted purple lock notice in the existing Sources panel. Keep saved prompts, original references/names, sheets, settings, Storyboard and package visible; disable creative editing, removal, regeneration/review and rebuilding after the persisted first-source lock. Inspector accordion summaries, reference navigation and Preview remain available. New first-source approval updates the surrounding Studio once per actual saved lock change; equivalent status DTOs cannot restart notifications/polling. Progress contains capture/approval timestamps and actionable setup/evidence issues. Remaining clip actions and M6 loading/recovery/approval UI remain unchanged. Reuse tokens, shared controls, disabled fieldsets inside expandable sections and the sole existing stylesheet. [Contract](pro-clip-approval-lock.md).

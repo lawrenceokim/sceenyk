@@ -1,5 +1,9 @@
 # Sceenyk
 
+## Phase 2 M7 — workflow source review (2026-11-09)
+
+Basic, short Pro and connected Pro workflows have been reviewed through final approval and recovery. Scoped Studio fixes reconcile saved status after mode changes, preserve Package approval display after one-use authority expires/is consumed, keep frozen package consent read-only and match retained-cast Basic controls to existing server guards. Source review and focused checks are complete; full end-to-end, hosted/provider and visual acceptance remain manual. No new schema, pricing or paid authority. [Setup, source review and manual checklist](m7-workflow-verification.md).
+
 ## Pro clip approval locking (2026-11-09)
 
 Package and estimate approval do not permanently lock creative editing. First approval of a Pro source clip freezes its exact approved creative inputs/package/estimate, while remaining clip generation/retries and M6 merging/final approval retain their existing finite authorization and recovery flows. Studio keeps frozen inputs viewable and read-only. Existing approved projects recover from real saved evidence; incomplete/conflicting history requires review without paid regeneration or invented approvals. Manual migration 100 follows 099. [Lifecycle and setup](pro-clip-approval-lock.md).
