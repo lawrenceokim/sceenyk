@@ -70,6 +70,7 @@ const nextConfig: NextConfig = {
         "/settings",
         "/credits",
         "/templates",
+        "/purchases",
         "/projects",
         "/marketplace/purchases",
       ].flatMap((base) => [

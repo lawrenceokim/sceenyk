@@ -25,7 +25,7 @@ const withClerk = clerkMiddleware(async (auth, request) => {
 });
 
 function isPrivatePath(path: string) {
-  return ["/settings", "/credits", "/templates", "/projects", "/marketplace/purchases"].some(base =>
+  return ["/settings", "/credits", "/templates", "/purchases", "/projects", "/marketplace/purchases"].some(base =>
     path === base || path.startsWith(`${base}/`) || path.startsWith(`${base}.`));
 }
 
@@ -50,6 +50,7 @@ export const config = {
     "/settings/:path*",
     "/credits/:path*",
     "/templates/:path*",
+    "/purchases/:path*",
     "/projects/:path*",
     "/(api|trpc)(.*)",
   ],

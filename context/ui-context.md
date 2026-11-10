@@ -1,5 +1,9 @@
 # UI Context
 
+## Purchases library reference (2026-11-10)
+
+Purchases sits directly below Templates using the existing icon/navigation classes and descendant active state. `/purchases` uses a compact My Purchases heading, Browse Marketplace action and responsive three-column preview cards with acquisition badges, saved price/date, creator and settings chips. Details use a large reviewed thumbnail and a desktop right-hand column for metadata, actions, shared settings/instructions and the storyboard availability state. Use real acquisitions only, shared light/dark tokens, existing font hierarchy, native scrolling, page-local matched skeletons and static Tailwind utilities. Keep `/marketplace/purchases` checkout history/recovery intact. [Data/privacy/setup/manual checks](purchases.md).
+
 ## Marketplace purchases reference redesign (2026-11-10)
 
 Redesign only the Marketplace purchases main content using the supplied dashboard reference: restrained purple arc artwork, store heading, existing Marketplace account links, compact purchase-check toolbar, responsive preview-led cards and centered real pagination. Preserve app typography (25–30px page title, 18–22px card titles, 12–14px supporting text/actions) and 40px desktop / 44px coarse-pointer action targets. Semantic tokens retain both themes. The sidebar and shared workspace frame are unchanged.

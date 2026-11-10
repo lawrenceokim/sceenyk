@@ -7,7 +7,7 @@
       "headers": { "X-Sceenyk-Inngest": "temporarily-disabled" }
     },
     {
-      "src": "^/(?:settings|credits|templates|projects|marketplace/purchases)(?:/.*|\\..*)?$",
+      "src": "^/(?:settings|credits|templates|purchases|projects|marketplace/purchases)(?:/.*|\\..*)?$",
       "continue": true,
       "transforms": [
         {

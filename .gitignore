@@ -16,6 +16,7 @@
 # context
 !/context/
 /context/*
+!/context/purchases.md
 !/context/stage-3-credit-protection.md
 !/context/m7-workflow-verification.md
 !/context/pro-clip-approval-lock.md

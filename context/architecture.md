@@ -1,5 +1,9 @@
 # Architecture Context
 
+## Private Purchases library (2026-11-10)
+
+`/purchases` combines completed paid entitlements and free adoption provenance behind server-derived identity and service-only RPCs. Manual migration 110 adds a private account/listing-to-current-project mapping for serialized reopen/redemption/settings-only replacement after deletion; payment/adoption history and generation accounting remain unchanged. Reviewed derivative previews are owner-checked and never expose source assets. Current shared snapshots contain instructions/settings, without a shared storyboard or public video. See [contract and manual setup](purchases.md).
+
 ## Independent sheet and Storyboard funding — 109 (2026-11-10)
 
 Sheet/Storyboard generation checks OpenAI funding independently of video/project review. Valid assigned free projects and eligible unused allowances retain included OpenAI access. Otherwise sufficient purchased credits authorize a new OpenAI request, even on a historical project whose video/free usage is unresolved. A review hold must never veto a separately credit-funded Character, Product, Location or Storyboard request. Each actual request costs 1 credit; fresh Location remains 2 (plan + sheet), continuation 1.

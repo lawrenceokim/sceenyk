@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BookOpen, Clapperboard, Coins, FolderOpen, LayoutTemplate, Settings2, Store } from "lucide-react";
+import { BookOpen, Clapperboard, Coins, FolderOpen, LayoutTemplate, Settings2, ShoppingBag, Store } from "lucide-react";
 import { Tooltip } from "@base-ui/react/tooltip";
 import { useId, type ReactElement } from "react";
 import { cn } from "@/lib/utils";
@@ -13,6 +13,7 @@ const groups = [
   { label: "Workspace", items: [
     { label: "Projects", icon: FolderOpen, href: "/projects" },
     { label: "Templates", icon: LayoutTemplate, href: "/templates" },
+    { label: "Purchases", icon: ShoppingBag, href: "/purchases" },
   ] },
   { label: "Discover", items: [{ label: "Marketplace", icon: Store, href: "/marketplace" }] },
   { label: "Resources", items: [{ label: "Documentation", icon: BookOpen, href: "/documentation" }] },
@@ -55,6 +56,7 @@ export function WorkspaceNavigation({ collapsed = false, onNavigate }: {
           : item.label === "Settings" ? pathname === "/settings" || pathname.startsWith("/settings/")
           : item.label === "Documentation" ? pathname === "/documentation" || pathname.startsWith("/documentation/")
           : item.label === "Templates" ? pathname === "/templates" || pathname.startsWith("/templates/")
+          : item.label === "Purchases" ? pathname === "/purchases" || pathname.startsWith("/purchases/")
           : item.href === pathname;
         const classes = cn(`
       workspace-nav-item flex w-full items-center overflow-hidden rounded-lg text-body-sm font-medium outline-none transition-colors duration-[var(--motion-micro)] ease-[var(--motion-ease)]

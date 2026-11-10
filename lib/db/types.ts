@@ -374,6 +374,10 @@ export type Database = {
       creator_payout_observe: { Args: { p_id: string; p_batch: string | null; p_item: string | null; p_status: string; p_failure_code?: string }; Returns: boolean };
       marketplace_browse: { Args: { p_query: string; p_category: string | null; p_page: number }; Returns: unknown };
       marketplace_detail: { Args: { p_listing_id: string }; Returns: unknown };
+      marketplace_acquisition_library: { Args: { p_owner: string; p_page: number }; Returns: unknown };
+      marketplace_acquisition_detail: { Args: { p_owner: string; p_id: string }; Returns: unknown };
+      marketplace_acquisition_preview: { Args: { p_owner: string; p_id: string }; Returns: unknown };
+      marketplace_open_acquisition: { Args: { p_owner: string; p_id: string }; Returns: unknown };
       marketplace_owned: { Args: { p_owner_user_id: string; p_page: number }; Returns: unknown };
       delete_owned_template: { Args: { p_owner_user_id: string; p_listing_id: string }; Returns: unknown };
       marketplace_owned_listing: { Args: { p_owner_user_id: string; p_listing_id: string | null; p_project_id: string | null }; Returns: unknown };

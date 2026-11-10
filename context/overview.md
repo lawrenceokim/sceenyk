@@ -1,5 +1,9 @@
 # Sceenyk
 
+## Purchases library (2026-11-10)
+
+Source implementation adds `/purchases` for free and verified paid Marketplace acquisitions, purchase details and Create your version. Acquired templates retain their saved instructions/settings and paid purchase-time price; opening a version reuses an owned adopted project or creates a clean replacement after deletion without repurchasing or generating. Private creator media/prompts/Storyboards remain private. Manual migration 110 and normal workflow/UI acceptance remain pending. [Contract and setup](purchases.md).
+
 ## Independent sheet and Storyboard funding — 109 (2026-11-10)
 
 Sheet/Storyboard generation checks OpenAI funding independently of video/project review. Valid assigned free projects and eligible unused allowances retain included OpenAI access. Otherwise sufficient purchased credits authorize a new OpenAI request, even on a historical project whose video/free usage is unresolved. A review hold must never veto a separately credit-funded Character, Product, Location or Storyboard request. Each actual request costs 1 credit; fresh Location remains 2 (plan + sheet), continuation 1.

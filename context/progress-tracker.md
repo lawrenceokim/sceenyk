@@ -1,5 +1,17 @@
 # Progress Tracker
 
+## Purchases card sizing and adoption action (2026-11-10)
+
+Reduced the Purchases gallery's desktop width to 1060px (approximately 340px per card at three columns), retaining responsive columns and matching loading widths. Card footers now contain only a full-width Adopt template button using the shared primary Button styling; removed the Open link, eye control and icon-only version action. Card content still opens purchase details, and the existing adoption/reuse handler, loading/errors and detail-page Create your version label remain. UI-only refinement; normal visual/workflow review stays manual. No schema or payment change, browser automation, build or provider request. No qualifying Next.js feedback candidate.
+
+## Purchases library implementation (2026-11-10)
+
+Added the private `/purchases` library/detail and the Purchases navigation entry directly below Templates. Saved free adoptions and verified paid entitlements supply real cards/details, historical prices and acquisition dates. Owner-filtered service RPCs, private reviewed-preview delivery and client account-switch protection retain account isolation. Local Suspense, matched skeletons, empty/error states and twelve-item pagination follow existing patterns. Reference-based cards and desktop two-column details use shared tokens and static Tailwind utilities in both themes.
+
+Create your version reopens an existing live adopted project, uses existing paid redemption when needed, or creates a clean settings-only replacement after deletion. A private owner/listing pointer and database lock prevent repeated/multi-tab duplicates. No payment, provider request, generation authority, allowance reservation or credit deduction is introduced. Existing projects retain edits/approval locks; original creator projects, private assets, purchase/adoption history and financial owners are preserved. Current shared snapshots contain no storyboard/public video; the page explicitly shows unavailable storyboard and a saved reviewed thumbnail, never private source data.
+
+Manual migration 110 is required. Its disposable SQL/service checks pass (49 assertions), including owner isolation, pending/failed exclusion, original price, archived access, repeated opens, settings-only recreation, historical preservation, pagination, RLS/grants, rerun safety and unchanged accounting. TypeScript, focused lint and whitespace checks pass. [Contract, setup and manual checks](purchases.md). Existing local Marketplace checkout-history/adoption presentation work is preserved. No browser automation, build, remote migration, checkout/provider request or deployment ran. No qualifying Next.js feedback candidate.
+
 ## Marketplace purchases reference redesign (2026-11-10)
 
 Redesign only the Marketplace purchases main content using the supplied dashboard reference: restrained purple arc artwork, store heading, existing Marketplace account links, compact purchase-check toolbar, responsive preview-led cards and centered real pagination. Preserve app typography (25–30px page title, 18–22px card titles, 12–14px supporting text/actions) and 40px desktop / 44px coarse-pointer action targets. Semantic tokens retain both themes. The sidebar and shared workspace frame are unchanged.
