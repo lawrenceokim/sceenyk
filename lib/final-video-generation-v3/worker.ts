@@ -1,5 +1,5 @@
 import "server-only";
-import { assertFreeV3Submission, dispatchFreeProjectOperation, freeProjectDispatchStatus, generationPolicyConfiguration } from "@/lib/accounting/generation-policy-server";
+import { assertFreeV3Submission, dispatchFreeProjectOperation, freeProjectDispatchStatus, generationPolicyConfiguration, recordOpenAIGeneration } from "@/lib/accounting/generation-policy-server";
 import { verifyPaidVideoPrice } from "@/lib/accounting/paid-video-pricing";
 import OpenAI, { toFile } from "openai";
 import { z } from "zod";
@@ -96,12 +96,14 @@ async function imageTask(store: V3Store, task: Task, w: RuntimeWorkspace, signal
       httpStatus = response.status; requestId = safeReferenceRequestId(response.headers.get("x-request-id"));
       stage = "response_receive";
       const responseText = await response.text(); stage = "response_save";
-      await saveSpool(task.id, "openai-response.json", Buffer.from(JSON.stringify({ responseText, requestId, httpStatus })));
+      try { await saveSpool(task.id, "openai-response.json", Buffer.from(JSON.stringify({ responseText, requestId, httpStatus }))); }
+      finally { await recordOpenAIGeneration(task); }
       stage = "response_parse"; saved = await savedReferenceResult(task.id);
     }
     stage = saved.responseError === "V3_REFERENCE_IMAGE_VALIDATION_FAILED" ? "image_validation" : "response_parse";
     if (!saved.image) throw new Error(saved.responseError ?? "V3_REFERENCE_SAVED_RESPONSE_UNUSABLE");
     const image = saved.image;
+    if (hasSavedOutput) await recordOpenAIGeneration(task);
     stage = "image_save";
     if (!saved.imageBytes) await saveSpool(task.id, "image.png", image.bytes);
     stage = "storage";
@@ -150,10 +152,18 @@ async function storyboardTask(store: V3Store, task: Task, w: RuntimeWorkspace, s
     generationPolicyConfiguration();
     await store.checkpoint(task, "intent");
     await dispatchFreeProjectOperation(task);
-    const response = await client.responses.create(request.body, { signal, headers: { "X-Client-Request-Id": task.id } });
-    raw = Buffer.from(JSON.stringify({ response, requestId: response._request_id ?? null })); await saveSpool(task.id, "openai-response.json", raw);
+    const response = await client.responses.create(request.body, { signal, headers: { "X-Client-Request-Id": task.id } })
+      .catch(error => { throw referenceStageError(error, "provider", null, null); });
+    raw = Buffer.from(JSON.stringify({ response, requestId: response._request_id ?? null }));
+    const failed = response.status === "failed" || response.status === "cancelled";
+    try { await saveSpool(task.id, "openai-response.json", raw); }
+    finally { await recordOpenAIGeneration(task, "default", failed ? "rejected" : "completed"); }
+    if (failed) throw new ReferenceTaskError("V3_OPENAI_REFERENCE_REQUEST_FAILED", { stage: "provider", httpStatus: 200, requestId: safeReferenceRequestId(response._request_id), errorCode: "V3_OPENAI_REFERENCE_REQUEST_FAILED" }, true);
   }
-  const captured = JSON.parse(raw.toString("utf8")) as { response: { output?: { type: string; content?: { type: string; text?: string }[] }[] }; requestId: string | null }, response = captured.response;
+  const captured = JSON.parse(raw.toString("utf8")) as { response: { status?: string; output?: { type: string; content?: { type: string; text?: string }[] }[] }; requestId: string | null }, response = captured.response;
+  const failed = response.status === "failed" || response.status === "cancelled";
+  await recordOpenAIGeneration(task, "default", failed ? "rejected" : "completed");
+  if (failed) throw new ReferenceTaskError("V3_OPENAI_REFERENCE_REQUEST_FAILED", { stage: "provider", httpStatus: 200, requestId: safeReferenceRequestId(captured.requestId), errorCode: "V3_OPENAI_REFERENCE_REQUEST_FAILED" }, true);
   const text = response.output?.flatMap(o => o.type === "message" ? o.content?.filter(c => c.type === "output_text").map(c => c.text ?? "") ?? [] : []).join("");
   const storyboard = directorStoryboardSchema.parse(JSON.parse(text ?? ""));
   if (task.input.cast) {
@@ -250,6 +260,8 @@ export async function runV3Task(projectId: string, ownerId: string, store = new 
     const started = refreshed.tasks.find(t => t.id === task.id)?.provider_started;
     const code = error instanceof Error && /^[A-Z0-9_]{1,100}$/.test(error.message) ? error.message : "V3_TASK_FAILED";
     const rejected = error instanceof HiggsfieldTransportError && error.outcome === "rejected" || error instanceof ReferenceTaskError && error.knownRejected;
+    if (rejected && ["character", "product", "storyboard"].includes(task.kind)) await recordOpenAIGeneration(task, "default", "rejected");
+    console.info(JSON.stringify({ stage: "V3_TASK_DIAGNOSTIC", taskId: task.id, kind: task.kind, code, rejected }));
     const deliveryPaused = !started && !run?.observation && code === "V3_REFERENCE_DELIVERY_EXPIRED";
     const unusable = task.kind === "video" && !run?.result && run?.observation?.status === "completed" && code === "V3_VIDEO_TECHNICAL_VALIDATION_FAILED";
     const dispatched = ["character", "product", "location", "storyboard", "video"].includes(task.kind) ? await freeProjectDispatchStatus(task) : null;

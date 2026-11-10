@@ -12,10 +12,10 @@ import { useStudioPanels } from "./studio-workspace-panels";
 type Action = (action: string, payload?: Record<string, unknown>) => Promise<boolean>;
 
 export function FinalVideoGenerate({ generating, disabled, onGenerate }: {
-  generating: boolean; disabled: boolean; onGenerate: () => void;
+  generating: boolean; disabled: boolean; onGenerate: (button: HTMLButtonElement) => void;
 }) {
   return <div className="flex flex-wrap items-center gap-3">
-    <Button disabled={disabled || generating} onClick={onGenerate}>Generate Final Video</Button>
+    <Button disabled={disabled || generating} onClick={event => onGenerate(event.currentTarget)}>Generate Final Video</Button>
     {generating && <span role="status" aria-label="Generating final video" className="inline-flex items-center gap-2 text-sm text-muted-foreground">
       <LoaderCircle aria-hidden="true" className="size-4 text-primary motion-safe:animate-spin" />
       <span>Generating...</span>

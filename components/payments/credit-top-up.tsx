@@ -11,10 +11,11 @@ import { CreditAccountSkeleton } from "./financial-skeletons";
 
 type CheckoutData = Extract<Awaited<ReturnType<typeof creditCheckoutAction>>, { ok: true }>["data"];
 
-export function CreditTopUp({ label = "Top up credits" }: { label?: string }) {
+export function CreditTopUp({ label = "Top up credits", onOpenChange }: { label?: string; onOpenChange?: (open: boolean) => void }) {
   const [open, setOpen] = useState(false);
   return <Dialog open={open} onOpenChange={next => {
     setOpen(next);
+    onOpenChange?.(next);
     if (!next) notifyCreditsChanged();
   }}>
     <DialogTrigger render={<Button type="button" variant="outline" />}>{label}</DialogTrigger>

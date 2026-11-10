@@ -414,6 +414,7 @@ export type Database = {
       generation_paid_quote: { Args: { p_owner: string; p_project: string; p_run: string; p_model: string; p_body_hash: string; p_response_hash: string; p_cost: number }; Returns: boolean };
       free_ai_dispatch: { Args: { p_task: string; p_token: string; p_phase: string }; Returns: boolean };
       free_ai_dispatch_status: { Args: { p_task: string; p_token: string; p_phase: string }; Returns: boolean | null };
+      generation_openai_receipt: { Args: { p_task: string; p_token: string; p_phase: string; p_outcome: "completed" | "rejected" }; Returns: boolean };
       generation_free_submit: { Args: { p_owner: string; p_project: string; p_run: string }; Returns: boolean };
       generation_free_transport: { Args: { p_project: string; p_run: string; p_hash: string }; Returns: boolean };
       attach_paypal_order: { Args: { p_purchase_id: string; p_owner_user_id: string; p_order_id: string }; Returns: boolean };

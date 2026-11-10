@@ -3,7 +3,6 @@ import { V3WorkflowPreview } from "./v3-workflow-preview";
 import { useStudioMode, useStudioModeIncompatibilities } from "@/components/workspace/studio-mode-provider";
 import type { RuntimeDto } from "@/lib/final-video-generation-v3/runtime-server";
 import { StudioSkeleton } from "./studio-skeleton";
-import { FreeAllowanceSummary } from "@/components/free-allowance";
 import { StudioProjectGuard } from "./studio-project-guard";
 
 import { BeforeAccountAuth } from "@/components/auth/before-account-auth";
@@ -479,7 +478,6 @@ function WorkspaceEditor({
                   revision={JSON.stringify([savedBrief, mediaUpload.assets])} /> : <><StudioPanelPortal panel="workflow">{controls}</StudioPanelPortal><UgcWorkflowPreview key={projectId ?? "new"} projectId={projectId ?? ""} progress={ugcProgress} /></> : undefined}
                 sources={
                   <>
-                    <div className="rounded-lg border border-primary/20 bg-primary/[0.04] p-3 text-xs"><FreeAllowanceSummary compact /><p className="mt-1 text-muted-foreground">One 5-second, 480p video per free project, within a $1.03 Higgsfield budget. OpenAI features are platform-funded and attempt-limited.</p></div>
                     {preferencesUnavailable && <p role="status" className="text-caption text-muted-foreground">Creation defaults unavailable.</p>}
                     {restoredDraft?.missingFiles && (
                       <p role="status" className="text-caption text-warning-foreground">

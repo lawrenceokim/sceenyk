@@ -1,8 +1,16 @@
 # AI Workflow Rules
 
-## Current authorization - Stage 3 credit protection (2026-11-10)
+## Independent sheet and Storyboard funding — 109 (2026-11-10)
 
-Implement purchased-credit V3 admission/settlement, paid user/global spending protection and Studio balance states while preserving Stage 1/2, M5/M6/M7 and unrelated money/subscription systems. Run only focused offline accounting/payment/security checks plus essential types/lint. No broad suites, browser automation, repeated builds, paid generation requests, hosted mutations or deployment. Leave UI/workflow acceptance to the owner. [Contract/setup](stage-3-credit-protection.md).
+Sheet/Storyboard generation checks OpenAI funding independently of video/project review. Valid assigned free projects and eligible unused allowances retain included OpenAI access. Otherwise sufficient purchased credits authorize a new OpenAI request, even on a historical project whose video/free usage is unresolved. A review hold must never veto a separately credit-funded Character, Product, Location or Storyboard request. Each actual request costs 1 credit; fresh Location remains 2 (plan + sheet), continuation 1.
+
+The access DTO requires version 109 and exposes preparationFunding separately from video funding. SQL binds funding to each immutable task/phase, reserves credits before dispatch, and reuses 108 settlement/recovery. OpenAI preparation/reservation project FKs reference the existing V3 project directly; no paid-video enrollment is required for a held project's paid preparation. Video holds, free counters, review flags, existing records, approved content and creative locks remain unchanged. This supersedes earlier statements that all generation on an unresolved historical project must be blocked.
+
+Apply [migration 109](../supabase/migrations/20261110010900_independent_openai_funding.sql) after 108 with old writers/workers stopped, then deploy matching app/worker code. No remote writes or provider requests were performed. Focused accounting/security checks and TypeScript pass; normal UI/provider testing remains manual.
+
+## Current authorization — Stage 2/3 simplification (2026-11-10)
+
+Implement two lifetime project allowances with unlimited included OpenAI regeneration and one included 5-second/480p video; paid OpenAI requests cost 1 credit and paid video 103. Remove conflicting lifetime attempt limits, reconcile only provable review holds, simplify Studio and update context. Preserve purchased balances, history, Basic/Pro permissions, locks, recovery and PayPal Sandbox. Run only essential offline accounting/security and necessary type/lint checks. No paid generations, broad suites, browser automation, builds, remote writes or deployment; normal testing stays with the owner. Migration 108 remains manual. [Contract/setup](stage-3-credit-protection.md).
 
 ## Current authorization — Phase 2 M7 (2026-11-09)
 

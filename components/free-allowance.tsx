@@ -90,18 +90,18 @@ function AllowanceRead({ signedIn = false, refreshKey = "", compact = false, pre
       : !allowance
         ? "Loading free allowance…"
         : allowance.reviewRequired
-          ? "Free AI projects remaining: under review"
+          ? "Free videos remaining: unavailable"
         : remaining === 0
-          ? "No free AI projects remaining"
-          : `Free AI projects remaining: ${remaining}`;
+          ? "No free videos remaining"
+          : `Free videos remaining: ${remaining}`;
   if (presentation) return <div className="grid min-w-0 gap-1">
     <div role="status" aria-live="polite" className={presentation === "billing-balance" ? "text-[22px] leading-7 font-semibold tabular-nums text-foreground" : "text-[14px] leading-5 font-semibold text-foreground"}>
       {signedIn && !allowance && !error ? <Skeleton className="h-5 w-20 max-w-full" /> : allowance && !allowance.reviewRequired
-        ? presentation === "billing-balance" ? `${allowance.available} / ${allowance.total}` : `Free AI projects remaining: ${allowance.available}`
+        ? presentation === "billing-balance" ? `${allowance.available} / ${allowance.total}` : `Free videos remaining: ${allowance.available}`
         : label}
     </div>
     {allowance && allowance.reserved > 0 && <span className="text-xs text-muted-foreground">{allowance.reserved} reserved in progress</span>}
-    {allowance?.reviewRequired && <span className="text-xs text-muted-foreground">Historical free-allowance usage needs review. Purchased credits stay separate; new eligible projects can use paid video funding. Project review holds and OpenAI usage limits still apply.</span>}
+    {allowance?.reviewRequired && <span className="text-xs text-muted-foreground">Use credits for AI generation.</span>}
     {error && <Button type="button" variant="outline" size="sm" onClick={() => setRevision(current => current + 1)}>Check allowance</Button>}
   </div>;
   return (
@@ -113,10 +113,10 @@ function AllowanceRead({ signedIn = false, refreshKey = "", compact = false, pre
         <p>{allowance.reserved} reserved for AI projects in progress.</p>
       )}
       {!compact && <><p>
-        2 lifetime free AI-powered projects. The first AI feature uses one allowance. Each project has one 5-second, 480p video within a $1.03 Higgsfield budget. OpenAI usage is platform-funded and attempt-limited.
+        2 lifetime free video projects, including reference and Storyboard regenerations. Each includes one 5-second, 480p video.
       </p>
-      <p>Sandbox credit purchases are available. Paid videos require verified pricing, enough credits and available spending capacity.</p></>}
-      {allowance?.reviewRequired && <p>Free-allowance review does not clear existing project holds or reset OpenAI attempts. Paid funding is checked separately for new eligible projects.</p>}
+      <p>Additional projects use purchased credits.</p></>}
+      {allowance?.reviewRequired && <p>Use credits for AI generation.</p>}
       {signedIn && error && (
         <>
           <p role="alert" className="text-destructive">{error}</p>

@@ -13,12 +13,11 @@ export async function generationAccess(owner: string, project?: string) {
   const configuration = generationPolicyConfiguration();
   const { data, error } = await createDatabaseClient().rpc("generation_project_access", { p_owner: owner, p_project: project ?? null });
   const count = z.number().int().min(0).max(2);
-  const parsed = z.object({ total: z.literal(2), remaining: count, reserved: count, consumed: count,
+  const parsed = z.object({ policyVersion: z.literal(109), total: z.literal(2), remaining: count, reserved: count, consumed: count,
     projectAllowed: z.boolean(), videoAllowed: z.boolean(), historyReview: z.boolean(), budgetMicrousd: z.number().int().positive().safe(), budgetUsedMicrousd: z.number().int().nonnegative().safe(),
     accountBudgetRemainingMicrousd: z.number().int().min(0).max(2060000).safe(),
-    preparationRemaining: z.object({ character: count, product: count, location: count, storyboard: count }),
     funding: z.enum(["free", "credits"]), requiredCredits: z.union([z.literal(0), z.literal(103)]),
-    preparationAllowed: z.boolean(), projectReviewRequired: z.boolean(), projectBlocker: z.string().nullable(),
+    preparationAllowed: z.boolean(), preparationFunding: z.enum(["free", "credits"]), preparationCredits: z.union([z.literal(0), z.literal(1)]), projectReviewRequired: z.boolean(), projectBlocker: z.string().nullable(),
     availableCredits: z.number().int().nonnegative().safe(), reservedCredits: z.number().int().nonnegative().safe(),
     shortageCredits: z.number().int().min(0).max(103), paidBlocker: z.string().nullable(),
     paidUserRemainingMicrousd: z.number().int().nonnegative().safe(), paidGlobalRemainingMicrousd: z.number().int().nonnegative().safe() })
@@ -32,10 +31,23 @@ export async function readGenerationAccess(owner: string, project?: string) {
   catch (error) { return { demoMode: true, paidGenerationConnected: true as const, durationSeconds: 5 as const, resolution: "480p" as const,
     ready: false, reason: error instanceof Error && ["GENERATION_POLICY_CONFIGURATION_INVALID", "GENERATION_POLICY_SETUP_REQUIRED"].includes(error.message) ? error.message : "GENERATION_POLICY_SETUP_REQUIRED",
     total: 2, remaining: 0, reserved: 0, consumed: 0, projectAllowed: false, videoAllowed: false, historyReview: false, budgetMicrousd: 0, budgetUsedMicrousd: 0, accountBudgetRemainingMicrousd: 0,
-    preparationRemaining: { character: 0, product: 0, location: 0, storyboard: 0 }, funding: "free" as const, requiredCredits: 0,
+    preparationFunding: "credits" as const, preparationCredits: 1, funding: "free" as const, requiredCredits: 0,
     preparationAllowed: false, projectReviewRequired: false, projectBlocker: null as string | null,
     availableCredits: 0, reservedCredits: 0, shortageCredits: 0, paidBlocker: null as string | null,
     paidUserRemainingMicrousd: 0, paidGlobalRemainingMicrousd: 0 }; }
+}
+
+// Successful HTTP generation is charged even if later parsing/publication fails.
+// Definitive provider rejection releases once; timeouts never call this receipt.
+export async function recordOpenAIGeneration(task: { id: string; lease_token: string | null }, phase = "default", outcome: "completed" | "rejected" = "completed") {
+  if (!task.lease_token) throw new Error("V3_LEASE_LOST");
+  const { data, error } = await createDatabaseClient().rpc("generation_openai_receipt", {
+    p_task: task.id, p_token: task.lease_token, p_phase: phase, p_outcome: outcome,
+  });
+  if (error || data !== true) {
+    console.error("OpenAI accounting receipt unavailable", { taskId: task.id, phase, outcome, code: error?.code });
+    throw new Error("PAID_RESERVATION_REQUIRED");
+  }
 }
 
 export async function dispatchFreeProjectOperation(task: { id: string; lease_token: string | null }, phase = "default") {

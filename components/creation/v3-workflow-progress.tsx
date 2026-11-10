@@ -1,9 +1,7 @@
 "use client";
 
-import type { ReactNode } from "react";
-import { Check, ChevronDown, Circle, CircleAlert, Clock3, Info, KeyRound, Layers2, LoaderCircle, Video } from "lucide-react";
+import { Check, Circle, CircleAlert, Clock3, Info, LoaderCircle } from "lucide-react";
 import type { RuntimeDto } from "@/lib/final-video-generation-v3/runtime-server";
-import { defaultVideoResolution } from "@/lib/projects/video-resolution";
 import { packageBuildError } from "@/lib/final-video-generation-v3/package-status";
 import { videoExecutionLabel } from "@/lib/final-video-generation-v3/video-progress";
 import { v3ActionErrorMessage } from "@/lib/final-video-generation-v3/reference-errors";
@@ -25,23 +23,6 @@ function StatusIcon({ status }: { status: ProgressStatus }) {
     : status === "needs_attention" || status === "failed" ? CircleAlert : Circle;
   return <Icon aria-hidden="true" className={"size-4 shrink-0 " + (status === "in_progress" ? "motion-safe:animate-spin" : "")} />;
 }
-function TechnicalSection({ title, icon, children }: { title: string; icon: ReactNode; children: ReactNode }) {
-  return <details className="group min-w-0 rounded-xl border border-border bg-card/60">
-    <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-semibold outline-none focus-visible:ring-2 focus-visible:ring-ring sm:px-4 [&::-webkit-details-marker]:hidden">
-      <span className="shrink-0 text-primary">{icon}</span>
-      <span className="min-w-0 flex-1">{title}</span>
-      <ChevronDown aria-hidden="true" className="size-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180 motion-reduce:transition-none" />
-    </summary>
-    <div className="min-w-0 space-y-3 border-t border-border px-3 py-3 text-xs text-muted-foreground sm:px-4">{children}</div>
-  </details>;
-}
-function Fields({ values }: { values: Record<string, string | number | null | undefined> }) {
-  return <dl className="grid min-w-0 grid-cols-1 gap-x-4 gap-y-1.5 @min-[25rem]/progress:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
-    {Object.entries(values).filter(([, value]) => value !== null && value !== undefined && value !== "").map(([label, value]) =>
-      <div key={label} className="contents"><dt>{label}</dt><dd className="min-w-0 [overflow-wrap:anywhere] text-foreground mb-1.5 @min-[25rem]/progress:mb-0">{value}</dd></div>)}
-  </dl>;
-}
-const money = (amount: number | null | undefined) => amount == null ? null : `$${(amount / 1_000_000).toFixed(2)}`;
 type Action = (action: string, payload?: Record<string, unknown>) => Promise<boolean>;
 
 export function V3WorkflowProgress({ workspace, productRequired, busy, locked, error, buildFailure, act }: {
@@ -55,8 +36,6 @@ export function V3WorkflowProgress({ workspace, productRequired, busy, locked, e
 }) {
   const progress = workflowProgress(workspace, productRequired), current = progress.current;
   const p = workspace.preflight;
-  const packageTask = workspace.tasks.filter(t => t.kind === "package").at(-1);
-  const build = packageTask?.packageBuild;
   const latestProblems = workspace.tasks.filter((t, index, all) =>
     t.status !== "done" && t.errorCode !== "V3_REFERENCE_REQUEST_SUPERSEDED" &&
     !all.slice(index + 1).some(n => n.kind === t.kind && (t.kind !== "character" || n.characterId === t.characterId) && !!n.referenceCleanup === !!t.referenceCleanup) &&
@@ -94,54 +73,13 @@ export function V3WorkflowProgress({ workspace, productRequired, busy, locked, e
         </div>)}
       </div>
     </div>
-    <div className="space-y-3">
-      <TechnicalSection title="Package technical details" icon={<Layers2 aria-hidden="true" className="size-4" />}>
-        {workspace.creativeLock && <Fields values={{ "Creative inputs": workspace.creativeLock.state === "locked" ? "Locked after first clip approval" : "Locked · administrator review required",
-          "Snapshot captured": workspace.creativeLock.capturedAt, "First source clip approved": workspace.creativeLock.firstApprovedAt }} />}
-        {workspace.creativeLock && workspace.creativeLock.state !== "locked" && <p role="alert">{v3ActionErrorMessage(workspace.creativeLock.state === "setup_required" ? "V3_CREATIVE_LOCK_SETUP_REQUIRED" : "V3_CREATIVE_LOCK_EVIDENCE_REQUIRED")}</p>}
-        {!p && !build && !buildFailure && <p>No Generation Package has been saved yet.</p>}
-        <Fields values={{ "Package state": progress.stages[2].description, Stage: buildFailure ? null : build?.stage,
-          Code: buildFailure?.code ?? build?.code, "HTTP status": buildFailure?.httpStatus ?? build?.httpStatus,
-          "Package ID": p?.packageId ?? build?.packageId, "Segment ID": build?.segmentId, "Selected output": workspace.selectedResolution ?? defaultVideoResolution, "Frozen package resolution": p?.resolution,
-          "Estimate status": build?.estimateStatus, Recoverable: build ? build.recoverable ? "Yes" : "No" : null }} />
-        {latestProblems.filter(t => t.kind === "storyboard").map(t => <Fields key={t.id} values={{ "Storyboard task": t.status, "Storyboard error": t.errorCode }} />)}
-      </TechnicalSection>
-      <TechnicalSection title="Final Video prerequisites" icon={<KeyRound aria-hidden="true" className="size-4" />}>
-        {p ? <>
-          {progress.generated && <p>The video is already generated. The submission checks below apply to a new request and do not indicate a failure of this video.</p>}
-          <Fields values={{ "Package validity": workspace.packageStale ? "stale" : p.currentness,
-            Authorization: p.authorizationState, "Generation availability": p.transportEnabled ? "Enabled" : "Paused by administrator",
-            [progress.generated || progress.runs.length ? "New submission allowed" : "Submission allowed"]: p.canSubmit ? "Yes" : "No",
-            [progress.generated || progress.runs.length ? "New-request prerequisite codes" : "Blocking reasons"]: p.issues.length ? p.issues.join(", ") : null }} />
-        </> : <p>{workspace.packageStale ? "The saved package is out of date. Rebuild it after approving current inputs." : "Build a Generation Package to inspect its video prerequisites."}</p>}
-      </TechnicalSection>
-      <TechnicalSection title="Final Video details" icon={<Video aria-hidden="true" className="size-4" />}>
-        {workspace.tasks.filter(t => t.kind === "join").map(t => <Fields key={t.id} values={{ "Merge task": t.status, "Merge stage": t.mergeStage, "Merge error": t.errorCode }} />)}
-        {!workspace.runs.length && <p>No video-generation request has been saved yet.</p>}
-        {workspace.runs.map((run, index) => <article key={run.id} className="min-w-0 space-y-3 border-border [&+article]:border-t [&+article]:pt-3">
-          <h3 className="text-xs font-semibold text-foreground">{run.segmentId === "joined" ? "Joined final video" : `Video attempt ${index + 1}`}{run.packageId !== p?.packageId || !run.current ? " · Previous saved work" : ""}</h3>
-          <Fields values={{ Status: videoExecutionLabel(run), "Saved inputs": run.current ? "Current" : "Out of date",
-            "Requested resolution": run.resolution, "Actual output": run.actualDimensions ? `${run.actualDimensions.width} × ${run.actualDimensions.height}` : null,
-            Format: run.aspectRatio, Provider: run.provider, Model: run.model,
-            Duration: run.actualDurationMs === null ? null : `${run.actualDurationMs / 1000}s`,
-            Audio: run.hasAudio === null ? null : run.hasAudio ? "Present" : "Absent",
-            "Estimated cost": money(run.displayEstimatedCostMicrousd ?? run.estimatedCostMicrousd) === null ? null : `~${money(run.displayEstimatedCostMicrousd ?? run.estimatedCostMicrousd)}`,
-            "Actual provider cost": money(run.actualCostMicrousd), "Execution stage": run.stage?.stage,
-            Segment: p?.segmentCount && p.segmentCount > 1 ? run.segmentId : null,
-            "Error code": run.errorCode, "Submission pause": run.submissionBlocker,
-            "Download host requiring administrator approval": run.outputHostname }} />
-          {(run.expectedDialogue.length > 0 || run.shotTimings.length > 0) && <details>
-            <summary className="min-h-8 cursor-pointer py-1 outline-none focus-visible:ring-2 focus-visible:ring-ring">Expected dialogue and shot timing</summary>
-            <div className="space-y-1 pt-2 [overflow-wrap:anywhere]">
-              {run.expectedDialogue.map((line, i) => <p key={i}>{line.startMs / 1000}–{line.endMs / 1000}s · {line.speaker}: {line.text}</p>)}
-              {run.shotTimings.map(shot => <p key={shot.number}>Shot {shot.number}: {shot.startMs / 1000}–{shot.endMs / 1000}s</p>)}
-            </div>
-          </details>}
-          {/* Preserve the existing recovery/review owner for earlier saved attempts. */}
-          {p && run.packageId !== p.packageId && <FinalVideoReview run={run} act={act} busy={locked} segmentCount={1} compact />}
-        </article>)}
-      </TechnicalSection>
-    </div>
+    {workspace.runs.length > 0 && <div className="space-y-3 rounded-xl border border-border bg-card/60 p-3 sm:p-4">
+      <h2 className="text-sm font-semibold">Video history</h2>
+      {workspace.runs.map((run, index) => <article key={run.id} className="min-w-0 space-y-3 border-border [&+article]:border-t [&+article]:pt-3">
+        <p className="text-sm">{run.segmentId === "joined" ? "Final video" : `Video ${index + 1}`} · {videoExecutionLabel(run)}</p>
+        {p && run.packageId !== p.packageId && <FinalVideoReview run={run} act={act} busy={locked} segmentCount={1} compact />}
+      </article>)}
+    </div>}
     <aside className="flex min-w-0 gap-3 rounded-xl border border-primary/30 bg-primary/5 p-4">
       <Info aria-hidden="true" className="mt-0.5 size-5 shrink-0 text-primary" />
       <div className="min-w-0 space-y-1"><h2 className="text-sm font-semibold">What this means</h2><p className="text-sm leading-relaxed text-muted-foreground">{current.guidance}</p></div>

@@ -242,12 +242,10 @@ export async function ownedV3Action(raw: unknown, acknowledge = false): Promise<
     if (existing) return runtimeDto(w);
     assertFreeVideoSettings(brief.duration, projectVideoResolution(brief.video_resolution));
     const access = await generationAccess(user.id, a.projectId);
-    if (!access.projectAllowed) throw new Error(access.projectBlocker ?? "FREE_PROJECT_HISTORY_REVIEW_REQUIRED");
-    if (["generate", "generate_clip"].includes(a.action) && !access.videoAllowed) throw new Error(access.paidBlocker ?? "FREE_PROJECT_VIDEO_USED");
     const preparation = a.action === "reference" ? a.kind : a.action === "storyboard" ? "storyboard" : null;
-    if (preparation && !access.preparationAllowed) throw new Error(access.projectBlocker ?? "FREE_PROJECT_HISTORY_REVIEW_REQUIRED");
-    if (typeof preparation === "string" && preparation in access.preparationRemaining &&
-      access.preparationRemaining[preparation as keyof typeof access.preparationRemaining] < 1) throw new Error("FREE_PREPARATION_LIMIT");
+    if (!preparation && !access.projectAllowed) throw new Error(access.projectBlocker ?? "FREE_PROJECT_HISTORY_REVIEW_REQUIRED");
+    if (["generate", "generate_clip"].includes(a.action) && !access.videoAllowed) throw new Error(access.paidBlocker ?? "FREE_PROJECT_VIDEO_USED");
+    if (preparation && access.preparationFunding === "credits" && access.availableCredits < (preparation === "location" ? 2 : 1)) throw new Error("INSUFFICIENT_CREDITS");
   }
   if (creativeLock && (creativeMutationActions.has(a.action) || a.action === "recover_task" && w.tasks.some(t => t.id === a.id && ["character", "product", "location", "storyboard", "package"].includes(t.kind))))
     throw new Error("V3_CREATIVE_INPUTS_LOCKED");

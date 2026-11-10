@@ -1,87 +1,65 @@
-# Stage 3 — Credit Management and Spending Protection
+# Stage 2 and Stage 3 project credits
 
-Source implementation, 2026-11-10. Migration 106 after 105, then correction 107, are manual; provider/UI acceptance remains pending. No paid generation request is part of development verification.
+## Independent sheet and Storyboard funding — 109 (2026-11-10)
 
-## Studio disabled-action investigation (2026-11-10)
+Sheet/Storyboard generation checks OpenAI funding independently of video/project review. Valid assigned free projects and eligible unused allowances retain included OpenAI access. Otherwise sufficient purchased credits authorize a new OpenAI request, even on a historical project whose video/free usage is unresolved. A review hold must never veto a separately credit-funded Character, Product, Location or Storyboard request. Each actual request costs 1 credit; fresh Location remains 2 (plan + sheet), continuation 1.
 
-A bounded read-only inspection found one account matching the reported 147 available credits, with zero credit holds. Its free account has total 2, reserved 0, consumed 1 and `review_required=true`. Both lifetime Character preparation records remain, but their disposable tasks have been deleted; Product/Location/Storyboard have no recorded starts. Migration 104 deliberately marks missing preparation-task history for review, and migration 103 deliberately retains these usage tombstones. This is not evidence that either preparation should be refunded or that the review flag should be cleared.
+The access DTO requires version 109 and exposes preparationFunding separately from video funding. SQL binds funding to each immutable task/phase, reserves credits before dispatch, and reuses 108 settlement/recovery. OpenAI preparation/reservation project FKs reference the existing V3 project directly; no paid-video enrollment is required for a held project's paid preparation. Video holds, free counters, review flags, existing records, approved content and creative locks remain unchanged. This supersedes earlier statements that all generation on an unresolved historical project must be blocked.
 
-The only active project is Basic, five seconds/480p, with one uploaded Character and one uploaded Product. Its free-project record is consumed and `historical_review=true`. No active tasks, video runs, generated artifacts or creative locks were found. The configured paid user/global caps are $3.09/$30.90, with no user override and zero paid reservation exposure. Thus neither insufficient credits, Pro-only cast/duration permissions, approved-input locking nor paid cap exhaustion explains these reported disabled sheet buttons.
+Apply [migration 109](../supabase/migrations/20261110010900_independent_openai_funding.sql) after 108 with old writers/workers stopped, then deploy matching app/worker code. No remote writes or provider requests were performed. Focused accounting/security checks and TypeScript pass; normal UI/provider testing remains manual.
 
-| Check | Source and condition | Result for the inspected account/project |
-| --- | --- | --- |
-| Billing label | `getFreeAllowance` maps `generation_project_access.historyReview`; `FreeAllowanceSummary` shows Under review | Correctly reports unresolved free usage independently of the 147-credit balance |
-| Project eligibility | 106 `free_ai_reserve` and `ownedV3Action` rejected combined free-account/project review before considering paid funding | Current historical project must remain held; account-only review wrongly blocked fresh paid projects too |
-| Character | `preparationBlocked(character)` plus project, source, pending-task, mode and creative-lock gates | Both Character starts are spent, including deleted tasks; project review also blocks new requests |
-| Product | Same gates using Product's independent attempt counter | Two starts remain, but this historical project's review hold blocks new work |
-| Basic/Pro | `proCharactersBlocked` and server `V3_PRO_CHARACTERS_RETAINED` require Pro for retained multiple-character inputs; Pro durations have a separate server guard | Basic with one Character and five seconds is compatible; no subscription permission is inferred or changed |
-| Approved-input lock | `creativeLock` disables creative actions; SQL/action guards preserve first-approved-clip inputs | No lock exists here; existing locks elsewhere are unchanged |
-| Paid video | Exact price, sufficient available credits, user/global exposure caps, finite authorization, compatible settings, current package and provider gates | 147 covers the 103-credit tariff; legitimate project/input/attempt guards still apply |
+## Stage 2 and Stage 3 project credits — 108 (2026-11-10)
 
-Confirmed defects: account-level **free** review was an unconditional cross-funding veto, and `free_ai_reserve` required a Higgsfield balance/cap before admitting fresh, platform-funded OpenAI preparation. The UI gave sheet buttons no adjacent explanation, hiding the separate Character-attempt restriction.
+Each account has two lifetime free video-project allowances in Basic and Pro. Creating/saving an empty project is free. The first fenced AI dispatch consumes one allowance permanently; deletion or later failure never restores it. A project reserved without any dispatch can release its temporary reservation. Assigned free projects keep unlimited supported OpenAI reference/Location/Storyboard regenerations at zero credits, including after both allowances are assigned or their video is used. Existing model, input/token, lease, duplicate and creative-approval protections remain.
 
-Correction **107** replaces the shared funding resolver/access DTO and adds one private project-review predicate. It preserves every review flag, counter, history row, approved project and financial/creative guard. Existing free projects needing review stay held. Unmapped past generated/approved evidence also requires review instead of silently enrolling an existing project as paid; no historical record is rewritten. Fresh projects under account-only free review (or exhausted free allowances) use the paid-video registry without claiming a free allowance; that registry is not spending authority. Platform-funded preparation remains independently attempt-limited and can start without video credits or Higgsfield capacity. Video admission and dispatch still require the existing 106 price, wallet reservation, caps, lease and once-only settlement. API/Studio now distinguish `historyReview` (free allowance) from `projectReviewRequired`/`projectBlocker`, plus `preparationAllowed` and video permission. Source buttons and workflow actions explain their specific project, quota, mode, source, unsaved, busy, recovery or creative-lock blockers.
+Each free project includes one 5-second/480p Higgsfield video within its protected $1.03 exposure; unresolved/dispatched spending cannot fund a second billable attempt. New projects after allowance exhaustion use purchased credits: Character Sheet 1, Product Sheet 1, Location Sheet 1, Storyboard 1, and each other actual OpenAI request 1. Location currently performs a separate planning request plus sheet request, so a fresh Location costs 2 credits; continuing only its remaining phase costs 1. Paid Higgsfield video is 103 credits. All provider invoices remain platform-funded; Sandbox purchases do not replenish real provider budgets.
 
-Apply `supabase/migrations/20261110010700_generation_access_funding_separation.sql` **after verified 106**, with old writers/workers stopped, then deploy matching app/worker code. It is transactional/rerunnable, verifies referenced columns and changes no data or caps. The focused 106/107 SQL reproduction and access-reason checks pass, including unchanged historical records/counters, attempt tombstones, paid holds/debits, zero-wallet/cap OpenAI access and protected unmapped approved history. TypeScript and focused lint pass; no browser/build or provider request ran. The live inspection above did not apply this migration or change any account/project. After installation, the reported historical project remains held and Character remains exhausted; a fresh eligible project's Product preparation can proceed, and any authorized paid video still needs all existing inputs/approvals and 103 available credits. A new project does not reset Character attempts. Manual UI/workflow testing remains with the owner.
+SQL reserves credits under the shared wallet lock before dispatch, binds each task/phase and lease once, and appends immutable ledger movements. Successful OpenAI responses consume once independently of parsing/storage/approval. Confirmed provider rejection or proven absence of dispatch releases once; timeouts and uncertain requests retain their hold and recover saved output without recharging or issuing another POST. No historical request is charged retroactively. The existing video price verification, finite real-funded user/global caps, 103-credit settlement, PayPal Sandbox purchases, Basic/Pro permissions, 5-second/480p enforcement, approval locks and recovery remain.
 
-## Funding and pricing
+Migration 108 supersedes the old two-starts-per-kind restrictions. It preserves preparation tombstones as audit history. Evidence-based review resolutions allow known consumed projects to continue when existing operations/tasks/free-run records prove their assignment and the mapped consumed-project count fits retained counters. Original flags, counters, ledger and media remain untouched. Account-only uncertainty does not block an already assigned project. Ambiguous deleted/unmapped/conflicting history retains free/video review and grants no new allowance; 109 permits separately credit-funded OpenAI requests. No historical video cost or approval is invented. Reconciled assignment permits included OpenAI continuation; unresolved historical video spending still blocks a replacement video.
 
-Existing free projects retain two lifetime project allowances, one $1.03 Higgsfield exposure per free project, $2.06 per account, historical review holds and immutable first-dispatch consumption. New compatible projects after exhaustion or account-only free review use purchased credits for video. They do not change any free counters. An already funded free project remains on its original budget; spending its video slot does not silently start a paid replacement.
-
-Paid reference-to-video costs **103 Sceenyk credits = $1.03** for five seconds at 480p. `verifyPaidVideoPrice` calls the authenticated Higgsfield `/estimate/{model}` endpoint with the exact server-created provider body, before admission and again before dispatch. Integer micro-USD conversion rounds upward, then validates the 103-credit band and owner-approved provider authorization ceiling. A price outside that band, missing credentials, unknown response or stale evidence blocks submission; package display estimates never authorize wallet debits. Other models/resolutions/durations remain blocked until their own verified pricing and reviewed tariff exist. Existing frozen package rates/hashes/approvals are not rewritten.
-
-Provider billing semantics were checked against [Higgsfield billing documentation](https://docs.higgsfield.ai/docs/concepts/billing-and-retention) on 2026-11-10: authenticated estimates are authoritative; successful generations are charged; failed/nsfw and successfully canceled queued requests are refunded. Provider acceptance alone does not establish a completed billable generation. No actual authenticated account estimate or media request was made during implementation.
-
-OpenAI remains platform-funded, independently of purchased balances and paid Higgsfield caps. Existing two lifetime preparation attempts per Character/Product/Location/Storyboard kind, finite Location phases, input/model/token and correction limits remain. Purchased credits never replenish those attempts. An exhausted preparation allowance can therefore still block a paid project's new preparation. Approved references, saved results and local recovery retain their existing rules.
+Manual installation and verification: [Stage 2/3 setup](stage-3-credit-protection.md). Source implementation is complete; remote migration, provider and visual acceptance remain manual.
 
 ## Accounting and recovery
 
-`generation_paid_projects` records paid funding without changing historical free records. `generation_paid_quotes` holds server-verified, five-minute exact-body price evidence. `generation_paid_reservations` pins a run's 103-credit hold and $1.03 provider exposure. Paid OpenAI dispatch fences use `generation_paid_preparations`; the existing lifetime preparation tombstones remain authoritative.
+Paid OpenAI reservations are unique by task and phase; they survive disposable-task cleanup. Each new actual request holds 1 credit atomically before the dispatch fence. Successful HTTP responses consume it once; validation/publication failures do not create a refund or replacement call. Explicit provider rejection releases it once. Terminal tasks with no dispatch safely release. A timeout, server error, missing receipt or ambiguous response retains the hold. Recovery reuses saved bytes and the existing reservation. Requests predating 108 are never retrospectively billed.
 
-Admission atomically locks the global cap and wallet, checks user/global exposure, moves 103 from `generation_accounts.credit_available` into `credit_reserved`, and appends a reservation to the **existing** immutable `credit_ledger`. V3 rows have a separate `v3_run_id` FK/reference namespace; existing purchase/job rows, FKs, unique constraints and PayPal fulfilment remain valid. No purchase/payment commission/provider-account funding is merged.
+Location plan and sheet are separate requests and ledger entries. If planning succeeds and the sheet is rejected, planning remains charged and the sheet credit returns. Failed local validation does not erase a successful provider request. Existing provider model/token/input limits and one-use leased intents prevent unbounded single-request or duplicate spend; there is no lifetime OpenAI-attempt quota.
 
-The leased dispatch checkpoint can transition once. Repeated tabs, the same run, changed workers and duplicate checkpoints cannot reserve, dispatch or settle it again. Existing V3 package/authorization/request uniqueness, creative lock and owner/currentness guards remain in force.
+Paid video still uses exact-body authenticated provider estimates, current immutable package/authorization, 103-credit wallet holds and finite user/global real-provider exposure caps from 106. Completed provider observations charge once; definitively rejected/failed/nsfw/canceled results release once under existing rules. Unknown/accepted requests retain holds and recover without a new POST. Free video retains the conservative single-attempt spending ceiling; confirmed absence of dispatch releases preparation, but a dispatched unknown request cannot be replaced for free.
 
-- Confirmed provider `completed`: debit the hold once, even if download, private publication or later owner approval fails. Provider completion is the billable event; owner rejection/deletion never refunds it.
-- Confirmed provider `failed`, `nsfw`, or `canceled`: restore the hold once and release cap exposure, using the existing trusted status observation.
-- Definite submission rejection with no accepted observation, or a terminal task proven undispatched: restore once.
-- Accepted/unknown/network/lost-acknowledgement outcomes: keep the hold and cap exposure; recover the same saved receipt/status. No automatic new paid request, timeout refund or uncertain POST replay.
-- Accepted work recovers even when caps are subsequently lowered. New dispatch rechecks caps and price freshness. An unused hold blocked by a lowered cap can safely release without submitting.
+## Historical review reconciliation
 
-`stage2_*` functions are private delegates copied once at migration time; wrappers add paid admission while preserving the installed 105 free contract. Migration reruns do not overwrite these delegates or financial history. Table writes and private settlement/cap helpers are denied to browser and service roles; narrowly scoped server-only RPCs preserve the existing application boundary.
+104 conservatively marked identified historical projects for review and accounts with orphaned preparations or old reservations. 107 separated fresh paid projects from account-only review but still preserved all project holds and lifetime preparation quotas. 108 removes the quota gates without deleting tombstones, and appends review-resolution evidence for provable consumed assignments whose mapped project count fits retained consumed counters. Proof comes from immutable started operations, provider-started task records or recorded free-run reservations/consumption. It does not infer an invoice or increase any spending budget.
+
+An assigned project is no longer blocked merely because its account has unresolved unrelated free history. Unmapped generated/approved evidence, more mapped consumed projects than retained consumed slots, missing evidence and conflicting paid funding remain blocked for manual investigation. No account counters, original review flags, wallet, old operation costs, approvals or media are reset. No live database audit or repair was executed in this change; runtime status must be checked after installation.
 
 ## Spending caps and setup
 
-1. Back up the database and review the installed catalog against migrations 101–105. Stop/drain old web writers and workers before applying **`supabase/migrations/20261110010600_paid_video_credit_protection.sql`**, then **`supabase/migrations/20261110010700_generation_access_funding_separation.sql`**, each in its own transaction. Do not run old code against the new schema. These migrations check prerequisites and preserve existing balances, purchase history, free counters and approved media; rerunning them in order does not reset caps or history. If 106 is already installed, apply only 107.
-2. Paid caps default to **zero**, so migration alone authorizes no paid spending. Use a database administrator to set finite lifetime user/global USD exposure ceilings. The example below enables at most $2.06 per user and $10.30 globally; choose amounts backed by the platform's real Higgsfield budget. Existing free exposure remains independently bounded by Stage 2.
+For the Sources correction, apply **109 after 108** using the linked migration above, then deploy matching app and worker code. Rerun 109 safely; do not rerun 108 over 109. Its free-history reconciliation must not classify new paid OpenAI requests as old free-usage evidence. Original 108 setup below is a prerequisite record.
+
+1. Stop old app writers and workers. Back up the database and verify prerequisite migrations through 107.
+2. Apply [20261110010800_project_generation_credits.sql](../supabase/migrations/20261110010800_project_generation_credits.sql) in the SQL Editor. Apply missing prior migrations in order first. Rerun 108 safely; do not rerun older policy migrations over it.
+3. Keep the existing 105 Higgsfield price and finite 106 paid caps backed by real provider funds. 108 never changes cap amounts. Zero paid caps keep video paused while OpenAI requires only its credit balance and normal safety guards. Sandbox top-ups cannot raise real provider budgets.
+4. Deploy matching app and worker code together and restart the normal worker. The access DTO requires policy version 108; an older database fails closed. Preserve HACKATHON_DEMO_MODE, existing ownership/Pro configuration and provider switches. This change does not enable paid transport or PayPal Live.
+5. Manually inspect Studio and saved results in both themes, free-project retention, paid costs/shortage/Buy Credits, loading/disabled controls, and ordinary recovery. No extra paid generation is needed merely to validate the migration.
+
+Read-only reconciliation audit after applying 108:
 
 ```sql
-begin;
-select * from public.generation_paid_policy where singleton for update;
-update public.generation_paid_policy
-set user_cap_microusd = 2060000, global_cap_microusd = 10300000
-where singleton;
-commit;
+select p.project_id, p.owner_user_id, p.state, p.historical_review,
+       r.evidence, r.created_at as resolved_at
+from public.free_ai_projects p
+left join public.free_ai_review_resolutions r using (project_id)
+where p.historical_review;
+
+select task_id, phase, project_id, state, dispatched_at, settled_at
+from public.generation_openai_reservations
+where state = 'reserved';
 ```
 
-Optional per-user override, including a zero block:
+For an unresolved hold, collect authentic project/task/provider receipts and reconcile it manually. Never bulk-clear flags, refill allowances, reset balances or fabricate usage. Original flags intentionally remain true even after an evidence-backed resolution.
 
-```sql
--- Replace the UUID with an existing generation_accounts.owner_user_id.
-insert into public.generation_paid_user_caps(owner_user_id, cap_microusd)
-values ('00000000-0000-0000-0000-000000000000', 1030000)
-on conflict(owner_user_id) do update set cap_microusd=excluded.cap_microusd;
-```
+## Focused verification
 
-Caps count reserved plus consumed exposure, excluding released holds. They never reset automatically and Sandbox purchases cannot increase them. Configure changes while dispatchers are stopped or under the same policy lock. Do not modify reservation/ledger rows to reset spending.
-
-3. Deploy matching app/worker source together. Preserve **`HACKATHON_DEMO_MODE=true`**, existing V3 owner rollout/paid transport switch, Higgsfield credentials/account scope, exact request-validity evidence and output-host approvals. No new environment variable enables generation or bypasses these gates. This implementation remains five-second/480p-only even if demo mode is disabled; future broader tariffs need separate implementation/review.
-4. Existing PayPal Sandbox custom-purchase configuration remains unchanged. Keep Sandbox test purchases separate from the platform's real provider balance. Marketplace earnings, commissions, withdrawals, creator payouts and Pro subscriptions are outside this change.
-
-## Studio and manual acceptance
-
-Studio displays funding source, required/available/reserved credits, shortage, Buy Credits, and cap/pricing/setup errors using existing Tailwind/theme controls. Sufficient balance enables the existing Generate path. Existing active-job polling, visible paid-panel reads, focus and credit-change events refresh the balance; a top-up continues only after trusted payment fulfilment. No browser balance, price or owner input is trusted.
-
-Essential verification: `npm run test:stage3-credits` runs disposable PGlite financial admission/settlement, ledger reconciliation, cap, pricing, role and replay checks with synthetic creative/authorization lineage. Existing `node scripts/check-custom-credit-purchases.mjs` validates Stage 1 mocked purchase/capture protections. Both pass, as do TypeScript and focused ESLint. No actual provider/payment HTTP, browser automation or build ran. PGlite does not prove native multi-connection lock contention; verify the deployed catalog and multi-tab/worker behavior during manual acceptance.
-
-Manually inspect loading/error/balance labels and top-up return. With compatible test accounts, check free-project continuation, exhausted-new-project funding, insufficient/103-credit admission, two-tab duplicate Generate, worker restart, and price/cap denial. Verify completion creates one consumption; rejected/unaccepted and confirmed refundable outcomes create one release; unknown outcomes retain the hold and only offer existing-request recovery. Review ledger totals against wallet deltas, purchase history, old approved clips/locking and M5/M6/M7 recovery. Use offline fixtures or existing authentic requests for failure/replay checks; do not purchase extra provider work solely to test accounting. Normal visual and end-to-end testing belongs to the owner.
+Run `node scripts/check-stage3-credit-protection.mjs` for disposable offline accounting/security checks. It uses synthetic creative lineage and real SQL financial triggers, no network/provider/payment calls. It verifies unchanged purchase and creative-lock functions, original history, repeated unlimited free requests, paid OpenAI reservation/settlement/rejection/unknown handling, two Location phases, video pricing/caps/settlement, wallet-to-ledger equality, owner/role denial and 108 reruns. Types and focused lint accompany this check. Hosted multi-session concurrency, provider/visual and normal workflow acceptance remain manual.

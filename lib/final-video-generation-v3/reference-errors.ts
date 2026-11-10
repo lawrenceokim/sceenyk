@@ -128,9 +128,9 @@ export function v3ActionErrorMessage(code: string) {
   if (service) {
     const name = service[1] === "CLERK" ? "Your account profile" : service[1] === "DATABASE" ? "The application database" : "Media storage";
     if (["CONNECTION_UNAVAILABLE", "TIMEOUT", "CAPACITY_UNAVAILABLE", "RATE_LIMITED", "UNAVAILABLE"].includes(service[2])) return `${name} is temporarily unavailable. Your approved clips and saved work are preserved. Wait briefly, then check status before retrying.`;
-    return `${name} needs attention. Your approved clips and saved work are preserved. Ask the administrator to check the service diagnostics in Progress and the worker logs.`;
+    return `${name} needs attention. Your approved clips and saved work are preserved. Please try again later.`;
   }
   if (/REFERENCE_LIMITS_(UNVERIFIED|EXPIRED|INVALID|UNAVAILABLE)$/.test(code) || ["REFERENCE_COUNT_EXCEEDED", "REFERENCE_FORMAT_OR_SIZE_INVALID", "REQUEST_SIZE_EXCEEDED"].includes(code)) return packageBuildError(code);
-  if (code.startsWith("V3_STORAGE_DELETE_")) return `The unwanted image could not be deleted (${code}). Its saved metadata is preserved for retry.`;
-  return messages[code] ?? "This request couldn’t finish. Check your saved inputs and local generation setup, then check status.";
+  if (code.startsWith("V3_STORAGE_DELETE_")) return "The image could not be deleted. Try deletion again.";
+  return messages[code] ?? "This request couldn’t finish. Check your saved inputs, then check status.";
 }

@@ -1,8 +1,20 @@
 # Code Standards
 
-## Stage 3 financial boundary (2026-11-10)
+## Independent sheet and Storyboard funding — 109 (2026-11-10)
 
-Paid V3 requests require exact server-obtained authenticated provider pricing, transactional wallet and user/global exposure reservation, a once-only leased dispatch fence, and trusted outcome settlement in SQL. Never infer billability from owner approval, local publication, a timeout or browser state. Unknown outcomes preserve holds and recover existing requests; only definitive unaccepted/refundable evidence releases them. Preserve immutable purchase/job movements while using the V3 ledger namespace. OpenAI limits remain independent. [Contract](stage-3-credit-protection.md).
+Sheet/Storyboard generation checks OpenAI funding independently of video/project review. Valid assigned free projects and eligible unused allowances retain included OpenAI access. Otherwise sufficient purchased credits authorize a new OpenAI request, even on a historical project whose video/free usage is unresolved. A review hold must never veto a separately credit-funded Character, Product, Location or Storyboard request. Each actual request costs 1 credit; fresh Location remains 2 (plan + sheet), continuation 1.
+
+The access DTO requires version 109 and exposes preparationFunding separately from video funding. SQL binds funding to each immutable task/phase, reserves credits before dispatch, and reuses 108 settlement/recovery. OpenAI preparation/reservation project FKs reference the existing V3 project directly; no paid-video enrollment is required for a held project's paid preparation. Video holds, free counters, review flags, existing records, approved content and creative locks remain unchanged. This supersedes earlier statements that all generation on an unresolved historical project must be blocked.
+
+Apply [migration 109](../supabase/migrations/20261110010900_independent_openai_funding.sql) after 108 with old writers/workers stopped, then deploy matching app/worker code. No remote writes or provider requests were performed. Focused accounting/security checks and TypeScript pass; normal UI/provider testing remains manual.
+
+## Generation credit boundary — 108 (2026-11-10)
+
+SQL reserves credits under the shared wallet lock before dispatch, binds each task/phase and lease once, and appends immutable ledger movements. Successful OpenAI responses consume once independently of parsing/storage/approval. Confirmed provider rejection or proven absence of dispatch releases once; timeouts and uncertain requests retain their hold and recover saved output without recharging or issuing another POST. No historical request is charged retroactively. The existing video price verification, finite real-funded user/global caps, 103-credit settlement, PayPal Sandbox purchases, Basic/Pro permissions, 5-second/480p enforcement, approval locks and recovery remain.
+
+Migration 108 supersedes the old two-starts-per-kind restrictions. It preserves preparation tombstones as audit history. Evidence-based review resolutions allow known consumed projects to continue when existing operations/tasks/free-run records prove their assignment and the mapped consumed-project count fits retained counters. Original flags, counters, ledger and media remain untouched. Account-only uncertainty does not block an already assigned project. Ambiguous deleted/unmapped/conflicting history retains free/video review and grants no new allowance; 109 permits separately credit-funded OpenAI requests. No historical video cost or approval is invented. Reconciled assignment permits included OpenAI continuation; unresolved historical video spending still blocks a replacement video.
+
+Charge actual provider requests, never task retries, polling, parsing, local assembly or cached publication. OpenAI is unlimited at zero credits within assigned free projects, with normal request-safety protections. Keep technical diagnostics in server logs and show concise user messages. Preserve private helpers, service-only leased receipts, RLS, immutable ledger validation, genuine history and approval locks.
 
 ## Phase 2 M7 — approval evidence versus submission authority (2026-11-09)
 

@@ -1,5 +1,5 @@
 import "server-only";
-import { dispatchFreeProjectOperation, freeProjectDispatchStatus, generationPolicyConfiguration } from "@/lib/accounting/generation-policy-server";
+import { dispatchFreeProjectOperation, freeProjectDispatchStatus, generationPolicyConfiguration, recordOpenAIGeneration } from "@/lib/accounting/generation-policy-server";
 import OpenAI from "openai";
 import { zodTextFormat } from "openai/helpers/zod";
 import { z } from "zod";
@@ -8,7 +8,7 @@ import type { Task } from "./runtime-contract";
 import { privateAssetSchema } from "./runtime-contract";
 import { bytesHash, readPrivate, saveSpool, publishPrivate } from "./runtime-media";
 import { v3OpenAIConfig } from "./runtime-config";
-import { referenceStageError, recordReferenceStage, safeReferenceRequestId } from "./reference-diagnostics";
+import { ReferenceTaskError, referenceStageError, recordReferenceStage, safeReferenceRequestId } from "./reference-diagnostics";
 import { LOCATION_VERSION, locationInstructionSchema, locationInstructionHash, locationRequestId } from "./location-contract";
 import { locationInputs, readLocationEnvelope, locationImageBytes, savedLocationState, savedLocationImage,
   savedLocationInstruction, parseLocationInstruction } from "./location-runtime";
@@ -46,6 +46,7 @@ export async function runLocationTask(store:V3Store,task:Task,w:RuntimeWorkspace
     const cached=await savedLocationImage(task);
     if(cached){
       const request=state.requests.find(r=>r.id===cached.id);
+      if (request?.key === "sheet") await recordOpenAIGeneration(task,"sheet");
       if(request?.status==="intent")await receipt(store,task,request.key,cached.id,cached.image.bytes);
       phase="publish";await publish(store,task,w,cached,signal);return;
     }
@@ -82,10 +83,17 @@ export async function runLocationTask(store:V3Store,task:Task,w:RuntimeWorkspace
       try{
         const response=await invoke();httpStatus=response.status;requestId=safeReferenceRequestId(response.headers.get("x-request-id"));
         const responseText=await response.text();
-        await saveSpool(id,"openai-response.json",Buffer.from(JSON.stringify({responseText,httpStatus,requestId})));
+        let failed=false;
+        try { const body=JSON.parse(responseText); failed=key==="plan" && ["failed","cancelled"].includes(body?.status); } catch { /* Invalid successful output still represents an actual request. */ }
+        try { await saveSpool(id,"openai-response.json",Buffer.from(JSON.stringify({responseText,httpStatus,requestId}))); }
+        finally { await recordOpenAIGeneration(task,key,failed?"rejected":"completed"); }
+        if(failed)throw new ReferenceTaskError("V3_LOCATION_PROVIDER_REJECTED",{stage:"provider",httpStatus,requestId,errorCode:"V3_LOCATION_PROVIDER_REJECTED"},true);
       }catch(error){
         const failure=referenceStageError(error,"provider",httpStatus,requestId);
-        if(failure.knownRejected)await checkpoint(store,task,"receipt",{key,status:"rejected",httpStatus:failure.metadata.httpStatus,requestId:failure.metadata.requestId,responseId:null,responseHash:null});
+        if(failure.knownRejected){
+          await recordOpenAIGeneration(task,key,"rejected");
+          await checkpoint(store,task,"receipt",{key,status:"rejected",httpStatus:failure.metadata.httpStatus,requestId:failure.metadata.requestId,responseId:null,responseHash:null});
+        }
         throw failure;
       }
       envelope=await readLocationEnvelope(id);
@@ -94,6 +102,9 @@ export async function runLocationTask(store:V3Store,task:Task,w:RuntimeWorkspace
     httpStatus=envelope.httpStatus;requestId=envelope.requestId;
     await receipt(store,task,key,id);
     let body:Record<string,unknown>;try{body=JSON.parse(envelope.responseText);}catch{throw new Error("V3_LOCATION_SAVED_RESPONSE_UNUSABLE");}
+    const failed=key==="plan" && ["failed","cancelled"].includes(String(body.status));
+    if (httpStatus !== null && httpStatus >= 200 && httpStatus < 300) await recordOpenAIGeneration(task,key,failed?"rejected":"completed");
+    if(failed)throw new ReferenceTaskError("V3_LOCATION_PROVIDER_REJECTED",{stage:"provider",httpStatus,requestId,errorCode:"V3_LOCATION_PROVIDER_REJECTED"},true);
     if(key==="plan"){
       const instruction=parseLocationInstruction(task,body);
       await checkpoint(store,task,"advance",{phase:"sheet",instruction,instructionHash:locationInstructionHash(instruction)});
@@ -105,7 +116,7 @@ export async function runLocationTask(store:V3Store,task:Task,w:RuntimeWorkspace
     }
   }catch(error){
     const failure=referenceStageError(error,phase,httpStatus,requestId);
-    const explicit=error instanceof Error&&/^((V3_|FREE_|GENERATION_)[A-Z0-9_]{1,97}|APPROVE_CURRENT_REFERENCES_FIRST)$/.test(error.message)?error.message:null;
+    const explicit=error instanceof Error&&/^((V3_|FREE_|GENERATION_|PAID_|INSUFFICIENT_)[A-Z0-9_]{1,97}|APPROVE_CURRENT_REFERENCES_FIRST)$/.test(error.message)?error.message:null;
     let code=failure.knownRejected?"V3_LOCATION_PROVIDER_REJECTED":explicit??(phase==="plan"?"V3_LOCATION_INSTRUCTION_INVALID":phase==="publish"?"V3_LOCATION_STORAGE_FAILED":"V3_LOCATION_IMAGE_FAILED");
     if(code==="V3_PRIVATE_SAVE_FAILED")code="V3_LOCATION_STORAGE_FAILED";
     if(code==="V3_DATABASE_UNAVAILABLE")code="V3_LOCATION_CHECKPOINT_FAILED";

@@ -16,7 +16,11 @@ export class ReferenceTaskError extends Error {
 }
 export async function recordReferenceStage(taskId: string, value: ReferenceStageMetadata) {
   // Best effort diagnostics must never turn a preserved successful image into a failed publication.
-  try { await writeReferenceDiagnostics(taskId, metadataSchema.parse(value)); } catch { /* The task checkpoint retains the code/HTTP/request ID too. */ }
+  try {
+    const metadata = metadataSchema.parse(value);
+    console.info(JSON.stringify({ event: "V3_REFERENCE_DIAGNOSTIC", taskId, ...metadata }));
+    await writeReferenceDiagnostics(taskId, metadata);
+  } catch { /* The task checkpoint retains the code/HTTP/request ID too. */ }
 }
 export function referenceStageError(error: unknown, stage: string, httpStatus: number | null, requestId: string | null) {
   if (error instanceof ReferenceTaskError) return error;
@@ -30,7 +34,7 @@ export function referenceStageError(error: unknown, stage: string, httpStatus: n
   const codes: Record<string, string> = { source: "V3_REFERENCE_SOURCE_READ_FAILED", provider: knownRejected ? "V3_OPENAI_REFERENCE_REQUEST_FAILED" : "V3_OPENAI_REFERENCE_OUTCOME_UNKNOWN",
     response_receive: "V3_OPENAI_REFERENCE_RESPONSE_INCOMPLETE", response_save: "V3_REFERENCE_RESPONSE_SAVE_FAILED", response_parse: "V3_REFERENCE_RESPONSE_PARSE_FAILED", image_validation: "V3_REFERENCE_IMAGE_VALIDATION_FAILED",
     image_save: "V3_REFERENCE_IMAGE_SAVE_FAILED", storage: "V3_REFERENCE_STORAGE_FAILED", publication: "V3_REFERENCE_PUBLICATION_FAILED" };
-    const explicit = error instanceof Error && /^(V3_|FREE_|GENERATION_)[A-Z0-9_]{1,97}$/.test(error.message) ? error.message : null;
+    const explicit = error instanceof Error && /^(V3_|FREE_|GENERATION_|PAID_|INSUFFICIENT_)[A-Z0-9_]{1,97}$/.test(error.message) ? error.message : null;
   return new ReferenceTaskError(explicit ?? codes[stage] ?? "V3_REFERENCE_LOCAL_PROCESSING_FAILED", {
     stage, httpStatus, requestId, errorCode: explicit ?? codes[stage] ?? "V3_REFERENCE_LOCAL_PROCESSING_FAILED",
     providerCode: typeof candidate.code === "string" && /^[a-zA-Z0-9_-]{1,100}$/.test(candidate.code) ? candidate.code : errorType,
