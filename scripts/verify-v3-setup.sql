@@ -72,3 +72,31 @@ select
 select (select count(*) from public.ugc_v3_projects v join public.ugc_final_executions f on f.project_id=v.project_id) as legacy_final_attachments,
  (select count(*) from public.ugc_v3_projects v join public.ugc_generation_jobs j on j.project_id=v.project_id) as legacy_ugc_jobs,
  (select count(*) from public.ugc_v3_projects v join public.generation_jobs j on j.project_id=v.project_id) as legacy_general_jobs;
+
+-- Stage 2 (102): read-only catalog inspection. Run after 101/102 and deploy
+-- matching app/workers; these reads never create holds, jobs or provider work.
+select to_regclass('public.generation_free_runs') as free_run_holds,
+       to_regclass('public.generation_free_preparations') as free_preparation_budget;
+select to_regprocedure('public.generation_free_access(uuid)') as access_rpc,
+       to_regprocedure('public.generation_free_submit(uuid,uuid,uuid)') as admission_rpc,
+       to_regprocedure('public.generation_free_transport(uuid,uuid,text)') as transport_rpc;
+select c.relname,c.relrowsecurity,t.tgname,t.tgenabled
+from pg_class c left join pg_trigger t on t.tgrelid=c.oid and not t.tgisinternal
+where c.oid in (to_regclass('public.generation_free_runs'),to_regclass('public.generation_free_preparations'))
+   or t.tgname like 'z_generation_free_%'
+order by c.relname,t.tgname;
+select p.oid::regprocedure as function_signature,
+       has_function_privilege('service_role',p.oid,'EXECUTE') as service_execute,
+       has_function_privilege('anon',p.oid,'EXECUTE') as anon_execute,
+       has_function_privilege('authenticated',p.oid,'EXECUTE') as authenticated_execute
+from pg_proc p join pg_namespace n on n.oid=p.pronamespace
+where n.nspname='public' and p.proname like 'generation_free_%'
+order by p.proname;
+
+-- Stage 2 cleanup repair (103): usage persists after disposable tasks are deleted.
+select to_regclass('public.generation_free_preparations') is not null and not exists (
+  select 1 from pg_constraint c join pg_attribute a on a.attrelid=c.conrelid and a.attnum=any(c.conkey)
+  where c.conrelid=to_regclass('public.generation_free_preparations') and c.contype='f' and a.attname='task_id'
+) as preparation_cleanup_compatible;
+select c.conname,pg_get_constraintdef(c.oid) as definition
+from pg_constraint c where c.conrelid=to_regclass('public.generation_free_preparations') order by c.conname;

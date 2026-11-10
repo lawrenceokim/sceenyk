@@ -1,4 +1,5 @@
 import "server-only";
+import { assertLegacyGenerationUnavailable } from "@/lib/accounting/generation-policy-server";
 import RunwayML, { toFile } from "@runwayml/sdk";
 import { z } from "zod";
 import { getVisualConfiguration } from "../legacy-runway-config";
@@ -28,6 +29,7 @@ function taskCreated(value: unknown) {
   return { taskId: result.id, estimatedCredits: result.estimatedCost?.credits ?? null };
 }
 export async function generateScene(scene: SceneExecution, inputUri?: string) {
+  assertLegacyGenerationUnavailable();
   try {
     const ratio = z.enum(["1280:720", "720:1280", "960:960"]).parse(scene.resolution);
     if (scene.operation === "text_to_video") return taskCreated(await client().textToVideo.create({ model: z.literal("gen4.5").parse(scene.model), promptText: scene.prompt, duration: scene.duration_seconds, ratio: z.enum(["1280:720", "720:1280"]).parse(ratio) }));
@@ -36,6 +38,7 @@ export async function generateScene(scene: SceneExecution, inputUri?: string) {
   } catch (error) { if (error instanceof VisualError) throw error; return providerError(error, true); }
 }
 export async function transformScene(scene: SceneExecution, inputUri: string) {
+  assertLegacyGenerationUnavailable();
   try {
     return taskCreated(await client().videoToVideo.create({ model: z.literal("aleph2").parse(scene.model), videoUri: inputUri, promptText: scene.prompt, outputFormat: "mp4" }));
   } catch (error) { return providerError(error, true); }

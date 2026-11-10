@@ -11,13 +11,13 @@ import { CreditAccountSkeleton } from "./financial-skeletons";
 
 type CheckoutData = Extract<Awaited<ReturnType<typeof creditCheckoutAction>>, { ok: true }>["data"];
 
-export function CreditTopUp() {
+export function CreditTopUp({ label = "Top up credits" }: { label?: string }) {
   const [open, setOpen] = useState(false);
   return <Dialog open={open} onOpenChange={next => {
     setOpen(next);
     if (!next) notifyCreditsChanged();
   }}>
-    <DialogTrigger render={<Button type="button" variant="outline" />}>Top up credits</DialogTrigger>
+    <DialogTrigger render={<Button type="button" variant="outline" />}>{label}</DialogTrigger>
     <DialogContent className="scrollbar-hidden sm:max-w-3xl">
       <DialogTitle className="pr-8 text-xl font-semibold">Buy credits</DialogTitle>
       <DialogDescription>Choose a custom USD amount and review the credits after estimated fees. PayPal Sandbox uses test money; Higgsfield uses real funded API balance. Checkout opens in a separate tab so your current draft stays here.</DialogDescription>

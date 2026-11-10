@@ -1,4 +1,5 @@
 import "server-only";
+import { assertLegacyGenerationUnavailable } from "@/lib/accounting/generation-policy-server";
 import { z } from "zod";
 import { getCharacterSheetConfig } from "./config";
 import { characterViewPrompt, characterPromptGeneration } from "./prompts";
@@ -22,6 +23,7 @@ export class HiggsfieldSoul2CharacterSheetProvider implements CharacterSheetProv
   readonly model = this.config.model;
 
   private async request(operation: CharacterProviderOperation, path: string, signal: AbortSignal, body?: unknown, key?: string): Promise<{ body: unknown; httpStatus: number }> {
+    if (body !== undefined) assertLegacyGenerationUnavailable();
     let response: Response;
     try {
       response = await fetch(`${apiOrigin}${path}`, {

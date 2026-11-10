@@ -1,5 +1,11 @@
 # M10 V3 Phase 3 — local runtime and first-test preparation
 
+## Stage 2 free/demo policy (2026-11-09)
+
+**Source implemented; manual 102 and hosted/provider/UI acceptance pending.** New requests now require the existing account's free allowance, a single 5-second/480p package and exact leased provider intent. V3 run holds bridge into generation_accounts without rewriting frozen packages, authorizations, prices or approved media. Usable private publication consumes once before aesthetic review; rejection/deletion never refunds success. Proven failure restores once; unknown or storage-interrupted completed provider results recover without another submission. The trusted worker can identify technically unusable completed bytes separately from storage/transport failure.
+
+OpenAI Character/Product/Location/Storyboard preparation reserves a bounded lifetime attempt at the existing provider-intent checkpoint, not at harmless queueing/retirement. Known/cached result recovery creates no new attempt. New incompatible or exhausted work is disabled/blocked across API/SQL/worker/transport, including Pro and purchased-credit owners; Stage 3 paid deductions remain disconnected. HACKATHON_DEMO_MODE defaults true, and false cannot turn on uncharged paid work. Existing M5/M6/M7 approval locks, frozen-input reads, source clips and provider-free merge/final review retain their owners and finite safeguards. [Accounting](accounting.md#stage-2-free-v3-admission-and-settlement-2026-11-09) and the current tracker own setup and scoped evidence.
+
 ## Next product roadmap — Basic & Pro Studio Modes (2026-11-05)
 
 **Product Phase 2: M1/M2 source implemented; M3–M7 Planned / Not Started.** M1 mode metadata remains outside creative hashes. [M2 routing/setup/evidence](phase-2-basic-pro-studio.md#m2-implementation-and-setup) extends existing V3 with independent named Pro character sheets, full approved Location/Director cast, strict shot/speaker IDs, frozen package sheet identities and complete Higgsfield mapping with verified-limit checks. Basic retains one character and its historical schemas/prompts/compiler path. Manual 095 after 094, actual provider-limit evidence and live/manual acceptance remain pending. Preserve estimates/resolution, finite USD authority, worker/recovery/storage and ownership protections. Free mode access retains paid-generation consent.

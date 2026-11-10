@@ -12,6 +12,8 @@ import { FinalVideoGenerate, FinalVideoReview } from "./v3-final-video-controls"
 import { finalVideoPresentation } from "./v3-final-video-state";
 import { shouldPollV3Video } from "@/lib/final-video-generation-v3/video-progress";
 import { StudioWorkflowGuidance } from "./studio-workflow-guidance";
+import { StudioFreeGenerationStatus } from "./studio-free-generation-status";
+import { notifyCreditsChanged } from "@/lib/accounting/client-events";
 import { GenerationCreditEstimate } from "@/components/payments/credit-balance";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -382,6 +384,10 @@ export function V3WorkflowPreview({
       setBusy(false);
     }
   };
+  const policy = workspace?.generationPolicy;
+  const generationBlocked = !policy?.ready || !policy.settingsSupported || policy.remaining < 1;
+  const preparationBlocked = (kind: "character" | "product" | "location" | "storyboard") => generationBlocked || !policy?.preparationRemaining[kind];
+  useEffect(() => { if (policy?.ready) notifyCreditsChanged(); }, [policy?.ready, policy?.remaining, policy?.reserved, policy?.consumed]);
   const p = workspace?.preflight;
   const transientFinalRead = !!workspace?.multiClip && (retryFinalRead || finalOperation.presentation.active) && statusRetryable;
   const workflowError = error || (transientFinalRead ? "" : statusError);
@@ -530,7 +536,7 @@ export function V3WorkflowPreview({
       ) : null;
     const generationButton = kind === "location" ? (
       <Button variant={current ? "default" : "outline"}
-        disabled={creativeLocked || locked || (!!workspace && referenceBusy(workspace.tasks, "location"))}
+        disabled={preparationBlocked("location") || creativeLocked || locked || (!!workspace && referenceBusy(workspace.tasks, "location"))}
         aria-disabled={!!locationFeedback}
         className="aria-disabled:cursor-not-allowed aria-disabled:bg-muted aria-disabled:text-muted-foreground aria-disabled:opacity-60"
         onClick={() => {
@@ -539,7 +545,7 @@ export function V3WorkflowPreview({
           void act("reference", { kind: "location", expectedId: current?.id, expectedVersion: current?.version });
         }}>{current ? "Regenerate Location" : "Generate Location"}</Button>
     ) : <Button variant={current || proCharacterPanel ? "default" : "outline"} className={proCharacterPanel ? "w-full" : undefined}
-      disabled={creativeLocked || !workspace || busy || dirty || proCharactersBlocked || referenceBusy(workspace.tasks, kind, undefined, assetId) || !reference(kind, assetId)}
+      disabled={preparationBlocked(kind) || creativeLocked || !workspace || busy || dirty || proCharactersBlocked || referenceBusy(workspace.tasks, kind, undefined, assetId) || !reference(kind, assetId)}
       onClick={() => requestReference(kind, assetId)}>{proCharacterPanel && current && <RefreshCw className="size-3.5 shrink-0" aria-hidden="true" />}{current ? proCharacterPanel ? "Regenerate" : `Regenerate ${label}` : `Generate ${label}`}</Button>;
     return (
       <StudioPanelPortal key={panel} panel={panel}>
@@ -639,6 +645,7 @@ export function V3WorkflowPreview({
           {current && (
             <article className="space-y-2">
               {image(current)}
+              {policy?.ready && policy.preparationRemaining[kind] === 0 && <p className="text-warning-foreground">Free {label} preparation is used up. Reuse an approved image; paid regeneration is not connected yet.</p>}
               {generationButton}
               {current.cleanupPending ? (
                 <div className="space-y-2">
@@ -803,6 +810,7 @@ export function V3WorkflowPreview({
       {sourcePanel("product")}
       {sourcePanel("location")}
       <StudioPanelPortal panel="workflow">
+        <StudioFreeGenerationStatus policy={policy} estimatedCostMicrousd={p?.estimatedCostMicrousd ?? null} />
         <div
           className="flex min-h-0 min-w-0 flex-1 flex-col gap-3"
           aria-busy={busy}
@@ -879,7 +887,7 @@ export function V3WorkflowPreview({
                     <Button
                       variant="default"
                       disabled={
-                        creativeLocked || locked ||
+                        preparationBlocked("storyboard") || creativeLocked || locked ||
                         proCharactersBlocked || workspace.proDurationRetained || !!locationFeedback ||
                         !currentApproved("character") ||
                         !currentApproved("location") ||
@@ -951,7 +959,7 @@ export function V3WorkflowPreview({
                     <Button
                       variant="default"
                       className="w-full max-w-full whitespace-normal sm:w-auto"
-                      disabled={creativeLocked || locked || proCharactersBlocked || workspace.proDurationRetained || !currentApproved("storyboard")}
+                      disabled={generationBlocked || creativeLocked || locked || proCharactersBlocked || workspace.proDurationRetained || !currentApproved("storyboard")}
                       onClick={() => {
                         setPackageRequestPending(true);
                         void act("build_package", {
@@ -1063,7 +1071,7 @@ export function V3WorkflowPreview({
                           variant="default"
                           className="w-full whitespace-normal"
                           disabled={
-                            !packageReady ||
+                            generationBlocked || !packageReady ||
                             workspace.resolutionPricingAvailable === false ||
                             p.issues.includes("V3_RESOLUTION_PRICING_NOT_CONFIGURED") ||
                             packageApproved ||
@@ -1107,11 +1115,11 @@ export function V3WorkflowPreview({
                 )}
                 {view === "final" && (
                   <section className="min-w-0 space-y-4">
-                    {Number(p?.durationMs ?? storyboards[0]?.storyboard?.durationMs ?? 0) > 30_000 ? <V3ClipManager workspace={workspace} act={act} disabled={busy || dirty || finalOperation.presentation.blocked} studioMode={studioMode} finalOperation={finalOperation.presentation} refreshingFinal={refreshing || retryFinalRead} /> : <>
+                    {Number(p?.durationMs ?? storyboards[0]?.storyboard?.durationMs ?? 0) > 30_000 ? <V3ClipManager workspace={workspace} generationBlocked={generationBlocked} act={act} disabled={busy || dirty || finalOperation.presentation.blocked} studioMode={studioMode} finalOperation={finalOperation.presentation} refreshingFinal={refreshing || retryFinalRead} /> : <>
                     <h2 className="font-semibold">Final Video</h2>
                     <FinalVideoGenerate
                       generating={finalVideoGenerating}
-                      disabled={locked || proCharactersBlocked || workspace.proDurationRetained || !p?.canSubmit || finalVideo.hasExistingRun}
+                      disabled={generationBlocked || locked || proCharactersBlocked || workspace.proDurationRetained || !p?.canSubmit || finalVideo.hasExistingRun}
                       onGenerate={() => {
                         if (!p) return;
                         setVideoRequestPending(true);

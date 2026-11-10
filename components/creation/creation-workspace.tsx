@@ -3,6 +3,7 @@ import { V3WorkflowPreview } from "./v3-workflow-preview";
 import { useStudioMode, useStudioModeIncompatibilities } from "@/components/workspace/studio-mode-provider";
 import type { RuntimeDto } from "@/lib/final-video-generation-v3/runtime-server";
 import { StudioSkeleton } from "./studio-skeleton";
+import { FreeAllowanceSummary } from "@/components/free-allowance";
 import { StudioProjectGuard } from "./studio-project-guard";
 
 import { BeforeAccountAuth } from "@/components/auth/before-account-auth";
@@ -210,7 +211,7 @@ function WorkspaceEditor({
   const [settings, setSettings] = useState<CreationSettings>(
     lockedDraft?.settings ?? initialProject?.settings ?? restoredDraft?.brief.settings ?? {
       aspectRatio: initialPreferences.aspectRatio,
-      duration: "10",
+      duration: "5",
       visualStyle: "Original",
       tone: "Storytelling",
     },
@@ -478,6 +479,7 @@ function WorkspaceEditor({
                   revision={JSON.stringify([savedBrief, mediaUpload.assets])} /> : <><StudioPanelPortal panel="workflow">{controls}</StudioPanelPortal><UgcWorkflowPreview key={projectId ?? "new"} projectId={projectId ?? ""} progress={ugcProgress} /></> : undefined}
                 sources={
                   <>
+                    <div className="rounded-lg border border-primary/20 bg-primary/[0.04] p-3 text-xs"><FreeAllowanceSummary compact /><p className="mt-1 text-muted-foreground">Free generation: 5 seconds at 480p. Reference preparation is limited; reuse approved images.</p></div>
                     {preferencesUnavailable && <p role="status" className="text-caption text-muted-foreground">Creation defaults unavailable.</p>}
                     {restoredDraft?.missingFiles && (
                       <p role="status" className="text-caption text-warning-foreground">
@@ -599,7 +601,7 @@ function WorkspaceEditor({
                       onChange={resolution => setSettings({ ...settings, resolution })} />
                     </fieldset></StudioInspectorSection>}
                     <div className="md:hidden">{status}</div>
-                    {creationType !== "ugc" && controls}
+                    {creationType !== "ugc" && <><p className="text-xs text-muted-foreground">Free generation currently supports the 5-second, 480p UGC V3 workflow. Existing Freestyle results remain available.</p><fieldset disabled className="min-w-0">{controls}</fieldset></>}
                   </>
                 }
               />

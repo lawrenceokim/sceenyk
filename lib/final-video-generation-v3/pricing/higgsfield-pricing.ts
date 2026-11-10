@@ -1,3 +1,4 @@
+import "server-only";
 import { manualPricingSchema, type ManualPricing } from "./contract";
 import type { CostEstimate, VideoCommand } from "../contract";
 import { v3Digest } from "../identity";

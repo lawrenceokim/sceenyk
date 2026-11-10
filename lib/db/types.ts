@@ -408,6 +408,9 @@ export type Database = {
       caption_dispatch_candidates: { Args: Record<string, never>; Returns: { job_id: string }[] };
       prepare_credit_purchase: { Args: { p_owner_user_id: string; p_pack_id: string; p_pack_name: string; p_amount_minor: number; p_currency: string; p_credits: number }; Returns: import("@/lib/payments/types").PurchaseRow };
       prepare_custom_credit_purchase: { Args: { p_owner_user_id: string; p_amount_minor: number; p_paypal_basis_points: number; p_paypal_fixed_minor: number; p_commission_basis_points: number; p_pricing_version: string }; Returns: import("@/lib/payments/types").PurchaseRow };
+      generation_free_access: { Args: { p_owner: string }; Returns: import("@/lib/accounting/generation-policy").FreeGenerationAccess };
+      generation_free_submit: { Args: { p_owner: string; p_project: string; p_run: string }; Returns: boolean };
+      generation_free_transport: { Args: { p_project: string; p_run: string; p_hash: string }; Returns: boolean };
       attach_paypal_order: { Args: { p_purchase_id: string; p_owner_user_id: string; p_order_id: string }; Returns: boolean };
       set_credit_purchase_state: { Args: { p_owner_user_id: string; p_order_id: string; p_status: string }; Returns: boolean };
       fulfil_paypal_purchase: { Args: { p_owner_user_id: string; p_order_id: string; p_capture_id: string; p_amount_minor: number; p_currency: string }; Returns: boolean };

@@ -99,6 +99,7 @@ export function V3ClipManager({
   studioMode,
   finalOperation,
   refreshingFinal,
+  generationBlocked = false,
 }: {
   workspace: RuntimeDto;
   act: Action;
@@ -106,6 +107,7 @@ export function V3ClipManager({
   studioMode: StudioMode;
   finalOperation?: FinalOperationPresentation;
   refreshingFinal?: boolean;
+  generationBlocked?: boolean;
 }) {
   const group = workspace.multiClip;
   const panels = useStudioPanels();
@@ -379,7 +381,7 @@ export function V3ClipManager({
                   <Button
                     size="sm"
                     className="w-full"
-                    disabled={locked || !clip.canGenerate}
+                    disabled={generationBlocked || locked || !clip.canGenerate}
                     onClick={() =>
                       void request(clip.id, "generate_clip", {
                         packageId: group.packageId,
@@ -433,7 +435,7 @@ export function V3ClipManager({
                   <Button
                     size="sm"
                     variant="outline"
-                    disabled={locked || !run?.current}
+                    disabled={generationBlocked || locked || !run?.current}
                     onClick={() => confirm(clip)}
                   >
                     Regenerate
@@ -443,7 +445,7 @@ export function V3ClipManager({
                   <Button
                     size="sm"
                     variant="outline"
-                    disabled={locked}
+                    disabled={generationBlocked || locked}
                     onClick={() => confirm(clip)}
                   >
                     Approve Clip Cost
@@ -626,7 +628,7 @@ export function V3ClipManager({
             </Button>
             <Button
               disabled={
-                disabled ||
+                generationBlocked || disabled ||
                 !!workspace.proDurationRetained ||
                 !!pending ||
                 snapshotChanged ||

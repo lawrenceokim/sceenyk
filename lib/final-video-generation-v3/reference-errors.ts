@@ -1,3 +1,4 @@
+import { generationPolicyMessages } from "@/lib/accounting/generation-policy";
 import { packageBuildError } from "./package-status";
 const messages: Record<string, string> = {
   V3_CREATIVE_LOCK_SETUP_REQUIRED: "Clip approval locking needs database migration 100. Your generated clip is preserved; ask your administrator to complete setup.",
@@ -122,6 +123,7 @@ const messages: Record<string, string> = {
   APPROVE_CURRENT_REFERENCES_FIRST: "Regenerate and approve references for the current saved inputs before continuing.",
 };
 export function v3ActionErrorMessage(code: string) {
+  if (generationPolicyMessages[code]) return generationPolicyMessages[code];
   const service = /^(?:V3_)?(DATABASE|CLERK|STORAGE)_(CONNECTION_UNAVAILABLE|TIMEOUT|CAPACITY_UNAVAILABLE|RATE_LIMITED|UNAVAILABLE|AUTHENTICATION_FAILED|PERMISSION_DENIED|SCHEMA_MISMATCH|CONFIGURATION_INVALID|NETWORK_BLOCKED|TLS_INVALID|OPERATION_FAILED|NOT_FOUND|CONSTRAINT_REJECTED)$/.exec(code);
   if (service) {
     const name = service[1] === "CLERK" ? "Your account profile" : service[1] === "DATABASE" ? "The application database" : "Media storage";

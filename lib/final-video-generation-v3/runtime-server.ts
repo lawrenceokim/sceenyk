@@ -1,6 +1,8 @@
 import "server-only";
+import { generationAccess, readGenerationAccess } from "@/lib/accounting/generation-policy-server";
+import { assertFreeVideoSettings } from "@/lib/accounting/generation-policy";
 import { projectVideoResolution } from "@/lib/projects/video-resolution";
-import { getEstimatedRate, suggestedAuthorizationMicrousd } from "./pricing/higgsfield-pricing";
+import { calculateManualEstimate, getEstimatedRate, suggestedAuthorizationMicrousd } from "./pricing/higgsfield-pricing";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { ensureAppUser } from "@/lib/auth/ensure-app-user";
@@ -186,7 +188,11 @@ export async function runtimeDto(w: RuntimeWorkspace) {
   const multiClip = clipDoc && clipPlans ? { packageId: clipDoc.id, packageHash: clipDoc.hash,
     ...clipSpending(w, clipDoc), clips: clipPlans, ...(merge ? { merge } : {}),
     readyForMerging: !!manifestHash && preflight?.currentness === "current" && clipPlans.every(c => runs.some(r => r.id === c.runId && r.current && r.state === "approved")) } : null;
-  return { projectId: w.project.project_id, packageStale: w.packages.length > 0 && !preflight, artifacts, runs: [...runs, ...joined],
+  const referenceModel = "bytedance/seedance-2.5/reference-to-video";
+  // Send only a read-only fallback amount; rates, hashing and authorization stay server-only.
+  const approximateVideoCostMicrousd = getEstimatedRate("higgsfield", referenceModel, "reference-to-video", "480p")
+    ? calculateManualEstimate("higgsfield", referenceModel, "reference-to-video", 5000, "480p").estimatedCostMicrousd : null;
+  return { generationPolicy: { ...await readGenerationAccess(w.project.owner_user_id), approximateVideoCostMicrousd, settingsSupported: Number(brief.duration) === 5 && projectVideoResolution(brief.video_resolution) === "480p" }, projectId: w.project.project_id, packageStale: w.packages.length > 0 && !preflight, artifacts, runs: [...runs, ...joined],
     ...(creativeLock ? { creativeLock } : {}),
     multiClip,
     ...(requiresProDuration(brief.duration) && w.project.studio_mode !== "pro" ? { proDurationRetained: true as const } : {}),
@@ -200,7 +206,9 @@ export async function runtimeDto(w: RuntimeWorkspace) {
     tasks,
     processing: w.tasks.some((t, i) => t.input.referenceCleanup||t.input.referenceCleanupHold ? false : ["character", "product", "location", "storyboard"].includes(t.kind) ? ["queued", "running"].includes(t.status) && taskBlocksGeneration(t, tasks[i].current) : t.status === "running" || t.status === "queued" && !["PAID_V3_EXECUTION_DISABLED", "V3_ACTIVATION_SCOPE_MISMATCH", "V3_REFERENCE_DELIVERY_EXPIRED"].includes(t.error_code ?? "")), localEnabled: v3UserAllowed(w.project.owner_user_id) };
 }
-export type RuntimeDto = Awaited<ReturnType<typeof runtimeDto>>;
+export type RuntimeDto = Omit<Awaited<ReturnType<typeof runtimeDto>>, "generationPolicy"> & {
+  generationPolicy?: Awaited<ReturnType<typeof runtimeDto>>["generationPolicy"];
+};
 export async function readOwnedV3(project: string) {
   const { userId } = await requireClerkUser(), db = createDatabaseClient();
   const user = await db.from("app_users").select("id").eq("clerk_user_id", userId).maybeSingle();
@@ -219,7 +227,7 @@ const actionSchema = z.object({ action: z.enum(["reference", "cleanup_references
 export type V3ActionReceipt = { accepted: true; action: string; id: string };
 export function ownedV3Action(raw: unknown): Promise<RuntimeDto>;
 export function ownedV3Action(raw: unknown, acknowledge: true): Promise<RuntimeDto | V3ActionReceipt>;
-export async function ownedV3Action(raw: unknown, acknowledge = false) {
+export async function ownedV3Action(raw: unknown, acknowledge = false): Promise<RuntimeDto | V3ActionReceipt> {
   const a = actionSchema.parse(raw);
   const finalRequest = acknowledge && ["merge", "approve", "reject_delete", "recover"].includes(a.action);
   const user = finalRequest ? await finalActionUser() : await ensureAppUser(); assertV3Access(user.id);
@@ -228,6 +236,16 @@ export async function ownedV3Action(raw: unknown, acknowledge = false) {
   const savedBrief = lockedBriefSchema.safeParse(lockDocument(w)?.brief);
   const brief = savedBrief.success ? savedBrief.data as typeof liveBrief : liveBrief, originals = lockedOriginals(w, liveOriginals);
   const creativeLock = creativeLockSummary(w);
+  if (["reference", "storyboard", "build_package", "authorize", "authorize_clip", "generate", "generate_clip"].includes(a.action)) {
+    const existing = ["generate", "generate_clip"].includes(a.action) && w.runs.some(r => r.package_id === a.packageId && (!a.segmentId || r.intent.segmentId === a.segmentId) && !["deleted", "failed"].includes(r.state));
+    if (existing) return runtimeDto(w);
+    assertFreeVideoSettings(brief.duration, projectVideoResolution(brief.video_resolution));
+    const access = await generationAccess(user.id);
+    if (access.remaining < 1) throw new Error("FREE_ALLOWANCE_EXHAUSTED");
+    const preparation = a.action === "reference" ? a.kind : a.action === "storyboard" ? "storyboard" : null;
+    if (typeof preparation === "string" && preparation in access.preparationRemaining &&
+      access.preparationRemaining[preparation as keyof typeof access.preparationRemaining] < 1) throw new Error("FREE_PREPARATION_LIMIT");
+  }
   if (creativeLock && (creativeMutationActions.has(a.action) || a.action === "recover_task" && w.tasks.some(t => t.id === a.id && ["character", "product", "location", "storyboard", "package"].includes(t.kind))))
     throw new Error("V3_CREATIVE_INPUTS_LOCKED");
   const context = generationContext(brief);

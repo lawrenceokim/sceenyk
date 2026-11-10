@@ -1,4 +1,5 @@
 import "server-only";
+import { assertLegacyGenerationUnavailable } from "@/lib/accounting/generation-policy-server";
 import { FinalVideoError, type ProviderReceipt } from "../contract";
 import type { ProviderContext } from "../providers";
 import { createHash } from "node:crypto";
@@ -27,6 +28,7 @@ export async function jsonRequest(url: string, init: RequestInit, context: Provi
   if (init.method === "POST" && context.replayResponse) {
     await context.preserveResponse?.(context.replayResponse); return JSON.parse(context.replayResponse.toString("utf8"));
   }
+  if (init.method === "POST") assertLegacyGenerationUnavailable();
   const secrets = ["FAL_KEY", "ELEVENLABS_API_KEY", "SUPABASE_SECRET_KEY", "SUPABASE_SERVICE_ROLE_KEY", "R2_SECRET_ACCESS_KEY", "R2_ACCESS_KEY_ID"].map(name => process.env[name] ?? "");
   if (init.method === "POST" && typeof init.body === "string") {
     // Retain redacted request fields and an exact byte hash before sending.

@@ -1,4 +1,5 @@
 import "server-only";
+import { assertFreeV3Submission, generationPolicyConfiguration } from "@/lib/accounting/generation-policy-server";
 import OpenAI, { toFile } from "openai";
 import { z } from "zod";
 import { zodTextFormat } from "openai/helpers/zod";
@@ -84,6 +85,7 @@ async function imageTask(store: V3Store, task: Task, w: RuntimeWorkspace, signal
       const config = v3ReferenceConfig();
       if (model !== config.imageModel || task.input.provider !== undefined && task.input.provider !== "openai") throw new Error("V3_OPENAI_REFERENCE_PROVIDER_UNAVAILABLE");
       const client = new OpenAI({ apiKey: config.apiKey, maxRetries: 0, timeout: 600_000, logLevel: "off" });
+      generationPolicyConfiguration();
       await store.checkpoint(task, "intent"); stage = "provider";
       await recordReferenceStage(task.id, { stage, httpStatus, requestId, errorCode: null });
       const response = await client.images.edit(prepareOpenAIReference(model, await Promise.all(inputs.map((b, i) => toFile(b, `reference-${i}.png`, { type: "image/png" }))),
@@ -142,6 +144,7 @@ async function storyboardTask(store: V3Store, task: Task, w: RuntimeWorkspace, s
     request.body.input = [{ role: "user", content: [{ type: "input_text", text: instruction },
       ...refs.map(r => ({ type: "input_image" as const, image_url: `data:image/png;base64,${r.bytes.toString("base64")}`, detail: "high" as const }))] }];
     const client = new OpenAI({ apiKey: config.apiKey, maxRetries: 0, timeout: 600_000, logLevel: "off" });
+    generationPolicyConfiguration();
     await store.checkpoint(task, "intent");
     const response = await client.responses.create(request.body, { signal, headers: { "X-Client-Request-Id": task.id } });
     raw = Buffer.from(JSON.stringify({ response, requestId: response._request_id ?? null })); await saveSpool(task.id, "openai-response.json", raw);
@@ -174,6 +177,7 @@ async function videoTask(store: V3Store, task: Task, w: RuntimeWorkspace, signal
   };
   await stage("V3_FINAL_VIDEO_JOB_CLAIMED");
   await executeV3Segment(run, task.provider_started, { provider: transport, beforeSubmit: async intent => {
+    await assertFreeV3Submission(w.project.owner_user_id, task.project_id, run.id, segment.durationMs / 1000, String(intent.body.resolution));
     assertV3Transport(config, intent);
     if (intent.body.resolution !== doc.source.resolution || intent.authorization.resolution !== doc.source.resolution) throw new Error("V3_RESOLUTION_BINDING_INVALID");
     // Do not mark a request started when its signed inputs have already expired.
@@ -242,7 +246,8 @@ export async function runV3Task(projectId: string, ownerId: string, store = new 
     const code = error instanceof Error && /^[A-Z0-9_]{1,100}$/.test(error.message) ? error.message : "V3_TASK_FAILED";
     const rejected = error instanceof HiggsfieldTransportError && error.outcome === "rejected" || error instanceof ReferenceTaskError && error.knownRejected;
     const deliveryPaused = !started && !run?.observation && code === "V3_REFERENCE_DELIVERY_EXPIRED";
-    const unknown = !rejected && (started || !!run?.observation) && !["PAID_V3_EXECUTION_DISABLED", "V3_ACTIVATION_SCOPE_MISMATCH"].includes(code) && !deliveryPaused;
+    const unusable = task.kind === "video" && !run?.result && run?.observation?.status === "completed" && code === "V3_VIDEO_TECHNICAL_VALIDATION_FAILED";
+    const unknown = !unusable && !rejected && (started || !!run?.observation) && !["PAID_V3_EXECUTION_DISABLED", "V3_ACTIVATION_SCOPE_MISMATCH"].includes(code) && !deliveryPaused;
     const paused = deliveryPaused || ["PAID_V3_EXECUTION_DISABLED", "V3_ACTIVATION_SCOPE_MISMATCH"].includes(code) ||
       !!task.input.referenceCleanup && ["V3_REFERENCE_CLEANUP_IN_PROGRESS", "V3_REFERENCE_CLEANUP_PENDING"].includes(code);
     if (error instanceof ReferenceTaskError && task.lease_token) {
@@ -252,7 +257,8 @@ export async function runV3Task(projectId: string, ownerId: string, store = new 
     await store.checkpoint(task, paused ? "pending" : unknown ? "unknown" : "failed", { code,
       ...(error instanceof ReferenceTaskError && (started || error.metadata.httpStatus !== null || error.metadata.requestId !== null) ?
         { httpStatus: error.metadata.httpStatus, correlationId: error.metadata.requestId, outcome: error.knownRejected ? "rejected" : "unknown" } : {}),
-      ...(error instanceof HiggsfieldTransportError ? { httpStatus: error.httpStatus, correlationId: error.correlationId, outcome: error.outcome } : {}) });
+      ...(error instanceof HiggsfieldTransportError ? { httpStatus: error.httpStatus, correlationId: error.correlationId, outcome: error.outcome } : {}),
+      ...(unusable ? { outcome: "unusable" } : {}) });
     if (task.kind === "video" && task.error_code !== code) console.info(JSON.stringify({ stage: paused ? "V3_VIDEO_REQUEST_PAUSED" : "V3_VIDEO_REQUEST_NEEDS_ATTENTION",
       projectId, runId: run?.id ?? null, code, providerStarted: !!started }));
   }

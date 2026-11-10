@@ -1,5 +1,11 @@
 # UI Context
 
+## Stage 2 Studio free/demo restrictions (2026-11-09)
+
+Source implementation keeps the existing Studio layout/tokens, modes, native scrolling and approved-work presentation. New drafts default to 5 seconds; Basic/Pro duration controls expose 5 seconds only, and higher saved durations remain visible and disabled. Resolution exposes 480p, retaining an incompatible saved selection read-only. No existing project is silently shortened or re-saved. Sources shows live free allowance; workflow shows available/reserved counters, supported limits, preparation restrictions, setup/exhaustion messages and an estimated-credit Buy Credits entry. New provider actions are disabled for unsupported settings, missing setup, exhausted free usage or spent preparation budgets. Local merge/review/approval/known recovery keep their original guards.
+
+Allowance changes refresh other tabs through the existing credit event/storage mechanism, with server/database checks authoritative. Purchased credits and Pro never waive demo limits; with Stage 3 absent, the upgrade message explicitly says credit-funded generation remains blocked. Both themes use existing semantic tokens and shared controls, with no new stylesheet or redesign. Cached pre-policy DTOs fail closed for new UI actions until refreshed. Normal visual, keyboard, responsive, provider and workflow acceptance remains manual.
+
 ## Credits & Billing main-content reference (2026-11-09)
 
 The supplied November 9 billing screenshot is the visual reference for the main region only: existing header with shortened subtitle, three-stat purple-tinted banner and original wallet illustration, compact amount/fee purchase card with highlighted credit row/right CTA, paired minimal history/activity cards, and a simple free-allowance footer. Keep 13px body/history rows with 12px timestamps, 16px card headings and 22px summary values within the existing 32px workspace heading hierarchy. Use semantic purple/border/card/status tokens, 14px card radii and container-based column changes. Preserve both left navigations and existing native scroll owners exactly; no shared shell geometry or stylesheet edits.

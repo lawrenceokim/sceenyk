@@ -1,12 +1,22 @@
 # Generation accounting contract
 
+## Stage 2 free V3 admission and settlement (2026-11-09)
+
+**Source implementation; manual 102 and acceptance pending.** The existing generation_accounts free_total=2/free_reserved/free_consumed counters remain authoritative across projects and legacy holds. New generation_free_runs records link each V3 run to a separate immutable free hold. Admission locks the account, validates a single 5-second/480p package/request and reserves once; exhausted accounts block safely regardless of purchased credits. No Stage 3 debit is implied.
+
+Free success is a verified usable private video published to awaiting_review, not the later aesthetic approval. Consume once at publication; reject/delete/regenerate cannot restore a successful generation. Confirmed terminal provider failure or failure before any submission releases once only with no usable/completed result. Uncertain or completed-provider-but-unsaved outcomes retain the hold until recovery resolves them. Proven V3_VIDEO_TECHNICAL_VALIDATION_FAILED without a usable result can restore once through the trusted worker failure event; generic storage/transport errors cannot. Historical provider-started/approved runs are not backfilled or charged, and recovery never submits a replacement automatically.
+
+A separate append-only generation_free_preparations record bounds new reference/creative provider starts to two lifetime attempts per account per Character, Product, Location and Storyboard kind. Failed tasks/new projects/deletion do not reset this budget; cached output recovery spends no new attempt. Unstarted queued/retired tasks spend no preparation attempt. Existing finite Location phases remain inside their one task. These records are not purchased credits and grant no extra video allowance. Account locking and task/run uniqueness arbitrate repeated tabs/requests. Existing payment ledger and Marketplace/payout accounting are untouched. See the current tracker for setup and focused verification.
+
+**Cleanup compatibility (103, 2026-11-10):** preparation usage retains the immutable task UUID after reference rejection/discard deletes the disposable task. It must not require that task row to remain or cascade-delete usage with it. Migration 103 removes the conflicting task FK while preserving the primary key, account FK, append-only/write guards and counts. Rejecting an image cannot refund a preparation attempt or a video allowance. [Setup](database.md#stage-2-reference-cleanup-repair-103-2026-11-10).
+
 ## Stage 1 custom purchase accounting (2026-11-09)
 
 **Source implemented; manual 101 pending.** [Custom pricing](pricing.md#stage-1-custom-credit-pricing-2026-11-09) approves 100 Sceenyk credits per $1 of generation cost, with independently rounded estimated PayPal and Sceenyk payment fees deducted from a custom USD total. This replaces earlier unresolved conversion/fixed-pack assumptions for new purchases only. Nullable immutable purchase pricing snapshots retain rates, both fees, net and credit quantity; historical purchases/ledger/balances/free counters are not rewritten. Existing verified-capture fulfilment and purchase/order/capture uniqueness still grant the frozen amount once. The payment commission and purchased credits never enter Marketplace's 10%/90% money ledger. V3 wallet debit integration and other hackathon enforcement below remain planned; the new generation credit equivalent/top-up display adds no settlement or provider authority.
 
 ## Hackathon accounting and spending protection (2026-11-09)
 
-**Planned / Not Implemented.** Apply the [canonical policy](overview.md#paypal-ai-hackathon-commercial-policy-2026-11-09) across every generation entry point and worker. Earlier 10-second/no-quality-restriction eligibility below is historical behavior, not the new free contract. Preserve balances, consumed allowance, jobs, quotes and immutable history; no account reset or retroactive charge.
+**Remaining paid-credit, user-quota and global-budget integration is planned; Stage 2 free/demo enforcement above is implemented in source.** Apply the [canonical policy](overview.md#paypal-ai-hackathon-commercial-policy-2026-11-09) across every generation entry point and worker. Earlier 10-second/no-quality-restriction eligibility below is historical behavior, not the new free contract. Preserve balances, consumed allowance, jobs, quotes and immutable history; no account reset or retroactive charge.
 
 ### Admission and activity
 

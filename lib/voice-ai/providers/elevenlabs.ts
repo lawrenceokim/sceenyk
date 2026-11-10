@@ -1,4 +1,5 @@
 import "server-only";
+import { assertLegacyGenerationUnavailable } from "@/lib/accounting/generation-policy-server";
 import { fileTypeFromBuffer } from "file-type";
 import { voiceCredential, voiceLimits } from "../config";
 import { VoiceError, type VoiceConfiguration } from "../contract";
@@ -10,6 +11,7 @@ export async function generateSpeech(text: string, config: VoiceConfiguration, r
   if (!text.trim() || Array.from(text).length > voiceLimits.segmentCharacters) throw new VoiceError("COST_GUARD");
   let response: Response;
   try {
+    assertLegacyGenerationUnavailable();
     response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(config.voiceId)}?output_format=${config.format}`, {
       method: "POST", redirect: "error", cache: "no-store", signal: AbortSignal.timeout(voiceLimits.requestMs),
       headers: { "xi-api-key": credential, "Content-Type": "application/json", Accept: "audio/mpeg" },

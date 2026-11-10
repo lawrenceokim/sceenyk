@@ -1,4 +1,5 @@
 import "server-only";
+import { assertLegacyGenerationUnavailable } from "@/lib/accounting/generation-policy-server";
 import OpenAI from "openai";
 import { zodTextFormat } from "openai/helpers/zod";
 import type { StoryboardInput } from "./contract";
@@ -32,6 +33,7 @@ export async function requestStoryboard(input: StoryboardInput, model: string, i
   // Strip private R2 descriptors, source IDs and implementation details from text context.
   const prompt = storyboardPrompt(input, repair);
   try {
+  assertLegacyGenerationUnavailable();
   const stream = await client.responses.create({ model, store: metadata.stored, stream: true, max_output_tokens: config.maxOutputTokens,
     instructions: prompt.instructions, input: [{ role: "user", content: [
       { type: "input_text", text: JSON.stringify(prompt.context) },

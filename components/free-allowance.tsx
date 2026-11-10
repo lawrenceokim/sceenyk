@@ -1,4 +1,5 @@
 "use client";
+import { creditRefreshKey } from "@/lib/accounting/client-events";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useEffect, useState } from "react";
 import { useAuth } from "@clerk/nextjs";
@@ -65,12 +66,17 @@ function AllowanceRead({ signedIn = false, refreshKey = "", compact = false, pre
           }
         });
     };
+    const storage = (event: StorageEvent) => { if (event.key === creditRefreshKey) reload(); };
     reload();
+    window.addEventListener("storage", storage);
+    window.addEventListener("sceenyk:credits", reload);
     window.addEventListener("pageshow", reload);
     window.addEventListener("sceenyk:allowance", reload);
     document.addEventListener("visibilitychange", reload);
     return () => {
       active = false;
+      window.removeEventListener("storage", storage);
+      window.removeEventListener("sceenyk:credits", reload);
       window.removeEventListener("pageshow", reload);
       window.removeEventListener("sceenyk:allowance", reload);
       document.removeEventListener("visibilitychange", reload);
@@ -104,7 +110,7 @@ function AllowanceRead({ signedIn = false, refreshKey = "", compact = false, pre
         <p>{allowance.reserved} reserved for generation in progress.</p>
       )}
       {!compact && <><p>
-        2 lifetime free video generations, up to 10 seconds each. Failed
+        2 lifetime free video generations, 5 seconds at 480p each. Failed
         generations restore the reserved allowance.
       </p>
       <p>Sandbox credit purchases are available. Paid generations require configured credit rates.</p></>}

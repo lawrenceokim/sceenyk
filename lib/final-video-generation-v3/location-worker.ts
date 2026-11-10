@@ -1,4 +1,5 @@
 import "server-only";
+import { generationPolicyConfiguration } from "@/lib/accounting/generation-policy-server";
 import OpenAI from "openai";
 import { zodTextFormat } from "openai/helpers/zod";
 import { z } from "zod";
@@ -75,6 +76,7 @@ export async function runLocationTask(store:V3Store,task:Task,w:RuntimeWorkspace
           quality:"high" as const,output_format:"png" as const,background:"opaque" as const};
         invoke=()=>client.images.generate(body,{signal,headers:{"X-Client-Request-Id":id}}).asResponse();
       }
+      generationPolicyConfiguration();
       await checkpoint(store,task,"intent",{key,id});
       try{
         const response=await invoke();httpStatus=response.status;requestId=safeReferenceRequestId(response.headers.get("x-request-id"));

@@ -1,4 +1,5 @@
 import "server-only";
+import { assertLegacyGenerationUnavailable } from "@/lib/accounting/generation-policy-server";
 import OpenAI from "openai";
 import { zodTextFormat } from "openai/helpers/zod";
 import { createReferenceAnalysisClient } from "@/lib/openai/server";
@@ -11,6 +12,7 @@ export function createOpenAIReferenceAnalysisProvider(model?: string): Reference
   return {
     provider: "openai", model: config.model,
     async analyze(role: ReferenceRole, image: Buffer, signal: AbortSignal, referenceName?: string): Promise<ReferenceProviderResult> {
+      assertLegacyGenerationUnavailable();
       const started = Date.now();
       const failureUsage = () => ({ responseId: null, model: config.model, inputTokens: null, outputTokens: null, totalTokens: null, latencyMs: Date.now() - started });
       try {

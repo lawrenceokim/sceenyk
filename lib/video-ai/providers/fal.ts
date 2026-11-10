@@ -1,4 +1,5 @@
 import "server-only";
+import { assertLegacyGenerationUnavailable } from "@/lib/accounting/generation-policy-server";
 import { createFalClient, ApiError } from "@fal-ai/client";
 import { z } from "zod";
 import { falEndpoints, getVisualConfiguration } from "../config";
@@ -39,6 +40,7 @@ function endpoint(scene: SceneExecution) {
   return z.enum([falEndpoints.text, falEndpoints.image, falEndpoints.video]).parse(scene.model);
 }
 async function submit(scene: SceneExecution, input: Record<string, unknown>) {
+  assertLegacyGenerationUnavailable();
   try {
     const task = await client(scene, "submit").queue.submit(endpoint(scene), { input, startTimeout: getVisualConfiguration().queueStartTimeout });
     return { taskId: requestId.parse(task.request_id), estimatedCredits: null };

@@ -15,20 +15,20 @@ export function StudioResolution({ value, onChange, imageCards = false }: {
 }) {
   const id = useId();
   if (imageCards) return <div className="min-w-0 space-y-3">
-    <PropertyImageGallery label="Video resolution" value={value} options={resolutionOptions} onChange={onChange} descriptionId={id} />
-    <p id={id} className="flex items-start gap-2 text-xs leading-relaxed text-muted-foreground"><Info aria-hidden="true" className="mt-0.5 size-4 shrink-0" />Higher resolutions may take longer to generate.</p>
+    <PropertyImageGallery label="Video resolution" value={value} options={resolutionOptions.filter(option => option.value === "480p" || option.value === value).map(option => ({ ...option, disabled: option.value !== "480p" }))} onChange={next => { if (next === "480p") onChange(next); }} descriptionId={id} />
+    <p id={id} className="flex items-start gap-2 text-xs leading-relaxed text-muted-foreground"><Info aria-hidden="true" className="mt-0.5 size-4 shrink-0" />Free and demo generation: 480p only. Saved higher-resolution work is preserved.</p>
   </div>;
   return <fieldset aria-describedby={id} className="@container/resolution min-w-0 space-y-3 rounded-xl border border-border bg-card/40 p-3">
     <legend className="sr-only">Video resolution</legend>
     <div className="grid min-w-0 grid-cols-3 gap-2">
       {videoResolutions.map(resolution => <label key={resolution} className="relative min-w-0 cursor-pointer">
-        <input type="radio" name={id} value={resolution} checked={value === resolution} onChange={() => onChange(resolution)} className="peer sr-only" />
-        <span className="flex min-h-11 flex-col items-center justify-center gap-1 rounded-lg border border-border px-1 py-2 text-xs font-medium text-muted-foreground transition-colors @min-[14rem]/resolution:flex-row peer-checked:border-primary peer-checked:bg-primary/15 peer-checked:text-primary peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-background motion-reduce:transition-none">
+        <input type="radio" name={id} value={resolution} checked={value === resolution} disabled={resolution !== "480p"} onChange={() => { if (resolution === "480p") onChange(resolution); }} className="peer sr-only" />
+        <span className="flex min-h-11 flex-col items-center justify-center gap-1 rounded-lg border border-border px-1 py-2 text-xs font-medium text-muted-foreground transition-colors @min-[14rem]/resolution:flex-row peer-checked:border-primary peer-checked:bg-primary/15 peer-checked:text-primary peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-background motion-reduce:transition-none peer-disabled:opacity-45">
           {value === resolution ? <span className="flex size-4 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground"><Check className="size-3" aria-hidden="true" /></span> : <Circle className="size-4 shrink-0" aria-hidden="true" />}
           {resolution}
         </span>
       </label>)}
     </div>
-    <p id={id} className="flex items-start gap-2 text-xs leading-relaxed text-muted-foreground"><Info aria-hidden="true" className="mt-0.5 size-4 shrink-0" />Higher resolutions may take longer to generate.</p>
+    <p id={id} className="flex items-start gap-2 text-xs leading-relaxed text-muted-foreground"><Info aria-hidden="true" className="mt-0.5 size-4 shrink-0" />Free and demo generation: 480p only. Saved higher-resolution work is preserved.</p>
   </fieldset>;
 }
