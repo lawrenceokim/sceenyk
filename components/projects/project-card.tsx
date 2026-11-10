@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { ProjectSummary } from "@/lib/projects/types";
-import type { GenerationStatus } from "@/lib/generation/contract";
+import type { ProjectCardStatus } from "@/lib/projects/card-status";
 import type { ProjectAsset } from "@/lib/media/types";
 import { ProjectJobBadge } from "./project-job-statuses";
 import { ProjectRename } from "./project-rename";
@@ -12,7 +12,7 @@ import { projectPreviewColor, templateAppearance } from "@/components/marketplac
 
 export function ProjectCard({ project, jobStatus, preview, listingId }: {
   project: ProjectSummary;
-  jobStatus?: GenerationStatus | "unavailable" | null;
+  jobStatus?: ProjectCardStatus;
   preview?: ProjectAsset | null;
   listingId?: string;
 }) {

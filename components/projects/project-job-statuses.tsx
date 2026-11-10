@@ -1,4 +1,5 @@
 "use client";
+import type { ProjectCardStatus } from "@/lib/projects/card-status";
 import {
   createContext,
   useContext,
@@ -9,13 +10,9 @@ import {
 import { generationStatusesAction } from "@/app/actions/generation";
 import {
   generationStatusLabels,
-  type GenerationStatus,
 } from "@/lib/generation/contract";
 
-export type ProjectJobStatuses = Record<
-  string,
-  GenerationStatus | "unavailable" | null
->;
+export type ProjectJobStatuses = Record<string, ProjectCardStatus>;
 const Statuses = createContext<ProjectJobStatuses>({});
 
 // One bounded owned request for the visible page, including retained-route recovery.
@@ -71,10 +68,11 @@ export function ProjectJobBadge({
   initialStatus,
 }: {
   projectId: string;
-  initialStatus?: GenerationStatus | "unavailable" | null;
+  initialStatus?: ProjectCardStatus;
 }) {
   const statuses = useContext(Statuses);
   const status = projectId in statuses ? statuses[projectId] : initialStatus;
+  if (status === "final_approved") return null;
   return (
     <span
       aria-live="polite"

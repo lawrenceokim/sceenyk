@@ -1,4 +1,5 @@
 import { TemplatesHeading } from "@/components/templates/templates-heading";
+import { WorkspaceGalleryPage } from "@/components/workspace/workspace-gallery-page";
 import { Suspense } from "react";
 import type { Metadata } from "next";
 import { unstable_rethrow } from "next/navigation";
@@ -22,14 +23,13 @@ async function Templates({ searchParams }: { searchParams: Promise<{ page?: stri
 
 export default function TemplatesPage({ searchParams }: { searchParams: Promise<{ page?: string | string[] }> }) {
   return (
-    <div className={`
+    <WorkspaceGalleryPage view="templates"><div className={`
       workspace-templates
-      [.workspace-content_.workspace-page[data-workspace-page='content'][data-workspace-view='templates']_>_&&]:mt-[0]
       [&&_>_#templates]:mt-[40px] max-599:[&&_>_#templates]:mt-[24px]
     `}>
       <TemplatesHeading />
       <Suspense fallback={<GallerySkeleton variant="library" />}><Templates searchParams={searchParams} /></Suspense>
 
-    </div>
+    </div></WorkspaceGalleryPage>
   );
 }

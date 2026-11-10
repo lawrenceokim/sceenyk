@@ -1,4 +1,5 @@
 import { ProjectsHeading } from "@/components/projects/projects-heading";
+import { WorkspaceGalleryPage } from "@/components/workspace/workspace-gallery-page";
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { AppUserSyncError } from "@/lib/auth/ensure-app-user";
@@ -9,9 +10,9 @@ import { listOwnedAssets, MediaAccessError } from "@/lib/media/server";
 import { ProjectsGallerySkeleton, ProjectsSection } from "@/components/projects/projects-section";
 import {
   GenerationAccessError,
-  getLatestProjectGenerations,
 } from "@/lib/generation/server";
-import type { GenerationStatus } from "@/lib/generation/contract";
+import type { ProjectCardStatus } from "@/lib/projects/card-status";
+import { getProjectCardStatuses } from "@/lib/projects/card-status-server";
 import { ProjectJobStatusesProvider } from "@/components/projects/project-job-statuses";
 import { ProjectsAccountFence } from "@/components/projects/projects-account-fence";
 import { getOwnedProjectTemplates } from "@/lib/marketplace/project-template";
@@ -45,14 +46,9 @@ async function OwnedProjects({
       return <WorkspaceUnavailable />;
     throw error;
   }
-  let jobStatuses: Record<string, GenerationStatus | "unavailable" | null> = {};
+  let jobStatuses: Record<string, ProjectCardStatus> = {};
   try {
-    const jobs = await getLatestProjectGenerations(
-      projects.projects.map(({ id }) => id),
-    );
-    jobStatuses = Object.fromEntries(
-      projects.projects.map(({ id }) => [id, jobs[id]?.status ?? null]),
-    );
+    jobStatuses = await getProjectCardStatuses(projects.projects.map(({ id }) => id));
   } catch (error: unknown) {
     if (
       error instanceof GenerationAccessError ||
@@ -85,10 +81,10 @@ async function OwnedProjects({
 }
 
 export default function ProjectsPage({ searchParams }: ProjectsPageProps) {
-  return <div className="workspace-projects">
+  return <WorkspaceGalleryPage view="projects"><div className="workspace-projects">
     <ProjectsHeading />
     <Suspense fallback={<ProjectsGallerySkeleton />}>
       <OwnedProjects searchParams={searchParams} />
     </Suspense>
-  </div>;
+  </div></WorkspaceGalleryPage>;
 }

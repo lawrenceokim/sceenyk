@@ -14,8 +14,8 @@ export function CategorySelector({ selected, onChange }: {
     <div className="relative">
       <Icon className="pointer-events-none absolute top-1/2 left-2 z-10 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
       <Select id={id} aria-labelledby={id + "-heading"} name="creation-type" value={selected}
-        options={[{ value: "ugc", label: "UGC" }, { value: "freestyle", label: "Freestyle" }]}
-        onValueChange={onChange} className="pl-8" />
+        options={[{ value: "ugc", label: "UGC" }]}
+        onValueChange={value => { if (value === "ugc") onChange(value); }} className="pl-8" />
     </div>
   </section>;
 }

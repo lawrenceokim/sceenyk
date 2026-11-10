@@ -1,3 +1,4 @@
+import { WorkspaceGalleryPage } from "@/components/workspace/workspace-gallery-page";
 import { MarketplaceDiscoverySkeleton } from "@/components/marketplace/gallery-skeletons";
 import { Suspense } from "react";
 import type { Metadata } from "next";
@@ -178,7 +179,7 @@ export default function MarketplacePage({
   searchParams: SearchParams;
 }) {
   return (
-    <div className={"workspace-marketplace marketplace-index p-5 [&&]:flex [&&]:flex-col [&&]:gap-[24px] [&&_header]:max-w-[100%] [&&_header_h1]:max-w-[660px] [.workspace-marketplace&&]:gap-[24px]"}>
+    <WorkspaceGalleryPage view="marketplace"><div className={"workspace-marketplace marketplace-index p-5 [&&]:flex [&&]:flex-col [&&]:gap-[24px] [&&_header]:max-w-[100%] [&&_header_h1]:max-w-[660px] [.workspace-marketplace&&]:gap-[24px]"}>
       <header className={`
       marketplace-heading [&&_h1]:mt-[0] [&&_h1]:mr-[0] [&&_h1]:mb-[0] [&&_h1]:ml-[0] [&&_h1]:font-[700]
       [&&_>_p]:max-w-[610px] [&&_>_p]:mt-[12px] [&&_>_p]:text-[color:var(--muted-foreground)] [&&_>_p]:text-[length:20px]
@@ -214,6 +215,6 @@ export default function MarketplacePage({
       >
         Manage my listings
       </Link>
-    </div>
+    </div></WorkspaceGalleryPage>
   );
 }

@@ -1,5 +1,21 @@
 # Progress Tracker
 
+## Project approval badges and Studio selectors (2026-11-10)
+
+Project cards hide the generic job/Draft badge after a stored final-video approval. The existing owner-scoped status read now combines legacy job status with verified V1 final approval and V3 single-video or joined-final approval, both for initial cards and retained-page refresh. Individual approvals from multi-segment packages do not count as final approval. No project/job status, media, approval or accounting record is changed; unknown approval reads stay unavailable rather than inventing approval.
+
+Creation Type exposes UGC only and rejects non-UGC changes from its selector callback. Saved legacy creation types/media remain intact; Freestyle cannot be selected through Sources. On desktop the collapsed sidebar displays the full active Basic/Pro label via the existing mode badge; expanded navigation retains both existing switching buttons, loading/error states and mode persistence/confirmation. No mode or project defaults are rewritten.
+
+Focused offline status-projection checks pass for draft, approved final, review-only output, individual clip, joined final, legacy approval and owner mismatch/filtering. TypeScript, focused lint and whitespace checks pass. Manual visual review remains with the owner; no browser automation, build, broad suite, provider call or deployment. No migration is required. No qualifying Next.js feedback candidate.
+
+
+## Stable gallery loading geometry (2026-11-10)
+
+Projects, Templates and Marketplace now put their existing responsive top/side/bottom insets inside a shared WorkspaceGalleryPage route root, rather than padding the persistent shared layout outside navigation's scroll target. The account-level Projects/Templates fallbacks use the same padded root and header/gallery spacing as their resolved pages. Gallery frames opt out of the generic direct-child sibling margin so streamed placeholders cannot add spacing; scrollbar gutters remain reserved on the gallery scroll owners to avoid width changes when skeletons become short/empty results.
+
+Preserve page-local Suspense, synchronous headers, owner-scoped authenticated reads, Cache Components, saved card geometry, filters and native/Lenis scroll ownership. This is presentation-only; no forced scrolling on data completion, auth/cache change, migration or request delay. Focused lint and whitespace checks pass; visual acceptance remains manual under UI-only workflow. No browser automation, broad suites, build, provider call or deployment. No verified Next.js issue is retained for feedback; this corrects application layout ownership.
+
+
 ## Workflow credit feedback on demand (2026-11-10)
 
 Remove the entire free-video/availability/balance/tariff card from Workflow and remove the Storyboard's permanent credit hint. Generation, package prerequisites and low-credit feedback appear through the existing slide-in notification when clicked, rather than persistent availability paragraphs. Credit shortages show missing/required/available credits and the existing Buy Credits action. Active processing, creative locks, finite approval/consent and server-side accounting remain protected. The notice renders within the active native or shared dialog and pauses its expiry during checkout, hover or focus; checkout retains its existing payment owner.

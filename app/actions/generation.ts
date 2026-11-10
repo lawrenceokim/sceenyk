@@ -4,10 +4,10 @@ import {
   createGenerationJob,
   getLatestProjectGeneration,
   getOwnedGenerationJob,
-  getLatestProjectGenerations,
 } from "@/lib/generation/server";
 import type { GenerationJob, GenerationResult } from "@/lib/generation/types";
-import type { GenerationStatus } from "@/lib/generation/contract";
+import type { ProjectCardStatus } from "@/lib/projects/card-status";
+import { getProjectCardStatuses } from "@/lib/projects/card-status-server";
 
 async function safely<T>(
   operation: () => Promise<T>,
@@ -43,11 +43,6 @@ export async function readGenerationAction(
 }
 export async function generationStatusesAction(
   input: unknown,
-): Promise<GenerationResult<Record<string, GenerationStatus | null>>> {
-  return safely(async () => {
-    const jobs = await getLatestProjectGenerations(input);
-    return Object.fromEntries(
-      Object.entries(jobs).map(([id, job]) => [id, job?.status ?? null]),
-    );
-  });
+): Promise<GenerationResult<Record<string, ProjectCardStatus>>> {
+  return safely(() => getProjectCardStatuses(input));
 }
