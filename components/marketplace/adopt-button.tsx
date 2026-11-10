@@ -1,7 +1,7 @@
 "use client";
 
 import { Skeleton, SkeletonRegion } from "@/components/ui/skeleton";
-import { useRef, useState } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
 import { ArrowUpRight, LoaderCircle, Plus } from "lucide-react";
@@ -11,13 +11,13 @@ import { Button } from "@/components/ui/button";
 import { adoptMarketplaceAction } from "@/app/actions/marketplace";
 import { PaidAdoption } from "./paid-adoption";
 
-type Props = { listingId: string; paid?: boolean; estimate?: { credits: number; test: boolean } | null };
+type Props = { listingId: string; paid?: boolean; estimate?: { credits: number; test: boolean } | null; preview?: ReactNode };
 
-function SignedInAdoption({ listingId, paid, estimate }: Props) {
+function SignedInAdoption({ listingId, paid, estimate, preview }: Props) {
   const { isLoaded, isSignedIn, userId } = useAuth();
   if (!isLoaded) return <SkeletonRegion label="Loading account…" className="w-full"><Skeleton className="h-11 w-full" /></SkeletonRegion>;
   if (!isSignedIn) return <AccountAction intent="sign-in" className="w-full">Sign in to adopt</AccountAction>;
-  return paid ? <PaidAdoption key={userId} listingId={listingId} estimate={estimate ?? null} /> : <Adoption key={userId} listingId={listingId} identity={userId!} />;
+  return paid ? <PaidAdoption key={userId} listingId={listingId} estimate={estimate ?? null} preview={preview} /> : <Adoption key={userId} listingId={listingId} identity={userId!} />;
 }
 function Adoption({ listingId, identity }: { listingId: string; identity: string }) {
   const router = useRouter();

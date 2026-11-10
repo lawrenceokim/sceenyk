@@ -1,5 +1,29 @@
 # Progress Tracker
 
+## Marketplace purchases reference redesign (2026-11-10)
+
+Redesign only the Marketplace purchases main content using the supplied dashboard reference: restrained purple arc artwork, store heading, existing Marketplace account links, compact purchase-check toolbar, responsive preview-led cards and centered real pagination. Preserve app typography (25–30px page title, 18–22px card titles, 12–14px supporting text/actions) and 40px desktop / 44px coarse-pointer action targets. Semantic tokens retain both themes. The sidebar and shared workspace frame are unchanged.
+
+Cards show actual title, financial status, price, date, refunds and adopted-project availability. Reuse public listing previews only, with a labeled abstract fallback for missing/unpublished previews; the preview button opens an accessible dialog. Overflow actions open the existing listing or invoke existing bounded saved-purchase recovery. Keep FinancialPanel as the checkout/recovery/account owner, including identity checks, in-flight guards, activation refresh, failed-payment behavior and pagination. Page-local Suspense, authentication fallback and client hydration share matching card skeletons/header geometry.
+
+Focused lint, SVG XML validation and whitespace checks pass. Manual responsive/theme/interaction review remains with the owner. No payment/provider calls, database setup, automated browser testing, broad tests, build or deployment. No qualifying Next.js feedback candidate.
+
+## Adoption modal compact typography (2026-11-10)
+
+Refine only the adoption overlay's type/control scale: 20–22px dialog title, 16–18px template title, 13px price/lead copy, 12px supporting copy/history link and 14px action labels. Main buttons use the account billing scale of 40px minimum height, growing to 44px for coarse pointers or wrapped labels; icons scale with their text. Preserve the reference layout/artwork, light/dark styling, accessible interactions and all checkout/recovery handlers. This supersedes the larger initial reference sizing below.
+
+Focused lint and whitespace checks pass; visual review stays manual. No payment requests, provider calls, browser automation, tests or builds. No qualifying Next.js feedback candidate.
+
+
+## Creator adoption checkout modal reference (2026-11-10)
+
+The existing PaidAdoption overlay now follows the supplied Adopt Creator Template Modal reference: decorative purple glass/play-card SVG, centered title, real listing thumbnail with server-returned checkout title/price, two compact icon/copy rows, PayPal Sandbox primary action, saved-purchase recovery and purchase-history link. The actual existing TemplateCover is passed as display-only React content; no placeholder car image, invented price, private asset mapping or new payment owner is introduced.
+
+Keep the existing summary/pay/recover handlers, in-flight guard, purchase status/failed/completed behavior, approval-URL fallback, errors and automatic project routing. Creator adoption money remains separate from AI usage/credits. The optional DialogContent overlayClassName provides only this modal's backdrop treatment. Responsive max-height/native scrolling, accessible dialog title/description/focus/dismissal, reduced motion and shared light/dark tokens remain. All styling stays in static Tailwind utilities; decorative artwork is a project-owned SVG at public/images/marketplace/adopt-template.svg.
+
+UI-only implementation; no schema, accounting, payment provider or server-action changes. Focused lint, SVG XML validation and whitespace checks pass; normal visual/payment acceptance remains manual. No checkout, provider call, build, browser automation, broad suite or deployment. No qualifying Next.js feedback candidate.
+
+
 ## Project approval badges and Studio selectors (2026-11-10)
 
 Project cards hide the generic job/Draft badge after a stored final-video approval. The existing owner-scoped status read now combines legacy job status with verified V1 final approval and V3 single-video or joined-final approval, both for initial cards and retained-page refresh. Individual approvals from multi-segment packages do not count as final approval. No project/job status, media, approval or accounting record is changed; unknown approval reads stay unavailable rather than inventing approval.

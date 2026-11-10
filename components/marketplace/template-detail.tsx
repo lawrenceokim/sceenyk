@@ -78,7 +78,8 @@ export function TemplateDetail({ listing, owned = false, children }: { listing: 
     `}>{owned ? <div className="grid gap-3">
           <Button nativeButton={false} render={<Link href={`/settings/templates/${listing.id}`} />}>Update Template</Button>
           {listing.status === "published" && <Button variant="outline" nativeButton={false} render={<Link href={`/marketplace/${listing.id}`} />}>View in Marketplace</Button>}
-        </div> : <AdoptButton listingId={listing.id} paid={listing.adoptionType === "paid"} estimate={listing.estimate} />}</div>
+        </div> : <AdoptButton listingId={listing.id} paid={listing.adoptionType === "paid"} estimate={listing.estimate}
+          preview={<TemplateCover template={listing.template} fallbackColor={listing.fallbackColor} previewId={listing.id} previewUrl={listing.previewUrl} />} />}</div>
         <p className={"marketplace-detail-note [&&]:max-w-[48ch] [&&]:text-[color:var(--muted-foreground)] [&&]:text-[length:12px] [&&]:leading-[18px]"}>{owned ? "This is your reusable template. Your original project and private media remain separate." : "Adoption creates your own editable project; creator media stays private. AI generation is separate, with a quote shown before you generate."}</p>
         <details className={`
       marketplace-configuration [&&_summary:focus-visible]:[outline:2px_solid_var(--ring)]

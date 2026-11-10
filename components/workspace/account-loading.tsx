@@ -3,6 +3,7 @@
 import { usePathname } from "next/navigation";
 import { SettingsWorkspace } from "@/components/settings/settings-workspace";
 import { SettingsLoading } from "@/components/settings/settings-loading";
+import { PurchasesWorkspace } from "@/components/marketplace/purchases-workspace";
 import { CreditsWorkspace } from "@/components/credits/credits-workspace";
 import { CreditAccountSkeleton, EarningsSkeleton, PurchasesSkeleton } from "@/components/payments/financial-skeletons";
 import { GallerySkeleton } from "@/components/marketplace/gallery-skeletons";
@@ -19,5 +20,6 @@ export function AccountLoading() {
   if (pathname.startsWith("/templates/")) return <TemplateDetailSkeleton owned />;
   if (pathname === "/templates") return <WorkspaceGalleryPage view="templates"><div className="workspace-templates [&&_>_#templates]:mt-[40px] max-599:[&&_>_#templates]:mt-[24px]"><TemplatesHeading /><GallerySkeleton variant="library" /></div></WorkspaceGalleryPage>;
   if (pathname === "/projects") return <WorkspaceGalleryPage view="projects"><div className="workspace-projects"><ProjectsHeading /><ProjectsGallerySkeleton /></div></WorkspaceGalleryPage>;
+  if (pathname === "/marketplace/purchases") return <PurchasesWorkspace><PurchasesSkeleton /></PurchasesWorkspace>;
   return <PurchasesSkeleton />;
 }

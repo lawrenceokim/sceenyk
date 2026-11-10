@@ -26,7 +26,13 @@ export function CreditAccountSkeleton({ dashboard = false }: { dashboard?: boole
 }
 
 export function PurchasesSkeleton() {
-  return <SkeletonRegion label="Loading Marketplace purchases…" className="space-y-6"><SkeletonButton className="w-36" /><Skeleton className="h-10 w-full" />{[0, 1, 2].map(i => <div key={i} className={cardClassName}><Skeleton className="h-6 w-2/3" /><Skeleton className="h-5 w-1/2" /><Skeleton className="h-4 w-28" /><SkeletonButton className="w-36" /></div>)}</SkeletonRegion>;
+  return <SkeletonRegion label="Loading Marketplace purchases…" className="@container/purchases min-w-0 space-y-6 sm:space-y-7">
+    <div className="flex flex-wrap items-center gap-4"><SkeletonButton className="h-10 w-40" /><Skeleton className="h-4 w-80 max-w-full" /></div>
+    <div className="space-y-4">{[0, 1].map(i => <div key={i} className="grid min-w-0 gap-5 rounded-[18px] border border-primary/30 bg-card p-4 @min-[700px]/purchases:grid-cols-[minmax(0,0.9fr)_minmax(0,1.15fr)] @min-[700px]/purchases:gap-7 @min-[900px]/purchases:p-5">
+      <Skeleton className="aspect-video w-full rounded-[13px]" />
+      <div className="grid content-center gap-5 py-1"><div className="flex flex-wrap items-center gap-4"><Skeleton className="h-7 w-36" /><Skeleton className="h-6 w-24" /></div><Skeleton className="h-5 w-56 max-w-full" /><div className="flex gap-3"><SkeletonButton className="h-10 flex-1" /><Skeleton className="size-10 shrink-0 rounded-lg" /></div></div>
+    </div>)}</div><Skeleton className="mx-auto h-4 w-32" />
+  </SkeletonRegion>;
 }
 
 export function EarningsSkeleton() {
