@@ -246,7 +246,7 @@ function PurchaseAccount({ pricing, configured, checkoutInNewTab = false, dashbo
       [.workspace-settings-inner_label&&_svg]:w-[18px] [.workspace-settings-inner_label&&_svg]:h-[18px]
     `} aria-labelledby="credit-activity-heading">
       <h2 id="credit-activity-heading" className="text-lg font-semibold">Paid credit activity</h2>
-      <p className="text-caption text-muted-foreground">Last 20 paid credit movements. Completion spends credits already reserved; it does not deduct them twice. Free generations are tracked separately.</p>
+      <p className="text-caption text-muted-foreground">Last 20 paid credit movements. Completion spends credits already reserved; it does not deduct them twice. Free AI projects are tracked separately.</p>
       {!wallet ? walletLoaded ? <p className="text-body-sm text-muted-foreground">Credit activity is unavailable. Check purchases to try again.</p> : <FinancialRowsSkeleton /> : !wallet.activity.length ? <p className="text-body-sm text-muted-foreground">No paid credit activity yet.</p> : <ul className="divide-y divide-border">
         {wallet.activity.map((entry, index) => <li key={`${entry.createdAt}-${index}`} className="flex flex-wrap items-center justify-between gap-2 py-3 text-body-sm">
           <div><p className="font-medium">{activityCopy[entry.type]}</p><time className="text-caption text-muted-foreground" dateTime={entry.createdAt}>{new Date(entry.createdAt).toLocaleString()}</time></div>

@@ -9,22 +9,40 @@ export function generationPolicyConfiguration() {
   return { demoMode: value === "true", paidGenerationConnected: false as const, durationSeconds: 5 as const, resolution: "480p" as const };
 }
 
-export async function generationAccess(owner: string) {
+export async function generationAccess(owner: string, project?: string) {
   const configuration = generationPolicyConfiguration();
-  const { data, error } = await createDatabaseClient().rpc("generation_free_access", { p_owner: owner });
+  const { data, error } = await createDatabaseClient().rpc("generation_project_access", { p_owner: owner, p_project: project ?? null });
   const count = z.number().int().min(0).max(2);
   const parsed = z.object({ total: z.literal(2), remaining: count, reserved: count, consumed: count,
+    projectAllowed: z.boolean(), videoAllowed: z.boolean(), historyReview: z.boolean(), budgetMicrousd: z.number().int().positive().safe(), budgetUsedMicrousd: z.number().int().nonnegative().safe(),
+    accountBudgetRemainingMicrousd: z.number().int().min(0).max(2060000).safe(),
     preparationRemaining: z.object({ character: count, product: count, location: count, storyboard: count }) })
     .refine(value => value.remaining + value.reserved + value.consumed === 2).safeParse(data);
   if (error || !parsed.success) throw new Error("GENERATION_POLICY_SETUP_REQUIRED");
   return { ...configuration, ...parsed.data };
 }
 
-export async function readGenerationAccess(owner: string) {
-  try { return { ...await generationAccess(owner), ready: true, reason: null as string | null }; }
+export async function readGenerationAccess(owner: string, project?: string) {
+  try { return { ...await generationAccess(owner, project), ready: true, reason: null as string | null }; }
   catch (error) { return { demoMode: true, paidGenerationConnected: false as const, durationSeconds: 5 as const, resolution: "480p" as const,
     ready: false, reason: error instanceof Error && ["GENERATION_POLICY_CONFIGURATION_INVALID", "GENERATION_POLICY_SETUP_REQUIRED"].includes(error.message) ? error.message : "GENERATION_POLICY_SETUP_REQUIRED",
-    total: 2, remaining: 0, reserved: 0, consumed: 0, preparationRemaining: { character: 0, product: 0, location: 0, storyboard: 0 } }; }
+    total: 2, remaining: 0, reserved: 0, consumed: 0, projectAllowed: false, videoAllowed: false, historyReview: false, budgetMicrousd: 0, budgetUsedMicrousd: 0, accountBudgetRemainingMicrousd: 0,
+    preparationRemaining: { character: 0, product: 0, location: 0, storyboard: 0 } }; }
+}
+
+export async function dispatchFreeProjectOperation(task: { id: string; lease_token: string | null }, phase = "default") {
+  generationPolicyConfiguration();
+  if (!task.lease_token) throw new Error("FREE_RESERVATION_REQUIRED");
+  const { data, error } = await createDatabaseClient().rpc("free_ai_dispatch", { p_task: task.id, p_token: task.lease_token, p_phase: phase });
+  if (error || data !== true) throw new Error(error && /^[A-Z0-9_]{1,100}$/.test(error.message) ? error.message : "FREE_RESERVATION_REQUIRED");
+}
+
+export async function freeProjectDispatchStatus(task: { id: string; lease_token: string | null }, phase = "default"): Promise<boolean | null> {
+  if (!task.lease_token) return null;
+  try {
+    const { data, error } = await createDatabaseClient().rpc("free_ai_dispatch_status", { p_task: task.id, p_token: task.lease_token, p_phase: phase });
+    return !error && typeof data === "boolean" ? data : null;
+  } catch { return null; } // Uncertain database state cannot prove no provider spend.
 }
 
 export async function assertFreeV3Transport(project: string, run: string, hash: string, duration: unknown, resolution: unknown) {

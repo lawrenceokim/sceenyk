@@ -385,7 +385,8 @@ export function V3WorkflowPreview({
     }
   };
   const policy = workspace?.generationPolicy;
-  const generationBlocked = !policy?.ready || !policy.settingsSupported || policy.remaining < 1;
+  const generationBlocked = !policy?.ready || !policy.settingsSupported || !policy.projectAllowed;
+  const videoBlocked = generationBlocked || !policy?.videoAllowed;
   const preparationBlocked = (kind: "character" | "product" | "location" | "storyboard") => generationBlocked || !policy?.preparationRemaining[kind];
   useEffect(() => { if (policy?.ready) notifyCreditsChanged(); }, [policy?.ready, policy?.remaining, policy?.reserved, policy?.consumed]);
   const p = workspace?.preflight;
@@ -1071,7 +1072,7 @@ export function V3WorkflowPreview({
                           variant="default"
                           className="w-full whitespace-normal"
                           disabled={
-                            generationBlocked || !packageReady ||
+                            videoBlocked || !packageReady ||
                             workspace.resolutionPricingAvailable === false ||
                             p.issues.includes("V3_RESOLUTION_PRICING_NOT_CONFIGURED") ||
                             packageApproved ||
@@ -1115,11 +1116,11 @@ export function V3WorkflowPreview({
                 )}
                 {view === "final" && (
                   <section className="min-w-0 space-y-4">
-                    {Number(p?.durationMs ?? storyboards[0]?.storyboard?.durationMs ?? 0) > 30_000 ? <V3ClipManager workspace={workspace} generationBlocked={generationBlocked} act={act} disabled={busy || dirty || finalOperation.presentation.blocked} studioMode={studioMode} finalOperation={finalOperation.presentation} refreshingFinal={refreshing || retryFinalRead} /> : <>
+                    {Number(p?.durationMs ?? storyboards[0]?.storyboard?.durationMs ?? 0) > 30_000 ? <V3ClipManager workspace={workspace} generationBlocked={videoBlocked} act={act} disabled={busy || dirty || finalOperation.presentation.blocked} studioMode={studioMode} finalOperation={finalOperation.presentation} refreshingFinal={refreshing || retryFinalRead} /> : <>
                     <h2 className="font-semibold">Final Video</h2>
                     <FinalVideoGenerate
                       generating={finalVideoGenerating}
-                      disabled={generationBlocked || locked || proCharactersBlocked || workspace.proDurationRetained || !p?.canSubmit || finalVideo.hasExistingRun}
+                      disabled={videoBlocked || locked || proCharactersBlocked || workspace.proDurationRetained || !p?.canSubmit || finalVideo.hasExistingRun}
                       onGenerate={() => {
                         if (!p) return;
                         setVideoRequestPending(true);

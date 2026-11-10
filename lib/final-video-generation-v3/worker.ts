@@ -1,5 +1,5 @@
 import "server-only";
-import { assertFreeV3Submission, generationPolicyConfiguration } from "@/lib/accounting/generation-policy-server";
+import { assertFreeV3Submission, dispatchFreeProjectOperation, freeProjectDispatchStatus, generationPolicyConfiguration } from "@/lib/accounting/generation-policy-server";
 import OpenAI, { toFile } from "openai";
 import { z } from "zod";
 import { zodTextFormat } from "openai/helpers/zod";
@@ -85,11 +85,13 @@ async function imageTask(store: V3Store, task: Task, w: RuntimeWorkspace, signal
       const config = v3ReferenceConfig();
       if (model !== config.imageModel || task.input.provider !== undefined && task.input.provider !== "openai") throw new Error("V3_OPENAI_REFERENCE_PROVIDER_UNAVAILABLE");
       const client = new OpenAI({ apiKey: config.apiKey, maxRetries: 0, timeout: 600_000, logLevel: "off" });
+      const request = prepareOpenAIReference(model, await Promise.all(inputs.map((b, i) => toFile(b, `reference-${i}.png`, { type: "image/png" }))),
+        task.kind as "character" | "product" | "location", context, subject);
       generationPolicyConfiguration();
       await store.checkpoint(task, "intent"); stage = "provider";
       await recordReferenceStage(task.id, { stage, httpStatus, requestId, errorCode: null });
-      const response = await client.images.edit(prepareOpenAIReference(model, await Promise.all(inputs.map((b, i) => toFile(b, `reference-${i}.png`, { type: "image/png" }))),
-        task.kind as "character" | "product" | "location", context, subject), { signal, headers: { "X-Client-Request-Id": task.id } }).asResponse();
+      await dispatchFreeProjectOperation(task);
+      const response = await client.images.edit(request, { signal, headers: { "X-Client-Request-Id": task.id } }).asResponse();
       httpStatus = response.status; requestId = safeReferenceRequestId(response.headers.get("x-request-id"));
       stage = "response_receive";
       const responseText = await response.text(); stage = "response_save";
@@ -146,6 +148,7 @@ async function storyboardTask(store: V3Store, task: Task, w: RuntimeWorkspace, s
     const client = new OpenAI({ apiKey: config.apiKey, maxRetries: 0, timeout: 600_000, logLevel: "off" });
     generationPolicyConfiguration();
     await store.checkpoint(task, "intent");
+    await dispatchFreeProjectOperation(task);
     const response = await client.responses.create(request.body, { signal, headers: { "X-Client-Request-Id": task.id } });
     raw = Buffer.from(JSON.stringify({ response, requestId: response._request_id ?? null })); await saveSpool(task.id, "openai-response.json", raw);
   }
@@ -247,7 +250,8 @@ export async function runV3Task(projectId: string, ownerId: string, store = new 
     const rejected = error instanceof HiggsfieldTransportError && error.outcome === "rejected" || error instanceof ReferenceTaskError && error.knownRejected;
     const deliveryPaused = !started && !run?.observation && code === "V3_REFERENCE_DELIVERY_EXPIRED";
     const unusable = task.kind === "video" && !run?.result && run?.observation?.status === "completed" && code === "V3_VIDEO_TECHNICAL_VALIDATION_FAILED";
-    const unknown = !unusable && !rejected && (started || !!run?.observation) && !["PAID_V3_EXECUTION_DISABLED", "V3_ACTIVATION_SCOPE_MISMATCH"].includes(code) && !deliveryPaused;
+    const dispatched = ["character", "product", "location", "storyboard", "video"].includes(task.kind) ? await freeProjectDispatchStatus(task) : null;
+    const unknown = dispatched !== false && !unusable && !rejected && (started || !!run?.observation) && !["PAID_V3_EXECUTION_DISABLED", "V3_ACTIVATION_SCOPE_MISMATCH"].includes(code) && !deliveryPaused;
     const paused = deliveryPaused || ["PAID_V3_EXECUTION_DISABLED", "V3_ACTIVATION_SCOPE_MISMATCH"].includes(code) ||
       !!task.input.referenceCleanup && ["V3_REFERENCE_CLEANUP_IN_PROGRESS", "V3_REFERENCE_CLEANUP_PENDING"].includes(code);
     if (error instanceof ReferenceTaskError && task.lease_token) {

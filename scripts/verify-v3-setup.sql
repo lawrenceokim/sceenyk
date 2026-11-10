@@ -100,3 +100,26 @@ select to_regclass('public.generation_free_preparations') is not null and not ex
 ) as preparation_cleanup_compatible;
 select c.conname,pg_get_constraintdef(c.oid) as definition
 from pg_constraint c where c.conrelid=to_regclass('public.generation_free_preparations') order by c.conname;
+
+-- Project-based Stage 2 (104): read-only; no initialization/queue/dispatch RPCs.
+select to_regclass('public.free_ai_accounts') as project_accounts,
+       to_regclass('public.free_ai_projects') as project_entitlements,
+       to_regclass('public.free_ai_operations') as project_exposure,
+       to_regprocedure('public.generation_project_access(uuid,uuid)') as access_rpc,
+       to_regprocedure('public.free_ai_dispatch(uuid,uuid,text)') as dispatch_rpc;
+select * from public.free_ai_project_policy;
+select kind,phase,provider,model,max_cost_microusd from public.free_ai_operation_prices order by kind,phase,model;
+select c.relname,c.relrowsecurity,
+       has_table_privilege('service_role',c.oid,'INSERT,UPDATE,DELETE') as service_write,
+       has_table_privilege('authenticated',c.oid,'INSERT,UPDATE,DELETE') as browser_write
+from pg_class c where c.oid in (to_regclass('public.free_ai_accounts'),to_regclass('public.free_ai_projects'),
+  to_regclass('public.free_ai_operations'),to_regclass('public.free_ai_project_policy'),to_regclass('public.free_ai_operation_prices'));
+
+-- 105: Higgsfield-only forward budget; OpenAI history is not rewritten.
+select exists(select 1 from pg_constraint where conrelid=to_regclass('public.free_ai_operations')
+  and conname='free_ai_operations_funding_check') as higgsfield_only_setup;
+select singleton,max_cost_microusd from public.free_ai_project_policy;
+select provider,state,count(*) as operations,sum(max_cost_microusd) as recorded_microusd
+from public.free_ai_operations group by provider,state order by provider,state;
+-- Only the Higgsfield rows count against the video cap. Old OpenAI amounts
+-- remain historical metadata; new zeroes mean no Higgsfield reservation.

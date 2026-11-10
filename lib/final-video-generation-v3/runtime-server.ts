@@ -192,7 +192,7 @@ export async function runtimeDto(w: RuntimeWorkspace) {
   // Send only a read-only fallback amount; rates, hashing and authorization stay server-only.
   const approximateVideoCostMicrousd = getEstimatedRate("higgsfield", referenceModel, "reference-to-video", "480p")
     ? calculateManualEstimate("higgsfield", referenceModel, "reference-to-video", 5000, "480p").estimatedCostMicrousd : null;
-  return { generationPolicy: { ...await readGenerationAccess(w.project.owner_user_id), approximateVideoCostMicrousd, settingsSupported: Number(brief.duration) === 5 && projectVideoResolution(brief.video_resolution) === "480p" }, projectId: w.project.project_id, packageStale: w.packages.length > 0 && !preflight, artifacts, runs: [...runs, ...joined],
+  return { generationPolicy: { ...await readGenerationAccess(w.project.owner_user_id, w.project.project_id), approximateVideoCostMicrousd, settingsSupported: Number(brief.duration) === 5 && projectVideoResolution(brief.video_resolution) === "480p" }, projectId: w.project.project_id, packageStale: w.packages.length > 0 && !preflight, artifacts, runs: [...runs, ...joined],
     ...(creativeLock ? { creativeLock } : {}),
     multiClip,
     ...(requiresProDuration(brief.duration) && w.project.studio_mode !== "pro" ? { proDurationRetained: true as const } : {}),
@@ -240,8 +240,10 @@ export async function ownedV3Action(raw: unknown, acknowledge = false): Promise<
     const existing = ["generate", "generate_clip"].includes(a.action) && w.runs.some(r => r.package_id === a.packageId && (!a.segmentId || r.intent.segmentId === a.segmentId) && !["deleted", "failed"].includes(r.state));
     if (existing) return runtimeDto(w);
     assertFreeVideoSettings(brief.duration, projectVideoResolution(brief.video_resolution));
-    const access = await generationAccess(user.id);
-    if (access.remaining < 1) throw new Error("FREE_ALLOWANCE_EXHAUSTED");
+    const access = await generationAccess(user.id, a.projectId);
+    if (access.historyReview) throw new Error("FREE_PROJECT_HISTORY_REVIEW_REQUIRED");
+    if (!access.projectAllowed) throw new Error("FREE_ALLOWANCE_EXHAUSTED");
+    if (["generate", "generate_clip"].includes(a.action) && !access.videoAllowed) throw new Error("FREE_PROJECT_VIDEO_USED");
     const preparation = a.action === "reference" ? a.kind : a.action === "storyboard" ? "storyboard" : null;
     if (typeof preparation === "string" && preparation in access.preparationRemaining &&
       access.preparationRemaining[preparation as keyof typeof access.preparationRemaining] < 1) throw new Error("FREE_PREPARATION_LIMIT");

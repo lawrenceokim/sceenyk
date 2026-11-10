@@ -479,7 +479,7 @@ function WorkspaceEditor({
                   revision={JSON.stringify([savedBrief, mediaUpload.assets])} /> : <><StudioPanelPortal panel="workflow">{controls}</StudioPanelPortal><UgcWorkflowPreview key={projectId ?? "new"} projectId={projectId ?? ""} progress={ugcProgress} /></> : undefined}
                 sources={
                   <>
-                    <div className="rounded-lg border border-primary/20 bg-primary/[0.04] p-3 text-xs"><FreeAllowanceSummary compact /><p className="mt-1 text-muted-foreground">Free generation: 5 seconds at 480p. Reference preparation is limited; reuse approved images.</p></div>
+                    <div className="rounded-lg border border-primary/20 bg-primary/[0.04] p-3 text-xs"><FreeAllowanceSummary compact /><p className="mt-1 text-muted-foreground">One 5-second, 480p video per free project, within a $1.03 Higgsfield budget. OpenAI features are platform-funded and attempt-limited.</p></div>
                     {preferencesUnavailable && <p role="status" className="text-caption text-muted-foreground">Creation defaults unavailable.</p>}
                     {restoredDraft?.missingFiles && (
                       <p role="status" className="text-caption text-warning-foreground">
@@ -601,7 +601,7 @@ function WorkspaceEditor({
                       onChange={resolution => setSettings({ ...settings, resolution })} />
                     </fieldset></StudioInspectorSection>}
                     <div className="md:hidden">{status}</div>
-                    {creationType !== "ugc" && <><p className="text-xs text-muted-foreground">Free generation currently supports the 5-second, 480p UGC V3 workflow. Existing Freestyle results remain available.</p><fieldset disabled className="min-w-0">{controls}</fieldset></>}
+                    {creationType !== "ugc" && <><p className="text-xs text-muted-foreground">Free AI projects support the 5-second, 480p UGC V3 workflow. Existing Freestyle results remain available.</p><fieldset disabled className="min-w-0">{controls}</fieldset></>}
                   </>
                 }
               />

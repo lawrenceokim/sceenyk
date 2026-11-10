@@ -1,5 +1,69 @@
 # Commercial cost contract
 
+## Current free-project spending policy — 105 (2026-11-10)
+
+The owner-approved free allowance is **two lifetime AI-powered projects**. The first supported AI dispatch consumes the project once, including platform-funded OpenAI use. Each project has a **Higgsfield-only ceiling of $1.03 = 1,030,000 micro-USD**, based on **$0.206/second × 5 seconds**. One video slot per project and two project slots bound new forward Higgsfield reservations to **$2.06/account**. A failed/unknown dispatched attempt keeps its full ceiling; recovery reuses the same request and cannot charge another POST. The video must remain 5 seconds/480p. Higher provider estimates are blocked, not funded by automatically increasing the cap or changing frozen authorizations.
+
+OpenAI text/planning/analysis/image work is paid separately by the platform and excluded from this cap. Existing supported Character/Product/Location/Storyboard attempt limits remain enforced; this is not an unlimited OpenAI API entitlement. Zero on a new OpenAI operation record means zero reserved Higgsfield funds, not a zero OpenAI cost estimate. Its actual token prices need not be guessed to enable this separate funding policy. Old OpenAI cost metadata, project usage and approved media remain unchanged.
+
+Paid retail math is separate: **100 generation credits/$1**, hence **103 credits/$1.03**. Estimated PayPal processing fees and Sceenyk's **1% payment commission** apply only to credit purchases and reduce purchased credits, not lifetime free-project slots, free video funding or platform OpenAI funds. Marketplace's 10% money commission remains distinct. Stage 3 credit-funded execution remains blocked.
+
+[Migration/setup](database.md#higgsfield-only-free-project-budget--105-2026-11-10) and [manual SQL](../scripts/configure-free-ai-project-pricing.sql) set the policy and canonical video row at 1,030,000. The $0.206 rate is the approved policy basis, not a guarantee of all future provider invoices. The existing 5-second estimate ($1.028335) fits this cap; the existing $1.24 suggested consent ceiling does not enlarge free funding. Neither estimate snapshots nor the paid-credit tariff is rewritten by this policy revision.
+
+## Stage 2 project pricing review (2026-11-10)
+
+**Historical review before 105.** The combined $3 cap, six required ceilings and completion-budget analysis below are superseded by the current Higgsfield-only policy above. The linked manual SQL now implements 105; do not apply the old combined-funding instructions. Public pricing evidence remains dated evidence, not an automatic rate/allowance change.
+
+**$3 is the approved policy cap, not a verified full-workflow cost guarantee.** No application implementation, provider selection, hosted configuration or database row was changed. This review uses migration 104, current source and public provider documentation; it does not establish that 104 is installed or that hosted model/account settings match this checkout.
+
+The manual [configuration SQL](../scripts/configure-free-ai-project-pricing.sql) includes a separate read-only audit and a transaction that refuses unreviewed/missing ceilings. Unknown costs remain NULL in the review inputs; they are never inserted into the application price table.
+
+### Required configuration
+
+`free_ai_project_policy`: one `singleton=true` row with `max_cost_microusd=3000000`. Migration 104 already seeds this value without overwriting an existing policy. The SQL preserves a changed cap rather than silently raising/lowering it. Existing projects keep their pinned caps and exposure; no project history or allowance is reset.
+
+The required `free_ai_operation_prices` rows below match the non-secret model identifiers in this checkout's local environment. Confirm the actual app/worker deployment before applying them. Each value must cover the **whole request**, not a per-token or per-second unit price.
+
+| kind | phase | provider | model | Required ceiling basis |
+| --- | --- | --- | --- | --- |
+| character | default | openai | gpt-image-2.5-sunburst | One high-quality 1024x1024 edit, prompt + original image input + output |
+| product | default | openai | gpt-image-2.5-sunburst | Same request shape, with the Product prompt/input |
+| location | plan | openai | gpt-6.1-sol | Entire prompt/schema + approved input images + at most 3,000 output tokens |
+| location | sheet | openai | gpt-image-2.5-sunburst | One high-quality 1024x1024 generation, prompt + output |
+| storyboard | default | openai | gpt-6.1-sol | Entire prompt/schema + approved input images + at most 14,000 output tokens for the 5-second path |
+| video | default | higgsfield | bytedance/seedance-2.5/reference-to-video | Exact 5-second/480p image-reference request with audio and permitted aspect ratios |
+
+The active package builder explicitly chooses Reference-to-Video and maps approved references as images. Text-to-Video/Image-to-Video rates in the repository are not required for this workflow and must not be substituted into these rows. Basic one-character work with a Product and Location needs six paid request phases; an extra Pro character adds another Character edit. Reuse/cached recovery makes no new provider request. Source: [builder](../lib/final-video-generation-v3/runtime-server.ts), [image adapter](../lib/final-video-generation-v3/adapters/openai-reference.ts), [worker](../lib/final-video-generation-v3/worker.ts), [Location worker](../lib/final-video-generation-v3/location-worker.ts).
+
+### Verified rates and unresolved whole-request ceilings
+
+The [Higgsfield pricing page](https://open.higgsfield.ai/models/bytedance/seedance-2.5/reference-to-video/playground) publishes approximately $0.2056/second for 16:9 480p without video inputs. Its token formula uses output width/height and billable duration: `ceil(width * height * seconds * 24 / 1024)`, charged at $0.0214/1,000 tokens for this no-video-input path. Image/audio references do not add video-input duration; dimensions and account terms still matter. This supports the order of magnitude of the repository estimate, not a guaranteed invoice maximum for every allowed request.
+
+The [local estimator](../lib/final-video-generation-v3/pricing/higgsfield-pricing.ts) stores the observed November 1 Reference-to-Video rate of 205,667 micro-USD/second. Its 5-second estimate is **1,028,335 micro-USD ($1.028335)**, or 103 display credits. The existing 20% authorization buffer rounded upward to cents gives **1,240,000 micro-USD ($1.24)**. That is a derived policy-ceiling candidate; it is not an independently verified provider upper bound. Before using it, verify the exact 480p dimensions/aspect ratios, audio and account quote. A configured video ceiling must also be at least the frozen request's estimate or 104 rejects it. No frozen quote/estimator was changed.
+
+[OpenAI's Sunburst model page](https://developers.openai.com/api/docs/models/gpt-image-2.5-sunburst) lists Standard rates per million tokens: text input $5, image input $8, image output $30. Thus the whole-request USD formula is `(5*T_text + 8*T_image_in + 30*T_image_out)/1,000,000`. These verified rates do not establish the token counts for Sceenyk's high-quality edits/generation.
+
+The [image generation guide](https://developers.openai.com/api/docs/guides/image-generation#cost-and-latency) says token consumption varies by model/settings, includes input costs, and excludes direct Images API edits from cached-input discounts. Do not copy older GPT Image per-image tables or another model's calculator/default into Sunburst ceilings. Existing image `usage`/billing evidence may support review; an average observed cost alone is not a worst-case bound. No new paid samples were requested.
+
+[GPT-6.1 Sol documentation](https://developers.openai.com/api/docs/models/gpt-6.1-sol) lists Standard short-context input/output at $2/$10 per million tokens. The output components at the source maxima are $0.03 for Location planning and $0.14 for the five-second Storyboard. These exclude text/schema/image input. Long-context, faster processing or regional terms can change charges; this code does not pin a billing tier. Complete input-token bounds and actual account terms are still required before setting the two full-request ceilings.
+
+### Does $3 cover completion?
+
+For one character, one product, one Location plan/sheet, one Storyboard and one video, the admission requirement is:
+
+`C_character + C_product + C_location_plan + C_location_sheet + C_storyboard + C_video <= 3000000`.
+
+Using the local **estimate only**, video leaves **1,971,665 micro-USD ($1.971665)** for everything else. Using the **conditional $1.24 candidate ceiling**, it leaves **1,760,000 micro-USD ($1.76)**. The verified short-context maximum-output components for the two text calls use $0.17 of that, leaving $1.59 for their inputs and the three image requests. These are budget inequalities, not a complete price quote. OpenAI input/output consumption and the exact Higgsfield/account ceiling remain unverified, so neither sufficiency nor insufficiency for a normal successful pass can currently be certified.
+
+104 reserves the full configured ceiling for every prepared/started operation, not the eventual invoice. One successful pass fitting the cap would not guarantee regeneration, failures, another Pro character or all permitted retries also fit. Started failures/unknown outcomes retain exposure. The cap remains $3; it must not be increased automatically to make a chosen set of ceilings fit.
+
+### Remaining setup
+
+1. Run only the read-only audit section manually after confirming 104 is installed; inspect existing cap/prices without initializing accounts or claiming work.
+2. Confirm hosted model IDs, provider/account billing tier and exact video settings. Establish conservative complete-request token/dimension bounds from the official calculators/tokenization rules, non-billable estimation where available, or already-existing authentic account/usage evidence. Do not submit new paid generations for this review.
+3. Fill all six SQL ceiling/evidence inputs, select whether one or two Character calls must fit, and explicitly confirm the evidence review. The SQL checks the total against $3, rejects conflicting existing rows, and inserts only missing reviewed prices.
+4. Keep unknown/unpriced operations blocked. If a verified full pass exceeds $3, record that result and decide the policy separately; this review authorizes no cap/model/workflow change. Historical project review flags and Stage 3 paid-credit blocking remain unchanged.
+
 ## Stage 1 custom credit pricing (2026-11-09)
 
 **Implemented in source; manual migration 101 and Sandbox/visual acceptance pending.** This owner-approved Stage 1 refines the earlier hackathon roadmap to deliver custom USD credit purchases without changing Pro or video execution. **100 Sceenyk credits = $1 of generation cost.** This supersedes earlier statements that no conversion is approved and new fixed Sandbox packs are required. Historical purchases keep their frozen values.

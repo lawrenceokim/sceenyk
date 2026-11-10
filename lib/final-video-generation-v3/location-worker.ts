@@ -1,5 +1,5 @@
 import "server-only";
-import { generationPolicyConfiguration } from "@/lib/accounting/generation-policy-server";
+import { dispatchFreeProjectOperation, freeProjectDispatchStatus, generationPolicyConfiguration } from "@/lib/accounting/generation-policy-server";
 import OpenAI from "openai";
 import { zodTextFormat } from "openai/helpers/zod";
 import { z } from "zod";
@@ -78,6 +78,7 @@ export async function runLocationTask(store:V3Store,task:Task,w:RuntimeWorkspace
       }
       generationPolicyConfiguration();
       await checkpoint(store,task,"intent",{key,id});
+      await dispatchFreeProjectOperation(task,key);
       try{
         const response=await invoke();httpStatus=response.status;requestId=safeReferenceRequestId(response.headers.get("x-request-id"));
         const responseText=await response.text();
@@ -104,14 +105,15 @@ export async function runLocationTask(store:V3Store,task:Task,w:RuntimeWorkspace
     }
   }catch(error){
     const failure=referenceStageError(error,phase,httpStatus,requestId);
-    const explicit=error instanceof Error&&/^(V3_[A-Z0-9_]{1,97}|APPROVE_CURRENT_REFERENCES_FIRST)$/.test(error.message)?error.message:null;
+    const explicit=error instanceof Error&&/^((V3_|FREE_|GENERATION_)[A-Z0-9_]{1,97}|APPROVE_CURRENT_REFERENCES_FIRST)$/.test(error.message)?error.message:null;
     let code=failure.knownRejected?"V3_LOCATION_PROVIDER_REJECTED":explicit??(phase==="plan"?"V3_LOCATION_INSTRUCTION_INVALID":phase==="publish"?"V3_LOCATION_STORAGE_FAILED":"V3_LOCATION_IMAGE_FAILED");
     if(code==="V3_PRIVATE_SAVE_FAILED")code="V3_LOCATION_STORAGE_FAILED";
     if(code==="V3_DATABASE_UNAVAILABLE")code="V3_LOCATION_CHECKPOINT_FAILED";
     const latest=await store.read(w.project.owner_user_id,task.project_id),current=latest.tasks.find(t=>t.id===task.id);
     if(!current||current.status!=="running"||current.lease_token!==task.lease_token)return;
     const state=savedLocationState(current);
-    const unknown=state.requests.some(r=>["plan","sheet","repair"].includes(r.key)&&r.status==="intent");
+    const dispatched=phase==="plan"||phase==="sheet"?await freeProjectDispatchStatus(task,phase):null;
+    const unknown=dispatched!==false&&state.requests.some(r=>["plan","sheet","repair"].includes(r.key)&&r.status==="intent");
     if(unknown)code="V3_LOCATION_OUTCOME_UNKNOWN";
     await recordReferenceStage(task.id,{...failure.metadata,stage:phase,errorCode:code});
     try{await store.rpc("ugc_v3_record_reference_diagnostic",{p_task:task.id,p_token:task.lease_token,p_document:{...failure.metadata,stage:phase,errorCode:code}});}catch{/* Fenced task failure still records the code. */}

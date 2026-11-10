@@ -42,7 +42,7 @@ export function CreditBillingDashboard({ purchaseForm, wallet, walletLoaded, bus
           <div className="grid min-w-0 gap-1"><dt className="text-[13px] text-muted-foreground">Available paid credits</dt><dd className="text-[22px] leading-7 font-semibold tabular-nums text-primary">{wallet ? wallet.available.toLocaleString() : walletLoaded ? "—" : <Skeleton className="h-7 w-20" />}</dd></div>
         </div>
         <div className="grid min-w-0 content-center gap-1 @min-[640px]/billing:border-l @min-[640px]/billing:border-primary/25 @min-[640px]/billing:px-5"><dt className="text-[13px] text-muted-foreground">Reserved in progress</dt><dd className="text-[22px] leading-7 font-semibold tabular-nums">{wallet ? wallet.reserved.toLocaleString() : walletLoaded ? "—" : <Skeleton className="h-7 w-12" />}</dd></div>
-        <div className="grid min-w-0 content-center gap-1 @min-[640px]/billing:border-l @min-[640px]/billing:border-primary/25 @min-[640px]/billing:pl-5"><dt className="text-[13px] text-muted-foreground">Free generations remaining</dt><dd><FreeAllowanceSummary presentation="billing-balance" /></dd></div>
+        <div className="grid min-w-0 content-center gap-1 @min-[640px]/billing:border-l @min-[640px]/billing:border-primary/25 @min-[640px]/billing:pl-5"><dt className="text-[13px] text-muted-foreground">Free AI projects remaining</dt><dd><FreeAllowanceSummary presentation="billing-balance" /></dd></div>
       </dl>
     </section>
 
@@ -82,7 +82,7 @@ export function CreditBillingDashboard({ purchaseForm, wallet, walletLoaded, bus
       </section>
     </div>
 
-    <section className={`${card} flex items-start gap-4 @min-[500px]/billing:items-center`} aria-label="Free generation allowance" title="Each free generation is limited to 5 seconds at 480p">
+    <section className={`${card} flex items-start gap-4 @min-[500px]/billing:items-center`} aria-label="Free AI project allowance" title="Free project videos are limited to 5 seconds at 480p">
       <span className="flex size-12 shrink-0 items-center justify-center rounded-[18px] bg-primary/[0.07] text-primary"><Gift className="size-6" aria-hidden="true" /></span>
       <div className="grid min-w-0 gap-1"><h2>Free allowance</h2><FreeAllowanceSummary presentation="billing-footer" /><p className="text-muted-foreground">Free usage stays separate from purchased credits.</p></div>
     </section>
