@@ -1,5 +1,13 @@
 # UI Context
 
+## Specific generation unavailability (2026-11-10)
+
+Source/workflow actions show adjacent live reasons for project review, exhausted preparation starts (including deleted requests), incompatible demo settings, Basic retained multi-character/Pro duration inputs, approved-input locks, missing sources/approvals, dirty inputs, active/recoverable requests and paid video caps/shortage. Free review copy distinguishes account allowance review from a project hold; it neither promises access nor clears usage. Existing Tailwind/primitives/state owners remain. [Investigation](stage-3-credit-protection.md#studio-disabled-action-investigation-2026-11-10).
+
+## Stage 3 Studio credit states (2026-11-10)
+
+Reuse StudioFreeGenerationStatus, existing Generate actions and CreditTopUp for required/available/reserved credits, shortage, cap/pricing errors and funded continuation. Credit events, visible paid-panel reads and active-job polling refresh server truth. Retain semantic Tailwind/theme controls, live status text and disabled actions. No new stylesheet or payment owner. Visual/workflow acceptance remains manual. [Contract](stage-3-credit-protection.md).
+
 ## Stage 2 Studio free/demo restrictions (2026-11-09)
 
 **Current project-based labels/capabilities (2026-11-10):** Studio and Credits & Billing show **Free AI projects remaining**. A paid-task reservation is shown separately; creating/saving projects is free. The workflow displays the server-projected budget remaining and lets an already funded project continue when account-wide unused slots are zero. Exhausted/unfunded, over-budget, unpriced and historical-review requests remain server/SQL blocked; Buy Credits explains that Stage 3 paid access is not connected. Provider rates, hashing, database and authorization code stay out of the client graph. New project/operation semantics supersede the video-consumption statements in older UI records. Both themes/layout/scroll owners and review/merge/recovery controls remain unchanged.

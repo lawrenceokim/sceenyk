@@ -1,5 +1,9 @@
 # M10 V3 Phase 3 — local runtime and first-test preparation
 
+## Stage 3 paid-credit admission (2026-11-10)
+
+The existing V3 Generate action verifies the exact provider estimate before creating paid intent; the existing worker rechecks it before first dispatch. Migration 106 adds wallet/cap reservations and outcome-driven ledger settlement while preserving package/approval/currentness/lease/unknown-recovery guards and M5/M6/M7 owners. HACKATHON_DEMO_MODE=true remains five seconds/480p for all users; known-request recovery and local finalization remain available. Free projects retain Stage 2 funding. [Contract/manual setup](stage-3-credit-protection.md).
+
 ## Stage 2 free/demo policy (2026-11-09)
 
 **Current 105 funding:** the first AI dispatch consumes one of two lifetime project allowances. Supported OpenAI features are platform-funded/attempt-limited. Higgsfield has a separate $1.03 cap and one prepared/spent video slot per project; a failed/unknown dispatched request cannot create another paid attempt. UI/server video eligibility is separate from OpenAI preparation eligibility. Frozen pricing, approval locks, private media and recovery/merge owners remain unchanged. Older combined-$3 and result-based descriptions below are historical; [current accounting](accounting.md#stage-2-project-accounting-2026-11-10) is authoritative.

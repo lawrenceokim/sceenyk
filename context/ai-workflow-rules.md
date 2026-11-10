@@ -1,5 +1,9 @@
 # AI Workflow Rules
 
+## Current authorization - Stage 3 credit protection (2026-11-10)
+
+Implement purchased-credit V3 admission/settlement, paid user/global spending protection and Studio balance states while preserving Stage 1/2, M5/M6/M7 and unrelated money/subscription systems. Run only focused offline accounting/payment/security checks plus essential types/lint. No broad suites, browser automation, repeated builds, paid generation requests, hosted mutations or deployment. Leave UI/workflow acceptance to the owner. [Contract/setup](stage-3-credit-protection.md).
+
 ## Current authorization — Phase 2 M7 (2026-11-09)
 
 Review the complete Basic/Pro workflow and Pro first-source approval lock; implement only confirmed gaps through existing owners and update context. Prioritize implementation and essential focused checks. No large suites, browser automation, repeated builds, paid provider requests or production data changes. Leave end-to-end and visual acceptance to the owner. The completed source review and scoped Studio fixes introduce no schema or paid authority; [M7 evidence/setup/manual checklist](m7-workflow-verification.md) distinguishes traced source safeguards and offline checks from unperformed hosted/provider/manual acceptance. Earlier M6/lock scopes below retain their dated history.

@@ -101,7 +101,7 @@ function AllowanceRead({ signedIn = false, refreshKey = "", compact = false, pre
         : label}
     </div>
     {allowance && allowance.reserved > 0 && <span className="text-xs text-muted-foreground">{allowance.reserved} reserved in progress</span>}
-    {allowance?.reviewRequired && <span className="text-xs text-muted-foreground">Historical AI usage needs review. Saved work remains available.</span>}
+    {allowance?.reviewRequired && <span className="text-xs text-muted-foreground">Historical free-allowance usage needs review. Purchased credits stay separate; new eligible projects can use paid video funding. Project review holds and OpenAI usage limits still apply.</span>}
     {error && <Button type="button" variant="outline" size="sm" onClick={() => setRevision(current => current + 1)}>Check allowance</Button>}
   </div>;
   return (
@@ -115,7 +115,8 @@ function AllowanceRead({ signedIn = false, refreshKey = "", compact = false, pre
       {!compact && <><p>
         2 lifetime free AI-powered projects. The first AI feature uses one allowance. Each project has one 5-second, 480p video within a $1.03 Higgsfield budget. OpenAI usage is platform-funded and attempt-limited.
       </p>
-      <p>Sandbox credit purchases are available. Paid generations require configured credit rates.</p></>}
+      <p>Sandbox credit purchases are available. Paid videos require verified pricing, enough credits and available spending capacity.</p></>}
+      {allowance?.reviewRequired && <p>Free-allowance review does not clear existing project holds or reset OpenAI attempts. Paid funding is checked separately for new eligible projects.</p>}
       {signedIn && error && (
         <>
           <p role="alert" className="text-destructive">{error}</p>

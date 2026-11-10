@@ -1,5 +1,9 @@
 # Sceenyk
 
+## Stage 3 credit protection (2026-11-10)
+
+Purchased credits fund fresh eligible five-second/480p V3 projects after free allowances are exhausted or while account-only free eligibility is under review. Existing historical project holds and OpenAI attempt limits remain; 107 separates these permissions without clearing history. Paid video requires 103 credits, an authenticated exact-request provider estimate, atomic wallet/cap reservation and confirmed-outcome settlement. OpenAI remains platform-funded with unchanged limits. Manual migration 106 after 105, finite paid caps and matching app/worker deployment are required; hosted/provider/UI acceptance is pending. [Contract, safe setup and manual checks](stage-3-credit-protection.md). This supersedes Stage 3-not-connected statements in dated records below.
+
 ## Stage 2 free AI projects (2026-11-10)
 
 **Source implemented; manual migration 105 after 104 and runtime/visual acceptance pending.** Every new account receives two lifetime free AI-powered projects, separate from purchased credits. Saving a project costs no allowance. The first supported AI task reserves its project; its fenced provider dispatch consumes that allowance once, including platform-funded OpenAI features. Further permitted operations in the same project use no additional project allowance. Failure/deletion after any dispatch does not refund the project; only a provably undispatched project can release its reservation. Unknown outcomes recover their existing request rather than starting a replacement.

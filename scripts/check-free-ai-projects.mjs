@@ -99,7 +99,9 @@ try {
   assert.equal((await access(owner, a)).budgetUsedMicrousd, 0);
   assert.equal((await access(owner, a)).budgetMicrousd, 1030000);
   assert.equal(generationCreditsFromMicrousd(1030000), 103);
-  assert.equal((await policy.generationAccess(owner, a)).videoAllowed, true);
+  // This fixture intentionally stops at 105. The current application DTO
+  // requires 106; inspect the preserved 105 SQL contract directly here.
+  assert.equal((await access(owner, a)).videoAllowed, true);
   const ra = await syntheticRun(a), video = await queue(a, 'video', { runId: ra.run }), vt = await lease(video); await prepare(video);
   await assert.rejects(() => queue(a, 'video', { runId: ra.run }), /FREE_PROJECT_VIDEO_USED/);
   assert.equal(await rpc('generation_free_transport', { p_project: a, p_run: ra.run, p_hash: 'b'.repeat(64) }), false);

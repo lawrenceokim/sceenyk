@@ -6,7 +6,7 @@ import { assertFreeVideoSettings } from "./generation-policy";
 export function generationPolicyConfiguration() {
   const value = process.env.HACKATHON_DEMO_MODE ?? "true";
   if (value !== "true" && value !== "false") throw new Error("GENERATION_POLICY_CONFIGURATION_INVALID");
-  return { demoMode: value === "true", paidGenerationConnected: false as const, durationSeconds: 5 as const, resolution: "480p" as const };
+  return { demoMode: value === "true", paidGenerationConnected: true as const, durationSeconds: 5 as const, resolution: "480p" as const };
 }
 
 export async function generationAccess(owner: string, project?: string) {
@@ -16,7 +16,12 @@ export async function generationAccess(owner: string, project?: string) {
   const parsed = z.object({ total: z.literal(2), remaining: count, reserved: count, consumed: count,
     projectAllowed: z.boolean(), videoAllowed: z.boolean(), historyReview: z.boolean(), budgetMicrousd: z.number().int().positive().safe(), budgetUsedMicrousd: z.number().int().nonnegative().safe(),
     accountBudgetRemainingMicrousd: z.number().int().min(0).max(2060000).safe(),
-    preparationRemaining: z.object({ character: count, product: count, location: count, storyboard: count }) })
+    preparationRemaining: z.object({ character: count, product: count, location: count, storyboard: count }),
+    funding: z.enum(["free", "credits"]), requiredCredits: z.union([z.literal(0), z.literal(103)]),
+    preparationAllowed: z.boolean(), projectReviewRequired: z.boolean(), projectBlocker: z.string().nullable(),
+    availableCredits: z.number().int().nonnegative().safe(), reservedCredits: z.number().int().nonnegative().safe(),
+    shortageCredits: z.number().int().min(0).max(103), paidBlocker: z.string().nullable(),
+    paidUserRemainingMicrousd: z.number().int().nonnegative().safe(), paidGlobalRemainingMicrousd: z.number().int().nonnegative().safe() })
     .refine(value => value.remaining + value.reserved + value.consumed === 2).safeParse(data);
   if (error || !parsed.success) throw new Error("GENERATION_POLICY_SETUP_REQUIRED");
   return { ...configuration, ...parsed.data };
@@ -24,10 +29,13 @@ export async function generationAccess(owner: string, project?: string) {
 
 export async function readGenerationAccess(owner: string, project?: string) {
   try { return { ...await generationAccess(owner, project), ready: true, reason: null as string | null }; }
-  catch (error) { return { demoMode: true, paidGenerationConnected: false as const, durationSeconds: 5 as const, resolution: "480p" as const,
+  catch (error) { return { demoMode: true, paidGenerationConnected: true as const, durationSeconds: 5 as const, resolution: "480p" as const,
     ready: false, reason: error instanceof Error && ["GENERATION_POLICY_CONFIGURATION_INVALID", "GENERATION_POLICY_SETUP_REQUIRED"].includes(error.message) ? error.message : "GENERATION_POLICY_SETUP_REQUIRED",
     total: 2, remaining: 0, reserved: 0, consumed: 0, projectAllowed: false, videoAllowed: false, historyReview: false, budgetMicrousd: 0, budgetUsedMicrousd: 0, accountBudgetRemainingMicrousd: 0,
-    preparationRemaining: { character: 0, product: 0, location: 0, storyboard: 0 } }; }
+    preparationRemaining: { character: 0, product: 0, location: 0, storyboard: 0 }, funding: "free" as const, requiredCredits: 0,
+    preparationAllowed: false, projectReviewRequired: false, projectBlocker: null as string | null,
+    availableCredits: 0, reservedCredits: 0, shortageCredits: 0, paidBlocker: null as string | null,
+    paidUserRemainingMicrousd: 0, paidGlobalRemainingMicrousd: 0 }; }
 }
 
 export async function dispatchFreeProjectOperation(task: { id: string; lease_token: string | null }, phase = "default") {

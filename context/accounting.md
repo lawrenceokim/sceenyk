@@ -1,5 +1,13 @@
 # Generation accounting contract
 
+## Free review versus paid and OpenAI access - 107 (2026-11-10)
+
+Account-only free review cannot grant another free project, but is not a veto on a fresh project using purchased video credits. Existing historical projects remain held, and deletion does not restore preparation attempts. Platform-funded OpenAI starts must not require a Higgsfield balance/cap; paid video admission/dispatch still reserves verified cost under the existing 106 wallet and exposure locks. No review flags, counters, approved inputs or balances are rewritten. [Confirmed findings and correction](stage-3-credit-protection.md#studio-disabled-action-investigation-2026-11-10).
+
+## Stage 3 paid-credit accounting (2026-11-10)
+
+Source implements a 103-credit hold for a five-second/480p paid Higgsfield request after free-project exhaustion. Verified exact-body provider pricing and lifetime user/global exposure caps gate admission and dispatch. Completed observations consume once; definitive unaccepted/refundable outcomes release once; uncertainty keeps the hold. Movements append to the existing credit_ledger with v3_run_id while preserving PayPal/history and separate free entitlements. [Accounting/setup/manual checks](stage-3-credit-protection.md). Migration 106 remains manual; caps default zero.
+
 ## Stage 2 project accounting (2026-11-10)
 
 **Current contract; supersedes the completed-video contract below.** Migration 104 preserves `generation_accounts`, credit/payment ledgers and old free-run holds as historical evidence. Separate `free_ai_accounts` stores two lifetime project slots, `free_ai_projects` binds each owned V3 project to one reservation/consumption, and `free_ai_operations` retains immutable task/phase exposure after task cleanup. Saving a project does not charge. Enqueue reserves at most one project slot under an account row lock; the provider-intent transaction prepares a unique bounded operation. A second fenced dispatch RPC consumes the project once and marks the operation started immediately before HTTP. Repeating dispatch is refused, including after a lost acknowledgement/new lease; recovery must reuse saved identities instead of issuing another paid POST.

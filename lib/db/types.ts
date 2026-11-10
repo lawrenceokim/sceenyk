@@ -206,6 +206,7 @@ export type Database = {
           id: string;
           owner_user_id: string;
           job_id: string | null;
+          v3_run_id: string | null;
           purchase_id: string | null;
           paypal_order_id: string | null;
           paypal_capture_id: string | null;
@@ -410,6 +411,7 @@ export type Database = {
       prepare_custom_credit_purchase: { Args: { p_owner_user_id: string; p_amount_minor: number; p_paypal_basis_points: number; p_paypal_fixed_minor: number; p_commission_basis_points: number; p_pricing_version: string }; Returns: import("@/lib/payments/types").PurchaseRow };
       generation_free_access: { Args: { p_owner: string }; Returns: import("@/lib/accounting/generation-policy").FreeGenerationAccess };
       generation_project_access: { Args: { p_owner: string; p_project: string | null }; Returns: import("@/lib/accounting/generation-policy").FreeGenerationAccess };
+      generation_paid_quote: { Args: { p_owner: string; p_project: string; p_run: string; p_model: string; p_body_hash: string; p_response_hash: string; p_cost: number }; Returns: boolean };
       free_ai_dispatch: { Args: { p_task: string; p_token: string; p_phase: string }; Returns: boolean };
       free_ai_dispatch_status: { Args: { p_task: string; p_token: string; p_phase: string }; Returns: boolean | null };
       generation_free_submit: { Args: { p_owner: string; p_project: string; p_run: string }; Returns: boolean };

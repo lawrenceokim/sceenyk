@@ -1,5 +1,9 @@
 # Commercial cost contract
 
+## Stage 3 verified paid video pricing (2026-11-10)
+
+103 Sceenyk credits cover $1.03 for a five-second/480p Higgsfield reference video. Paid execution verifies the exact authenticated account estimate before admission and dispatch; the accepted cost must convert upward to the reviewed 103 credits and fit the frozen provider authorization. Changed/unavailable pricing blocks submission. Historical approximate package rates remain display/consent evidence, never wallet authority. OpenAI remains platform-funded; purchase fees stay separate. [Full contract/setup](stage-3-credit-protection.md).
+
 ## Current free-project spending policy — 105 (2026-11-10)
 
 The owner-approved free allowance is **two lifetime AI-powered projects**. The first supported AI dispatch consumes the project once, including platform-funded OpenAI use. Each project has a **Higgsfield-only ceiling of $1.03 = 1,030,000 micro-USD**, based on **$0.206/second × 5 seconds**. One video slot per project and two project slots bound new forward Higgsfield reservations to **$2.06/account**. A failed/unknown dispatched attempt keeps its full ceiling; recovery reuses the same request and cannot charge another POST. The video must remain 5 seconds/480p. Higher provider estimates are blocked, not funded by automatically increasing the cap or changing frozen authorizations.

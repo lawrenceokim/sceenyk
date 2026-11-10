@@ -1,5 +1,9 @@
 # Payments and PayPal Sandbox payouts
 
+## Stage 3 generation consumption (2026-11-10)
+
+Existing Stage 1 PayPal Sandbox custom checkout, frozen terms, verified capture/webhooks and once-only fulfilment remain the purchase owner. Stage 3 reuses the resulting generation_accounts balance and credit_ledger for video holds/debits/releases; no purchase fee, Marketplace commission, creator payout or Pro change is included. Sandbox credits never expand real provider exposure caps. [Credit protection/setup](stage-3-credit-protection.md).
+
 ## Stage 1 custom USD credit checkout (2026-11-09)
 
 **Source implemented; apply manual migration 101 before using new purchases.** Credits & Billing and the existing editor top-up now accept a custom USD total in place of new fixed-pack selection. The preview shows estimated PayPal fee, separate Sceenyk payment commission, net generation funds, whole credits and exact total. [Pricing](pricing.md#stage-1-custom-credit-pricing-2026-11-09) owns arithmetic, defaults and examples; public rate/preview data never authorizes a credit grant.

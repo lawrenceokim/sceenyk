@@ -1,5 +1,6 @@
 import "server-only";
 import { generationAccess, readGenerationAccess } from "@/lib/accounting/generation-policy-server";
+import { verifyPaidVideoPrice } from "@/lib/accounting/paid-video-pricing";
 import { assertFreeVideoSettings } from "@/lib/accounting/generation-policy";
 import { projectVideoResolution } from "@/lib/projects/video-resolution";
 import { calculateManualEstimate, getEstimatedRate, suggestedAuthorizationMicrousd } from "./pricing/higgsfield-pricing";
@@ -241,10 +242,10 @@ export async function ownedV3Action(raw: unknown, acknowledge = false): Promise<
     if (existing) return runtimeDto(w);
     assertFreeVideoSettings(brief.duration, projectVideoResolution(brief.video_resolution));
     const access = await generationAccess(user.id, a.projectId);
-    if (access.historyReview) throw new Error("FREE_PROJECT_HISTORY_REVIEW_REQUIRED");
-    if (!access.projectAllowed) throw new Error("FREE_ALLOWANCE_EXHAUSTED");
-    if (["generate", "generate_clip"].includes(a.action) && !access.videoAllowed) throw new Error("FREE_PROJECT_VIDEO_USED");
+    if (!access.projectAllowed) throw new Error(access.projectBlocker ?? "FREE_PROJECT_HISTORY_REVIEW_REQUIRED");
+    if (["generate", "generate_clip"].includes(a.action) && !access.videoAllowed) throw new Error(access.paidBlocker ?? "FREE_PROJECT_VIDEO_USED");
     const preparation = a.action === "reference" ? a.kind : a.action === "storyboard" ? "storyboard" : null;
+    if (preparation && !access.preparationAllowed) throw new Error(access.projectBlocker ?? "FREE_PROJECT_HISTORY_REVIEW_REQUIRED");
     if (typeof preparation === "string" && preparation in access.preparationRemaining &&
       access.preparationRemaining[preparation as keyof typeof access.preparationRemaining] < 1) throw new Error("FREE_PREPARATION_LIMIT");
   }
@@ -451,7 +452,9 @@ export async function ownedV3Action(raw: unknown, acknowledge = false): Promise<
       const auth = clips ? clipAuthority(w, doc, segment.segmentId)! : w.runtimeAuthorizations.filter(x => x.document.segmentUuid === segment.segmentUuid &&
         !w.runs.some(r => r.intent.authorization.id === x.document.id)).at(-1)!.document;
       const delivery = await prepareVideoDelivery(w, doc, segment, signal);
-      await store.action(user.id, a.projectId, "generate", { intent: createPaidIntent(doc, quote, auth, new Date().toISOString(), delivery) });
+      const intent = createPaidIntent(doc, quote, auth, new Date().toISOString(), delivery);
+      await verifyPaidVideoPrice(user.id, intent, signal);
+      await store.action(user.id, a.projectId, "generate", { intent });
     }
   } else if (a.action === "merge") {
     const taskId = await store.rpc("ugc_v3_merge_begin", { p_owner: user.id, p_project: a.projectId,

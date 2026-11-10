@@ -1,5 +1,13 @@
 # Development application identity
 
+## Generation access separation migration 107 (2026-11-10)
+
+Apply 20261110010700_generation_access_funding_separation.sql only after verified 106, with old app/workers stopped and matching deployment. It checks actual referenced-column prerequisites and replaces funding/access functions and adds a private project-review predicate, preserving private/RPC grants. No tables, flags, counters, project records, caps or balances are edited. It is transactional/rerunnable; deployment remains manual. [Reason, safeguards and setup](stage-3-credit-protection.md#studio-disabled-action-investigation-2026-11-10).
+
+## Stage 3 credit and cap migration 106 (2026-11-10)
+
+Apply 20261110010600_paid_video_credit_protection.sql after verified 105 with old writers/workers stopped and a backup. It checks prerequisites, preserves records and adds paid V3 evidence plus v3_run_id ledger movements. It is transactional/rerunnable; finite paid caps default zero and need explicit administrator configuration backed by real provider funds. Deploy matching app/worker source together. No remote migration was applied. [Safe application/configuration](stage-3-credit-protection.md#spending-caps-and-setup).
+
 ## Higgsfield-only free project budget — 105 (2026-11-10)
 
 Apply [105](../supabase/migrations/20261110010500_higgsfield_free_project_budget.sql) **after 104**, with old app/workers stopped; deploy/restart matching source afterward. It lowers higher `free_ai_project_policy.max_cost_microusd` values to **1,030,000 ($1.03)** and seeds the canonical `video/default/higgsfield/bytedance/seedance-2.5/reference-to-video` price row at that amount. Intentionally lower caps remain lower and can block video; they require explicit operator review. No additional price setup is needed for supported platform-funded OpenAI work under 105. [Manual audit/idempotent configuration SQL](../scripts/configure-free-ai-project-pricing.sql) is prepared but not applied remotely.

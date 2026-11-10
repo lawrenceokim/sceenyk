@@ -13,7 +13,8 @@ import { finalVideoPresentation } from "./v3-final-video-state";
 import { shouldPollV3Video } from "@/lib/final-video-generation-v3/video-progress";
 import { StudioWorkflowGuidance } from "./studio-workflow-guidance";
 import { StudioFreeGenerationStatus } from "./studio-free-generation-status";
-import { notifyCreditsChanged } from "@/lib/accounting/client-events";
+import { generationUnavailability } from "@/lib/accounting/generation-unavailability";
+import { creditRefreshKey, notifyCreditsChanged } from "@/lib/accounting/client-events";
 import { GenerationCreditEstimate } from "@/components/payments/credit-balance";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -387,8 +388,23 @@ export function V3WorkflowPreview({
   const policy = workspace?.generationPolicy;
   const generationBlocked = !policy?.ready || !policy.settingsSupported || !policy.projectAllowed;
   const videoBlocked = generationBlocked || !policy?.videoAllowed;
-  const preparationBlocked = (kind: "character" | "product" | "location" | "storyboard") => generationBlocked || !policy?.preparationRemaining[kind];
-  useEffect(() => { if (policy?.ready) notifyCreditsChanged(); }, [policy?.ready, policy?.remaining, policy?.reserved, policy?.consumed]);
+  const preparationBlocked = (kind: "character" | "product" | "location" | "storyboard") => generationBlocked || !policy?.preparationAllowed || !policy?.preparationRemaining[kind];
+  useEffect(() => { if (policy?.ready) notifyCreditsChanged(); }, [policy?.ready, policy?.remaining, policy?.reserved, policy?.consumed, policy?.availableCredits, policy?.reservedCredits]);
+  useEffect(() => {
+    if (!statusEnabled) return;
+    const reload = () => { if (document.visibilityState !== "hidden") void refresh(); };
+    const storage = (event: StorageEvent) => { if (event.key === creditRefreshKey) reload(); };
+    window.addEventListener("sceenyk:credits", reload);
+    window.addEventListener("storage", storage);
+    // Worker/account changes in another project need no browser event. Read
+    // only while the paid panel is visible; this never starts generation.
+    const timer = policy?.funding === "credits" ? setInterval(reload, 15_000) : null;
+    return () => {
+      window.removeEventListener("sceenyk:credits", reload);
+      window.removeEventListener("storage", storage);
+      if (timer) clearInterval(timer);
+    };
+  }, [policy?.funding, refresh, statusEnabled]);
   const p = workspace?.preflight;
   const transientFinalRead = !!workspace?.multiClip && (retryFinalRead || finalOperation.presentation.active) && statusRetryable;
   const workflowError = error || (transientFinalRead ? "" : statusError);
@@ -494,6 +510,28 @@ export function V3WorkflowPreview({
   const locationFeedback = locationReferenceFeedback(workspace?.artifacts ?? [], {
     character: !!reference("character"), product: !!reference("product"), characterIds: characterAssets.map(a => a.id),
   });
+  const workflowUnavailable = (kind: "storyboard" | "package" | "video") => {
+    const reasons = generationUnavailability(policy, kind);
+    if (kind === "video" && finalVideo.hasExistingRun) reasons.push("A video request already exists. Review or recover that request before starting another.");
+    if (kind !== "video" && creativeLocked) reasons.push(v3ActionErrorMessage("V3_CREATIVE_INPUTS_LOCKED"));
+    if (dirty) reasons.push("Save changes before starting generation.");
+    if (busy) reasons.push("A Studio action is being saved. Wait for it to finish.");
+    if (workspace?.processing) reasons.push("A generation is already processing. Check its saved status.");
+    if (finalOperation.presentation.blocked) reasons.push("Resolve or recover the active final-video operation first.");
+    if (proCharactersBlocked) reasons.push("Basic supports one character. Switch to Pro to use the retained multiple-character inputs.");
+    if (workspace?.proDurationRetained) reasons.push("This project retains a Pro duration. Switch to Pro or use compatible settings.");
+    if (kind === "storyboard") {
+      if (locationFeedback) reasons.push(locationFeedback);
+      if (!currentApproved("character")) reasons.push("Approve the current Character Sheet before generating the Storyboard.");
+      if (!currentApproved("location")) reasons.push("Approve the current Location before generating the Storyboard.");
+      if (reference("product") && !currentApproved("product")) reasons.push("Approve the current Product Sheet before generating the Storyboard.");
+    }
+    if (kind === "package" && !currentApproved("storyboard")) reasons.push("Approve the current Storyboard before building its Generation Package.");
+    if (kind === "video" && !p?.canSubmit && !finalVideo.hasExistingRun) reasons.push(...(p?.issues.length ? p.issues.map(v3ActionErrorMessage) : ["Build and approve the current Generation Package before generating video."]));
+    return reasons.length ? <div role="status" aria-live="polite" className="space-y-1 text-xs text-muted-foreground">
+      {[...new Set(reasons)].map(reason => <p key={reason}>{reason}</p>)}
+    </div> : null;
+  };
   const sourcePanel = (kind: "character" | "product" | "location", assetId?: string) => {
     const proCharacterPanel = kind === "character" && !!assetId && studioMode === "pro";
     const panel = kind === "character" && assetId ? `character:${assetId}` as const : kind;
@@ -515,6 +553,20 @@ export function V3WorkflowPreview({
           !a.rejected &&
           !latest.some((n) => n.id === a.id),
       ) ?? [];
+    const blockedReasons = generationUnavailability(policy, kind);
+    if (creativeLocked) blockedReasons.push(v3ActionErrorMessage("V3_CREATIVE_INPUTS_LOCKED"));
+    if (dirty) blockedReasons.push("Save changes before starting generation.");
+    if (busy) blockedReasons.push("A Studio action is being saved. Wait for it to finish.");
+    if (proCharactersBlocked) blockedReasons.push("Basic supports one character. Switch to Pro to use the retained multiple-character inputs.");
+    if (kind === "location" && locationFeedback) blockedReasons.push(locationFeedback);
+    if (kind === "location" && workspace?.processing) blockedReasons.push("Another generation is processing. Wait for it to finish.");
+    if (kind === "location" && finalOperation.presentation.blocked) blockedReasons.push("Resolve or recover the active final-video operation first.");
+    if (workspace && referenceBusy(workspace.tasks, kind, undefined, assetId)) blockedReasons.push(
+      task?.recoveryAvailable || task?.status === "reconciliation_required" || task?.status === "failed"
+        ? `Recover or resolve the existing ${label} request before starting another.`
+        : `${label} is already queued or generating. Check its saved status.`);
+    if (kind !== "location" && !reference(kind, assetId)) blockedReasons.push(`Upload and save the ${kind === "character" ? "Character" : "Product / Prop"} source first.`);
+    const reasonId = `generation-unavailable-${projectId}-${panel}`;
     const image = (a: NonNullable<typeof current>) =>
       a.preview && !a.cleanupPending ? (
         <button
@@ -537,8 +589,9 @@ export function V3WorkflowPreview({
       ) : null;
     const generationButton = kind === "location" ? (
       <Button variant={current ? "default" : "outline"}
-        disabled={preparationBlocked("location") || creativeLocked || locked || (!!workspace && referenceBusy(workspace.tasks, "location"))}
+        disabled={preparationBlocked("location") || creativeLocked || locked || proCharactersBlocked || (!!workspace && referenceBusy(workspace.tasks, "location"))}
         aria-disabled={!!locationFeedback}
+        aria-describedby={blockedReasons.length ? reasonId : undefined}
         className="aria-disabled:cursor-not-allowed aria-disabled:bg-muted aria-disabled:text-muted-foreground aria-disabled:opacity-60"
         onClick={() => {
           if (locationFeedback) { setShowLocationFeedback(true); return; }
@@ -546,6 +599,7 @@ export function V3WorkflowPreview({
           void act("reference", { kind: "location", expectedId: current?.id, expectedVersion: current?.version });
         }}>{current ? "Regenerate Location" : "Generate Location"}</Button>
     ) : <Button variant={current || proCharacterPanel ? "default" : "outline"} className={proCharacterPanel ? "w-full" : undefined}
+      aria-describedby={blockedReasons.length ? reasonId : undefined}
       disabled={preparationBlocked(kind) || creativeLocked || !workspace || busy || dirty || proCharactersBlocked || referenceBusy(workspace.tasks, kind, undefined, assetId) || !reference(kind, assetId)}
       onClick={() => requestReference(kind, assetId)}>{proCharacterPanel && current && <RefreshCw className="size-3.5 shrink-0" aria-hidden="true" />}{current ? proCharacterPanel ? "Regenerate" : `Regenerate ${label}` : `Generate ${label}`}</Button>;
     return (
@@ -565,6 +619,9 @@ export function V3WorkflowPreview({
           )}
           {proCharacterPanel && (!current || !current.preview) && <div className="flex aspect-square w-full items-center justify-center rounded-lg border border-dashed border-border bg-muted/30 text-[11px] text-muted-foreground">{current ? current.cleanupPending ? "Deletion pending" : "Loading sheet…" : "No sheet generated yet"}</div>}
           {!current && generationButton}
+          {blockedReasons.length > 0 && <div id={reasonId} role="status" aria-live="polite" className="space-y-1 text-muted-foreground">
+            {[...new Set(blockedReasons)].map(reason => <p key={reason}>{reason}</p>)}
+          </div>}
           {kind === "location" && showLocationFeedback && locationFeedback && (
             <p role="status" aria-live="polite" className="text-muted-foreground">{locationFeedback}</p>
           )}
@@ -903,6 +960,7 @@ export function V3WorkflowPreview({
                     >
                       Generate Storyboard
                     </Button>
+                    {workflowUnavailable("storyboard")}
                     {workspace.proDurationRetained && <p role="status" className="text-sm text-muted-foreground">Your Pro duration and story are preserved. Switch to Pro or choose a Basic duration to continue.</p>}
                     {storyboardLoading && <V3StoryboardSkeleton />}
                     {storyboards.map((a) => (
@@ -971,6 +1029,7 @@ export function V3WorkflowPreview({
                       <Layers2 aria-hidden="true" className="size-4 shrink-0" />
                       <span className="min-w-0">Build package and estimate</span>
                     </Button>
+                    {workflowUnavailable("package")}
                     {packageLoading && <V3PackageSkeleton />}
                     {workspace.packageStale && (
                       <p
@@ -1130,6 +1189,7 @@ export function V3WorkflowPreview({
                         }).finally(() => setVideoRequestPending(false));
                       }}
                     />
+                    {workflowUnavailable("video")}
                     {!finalVideo.loading && !finalVideo.hasExistingRun && finalVideo.reason && (
                       <p role="status" className="text-sm text-muted-foreground">{finalVideo.reason}</p>
                     )}

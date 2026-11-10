@@ -1,5 +1,13 @@
 # Architecture Context
 
+## Generation access separation - 107 (2026-11-10)
+
+Free-account review is distinct from project review and from paid video funding. Migration 107 preserves historical project holds and free counters while routing fresh account-reviewed/exhausted projects to paid-video funding. OpenAI preparation uses existing attempt/dispatch guards independently of Higgsfield wallet/caps; paid video still uses all 106 reservations/pricing/cap guards. The API and UI consume explicit project/preparation/video decisions, not a blanket historyReview veto. [Investigation and setup](stage-3-credit-protection.md#studio-disabled-action-investigation-2026-11-10).
+
+## Stage 3 paid generation boundary (2026-11-10)
+
+Existing V3 actions, workers, dispatch fences and generation_accounts/credit_ledger now admit purchased-credit funding through migration 106. Private Stage 2 delegates preserve the free path; additive paid project, quote, reservation and OpenAI dispatch evidence support exact authenticated pricing, global/user cap locking and once-only settlement. Provider completion settles independently of local publication; unknown requests retain holds and recover without POST replay. OpenAI limits and M5/M6/M7/creative locks retain existing owners. [Contract/setup](stage-3-credit-protection.md).
+
 ## Stage 2 generation policy boundary (2026-11-09)
 
 **Current revision (2026-11-10, 105 after 104):** [Project accounting](accounting.md#stage-2-project-accounting-2026-11-10) supersedes earlier video units and the combined $3 cap. Owned reads/actions use `generation_project_access(owner,project)` and receive separate project eligibility and video eligibility. The first AI dispatch consumes one project once; per-task/phase intent, lease, dispatch and preparation guards are retained. SQL totals only Higgsfield exposure against $1.03 and serializes one prepared/spent video slot per project. OpenAI is platform-funded/attempt-limited and does not use the Higgsfield cap. UI/server gates distinguish OpenAI continuation from new video permission; worker/transport SQL guards remain authoritative. No browser/service direct-write or paid-wallet bypass exists. Frozen prices, Clip Approval Locking, recovery/local merge/approval and historical counters/media retain their owners. The older 102/103/104 descriptions below are dated evidence; result-based settlement remains a no-op for current project charging.

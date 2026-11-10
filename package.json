@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "test:stage3-credits": "node scripts/check-stage3-credit-protection.mjs",
     "test:ugc-v3-director": "node --conditions=react-server --import=tsx scripts/check-v3-director-creative.ts && node --conditions=react-server --import=tsx scripts/check-v3-storyboard-director.ts",
     "test:ugc-v3-connected-story": "node --conditions=react-server --import=tsx scripts/check-v3-connected-story.mjs && node --import=tsx scripts/check-v3-connected-story-ui.mjs",
     "test:pro-properties": "node scripts/check-visual-style-gallery.mjs",

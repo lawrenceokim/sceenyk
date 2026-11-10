@@ -1,5 +1,9 @@
 # Code Standards
 
+## Stage 3 financial boundary (2026-11-10)
+
+Paid V3 requests require exact server-obtained authenticated provider pricing, transactional wallet and user/global exposure reservation, a once-only leased dispatch fence, and trusted outcome settlement in SQL. Never infer billability from owner approval, local publication, a timeout or browser state. Unknown outcomes preserve holds and recover existing requests; only definitive unaccepted/refundable evidence releases them. Preserve immutable purchase/job movements while using the V3 ledger namespace. OpenAI limits remain independent. [Contract](stage-3-credit-protection.md).
+
 ## Phase 2 M7 — approval evidence versus submission authority (2026-11-09)
 
 Display saved package approval from current non-deleted execution evidence independently of unused finite authority. Never turn an approval label or mode change into a grant, retry or workflow mutation. Mode metadata changes must reconcile status without resetting saved work; frozen package inputs stay read-only. Preserve existing server/database guards. M7 verification remains focused; do not infer hosted/backend/payment/provider acceptance from UI fixtures. [Source review and manual checks](m7-workflow-verification.md).

@@ -1,5 +1,6 @@
 import "server-only";
 import { assertFreeV3Submission, dispatchFreeProjectOperation, freeProjectDispatchStatus, generationPolicyConfiguration } from "@/lib/accounting/generation-policy-server";
+import { verifyPaidVideoPrice } from "@/lib/accounting/paid-video-pricing";
 import OpenAI, { toFile } from "openai";
 import { z } from "zod";
 import { zodTextFormat } from "openai/helpers/zod";
@@ -180,6 +181,7 @@ async function videoTask(store: V3Store, task: Task, w: RuntimeWorkspace, signal
   };
   await stage("V3_FINAL_VIDEO_JOB_CLAIMED");
   await executeV3Segment(run, task.provider_started, { provider: transport, beforeSubmit: async intent => {
+    await verifyPaidVideoPrice(w.project.owner_user_id, intent, signal);
     await assertFreeV3Submission(w.project.owner_user_id, task.project_id, run.id, segment.durationMs / 1000, String(intent.body.resolution));
     assertV3Transport(config, intent);
     if (intent.body.resolution !== doc.source.resolution || intent.authorization.resolution !== doc.source.resolution) throw new Error("V3_RESOLUTION_BINDING_INVALID");
