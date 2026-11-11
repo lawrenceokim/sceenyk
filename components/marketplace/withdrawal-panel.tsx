@@ -8,6 +8,8 @@ import type { WithdrawalAccount } from "@/lib/marketplace/withdrawals/contract";
 import { MarketplacePagination } from "./pagination";
 import { Landmark, Mail, ReceiptText } from "lucide-react";
 import { EarningsCard, EarningsEmptyState, EarningsIcon, PayPalMark } from "./earnings-ui";
+import { AppNotification } from "@/components/notifications/app-notification";
+
 
 export function WithdrawalPanel({ account, page, clerkUserId, onChanged, marketplaceSales }: { account: WithdrawalAccount; page: number; clerkUserId: string; onChanged: () => Promise<void>; marketplaceSales: ReactNode }) {
   const router = useRouter();
@@ -56,7 +58,7 @@ export function WithdrawalPanel({ account, page, clerkUserId, onChanged, marketp
     finally { inFlight.current = false; setBusy(false); }
   }
   return <>
-    {account.deficit > 0 && <p className="rounded-xl bg-warning-surface p-4 text-warning-foreground">Creator earnings deficit: {usd(account.deficit)}. Future Marketplace earnings will offset this amount before becoming available. New withdrawals are blocked.</p>}
+    {account.deficit > 0 && <AppNotification className="rounded-xl bg-warning-surface p-4 text-warning-foreground">Creator earnings deficit: {usd(account.deficit)}. Future Marketplace earnings will offset this amount before becoming available. New withdrawals are blocked.</AppNotification>}
     <div className="grid min-w-0 gap-4 @min-[680px]/earnings:grid-cols-2">
       <EarningsCard label="PayPal Payout Account" className="grid content-start gap-3">
         <div className="flex items-start gap-3"><EarningsIcon><PayPalMark /></EarningsIcon><div className="grid min-w-0 gap-0.5"><h2>PayPal Payout Account</h2><p className="text-muted-foreground">Required before requesting a withdrawal.</p></div><span className="ml-auto shrink-0 rounded-full bg-accent px-2 py-0.5 text-[11px] leading-4 font-medium text-link">Required</span></div>
@@ -77,10 +79,10 @@ export function WithdrawalPanel({ account, page, clerkUserId, onChanged, marketp
           <Button type="submit" className="w-fit shadow-none disabled:bg-muted disabled:bg-none disabled:text-muted-foreground disabled:opacity-100" disabled={busy || confirmed || account.available < 500 || account.deficit > 0 || !account.email}>Request Withdrawal</Button>
           {confirmed && <Button type="button" variant="outline" className="w-fit" disabled={busy} onClick={() => { try { localStorage.removeItem(`sceenyk-withdrawal:${clerkUserId}`); } catch { /* Storage is advisory. */ } request.current = null; setConfirmed(false); setAmount(""); setMessage(""); }}>Request another withdrawal</Button>}
         </form>
-        <p className="text-muted-foreground">Refunds may reduce or cancel a pending withdrawal. Payouts use PayPal Sandbox.</p>
+        <p className="text-muted-foreground">Refunds may reduce or cancel a pending withdrawal. Payouts use PayPal.</p>
       </EarningsCard>
     </div>
-    {message && <p role="status" aria-live="polite" className="rounded-lg border border-border bg-muted p-3 text-muted-foreground">{message}</p>}
+    {message && <AppNotification role="status" aria-live="polite" className="rounded-lg border border-border bg-muted p-3 text-muted-foreground">{message}</AppNotification>}
     <div className="grid min-w-0 items-start gap-4 @min-[680px]/earnings:grid-cols-2">
       <EarningsCard label="Payout History" className="grid content-start gap-3">
         <div className="flex items-center gap-3"><EarningsIcon small><ReceiptText /></EarningsIcon><h2>Payout History</h2></div>
@@ -90,7 +92,7 @@ export function WithdrawalPanel({ account, page, clerkUserId, onChanged, marketp
           <p className="text-muted-foreground">Requested {usd(w.requested)} on {new Date(w.requestedAt).toLocaleString()}</p>
           <p className="text-muted-foreground">Hold until {new Date(w.holdUntil).toLocaleString()}</p>
           {w.paidAt && <p>Paid {new Date(w.paidAt).toLocaleString()}</p>}
-          {w.reviewRequired && <p className="text-warning-foreground">PayPal reported a return after payout. Contact support to reconcile it; the original paid record is preserved.</p>}
+          {w.reviewRequired && <AppNotification className="text-warning-foreground">PayPal reported a return after payout. Contact support to reconcile it; the original paid record is preserved.</AppNotification>}
           {w.failureMessage && <p className="text-muted-foreground">{w.failureMessage}</p>}
         </article>)}
         {(account.total > 0 || page > 1) && <MarketplacePagination total={account.total} page={page} pageSize={12} itemLabel="withdrawal" href={value => `/credits/earnings?page=${value}`} />}

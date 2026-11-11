@@ -8,6 +8,8 @@ import { loadOwnedListingsAction } from "@/app/actions/owned-listings";
 import type { ListingPage, OwnedListing } from "@/lib/marketplace/contract";
 import { appendUniqueListings, listingScrollRoot } from "./infinite-listings";
 import { ManageTemplateCard } from "./manage-template-card";
+import { AppNotification } from "@/components/notifications/app-notification";
+
 
 export function OwnedInfiniteGallery({ initial, clerkUserId }: { initial: ListingPage<OwnedListing>; clerkUserId: string }) {
   const [items, setItems] = useState(initial.items);
@@ -67,7 +69,7 @@ export function OwnedInfiniteGallery({ initial, clerkUserId }: { initial: Listin
       [&&]:text-[color:var(--muted-foreground)] [&&]:text-[length:12px]
     `} role="status" aria-live="polite">
       {loading && <>Loading more templates…</>}
-      {error && <span>More templates couldn’t be loaded. <button type="button" onClick={() => setError(false)} className="underline underline-offset-4">Try loading more</button></span>}
+      {error && <AppNotification role="alert">More templates couldn’t be loaded. <button type="button" onClick={() => setError(false)} className="underline underline-offset-4">Try loading more</button></AppNotification>}
     </div>
   </Tooltip.Provider>;
 }

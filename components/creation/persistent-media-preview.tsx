@@ -7,6 +7,8 @@ import type { ProjectAsset } from "@/lib/media/types";
 import { Button } from "@/components/ui/button";
 import { RefreshCw } from "lucide-react";
 import { MediaPreviewSkeleton } from "@/components/ui/skeleton";
+import { AppNotification } from "@/components/notifications/app-notification";
+
 
 export function PersistentMediaPreview({ asset, thumbnail = false, passiveThumbnail = false, onSelect }: { asset: ProjectAsset; thumbnail?: boolean; passiveThumbnail?: boolean; onSelect?: () => void }) {
   const [source, setSource] = useState<{ url?: string; error?: string }>({});
@@ -47,9 +49,9 @@ export function PersistentMediaPreview({ asset, thumbnail = false, passiveThumbn
   if (source.error)
     return (
       <div className="rounded-lg bg-field p-5">
-        <p role="status" className="text-body-sm text-muted-foreground">
+        <AppNotification role="status" className="text-body-sm text-muted-foreground">
           {source.error}
-        </p>
+        </AppNotification>
         <Button
           type="button"
           variant="outline"

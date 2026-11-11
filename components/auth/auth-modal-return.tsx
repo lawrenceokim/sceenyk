@@ -4,6 +4,8 @@ import { Suspense, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { useAuth, useClerk } from "@clerk/nextjs";
 import { useAuthAvailable } from "./auth-availability";
+import { AppNotification } from "@/components/notifications/app-notification";
+
 
 function ModalReturn() {
   const params = useSearchParams();
@@ -39,13 +41,13 @@ function UnavailableReturn() {
   if (params.get("auth") !== "sign-in" && params.get("auth") !== "sign-up")
     return null;
   return (
-    <p
+    <AppNotification
       role="status"
       className="border-b border-border bg-accent px-6 py-3 text-center text-body-sm text-accent-foreground"
     >
       Sign in is temporarily unavailable. You can still explore Sceenyk and the
       creation workspace.
-    </p>
+    </AppNotification>
   );
 }
 

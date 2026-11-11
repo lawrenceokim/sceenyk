@@ -9,6 +9,8 @@ import { AccountAction } from "@/components/account-action";
 import { saveCreatorProfileAction, removeCreatorAvatarAction } from "@/app/actions/creator-profile";
 import { avatarMaximumBytes, avatarMimeTypes, type CreatorProfile } from "@/lib/marketplace/creators/contract";
 import { CreatorAvatar } from "./creator-avatar";
+import { AppNotification } from "@/components/notifications/app-notification";
+
 
 export function CreatorProfileEditor(props: { clerkUserId: string; profile: CreatorProfile | null }) {
   const { isLoaded, userId } = useAuth();
@@ -251,7 +253,7 @@ function Editor({ initial }: { initial: CreatorProfile | null }) {
       </fieldset>
       {!profile && <p className="text-caption text-muted-foreground">Save your public profile first.</p>}
     </section>
-    <p role="status" aria-live="polite" className={`min-h-6 text-body-sm ${failed ? "text-destructive" : "text-success-foreground"}`}>{message}</p>
+    <AppNotification role="status" aria-live="polite" className={`min-h-6 text-body-sm ${failed ? "text-destructive" : "text-success-foreground"}`}>{message}</AppNotification>
     {profile && <Link className={`
       [@layer_components]:inline-flex [@layer_components]:min-h-[var(--control-height)] [@layer_components]:items-center
       [@layer_components]:gap-[var(--space-1)] [@layer_components]:text-[color:var(--muted-foreground)]

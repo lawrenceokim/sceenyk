@@ -7,6 +7,8 @@ import { enqueueUgcGenerationAction, ugcReadinessAction } from "@/app/actions/ug
 import { ugcInputIssue, uniqueUgcIssues, type UgcInputIssue, type UgcReadiness } from "@/lib/ugc-jobs/input-contract";
 import { isUgcJobActive } from "@/lib/ugc-jobs/contract";
 import type { UgcProgressState } from "./ugc-progress-preview";
+import { AppNotification } from "@/components/notifications/app-notification";
+
 
 export function UgcGenerationControls({ projectId, revision, localIssues, dirty, hasLocalReferences, mediaBusy, mediaError, signedIn, authReady, progress }: {
   projectId: string | null; revision: string; localIssues: UgcInputIssue[];
@@ -73,10 +75,10 @@ export function UgcGenerationControls({ projectId, revision, localIssues, dirty,
     </Button>
     {!signedIn && <AccountAction intent="sign-in" disabled={!authReady}>Sign in to generate</AccountAction>}
     <div id={helpId} className="space-y-1 text-caption text-muted-foreground" role="status" aria-live="polite">
-      {issues.map(issue => <p key={`${issue.code}:${issue.field}`}>{issue.message}</p>)}
+      {issues.map(issue => <AppNotification key={`${issue.code}:${issue.field}`} tone="warning">{issue.message}</AppNotification>)}
       {job && <p>{job.message}</p>}
       {!job && <p>Video generation is not available yet.</p>}
-      {progress.error && <p>Generation status unavailable. Check status before preparing another request.</p>}
+      {progress.error && <AppNotification role="alert">Generation status unavailable. Check status before preparing another request.</AppNotification>}
     </div>
     {eligible && !checking && !submission?.busy && !busyJob && <Button type="button" variant="ghost" size="sm" onClick={() => {
       setSubmission(current => current?.key === revisionKey ? undefined : current);

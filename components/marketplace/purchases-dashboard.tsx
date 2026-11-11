@@ -11,6 +11,8 @@ import { usd, type MarketplacePurchaseSummary } from "@/lib/marketplace/payments
 import { AbstractPreview } from "./abstract-preview";
 import { PurchasePreview } from "@/components/purchases/purchase-preview";
 import { MarketplacePagination } from "./pagination";
+import { AppNotification } from "@/components/notifications/app-notification";
+
 
 type Props = {
   purchases?: { items: MarketplacePurchaseSummary[]; total: number };
@@ -51,7 +53,7 @@ export function PurchasesDashboard({ purchases, previews = {}, page, busy, error
       </Button>
       <p className="flex min-w-0 items-start gap-2.5 text-xs leading-5 text-muted-foreground @min-[650px]/purchases:border-l @min-[650px]/purchases:border-border @min-[650px]/purchases:pl-5"><Info aria-hidden="true" className="mt-0.5 size-4 shrink-0" />Template purchases don’t include AI credits or generation usage.</p>
     </div>
-    {(error || message) && <p role={error ? "alert" : "status"} className={`rounded-xl border p-3 text-xs leading-5 ${error ? "border-destructive/20 bg-destructive-surface text-destructive" : "border-primary/20 bg-primary/5 text-muted-foreground"}`}>{error || message}</p>}
+    {(error || message) && <AppNotification role={error ? "alert" : "status"} className={`rounded-xl border p-3 text-xs leading-5 ${error ? "border-destructive/20 bg-destructive-surface text-destructive" : "border-primary/20 bg-primary/5 text-muted-foreground"}`}>{error || message}</AppNotification>}
 
     <div className="space-y-4" aria-busy={busy}>
       {purchases?.items.map(purchase => {
@@ -75,7 +77,7 @@ export function PurchasesDashboard({ purchases, previews = {}, page, busy, error
             <div className="flex min-w-0 items-start gap-3">
               <div className="min-w-0 flex-1">
                 {purchase.projectId ? <Button nativeButton={false} render={<Link href={`/projects/${purchase.projectId}`} />} className="h-auto min-h-10 w-full justify-start gap-2 rounded-lg px-3 py-2 text-[13px] font-semibold whitespace-normal [@media(pointer:coarse)]:min-h-11"><Folder aria-hidden="true" className="size-4 shrink-0" /><span className="flex-1 text-left">Open adopted project</span><ArrowRight aria-hidden="true" className="size-4 shrink-0" /></Button>
-                  : purchase.status !== "failed" ? <Button variant="outline" disabled={busy} onClick={() => void onContinueCheckout(purchase)} className="h-auto min-h-10 w-full gap-2 rounded-lg px-3 py-2 text-[13px] whitespace-normal [@media(pointer:coarse)]:min-h-11"><RefreshCw aria-hidden="true" className="size-4 shrink-0" />{purchase.status === "completed" ? "Recover adopted project" : "Continue saved Sandbox checkout"}</Button>
+                  : purchase.status !== "failed" ? <Button variant="outline" disabled={busy} onClick={() => void onContinueCheckout(purchase)} className="h-auto min-h-10 w-full gap-2 rounded-lg px-3 py-2 text-[13px] whitespace-normal [@media(pointer:coarse)]:min-h-11"><RefreshCw aria-hidden="true" className="size-4 shrink-0" />{purchase.status === "completed" ? "Recover adopted project" : "Continue saved checkout"}</Button>
                     : <p className="text-xs leading-5 text-muted-foreground">Payment failed. Reconciliation is required before another charge.</p>}
               </div>
               <Menu.Root>
@@ -96,7 +98,7 @@ export function PurchasesDashboard({ purchases, previews = {}, page, busy, error
         <p className="max-w-md text-xs leading-5 text-muted-foreground">{purchases.total ? "Return to your latest purchases to reopen an adopted project." : "Discover a creator template and make it your own."}</p>
         <Button variant="outline" nativeButton={false} render={<Link href={purchases.total ? "/marketplace/purchases" : "/marketplace"} />} className="h-auto min-h-9 px-3 py-2 text-xs [@media(pointer:coarse)]:min-h-11">{purchases.total ? "Latest purchases" : "Browse Marketplace"}</Button>
       </div>}
-      {!purchases && <p role="status" className="rounded-xl border border-border p-5 text-xs text-muted-foreground">Saved purchases are unavailable. Check purchases to try again.</p>}
+      {!purchases && <AppNotification role="status" className="rounded-xl border border-border p-5 text-xs text-muted-foreground">Saved purchases are unavailable. Check purchases to try again.</AppNotification>}
     </div>
 
     {purchases && <div className="flex min-w-0 items-center justify-center gap-5 pt-3 sm:pt-6">

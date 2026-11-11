@@ -38,6 +38,8 @@ import {
   packageBuildLabel,
   packageBuildError,
 } from "@/lib/final-video-generation-v3/package-status";
+import { AppNotification } from "@/components/notifications/app-notification";
+
 
 const money = (amount: number | null) => {
   if (amount === null) return "Unavailable";
@@ -59,9 +61,9 @@ function PackageStatus({
     <div className="space-y-2 text-sm">
       <p role="status">{packageBuildLabel(d, task.status)}</p>
       {d.code && (
-        <p role="alert" className="text-destructive">
+        <AppNotification role="alert" className="text-destructive">
           {packageBuildError(d.code)}
-        </p>
+        </AppNotification>
       )}
 
     </div>
@@ -590,9 +592,9 @@ export function V3WorkflowPreview({
             </p>
           )}
           {error && actionArea === panel && (
-            <p role="alert" className="break-words text-destructive">
+            <AppNotification role="alert" className="break-words text-destructive">
               {v3ActionErrorMessage(error)}
-            </p>
+            </AppNotification>
           )}
           {task && ["queued", "running"].includes(task.status) && (
             <p role="status" className="text-muted-foreground">
@@ -606,23 +608,23 @@ export function V3WorkflowPreview({
             !task.current &&
             task.status === "queued" &&
             !task.providerStarted && (
-              <p role="status" className="text-warning-foreground">
+              <AppNotification role="status" className="text-warning-foreground">
                 Inputs changed. Generate again to replace the unstarted request.
-              </p>
+              </AppNotification>
             )}
           {task &&
             ["failed", "reconciliation_required"].includes(task.status) &&
             !task.diagnostics &&
             !task.location && (
-              <p role="status" className="text-destructive">
+              <AppNotification role="status" className="text-destructive">
                 {v3ActionErrorMessage(task.errorCode ?? "V3_TASK_FAILED")}
-              </p>
+              </AppNotification>
             )}
           {kind !== "location" && task?.diagnostics && (
             <div className="space-y-2">
-              <p role="status" className="text-muted-foreground">
+              <AppNotification role="status" className="text-muted-foreground">
                 {referenceFailureLabel(kind, task.diagnostics)}
-              </p>
+              </AppNotification>
               {task.canStartNew && (
                 <p className="text-muted-foreground">
                   Generate starts a new request. The previous provider outcome
@@ -679,11 +681,11 @@ export function V3WorkflowPreview({
                 </div>
               ) : !current.current ? (
                 <div className="space-y-2">
-                  <p role="status" className="text-warning-foreground">
+                  <AppNotification role="status" className="text-warning-foreground">
                     {current.kind === "character" || current.kind === "product"
                       ? "Visual Style or source changed — regenerate and approve this sheet."
                       : "Stale — regenerate and approve."}
-                  </p>
+                  </AppNotification>
                   {(current.kind === "character" || current.kind === "product") && (
                     <Button variant="outline" disabled={creativeLocked || busy} onClick={() => void act("review_artifact", {
                       id: current.id, kind: current.kind, expectedVersion: current.version, decision: "reject",
@@ -768,11 +770,11 @@ export function V3WorkflowPreview({
                 {workspace.tasks
                   .filter((t) => t.referenceCleanup && t.status === "failed")
                   .map((t) => (
-                    <p key={t.id} role="alert">
+                    <AppNotification key={t.id} role="alert">
                       {v3ActionErrorMessage(
                         t.errorCode ?? "V3_REFERENCE_DISCARD_STORAGE_FAILED",
                       )}
-                    </p>
+                    </AppNotification>
                   ))}
                 <Button
                   variant="outline"
@@ -847,9 +849,9 @@ export function V3WorkflowPreview({
           </div>
           <div className="min-h-0 min-w-0 space-y-4 break-words">
             {dirty && (
-              <p role="status" className="text-sm text-warning-foreground">
+              <AppNotification role="status" className="text-sm text-warning-foreground">
                 Save changes before generating or approving.
-              </p>
+              </AppNotification>
             )}
             {busy && actionArea === "workflow" && view !== "final" && (
               <p role="status" className="text-sm text-muted-foreground">
@@ -857,14 +859,14 @@ export function V3WorkflowPreview({
               </p>
             )}
             {workflowError && actionArea === "workflow" && (view !== "progress" || !workspace) && (
-              <p
+              <AppNotification
                 role="alert"
                 className="break-words rounded-lg border border-destructive/30 p-3 text-sm"
               >
                 {view !== "final" && workflowError !== "V3_DIRECT_APPROVAL_SETUP_REQUIRED" && /PACKAGE|STORYBOARD|APPROV/.test(workflowError)
                   ? packageBuildError(workflowError)
                   : v3ActionErrorMessage(workflowError)}
-              </p>
+              </AppNotification>
             )}
             {!workspace ? (
               <p role="status" className="text-sm text-muted-foreground">
@@ -899,7 +901,7 @@ export function V3WorkflowPreview({
                     >
                       Generate Storyboard
                     </Button>
-                    {workspace.proDurationRetained && <p role="status" className="text-sm text-muted-foreground">Your Pro duration and story are preserved. Switch to Pro or choose a Basic duration to continue.</p>}
+                    {workspace.proDurationRetained && <AppNotification role="status" className="text-sm text-muted-foreground">Your Pro duration and story are preserved. Switch to Pro or choose a Basic duration to continue.</AppNotification>}
                     {storyboardLoading && <V3StoryboardSkeleton />}
                     {storyboards.map((a) => (
                         <article
@@ -908,13 +910,13 @@ export function V3WorkflowPreview({
                         >
                           <V3StoryboardContent storyboard={a.storyboard!} />
                           {!a.current ? (
-                            <p
+                            <AppNotification
                               role="status"
                               className="text-sm text-warning-foreground"
                             >
                               Storyboard is stale. Regenerate after approving
                               current references.
-                            </p>
+                            </AppNotification>
                           ) : a.approved ? (
                             <p className="text-sm">{a.storyboard?.version === "director-storyboard-connected-v1" ? "Connected Storyboard approved. Build and approve its Generation Package, then generate clips in Final Video." : "Storyboard approved"}</p>
                           ) : (
@@ -952,7 +954,7 @@ export function V3WorkflowPreview({
                   <section className="min-w-0 space-y-3">
                     <h2 className="font-semibold">Package &amp; Estimates</h2>
                     {workspace.selectedResolution && <p className="text-xs text-muted-foreground">Selected output: {workspace.selectedResolution}</p>}
-                    {workspace.resolutionPricingAvailable === false && <p role="status" className="text-sm text-warning-foreground">Pricing for {workspace.selectedResolution} is not configured. Choose 480p or wait for a verified rate before approving paid generation.</p>}
+                    {workspace.resolutionPricingAvailable === false && <AppNotification role="status" className="text-sm text-warning-foreground">Pricing for {workspace.selectedResolution} is not configured. Choose 480p or wait for a verified rate before approving paid generation.</AppNotification>}
                     <Button
                       variant="default"
                       className="w-full max-w-full whitespace-normal sm:w-auto"
@@ -971,14 +973,14 @@ export function V3WorkflowPreview({
                     </Button>
                     {packageLoading && <V3PackageSkeleton />}
                     {workspace.packageStale && (
-                      <p
+                      <AppNotification
                         role="status"
                         className="text-sm text-warning-foreground"
                       >
                         This package needs rebuilding. Regenerate and approve
                         references and Storyboard for your saved style and
                         direction first.
-                      </p>
+                      </AppNotification>
                     )}
                     {packageTask && !packageLoading && !packageReady && (
                       <PackageStatus
@@ -1096,12 +1098,12 @@ export function V3WorkflowPreview({
                         </div>
                       </div>
                         {p.transportEnabled && p.issues.some(issue => !["V3_AUTHORIZATION_REQUIRED", "V3_SEGMENT_AUTHORIZATION_REQUIRED"].includes(issue)) && (
-                          <p
+                          <AppNotification
                             role="status"
                             className="text-sm text-muted-foreground"
                           >
                             Video generation is awaiting setup or approval.
-                          </p>
+                          </AppNotification>
                         )}
                       </>
                     )}
@@ -1141,7 +1143,7 @@ export function V3WorkflowPreview({
                     </>}
                     {workspace.tasks.filter(task => !workspace.multiClip && task.kind === "join" && task.status === "failed").map(task => (
                       <div key={task.id} className="space-y-2">
-                        <p role="alert" className="text-sm text-muted-foreground">The final video could not be joined. Recover the saved segments or see Progress.</p>
+                        <AppNotification role="alert" className="text-sm text-muted-foreground">The final video could not be joined. Recover the saved segments or see Progress.</AppNotification>
                         <Button variant="outline" disabled={locked} onClick={() => void act("recover_task", { id: task.id })}>Recover local join</Button>
                       </div>
                     ))}

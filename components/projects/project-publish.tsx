@@ -4,6 +4,8 @@ import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { LoaderCircle } from "lucide-react";
 import { initializeTemplateAction } from "@/app/actions/marketplace";
+import { AppNotification } from "@/components/notifications/app-notification";
+
 
 export function ProjectPublish({ projectId, listingId, compact = false }: { projectId: string; listingId?: string | null; compact?: boolean }) {
   const router = useRouter();
@@ -32,6 +34,6 @@ export function ProjectPublish({ projectId, listingId, compact = false }: { proj
       {pending && <LoaderCircle className="size-3 shrink-0 motion-safe:animate-spin" aria-hidden="true" />}
       <span className="truncate">{pending ? "Opening..." : label}</span>
     </button>
-    {error && <span role="alert" className="max-w-full break-words text-[11px] text-destructive">{error}</span>}
+    {error && <AppNotification role="alert" className="max-w-full break-words text-[11px] text-destructive">{error}</AppNotification>}
   </span>;
 }

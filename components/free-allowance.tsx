@@ -7,6 +7,8 @@ import { freeAllowanceAction } from "@/app/actions/accounting";
 import type { FreeAllowance } from "@/lib/accounting/types";
 import { Button } from "@/components/ui/button";
 import { useAuthAvailable } from "@/components/auth/auth-availability";
+import { AppNotification } from "@/components/notifications/app-notification";
+
 
 type AllowanceProps = {
   signedIn?: boolean;
@@ -102,7 +104,7 @@ function AllowanceRead({ signedIn = false, refreshKey = "", compact = false, pre
     </div>
     {allowance && allowance.reserved > 0 && <span className="text-xs text-muted-foreground">{allowance.reserved} reserved in progress</span>}
     {allowance?.reviewRequired && <span className="text-xs text-muted-foreground">Use credits for AI generation.</span>}
-    {error && <Button type="button" variant="outline" size="sm" onClick={() => setRevision(current => current + 1)}>Check allowance</Button>}
+    {error && <><AppNotification tone="error">{error}</AppNotification><Button type="button" variant="outline" size="sm" onClick={() => setRevision(current => current + 1)}>Check allowance</Button></>}
   </div>;
   return (
     <div className="space-y-2 text-caption leading-relaxed text-muted-foreground">
@@ -119,7 +121,7 @@ function AllowanceRead({ signedIn = false, refreshKey = "", compact = false, pre
       {allowance?.reviewRequired && <p>Use credits for AI generation.</p>}
       {signedIn && error && (
         <>
-          <p role="alert" className="text-destructive">{error}</p>
+          <AppNotification role="alert" className="text-destructive">{error}</AppNotification>
           <Button
             type="button"
             variant="outline"

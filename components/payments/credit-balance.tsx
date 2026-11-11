@@ -8,10 +8,12 @@ import { creditSummaryAction } from "@/app/actions/payments";
 import { creditRefreshKey } from "@/lib/accounting/client-events";
 import { generationCreditsFromMicrousd } from "@/lib/payments/credit-pricing";
 import { CreditTopUp } from "./credit-top-up";
+import { AppNotification } from "@/components/notifications/app-notification";
+
 
 export function GenerationCreditEstimate({ costMicrousd }: { costMicrousd: number | null }) {
   const configured = useAuthAvailable();
-  if (costMicrousd === null) return <p className="text-xs text-muted-foreground">Generation credit estimate unavailable.</p>;
+  if (costMicrousd === null) return <AppNotification className="text-xs text-muted-foreground">Generation credit estimate unavailable.</AppNotification>;
   const requiredCredits = generationCreditsFromMicrousd(costMicrousd);
   return <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2 text-xs">
     <p>Estimated paid generation requirement: <strong>{requiredCredits.toLocaleString()} credits</strong>.</p>
@@ -76,10 +78,10 @@ function BalanceRead({ compact, requiredCredits }: { compact: boolean; requiredC
       [@media_(pointer:_coarse)]:[.workspace-settings-inner_&&]:min-h-[44px]
     `} aria-label={`Paid credits: ${balance}. Buy credits`}>
     <span aria-live="polite">Paid credits: {!loaded && !summary ? <Skeleton className="inline-block h-4 w-10 align-middle" /> : balance}</span>
-    {summary?.lowBalance && <span className="text-warning-foreground">Low balance</span>}
   </Link>
+    {summary?.lowBalance && <AppNotification tone="warning">Low paid credit balance. Top up when you need more.</AppNotification>}
     {requiredCredits !== undefined && summary && summary.available < requiredCredits && <>
-      <span className="text-warning-foreground">Insufficient paid credits. Free allowance stays separate.</span>
+      <AppNotification tone="warning">Insufficient paid credits. Free allowance stays separate.</AppNotification>
       <CreditTopUp />
     </>}
   </> : <span aria-live="polite">{!loaded && !summary ? <Skeleton className="inline-block h-4 w-10 align-middle" /> : balance}</span>;

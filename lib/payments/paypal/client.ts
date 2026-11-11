@@ -64,10 +64,10 @@ async function createOrder(purchase: PayPalPurchase, description: string, return
   const body = {
     intent: "CAPTURE",
     purchase_units: [{ reference_id: purchase.listing_id ?? purchase.id, custom_id: purchase.id, invoice_id: purchase.listing_id ? `marketplace:${purchase.id}` : purchase.id,
-      description: `Sceenyk Sandbox — ${description}`.slice(0, 127),
+      description: `Sceenyk — ${description.replace(/\bTest Pack\b/g, "Pack")}`.slice(0, 127),
       amount: { currency_code: purchase.currency, value: purchaseAmount(purchase) } }],
     payment_source: { paypal: { experience_context: {
-      brand_name: "Sceenyk Sandbox", shipping_preference: "NO_SHIPPING", user_action: "PAY_NOW",
+      brand_name: "Sceenyk", shipping_preference: "NO_SHIPPING", user_action: "PAY_NOW",
       return_url: `${origin}${returnPath}?checkout=return`, cancel_url: `${origin}${returnPath}?checkout=cancel`,
     } } },
   };

@@ -5,6 +5,8 @@ import { Trash2 } from "lucide-react";
 import { deleteTemplateAction } from "@/app/actions/marketplace";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogTrigger, DialogContent, DialogTitle, DialogDescription, DialogClose } from "@/components/ui/dialog";
+import { AppNotification } from "@/components/notifications/app-notification";
+
 
 export function TemplateDelete({ listingId, title }: { listingId: string; title: string }) {
   const [open, setOpen] = useState(false);
@@ -31,7 +33,7 @@ export function TemplateDelete({ listingId, title }: { listingId: string; title:
       <DialogTitle>Delete template</DialogTitle>
       <DialogDescription>Are you sure you want to delete <strong className="break-words text-foreground">“{title}”</strong>? It will be removed from My Templates and Marketplace. Your original project will be kept.</DialogDescription>
       <form onSubmit={event => { event.preventDefault(); startTransition(async () => { await remove(); }); }}>
-        {error && <p role="alert" className="text-xs text-destructive">{error}</p>}
+        {error && <AppNotification role="alert" className="text-xs text-destructive">{error}</AppNotification>}
         <div className="mt-3.5 flex items-center justify-end gap-2">
           <DialogClose render={<Button size="xs" className={actionClass} variant="outline" type="button" disabled={busy} autoFocus />}>Cancel</DialogClose>
           <Button size="xs" className={actionClass} variant="destructive" type="submit" disabled={busy} aria-busy={busy}>{busy ? "Deleting…" : "Delete"}</Button>

@@ -5,6 +5,8 @@ import { Download } from "lucide-react";
 import { StudioToolbarAction } from "./studio-toolbar-actions";
 import { StudioPropertyControls } from "./studio-property-controls";
 import { MediaPreviewSkeleton } from "@/components/ui/skeleton";
+import { AppNotification } from "@/components/notifications/app-notification";
+
 type Video={id:string;url:string;downloadUrl:string;durationMs:number;width:number;height:number};
 export function FinalVideoResult({projectId,jobId}:{projectId:string;jobId:string}){
   const [attempt,setAttempt]=useState(0),[state,setState]=useState<{video?:Video;error?:string}>({});
@@ -37,7 +39,7 @@ export function FinalVideoResult({projectId,jobId}:{projectId:string;jobId:strin
       [[data-workspace-shell]_&&:hover]:[box-shadow:none] [[data-workspace-shell]_&&:hover]:[border-color:var(--input)]
     `} href={state.video.downloadUrl} download="sceenyk-video.mp4" aria-label="Export video"><Download className="size-4" aria-hidden="true" /><span>Export</span></a></StudioToolbarAction></>}
     {!state.video&&!state.error&&<MediaPreviewSkeleton className="aspect-video max-h-96 w-full rounded-lg max-767:min-h-0 max-767:flex-1 max-767:max-h-full" />}
-    <StudioPropertyControls>{state.error&&<p role="alert" className="text-body-sm text-destructive">{state.error}</p>}
+    <StudioPropertyControls>{state.error&&<AppNotification role="alert" className="text-body-sm text-destructive">{state.error}</AppNotification>}
     <Button type="button" variant="outline" onClick={()=>{setState({});setAttempt(n=>n+1);}}>Refresh video</Button></StudioPropertyControls>
   </div>;
 }

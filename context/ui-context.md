@@ -1,5 +1,13 @@
 # UI Context
 
+## Payment presentation language (2026-11-11)
+
+Customer-facing checkout, Marketplace adoption, payouts, purchase history, landing pricing and help text use neutral PayPal/payment wording. App titles and merchant branding use Sceenyk. Historical fixed-pack display names omit the Test qualifier without rewriting saved purchase snapshots. Keep payment totals, fees, pricing limits, pending/unavailable states and recovery explanations accurate. These copy changes do not enable PayPal Live, alter the Sandbox-only transport/verification boundaries or assert that test transactions settle real money; operator documentation and environment identifiers retain the actual configuration.
+
+## Shared slide-in notification policy (2026-11-11)
+
+Use the shared notification renderer for application errors, warnings, validation and action-result feedback instead of inline alert panels. Reuse the existing top-right slide-in appearance, semantic light/dark tokens, restrained reduced-motion behavior and dismiss control. Keep confirmations, editor/recovery controls, field labels, ongoing progress and structural empty/loading states in their appropriate UI. Feedback must remain visible and keyboard-accessible above native and shared dialogs; do not steal focus or re-run actions when displaying a notice. Studio shows its complete current duration/resolution catalog with unavailable options disabled but explainable by pointer/keyboard. Editable drafts reset to the allowed 5-second/480p testing choices; approved projects and approval locks preserve saved settings.
+
 ## Purchases library reference (2026-11-10)
 
 Purchases sits directly below Templates using the existing icon/navigation classes and descendant active state. `/purchases` uses a compact My Purchases heading, Browse Marketplace action and responsive three-column preview cards with acquisition badges, saved price/date, creator and settings chips. Details use a large reviewed thumbnail and a desktop right-hand column for metadata, actions, shared settings/instructions and the storyboard availability state. Use real acquisitions only, shared light/dark tokens, existing font hierarchy, native scrolling, page-local matched skeletons and static Tailwind utilities. Keep `/marketplace/purchases` checkout history/recovery intact. [Data/privacy/setup/manual checks](purchases.md).

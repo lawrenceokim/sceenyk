@@ -10,10 +10,12 @@ import { EarningsDashboard } from "./earnings-dashboard";
 import { withdrawalAccountAction } from "@/app/actions/creator-withdrawals";
 import type { WithdrawalAccount } from "@/lib/marketplace/withdrawals/contract";
 import { EarningsSkeleton, PurchasesSkeleton } from "@/components/payments/financial-skeletons";
+import { AppNotification } from "@/components/notifications/app-notification";
+
 
 type Props = { purchasePreviews?: Record<string, ReactNode>; clerkUserId: string; page: number; earnings?: CreatorEarnings; withdrawals?: WithdrawalAccount; purchases?: { items: MarketplacePurchaseSummary[]; total: number } };
 export function FinancialPanel(props: Props) {
-  return useAuthAvailable() ? <AccountPanel {...props} /> : <p>Sign in is temporarily unavailable.</p>;
+  return useAuthAvailable() ? <AccountPanel {...props} /> : <AppNotification>Sign in is temporarily unavailable.</AppNotification>;
 }
 function AccountPanel(props: Props) {
   const { isLoaded, userId } = useAuth();

@@ -11,23 +11,24 @@ import type { ReactNode } from "react";
 const toneOptions = tones.map(value => ({ value, label: value, image: `/images/pro-properties/tone-${value.toLowerCase()}.webp` }));
 const typeOptions = ugcTypes.map(option => ({ ...option, image: `/images/pro-properties/type-${option.value}.webp` }));
 
-export function StudioGenerationProperties({ studioMode, settings, onChange, ugcType, onUgcTypeChange, readOnly = false }: {
+export function StudioGenerationProperties({ studioMode, settings, onChange, ugcType, onUgcTypeChange, readOnly = false, durationReadOnly = readOnly }: {
   studioMode: StudioMode;
   settings: CreationSettings;
   onChange: (settings: CreationSettings) => void;
   ugcType?: UgcType;
   onUgcTypeChange?: (value: UgcType) => void;
   readOnly?: boolean;
+  durationReadOnly?: boolean;
 }) {
   const view = (children: ReactNode) => readOnly ? <fieldset disabled className="min-w-0">{children}</fieldset> : children;
   const changeSettings = (next: CreationSettings) => { if (!readOnly) onChange(next); };
   const changeType = (next: UgcType) => { if (!readOnly) onUgcTypeChange?.(next); };
   if (studioMode !== "pro") return <StudioInspectorSection key="basic-style" title="Style & pacing">
-    {view(<GenerationSettings settings={settings} onChange={changeSettings} ugcType={ugcType} onUgcTypeChange={onUgcTypeChange ? changeType : undefined} />)}
+    <GenerationSettings settings={settings} onChange={changeSettings} readOnly={readOnly} durationReadOnly={durationReadOnly} ugcType={ugcType} onUgcTypeChange={onUgcTypeChange ? changeType : undefined} />
   </StudioInspectorSection>;
   return <>
     <StudioInspectorSection key="duration" title="Duration">
-      {view(<DurationGallery value={settings.duration} onChange={duration => changeSettings({ ...settings, duration })} />)}
+      <DurationGallery value={settings.duration} readOnly={durationReadOnly} onChange={duration => changeSettings({ ...settings, duration })} />
     </StudioInspectorSection>
     <StudioInspectorSection key="visual-style" title="Visual Style">
       {view(<VisualStyleGallery value={settings.visualStyle} onChange={visualStyle => changeSettings({ ...settings, visualStyle })} />)}

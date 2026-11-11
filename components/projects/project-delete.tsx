@@ -8,6 +8,8 @@ import { deleteProjectAction } from "@/app/actions/projects";
 import { markProjectDeleted } from "@/lib/projects/client-lifecycle";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogTrigger, DialogContent, DialogTitle, DialogDescription, DialogClose } from "@/components/ui/dialog";
+import { AppNotification } from "@/components/notifications/app-notification";
+
 
 export function ProjectDelete({ projectId, title }: { projectId: string; title: string }) {
   const scope = useContext(ProjectsCacheScope);
@@ -57,7 +59,7 @@ export function ProjectDelete({ projectId, title }: { projectId: string; title: 
       <DialogTitle>Delete project</DialogTitle>
       <DialogDescription>You are about to delete the project <strong className="break-words text-foreground">“{title}”</strong>. It will be removed from your saved projects.</DialogDescription>
       <form onSubmit={event => { event.preventDefault(); startTransition(async () => { await remove(); }); }}>
-        {error && <p role="alert" className="text-destructive">{error}</p>}
+        {error && <AppNotification role="alert" className="text-destructive">{error}</AppNotification>}
         <div className={"workspace-project-rename-actions [&&]:flex [&&]:items-center [&&]:justify-end [&&]:gap-[8px] [&&]:mt-[14px]"}>
           <DialogClose render={<Button size="xs" className={"workspace-project-rename-button [.workspace-project-rename-actions_&&]:inline-flex [.workspace-project-rename-actions_&&]:items-center [.workspace-project-rename-actions_&&]:justify-center [.workspace-project-rename-actions_&&]:w-[auto] [.workspace-project-rename-actions_&&]:min-w-[64px] [.workspace-project-rename-actions_&&]:h-[28px] [.workspace-project-rename-actions_&&]:min-h-[28px] [.workspace-project-rename-actions_&&]:pt-[0] [.workspace-project-rename-actions_&&]:pr-[10px] [.workspace-project-rename-actions_&&]:pb-[0] [.workspace-project-rename-actions_&&]:pl-[10px] [.workspace-project-rename-actions_&&]:rounded-[6px] [.workspace-project-rename-actions_&&]:text-[length:11px] [.workspace-project-rename-actions_&&]:leading-[18px] [.workspace-project-rename-actions_&&]:font-[500] [@media_(pointer:_coarse)]:[.workspace-project-rename-actions_&&]:min-h-[44px]"} variant="outline" type="button" disabled={busy} autoFocus />}>Cancel</DialogClose>
           <Button size="xs" className={"workspace-project-rename-button [.workspace-project-rename-actions_&&]:inline-flex [.workspace-project-rename-actions_&&]:items-center [.workspace-project-rename-actions_&&]:justify-center [.workspace-project-rename-actions_&&]:w-[auto] [.workspace-project-rename-actions_&&]:min-w-[64px] [.workspace-project-rename-actions_&&]:h-[28px] [.workspace-project-rename-actions_&&]:min-h-[28px] [.workspace-project-rename-actions_&&]:pt-[0] [.workspace-project-rename-actions_&&]:pr-[10px] [.workspace-project-rename-actions_&&]:pb-[0] [.workspace-project-rename-actions_&&]:pl-[10px] [.workspace-project-rename-actions_&&]:rounded-[6px] [.workspace-project-rename-actions_&&]:text-[length:11px] [.workspace-project-rename-actions_&&]:leading-[18px] [.workspace-project-rename-actions_&&]:font-[500] [@media_(pointer:_coarse)]:[.workspace-project-rename-actions_&&]:min-h-[44px]"} variant="destructive" type="submit" disabled={busy}>{busy ? "Deleting…" : "Delete"}</Button>

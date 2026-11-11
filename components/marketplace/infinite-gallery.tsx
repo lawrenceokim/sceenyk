@@ -8,6 +8,8 @@ import type { CategoryId } from "@/lib/projects/options";
 import { ListingCard } from "./listing-card";
 import { z } from "zod";
 import { appendUniqueListings, listingScrollRoot } from "./infinite-listings";
+import { AppNotification } from "@/components/notifications/app-notification";
+
 
 const pageSchema = z.object({ items: z.array(listingSchema.extend({ estimate: z.object({ credits: z.number(), test: z.boolean() }).nullable() })), total: z.number().int().nonnegative(), page: z.number().int().positive(), pageSize: z.literal(12) });
 
@@ -73,7 +75,7 @@ export function MarketplaceInfiniteGallery({ initial, query, category }: { initi
       [&&]:text-[color:var(--muted-foreground)] [&&]:text-[length:12px]
     `} role="status" aria-live="polite">
       {loading && <>Loading more looks…</>}
-      {error && <span>More looks couldn’t be loaded. <button type="button" onClick={() => setError(false)} className="underline underline-offset-4">Try loading more</button></span>}
+      {error && <AppNotification role="alert">More looks couldn’t be loaded. <button type="button" onClick={() => setError(false)} className="underline underline-offset-4">Try loading more</button></AppNotification>}
     </div>
   </>;
 }

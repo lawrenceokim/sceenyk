@@ -1,6 +1,7 @@
 "use client";
 import { Skeleton, SkeletonRegion } from "@/components/ui/skeleton";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { AppNotification } from "@/components/notifications/app-notification";
 import { StudioPropertyControls } from "./studio-property-controls";
 import { Button } from "@/components/ui/button";
 import { setCaptionPreferenceAction, setCaptionStyleAction } from "@/app/actions/captions";
@@ -82,10 +83,10 @@ export function CaptionTrackPreview({ projectId, jobId }: { projectId: string; j
       </Button>
     </div>
     </StudioPropertyControls>
-    <StudioPropertyControls><p role="status" aria-live="polite" className="text-body-sm text-muted-foreground">
-      {error || (track?.status === "timing_issue" ? "Caption timing issue" : track?.status === "ready" ?
-        track.cues.length ? "Captions ready — estimated phrase timing" : "Captions ready — no spoken narration" : "Preparing captions")}
-    </p></StudioPropertyControls>
+    {error ? <AppNotification role="alert">{error}</AppNotification> : track?.status === "timing_issue"
+      ? <AppNotification tone="warning">Caption timing issue</AppNotification> : <StudioPropertyControls><p role="status" aria-live="polite" className="text-body-sm text-muted-foreground">
+        {track?.status === "ready" ? track.cues.length ? "Captions ready — estimated phrase timing" : "Captions ready — no spoken narration" : "Preparing captions"}
+      </p></StudioPropertyControls>}
     {track?.status === "ready" && track.cues.length > 0 && <>
       {data && <SceneCaptionPreview projectId={projectId} jobId={jobId} track={track} enabled={data.enabled}
         style={data.style} savingStyle={savingStyle} onStyleChange={next => void changeStyle(next)} />}

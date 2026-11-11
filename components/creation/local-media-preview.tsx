@@ -4,6 +4,8 @@ import { useMemo, useState, useSyncExternalStore } from "react";
 import Image from "next/image";
 import { AudioLines, TriangleAlert } from "lucide-react";
 import type { LocalMedia } from "./creation-options";
+import { AppNotification } from "@/components/notifications/app-notification";
+
 
 const noServerUrl = () => null;
 
@@ -41,10 +43,10 @@ export function LocalMediaPreview({ media }: { media: LocalMedia }) {
     return (
       <div className="flex min-h-48 flex-col items-center justify-center gap-3 rounded-lg bg-field p-5 text-center">
         <TriangleAlert className="size-6 text-warning" aria-hidden="true" />
-        <p role="status" className="text-body-sm text-muted-foreground">
+        <AppNotification role="status" className="text-body-sm text-muted-foreground">
           Your browser couldn’t preview this file. You can remove it or try
           another format.
-        </p>
+        </AppNotification>
       </div>
     );
   if (!url) return <div className="min-h-48 rounded-lg bg-field" />;

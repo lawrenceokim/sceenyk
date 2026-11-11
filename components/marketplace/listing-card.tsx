@@ -7,6 +7,8 @@ import { CreatorAvatar } from "./creator-avatar";
 import { templateAppearance } from "./template-appearance";
 import { AbstractPreview } from "./abstract-preview";
 import { TemplateMediaPreview } from "./template-media-preview";
+import { AppNotification } from "@/components/notifications/app-notification";
+
 
 export function ListingCreator({ listing }: { listing: Listing }) {
   const identity = <><CreatorAvatar name={listing.creatorName} url={listing.creatorAvatar} /><span className="min-w-0 break-words">By {listing.creatorName}</span></>;
@@ -123,7 +125,7 @@ export function MarketplaceFailure({ href = "/marketplace" }: { href?: string })
       [.workspace-settings-inner_label&&]:pt-[12px] [.workspace-settings-inner_label&&]:pr-[12px]
       [.workspace-settings-inner_label&&]:pb-[12px] [.workspace-settings-inner_label&&]:pl-[12px]
       [.workspace-settings-inner_label&&_svg]:w-[18px] [.workspace-settings-inner_label&&_svg]:h-[18px]
-    `} role="alert"><Store className="size-6 text-link" aria-hidden="true" /><h2 className="text-lg font-semibold">Marketplace is temporarily unavailable</h2><p className="text-body-sm text-muted-foreground">We couldn’t load these listings. Please try again.</p><Link href={href} className={`
+    `} ><Store className="size-6 text-link" aria-hidden="true" /><h2 className="text-lg font-semibold">Marketplace is temporarily unavailable</h2><AppNotification role="alert" className="text-body-sm text-muted-foreground">We couldn’t load these listings. Please try again.</AppNotification><Link href={href} className={`
       [@layer_components]:inline-flex [@layer_components]:min-h-[var(--control-height)] [@layer_components]:items-center
       [@layer_components]:gap-[var(--space-1)] [@layer_components]:text-[color:var(--muted-foreground)]
       [@layer_components]:text-[length:var(--text-body-sm)] [@layer_components]:font-[500]

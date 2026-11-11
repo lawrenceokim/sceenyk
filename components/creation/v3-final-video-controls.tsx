@@ -8,6 +8,8 @@ import type { RuntimeDto } from "@/lib/final-video-generation-v3/runtime-server"
 import { uncheckedQuality } from "@/lib/final-video-generation-v3/runtime-contract";
 import { videoRequestBlocker } from "@/lib/final-video-generation-v3/video-request-status";
 import { useStudioPanels } from "./studio-workspace-panels";
+import { AppNotification } from "@/components/notifications/app-notification";
+
 
 type Action = (action: string, payload?: Record<string, unknown>) => Promise<boolean>;
 
@@ -45,7 +47,7 @@ export function FinalVideoReview({ run, act, busy, segmentCount, generating = fa
         <Button variant="outline" className={compact ? undefined : "min-w-0 flex-1 basis-40"} disabled={busy} onClick={() => setConfirmDelete(true)}>Reject and Delete</Button>
       </div>
       {!compact && <p className="text-xs leading-relaxed text-muted-foreground">Use Preview to watch the video before approving.</p>}
-      {!run.current && <p role="status" className="text-sm text-muted-foreground">This video’s package is out of date. Review the current Generation Package.</p>}
+      {!run.current && <AppNotification role="status" className="text-sm text-muted-foreground">This video’s package is out of date. Review the current Generation Package.</AppNotification>}
       <Dialog open={confirmDelete} onOpenChange={(open) => { if (!busy) setConfirmDelete(open); }}>
         <DialogContent>
           <DialogHeader>
@@ -63,14 +65,14 @@ export function FinalVideoReview({ run, act, busy, segmentCount, generating = fa
     </>}
     {!compact && ["awaiting_review", "approved"].includes(run.state) && <p className="text-xs text-muted-foreground">Requested: {run.resolution}{run.actualDimensions ? ` · Actual: ${run.actualDimensions.width} × ${run.actualDimensions.height}` : ""}</p>}
     {run.state === "deleted" && <p className="text-sm text-muted-foreground">Video deleted. Approve the Generation Package again to generate another video.</p>}
-    {run.submissionBlocker && <p role="status" className="text-sm text-muted-foreground">{videoRequestBlocker(run.submissionBlocker) ?? "Video generation is paused. See Progress for details."}</p>}
-    {run.errorCode && <p role="alert" className="text-sm text-muted-foreground">
+    {run.submissionBlocker && <AppNotification role="status" className="text-sm text-muted-foreground">{videoRequestBlocker(run.submissionBlocker) ?? "Video generation is paused. See Progress for details."}</AppNotification>}
+    {run.errorCode && <AppNotification role="alert" className="text-sm text-muted-foreground">
       {run.errorCode === "OUTPUT_HOST_APPROVAL_REQUIRED" ? "The generated video needs administrator download-host approval before saving. See Progress."
         : run.errorCode === "V3_PROVIDER_OUTCOME_UNKNOWN" ? "The submission outcome is unknown. See Progress before taking another paid action."
         : "This saved video needs attention. See Progress or recover the saved work."}
-    </p>}
-    {run.state === "failed" && !run.errorCode && <p role="alert" className="text-sm text-muted-foreground">Video generation failed. See Progress for details.</p>}
-    {run.state === "awaiting_review" && !run.preview && <p role="alert" className="text-sm text-muted-foreground">The saved video preview is unavailable. See Progress before reviewing.</p>}
+    </AppNotification>}
+    {run.state === "failed" && !run.errorCode && <AppNotification role="alert" className="text-sm text-muted-foreground">Video generation failed. See Progress for details.</AppNotification>}
+    {run.state === "awaiting_review" && !run.preview && <AppNotification role="alert" className="text-sm text-muted-foreground">The saved video preview is unavailable. See Progress before reviewing.</AppNotification>}
     {run.state === "queued" && run.submissionBlocker === "V3_REFERENCE_DELIVERY_EXPIRED" &&
       <Button variant="outline" disabled={busy} onClick={() => void act("refresh_video_delivery", { id: run.id })}>Refresh saved request links</Button>}
     {needsRecovery && <Button variant="outline" disabled={busy} onClick={() => void act("recover", { id: run.id })}>

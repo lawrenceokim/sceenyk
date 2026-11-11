@@ -52,6 +52,8 @@ import {
   type CreationSettings,
   type LocalMedia,
 } from "./creation-options";
+import { AppNotification } from "@/components/notifications/app-notification";
+
 
 type WorkspaceProps = {
   initialV3?: RuntimeDto;
@@ -191,6 +193,12 @@ function WorkspaceEditor({
   const { mode: studioMode } = useStudioMode();
   const proCharacters = studioMode === "pro" && (v3 || !projectId);
   const ugcProgress = useUgcProgress(projectId, signedIn && authReady && !v3);
+  // Reuse the existing approval read; completed planning is not approval.
+  // Preserve saved legacy settings until their approval status is known.
+  const approvalUnknown = !!projectId && !v3 && (!authReady || ugcProgress.loading || !!ugcProgress.error);
+  const approvedSettings = creativeLocked || !!initialV3?.runs.some(run => run.state === "approved") ||
+    ugcProgress.job?.finalVideo?.review?.state === "approved";
+  const preserveSettings = approvedSettings || approvalUnknown;
   const showUgcProgress = creationType === "ugc" && (ugcProgress.loading || ugcProgress.error && !ugcProgress.job ||
     !!ugcProgress.job);
   const attemptId = useRef(initialProject?.id ?? null);
@@ -207,14 +215,15 @@ function WorkspaceEditor({
   const selectedFiles = selection.files;
   const [selectedFileId, setSelectedFileId] = useState<string | null>(null);
   const mediaError = selection.error;
-  const [settings, setSettings] = useState<CreationSettings>(
-    lockedDraft?.settings ?? initialProject?.settings ?? restoredDraft?.brief.settings ?? {
+  const [selectedSettings, setSettings] = useState<CreationSettings>(() => {
+    return lockedDraft?.settings ?? initialProject?.settings ?? restoredDraft?.brief.settings ?? {
       aspectRatio: initialPreferences.aspectRatio,
       duration: "5",
       visualStyle: "Original",
       tone: "Storytelling",
-    },
-  );
+    };
+  });
+  const settings: CreationSettings = preserveSettings ? selectedSettings : { ...selectedSettings, duration: "5", resolution: "480p" };
   const category =
     creationCategories.find((item) => item.id === selectedCategory) ??
     creationCategories[2];
@@ -478,11 +487,11 @@ function WorkspaceEditor({
                   revision={JSON.stringify([savedBrief, mediaUpload.assets])} /> : <><StudioPanelPortal panel="workflow">{controls}</StudioPanelPortal><UgcWorkflowPreview key={projectId ?? "new"} projectId={projectId ?? ""} progress={ugcProgress} /></> : undefined}
                 sources={
                   <>
-                    {preferencesUnavailable && <p role="status" className="text-caption text-muted-foreground">Creation defaults unavailable.</p>}
+                    {preferencesUnavailable && <AppNotification role="status" className="text-caption text-muted-foreground">Creation defaults unavailable.</AppNotification>}
                     {restoredDraft?.missingFiles && (
-                      <p role="status" className="text-caption text-warning-foreground">
+                      <AppNotification role="status" className="text-caption text-warning-foreground">
                         Brief restored. Reselect local files.
-                      </p>
+                      </AppNotification>
                     )}
                     {initialOrigin && (
                       <section className={`
@@ -525,7 +534,7 @@ function WorkspaceEditor({
                       </section>
                     )}
                     {project}
-                    {creativeLocked && <p role="status" data-creative-lock={creativeLock.state} className="flex items-start gap-2 rounded-lg border border-primary/20 bg-primary/5 p-2 text-xs text-muted-foreground"><LockKeyhole aria-hidden="true" className="mt-0.5 size-3.5 shrink-0 text-primary" /><span>{creativeLock.state === "locked" ? "Creative inputs locked after the first clip approval. Continue with the remaining clips in Workflow." : "Saved creative inputs are read-only and need review. Your clips and videos are preserved; see Workflow for details."}</span></p>}
+                    {creativeLocked && <AppNotification role="status" data-creative-lock={creativeLock.state} className="flex items-start gap-2 rounded-lg border border-primary/20 bg-primary/5 p-2 text-xs text-muted-foreground"><LockKeyhole aria-hidden="true" className="mt-0.5 size-3.5 shrink-0 text-primary" /><span>{creativeLock.state === "locked" ? "Creative inputs locked after the first clip approval. Continue with the remaining clips in Workflow." : "Saved creative inputs are read-only and need review. Your clips and videos are preserved; see Workflow for details."}</span></AppNotification>}
                     <fieldset disabled={creativeLocked} className="min-w-0"><CategorySelector selected={creationType} onChange={value => { if (!creativeLocked) setCreationType(value); }} /></fieldset>
                     {studioInputs.creationType === "ugc" ? <>
                       <StudioReferenceSources label="Characters" addLabel="Add Character" role="character" references={studioInputs.characters}
@@ -540,7 +549,7 @@ function WorkspaceEditor({
                         onUpload={mediaUpload.upload} onRecover={mediaUpload.recover} uploadStates={mediaUpload.uploadStates}
                         busy={mediaUpload.busy || saveState.status === "saving"} signedIn={signedIn} authReady={authReady} />
                       <StudioPanelTarget panel="location" />
-                      {(mediaError || mediaUpload.assetError) && <p role="status" className="break-words text-xs text-destructive">{mediaError || mediaUpload.assetError}</p>}
+                      {(mediaError || mediaUpload.assetError) && <AppNotification role="status" className="break-words text-xs text-destructive">{mediaError || mediaUpload.assetError}</AppNotification>}
                     </> : <MediaDropzone
           files={freestyle.files}
           selectedId={activeMedia?.id ?? activeAsset?.id}
@@ -592,12 +601,14 @@ function WorkspaceEditor({
         /></StudioInspectorSection>
                     <StudioGenerationProperties settings={settings} onChange={setSettings} studioMode={studioMode}
                       readOnly={creativeLocked}
+                      durationReadOnly={preserveSettings}
                       ugcType={creationType === "ugc" ? ugcType : undefined} onUgcTypeChange={setUgcType} />
-                    {(v3 || !initialProject && creationType === "ugc") && <StudioInspectorSection title="Resolution"><fieldset disabled={creativeLocked} className="min-w-0"><StudioResolution
+                    <StudioInspectorSection title="Resolution"><StudioResolution
+                      readOnly={preserveSettings}
                       imageCards={studioMode === "pro"}
                       value={projectVideoResolution(settings.resolution)}
                       onChange={resolution => setSettings({ ...settings, resolution })} />
-                    </fieldset></StudioInspectorSection>}
+                    </StudioInspectorSection>
                     <div className="md:hidden">{status}</div>
                     {creationType !== "ugc" && <><p className="text-xs text-muted-foreground">Free AI projects support the 5-second, 480p UGC V3 workflow. Existing Freestyle results remain available.</p><fieldset disabled className="min-w-0">{controls}</fieldset></>}
                   </>

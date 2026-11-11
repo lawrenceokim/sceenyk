@@ -1,5 +1,11 @@
 # Code Standards
 
+## Shared application feedback (2026-11-11)
+
+Render application errors, warnings, validation and action results with `components/notifications/app-notification.tsx`; event handlers can call `notify(message, tone)` from `lib/notifications/store.ts`. Do not introduce inline alert panels, native alert popups or a second toast dependency. Keep business state and action callbacks in their existing source components; the shared portal owns presentation only. Use explicit tones in new code, stable notice keys for repeated workflow receipts, and persistent duration for actionable notices. Source error IDs remain available for field descriptions, while screen-reader announcements come from the visible notification. Preserve confirmation dialogs, recovery controls, financial records, progress and loading/empty states. Feedback must not trigger navigation or parent card actions, mutate workflow state, or retain private content across authenticated-account changes. Use Tailwind and shared semantic tokens with reduced-motion support.
+
+Studio exposes all current duration/resolution options in both Basic and Pro. Only 5 seconds and 480p can be newly selected during testing; unavailable choices remain explainable through keyboard/pointer notifications. Editable draft settings normalize in the existing editor and persist through ordinary Save. Genuine saved approval/creative-lock evidence preserves approved settings; unresolved legacy approval reads preserve saved values until checked. Do not infer approval from a completed planning job or relax server/worker admission.
+
 ## Independent sheet and Storyboard funding — 109 (2026-11-10)
 
 Sheet/Storyboard generation checks OpenAI funding independently of video/project review. Valid assigned free projects and eligible unused allowances retain included OpenAI access. Otherwise sufficient purchased credits authorize a new OpenAI request, even on a historical project whose video/free usage is unresolved. A review hold must never veto a separately credit-funded Character, Product, Location or Storyboard request. Each actual request costs 1 credit; fresh Location remains 2 (plan + sheet), continuation 1.

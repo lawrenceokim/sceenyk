@@ -95,7 +95,7 @@ export async function createMarketplaceListing(input: unknown): Promise<Marketpl
   const parsed = createListingSchema.safeParse(input);
   if (!parsed.success) return { ok: false, code: "INVALID_INPUT", message: parsed.error.issues[0].message };
   const v = parsed.data;
-  try { validateMarketplacePrice(v.adoptionType, v.priceMinor); } catch { return { ok: false, code: "INVALID_INPUT", message: "Choose Free or a Sandbox price from $1.00 to $25.00." }; }
+  try { validateMarketplacePrice(v.adoptionType, v.priceMinor); } catch { return { ok: false, code: "INVALID_INPUT", message: "Choose Free or a price from $1.00 to $25.00." }; }
   const { data, error } = await createDatabaseClient().rpc("marketplace_create_priced", {
     p_owner_user_id: user.id, p_listing_id: v.id, p_project_id: v.sourceProjectId, p_title: v.title,
     p_description: v.description, p_category: v.category, p_tags: v.tags, p_instructions: v.instructions,
@@ -109,7 +109,7 @@ export async function updateMarketplaceListing(input: unknown, preview?: FormDat
   const parsed = updateListingSchema.safeParse(input);
   if (!parsed.success) return { ok: false, code: "INVALID_INPUT", message: parsed.error.issues[0].message };
   const v = parsed.data;
-  try { validateMarketplacePrice(v.adoptionType, v.priceMinor); } catch { return { ok: false, code: "INVALID_INPUT", message: "Choose Free or a Sandbox price from $1.00 to $25.00." }; }
+  try { validateMarketplacePrice(v.adoptionType, v.priceMinor); } catch { return { ok: false, code: "INVALID_INPUT", message: "Choose Free or a price from $1.00 to $25.00." }; }
   if (preview && !v.rightsConfirmed) return { ok: false, code: "INVALID_INPUT", message: "Confirm your rights to the preview before publishing." };
   const derivative = preview ? await prepareTemplatePreview(user.id, v.id, preview) : null;
   const args = {

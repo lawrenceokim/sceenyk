@@ -28,6 +28,8 @@ import {
   usd,
   type MarketplacePurchaseSummary,
 } from "@/lib/marketplace/payments/contract";
+import { AppNotification } from "@/components/notifications/app-notification";
+
 
 export function PaidAdoption({
   listingId,
@@ -116,7 +118,7 @@ export function PaidAdoption({
         disabled={busy}
         onClick={() => void run("summary")}
       >
-        Adopt with PayPal Sandbox
+        Adopt with PayPal
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent
@@ -139,7 +141,7 @@ export function PaidAdoption({
             Adopt this creator template
           </DialogTitle>
           <DialogDescription className="sr-only">
-            Review the template price, pay with PayPal Sandbox, or recover your
+            Review the template price, pay with PayPal, or recover your
             saved purchase. AI generation is separate.
           </DialogDescription>
 
@@ -180,7 +182,7 @@ export function PaidAdoption({
                   </span>
                   <div className="min-w-0 space-y-1 text-[13px] leading-5">
                     <p className="font-medium">
-                      Sandbox payment unlocks one adopted template project.
+                      Payment unlocks one adopted template project.
                     </p>
                     <p className="text-xs leading-5 text-muted-foreground">
                       It does not include future AI generation usage.
@@ -238,14 +240,14 @@ export function PaidAdoption({
                     ? "Checking purchase…"
                     : purchase.status === "completed"
                       ? "Open adopted project"
-                      : "Pay with PayPal Sandbox"}
+                      : "Pay with PayPal"}
                 </Button>
                 {approval && (
                   <a
                     className="flex min-h-10 items-center justify-center rounded-lg px-3 text-center text-xs text-link underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-ring"
                     href={approval}
                   >
-                    Continue to PayPal Sandbox
+                    Continue to PayPal
                   </a>
                 )}
                 <Button
@@ -266,12 +268,12 @@ export function PaidAdoption({
             </div>
           )}
           {error && (
-            <p
+            <AppNotification
               role="alert"
               className="mt-4 rounded-xl border border-destructive/20 bg-destructive-surface p-3 text-[13px] leading-5 text-destructive"
             >
               {error}
-            </p>
+            </AppNotification>
           )}
           <Link
             className="mx-auto mt-6 inline-flex min-h-10 max-w-full items-center justify-center rounded-lg px-2 text-center text-xs font-medium text-link underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:mt-7"

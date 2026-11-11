@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { LoaderCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { openPurchaseProjectAction } from "@/app/actions/purchases";
+import { AppNotification } from "@/components/notifications/app-notification";
+
 
 export function CreateVersionButton({ id, title, label = "Create your version" }: { id: string; title: string; label?: string }) {
   const router = useRouter();
@@ -31,6 +33,6 @@ export function CreateVersionButton({ id, title, label = "Create your version" }
       {busy && <LoaderCircle aria-hidden="true" className="size-4 motion-safe:animate-spin" />}
       {busy ? "Opening your project…" : label}
     </Button>
-    {error && <p role="alert" className="mt-2 text-xs leading-5 text-destructive">{error}</p>}
+    {error && <AppNotification role="alert" className="mt-2 text-xs leading-5 text-destructive">{error}</AppNotification>}
   </div>;
 }

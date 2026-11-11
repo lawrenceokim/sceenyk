@@ -11,6 +11,8 @@ import { creditRefreshKey, notifyCreditsChanged } from "@/lib/accounting/client-
 import { CreditBillingDashboard } from "./credit-billing-dashboard";
 import { CustomCreditPurchase } from "./custom-credit-purchase";
 import type { CreditPurchasePricing } from "@/lib/payments/credit-pricing";
+import { AppNotification } from "@/components/notifications/app-notification";
+
 
 const statusCopy: Record<PurchaseStatus, string> = {
   pending: "Awaiting PayPal approval. No credits have been added.",
@@ -137,9 +139,9 @@ function PurchaseAccount({ pricing, configured, checkoutInNewTab = false, dashbo
           if (checkoutInNewTab) {
             setApprovalLink(result.data.approvalUrl);
             if (popup && !popup.closed) { popup.location.replace(result.data.approvalUrl); opened = true; }
-            setMessage("Approve your test purchase in PayPal Sandbox, then return here. Check purchases to refresh your balance.");
+            setMessage("Approve your purchase in PayPal, then return here. Check purchases to refresh your balance.");
           } else {
-            setMessage("Opening PayPal Sandbox checkout…");
+            setMessage("Opening PayPal checkout…");
             window.location.assign(result.data.approvalUrl);
           }
         } else {
@@ -163,13 +165,13 @@ function PurchaseAccount({ pricing, configured, checkoutInNewTab = false, dashbo
       await reload();
     })}
     notices={<>
-      {wallet?.lowBalance && <p className="text-warning-foreground">Low paid credit balance. Top up when you need more.</p>}
-      {!configured && <p className="rounded-lg border border-border bg-muted px-3 py-2" role="status">Sandbox checkout is awaiting configuration. Your existing balance is preserved.</p>}
-      {message && <p className={`rounded-lg px-3 py-2 ${completedPurchase ? "bg-success-surface text-success-foreground" : "bg-info-surface text-info-foreground"}`} role="status" aria-live="polite">
+      {wallet?.lowBalance && <AppNotification className="text-warning-foreground">Low paid credit balance. Top up when you need more.</AppNotification>}
+      {!configured && <AppNotification className="rounded-lg border border-border bg-muted px-3 py-2" role="status">PayPal checkout is currently unavailable. Your existing balance is preserved.</AppNotification>}
+      {message && <AppNotification className={`rounded-lg px-3 py-2 ${completedPurchase ? "bg-success-surface text-success-foreground" : "bg-info-surface text-info-foreground"}`} role="status" aria-live="polite">
         {completedPurchase ? `${completedPurchase.credits.toLocaleString()} credits added. Current paid balance: ${wallet!.available.toLocaleString()} credits.` : message}
-      </p>}
-      {approvalLink && <Button nativeButton={false} variant="outline" render={<a href={approvalLink} target="_blank" rel="noopener noreferrer" />}>Continue to PayPal Sandbox <ExternalLink className="size-4" aria-hidden="true" /></Button>}
-      {error && <p className="rounded-lg bg-destructive-surface px-3 py-2 text-destructive" role="alert">{error}</p>}
+      </AppNotification>}
+      {approvalLink && <Button nativeButton={false} variant="outline" render={<a href={approvalLink} target="_blank" rel="noopener noreferrer" />}>Continue to PayPal <ExternalLink className="size-4" aria-hidden="true" /></Button>}
+      {error && <AppNotification className="rounded-lg bg-destructive-surface px-3 py-2 text-destructive" role="alert">{error}</AppNotification>}
     </>} />;
   return <div className="space-y-6" aria-busy={busy}>
     <section className={`
@@ -193,13 +195,13 @@ function PurchaseAccount({ pricing, configured, checkoutInNewTab = false, dashbo
       </div>
       <Button variant="outline" disabled={busy} onClick={() => void checkPurchases()}>{busy ? "Checking payment…" : "Check purchases"}</Button>
     </section>
-    {wallet?.lowBalance && <p className="rounded-lg bg-warning-surface p-3 text-body-sm text-warning-foreground">You’re running low on paid credits. Top up when you need more. Your free allowance stays separate.</p>}
-    {!configured && <p className="rounded-lg border border-border bg-muted p-4 text-body-sm" role="status">Sandbox checkout is awaiting configuration. Your existing balance is preserved.</p>}
-    {message && <p className={`rounded-lg p-4 text-body-sm ${completedPurchase ? "bg-success-surface text-success-foreground" : "bg-info-surface text-info-foreground"}`} role="status" aria-live="polite">
+    {wallet?.lowBalance && <AppNotification className="rounded-lg bg-warning-surface p-3 text-body-sm text-warning-foreground">You’re running low on paid credits. Top up when you need more. Your free allowance stays separate.</AppNotification>}
+    {!configured && <AppNotification className="rounded-lg border border-border bg-muted p-4 text-body-sm" role="status">PayPal checkout is currently unavailable. Your existing balance is preserved.</AppNotification>}
+    {message && <AppNotification className={`rounded-lg p-4 text-body-sm ${completedPurchase ? "bg-success-surface text-success-foreground" : "bg-info-surface text-info-foreground"}`} role="status" aria-live="polite">
       {completedPurchase ? `${completedPurchase.credits.toLocaleString()} credits added. Current paid balance: ${wallet!.available.toLocaleString()} credits.` : message}
-    </p>}
-    {approvalLink && <Button nativeButton={false} variant="outline" render={<a href={approvalLink} target="_blank" rel="noopener noreferrer" />}>Continue to PayPal Sandbox <ExternalLink className="size-4" aria-hidden="true" /></Button>}
-    {error && <p className="rounded-lg bg-destructive-surface p-4 text-body-sm text-destructive" role="alert">{error}</p>}
+    </AppNotification>}
+    {approvalLink && <Button nativeButton={false} variant="outline" render={<a href={approvalLink} target="_blank" rel="noopener noreferrer" />}>Continue to PayPal <ExternalLink className="size-4" aria-hidden="true" /></Button>}
+    {error && <AppNotification className="rounded-lg bg-destructive-surface p-4 text-body-sm text-destructive" role="alert">{error}</AppNotification>}
     {purchaseForm}
     <section className={`
       [@layer_components]:[border:1px_solid_var(--border)] [@layer_components]:rounded-[var(--radius-xl)]
@@ -215,9 +217,9 @@ function PurchaseAccount({ pricing, configured, checkoutInNewTab = false, dashbo
       [.workspace-settings-inner_label&&_svg]:w-[18px] [.workspace-settings-inner_label&&_svg]:h-[18px]
     `} aria-labelledby="purchases-heading">
       <h2 id="purchases-heading" className="text-lg font-semibold">Recent purchases</h2>
-      {!wallet ? walletLoaded ? <p className="text-body-sm text-muted-foreground">Saved purchases are unavailable. Check purchases to try again.</p> : <FinancialRowsSkeleton /> : !wallet.purchases.length ? <p className="text-body-sm text-muted-foreground">No credit purchases yet.</p> :
+      {!wallet ? walletLoaded ? <AppNotification className="text-body-sm text-muted-foreground">Saved purchases are unavailable. Check purchases to try again.</AppNotification> : <FinancialRowsSkeleton /> : !wallet.purchases.length ? <p className="text-body-sm text-muted-foreground">No credit purchases yet.</p> :
         <ul className="divide-y divide-border">{wallet.purchases.map((purchase, index) => <li key={purchase.orderId ?? `${purchase.created_at}-${index}`} className="space-y-2 py-4">
-          <div className="flex flex-wrap justify-between gap-2 text-body-sm"><p className="font-medium">{purchase.pack_name} · {purchase.credits} credits</p><p>${purchase.amount} {purchase.currency} · {purchase.status}</p></div>
+          <div className="flex flex-wrap justify-between gap-2 text-body-sm"><p className="font-medium">{purchase.pack_name.replace(/\bTest Pack\b/g, "Pack")} · {purchase.credits} credits</p><p>${purchase.amount} {purchase.currency} · {purchase.status}</p></div>
           <p className="text-caption text-muted-foreground">{statusCopy[purchase.status]}</p>
           {purchase.pricing && <p className="text-caption text-muted-foreground">Estimated PayPal fee ${(purchase.pricing.paypalFeeMinor / 100).toFixed(2)} · Sceenyk commission ${(purchase.pricing.commissionMinor / 100).toFixed(2)}</p>}
           <p className="text-caption text-muted-foreground"><time dateTime={purchase.created_at}>{new Date(purchase.created_at).toLocaleString()}</time></p>
@@ -247,7 +249,7 @@ function PurchaseAccount({ pricing, configured, checkoutInNewTab = false, dashbo
     `} aria-labelledby="credit-activity-heading">
       <h2 id="credit-activity-heading" className="text-lg font-semibold">Paid credit activity</h2>
       <p className="text-caption text-muted-foreground">Last 20 paid credit movements. Completion spends credits already reserved; it does not deduct them twice. Free AI projects are tracked separately.</p>
-      {!wallet ? walletLoaded ? <p className="text-body-sm text-muted-foreground">Credit activity is unavailable. Check purchases to try again.</p> : <FinancialRowsSkeleton /> : !wallet.activity.length ? <p className="text-body-sm text-muted-foreground">No paid credit activity yet.</p> : <ul className="divide-y divide-border">
+      {!wallet ? walletLoaded ? <AppNotification className="text-body-sm text-muted-foreground">Credit activity is unavailable. Check purchases to try again.</AppNotification> : <FinancialRowsSkeleton /> : !wallet.activity.length ? <p className="text-body-sm text-muted-foreground">No paid credit activity yet.</p> : <ul className="divide-y divide-border">
         {wallet.activity.map((entry, index) => <li key={`${entry.createdAt}-${index}`} className="flex flex-wrap items-center justify-between gap-2 py-3 text-body-sm">
           <div><p className="font-medium">{activityCopy[entry.type]}</p><time className="text-caption text-muted-foreground" dateTime={entry.createdAt}>{new Date(entry.createdAt).toLocaleString()}</time></div>
           <p>{entry.type === "consumption" ? `${entry.amount.toLocaleString()} reserved credits used` : `${entry.availableDelta > 0 ? "+" : ""}${entry.availableDelta.toLocaleString()} available credits`}</p>

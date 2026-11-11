@@ -4,11 +4,13 @@ import { shadcn } from "@clerk/ui/themes";
 import { getClerkDevelopmentConfig } from "@/lib/auth/config";
 import { AuthAvailabilityProvider } from "./auth-availability";
 import { AuthModalReturn } from "./auth-modal-return";
+import { NotificationHost } from "@/components/notifications/notification-host";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const { enabled, publishableKey } = getClerkDevelopmentConfig();
   const content = (
     <AuthAvailabilityProvider enabled={enabled}>
+      <NotificationHost />
       <AuthModalReturn />
       {children}
     </AuthAvailabilityProvider>

@@ -3,6 +3,8 @@ import { ArrowLeft, Plus, ShoppingBag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton, SkeletonRegion } from "@/components/ui/skeleton";
 import { PurchasesRetryButton } from "./purchases-boundary";
+import { AppNotification } from "@/components/notifications/app-notification";
+
 
 export function PurchasesHeading() {
   return <header className="flex flex-wrap items-end justify-between gap-4">
@@ -25,9 +27,9 @@ export function PurchaseDetailSkeleton() {
   </SkeletonRegion></div>;
 }
 export function PurchasesFailure({ detail = false }: { detail?: boolean }) {
-  return <div role="alert" className="flex flex-col items-start gap-3 rounded-xl border border-border bg-card p-6"><ShoppingBag aria-hidden="true" className="size-6 text-primary" />
+  return <div  className="flex flex-col items-start gap-3 rounded-xl border border-border bg-card p-6"><ShoppingBag aria-hidden="true" className="size-6 text-primary" />
     <h2 className="text-base font-semibold">{detail ? "This purchase couldn’t be loaded" : "Your purchases couldn’t be loaded"}</h2>
-    <p className="text-sm text-muted-foreground">Refresh to try again. Your saved purchases are unchanged.</p>
+    <AppNotification role="alert" className="text-sm text-muted-foreground">Refresh to try again. Your saved purchases are unchanged.</AppNotification>
     <div className="flex flex-wrap items-center gap-3"><PurchasesRetryButton /><Link href="/purchases" className="text-xs font-medium text-link underline-offset-4 hover:underline">Return to purchases</Link></div>
   </div>;
 }

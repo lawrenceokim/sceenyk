@@ -1,5 +1,7 @@
 "use client";
 import { Button } from "@/components/ui/button";
+import { AppNotification } from "@/components/notifications/app-notification";
+
 export default function ErrorPage({ reset }: { reset: () => void }) {
   return <div className={`
       [@layer_components]:[border:1px_solid_var(--border)] [@layer_components]:rounded-[var(--radius-xl)]
@@ -13,5 +15,5 @@ export default function ErrorPage({ reset }: { reset: () => void }) {
       [.workspace-settings-inner_label&&]:pt-[12px] [.workspace-settings-inner_label&&]:pr-[12px]
       [.workspace-settings-inner_label&&]:pb-[12px] [.workspace-settings-inner_label&&]:pl-[12px]
       [.workspace-settings-inner_label&&_svg]:w-[18px] [.workspace-settings-inner_label&&_svg]:h-[18px]
-    `}><p role="alert">Your settings couldn’t be loaded. Check your connection and try again.</p><Button variant="outline" onClick={reset}>Reload settings</Button></div>;
+    `}><AppNotification role="alert">Your settings couldn’t be loaded. Check your connection and try again.</AppNotification><Button variant="outline" onClick={reset}>Reload settings</Button></div>;
 }

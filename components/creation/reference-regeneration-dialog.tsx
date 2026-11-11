@@ -2,6 +2,8 @@
 
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AppNotification } from "@/components/notifications/app-notification";
+
 
 export function ReferenceRegenerationDialog({ kind, busy, blocked, error, onCancel, onContinue }: {
   kind: "character" | "product" | null; busy: boolean; blocked: boolean; error: string; onCancel: () => void; onContinue: () => void;
@@ -13,7 +15,7 @@ export function ReferenceRegenerationDialog({ kind, busy, blocked, error, onCanc
         <DialogTitle>Regenerate {subject} Sheet?</DialogTitle>
         <DialogDescription>{`Regenerating will permanently delete the current ${subject} Sheet and generate a new one. This action cannot be undone.`}</DialogDescription>
       </DialogHeader>
-      {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
+      {error && <AppNotification role="alert" className="text-sm text-destructive">{error}</AppNotification>}
       <DialogFooter>
         <Button variant="outline" disabled={busy} onClick={onCancel}>Cancel</Button>
         <Button disabled={busy || blocked} onClick={onContinue}>Continue</Button>

@@ -6,7 +6,7 @@ import { isPayPalConfigured } from "@/lib/payments/paypal/config";
 import { CreditPurchases } from "@/components/payments/credit-purchases";
 import { CreditAccountSkeleton } from "@/components/payments/financial-skeletons";
 
-export const metadata: Metadata = { title: "Credits & Billing — Sceenyk Sandbox" };
+export const metadata: Metadata = { title: "Credits & Billing — Sceenyk" };
 
 async function CreditAccount() {
   const user = await ensureAppUser();

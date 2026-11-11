@@ -68,7 +68,7 @@ export function TemplateDetail({ listing, owned = false, children }: { listing: 
       [&&_>_p:first-child_>_span]:text-[color:var(--muted-foreground)] [&&_>_p:first-child_>_span]:text-[length:12px]
       [&&_strong]:text-[length:18px] [&&_strong]:font-[650] [&&_>_p_+_p]:mt-[6px] [&&_>_p_+_p]:text-[length:12px]
       [&&_>_p_+_p]:leading-[18px]
-    `}><p><span>Adoption price</span><strong>{listing.adoptionType === "free" ? "Free" : usd(listing.priceMinor)}</strong>{listing.adoptionType === "paid" && <span>USD · PayPal Sandbox</span>}</p><GenerationEstimate listing={listing} /></div>
+    `}><p><span>Adoption price</span><strong>{listing.adoptionType === "free" ? "Free" : usd(listing.priceMinor)}</strong>{listing.adoptionType === "paid" && <span>USD · PayPal</span>}</p><GenerationEstimate listing={listing} /></div>
         <div className={`
       marketplace-detail-adopt [&&]:w-[100%] [&&]:max-w-[310px] [&&_[data-slot='button']]:h-[auto]
       [&&_[data-slot='button']]:min-h-[34px] [&&_[data-slot='button']]:rounded-[8px] [&&_[data-slot='button']]:pt-[8px]

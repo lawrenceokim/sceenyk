@@ -15,6 +15,8 @@ import { AbstractPreview } from "@/components/marketplace/abstract-preview";
 import { projectPreviewColor } from "@/components/marketplace/template-appearance";
 import { MarketplaceFailure } from "@/components/marketplace/listing-card";
 import { MarketplacePagination } from "@/components/marketplace/pagination";
+import { AppNotification } from "@/components/notifications/app-notification";
+
 
 export const metadata: Metadata = { title: "New Template — Sceenyk", robots: { index: false, follow: false } };
 async function NewListing({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
@@ -40,7 +42,7 @@ async function NewListing({ searchParams }: { searchParams: Promise<Record<strin
       }
     })));
   } catch (error) { unstable_rethrow(error); return <MarketplaceFailure href="/settings/templates/new" />; }
-  if (unavailable) return <p role="alert">This project is unavailable. Choose a project you own.</p>;
+  if (unavailable) return <AppNotification role="alert">This project is unavailable. Choose a project you own.</AppNotification>;
   if (typeof params.project === "string" && templateIds[params.project]) redirect(`/settings/templates/${templateIds[params.project]}`);
   return <TemplateAccountBoundary clerkUserId={user.clerk_user_id} fallback={<ProjectPickerSkeleton />}>
     <section className="min-w-0 space-y-5">

@@ -25,6 +25,8 @@ import {
   v5FrontReviewHelp,
 } from "@/lib/character-v5/contract";
 import type { ReferenceReviewSnapshot } from "@/lib/reference-review/contract";
+import { AppNotification } from "@/components/notifications/app-notification";
+
 
 const titles: Record<V5Slot, string> = {
   face: "Face",
@@ -249,11 +251,11 @@ export function PrivateV5Image({
       });
   };
   return failed ? (
-    <span className="block p-3 text-[11px] text-muted-foreground">
+    <AppNotification className="block p-3 text-[11px] text-muted-foreground">
       {backCandidate
         ? "Back candidate preview unavailable. Close and reopen to retry."
         : "Preview unavailable. Close and reopen to retry."}
-    </span>
+    </AppNotification>
   ) : (
     // Session-authenticated, owner/version-bound private no-store media.
     // eslint-disable-next-line @next/next/no-img-element
@@ -538,22 +540,22 @@ export function CharacterV5Review({
               </p>
             )}
           {workflow.recoveryState === "unrecoverable" && (
-            <p role="alert" className="text-destructive">
+            <AppNotification role="alert" className="text-destructive">
               Generated image could not be recovered. Regeneration is required.
-            </p>
+            </AppNotification>
           )}
           {workflow.recoveryState === "storage_missing" && (
-            <p role="alert" className="text-destructive">
+            <AppNotification role="alert" className="text-destructive">
               The saved image is missing or does not match its record. It cannot
               be reviewed or approved. Check storage before regenerating.
-            </p>
+            </AppNotification>
           )}
           {workflow.recoveryState === "unknown" &&
             !workflow.savingIncomplete && (
-              <p role="alert" className="text-muted-foreground">
+              <AppNotification role="alert" className="text-muted-foreground">
                 Image storage could not be checked. Check status before
                 reviewing or approving.
-              </p>
+              </AppNotification>
             )}
           {workflow.canRetrySaving && (
             <Button
@@ -567,13 +569,13 @@ export function CharacterV5Review({
           )}
           {workflow.state === "failed" && (
             <div className="space-y-2">
-              <p className="text-muted-foreground">
+              <AppNotification className="text-muted-foreground">
                 {workflow.errorCode === "CHARACTER_CANDIDATE_REJECTED"
                   ? "Candidate rejected. Choose another image when ready."
                   : workflow.canRetrySaving
                     ? "Retry saving only recovers the existing image. It never requests a new generation."
                     : "This step needs attention. Check Progress for details."}
-              </p>
+              </AppNotification>
               {workflow.errorPhase === "candidate_delete" ? (
                 <Button
                   type="button"
@@ -730,9 +732,9 @@ export function CharacterV5Review({
         </>
       )}
       {error && (
-        <p role="alert" className="text-destructive">
+        <AppNotification role="alert" className="text-destructive">
           {error}
-        </p>
+        </AppNotification>
       )}
       <Dialog
         open={!!selected}

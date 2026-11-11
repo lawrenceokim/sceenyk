@@ -46,7 +46,7 @@ async function request(path: string, body?: unknown, preparedToken?: string) {
 }
 export function payoutInstruction(w: WithdrawalRow) {
   if (w.status !== "processing" || w.submitted_minor === null) throw new Error("PAYOUT_NOT_CLAIMED");
-  return { sender_batch_header: { sender_batch_id: w.id, email_subject: "Your Sceenyk Sandbox payout" }, items: [{
+  return { sender_batch_header: { sender_batch_id: w.id, email_subject: "Your Sceenyk payout" }, items: [{
     recipient_type: "EMAIL", receiver: w.destination_snapshot, amount: { currency: "USD", value: (w.submitted_minor / 100).toFixed(2) },
     sender_item_id: w.id, recipient_wallet: "PAYPAL",
   }] };

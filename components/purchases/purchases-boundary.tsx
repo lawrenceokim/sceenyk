@@ -6,6 +6,8 @@ import { useAuth } from "@clerk/nextjs";
 import { useAuthAvailable } from "@/components/auth/auth-availability";
 import { AccountAction } from "@/components/account-action";
 import { Button } from "@/components/ui/button";
+import { AppNotification } from "@/components/notifications/app-notification";
+
 
 export function PurchasesRetryButton() {
   const router = useRouter();
@@ -14,7 +16,7 @@ export function PurchasesRetryButton() {
 }
 
 export function PurchasesBoundary(props: { clerkUserId: string; children: ReactNode; fallback: ReactNode }) {
-  return useAuthAvailable() ? <AccountPurchases {...props} /> : <p className="text-sm text-muted-foreground">Sign in is temporarily unavailable.</p>;
+  return useAuthAvailable() ? <AccountPurchases {...props} /> : <AppNotification className="text-sm text-muted-foreground">Sign in is temporarily unavailable.</AppNotification>;
 }
 function AccountPurchases({ clerkUserId, children, fallback }: { clerkUserId: string; children: ReactNode; fallback: ReactNode }) {
   const { isLoaded, userId } = useAuth();

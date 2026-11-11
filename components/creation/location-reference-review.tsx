@@ -4,6 +4,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { locationErrorMessage, locationMessages, type LocationReview } from "@/lib/location-reference/contract";
 import { StudioWorkflowMedia, useStudioPanels, type StudioPreviewMedia } from "./studio-workspace-panels";
+import { AppNotification } from "@/components/notifications/app-notification";
+
 
 export function LocationReferenceReview(props: {
   projectId: string; jobId: string; location?: LocationReview; eligible: boolean; enabled: boolean; checkStatus: () => void;
@@ -47,7 +49,7 @@ function LocationCard({ projectId, jobId, location, eligible, enabled, checkStat
     </div>
     {!eligible && <p className="text-xs text-muted-foreground">Approve Character and Product references to generate your location.</p>}
     {idle && eligible && <p className="text-xs text-muted-foreground">Create a filming environment from your saved scene, references and video settings.</p>}
-    {location && !location.dependenciesCurrent && <p className="text-xs text-warning-foreground">Saved source details, settings or reference approvals changed. Generate a new location for the updated project.</p>}
+    {location && !location.dependenciesCurrent && <AppNotification className="text-xs text-warning-foreground">Saved source details, settings or reference approvals changed. Generate a new location for the updated project.</AppNotification>}
     {location?.imageAvailable && location.candidateId && !(busy && ["reject", "retry_delete"].includes(operation)) && <div className="overflow-hidden rounded-md border border-border bg-muted/20">
       {!imageFailed ? <button type="button" aria-label="Preview Location" className="block w-full cursor-zoom-in outline-none focus-visible:ring-2 focus-visible:ring-ring" onClick={() => panels?.selectMedia(`legacy-location:${location.candidateId}`)}>
         {/* Authenticated no-store endpoint; the private plan and R2 key stay on the server. */}
@@ -56,11 +58,11 @@ function LocationCard({ projectId, jobId, location, eligible, enabled, checkStat
           alt="Generated filming location reference" className="max-h-[70dvh] w-full object-contain"
           onLoad={() => setImageLoaded(true)} onError={() => setImageFailed(true)} />
         {!imageLoaded && <p className="p-3 text-xs text-muted-foreground">Loading private location preview…</p>}
-      </button> : <p role="alert" className="p-3 text-xs text-destructive">Location preview could not load. Check status and storage before accepting.</p>}
+      </button> : <AppNotification role="alert" className="p-3 text-xs text-destructive">Location preview could not load. Check status and storage before accepting.</AppNotification>}
     </div>}
     {location?.state === "image_review" && <p className="text-xs leading-relaxed text-muted-foreground">Check the scene, visual style, lighting, surroundings and framing. Reject and Delete removes only this candidate. Generate Location is a separate action after deletion.</p>}
     {location?.state === "approved" && <p className="text-xs text-muted-foreground">Location saved privately. Continue in Storyboard to plan your scenes.</p>}
-    {location?.error && <p role="status" className="text-xs text-warning-foreground">{locationErrorMessage(location.error, location.providerCompleted)}</p>}
+    {location?.error && <AppNotification role="status" className="text-xs text-warning-foreground">{locationErrorMessage(location.error, location.providerCompleted)}</AppNotification>}
     {location?.diagnostic && <details className="text-xs text-muted-foreground"><summary className="cursor-pointer">Operation details</summary>
       <p className="mt-1 break-words">{location.diagnostic.phase} · {location.diagnostic.code}{location.diagnostic.databaseCode ? ` · ${location.diagnostic.databaseCode}` : ""}{location.diagnostic.causeCode ? ` · ${location.diagnostic.causeCode}` : ""}{location.diagnostic.httpStatus ? ` · HTTP ${location.diagnostic.httpStatus}` : ""}</p>
     </details>}
@@ -77,6 +79,6 @@ function LocationCard({ projectId, jobId, location, eligible, enabled, checkStat
       {location?.canResume && <Button type="button" size="sm" variant="outline" disabled={!mutable || busy} onClick={() => void act("resume")}>Resume location</Button>}
       <Button type="button" size="sm" variant="ghost" disabled={busy} onClick={checkStatus}>Check status</Button>
     </div>
-    {error && <p role="alert" className="break-words text-xs text-destructive">{error}</p>}
+    {error && <AppNotification role="alert" className="break-words text-xs text-destructive">{error}</AppNotification>}
   </section>;
 }

@@ -8,6 +8,8 @@ import { renameProjectAction } from "@/app/actions/projects";
 import { projectTitleLimit } from "@/lib/projects/options";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogTrigger, DialogContent, DialogTitle, DialogDescription, DialogClose } from "@/components/ui/dialog";
+import { AppNotification } from "@/components/notifications/app-notification";
+
 
 export function ProjectRename({ projectId, title }: { projectId: string; title: string }) {
   const scope = useContext(ProjectsCacheScope);
@@ -99,7 +101,7 @@ export function ProjectRename({ projectId, title }: { projectId: string; title: 
       [.studio-property_textarea&&]:text-[length:13px] [.studio-property_textarea&&]:leading-[20px]
       [.studio-setting-select_select&&]:pr-[28px]
     `} value={value} onChange={event => setValue(event.target.value)} maxLength={projectTitleLimit} required disabled={busy} autoComplete="off" onFocus={event => event.target.select()} aria-invalid={!!error} aria-describedby={error ? `rename-error-${projectId}` : undefined} />
-        {error && <p id={`rename-error-${projectId}`} role="alert" className="text-destructive">{error}</p>}
+        {error && <AppNotification id={`rename-error-${projectId}`} role="alert" className="text-destructive">{error}</AppNotification>}
         <div className={"workspace-project-rename-actions [&&]:flex [&&]:items-center [&&]:justify-end [&&]:gap-[8px] [&&]:mt-[14px]"}>
           <DialogClose render={<Button size="xs" className={"workspace-project-rename-button [.workspace-project-rename-actions_&&]:inline-flex [.workspace-project-rename-actions_&&]:items-center [.workspace-project-rename-actions_&&]:justify-center [.workspace-project-rename-actions_&&]:w-[auto] [.workspace-project-rename-actions_&&]:min-w-[64px] [.workspace-project-rename-actions_&&]:h-[28px] [.workspace-project-rename-actions_&&]:min-h-[28px] [.workspace-project-rename-actions_&&]:pt-[0] [.workspace-project-rename-actions_&&]:pr-[10px] [.workspace-project-rename-actions_&&]:pb-[0] [.workspace-project-rename-actions_&&]:pl-[10px] [.workspace-project-rename-actions_&&]:rounded-[6px] [.workspace-project-rename-actions_&&]:text-[length:11px] [.workspace-project-rename-actions_&&]:leading-[18px] [.workspace-project-rename-actions_&&]:font-[500] [@media_(pointer:_coarse)]:[.workspace-project-rename-actions_&&]:min-h-[44px]"} variant="outline" type="button" disabled={busy} />}>Cancel</DialogClose>
           <Button size="xs" className={"workspace-project-rename-button [.workspace-project-rename-actions_&&]:inline-flex [.workspace-project-rename-actions_&&]:items-center [.workspace-project-rename-actions_&&]:justify-center [.workspace-project-rename-actions_&&]:w-[auto] [.workspace-project-rename-actions_&&]:min-w-[64px] [.workspace-project-rename-actions_&&]:h-[28px] [.workspace-project-rename-actions_&&]:min-h-[28px] [.workspace-project-rename-actions_&&]:pt-[0] [.workspace-project-rename-actions_&&]:pr-[10px] [.workspace-project-rename-actions_&&]:pb-[0] [.workspace-project-rename-actions_&&]:pl-[10px] [.workspace-project-rename-actions_&&]:rounded-[6px] [.workspace-project-rename-actions_&&]:text-[length:11px] [.workspace-project-rename-actions_&&]:leading-[18px] [.workspace-project-rename-actions_&&]:font-[500] [@media_(pointer:_coarse)]:[.workspace-project-rename-actions_&&]:min-h-[44px]"} type="submit" disabled={busy || !value.trim() || value.trim() === title}>{busy ? "Renaming…" : "Rename"}</Button>

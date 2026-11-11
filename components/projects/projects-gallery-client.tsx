@@ -9,6 +9,8 @@ import { ProjectsCacheScope } from "./projects-cache-context";
 import { ProjectsGallerySkeleton, ProjectsSection } from "./projects-section";
 import { ProjectJobStatusesProvider } from "./project-job-statuses";
 import { Button } from "@/components/ui/button";
+import { AppNotification } from "@/components/notifications/app-notification";
+
 
 const noSnapshot = () => undefined;
 export function ProjectsGalleryClient({ cachedOnly = false }: { cachedOnly?: boolean }) {
@@ -76,12 +78,12 @@ export function ProjectsGalleryClient({ cachedOnly = false }: { cachedOnly?: boo
     // Restore once at admission, not after every background card update.
   }, [scope, page, cachedOnly, hasSnapshot]);
   if (!scope) return <ProjectsGallerySkeleton />;
-  if (!snapshot) return failed && !cachedOnly ? <div role="status" className="space-y-3 text-muted-foreground">
-    <p>Your projects couldn’t be loaded.</p><Button variant="outline" onClick={() => setRetry(n => n + 1)}>Try again</Button>
+  if (!snapshot) return failed && !cachedOnly ? <div  className="space-y-3 text-muted-foreground">
+    <AppNotification role="alert">Your projects couldn’t be loaded.</AppNotification><Button variant="outline" onClick={() => setRetry(n => n + 1)}>Try again</Button>
   </div> : <ProjectsGallerySkeleton />;
   const statuses = Object.fromEntries(Object.entries(snapshot.cards).map(([id, card]) => [id, card.status]));
   return <ProjectsCacheScope.Provider value={scope}><div ref={marker}>
-    {failed && <p role="status" className="mb-3 text-caption text-muted-foreground">Projects couldn’t be refreshed. Showing your saved cards.</p>}
+    {failed && <AppNotification role="status" className="mb-3 text-caption text-muted-foreground">Projects couldn’t be refreshed. Showing your saved cards.</AppNotification>}
     <ProjectJobStatusesProvider initial={statuses}>
       <ProjectsSection data={snapshot.data} jobStatuses={statuses}
         previews={Object.fromEntries(Object.entries(snapshot.cards).map(([id, card]) => [id, card.preview]))}

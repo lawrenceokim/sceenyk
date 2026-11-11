@@ -10,6 +10,8 @@ import { StudioPanelTarget, useStudioPanels } from "./studio-workspace-panels";
 import { studioReferenceImages } from "./studio-inputs";
 import { referenceNameLimit } from "@/lib/projects/reference-names";
 import type { StudioReferenceSourcesProps } from "./studio-reference-sources";
+import { AppNotification } from "@/components/notifications/app-notification";
+
 
 const smallButton = "h-8 min-h-8 min-w-0 cursor-pointer gap-1 rounded-lg px-2 text-[11px] [@media(pointer:coarse)]:min-h-11";
 const interactive = "input,textarea,select,a,summary,[contenteditable=true],[role=button],button:not([data-character-swipe-preview])";
@@ -166,9 +168,9 @@ export function ProCharacterSources({ references, onAdd, onRemoveLocal, onRemove
             {perCharacterSheets && !local && asset?.status === "uploaded" ? <StudioPanelTarget panel={`character:${asset.id}`} /> : <div className="flex aspect-square w-full items-center justify-center rounded-lg border border-dashed border-border bg-muted/30 text-[11px] text-muted-foreground">No sheet generated yet</div>}
           </div>
           {local && <div className="space-y-1 text-[11px] text-muted-foreground">
-            {uploadStates[local.id]?.status === "failed" ? <><p role="status" className="break-words text-destructive">{uploadStates[local.id].message}</p><Button type="button" variant="ghost" disabled={readOnly || busy} className={smallButton} onClick={() => onUpload(local)}>Retry upload</Button></> : <p role="status">{uploadStates[local.id]?.status === "verifying" ? "Verifying…" : signedIn ? "Uploading…" : "Local preview"}</p>}
+            {uploadStates[local.id]?.status === "failed" ? <><AppNotification role="status" className="break-words text-destructive">{uploadStates[local.id].message}</AppNotification><Button type="button" variant="ghost" disabled={readOnly || busy} className={smallButton} onClick={() => onUpload(local)}>Retry upload</Button></> : <p role="status">{uploadStates[local.id]?.status === "verifying" ? "Verifying…" : signedIn ? "Uploading…" : "Local preview"}</p>}
           </div>}
-          {!local && asset && asset.status !== "uploaded" && <div className="text-[11px] text-muted-foreground">{asset.status === "pending" ? <Button type="button" variant="ghost" disabled={readOnly || busy} className={smallButton} onClick={() => onRecover(asset)}>Check upload</Button> : <p role="status" className="text-destructive">Upload rejected. Remove and select again.</p>}</div>}
+          {!local && asset && asset.status !== "uploaded" && <div className="text-[11px] text-muted-foreground">{asset.status === "pending" ? <Button type="button" variant="ghost" disabled={readOnly || busy} className={smallButton} onClick={() => onRecover(asset)}>Check upload</Button> : <AppNotification role="status" className="text-destructive">Upload rejected. Remove and select again.</AppNotification>}</div>}
         </div>)}
       </div>
     </>}

@@ -344,7 +344,7 @@ export function LandingPricing() {
       <ul>{offer.features.map(feature => <li key={feature}><Check size={16} aria-hidden="true" />{feature}</li>)}</ul>
       <Link href={offer.href} className={buttonVariants({ variant: offer.featured ? "default" : "outline" })}>{offer.action} <ArrowRight aria-hidden="true" /></Link>
     </article>)}</div>
-    <p className={"sceenyk-landing-sectionNote [&&]:text-[length:11px] [&&]:leading-[1.5] [&&]:text-[color:var(--muted-foreground)] [&&]:mt-[12px]"}>PayPal Sandbox test payments only. Production pack prices and generation rates are awaiting approval.</p>
+    <p className={"sceenyk-landing-sectionNote [&&]:text-[length:11px] [&&]:leading-[1.5] [&&]:text-[color:var(--muted-foreground)] [&&]:mt-[12px]"}>Review payment totals and generation costs before confirming.</p>
   </section>;
 }
 

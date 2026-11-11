@@ -6,6 +6,8 @@ import { projectAvailabilityAction } from "@/app/actions/projects";
 import { isProjectDeleted, subscribeProjectDeletion } from "@/lib/projects/client-lifecycle";
 import { Button } from "@/components/ui/button";
 import { StudioSkeleton } from "./studio-skeleton";
+import { AppNotification } from "@/components/notifications/app-notification";
+
 
 type Status = { id: string | null; phase: "checking" | "ready" | "missing" | "error" };
 
@@ -94,8 +96,8 @@ export function StudioProjectGuard({ initialProjectId, children }: {
   const blocked = deleted || !!projectId && (status.id !== projectId || status.phase !== "ready");
   return <>
     {blocked && (status.phase === "error" && !deleted ?
-      <div role="alert" className="p-6 text-sm">
-        <p>Your project couldn’t be checked. Try again to open it.</p>
+      <div  className="p-6 text-sm">
+        <AppNotification role="alert">Your project couldn’t be checked. Try again to open it.</AppNotification>
         <Button className="mt-4" onClick={() => setRetry(value => value + 1)}>Try again</Button>
       </div> : <StudioSkeleton />)}
     <Activity key={session.revision} mode={blocked ? "hidden" : "visible"}>

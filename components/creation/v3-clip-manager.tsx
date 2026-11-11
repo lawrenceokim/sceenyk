@@ -33,6 +33,8 @@ import type { StudioMode } from "@/lib/studio-mode/contract";
 import { V3MergeReview } from "./v3-merge-review";
 import type { FinalOperationPresentation } from "@/lib/final-video-generation-v3/final-operation";
 import { useStudioPanels } from "./studio-workspace-panels";
+import { AppNotification } from "@/components/notifications/app-notification";
+
 
 type Action = (
   action: string,
@@ -531,17 +533,17 @@ export function V3ClipManager({
                         </p>
                       )}
                       {reviewable && !run.preview && (
-                        <p>
+                        <AppNotification>
                           This clip&apos;s saved Preview link is unavailable.
                           Review it once the existing status refresh restores
                           access.
-                        </p>
+                        </AppNotification>
                       )}
                       {run?.state === "failed" && !run.errorCode && (
-                        <p>
+                        <AppNotification>
                           The saved attempt failed. Open Progress for its
                           recorded failure and recovery information.
-                        </p>
+                        </AppNotification>
                       )}
                       <p>
                         {clip.attempts > 0
@@ -550,11 +552,11 @@ export function V3ClipManager({
                         {run ? ` ${videoExecutionLabel(run)}.` : ""}
                       </p>
                       {clip.needsContinuityReview && (
-                        <p className="text-warning-foreground">
+                        <AppNotification className="text-warning-foreground">
                           An earlier clip was regenerated. Review this
                           clip&apos;s continuity again; its saved output and
                           approval are preserved.
-                        </p>
+                        </AppNotification>
                       )}
                       <p>{clip.purpose}</p>
                       <p>
@@ -602,10 +604,10 @@ export function V3ClipManager({
               </p>
             )}
           {spendingChanged && (
-            <p role="alert" className="text-sm text-warning-foreground">
+            <AppNotification role="alert" className="text-sm text-warning-foreground">
               Spending reservations changed. Close this dialog and review the
               updated cost before approving.
-            </p>
+            </AppNotification>
           )}
           {selectedRun?.state !== "awaiting_review" && (
             <label className="flex min-h-11 items-start gap-2 text-sm">

@@ -9,6 +9,8 @@ import { speechIntervalBudget } from "@/lib/storyboard/speech-budget";
 import { inspectStoryboard } from "@/lib/storyboard/validation";
 import { proposeExecutionRepair, type RepairChange } from "@/lib/storyboard/execution-repair";
 import { defaultDelivery, type VoiceDelivery, type Transition } from "@/lib/execution-v1/contract";
+import { AppNotification } from "@/components/notifications/app-notification";
+
 
 function ValidationDetails({ report }: { report: StoryboardValidationReport }) {
   return <details open={!report.valid} className="rounded-md border border-border p-2 text-xs">
@@ -48,7 +50,7 @@ function Time({ label, value, onChange }: { label: string; value: number; onChan
 const stamp = (ms: number) => `${(ms / 1000).toFixed(3)}s`;
 
 function SpeechTiming({ speech, pace }: { speech: StoryboardScene["speech"][number]; pace: Storyboard["voice"]["pace"] }) {
-  if (!Number.isSafeInteger(speech.startMs) || !Number.isSafeInteger(speech.endMs) || speech.startMs < 0 || speech.endMs <= speech.startMs) return <p className="text-xs text-warning-foreground">Enter a valid positive speech interval before checking its budget.</p>;
+  if (!Number.isSafeInteger(speech.startMs) || !Number.isSafeInteger(speech.endMs) || speech.startMs < 0 || speech.endMs <= speech.startMs) return <AppNotification className="text-xs text-warning-foreground">Enter a valid positive speech interval before checking its budget.</AppNotification>;
   const budget = speechIntervalBudget(speech.startMs, speech.endMs, typeof speech.delivery === "string" ? pace : speech.delivery.pace);
   return <p className="text-xs text-muted-foreground">{speech.text.trim() ? speech.text.trim().split(/\s+/u).length : 0} words · preferred {budget.preferredTargetWords}, absolute maximum {budget.maximumWords} · {[...speech.text.replace(/\s/gu, "")].length} characters · preferred {budget.preferredTargetNonspaceCharacters}, absolute maximum {budget.maximumNonspaceCharacters}</p>;
 }
@@ -162,8 +164,8 @@ function StoryboardCard({ projectId, jobId, storyboard, eligible, enabled, check
       !storyboard.current && !["deleting", "deleted"].includes(storyboard.state) ? "Storyboard needs regeneration" : storyboardStatusLabel(storyboard) : "Plan scenes and a script from your approved references and saved idea."}</p>
     {!eligible && !draft && <p className="text-xs text-muted-foreground">Approve the current Character, Product and Location references first.</p>}
     {!enabled && <p className="text-xs text-muted-foreground">Storyboard generation is awaiting server setup.</p>}
-    {storyboard && !storyboard.current && storyboard.state !== "deleted" && <p className="text-xs text-warning-foreground">Inputs or approved references changed. This storyboard needs regeneration. Saved scenes are preserved for review; Reject and Delete before generating a replacement.</p>}
-    {storyboard?.error && <p role="status" className="text-xs text-warning-foreground">{storyboard.recovery ? storyboardRecoveryMessage(storyboard.recovery) : storyboardErrorMessage(storyboard.error)}</p>}
+    {storyboard && !storyboard.current && storyboard.state !== "deleted" && <AppNotification className="text-xs text-warning-foreground">Inputs or approved references changed. This storyboard needs regeneration. Saved scenes are preserved for review; Reject and Delete before generating a replacement.</AppNotification>}
+    {storyboard?.error && <AppNotification role="status" className="text-xs text-warning-foreground">{storyboard.recovery ? storyboardRecoveryMessage(storyboard.recovery) : storyboardErrorMessage(storyboard.error)}</AppNotification>}
     {storyboard?.document && !storyboard.error && storyboard.recovery?.validations?.some(report => !report.valid) && <p className="text-xs text-muted-foreground">Your saved storyboard passed validation. Reports for the unchanged original provider responses are retained below for inspection.</p>}
     {storyboard?.recovery?.validations?.map(report => <ValidationDetails key={report.requestIndex} report={report} />)}
     {validation && <ValidationDetails report={validation} />}
@@ -194,7 +196,7 @@ function StoryboardCard({ projectId, jobId, storyboard, eligible, enabled, check
       </dl>
     </details>}
     {(!storyboard || storyboard.state === "deleted") && eligible && <Button type="button" size="sm" disabled={!enabled || !!busy} onClick={() => void act("generate")}>{busy ? "Starting…" : "Generate Storyboard"}</Button>}
-    {storyboard && storyboardQueueMessage(storyboard) && <p role="status" className={storyboard.execution === "queued_delayed" || storyboard.execution === "stalled" ? "text-xs text-warning-foreground" : "text-xs text-muted-foreground"}>{storyboardQueueMessage(storyboard)}</p>}
+    {storyboard && storyboardQueueMessage(storyboard) && <AppNotification role="status" className={storyboard.execution === "queued_delayed" || storyboard.execution === "stalled" ? "text-xs text-warning-foreground" : "text-xs text-muted-foreground"}>{storyboardQueueMessage(storyboard)}</AppNotification>}
     {storyboard && <p className="text-xs text-muted-foreground">Worker attempts: {storyboard.attempts ?? 0}/3 · Provider requests: {storyboard.requestCount ?? 0}/2</p>}
     {active && storyboard?.state !== "queued" && !storyboardQueueMessage(storyboard) && <p className="text-xs text-muted-foreground">{storyboard?.state === "deleting" ? "Removing storyboard content. Approved references are preserved." : "Planning and validating your scenes. Progress is saved automatically."}</p>}
     {draft && storyboard?.state !== "deleting" && <>
@@ -228,10 +230,10 @@ function StoryboardCard({ projectId, jobId, storyboard, eligible, enabled, check
     {storyboard?.canRetry && <Button type="button" size="sm" variant="outline" disabled={!enabled || !!busy} onClick={() => void act("retry")}>{storyboard.state === "deleting" ? "Retry deletion" : "Retry saved storyboard work"}</Button>}
     {storyboard?.canDelete && !confirmDelete && <Button type="button" size="sm" variant="outline" disabled={!!busy} onClick={() => setConfirmDelete(true)}>Reject and Delete</Button>}
     {confirmDelete && <div className="space-y-2 rounded-md border border-border p-3">
-      {storyboard?.recovery?.validations?.some(report => !report.valid) && <p className="text-xs text-warning-foreground">Review the validation errors above first. Deletion removes the saved responses; recovery cannot rewrite creative content or fit excessive dialogue into its interval. Generating a replacement is a separate paid action.</p>}
+      {storyboard?.recovery?.validations?.some(report => !report.valid) && <AppNotification className="text-xs text-warning-foreground">Review the validation errors above first. Deletion removes the saved responses; recovery cannot rewrite creative content or fit excessive dialogue into its interval. Generating a replacement is a separate paid action.</AppNotification>}
       <p className="text-xs text-muted-foreground">Delete this storyboard and unsaved edits? Character, Product and Location references stay approved. Generate Storyboard will be available after deletion.</p>
       <div className="flex flex-wrap gap-2"><Button type="button" size="sm" disabled={!!busy} onClick={() => void act("reject")}>Confirm deletion</Button>
         <Button type="button" size="sm" variant="outline" disabled={!!busy} onClick={() => setConfirmDelete(false)}>Keep storyboard</Button></div></div>}
-    {error && <p role="alert" className="text-xs text-destructive">{error}</p>}
+    {error && <AppNotification role="alert" className="text-xs text-destructive">{error}</AppNotification>}
   </section>;
 }

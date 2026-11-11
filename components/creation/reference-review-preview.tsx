@@ -32,6 +32,8 @@ import {
   useStudioPanels,
   type StudioPreviewMedia,
 } from "./studio-workspace-panels";
+import { AppNotification } from "@/components/notifications/app-notification";
+
 
 type Scope = { projectId: string; jobId: string };
 async function reviewRequest(
@@ -454,19 +456,19 @@ export function ReferenceReviewPreview({
               </Button>
             </div>
             {job.failure && (
-              <p role="status" className="break-words text-destructive">
+              <AppNotification role="status" className="break-words text-destructive">
                 {job.failure.message}
-              </p>
+              </AppNotification>
             )}
             {error && !confirmation && (
-              <p role="alert" className="break-words text-destructive">
+              <AppNotification role="alert" className="break-words text-destructive">
                 {error}
-              </p>
+              </AppNotification>
             )}
             {!review.actionsAvailable && (
-              <p className="text-warning-foreground">
+              <AppNotification className="text-warning-foreground">
                 Review actions are temporarily unavailable.
-              </p>
+              </AppNotification>
             )}
             <CharacterV5Review
               projectId={projectId}
@@ -541,15 +543,15 @@ export function ReferenceReviewPreview({
               {hasAssets && (
                 <>
                   {group.state === "failed" && (
-                    <p className="text-[11px] text-destructive">
+                    <AppNotification className="text-[11px] text-destructive">
                       Replacement failed. Your previous usable views and
                       outdated sheet remain available. Check Progress for
                       details.
-                    </p>
+                    </AppNotification>
                   )}
                   {group.validationFailure &&
                     group.execution?.state !== "running" && (
-                      <p className="break-words text-[11px] text-destructive">
+                      <AppNotification className="break-words text-[11px] text-destructive">
                         {group.validationFailure.view}: output rejected (
                         {group.validationFailure.reasons.slice(0, 2).join(", ")}
                         {group.validationFailure.reasons.length > 2
@@ -559,26 +561,26 @@ export function ReferenceReviewPreview({
                         {group.providerDecisionRequired
                           ? "Provider decision required."
                           : "Request only the affected view again."}
-                      </p>
+                      </AppNotification>
                     )}
                   {!!group.needsFreshRequestViews?.length && (
-                    <p className="text-[11px] text-warning-foreground">
+                    <AppNotification className="text-[11px] text-warning-foreground">
                       Historical requests are preserved. Start Character V5
                       above for new generation and manual review.
-                    </p>
+                    </AppNotification>
                   )}
                   {group.providerDecisionRequired && (
-                    <p className="text-[11px] text-destructive">
+                    <AppNotification className="text-[11px] text-destructive">
                       Character provider single-view contract remains
                       unsatisfied. Review the rejected outputs before choosing a
                       provider or contract change. Automatic spending stopped.
-                    </p>
+                    </AppNotification>
                   )}
                   {group.execution?.state === "waiting" && (
-                    <p className="text-[11px] text-warning-foreground">
+                    <AppNotification className="text-[11px] text-warning-foreground">
                       Waiting for generation worker. Start the local UGC worker
                       to continue.
-                    </p>
+                    </AppNotification>
                   )}
                   <p className="text-[11px] leading-relaxed text-muted-foreground">
                     {group.type === "character"
@@ -647,19 +649,19 @@ export function ReferenceReviewPreview({
                                 {asset.label}
                               </p>
                               {asset.validationRequired && asset.available && (
-                                <p className="break-words text-[10px] text-warning-foreground">
+                                <AppNotification className="break-words text-[10px] text-warning-foreground">
                                   Historical image — single-view validation
                                   required
-                                </p>
+                                </AppNotification>
                               )}
                               {asset.stale && (
-                                <p className="break-words text-[10px] text-warning-foreground">
+                                <AppNotification className="break-words text-[10px] text-warning-foreground">
                                   {asset.view === "sheet"
                                     ? "Outdated — needs rebuilding"
                                     : asset.state === "failed"
                                       ? "Previous view — replacement failed"
                                       : "Previous view — replacement pending"}
-                                </p>
+                                </AppNotification>
                               )}
                             </div>
                             <div className="flex shrink-0 items-center gap-0.5">
@@ -782,10 +784,10 @@ export function ReferenceReviewPreview({
                       ))}
                   </div>
                   {group.sheetInvalidated && (
-                    <p className="text-[11px] text-warning-foreground">
+                    <AppNotification className="text-[11px] text-warning-foreground">
                       The previous sheet is shown for comparison. A replacement
                       view and rebuilt sheet must be reviewed before approval.
-                    </p>
+                    </AppNotification>
                   )}
                 </>
               )}
@@ -918,9 +920,9 @@ export function ReferenceReviewPreview({
               : "The local worker will regenerate only this view and rebuild the Product Sheet. Previous references stay available until the replacement is saved. You will need to approve this reference again."}
           </DialogDescription>
           {error && (
-            <p role="alert" className="break-words text-xs text-destructive">
+            <AppNotification role="alert" className="break-words text-xs text-destructive">
               {error}
-            </p>
+            </AppNotification>
           )}
           <div className="flex justify-end gap-2">
             <DialogClose

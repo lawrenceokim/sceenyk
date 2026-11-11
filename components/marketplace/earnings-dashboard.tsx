@@ -8,6 +8,8 @@ import { EarningsCard, EarningsEmptyState, EarningsIcon } from "./earnings-ui";
 import { EarningsHistory } from "./earnings-history";
 import { WithdrawalPanel } from "./withdrawal-panel";
 import { MarketplacePagination } from "./pagination";
+import { AppNotification } from "@/components/notifications/app-notification";
+
 
 type Props = { earnings: CreatorEarnings; account?: WithdrawalAccount; page: number; clerkUserId: string; busy: boolean; error: string; message: string; onRefresh: () => Promise<void> };
 
@@ -34,9 +36,9 @@ export function EarningsDashboard({ earnings, account, page, clerkUserId, busy, 
         return <EarningsCard key={label} label={label} className="flex items-center gap-3"><EarningsIcon><Icon /></EarningsIcon><dl className="grid min-w-0 gap-1"><dt className="text-[11px] leading-4 text-muted-foreground">{label}</dt><dd className="[&&&&]:text-base [&&&&]:leading-6 font-semibold tabular-nums">{usd(value)}</dd></dl></EarningsCard>;
       })}
     </div>
-    {error && <p role="alert" className="rounded-lg bg-destructive-surface p-3 text-destructive">{error}</p>}
-    {message && <p role="status" className="text-muted-foreground">{message}</p>}
-    {account ? <WithdrawalPanel account={account} page={page} clerkUserId={clerkUserId} onChanged={onRefresh} marketplaceSales={sales} /> : <><p role="status" className="rounded-lg border border-border p-4 text-muted-foreground">Your payout account couldn’t be loaded. Refresh earnings to try again.</p>{sales}</>}
+    {error && <AppNotification role="alert" className="rounded-lg bg-destructive-surface p-3 text-destructive">{error}</AppNotification>}
+    {message && <AppNotification role="status" className="text-muted-foreground">{message}</AppNotification>}
+    {account ? <WithdrawalPanel account={account} page={page} clerkUserId={clerkUserId} onChanged={onRefresh} marketplaceSales={sales} /> : <><AppNotification role="status" className="rounded-lg border border-border p-4 text-muted-foreground">Your payout account couldn’t be loaded. Refresh earnings to try again.</AppNotification>{sales}</>}
     <footer className="flex flex-wrap items-center gap-x-5 gap-y-2 text-[11px] text-muted-foreground">
       <Button variant="ghost" size="sm" disabled={busy} onClick={() => void onRefresh()}><RefreshCw className={busy ? "motion-safe:animate-spin" : ""} aria-hidden="true" />{busy ? "Checking…" : "Refresh earnings"}</Button>
       <Link href="/settings/templates" className="rounded hover:text-link focus-visible:outline-2 focus-visible:outline-ring">My Marketplace Listings</Link>

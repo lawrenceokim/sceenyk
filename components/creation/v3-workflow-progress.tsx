@@ -9,6 +9,8 @@ import { referenceFailureLabel } from "@/lib/final-video-generation-v3/reference
 import { Button } from "@/components/ui/button";
 import { FinalVideoReview } from "./v3-final-video-controls";
 import { progressStatusLabels, storyboardProgressError, workflowProgress, type ProgressStatus } from "./v3-progress-state";
+import { AppNotification } from "@/components/notifications/app-notification";
+
 
 const statusStyles: Record<ProgressStatus, string> = {
   not_started: "border-border bg-muted text-muted-foreground",
@@ -57,16 +59,16 @@ export function V3WorkflowProgress({ workspace, productRequired, busy, locked, e
           <StatusIcon status={current.status} />{progress.complete ? "Complete" : `${current.title} · ${progressStatusLabels[current.status]}`}
         </p>
         <p className="text-sm leading-relaxed">{current.description}</p>
-        {buildFailure && <p className="text-sm text-destructive">{packageBuildError(buildFailure.code)}</p>}
-        {error && !buildFailure && <p className="text-sm text-destructive">{v3ActionErrorMessage(error)}</p>}
+        {buildFailure && <AppNotification className="text-sm text-destructive">{packageBuildError(buildFailure.code)}</AppNotification>}
+        {error && !buildFailure && <AppNotification className="text-sm text-destructive">{v3ActionErrorMessage(error)}</AppNotification>}
         {latestProblems.filter(t => t.kind !== "video" && (t.referenceCleanup ||
           !progress.stages.some(stage => stage.status === "completed" && (stage.id === t.kind || stage.id === "references" && ["character", "product", "location"].includes(t.kind))) &&
           !(t.kind === "join" && progress.generated))).map(t => <div key={t.id} className="space-y-2 text-sm">
-          <p className="text-destructive">{t.referenceCleanup ? "Unwanted image deletion needs attention. Open Sources to retry image cleanup."
+          <AppNotification className="text-destructive">{t.referenceCleanup ? "Unwanted image deletion needs attention. Open Sources to retry image cleanup."
             : t.kind === "package" ? packageBuildError(t.packageBuild?.code ?? t.errorCode ?? "V3_TASK_FAILED")
               : t.location ? t.location.failureLabel : t.diagnostics ? referenceFailureLabel(t.kind, t.diagnostics)
                 : t.kind === "storyboard" ? storyboardProgressError(t.errorCode)
-                  : t.kind === "join" ? "Your final video could not be joined." : "Saved video deletion needs attention. Open Final Video to retry."}</p>
+                  : t.kind === "join" ? "Your final video could not be joined." : "Saved video deletion needs attention. Open Final Video to retry."}</AppNotification>
           {((!t.location && t.recoveryAvailable) || t.status === "reconciliation_required" && t.kind === "storyboard" || t.packageBuild?.recoverable) &&
             <Button variant="outline" disabled={busy || !!workspace.creativeLock && ["character", "product", "location", "storyboard", "package"].includes(t.kind)} onClick={() => void act("recover_task", { id: t.id })}>Recover saved response</Button>}
           {t.kind === "join" && t.status === "failed" && <Button variant="outline" disabled={busy} onClick={() => void act("recover_task", { id: t.id })}>Recover local join</Button>}

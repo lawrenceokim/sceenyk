@@ -18,6 +18,8 @@ import type { CategoryId } from "@/lib/projects/options";
 import { TemplateCover } from "./listing-card";
 import { templatePreviewPoster } from "./template-media-preview";
 import { ListingEditorSkeleton } from "./detail-skeletons";
+import { AppNotification } from "@/components/notifications/app-notification";
+
 
 type Props = { clerkUserId: string; project?: SavedProject; listing?: OwnedListing };
 
@@ -25,7 +27,7 @@ const fieldClass = "mt-1.5 w-full min-w-0 rounded-lg border border-input bg-fiel
 const labelClass = "block text-[13px]! font-medium leading-5 text-foreground";
 
 export function ListingEditor(props: Props) {
-  return useAuthAvailable() ? <AccountEditor {...props} /> : <p role="alert">Sign in is temporarily unavailable.</p>;
+  return useAuthAvailable() ? <AccountEditor {...props} /> : <AppNotification role="alert">Sign in is temporarily unavailable.</AppNotification>;
 }
 
 function AccountEditor(props: Props) {
@@ -115,7 +117,7 @@ function Editor({ project, listing }: Props) {
               </div>
               <p className="flex items-start gap-2 border-l border-border pl-3 text-[11px] leading-4 text-muted-foreground"><Info className="mt-0.5 size-4 shrink-0" aria-hidden="true" /><span>AI generation credits are separate from adoption.</span></p>
             </div>
-            {adoptionType === "paid" && <div className="mt-3 space-y-1"><label className={labelClass} htmlFor={`${prefix}-price`}>Adoption price (USD)</label><input id={`${prefix}-price`} name="price" type="number" inputMode="decimal" min={sandboxMarketplacePricing.minMinor / 100} max={sandboxMarketplacePricing.maxMinor / 100} step="0.01" required className={`${fieldClass} max-w-48`} value={price} onChange={event => setPrice(event.target.value)} /><p className="text-[11px] leading-4 text-muted-foreground">PayPal Sandbox · {usd(sandboxMarketplacePricing.minMinor)}–{usd(sandboxMarketplacePricing.maxMinor)}. New prices apply to new purchases; saved checkouts retain their price. Paid sales record pending earnings; withdrawals are unavailable.</p></div>}
+            {adoptionType === "paid" && <div className="mt-3 space-y-1"><label className={labelClass} htmlFor={`${prefix}-price`}>Adoption price (USD)</label><input id={`${prefix}-price`} name="price" type="number" inputMode="decimal" min={sandboxMarketplacePricing.minMinor / 100} max={sandboxMarketplacePricing.maxMinor / 100} step="0.01" required className={`${fieldClass} max-w-48`} value={price} onChange={event => setPrice(event.target.value)} /><p className="text-[11px] leading-4 text-muted-foreground">PayPal · {usd(sandboxMarketplacePricing.minMinor)}–{usd(sandboxMarketplacePricing.maxMinor)}. New prices apply to new purchases; saved checkouts retain their price. Paid sales record pending earnings; withdrawals are unavailable.</p></div>}
           </div>
 
           <label className="flex min-h-12 cursor-pointer items-start gap-3 rounded-lg border border-border bg-muted/20 p-3 text-[12px] leading-[18px]"><input name="rightsConfirmed" type="checkbox" checked={rights} onChange={event => setRights(event.target.checked)} className="mt-0.5 size-4 shrink-0 accent-primary" /><span>I have reviewed the public text and preview for private information. I have the right to publish, share and, for paid adoption, monetize this reusable template and its preview.</span></label>
@@ -128,7 +130,7 @@ function Editor({ project, listing }: Props) {
             <Link href="/settings/templates" className="inline-flex min-h-9 items-center gap-1 rounded-md px-2 text-[12px] font-medium text-primary hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:ml-auto">My Marketplace Listings <ArrowUpRight className="size-3.5" aria-hidden="true" /></Link>
           </div>
         </fieldset>
-        <div role="status" aria-live="polite" className={`text-[12px] ${error ? "text-destructive" : "text-success-foreground"}`}>{error || success || (pending && pending !== "published" ? "Saving listing…" : "")}</div>
+        <AppNotification role="status" aria-live="polite" className={`text-[12px] ${error ? "text-destructive" : "text-success-foreground"}`}>{error || success || (pending && pending !== "published" ? "Saving listing…" : "")}</AppNotification>
         {archived && <p className="mt-2 text-[12px] text-muted-foreground">This archived listing is retained for adoption history and cannot be republished.</p>}
         {listing?.status === "published" && <Link href={`/marketplace/${listing.id}`} className="mt-2 inline-flex min-h-8 items-center gap-1 text-[12px] font-medium text-primary hover:underline focus-visible:outline-2 focus-visible:outline-ring">View public listing <ArrowUpRight className="size-3.5" aria-hidden="true" /></Link>}
       </form>

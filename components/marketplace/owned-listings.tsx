@@ -11,10 +11,12 @@ import type { ListingPage, OwnedListing } from "@/lib/marketplace/contract";
 import { TemplateLibrary } from "@/components/templates/template-library";
 import { OwnedInfiniteGallery } from "./owned-infinite-gallery";
 import { GallerySkeleton } from "./gallery-skeletons";
+import { AppNotification } from "@/components/notifications/app-notification";
+
 
 type Props = { clerkUserId: string; result: ListingPage<OwnedListing>; presentation?: "management" | "library" };
 export function OwnedListings(props: Props) {
-  return useAuthAvailable() ? <AccountListings {...props} /> : <p>Sign in is temporarily unavailable.</p>;
+  return useAuthAvailable() ? <AccountListings {...props} /> : <AppNotification>Sign in is temporarily unavailable.</AppNotification>;
 }
 function AccountListings({ clerkUserId, result, presentation = "management" }: Props) {
   const { isLoaded, userId } = useAuth();

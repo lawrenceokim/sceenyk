@@ -1,5 +1,9 @@
 # Architecture Context
 
+## Shared slide-in feedback (2026-11-11)
+
+Application feedback uses one shared slide-in notification viewport and renderer. Source components retain their state, callbacks and React context; feedback portals into a bounded stack that follows the active dialog/native top layer. Errors, validation, warnings and action results use this renderer; loading/progress, ordinary content and confirmations retain their existing owners. Identical notices are deduplicated, interactive notices remain actionable, and auth changes clear private feedback. The Studio testing option catalog is presentation-only: disabled duration/resolution choices explain their restriction through the same notification system, with existing server/worker admission unchanged.
+
 ## Projects session cache (2026-11-11)
 
 Projects reuses Next.js Activity and adds a bounded browser-memory gallery/media cache keyed by the active Clerk user and session. It uses no shared private server cache or persistent browser storage. A Projects-only authenticated action compares compact owner-scoped revisions and enriches changed cards; background checks keep existing cards visible. Auth changes clear snapshots, pending requests and private Blob URLs, even while Projects is inactive. Media bytes are reused only within a short authorization lifetime and reauthorized before further display after expiry. Other routes retain their data owners and caching behavior. Setup and current acceptance are recorded in [Projects previews](project-video-previews.md).

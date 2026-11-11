@@ -8,6 +8,8 @@ import type { RuntimeDto } from "@/lib/final-video-generation-v3/runtime-server"
 import { uncheckedQuality } from "@/lib/final-video-generation-v3/runtime-contract";
 import { useStudioPanels } from "./studio-workspace-panels";
 import type { FinalOperationPresentation } from "@/lib/final-video-generation-v3/final-operation";
+import { AppNotification } from "@/components/notifications/app-notification";
+
 
 export function V3MergeReview({ workspace, act, disabled, operation, refreshing = false }: { workspace: RuntimeDto;
   act: (action: string, payload?: Record<string, unknown>) => Promise<boolean>; disabled: boolean;
@@ -35,9 +37,9 @@ export function V3MergeReview({ workspace, act, disabled, operation, refreshing 
     </p>
     {operation?.detail && <p role="status" className="text-xs text-muted-foreground">{operation.detail}</p>}
     {refreshing && !operation?.active && <p role="status" className="flex items-center gap-2 text-xs text-muted-foreground"><LoaderCircle aria-hidden="true" className="size-3 shrink-0 motion-safe:animate-spin" />Refreshing final status...</p>}
-    {operation?.error && <div role="alert" className="space-y-2 text-sm text-muted-foreground"><p>{operation.error}</p><Button size="sm" variant="outline" onClick={operation.checkStatus}>Check status</Button></div>}
+    {operation?.error && <AppNotification role="alert" className="space-y-2 text-sm text-muted-foreground"><p>{operation.error}</p><Button type="button" size="sm" variant="outline" onClick={operation.checkStatus}>Check status</Button></AppNotification>}
     {outdated && <p className="text-xs text-muted-foreground">The approved clips or project settings changed. Merge the current approved clips again.</p>}
-    {failed && <p role="alert" className="text-sm text-muted-foreground">The clips could not be merged. Your approved clips are saved. Retry merging, or open Progress for details.</p>}
+    {failed && <AppNotification role="alert" className="text-sm text-muted-foreground">The clips could not be merged. Your approved clips are saved. Retry merging, or open Progress for details.</AppNotification>}
     <div className="flex min-w-0 flex-wrap gap-2 [&>button]:max-w-full [&>button]:whitespace-normal">
       {(!result || outdated || result.state === "deleted") && <Button size="sm" disabled={locked || !canStart} onClick={() => void request("merge", {
         packageId: group.packageId, packageHash: group.packageHash, manifestHash: merge?.manifestHash,

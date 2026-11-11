@@ -6,6 +6,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { FreeAllowanceSummary } from "@/components/free-allowance";
 import type { CreditWallet, PurchaseStatus } from "@/lib/payments/types";
 import { FinancialRowsSkeleton } from "./financial-skeletons";
+import { AppNotification } from "@/components/notifications/app-notification";
+
 
 type Props = {
   purchaseForm: ReactNode;
@@ -55,10 +57,10 @@ export function CreditBillingDashboard({ purchaseForm, wallet, walletLoaded, bus
           <div className="flex items-center gap-3"><ShoppingCart className="size-5 shrink-0 text-primary" aria-hidden="true" /><h2 id="purchases-heading">Recent purchases</h2></div>
           <Button variant="ghost" size="icon-xs" disabled={busy} onClick={onCheckPurchases} aria-label={busy ? "Checking payment…" : "Check purchases"} title={busy ? "Checking payment…" : "Check purchases"} className="size-7 min-h-7 text-muted-foreground [@media(pointer:coarse)]:size-11"><RefreshCw className={`size-4 ${busy ? "motion-safe:animate-spin" : ""}`} aria-hidden="true" /></Button>
         </div>
-        {!wallet ? walletLoaded ? <p className="text-muted-foreground">Purchases unavailable. Refresh to retry.</p> : <FinancialRowsSkeleton /> : !wallet.purchases.length ? <p className="py-3 text-muted-foreground">No credit purchases yet.</p> : <ul className="list-none divide-y divide-border">
+        {!wallet ? walletLoaded ? <AppNotification className="text-muted-foreground">Purchases unavailable. Refresh to retry.</AppNotification> : <FinancialRowsSkeleton /> : !wallet.purchases.length ? <p className="py-3 text-muted-foreground">No credit purchases yet.</p> : <ul className="list-none divide-y divide-border">
           {wallet.purchases.map((purchase, index) => <li key={purchase.orderId ?? `${purchase.created_at}-${index}`} className="grid gap-1 py-2.5 first:pt-0 last:pb-0">
             <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-              <span className="text-[13px] leading-5 font-semibold">{purchase.pack_name} · {purchase.credits.toLocaleString()} credits</span>
+              <span className="text-[13px] leading-5 font-semibold">{purchase.pack_name.replace(/\bTest Pack\b/g, "Pack")} · {purchase.credits.toLocaleString()} credits</span>
               <span className="inline-flex flex-wrap items-center gap-1.5 text-[13px] leading-5 font-semibold tabular-nums">${purchase.amount}<span className={`rounded-full px-1.5 py-0.5 text-[11px] leading-4 font-medium ${statusStyles[purchase.status]}`}>{purchase.status}</span></span>
             </div>
             <time className="text-[12px] leading-[18px] text-muted-foreground" dateTime={purchase.created_at}>{new Date(purchase.created_at).toLocaleString()}</time>
@@ -73,7 +75,7 @@ export function CreditBillingDashboard({ purchaseForm, wallet, walletLoaded, bus
       </section>
       <section className={`${card} flex min-h-44 flex-col gap-4`} aria-labelledby="credit-activity-heading">
         <div className="flex min-h-7 items-center gap-3"><Layers className="size-5 shrink-0 text-primary" aria-hidden="true" /><h2 id="credit-activity-heading">Paid credit activity</h2></div>
-        {!wallet ? walletLoaded ? <p className="text-muted-foreground">Activity unavailable. Refresh purchases to retry.</p> : <FinancialRowsSkeleton /> : !wallet.activity.length ? <p className="py-3 text-muted-foreground">No paid credit activity yet.</p> : <ul className="list-none divide-y divide-border">
+        {!wallet ? walletLoaded ? <AppNotification className="text-muted-foreground">Activity unavailable. Refresh purchases to retry.</AppNotification> : <FinancialRowsSkeleton /> : !wallet.activity.length ? <p className="py-3 text-muted-foreground">No paid credit activity yet.</p> : <ul className="list-none divide-y divide-border">
           {wallet.activity.map((entry, index) => <li key={`${entry.createdAt}-${index}`} className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1 py-2.5 first:pt-0 last:pb-0">
             <div className="grid gap-1"><span className="text-[13px] leading-5 font-semibold">{activityCopy[entry.type]}</span><time className="text-[12px] leading-[18px] text-muted-foreground" dateTime={entry.createdAt}>{new Date(entry.createdAt).toLocaleString()}</time></div>
             <span className={`text-[13px] leading-5 font-semibold tabular-nums ${entry.availableDelta > 0 ? "text-success-foreground" : "text-foreground"}`} title={entry.type === "consumption" ? "Spent from reserved credits" : "Change to available credits"}>{entry.type === "consumption" ? `−${entry.amount.toLocaleString()}` : `${entry.availableDelta > 0 ? "+" : ""}${entry.availableDelta.toLocaleString()}`} credits</span>

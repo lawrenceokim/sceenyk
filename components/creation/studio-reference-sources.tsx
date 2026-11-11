@@ -14,6 +14,8 @@ import { ugcV1LimitMessages } from "@/lib/projects/ugc-v1";
 import { referenceNameLimit } from "@/lib/projects/reference-names";
 import { StudioPanelTarget, useStudioPanels } from "./studio-workspace-panels";
 import { ProCharacterSources } from "./pro-character-sources";
+import { AppNotification } from "@/components/notifications/app-notification";
+
 
 export type StudioReferenceSourcesProps = {
   label: string;
@@ -99,13 +101,13 @@ function StandardReferenceSources({ label, addLabel, role, references, onAdd, on
       })}
     </ul>}
     {!perCharacterSheets && <div className="mt-2"><StudioPanelTarget panel={role} /></div>}
-    {!multiple && images.length > 1 && <p role="alert" className="mt-2 text-xs text-muted-foreground">{role === "character" ? "Basic Studio supports one character. Your Pro characters and sheets are saved. Switch to Pro to continue." : ugcV1LimitMessages[role]}</p>}
+    {!multiple && images.length > 1 && <AppNotification role="alert" className="mt-2 text-xs text-muted-foreground">{role === "character" ? "Basic Studio supports one character. Your Pro characters and sheets are saved. Switch to Pro to continue." : ugcV1LimitMessages[role]}</AppNotification>}
     <div className="mt-2 space-y-2">
       {references.flatMap(reference => reference.images).map(({ local, asset }) => {
         const state = local ? uploadStates[local.id] : undefined;
         if (local) return <div key={local.id} className="min-w-0 text-[11px] text-muted-foreground">
           <p className="truncate">{local.file.name}</p>
-          {state?.status === "failed" ? <><p role="status" className="break-words text-destructive">{state.message}</p>
+          {state?.status === "failed" ? <><AppNotification role="status" className="break-words text-destructive">{state.message}</AppNotification>
             <Button type="button" variant="ghost" disabled={readOnly || busy} className={buttonClass} onClick={() => onUpload(local)}>Retry upload</Button></>
             : <p role="status">{state?.status === "uploading" ? `Uploading${state.progress === undefined ? "…" : ` · ${state.progress}%`}`
               : state?.status === "verifying" ? "Verifying…" : signedIn ? "Preparing upload…" : "Local preview"}</p>}
@@ -113,7 +115,7 @@ function StandardReferenceSources({ label, addLabel, role, references, onAdd, on
         if (asset && asset.status !== "uploaded") return <div key={asset.id} className="min-w-0 text-[11px] text-muted-foreground">
           <p className="truncate">{asset.filename}</p>
           {asset.status === "pending" ? <Button type="button" variant="ghost" disabled={readOnly || busy} className={buttonClass} onClick={() => onRecover(asset)}>Check upload</Button>
-            : <p role="status" className="text-destructive">Upload rejected. Remove and select again.</p>}
+            : <AppNotification role="status" className="text-destructive">Upload rejected. Remove and select again.</AppNotification>}
         </div>;
         return null;
       })}

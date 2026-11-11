@@ -5,6 +5,7 @@ import { Check, CircleAlert, FolderOpen, LoaderCircle, Save } from "lucide-react
 import { AccountAction } from "@/components/account-action";
 import { Button } from "@/components/ui/button";
 import { projectTitleLimit } from "@/lib/projects/options";
+import { AppNotification } from "@/components/notifications/app-notification";
 
 export type SaveState =
   | { status: "idle" }
@@ -177,8 +178,8 @@ export function ProjectSaveControls({
           </AccountAction>
         )}
         <span role="status" aria-live="polite" className="sr-only">{signedIn ? label : "Sign in to save."}</span>
-        {description && <span id={`${id}-save-description`} role={error ? "alert" : undefined}
-          className={error ? "absolute right-0 top-full z-50 mt-2 w-64 max-w-[calc(100vw-2rem)] rounded-lg border border-destructive/30 bg-card px-3 py-2 text-xs leading-relaxed text-destructive shadow-md [overflow-wrap:anywhere]" : "sr-only"}>{description}</span>}
+        {description && (error ? <AppNotification id={`${id}-save-description`} role="alert">{description}</AppNotification>
+          : <span id={`${id}-save-description`} className="sr-only">{description}</span>)}
 </div>);
   return children({ project, save });
 }

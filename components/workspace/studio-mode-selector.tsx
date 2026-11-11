@@ -3,6 +3,8 @@
 import { useId } from "react";
 import { studioModeLabel } from "@/lib/studio-mode/contract";
 import { useStudioMode } from "./studio-mode-provider";
+import { AppNotification } from "@/components/notifications/app-notification";
+
 
 export function StudioModeSelector({ collapsed = false }: { collapsed?: boolean }) {
   const { mode, ready, pending, error, select, retry } = useStudioMode();
@@ -23,10 +25,10 @@ export function StudioModeSelector({ collapsed = false }: { collapsed?: boolean 
     {!collapsed && <p id={`${id}-status`} role="status" aria-live="polite" className="sr-only">
       {!ready && !error ? "Loading Studio mode…" : pending ? "Saving Studio mode…" : active}
     </p>}
-    {error && <div className="mt-1 text-[10px] leading-4 text-destructive" role="alert">
+    {error && <AppNotification className="mt-1 text-[10px] leading-4 text-destructive" role="alert">
       <span className={collapsed ? "sr-only" : undefined}>{error} </span>
       <button type="button" onClick={retry} aria-label="Reload Studio mode" title={error} className="min-h-8 rounded px-1 underline focus-visible:outline-2 focus-visible:outline-ring">Retry</button>
-    </div>}
+    </AppNotification>}
   </div>;
 }
 
