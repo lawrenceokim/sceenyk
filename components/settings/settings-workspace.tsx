@@ -122,7 +122,7 @@ export function SettingsWorkspace({ children, title = "Settings", description = 
       [&&_[data-slot='button']_svg]:w-[14px] [&&_[data-slot='button']_svg]:h-[14px] [&&_dl_dd]:text-[length:13px]
       [&&_dl_dd]:leading-[20px] [@media_(pointer:_coarse)]:[&&_[data-slot='button']]:min-h-[44px]
       [@media_(pointer:_coarse)]:[&&_:is(.sceenyk-field,_.sceenyk-input,_input:not([type='radio']):not([type='checkbox']),_select)]:min-h-[44px]
-      ${wideContent ? "[&&&]:max-w-none" : ""}
+      ${wideContent || /^\/settings\/templates\/[^/]+$/.test(pathname) ? "[&&&]:max-w-none" : ""}
     `}>{children}</div>
       </div>
     </div>

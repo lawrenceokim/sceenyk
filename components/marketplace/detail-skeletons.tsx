@@ -14,9 +14,12 @@ export function TemplateDetailSkeleton({ owned = false }: { owned?: boolean }) {
 }
 
 export function ListingEditorSkeleton() {
-  return <SkeletonRegion label="Loading template details…" className="grid items-start gap-6 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
-    <div className="sceenyk-card min-w-0 space-y-5 rounded-[var(--radius-xl)] border border-border bg-card p-5 sm:p-7"><Skeleton className="h-7 w-40" /><Skeleton className="h-16 w-full" /><SkeletonField /><SkeletonField multiline /><div className="grid gap-5 sm:grid-cols-2"><SkeletonField /><SkeletonField /></div><SkeletonField multiline /><div className="space-y-3 rounded-xl border border-border p-4"><SkeletonField /><Skeleton className="h-16 w-full" /></div><Skeleton className="h-24 w-full" /><SkeletonButton className="w-full" /></div>
-    <div className="overflow-hidden rounded-[var(--radius-xl)] border border-border bg-card"><Skeleton className="aspect-video min-h-[280px] w-full rounded-none" /><div className="space-y-3 p-5"><Skeleton className="h-7 w-40" /><Skeleton className="h-24 w-full" /></div></div>
+  return <SkeletonRegion label="Loading template details…" className="min-w-0 space-y-5">
+    <div className="flex items-center gap-3"><Skeleton className="size-11 rounded-xl" /><div className="space-y-2"><Skeleton className="h-5 w-44" /><Skeleton className="h-4 w-72 max-w-full" /></div></div>
+    <div className="grid min-w-0 items-start gap-5 xl:grid-cols-[minmax(0,1.7fr)_minmax(300px,1fr)]">
+      <div className="min-w-0 space-y-4 rounded-2xl border border-border bg-card p-4 sm:p-5"><div className="flex items-center gap-3 border-b border-border pb-4"><Skeleton className="size-10 rounded-xl" /><Skeleton className="h-5 w-36" /></div><SkeletonField /><SkeletonField multiline /><div className="grid gap-4 sm:grid-cols-2"><SkeletonField /><SkeletonField /></div><SkeletonField multiline /><Skeleton className="h-16 w-full rounded-lg" /><Skeleton className="h-16 w-full rounded-lg" /><div className="flex gap-2"><SkeletonButton /><SkeletonButton /></div></div>
+      <div className="min-w-0 space-y-4 rounded-2xl border border-border bg-card p-4 sm:p-5"><Skeleton className="aspect-[4/3] w-full rounded-xl" /><Skeleton className="h-5 w-40" /><Skeleton className="h-7 w-40 rounded-full" /><Skeleton className="h-14 w-full" /><div className="grid grid-cols-2 gap-2"><Skeleton className="h-12 rounded-lg" /><Skeleton className="h-12 rounded-lg" /><Skeleton className="h-12 rounded-lg" /><Skeleton className="h-12 rounded-lg" /></div></div>
+    </div>
   </SkeletonRegion>;
 }
 

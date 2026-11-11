@@ -10,7 +10,7 @@ import { ListingEditorSkeleton } from "@/components/marketplace/detail-skeletons
 export function SettingsLoading() {
   const pathname = usePathname();
   if (pathname === "/settings/templates/new") return <SettingsSection title="New Template" description="Start with one of your Projects."><ProjectPickerSkeleton /></SettingsSection>;
-  if (pathname.startsWith("/settings/templates/")) return <SettingsSection title="Manage Template" description="Review your template and control when it appears in Marketplace."><ListingEditorSkeleton /></SettingsSection>;
+  if (pathname.startsWith("/settings/templates/")) return <ListingEditorSkeleton />;
   if (pathname === "/settings/templates") return <SettingsSection title="Manage Templates" description="Manage your drafts, published templates and unpublished listings."><GallerySkeleton variant="management" /></SettingsSection>;
   if (pathname === "/settings/creation") return <CreationPreferencesSection><CreationPreferencesSkeleton /></CreationPreferencesSection>;
   if (pathname === "/settings/creator-profile") return <CreatorProfileSection><CreatorProfileSkeleton /></CreatorProfileSection>;
