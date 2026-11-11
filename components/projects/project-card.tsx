@@ -7,6 +7,7 @@ import { ProjectRename } from "./project-rename";
 import { ProjectDelete } from "./project-delete";
 import { ProjectPublish } from "./project-publish";
 import { ProjectPreview } from "./project-preview";
+import { ProjectVideoPreview } from "./project-video-preview";
 import { AbstractPreview } from "@/components/marketplace/abstract-preview";
 import { projectPreviewColor, templateAppearance } from "@/components/marketplace/template-appearance";
 
@@ -46,9 +47,11 @@ export function ProjectCard({ project, jobStatus, preview, listingId }: {
       [&&]:[background:var(--template-color)] [&&_:is(img,_video)]:w-[100%] [&&_:is(img,_video)]:h-[100%]
       [&&_:is(img,_video)]:object-cover
     `}>
+        <ProjectVideoPreview projectId={project.id} initialStatus={jobStatus}>
         <ProjectPreview asset={preview}>
           <AbstractPreview previewId={project.id} fallbackColor={fallbackColor} label="Project preview" ariaLabel="Abstract project placeholder; not generated media" />
         </ProjectPreview>
+        </ProjectVideoPreview>
         <div className={`
       workspace-project-status [&&]:absolute [&&]:top-[6px] [&&]:right-[6px] [&&]:pointer-events-none [&&_>_span]:block
       [&&_>_span]:pt-[2px] [&&_>_span]:pr-[5px] [&&_>_span]:pb-[2px] [&&_>_span]:pl-[5px] [&&_>_span]:text-[length:9px]

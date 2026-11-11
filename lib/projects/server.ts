@@ -254,11 +254,16 @@ export async function deleteOwnedProject(input: unknown): Promise<DeleteProjectR
 export async function listOwnedProjects(
   input: unknown = 1,
 ): Promise<ProjectPage> {
+  return (await readOwnedProjectsIndex(input, false)).data;
+}
+
+// Projects-only background index; identity remains request-derived.
+export async function readOwnedProjectsIndex(input: unknown = 1, liveOnly = true) {
   const user = await ensureAppUser();
   const parsed = projectPageSchema.safeParse(input);
   const page = parsed.success ? parsed.data : 1;
   const offset = (page - 1) * projectPageSize;
-  const { data, error, count } = await createDatabaseClient()
+  const query = createDatabaseClient()
     .from("projects")
     .select(summaryColumns, { count: "exact" })
     .eq("owner_user_id", user.id)
@@ -266,14 +271,15 @@ export async function listOwnedProjects(
     .order("updated_at", { ascending: false })
     .order("id", { ascending: false })
     .range(offset, offset + projectPageSize - 1);
+  const { data, error, count } = await (liveOnly ? query.is("deleted_at", null) : query);
   if (error || !data || count === null) {
     logDatabaseError("list", error);
     throw new ProjectAccessError();
   }
-  return {
+  return { user, data: {
     projects: data.map(toSummary),
     total: count,
     page,
     pageSize: projectPageSize,
-  };
+  } };
 }

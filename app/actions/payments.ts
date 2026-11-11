@@ -52,9 +52,13 @@ export async function creditCheckoutAction() {
 export async function reconcileCreditOrdersAction() {
   return paymentAction(async () => {
     const result = await reconcileOwnedCreditOrders();
-    revalidatePath("/studio");
-    revalidatePath("/credits");
-    revalidatePath("/settings/credits");
+    // Mount/focus recovery also runs with no pending purchases. Revalidating
+    // its own route on that no-op can keep restarting the streamed account UI.
+    if (result.recovered > 0) {
+      revalidatePath("/studio");
+      revalidatePath("/credits");
+      revalidatePath("/settings/credits");
+    }
     return result;
   });
 }

@@ -1,6 +1,8 @@
 "use client";
 
-import { startTransition, useRef, useState } from "react";
+import { startTransition, useContext, useRef, useState } from "react";
+import { ProjectsCacheScope } from "./projects-cache-context";
+import { projectsSessionCache } from "@/lib/projects/session-cache";
 import { Trash2 } from "lucide-react";
 import { deleteProjectAction } from "@/app/actions/projects";
 import { markProjectDeleted } from "@/lib/projects/client-lifecycle";
@@ -8,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogTrigger, DialogContent, DialogTitle, DialogDescription, DialogClose } from "@/components/ui/dialog";
 
 export function ProjectDelete({ projectId, title }: { projectId: string; title: string }) {
+  const scope = useContext(ProjectsCacheScope);
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -19,6 +22,8 @@ export function ProjectDelete({ projectId, title }: { projectId: string; title: 
       const result = await deleteProjectAction({ id: projectId });
       if (result.ok) {
         markProjectDeleted(result.projectId);
+        if (scope) projectsSessionCache.remove(scope, result.projectId);
+        window.dispatchEvent(new Event("sceenyk:projects"));
         setOpen(false);
       }
       else setError(result.message);

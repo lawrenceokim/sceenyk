@@ -11,6 +11,7 @@ import { runMediaCommand } from "../lib/media-preparation/ffmpeg";
 import { executeNarration } from "../lib/voice-ai/server";
 import { inspectCompositionScene } from "../lib/composition/worker";
 import { dispatchRender, drainRenderer } from "../lib/final-render/worker";
+import { startProjectVideoPreviews } from "../lib/projects/video-preview-worker";
 
 async function main() {
   loadEnvConfig(process.cwd(), false, { info() {}, error() {} });
@@ -23,9 +24,11 @@ async function main() {
   if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error("WORKER_PORT_INVALID");
   const host = process.env.MEDIA_PREPARATION_WORKER_HOST ?? (process.env.NODE_ENV === "production" ? "0.0.0.0" : "127.0.0.1");
   const { server, drain } = createPreparationServer(secret, async input => executePreparation(await resolveWorkerPreparation(input)), registerWorkerRequest, executeNarration, inspectCompositionScene, dispatchRender);
+  const drainPreviews = startProjectVideoPreviews();
   for (const signal of ["SIGTERM", "SIGINT"] as const) process.once(signal, () => {
     drain();
     void drainRenderer();
+    void drainPreviews();
     // Render's 300-second shutdown allowance lets in-flight work clean up.
     setTimeout(() => process.exit(1), 290_000).unref();
   });

@@ -1,5 +1,13 @@
 # Architecture Context
 
+## Projects session cache (2026-11-11)
+
+Projects reuses Next.js Activity and adds a bounded browser-memory gallery/media cache keyed by the active Clerk user and session. It uses no shared private server cache or persistent browser storage. A Projects-only authenticated action compares compact owner-scoped revisions and enriches changed cards; background checks keep existing cards visible. Auth changes clear snapshots, pending requests and private Blob URLs, even while Projects is inactive. Media bytes are reused only within a short authorization lifetime and reauthorized before further display after expiry. Other routes retain their data owners and caching behavior. Setup and current acceptance are recorded in [Projects previews](project-video-previews.md).
+
+## Projects-page private video derivatives (2026-11-11)
+
+Projects cards lazily request a saved 3-second silent final-video preview through an owner-authenticated private route. Explicit new migration 112 adds only a service-only derivative queue/cache with owner/project/version uniqueness and fenced worker leases. The existing FFmpeg media worker reads approved current final outputs, verifies private bytes and publishes immutable private R2 previews; it never calls AI providers or changes generation, approval, credit or payment state. The client unloads offscreen/hidden/reduced-motion playback and retains existing thumbnails. Other pages do not consume these derivatives. [Source contract, setup and manual acceptance](project-video-previews.md).
+
 ## Private Purchases library (2026-11-10)
 
 `/purchases` combines completed paid entitlements and free adoption provenance behind server-derived identity and service-only RPCs. Manual migration 110 adds a private account/listing-to-current-project mapping for serialized reopen/redemption/settings-only replacement after deletion; payment/adoption history and generation accounting remain unchanged. Reviewed derivative previews are owner-checked and never expose source assets. Current shared snapshots contain instructions/settings, without a shared storyboard or public video. See [contract and manual setup](purchases.md).

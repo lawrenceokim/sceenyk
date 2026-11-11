@@ -1,6 +1,8 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useContext, useRef, useState } from "react";
+import { ProjectsCacheScope } from "./projects-cache-context";
+import { projectsSessionCache } from "@/lib/projects/session-cache";
 import { Pencil } from "lucide-react";
 import { renameProjectAction } from "@/app/actions/projects";
 import { projectTitleLimit } from "@/lib/projects/options";
@@ -8,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogTrigger, DialogContent, DialogTitle, DialogDescription, DialogClose } from "@/components/ui/dialog";
 
 export function ProjectRename({ projectId, title }: { projectId: string; title: string }) {
+  const scope = useContext(ProjectsCacheScope);
   const [open, setOpen] = useState(false);
   const [value, setValue] = useState(title);
   const [error, setError] = useState("");
@@ -18,7 +21,11 @@ export function ProjectRename({ projectId, title }: { projectId: string; title: 
     running.current = true; setBusy(true); setError("");
     try {
       const result = await renameProjectAction({ id: projectId, title: value });
-      if (result.ok) setOpen(false);
+      if (result.ok) {
+        if (scope) projectsSessionCache.rename(scope, result.project);
+        window.dispatchEvent(new Event("sceenyk:projects"));
+        setOpen(false);
+      }
       else setError(result.message);
     } catch { setError("Your project couldn’t be renamed. Please try again."); }
     finally { running.current = false; setBusy(false); }

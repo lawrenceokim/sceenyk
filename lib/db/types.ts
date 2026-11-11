@@ -282,6 +282,9 @@ export type Database = {
     };
     Views: Record<string, never>;
     Functions: {
+      project_video_preview_request: { Args: { p_owner: string; p_project: string; p_version: string }; Returns: unknown };
+      project_video_preview_claim: { Args: Record<string, never>; Returns: unknown };
+      project_video_preview_finish: { Args: { p_id: string; p_token: string; p_etag: string | null; p_size: number | null; p_obsolete: boolean }; Returns: boolean };
       studio_mode_read: { Args: { p_owner: string; p_project: string | null }; Returns: import("@/lib/studio-mode/contract").StudioModeState | null };
       studio_mode_save: { Args: { p_owner: string; p_project: string | null; p_mode: import("@/lib/studio-mode/contract").StudioMode }; Returns: import("@/lib/studio-mode/contract").StudioModeState | null };
       ugc_final_current: { Args: { p_execution: string }; Returns: boolean };
