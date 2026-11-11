@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/compone
 import { popupMotion } from "@/components/ui/motion";
 import { usd, type MarketplacePurchaseSummary } from "@/lib/marketplace/payments/contract";
 import { AbstractPreview } from "./abstract-preview";
+import { PurchasePreview } from "@/components/purchases/purchase-preview";
 import { MarketplacePagination } from "./pagination";
 
 type Props = {
@@ -38,7 +39,9 @@ function purchaseDate(value: string) {
 
 export function PurchasesDashboard({ purchases, previews = {}, page, busy, error, message, onRefresh, onContinueCheckout }: Props) {
   const [previewed, setPreviewed] = useState<MarketplacePurchaseSummary | null>(null);
-  const preview = (purchase: MarketplacePurchaseSummary) => previews[purchase.listingId] ?? <AbstractPreview previewId={purchase.listingId} label={purchase.title} ariaLabel="Abstract template placeholder; not purchased media" />;
+  const preview = (purchase: MarketplacePurchaseSummary) => purchase.status === "completed"
+    ? <PurchasePreview url={`/api/purchases/${purchase.id}/preview`} title={purchase.title} />
+    : previews[purchase.listingId] ?? <AbstractPreview previewId={purchase.listingId} label={purchase.title} ariaLabel="Abstract template placeholder; not purchased media" />;
 
   return <div className="@container/purchases min-w-0 space-y-6 text-[13px] leading-5 sm:space-y-7">
     <div className="flex flex-col items-start gap-3 @min-[650px]/purchases:flex-row @min-[650px]/purchases:items-center @min-[650px]/purchases:gap-5">
@@ -79,7 +82,7 @@ export function PurchasesDashboard({ purchases, previews = {}, page, busy, error
                 <Menu.Trigger render={<Button variant="outline" size="icon" className="size-10 shrink-0 rounded-lg border-primary/25 bg-transparent [@media(pointer:coarse)]:size-11" />} aria-label={`Actions for ${purchase.title}`}><Ellipsis aria-hidden="true" className="size-5" /></Menu.Trigger>
                 <Menu.Portal><Menu.Positioner side="bottom" align="end" sideOffset={6} className="z-[70]">
                   <Menu.Popup className={`${popupMotion} min-w-48 max-w-[calc(100vw-2rem)] rounded-xl border border-border bg-popover p-1 text-popover-foreground shadow-popover outline-none`}>
-                    <Menu.Item render={<Link href={`/marketplace/${purchase.listingId}`} />} className="flex min-h-9 items-center gap-2 rounded-lg px-3 text-xs outline-none data-highlighted:bg-accent [@media(pointer:coarse)]:min-h-11"><ExternalLink aria-hidden="true" className="size-3.5" />View template</Menu.Item>
+                    <Menu.Item render={<Link href={purchase.status === "completed" ? `/purchases/${purchase.id}` : `/marketplace/${purchase.listingId}`} />} className="flex min-h-9 items-center gap-2 rounded-lg px-3 text-xs outline-none data-highlighted:bg-accent [@media(pointer:coarse)]:min-h-11"><ExternalLink aria-hidden="true" className="size-3.5" />{purchase.status === "completed" ? "View acquired template" : "View template"}</Menu.Item>
                     <Menu.Item disabled={busy} onClick={() => void onRefresh()} className="flex min-h-9 items-center gap-2 rounded-lg px-3 text-xs outline-none data-highlighted:bg-accent data-disabled:opacity-50 [@media(pointer:coarse)]:min-h-11"><ReceiptText aria-hidden="true" className="size-3.5" />Check purchases</Menu.Item>
                   </Menu.Popup>
                 </Menu.Positioner></Menu.Portal>

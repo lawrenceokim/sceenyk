@@ -13,6 +13,8 @@ const load = typescriptLoader({
   '@/lib/auth/ensure-app-user': { ensureAppUser: async () => { if (!identity) throw new Error('AUTH_REQUIRED'); return { id: identity }; } },
 });
 const service = load('lib/marketplace/server.ts');
+const templates = load('lib/marketplace/project-template.ts');
+const purchases = load('lib/marketplace/purchases/server.ts');
 let checks = 0;
 function check(name, value) { assert.ok(value, name); checks++; }
 async function rpc(name, args) { const result = await db.rpc(name, args); assert.equal(result.error, null, result.error?.message); return result.data; }
@@ -80,18 +82,42 @@ try {
   check('normal archived templates retain existing gallery behavior', [...page.items, ...page2.items].some(item => item.id === archived.id));
   check('original Project preserved', JSON.stringify(await one('select * from projects where id=$1', [free.projectId])) === originalProject);
   check('private source media references retained', JSON.stringify(await one('select * from project_assets where id=$1', [sourceId])) === sourceBefore);
-  check('one-Template-per-Project relationship retained as archived history', (await service.getOwnedMarketplaceListing(free.projectId, true)).id === free.id && await scalar('select count(*)::int as value from marketplace_listings where source_project_id=$1', [free.projectId]) === 1);
+  check('deleted direct owner detail is unavailable', await service.getOwnedMarketplaceListing(free.id) === null);
+  check('deleted Project template relationship is hidden', await service.getOwnedMarketplaceListing(free.projectId, true) === null && !Object.hasOwn(await templates.getOwnedProjectTemplates([free.projectId]), free.projectId));
+  check('deleted creator source and preview are unavailable', await templates.getOwnedTemplateSource(free.id) === null && await rpc('marketplace_template_preview', { p_listing_id: free.id, p_owner_user_id: a }) === null);
   check('existing adoption and adopted Project preserved', JSON.stringify(await one('select * from marketplace_adoptions where listing_id=$1', [free.id])) === adoptionBefore && JSON.stringify(await one('select * from projects where id=$1', [adopted.projectId])) === adoptedProjectBefore);
   check('deleted listing cannot be republished', !(await service.updateMarketplaceListing({ id: free.id, title: free.title, description: free.description, category: free.category, tags: [], rightsConfirmed: true, status: 'published' })).ok);
   check('paid template can be deleted with purchase/history FKs', (await service.deleteOwnedTemplate({ id: paid.id })).ok);
+  check('paid direct owner detail and preview are unavailable', await service.getOwnedMarketplaceListing(paid.id) === null && await rpc('marketplace_template_preview', { p_listing_id: paid.id, p_owner_user_id: a }) === null);
   check('purchase, entitlement and earnings snapshots unchanged', await financialHistory() === financialBefore);
   const redeemedAgain = await rpc('marketplace_redeem_purchase', { p_buyer_user_id: b, p_purchase_id: purchase.id });
   check('existing purchased template access still resolves same Project', redeemedAgain.projectId === paidAdoption.projectId);
+  identity = b;
+  const acquiredFree = (await purchases.getAcquiredTemplates()).items.find(item => item.listingId === free.id);
+  const acquiredPaid = await purchases.getAcquiredTemplate(purchase.id);
+  check('free adopter keeps private acquisition after creator deletion', !!acquiredFree && (await purchases.getAcquiredTemplate(acquiredFree.id)).purchase.template.instructions === free.instructions);
+  check('paid buyer keeps private acquisition after creator deletion', acquiredPaid?.purchase.kind === 'paid' && acquiredPaid.purchase.amountMinor === 200);
+  check('free buyer keeps reviewed preview after creator deletion', (await purchases.getAcquiredTemplatePreview(acquiredFree.id)).listingId === free.id);
+  check('buyer opens existing paid version after deletion', (await purchases.openAcquiredTemplate(purchase.id)).projectId === paidAdoption.projectId);
+  check('adopted free Project points to private acquired template', (await service.getOwnedProjectOrigin(adopted.projectId)).acquisitionId === acquiredFree.id);
+  check('adopted paid Project points to private acquired template', (await service.getOwnedProjectOrigin(paidAdoption.projectId)).acquisitionId === purchase.id);
+  check('deleted listing cannot be newly adopted', (await service.adoptMarketplaceListing({ listingId: free.id, requestId: randomUUID() })).code === 'NOT_FOUND');
+  identity = a;
+  const newListing = await templates.initializeProjectTemplate(free.projectId);
+  const replacementId = newListing.ok && newListing.listingId;
+  check('original Project can start a distinct new template', !!replacementId && replacementId !== free.id);
+  check('only new active template maps to original Project', (await templates.getOwnedProjectTemplates([free.projectId]))[free.projectId] === replacementId && (await service.getOwnedMarketplaceListing(free.projectId, true)).id === replacementId);
+  check('old tombstone stays absent after republishing', await service.getOwnedMarketplaceListing(free.id) === null && await service.getMarketplaceListing(free.id) === null);
+  identity = b;
+  check('new listing does not alter historical free copy', (await purchases.getAcquiredTemplate(acquiredFree.id)).purchase.listingId === free.id);
+  identity = a;
   for (const role of ['anon', 'authenticated']) {
     await pg.exec(`set role ${role}`);
     await assert.rejects(() => pg.query('select delete_owned_template($1,$2)', [a, archived.id])); checks++;
     await pg.exec('reset role');
   }
   check('missing owner cannot call deletion successfully', (await rpc('delete_owned_template', { p_owner_user_id: null, p_listing_id: archived.id })).code === 'NOT_FOUND');
+  await pg.exec(fs.readFileSync('supabase/migrations/20261111011100_deleted_template_visibility.sql', 'utf8'));
+  check('migration safely reruns', await service.getOwnedMarketplaceListing(free.id) === null && (await templates.getOwnedProjectTemplates([free.projectId]))[free.projectId] === replacementId);
   console.log(`${checks} focused Template deletion checks passed.`);
 } finally { await pg.close(); }

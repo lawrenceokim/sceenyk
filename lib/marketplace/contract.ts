@@ -46,7 +46,7 @@ export const listingSchema = z.strictObject({
   previewUrl: z.string().regex(/^\/api\/marketplace\/listings\/[a-f0-9-]{36}\/preview$/).nullable().default(null),
 });
 export const ownedListingSchema = listingSchema.extend({ sourceProjectId: z.uuid(), rightsConfirmed: z.boolean(), adoptionCount: z.number().int().nonnegative(), paidSalesCount: z.number().int().nonnegative(), creatorEarningsMinor: z.number().int().nonnegative() });
-export const originSchema = z.strictObject({ listingId: z.uuid(), title: z.string().max(120) });
+export const originSchema = z.strictObject({ listingId: z.uuid(), title: z.string().max(120), acquisitionId: z.uuid().optional() });
 export type TemplateSnapshot = z.infer<typeof templateSnapshotSchema>;
 export type Listing = z.infer<typeof listingSchema> & { estimate: { credits: number; test: boolean } | null };
 export type OwnedListing = z.infer<typeof ownedListingSchema> & Pick<Listing, "estimate">;

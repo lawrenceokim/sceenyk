@@ -521,7 +521,7 @@ function WorkspaceEditor({
       [.workspace-gallery-copy_&&]:text-[length:inherit] [.workspace-gallery-copy_&&]:leading-[inherit]
       [.workspace-settings-inner_&&]:min-h-[28px] [.workspace-settings-inner_&&]:text-[length:12px]
       [@media_(pointer:_coarse)]:[.workspace-settings-inner_&&]:min-h-[44px]
-    `} href={`/marketplace/${initialOrigin.listingId}`}>View template</Link>
+    `} href={initialOrigin.acquisitionId ? `/purchases/${initialOrigin.acquisitionId}` : `/marketplace/${initialOrigin.listingId}`}>View template</Link>
                       </section>
                     )}
                     {project}
