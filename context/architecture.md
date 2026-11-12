@@ -1,5 +1,11 @@
 # Architecture Context
 
+## Detail-page approved video playback (2026-11-12)
+
+Only the large previews on `/projects/[id]`, `/templates/[listingId]` and `/marketplace/[listingId]` offer user-initiated full approved-final playback. Native controls provide seek, volume/mute and fullscreen without autoplay or a new player dependency. Static covers remain before playback and on failure; dimensions and existing gallery/media caches remain. The Projects route uses a route-scoped preferred final in the existing Studio preview, preserving explicit source/workflow selections and all review/generation owners.
+
+The detail resolver reuses `resolveApprovedProjectVideo` (current single-run, joined-final or legacy approval). Private project/template requests resolve the authenticated mapping and owner-only records; draft templates are excluded. Public requests require the existing published/nondeleted/rights-confirmed listing binding **and a saved reviewed poster**, then resolve only its approved generated final. This adds full playback of that authorized public-preview final; uploaded sources, intermediate clips, keys and signed storage URLs are never returned. A same-origin no-store stream reauthorizes each request, fences the requested version and forwards validated byte ranges for native seeking. It streams existing immutable bytes rather than making a new derivative, buffering whole videos or invoking a worker. No schema, payment or generation change.
+
 ## Smart account caching and confirmed mutation refresh (2026-11-12)
 
 The existing Projects, Templates, Marketplace and Purchases gallery/media instances remain the owners of their snapshots and 3-second previews. A small account/session-scoped coordinator invalidates them after confirmed browser actions, fences older in-flight reads and reconciles only retained pages through their existing changed-card services. This is metadata work only; hidden cards never begin preview downloads. Confirmed actions are unchanged server actions behind thin browser adapters; failed/unknown actions publish no successful result. Reconciliation is coalesced, allows at most one follow-up batch and has a short UI wait budget while slow reads continue quietly.

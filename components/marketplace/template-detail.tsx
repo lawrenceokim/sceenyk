@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import type { ReactNode } from "react";
+import { Suspense, type ReactNode } from "react";
+import { DetailVideoPreview } from "@/components/media/detail-video-preview";
 import type { Listing } from "@/lib/marketplace/contract";
 import { creationCategories } from "@/components/creation/creation-options";
 import { Button } from "@/components/ui/button";
@@ -11,6 +12,7 @@ import { templateAppearance } from "./template-appearance";
 
 export function TemplateDetail({ listing, owned = false, children }: { listing: Listing; owned?: boolean; children?: ReactNode }) {
   const category = creationCategories.find(item => item.id === listing.category)!;
+  const cover = <TemplateCover template={listing.template} fallbackColor={listing.fallbackColor} previewId={listing.id} previewUrl={listing.previewUrl} owned={owned} large />;
   return <div className={`
       marketplace-detail
       [.workspace-content_.workspace-page[data-workspace-page='content'][data-workspace-view='template-detail']_>_&&]:mt-[0]
@@ -36,7 +38,7 @@ export function TemplateDetail({ listing, owned = false, children }: { listing: 
       @min-[860px]:[&&]:[grid-template-columns:minmax(0,_2.2fr)_minmax(0,_1fr)] @min-[860px]:[&&]:gap-[40px]
       max-599:[&&]:gap-[38px]
     `}>
-      <div className={"marketplace-detail-preview [&&]:min-w-[0] [&&]:overflow-hidden [&&]:rounded-[12px]"}><TemplateCover template={listing.template} fallbackColor={listing.fallbackColor} previewId={listing.id} previewUrl={listing.previewUrl} owned={owned} large /></div>
+      <div className={"marketplace-detail-preview [&&]:min-w-[0] [&&]:overflow-hidden [&&]:rounded-[12px]"}><Suspense fallback={cover}><DetailVideoPreview kind={owned ? "template" : "marketplace"} id={listing.id}>{cover}</DetailVideoPreview></Suspense></div>
       <div className={`
       marketplace-detail-info [&&]:flex [&&]:min-w-[0] [&&]:flex-col [&&]:items-start [&&]:gap-[18px] [&&]:pt-[1px]
       [&&]:[overflow-wrap:anywhere] [.workspace-page[data-workspace-page='content']_&&_h1]:text-[length:30px]

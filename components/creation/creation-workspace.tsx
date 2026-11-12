@@ -57,6 +57,7 @@ import { AppNotification } from "@/components/notifications/app-notification";
 
 type WorkspaceProps = {
   initialV3?: RuntimeDto;
+  initialApprovedVideo?: string;
   initialProject?: SavedProject;
   viewerUserId?: string;
   initialAssets?: ProjectAsset[];
@@ -104,6 +105,7 @@ function AccountWorkspace(props: WorkspaceProps) {
       key={`${userId ?? "visitor"}:${props.initialProject?.id ?? "new"}`}
       initialProject={props.initialProject}
       initialV3={props.initialV3}
+      initialApprovedVideo={props.initialApprovedVideo}
       initialAssets={props.initialAssets}
       initialMediaError={props.initialMediaError}
       initialGeneration={props.initialGeneration}
@@ -147,6 +149,7 @@ export function CreationWorkspace(props: WorkspaceProps) {
 function WorkspaceEditor({
   initialProject,
   initialV3,
+  initialApprovedVideo,
   initialAssets = [],
   initialMediaError = "",
   initialGeneration = null,
@@ -160,6 +163,7 @@ function WorkspaceEditor({
   onProjectSaved,
 }: {
   initialV3?: RuntimeDto;
+  initialApprovedVideo?: string;
   restoredDraft?: NonNullable<ReturnType<typeof readGuestDraft>>;
   initialProject?: SavedProject;
   initialAssets?: ProjectAsset[];
@@ -479,6 +483,7 @@ function WorkspaceEditor({
         >
             {({ controls, output, status, label }) => (
               <StudioLayout
+                approvedVideo={initialProject && initialApprovedVideo ? { projectId: initialProject.id, version: initialApprovedVideo } : undefined}
                 media={studioInputs.creationType === "ugc" ? [...studioReferenceImages(studioInputs.characters), ...studioReferenceImages(studioInputs.products)].flatMap(({ local, asset }): StudioPreviewMedia[] =>
                   local ? [{ id: local.id, label: local.file.name, kind: "local", media: local }]
                     : asset?.status === "uploaded" ? [{ id: asset.id, label: asset.filename, kind: "asset", asset }] : []) : undefined}

@@ -1,6 +1,7 @@
 "use client";
 
 import { newlyAvailableVideo } from "./studio-video-selection";
+import { ApprovedVideoPlayer } from "@/components/media/approved-video-player";
 import {
   useCallback,
   useEffect,
@@ -44,6 +45,7 @@ export function StudioLayout({
   properties,
   workflow,
   media = [],
+  approvedVideo,
 }: {
   sources: ReactNode;
   toolbar: ReactNode;
@@ -51,6 +53,7 @@ export function StudioLayout({
   properties: ReactNode;
   workflow?: ReactNode;
   media?: StudioPreviewMedia[];
+  approvedVideo?: { projectId: string; version: string };
 }) {
   const root = useRef<HTMLDivElement>(null);
   const sourcesDialog = useRef<HTMLDialogElement>(null);
@@ -90,18 +93,19 @@ export function StudioLayout({
     undefined,
   );
   const seenWorkflowVideos = useRef(new Set<string>());
+  const hasApprovedVideo = !!approvedVideo;
   const setWorkflowMedia = useCallback(
     (media: StudioPreviewMedia[], collection: string, autoSelectVideo = false) => {
       if (autoSelectVideo) {
         const added = newlyAvailableVideo(media, seenWorkflowVideos.current);
-        if (added) setSelectedId(added);
+        if (added) setSelectedId(current => hasApprovedVideo && current === undefined ? current : added);
       }
       setWorkflowCollections((current) => ({
         ...current,
         [collection]: media,
       }));
     },
-    [],
+    [hasApprovedVideo],
   );
   const workflowMedia = Object.values(workflowCollections).flat();
 
@@ -114,6 +118,7 @@ export function StudioLayout({
     selectedId === undefined
       ? workflowMedia.filter((item) => item.kind === "video").at(-1)
       : allMedia.find((item) => item.id === selectedId);
+  const showApprovedVideo = !!approvedVideo && selectedId === undefined;
   const mobileImage = allMedia.find((item) => item.id === mobileImageId);
   function selectMedia(id: string) {
     const item = allMedia.find((item) => item.id === id);
@@ -401,7 +406,7 @@ export function StudioLayout({
                     role="region"
                     aria-label="Preview content"
                   >
-                    {selected ? (
+                    {selected || showApprovedVideo ? (
                       <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
                         <Button
                           type="button"
@@ -413,7 +418,10 @@ export function StudioLayout({
                         >
                           <X className="size-4" aria-hidden="true" />
                         </Button>
-                        <StudioMediaView media={selected} />
+                        {showApprovedVideo && approvedVideo ? <ApprovedVideoPlayer label="Approved final project video" className="h-full min-h-0 w-full flex-1 rounded-lg"
+                          src={`/api/detail-video?${new URLSearchParams({ kind: "project", id: approvedVideo.projectId, version: approvedVideo.version })}`}>
+                          {media[0] ? <StudioMediaView media={media[0]} /> : stage}
+                        </ApprovedVideoPlayer> : selected && <StudioMediaView media={selected} />}
                       </div>
                     ) : (
                       stage
