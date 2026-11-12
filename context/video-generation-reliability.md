@@ -1,5 +1,59 @@
 # Package approval and repeatable video funding
 
+## Production connection incident — 2026-11-13
+
+**Source fixes and essential checks complete; rollout and authenticated Production acceptance remain pending.** No paid generation, provider request, credit mutation, migration, Vercel deployment or worker recreation was performed. Existing active workers were inspected only.
+
+Verified against the running UGC container:
+
+- Local `.env.local`, the Compose UGC env files and the container's inherited Supabase endpoint/key have matching fingerprints. The endpoint is hosted HTTPS, the selected credential is a working `sb_secret_` key and there is no competing service-role fallback. This worker uses PostgREST over HTTPS, not a PostgreSQL password/pooler connection.
+- DNS resolved IPv4 successfully. Eight consecutive authenticated reads returned HTTP 200 (approximately 0.23–1.57 seconds); enabled-submission discovery returned HTTP 200 in about one second, with zero candidates. Further diagnostic reads also passed. These short samples do **not** prove continuous reliability or identify the earlier intermittent outage's cause. Old logs lost the failing operation and socket/status details. No speculative DNS/TLS/credential repair is claimed.
+- Hosted `generation_project_access` returns **policyVersion 114**. Both actual UGC and Media `/app/runtime/cycle.cjs` bundles contain **`policyVersion: ...literal(109)`**: a confirmed outdated-image mismatch despite reported container health. Both containers' loaded endpoint/key fingerprints also match. The live policy marker is verified; direct PostgreSQL trigger/FK/grant audit still requires the read-only SQL setup queries. Do not blindly reapply historical accounting migrations.
+- A transient database error exited the Docker cycle; its supervisor treated every nonzero exit as fatal and restarted under Compose. The health check measured only a heartbeat. A failing/restarting database connection could therefore coexist with a healthy status. The local/background runners' connection handling did not protect this Docker entrypoint.
+- Current project `62676621-ad32-46c3-b6c5-9cfb8ded8104` has an immutable $1.03 authorization but **no video runs, video tasks or paid video reservations**. Wallet: **142 available / 0 reserved**. Current policy permits a 103-credit request within the unchanged finite budgets. There is no accepted video job to claim/resume and no video hold/debit to refund. This V3 path cannot submit a provider request without its required run/task. No recovery or replacement was enqueued. Authorization may need ordinary owner renewal if it expires before rollout.
+- The owner identified Production at `https://sceenyk.vercel.app`. No authenticated Vercel session/project link is available here: its active deployment environment, exact failing Server Action/request and Skew Protection settings were **not retrieved**. Vercel/Supabase parity remains **Needs confirmation**. A missing Action can indicate a stale browser/build mismatch or an unrelated invalid request; it has not been causally linked to this attempt. Current video requests already use `POST /api/ugc/v3`.
+
+Source changes preserve financial, ownership and provider authority:
+
+- Docker now prints secret-safe operation/category/retryability/HTTP/SQL/socket diagnostics. Only transient **database** failures in UGC/Media return temporary exit 75. The supervisor backs off 3–60 seconds with jitter, marks health degraded, then starts a fresh queue iteration. It never retries an individual charge, claim, checkpoint or provider POST. Existing leases/intents/receipts and unknown-outcome fences govern recovery. Permanent/setup/provider-unknown failures retain stop behavior; payout gets no new financial retry loop.
+- Read-only discovery gets a 30-second timeout, matching workspace reads. Mutation deadlines remain 10 seconds and explicit cancellation stays authoritative. No generic fetch/RPC mutation retry.
+- Studio saving uses `POST /api/projects/save`, independent of build-specific Action IDs. Exact-origin/JSON/body bounds precede the **existing** `saveProjectAction`/owned service, retaining verified Clerk identity, ownership, validation, creative locks, same-ID create recovery, revalidation and confirmed cache updates. No POST is automatically replayed. Other Actions retain their owners. Existing tabs require one full reload after preserving unsaved edits.
+- Worker builds include `/app/runtime/build-info.json` (policy/bundle hash) and `/app/runtime/diagnose.cjs`. Diagnostics use **only inherited env**, expose fingerprints instead of secrets, and perform only DNS/authenticated reads/read-only discovery/policy and optional saved-job inspection. They cannot claim, enqueue, migrate, charge or call Higgsfield/OpenAI.
+
+Essential verification: **67** injected actual supervisor/cycle/save-route/client checks and **154** connection-recovery checks pass, with zero real network/provider calls in fixtures. Standalone TypeScript, targeted ESLint, whitespace and offline worker/diagnostic compilation pass; the new manifest reports policy 114. The diagnostic was also piped read-only into the existing container and confirmed working auth, zero candidates, live 114 and empty current video state. This did **not** replace its old worker bundle. The older connection harness needed its current text assertion and injected local registration updated; it never changed workstation worker mode. No full Next build, image rebuild, browser automation or paid acceptance ran.
+
+### Operator rollout
+
+Use the existing stack and retain control/env files and named recovery volumes. Pause new Generate requests. The diagnostic `run` below invokes no supervisor or queue worker. Never use `down -v`, reset jobs, clear review flags or refund/recharge manually.
+
+```powershell
+docker compose -f compose.workers.yaml --profile workers stop ugc media
+docker compose -f compose.workers.yaml --profile workers build ugc media
+docker compose -f compose.workers.yaml --profile workers run --rm --no-deps --entrypoint node ugc --conditions=react-server /app/runtime/diagnose.cjs --live --project 62676621-ad32-46c3-b6c5-9cfb8ded8104
+```
+
+Require `migration_114_policy.ok=true` and expected configuration before activation. Run the existing 114 section of `scripts/verify-v3-setup.sql` in trusted Supabase SQL Editor for installed bodies/FK/quote bounds; the working API marker does not prove these catalog details. No new migration or env variable is required by this correction.
+
+Confirm Production's exact hosted `SUPABASE_URL` and selected server-only credential match Docker, together with existing V3 owned/enable/provider/storage configuration. Do not paste secrets into chat/command arguments. Current [Vercel CLI env](https://vercel.com/docs/cli/env) supports a read-only diagnostic without writing environment values to a file:
+
+```powershell
+vercel env run -e production -- node --conditions=react-server --import=tsx scripts/diagnose-generation-worker.ts --live --project 62676621-ad32-46c3-b6c5-9cfb8ded8104
+```
+
+Run from the correctly linked Production project. Compare `projectFingerprint` and `credentialFingerprint` with Docker. If secret values are unavailable to the CLI, fail closed; do not silently substitute local credentials and claim parity. This script intentionally does not load `.env.local`. Current settings parity does not prove an older immutable deployment used them.
+
+Deploy **this updated checkout**, including the new route, through the normal Production pipeline or `vercel --prod` after verifying the linked project. Redeploying an older artifact does not include the fix. Review existing [Skew Protection](https://vercel.com/docs/skew-protection) where available; a full-page reload selects the latest Production deployment. Do not add obsolete experimental config options or rotate encryption keys speculatively.
+
+When ready to resume workers:
+
+```powershell
+docker compose -f compose.workers.yaml --profile workers up -d --no-deps --force-recreate ugc media
+docker exec sceenyk-worker-ugc node -p 'require("/app/runtime/build-info.json").policyVersion'
+docker exec sceenyk-worker-ugc node --conditions=react-server /app/runtime/diagnose.cjs --live --project 62676621-ad32-46c3-b6c5-9cfb8ded8104
+```
+
+Require image policy **114**. Payout needs no recreation for this incident. Preserve unsaved edits, then reload Studio. Read saved state first; if a run appeared meanwhile, follow that run's status/recovery. If still absent, normal owner-consented Generate after rollout is a **new paid request**, not recovery; it was not run here. Continuous network stability, active Production env/deployment parity and authorized end-to-end generation remain live acceptance work. Recurring failures now retain their actual operation/transport diagnostic for a specific repair.
+
 Source correction: 2026-11-12. Migration 114, matching Vercel deployment and rebuilt generation workers are required for release. No remote writes, provider generation, deployment or worker recreation was performed during this investigation.
 
 ## Confirmed causes

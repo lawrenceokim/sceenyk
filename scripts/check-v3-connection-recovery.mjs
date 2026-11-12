@@ -14,6 +14,7 @@ let rpcImpl=async()=>({data:[],error:null}),readImpl=async()=>{throw Error('UNEX
 const db={rpc:async(...args)=>{rpcCalls++;return rpcImpl(...args);},from:()=>({upsert(){upsertCalls++;return this;},select(){return this;},async single(){return{data:null,error:databaseFailure,status:databaseStatus};}})};
 class MediaAccessError extends Error{}
 const stubs={
+ '../worker-runtime/local-guard.mjs':{registerLocalWorker(){}},
  '@/lib/db/server':{createDatabaseClient:()=>db}, './worker':{runV3Task:async()=>{throw Error('WORKER_EXECUTION_FORBIDDEN');}},
  '@clerk/nextjs/server':{clerkClient:async()=>({users:{getUser:async()=>{if(clerkFailure)throw clerkFailure;return{id:'fixture-user',emailAddresses:[]};}}})},
  './require-user':{requireClerkUser:async()=>({userId:'fixture-user'})},'next/server':{connection:async()=>{}},'next/navigation':{unstable_rethrow:e=>{if(e?.digest==='NEXT_REDIRECT')throw e;}},
@@ -29,6 +30,7 @@ const {withV3ConnectionRecovery,waitForV3Retry}=load('lib/final-video-generation
 try {
  const {databaseRequestTimeout}=load('lib/db/timeouts.ts');
  equal(databaseRequestTimeout('https://database.test/rest/v1/rpc/ugc_v3_runtime_read'),30000);
+ equal(databaseRequestTimeout('https://database.test/rest/v1/rpc/ugc_v3_worker_projects'),30000);
  equal(databaseRequestTimeout(new Request('https://database.test/rest/v1/rpc/ugc_v3_runtime_read',{method:'POST'})),30000);
  for(const name of ['ugc_v3_runtime_action','ugc_v3_worker_claim','ugc_v3_merge_begin','ugc_v3_task_checkpoint','ugc_v3_clip_authorize'])equal(databaseRequestTimeout('https://database.test/rest/v1/rpc/'+name),10000);
  equal(databaseRequestTimeout('https://database.test/rest/v1/projects'),10000);
@@ -76,7 +78,7 @@ try {
  await assert.rejects(()=>mergeStorageOperation('publish',async()=>{throw new Error('V3_PRIVATE_SAVE_FAILED',{cause:{code:'ECONNRESET',message:secret}});}),e=>e.diagnostic.service==='storage'&&e.diagnostic.retryable);checks++;
  const integrity=Error('V3_MEDIA_INTEGRITY_INVALID');await assert.rejects(()=>mergeStorageOperation('source',async()=>{throw integrity;}),e=>e===integrity);checks++;
  const {v3ActionErrorMessage}=load('lib/final-video-generation-v3/reference-errors.ts');
- ok(v3ActionErrorMessage('V3_DATABASE_TIMEOUT').includes('temporarily unavailable'));ok(v3ActionErrorMessage('V3_DATABASE_AUTHENTICATION_FAILED').includes('administrator'));
+ ok(v3ActionErrorMessage('V3_DATABASE_TIMEOUT').includes('temporarily unavailable'));ok(v3ActionErrorMessage('V3_DATABASE_AUTHENTICATION_FAILED').includes('needs attention'));
  ok(v3ActionErrorMessage('CLERK_CONNECTION_UNAVAILABLE').includes('account profile'));
  const route=load('app/api/ugc/v3/route.ts');
  for(const [error,status,retryable] of [[new V3DatabaseError(timeout,'read'),503,true],[permanent,503,false],[new V3DatabaseError({code:'23505'},'write'),409,false]]) {

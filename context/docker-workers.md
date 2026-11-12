@@ -1,5 +1,9 @@
 # Windows laptop Docker workers
 
+## Production connection incident (2026-11-13)
+
+Live inspection found **policy 109 in both running UGC/Media bundles against hosted 114**, despite container health. Actual loaded hosted Supabase endpoint/key match local/Compose and authenticate; short UGC DNS/HTTP/discovery samples passed, so the earlier intermittent transport cause remains unconfirmed. Docker now retains diagnostics, backs off only UGC/Media transient DB failures and marks health degraded. Builds carry `runtime/build-info.json` and inherited-env-only, non-generating `runtime/diagnose.cjs`. The current video was authorized but never enqueued/charged/submitted; no pending run was replayed. **221** essential offline checks, TypeScript, lint and worker compilation pass; recreation/Production parity/paid acceptance remain pending. [Exact evidence and commands](video-generation-reliability.md#operator-rollout). No new env variable/migration or payout activation.
+
 ## Generation funding update — 114 (2026-11-12)
 
 Package/credit continuation changes require database migration 114 after 113 and matching app/worker source. Rebuild/recreate **UGC and Media** through the existing Compose stack; both contain the compiled generation runtime, while payout is unchanged. Preserve named recovery volumes, control/env files and one-stack operation. Do not start a second worker stack or remove volumes. UGC/Media were healthy in read-only inspection, but running images do not acquire source edits automatically. Exact price validation now covers both new free and paid submissions; new paid attempts bind to a run without changing free-project/OpenAI history. [Release sequence, finite real-provider budgets and focused evidence](video-generation-reliability.md).

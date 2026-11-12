@@ -2,8 +2,8 @@
 import { promises as fs } from "node:fs";
 import { z } from "zod";
 import { createDatabaseClient } from "../lib/db/server";
-import { DatabaseConfigurationError } from "../lib/db/config";
 import { getPayPalConfig } from "../lib/payments/paypal/config";
+import { v3WorkerFailure } from "../lib/final-video-generation-v3/connection-recovery";
 
 async function generationCycle(lane: "ugc" | "media") {
   const { V3Store } = await import("../lib/final-video-generation-v3/runtime-store");
@@ -22,7 +22,13 @@ async function generationCycle(lane: "ugc" | "media") {
     if (await runV3Task(project.project_id, project.owner_user_id, store, signal, lane)) processed = project.project_id;
   });
   await fs.writeFile(cursorFile, JSON.stringify(processed ?? result.after), { mode: 0o600 });
-  if (result.failures.length) throw new Error("DOCKER_V3_QUEUE_CYCLE_FAILED");
+  if (result.failures.length) {
+    // Preserve the classified failure. Never retry an individual claim, charge,
+    // checkpoint or provider POST after a lost acknowledgement.
+    for (const failure of result.failures) console.error("DOCKER_V3_PROJECT_FAILURE", JSON.stringify(failure));
+    process.exitCode = result.failures.every(f => f.diagnostic?.service === "database" && f.diagnostic.retryable) ? 75 : 1;
+    return;
+  }
   if (lane === "media") {
     const { processProjectVideoPreview } = await import("../lib/projects/video-preview-worker");
     await processProjectVideoPreview();
@@ -58,7 +64,9 @@ async function main() {
   if (lane === "payout") await payoutCycle(); else await generationCycle(lane);
 }
 void main().catch(error => {
-  const code = error instanceof DatabaseConfigurationError ? error.code :
-    error instanceof Error && /^[A-Z0-9_]{1,100}$/.test(error.message) ? error.message : "DOCKER_WORKER_CYCLE_FAILED";
-  console.error(code); process.exitCode = 1;
+  const failure = v3WorkerFailure(error);
+  console.error("DOCKER_WORKER_CYCLE_FAILURE", JSON.stringify(failure));
+  // EX_TEMPFAIL is consumed by the supervisor, not a blanket RPC retry policy.
+  // Payouts and all permanent/configuration failures retain stop behavior.
+  process.exitCode = process.argv[2] !== "payout" && failure.diagnostic?.service === "database" && failure.diagnostic.retryable ? 75 : 1;
 });
