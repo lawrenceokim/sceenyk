@@ -16,6 +16,7 @@ const load = typescriptLoader({
   '@clerk/nextjs/server': { auth: async () => ({ userId: owner ? 'fixture_clerk' : null }) },
   '@/lib/db/server': { createDatabaseClient: () => db },
   '@/lib/auth/ensure-app-user': { ensureAppUser: async () => { if (!owner) throw new Error('AUTH_REQUIRED'); return { id: owner }; } },
+  '@/lib/auth/read-app-user': { readAppUser: async () => { if (!owner) throw new Error('AUTH_REQUIRED'); return { id: owner }; } },
   '@/lib/media/server': { readOwnedAsset: async () => ({ url: 'https://private.invalid/owned-source' }) },
   '@/lib/storage/r2': {
     putR2CreatorAvatar: async (key, bytes) => { stored = { key, bytes }; return 'fixture-etag'; },

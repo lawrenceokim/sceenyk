@@ -1,5 +1,9 @@
 # Architecture Context
 
+## Marketplace publishing media access (2026-11-12)
+
+Publishing media is read through a private same-origin route bound to the authenticated account and owned listing/project/version. Reuse a ready approved-final 3-second derivative or the current approved final; the existing deduplicated Media-worker queue owns missing clips. One exact selected-upload fallback is allowed. Browser canvas capture never reads a signed cross-origin R2 URL. Before returning bytes, enforce conditional immutable metadata/ranges and recheck ownership/currentness; before storing the public bounded WebP, recheck capture provenance and retain the existing SQL/rights/source gates. Content-addressed poster writes deduplicate retries; public poster/full-playback boundaries and financial owners are unchanged. [Confirmed CORS failure, source/storage evidence and release](project-video-previews.md#marketplace-publishing-without-browser-r2-cors--2026-11-12).
+
 ## Per-attempt video funding — 114 (2026-11-12)
 
 Package build and finite package approval are independent of financial availability; Generate owns funded admission. The server derives the supported video ceiling from approved pricing, with one explicit consent and immutable package/hash/quote binding. SQL 114 routes each new video to its valid included allowance or a 103-credit reservation referencing the existing V3 project directly. Historical flags/counters and project-level OpenAI funding are preserved. Existing paid/free runs keep their funding, leases, once-only dispatch and settlement; unknown outcomes require reconciliation. Exact authenticated provider prices may decrease but cannot exceed the $1.03 ceiling. All real-funded user/global caps remain. This supersedes the authorization/video blanket history restrictions in the earlier package-estimation note below. [Contract and release](video-generation-reliability.md).
