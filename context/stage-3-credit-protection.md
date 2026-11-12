@@ -1,5 +1,9 @@
 # Stage 2 and Stage 3 project credits
 
+## Per-attempt video continuation — 114 (2026-11-12)
+
+114 supersedes blanket historical/free-video holds for **new independently credit-funded video attempts**. A valid unused included video remains free; otherwise each new video reserves 103 credits and $1.03 real-provider exposure through the existing financial owners. Free flags/counters and included OpenAI rules remain unchanged. Paid reservations bind directly to the existing V3 project without converting its free assignment. Real-funded caps, currentness/consent, duplicate/unknown-outcome protection and settlement/refunds remain. Approved media is never overwritten to regenerate. Package approval is one explicit action with an automatic server ceiling and no financial-availability veto. Lower positive exact provider estimates are accepted within that ceiling; the retail charge stays 103. [114 setup, verification and limits](video-generation-reliability.md). Older 109/108 descriptions below are historical prerequisites; do not replay their backfills over 114.
+
 ## Independent sheet and Storyboard funding — 109 (2026-11-10)
 
 Sheet/Storyboard generation checks OpenAI funding independently of video/project review. Valid assigned free projects and eligible unused allowances retain included OpenAI access. Otherwise sufficient purchased credits authorize a new OpenAI request, even on a historical project whose video/free usage is unresolved. A review hold must never veto a separately credit-funded Character, Product, Location or Storyboard request. Each actual request costs 1 credit; fresh Location remains 2 (plan + sheet), continuation 1.

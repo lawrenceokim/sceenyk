@@ -1,5 +1,9 @@
 # UI Context
 
+## Package approval — 114 (2026-11-12)
+
+Keep the existing Studio Package layout/tokens and display the automatic server-provided spending ceiling as read-only text. One Approve Generation Package button provides explicit consent to the exact saved package/quote; no additional checkbox or editable USD input. Credit shortages, historical free review and provider-budget availability belong to Generate, while stale/unready packages, dirty work, active operations, creative locks and retained Basic/Pro restrictions still prevent invalid approval. Existing approved media and exact historical authority remain visible. [Funding/release contract](video-generation-reliability.md).
+
 ## Payment presentation language (2026-11-11)
 
 Customer-facing checkout, Marketplace adoption, payouts, purchase history, landing pricing and help text use neutral PayPal/payment wording. App titles and merchant branding use Sceenyk. Historical fixed-pack display names omit the Test qualifier without rewriting saved purchase snapshots. Keep payment totals, fees, pricing limits, pending/unavailable states and recovery explanations accurate. These copy changes do not enable PayPal Live, alter the Sandbox-only transport/verification boundaries or assert that test transactions settle real money; operator documentation and environment identifiers retain the actual configuration.

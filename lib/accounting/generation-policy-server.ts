@@ -13,7 +13,7 @@ export async function generationAccess(owner: string, project?: string) {
   const configuration = generationPolicyConfiguration();
   const { data, error } = await createDatabaseClient().rpc("generation_project_access", { p_owner: owner, p_project: project ?? null });
   const count = z.number().int().min(0).max(2);
-  const parsed = z.object({ policyVersion: z.literal(109), total: z.literal(2), remaining: count, reserved: count, consumed: count,
+  const parsed = z.object({ policyVersion: z.literal(114), total: z.literal(2), remaining: count, reserved: count, consumed: count,
     projectAllowed: z.boolean(), videoAllowed: z.boolean(), historyReview: z.boolean(), budgetMicrousd: z.number().int().positive().safe(), budgetUsedMicrousd: z.number().int().nonnegative().safe(),
     accountBudgetRemainingMicrousd: z.number().int().min(0).max(2060000).safe(),
     funding: z.enum(["free", "credits"]), requiredCredits: z.union([z.literal(0), z.literal(103)]),

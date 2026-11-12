@@ -1,5 +1,9 @@
 # AI Workflow Rules
 
+## Repeatable generation correction — 114 (2026-11-12)
+
+Fix the existing package/authorization/funding workflow for every eligible owner without account exceptions. Use approved 103-credit/$1.03, two-free-project and 5-second/480p rules. Package approval is one explicit exact-package consent, with an automatic server ceiling; Generate retains atomic financial admission. Independently funded new videos may proceed despite historical free-review flags without clearing them or granting free funding. Preserve live balances, ledger/media/history, real-provider budgets and duplicate/unknown-outcome safeguards. Essential offline UI/SQL/route/worker checks and static compilation only; no paid generations, browser automation, broad suites or full builds. Migration/release prerequisites and unperformed external acceptance are explicit in [the reliability contract](video-generation-reliability.md).
+
 ## Current authorization — laptop Docker workers (2026-11-12)
 
 Prepare fixed Docker images and an outgoing-only Compose stack for existing UGC/FFmpeg/preview and Sandbox payout processing. Reuse all ownership, accounting, eligibility, verification and recovery owners. Perform essential offline configuration/security checks and worker-only compilation/image checks; no Next.js full build, broad suites, browser automation, paid generation, live queue processing, payout, remote migration, deployment or automatic activation. Leave operator activation and connected manual testing to the owner. [Setup and acceptance limits](docker-workers.md).

@@ -36,7 +36,7 @@ vm.runInNewContext(code, { exports, z, Error, AbortSignal, Date,
   V3Store: class { async read(acting, id) {
     assert.equal(acting, owner); assert.equal(id, project);
     if (!allowedOwner) throw new Error("FRESH_V3_PROJECT_REQUIRED");
-    return { project: {}, runs: [], tasks: [], artifacts: [] };
+    return { project: {}, runs: [], tasks: [], artifacts: [], packages: [], quotes: [] };
   } },
   projectBrief: async () => ({ duration, video_resolution: "480p" }), referenceOriginals: async () => ({}),
   lockedBriefSchema: z.never(), lockDocument: () => null, lockedOriginals: (_w, originals) => originals,
@@ -45,11 +45,15 @@ vm.runInNewContext(code, { exports, z, Error, AbortSignal, Date,
   generationAccess: async () => { accessReads++; return access; },
   generationContext: () => ({ creationType: "ugc" }), requiresProDuration: () => false,
   approvedArtifacts: () => { throw new Error("PACKAGE_INPUT_VALIDATION_REACHED"); },
+  readFrozenPackage: () => ({ id: "fixture-package" }), packageClips: () => null,
 });
 const request = action => exports.ownedV3Action({ action, projectId: project, ownerId: "forged" });
 await assert.rejects(() => request("build_package"), /PACKAGE_INPUT_VALIDATION_REACHED/);
 assert.equal(accessReads, 0); // No accounting RPC on local package admission.
-for (const action of ["authorize", "authorize_clip", "generate", "generate_clip"])
+for (const action of ["authorize", "authorize_clip"])
+  await assert.rejects(() => request(action), /V3_REVIEW_SNAPSHOT_CHANGED/);
+assert.equal(accessReads, 0); // Local consent never reserves generation funds.
+for (const action of ["generate", "generate_clip"])
   await assert.rejects(() => request(action), /FREE_PROJECT_HISTORY_REVIEW_REQUIRED/);
 access = { ...held, projectAllowed: true, paidBlocker: "INSUFFICIENT_CREDITS", availableCredits: 0 };
 for (const action of ["generate", "generate_clip", "storyboard"])

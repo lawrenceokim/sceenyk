@@ -1,5 +1,9 @@
 # Code Standards
 
+## Video funding and consent — 114 (2026-11-12)
+
+Derive supported generation consent limits server-side from approved pricing; package approval must not depend on credit/provider-budget availability. Charge/reserve at Generate through the existing SQL financial owners. Select new-video funding per attempt; historical free holds never mint free entitlement and must not veto a separately credit-funded request. Preserve original flags/counters, included OpenAI rules, immutable authority, real-funded provider caps and unknown-outcome recovery. Verify exact-body provider price before admission/dispatch; accept reductions within the approved ceiling without changing the 103-credit retail price. [Release and preservation contract](video-generation-reliability.md).
+
 ## Shared application feedback (2026-11-11)
 
 Render application errors, warnings, validation and action results with `components/notifications/app-notification.tsx`; event handlers can call `notify(message, tone)` from `lib/notifications/store.ts`. Do not introduce inline alert panels, native alert popups or a second toast dependency. Keep business state and action callbacks in their existing source components; the shared portal owns presentation only. Use explicit tones in new code, stable notice keys for repeated workflow receipts, and persistent duration for actionable notices. Source error IDs remain available for field descriptions, while screen-reader announcements come from the visible notification. Preserve confirmation dialogs, recovery controls, financial records, progress and loading/empty states. Feedback must not trigger navigation or parent card actions, mutate workflow state, or retain private content across authenticated-account changes. Use Tailwind and shared semantic tokens with reduced-motion support.

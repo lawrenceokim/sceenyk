@@ -123,3 +123,14 @@ select provider,state,count(*) as operations,sum(max_cost_microusd) as recorded_
 from public.free_ai_operations group by provider,state order by provider,state;
 -- Only the Higgsfield rows count against the video cap. Old OpenAI amounts
 -- remain historical metadata; new zeroes mean no Higgsfield reservation.
+
+-- 114: read-only setup evidence. Do not call account initialization or dispatch.
+select to_regprocedure('public.laptop_v3_worker_claim(uuid,boolean,text,boolean)') as docker_lane,
+       to_regprocedure('public.video_policy_109_generation_project_access(uuid,uuid)') as preserved_109_access,
+       position('''policyVersion'',114' in pg_get_functiondef(to_regprocedure('public.generation_project_access(uuid,uuid)')))>0 as attempt_funding_114;
+select pg_get_constraintdef(oid) as paid_quote_cost_bound from pg_constraint
+where conrelid=to_regclass('public.generation_paid_quotes') and conname='generation_paid_quotes_cost_microusd_check';
+select conname,confrelid::regclass as paid_attempt_project_owner from pg_constraint
+where conrelid=to_regclass('public.generation_paid_reservations') and contype='f'
+  and conkey=array[(select attnum from pg_attribute where attrelid=to_regclass('public.generation_paid_reservations') and attname='project_id')];
+select singleton,user_cap_microusd,global_cap_microusd from public.generation_paid_policy;

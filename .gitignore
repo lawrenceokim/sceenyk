@@ -17,6 +17,7 @@
 # context
 !/context/
 /context/*
+!/context/video-generation-reliability.md
 !/context/project-video-previews.md
 !/context/vercel-deployment.md
 !/context/preview-e2e-setup.md

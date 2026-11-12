@@ -21,7 +21,7 @@ import { HIGGSFIELD_V3_PROFILE } from "./adapters/higgsfield";
 import { readPrivate, signPrivate, readSpool } from "./runtime-media";
 import { packageContentHash, storyboardContentHash, v3Digest } from "./identity";
 import { readFrozenPackage } from "./package";
-import { createPaidIntent, createRuntimeAuthorization } from "./execution-package";
+import { createPaidIntent, createRuntimeAuthorization, packageAuthorizationMaximum } from "./execution-package";
 import { V3Store, type RuntimeWorkspace } from "./runtime-store";
 import { assertV3Access, assertV3Transport, v3UserAllowed, v3TransportConfig, v3OpenAIConfig, v3ReferenceConfig } from "./runtime-config";
 import { prepareVideoDelivery } from "./video-delivery";
@@ -242,8 +242,8 @@ export async function ownedV3Action(raw: unknown, acknowledge = false): Promise<
     if (existing) return runtimeDto(w);
     assertFreeVideoSettings(brief.duration, projectVideoResolution(brief.video_resolution));
     // Package construction is local validation/estimation, not funded admission.
-    // Keep usage review authoritative for authorization and video submission.
-    if (a.action !== "build_package") {
+    // Package consent is separate from funded video admission.
+    if (!["build_package", "authorize", "authorize_clip"].includes(a.action)) {
       const access = await generationAccess(user.id, a.projectId);
       const preparation = a.action === "reference" ? a.kind : a.action === "storyboard" ? "storyboard" : null;
       if (!preparation && !access.projectAllowed) throw new Error(access.projectBlocker ?? "FREE_PROJECT_HISTORY_REVIEW_REQUIRED");
@@ -402,11 +402,12 @@ export async function ownedV3Action(raw: unknown, acknowledge = false): Promise<
     const clips = packageClips(doc);
     if (a.packageId !== doc.id || a.packageHash !== doc.hash || a.quoteId !== quote?.id) throw new Error("V3_REVIEW_SNAPSHOT_CHANGED");
     if (!quote || a.operatorApproved !== true) throw new Error("CURRENT_QUOTE_AND_OPERATOR_APPROVAL_REQUIRED");
-    const maximum = z.number().int().nonnegative().safe().parse(a.maximumMicrousd);
+    const maximum = packageAuthorizationMaximum(doc, quote);
     if (maximum < quote.totalMicrousd) throw new Error("V3_PACKAGE_AUTHORIZATION_INSUFFICIENT");
     const documents = [];
     for (const [index, segment] of quote.segments.entries()) {
       if (!clips && w.runtimeAuthorizations.some(x => x.document.segmentUuid === segment.segmentUuid && Date.parse(x.document.expiresAt) > Date.now() &&
+        x.document.maxEstimatedCostMicrousd >= (doc.segments.length === 1 ? maximum : segment.estimatedCostMicrousd) &&
         !w.runs.some(r => r.intent.authorization.id === x.document.id))) continue;
       const auth = createRuntimeAuthorization(doc, quote, segment.segmentUuid, { operatorId: user.id, approved: true,
         maximumMicrousd: segment.estimatedCostMicrousd + (index === 0 ? maximum - quote.totalMicrousd : 0), packageMaximumMicrousd: maximum, now,
@@ -452,6 +453,7 @@ export async function ownedV3Action(raw: unknown, acknowledge = false): Promise<
     const quote = w.quotes.find(q => q.document.packageId === doc.id)!.document;
     for (const segment of quote.segments.filter(s => !selected || s.segmentId === selected.segmentId)) {
       const auth = clips ? clipAuthority(w, doc, segment.segmentId)! : w.runtimeAuthorizations.filter(x => x.document.segmentUuid === segment.segmentUuid &&
+        x.document.maxEstimatedCostMicrousd >= (doc.segments.length === 1 ? packageAuthorizationMaximum(doc, quote) : segment.estimatedCostMicrousd) &&
         !w.runs.some(r => r.intent.authorization.id === x.document.id)).at(-1)!.document;
       const delivery = await prepareVideoDelivery(w, doc, segment, signal);
       const intent = createPaidIntent(doc, quote, auth, new Date().toISOString(), delivery);
