@@ -4,6 +4,9 @@ import type { ProjectMediaReply } from "./cached-media-contract";
 export type CachedProjectMedia = { url: string; version: string; expiresAt: number; bytes: number; objectUrl: boolean; loaded: boolean; retryAt?: number };
 type PageEntry = { snapshot: GallerySnapshot; checkedAt: number; scrollTop?: number };
 type MediaEntry = { value: CachedProjectMedia; timer?: ReturnType<typeof setTimeout> };
+export class ProjectsRefreshError extends Error {
+  constructor(readonly retryable: boolean, readonly attempts = 1) { super("PROJECTS_UNAVAILABLE"); }
+}
 
 // Browser memory only. No localStorage, Cache API, service worker or server cache.
 export class ProjectsSessionCache {
@@ -13,6 +16,7 @@ export class ProjectsSessionCache {
   private mediaVersions = new Map<string, number>();
   private invalidations = new Map<string, number>();
   private pages = new Map<number, PageEntry>();
+  private refreshFailures = new Map<number, { error: ProjectsRefreshError; retryAt: number }>();
   private media = new Map<string, MediaEntry>();
   private pending = new Map<string, Promise<unknown>>();
   private requests = new Set<AbortController>();
@@ -25,6 +29,7 @@ export class ProjectsSessionCache {
     if (scope === this.scope) return;
     this.scope = scope; this.epoch++;
     this.requests.forEach(c => c.abort()); this.requests.clear(); this.pending.clear(); this.pages.clear();
+    this.refreshFailures.clear();
     for (const key of this.media.keys()) this.dropMedia(key);
     this.mediaVersions.clear();
     this.invalidations.clear();
@@ -47,15 +52,18 @@ export class ProjectsSessionCache {
     if (scope !== this.scope) return;
     const key = `page:${page}`, previous = this.pages.get(page);
     if (this.pending.has(key)) return this.pending.get(key);
+    const failure = this.refreshFailures.get(page);
+    if (failure && Date.now() < failure.retryAt) throw failure.error;
     if (!force && previous && Date.now() - previous.checkedAt < 15_000) return;
     const epoch = this.epoch, mutation = this.mutation;
-    let repeat = false;
     const request = Promise.resolve().then(async () => {
       const reply = await load(Object.fromEntries(Object.entries(previous?.snapshot.cards ?? {}).map(([id, card]) => [id, card.revision])));
       if (epoch !== this.epoch || scope !== this.scope) return;
-      if (mutation !== this.mutation) { repeat = true; return; }
-      if (!reply.ok) throw new Error("PROJECTS_UNAVAILABLE");
-      if (reply.clerkUserId !== owner) { this.setScope(null); throw new Error("PROJECTS_UNAVAILABLE"); }
+      // A mutation already updated local cards. Reconcile on the next scheduled
+      // check rather than recursively issuing requests while mutations continue.
+      if (mutation !== this.mutation) return;
+      if (!reply.ok) throw new ProjectsRefreshError(reply.retryable === true);
+      if (reply.clerkUserId !== owner) { this.setScope(null); throw new ProjectsRefreshError(false); }
       const cards = Object.fromEntries(reply.data.projects.map(project => {
         const old = previous?.snapshot.cards[project.id], next = reply.changed[project.id] ?? old;
         if (!next) throw new Error("PROJECTS_INCOMPLETE");
@@ -71,13 +79,25 @@ export class ProjectsSessionCache {
       const unchanged = previous && JSON.stringify(previous.snapshot) === JSON.stringify(snapshot);
       this.pages.delete(page);
       this.pages.set(page, { snapshot: unchanged ? previous.snapshot : snapshot, checkedAt: Date.now(), scrollTop: previous?.scrollTop });
+      this.refreshFailures.delete(page);
       while (this.pages.size > 8) this.pages.delete(this.pages.keys().next().value!);
       if (!unchanged) this.emit();
+    }).catch(error => {
+      if (epoch !== this.epoch || scope !== this.scope) {
+        if (error instanceof ProjectsRefreshError) throw error;
+        return;
+      }
+      const network = error instanceof TypeError && /fetch failed|failed to fetch|load failed|networkerror/i.test(error.message);
+      const attempts = (failure?.error.attempts ?? 0) + 1;
+      const safe = new ProjectsRefreshError(error instanceof ProjectsRefreshError ? error.retryable : network, attempts);
+      this.refreshFailures.set(page, { error: safe, retryAt: Date.now() + Math.min(120_000, 15_000 * 2 ** Math.min(attempts - 1, 3)) });
+      while (this.refreshFailures.size > 8) this.refreshFailures.delete(this.refreshFailures.keys().next().value!);
+      throw safe;
     });
     this.pending.set(key, request);
     try { await request; } finally { if (this.pending.get(key) === request) this.pending.delete(key); }
-    if (repeat) await this.refresh(scope, owner, page, load, true);
   }
+  retryPage(scope: string, page: number) { if (scope === this.scope) this.refreshFailures.delete(page); }
   rename(scope: string, project: { id: string; title: string; updatedAt: string }) {
     if (scope !== this.scope) return;
     this.mutation++;

@@ -1,6 +1,8 @@
 import "server-only";
 import { z } from "zod";
 import { ensureAppUser } from "@/lib/auth/ensure-app-user";
+import { readAppUser } from "@/lib/auth/read-app-user";
+import { ServiceOperationError } from "@/lib/diagnostics/service-failure";
 import { createDatabaseClient } from "@/lib/db/server";
 import type { ProjectFields, ProjectRow } from "@/lib/db/types";
 import { legacyDuration, projectPageSize } from "./options";
@@ -259,7 +261,7 @@ export async function listOwnedProjects(
 
 // Projects-only background index; identity remains request-derived.
 export async function readOwnedProjectsIndex(input: unknown = 1, liveOnly = true) {
-  const user = await ensureAppUser();
+  const user = await readAppUser();
   const parsed = projectPageSchema.safeParse(input);
   const page = parsed.success ? parsed.data : 1;
   const offset = (page - 1) * projectPageSize;
@@ -271,10 +273,10 @@ export async function readOwnedProjectsIndex(input: unknown = 1, liveOnly = true
     .order("updated_at", { ascending: false })
     .order("id", { ascending: false })
     .range(offset, offset + projectPageSize - 1);
-  const { data, error, count } = await (liveOnly ? query.is("deleted_at", null) : query);
+  const { data, error, count, status } = await (liveOnly ? query.is("deleted_at", null) : query);
   if (error || !data || count === null) {
     logDatabaseError("list", error);
-    throw new ProjectAccessError();
+    throw new ServiceOperationError(error, "database", "projects_index", undefined, undefined, status);
   }
   return { user, data: {
     projects: data.map(toSummary),

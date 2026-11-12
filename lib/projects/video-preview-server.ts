@@ -1,6 +1,6 @@
 import "server-only";
 import { z } from "zod";
-import { ensureAppUser } from "@/lib/auth/ensure-app-user";
+import { readAppUser } from "@/lib/auth/read-app-user";
 import { createDatabaseClient } from "@/lib/db/server";
 import { signR2Read } from "@/lib/storage/r2";
 import { resolveApprovedProjectVideo } from "./approved-video";
@@ -9,7 +9,7 @@ import { readPrivate } from "@/lib/final-video-generation-v3/runtime-media";
 import { projectMediaLifetimeMs, type ProjectMediaReply } from "./cached-media-contract";
 
 async function ownedPreview(project: unknown) {
-  const projectId = z.uuid().parse(project), user = await ensureAppUser();
+  const projectId = z.uuid().parse(project), user = await readAppUser();
   const video = await resolveApprovedProjectVideo(user.id, projectId);
   if (!video) return null;
   const result = await createDatabaseClient().rpc("project_video_preview_request", {

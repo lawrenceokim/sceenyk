@@ -4,6 +4,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { unstable_rethrow } from "next/navigation";
 import { createDatabaseClient } from "@/lib/db/server";
+import { ServiceOperationError } from "@/lib/diagnostics/service-failure";
 import { getProjectCardStatuses } from "./card-status-server";
 import { readOwnedProjectsIndex } from "./server";
 import type { GalleryCard, GalleryReply } from "./gallery-contract";
@@ -34,7 +35,7 @@ export async function readOwnedProjectsGallery(input: unknown): Promise<GalleryR
     for (let offset = 0; ; offset += 500) {
       const result = await query.range(offset, offset + 499);
       if (result.error || !result.data) {
-        if (!initialRead) throw new Error("PROJECTS_INDEX_UNAVAILABLE");
+        if (!initialRead) throw new ServiceOperationError(result.error, "database", "projects_revision", undefined, undefined, result.status);
         return ids.map(project_id => ({ project_id, unavailable: true }));
       }
       rows.push(...z.array(stampRow).parse(result.data));
@@ -42,7 +43,7 @@ export async function readOwnedProjectsGallery(input: unknown): Promise<GalleryR
     }
   }));
   const templates = await db.rpc("marketplace_project_templates", { p_owner_user_id: user.id, p_project_ids: ids });
-  if (templates.error && !initialRead) throw new Error("PROJECTS_INDEX_UNAVAILABLE");
+  if (templates.error && !initialRead) throw new ServiceOperationError(templates.error, "database", "projects_templates", undefined, undefined, templates.status);
   const templateIds = templates.error ? {} : z.record(z.string(), z.string()).parse(templates.data);
   const revisions = Object.fromEntries(data.projects.map(project => {
     const mediaRevision = digest(stamps.map(rows => rows.filter(row => row.project_id === project.id)));
@@ -59,14 +60,14 @@ export async function readOwnedProjectsGallery(input: unknown): Promise<GalleryR
     db.from("project_assets").select("*").eq("owner_user_id", user.id).in("project_id", changedIds)
       .eq("upload_status", "uploaded").eq("removed_from_draft", false).in("media_type", ["image", "video"]).order("created_at").order("id"),
   ]);
-  if (assets.error || !assets.data) throw new Error("PROJECTS_MEDIA_UNAVAILABLE");
+  if (assets.error || !assets.data) throw new ServiceOperationError(assets.error, "database", "projects_media", undefined, undefined, assets.status);
   // In a large history one project can fill the batch before another project's
   // first source. Fetch only missing first sources instead of truncating them.
   if (assets.data.length >= 1000) await Promise.all(changedIds.filter(id => !assets.data.some(a => a.project_id === id)).map(async id => {
     const first = await db.from("project_assets").select("*").eq("owner_user_id", user.id).eq("project_id", id)
       .eq("upload_status", "uploaded").eq("removed_from_draft", false).in("media_type", ["image", "video"])
       .order("created_at").order("id").limit(1).maybeSingle();
-    if (first.error) throw new Error("PROJECTS_MEDIA_UNAVAILABLE");
+    if (first.error) throw new ServiceOperationError(first.error, "database", "projects_media", undefined, undefined, first.status);
     if (first.data) assets.data.push(first.data);
   }));
   const changed: Record<string, GalleryCard> = {};

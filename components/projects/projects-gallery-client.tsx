@@ -4,7 +4,7 @@ import { useAuth, useClerk } from "@clerk/nextjs";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
 import { projectsGalleryAction } from "@/app/actions/projects-gallery";
-import { projectsSessionCache } from "@/lib/projects/session-cache";
+import { ProjectsRefreshError, projectsSessionCache } from "@/lib/projects/session-cache";
 import { ProjectsCacheScope } from "./projects-cache-context";
 import { ProjectsGallerySkeleton, ProjectsSection } from "./projects-section";
 import { ProjectJobStatusesProvider } from "./project-job-statuses";
@@ -34,15 +34,17 @@ export function ProjectsGalleryClient({ cachedOnly = false }: { cachedOnly?: boo
     if (!scope || !userId || cachedOnly) return;
     let active = true, timer: ReturnType<typeof setTimeout> | undefined;
     const reload = async (force = false) => {
-      if (document.visibilityState !== "visible") return;
+      if (!active || document.visibilityState !== "visible" || !navigator.onLine) return;
       try {
         await projectsSessionCache.refresh(scope, userId, page, known => projectsGalleryAction({ page, known }), force);
         if (active) setFailed(false);
-      } catch { if (active) setFailed(true); }
+      } catch (error) {
+        if (active) setFailed(!(error instanceof ProjectsRefreshError && error.retryable && error.attempts < 3 && projectsSessionCache.readPage(scope, page)));
+      }
     };
     const interval = () => {
       const cards = projectsSessionCache.readPage(scope, page)?.cards;
-      const processing = Object.values(cards ?? {}).some(card => card.active || card.status === "queued" || card.status === "processing" || card.status === "completed");
+      const processing = Object.values(cards ?? {}).some(card => card.active || card.status === "queued" || card.status === "processing");
       return processing ? 15_000 : 60_000;
     };
     const poll = async () => {
@@ -50,16 +52,18 @@ export function ProjectsGalleryClient({ cachedOnly = false }: { cachedOnly?: boo
       if (active) timer = setTimeout(() => { void poll(); }, interval());
     };
     // One compact revision check on return; current cards stay mounted.
-    void reload(true).then(() => { if (active) timer = setTimeout(() => { void poll(); }, interval()); });
+    void reload().then(() => { if (active) timer = setTimeout(() => { void poll(); }, interval()); });
     const activate = () => { void reload(); };
     const changed = () => { void reload(true); };
     window.addEventListener("focus", activate);
     window.addEventListener("pageshow", activate);
+    window.addEventListener("online", activate);
     window.addEventListener("sceenyk:projects", changed);
     document.addEventListener("visibilitychange", activate);
     return () => {
       active = false; clearTimeout(timer);
       window.removeEventListener("focus", activate); window.removeEventListener("pageshow", activate);
+      window.removeEventListener("online", activate);
       window.removeEventListener("sceenyk:projects", changed); document.removeEventListener("visibilitychange", activate);
     };
   }, [scope, userId, page, cachedOnly, retry]);
@@ -79,7 +83,7 @@ export function ProjectsGalleryClient({ cachedOnly = false }: { cachedOnly?: boo
   }, [scope, page, cachedOnly, hasSnapshot]);
   if (!scope) return <ProjectsGallerySkeleton />;
   if (!snapshot) return failed && !cachedOnly ? <div  className="space-y-3 text-muted-foreground">
-    <AppNotification role="alert">Your projects couldn’t be loaded.</AppNotification><Button variant="outline" onClick={() => setRetry(n => n + 1)}>Try again</Button>
+    <AppNotification role="alert">Your projects couldn’t be loaded.</AppNotification><Button variant="outline" onClick={() => { projectsSessionCache.retryPage(scope, page); setRetry(n => n + 1); }}>Try again</Button>
   </div> : <ProjectsGallerySkeleton />;
   const statuses = Object.fromEntries(Object.entries(snapshot.cards).map(([id, card]) => [id, card.status]));
   return <ProjectsCacheScope.Provider value={scope}><div ref={marker}>

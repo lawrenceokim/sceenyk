@@ -1,6 +1,6 @@
 import "server-only";
 import { z } from "zod";
-import { ensureAppUser } from "@/lib/auth/ensure-app-user";
+import { readAppUser } from "@/lib/auth/read-app-user";
 import { createDatabaseClient } from "@/lib/db/server";
 import { getLatestProjectGenerations } from "@/lib/generation/server";
 import { V3Store } from "@/lib/final-video-generation-v3/runtime-store";
@@ -14,7 +14,7 @@ const approvalSnapshot = z.object({
 });
 
 export async function getProjectCardStatuses(input: unknown): Promise<Record<string, ProjectCardStatus>> {
-  const user = await ensureAppUser();
+  const user = await readAppUser();
   // This existing read validates bounded IDs and filters them to the owner.
   const jobs = await getLatestProjectGenerations(input), ids = Object.keys(jobs);
   if (!ids.length) return {};

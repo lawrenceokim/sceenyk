@@ -23,9 +23,9 @@ export function serviceDiagnostic(error: unknown, service: ServiceName, operatio
   }
   visit(error);
   const codes = values.map(v => typeof v.code === "string" ? v.code : "");
-  const text = values.flatMap(v => [v.message, v.details, v.hint, v.name]).filter((s): s is string => typeof s === "string").map(s => s.slice(0, 4096)).join(" ");
+  const text = values.flatMap(v => [v.message, service === "clerk" ? v.longMessage : undefined, v.details, v.hint, v.name]).filter((s): s is string => typeof s === "string").map(s => s.slice(0, 4096)).join(" ");
   const transportCode = transports.find(code => codes.includes(code) || new RegExp(`\\b${code}\\b`).test(text)) ?? null;
-  const upstreamCode = codes.find(code => sqlCode.test(code) || configurationCodes.includes(code)) ?? null;
+  const upstreamCode = codes.find(code => sqlCode.test(code) || configurationCodes.includes(code) || service === "clerk" && code === "unexpected_error") ?? null;
   const statuses = [status, ...values.flatMap(v => [v.status, v.statusCode, (v.$metadata as { httpStatusCode?: unknown } | undefined)?.httpStatusCode])];
   const upstreamStatus = statuses.find((s): s is number => typeof s === "number" && Number.isInteger(s) && s >= 100 && s <= 599) ?? null;
   let category: ServiceDiagnostic["category"] = "unknown", retryable = false;
@@ -41,8 +41,11 @@ export function serviceDiagnostic(error: unknown, service: ServiceName, operatio
   else if (upstreamCode === "53300" || ["PGRST000", "PGRST001", "PGRST002", "PGRST003"].includes(upstreamCode ?? "")) { category = "capacity"; retryable = true; }
   else if (upstreamCode === "57014" || transportCode === "ETIMEDOUT" || /TIMEOUT/.test(transportCode ?? "") || /\b(?:TimeoutError|AbortError)\b/.test(text)) { category = "timeout"; retryable = true; }
   else if (transportCode) { category = "network"; retryable = true; }
+  // Clerk wraps fetch exceptions as unexpected_error and drops their cause.
+  // Recognize only explicit fetch-failure text, never every unexpected error.
+  else if (service === "clerk" && upstreamCode === "unexpected_error" && /\b(?:fetch failed|failed to fetch|network request failed)\b/i.test(text)) { category = "network"; retryable = true; }
   else if (upstreamCode?.startsWith("08") || ["57P01", "57P02", "57P03"].includes(upstreamCode ?? "")) { category = "unavailable"; retryable = true; }
-  else if (!upstreamCode && upstreamStatus !== null && [408, 500, 502, 503, 504].includes(upstreamStatus)) { category = "unavailable"; retryable = true; }
+  else if ((!upstreamCode || service === "clerk" && upstreamCode === "unexpected_error") && upstreamStatus !== null && [408, 500, 502, 503, 504].includes(upstreamStatus)) { category = "unavailable"; retryable = true; }
   return { service, operation: /^[a-z0-9_]{1,100}$/.test(operation) ? operation : "operation", category, retryable, upstreamStatus, upstreamCode, transportCode };
 }
 const suffix: Record<ServiceDiagnostic["category"], string> = {

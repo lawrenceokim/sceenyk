@@ -1,5 +1,11 @@
 # Architecture Context
 
+## Projects identity reads and refresh recovery (2026-11-12)
+
+The account layout and Projects index/status/thumbnail/video-preview reads authenticate each request through Clerk's existing session protection and look up the matching `app_users` mapping. Existing mappings require no Clerk profile request or account upsert. Only a confirmed missing mapping invokes unchanged verified `ensureAppUser` provisioning; database errors never trigger that fallback. React `cache` deduplicates only within a render pass, with no shared user cache; actions/handlers still authenticate each invocation. Explicit profile synchronization and financial/mutation services retain their existing owners.
+
+Projects return navigation respects the session cache's freshness window. Completed cards no longer select the fast active-job interval. Failed checks retain owned cached cards/media, use bounded backoff and do not recursively refresh on mutation races. Only explicitly retryable failures receive a short quiet recovery window; authentication/permission/schema/unknown failures and sustained outages remain visible. [Evidence and manual checks](project-video-previews.md#projects-refresh-and-clerk-investigation-2026-11-12). Workers, Docker configuration, payment behavior and media authorization deadlines are unchanged.
+
 ## Optional Windows Docker workers (2026-11-12)
 
 The existing trusted payout functions are moved unchanged into the worker-safe `lib/marketplace/withdrawals/processor.ts`; `server.ts` keeps authenticated account actions and re-exports the same processing/webhook functions. This removes request-bound Clerk/Next imports from standalone payout startup without changing financial decisions.

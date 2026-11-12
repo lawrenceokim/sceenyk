@@ -39,6 +39,7 @@ try {
   equal(requests, 1); // Fresh mount/focus events reuse the index result.
   await assert.rejects(() => cache.refresh(scope, "user-a", 1, async () => ({ ok: false }), true)); checks++;
   assert.equal(cache.readPage(scope, 1), snapshot); checks++;
+  cache.retryPage(scope, 1);
   const key = `video:${id}`;
   await Promise.all([cache.loadMedia(scope, key, "/fixture", {}), cache.loadMedia(scope, key, "/fixture", {})]);
   equal(downloads, 1); equal(created, 1);
@@ -112,7 +113,7 @@ try {
   const job = { id: randomUUID(), owner_user_id: owner, project_id: id, version,
     state: "ready", lease_token: null, etag: '"saved"', size_bytes: 3 };
   const delivery = typescriptLoader({
-    "@/lib/auth/ensure-app-user": { ensureAppUser: async () => { authorizations++; return { id: owner }; } },
+    "@/lib/auth/read-app-user": { readAppUser: async () => { authorizations++; return { id: owner }; } },
     "@/lib/db/server": { createDatabaseClient: () => ({ rpc: async () => ({ data: job, error: null }) }) },
     "@/lib/storage/r2": {},
     "./approved-video": { resolveApprovedProjectVideo: async (acting, projectId) => {

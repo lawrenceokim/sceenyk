@@ -1,5 +1,7 @@
 import "server-only";
 import { ensureAppUser } from "@/lib/auth/ensure-app-user";
+import { readAppUser } from "@/lib/auth/read-app-user";
+import { ServiceOperationError } from "@/lib/diagnostics/service-failure";
 import { createDatabaseClient } from "@/lib/db/server";
 import type { GenerationRow } from "@/lib/db/types";
 import { compositionPlanSchema } from "@/lib/composition/contract";
@@ -239,19 +241,19 @@ export async function getLatestProjectGeneration(
 export async function getLatestProjectGenerations(
   input: unknown,
 ): Promise<Record<string, GenerationJob | null>> {
-  const user = await ensureAppUser();
+  const user = await readAppUser();
   const parsed = generationProjectIdsSchema.safeParse(input);
   if (!parsed.success) throw new GenerationAccessError();
   const ids = [...new Set(parsed.data)];
   if (!ids.length) return {};
   const database = createDatabaseClient();
-  const { data, error } = await database
+  const { data, error, status } = await database
     .from("projects")
     .select("id")
     .eq("owner_user_id", user.id)
     .eq("status", "draft")
     .in("id", ids);
-  if (error || !data) throw new GenerationAccessError();
+  if (error || !data) throw new ServiceOperationError(error, "database", "projects_generation_status", undefined, undefined, status);
   return Object.fromEntries(
     await Promise.all(
       data.map(
