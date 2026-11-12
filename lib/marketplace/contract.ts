@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { saveProjectSchema } from "@/lib/projects/validation";
+import { saveProjectSchema, legacyProjectSettingsSchema } from "@/lib/projects/validation";
 
 export const listingStatuses = ["draft", "published", "unpublished", "archived"] as const;
 export const marketplacePageSize = 12;
@@ -26,7 +26,7 @@ export const adoptListingSchema = z.strictObject({ listingId: z.uuid(), requestI
 export const deleteTemplateSchema = z.strictObject({ id: z.uuid() });
 export const templateSnapshotSchema = z.strictObject({
   version: z.literal(1), category: saveProjectSchema.shape.category,
-  instructions: publicText(4000), settings: saveProjectSchema.shape.settings,
+  instructions: publicText(4000), settings: legacyProjectSettingsSchema,
   creationType: saveProjectSchema.shape.creationType.optional(), ugcType: saveProjectSchema.shape.ugcType.optional(),
 });
 export const browseSchema = z.strictObject({
@@ -46,7 +46,7 @@ export const listingSchema = z.strictObject({
   previewUrl: z.string().regex(/^\/api\/marketplace\/listings\/[a-f0-9-]{36}\/preview$/).nullable().default(null),
 });
 export const ownedListingSchema = listingSchema.extend({ sourceProjectId: z.uuid(), rightsConfirmed: z.boolean(), adoptionCount: z.number().int().nonnegative(), paidSalesCount: z.number().int().nonnegative(), creatorEarningsMinor: z.number().int().nonnegative() });
-export const originSchema = z.strictObject({ listingId: z.uuid(), title: z.string().max(120) });
+export const originSchema = z.strictObject({ listingId: z.uuid(), title: z.string().max(120), acquisitionId: z.uuid().optional() });
 export type TemplateSnapshot = z.infer<typeof templateSnapshotSchema>;
 export type Listing = z.infer<typeof listingSchema> & { estimate: { credits: number; test: boolean } | null };
 export type OwnedListing = z.infer<typeof ownedListingSchema> & Pick<Listing, "estimate">;

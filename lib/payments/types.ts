@@ -24,11 +24,12 @@ export type PurchaseRow = {
   created_at: string;
   updated_at: string;
   completed_at: string | null;
+  pricing_snapshot: import("./credit-pricing").CreditPurchaseQuote | null;
 };
 
 export type PurchaseSummary = Pick<PurchaseRow,
   "pack_id" | "pack_name" | "credits" | "status" | "created_at"
-> & { orderId: string | null; amount: string; currency: "USD" };
+> & { id: string; orderId: string | null; amount: string; currency: "USD"; pricing: import("./credit-pricing").CreditPurchaseQuote | null };
 
 export type CreditWallet = {
   available: number;

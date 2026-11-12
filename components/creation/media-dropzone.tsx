@@ -8,6 +8,7 @@ import type { ProjectAsset } from "@/lib/media/types";
 import { ProjectMediaList } from "./project-media-list";
 import { LocalMediaThumbnail } from "./local-media-preview";
 import { AccountAction } from "@/components/account-action";
+import { AppNotification } from "@/components/notifications/app-notification";
 
 const mediaIcons = { image: ImageIcon, video: FileVideo, audio: AudioLines };
 
@@ -156,17 +157,11 @@ export function MediaDropzone({
       <p id={`${id}-help`} className="mt-3 text-caption text-muted-foreground">
         Images, video & audio · SVG preview only.
       </p>
-      <p
-        role="status"
-        className={cn(
-          "mt-3 text-body-sm",
-          error ? "text-destructive" : "sr-only",
-        )}
-      >
-        {error ||
-          (files.length
+      {error && <AppNotification role="alert">{error}</AppNotification>}
+      <p role="status" className="sr-only">
+        {files.length
             ? `${files.length} local media ${files.length === 1 ? "file" : "files"} selected.`
-            : "No local media selected.")}
+            : "No local media selected."}
       </p>
       {files.length > 0 && (
         <ul className="mt-4 space-y-2" aria-label="Selected local media">
@@ -236,13 +231,11 @@ export function MediaDropzone({
                       Sign in to upload
                     </AccountAction>
                   )}
-                  <p
+                  {state?.status === "failed" ? <AppNotification role="alert">{state.message}</AppNotification> : <p
                     role="status"
                     className={cn(
                       "mt-2 break-words text-caption",
-                      state?.status === "failed"
-                        ? "text-destructive"
-                        : "text-muted-foreground",
+                      "text-muted-foreground",
                     )}
                   >
                     {state?.status === "preparing"
@@ -251,10 +244,8 @@ export function MediaDropzone({
                         ? `Uploading${state.progress !== undefined ? ` · ${state.progress}%` : "…"}`
                         : state?.status === "verifying"
                           ? "Verifying stored media…"
-                          : state?.status === "failed"
-                            ? state.message
-                            : "Selected · local preview only"}
-                  </p>
+                          : "Selected · local preview only"}
+                  </p>}
                   {state?.status === "uploading" &&
                     state.progress !== undefined && (
                       <progress

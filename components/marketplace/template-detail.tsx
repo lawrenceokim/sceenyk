@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import type { ReactNode } from "react";
+import { Suspense, type ReactNode } from "react";
+import { DetailVideoPreview } from "@/components/media/detail-video-preview";
 import type { Listing } from "@/lib/marketplace/contract";
 import { creationCategories } from "@/components/creation/creation-options";
 import { Button } from "@/components/ui/button";
@@ -11,6 +12,7 @@ import { templateAppearance } from "./template-appearance";
 
 export function TemplateDetail({ listing, owned = false, children }: { listing: Listing; owned?: boolean; children?: ReactNode }) {
   const category = creationCategories.find(item => item.id === listing.category)!;
+  const cover = <TemplateCover template={listing.template} fallbackColor={listing.fallbackColor} previewId={listing.id} previewUrl={listing.previewUrl} owned={owned} large />;
   return <div className={`
       marketplace-detail
       [.workspace-content_.workspace-page[data-workspace-page='content'][data-workspace-view='template-detail']_>_&&]:mt-[0]
@@ -36,7 +38,7 @@ export function TemplateDetail({ listing, owned = false, children }: { listing: 
       @min-[860px]:[&&]:[grid-template-columns:minmax(0,_2.2fr)_minmax(0,_1fr)] @min-[860px]:[&&]:gap-[40px]
       max-599:[&&]:gap-[38px]
     `}>
-      <div className={"marketplace-detail-preview [&&]:min-w-[0] [&&]:overflow-hidden [&&]:rounded-[12px]"}><TemplateCover template={listing.template} fallbackColor={listing.fallbackColor} previewId={listing.id} previewUrl={listing.previewUrl} owned={owned} large /></div>
+      <div className={"marketplace-detail-preview [&&]:min-w-[0] [&&]:overflow-hidden [&&]:rounded-[12px]"}><Suspense fallback={cover}><DetailVideoPreview kind={owned ? "template" : "marketplace"} id={listing.id}>{cover}</DetailVideoPreview></Suspense></div>
       <div className={`
       marketplace-detail-info [&&]:flex [&&]:min-w-[0] [&&]:flex-col [&&]:items-start [&&]:gap-[18px] [&&]:pt-[1px]
       [&&]:[overflow-wrap:anywhere] [.workspace-page[data-workspace-page='content']_&&_h1]:text-[length:30px]
@@ -68,7 +70,7 @@ export function TemplateDetail({ listing, owned = false, children }: { listing: 
       [&&_>_p:first-child_>_span]:text-[color:var(--muted-foreground)] [&&_>_p:first-child_>_span]:text-[length:12px]
       [&&_strong]:text-[length:18px] [&&_strong]:font-[650] [&&_>_p_+_p]:mt-[6px] [&&_>_p_+_p]:text-[length:12px]
       [&&_>_p_+_p]:leading-[18px]
-    `}><p><span>Adoption price</span><strong>{listing.adoptionType === "free" ? "Free" : usd(listing.priceMinor)}</strong>{listing.adoptionType === "paid" && <span>USD · PayPal Sandbox</span>}</p><GenerationEstimate listing={listing} /></div>
+    `}><p><span>Adoption price</span><strong>{listing.adoptionType === "free" ? "Free" : usd(listing.priceMinor)}</strong>{listing.adoptionType === "paid" && <span>USD · PayPal</span>}</p><GenerationEstimate listing={listing} /></div>
         <div className={`
       marketplace-detail-adopt [&&]:w-[100%] [&&]:max-w-[310px] [&&_[data-slot='button']]:h-[auto]
       [&&_[data-slot='button']]:min-h-[34px] [&&_[data-slot='button']]:rounded-[8px] [&&_[data-slot='button']]:pt-[8px]
@@ -78,7 +80,8 @@ export function TemplateDetail({ listing, owned = false, children }: { listing: 
     `}>{owned ? <div className="grid gap-3">
           <Button nativeButton={false} render={<Link href={`/settings/templates/${listing.id}`} />}>Update Template</Button>
           {listing.status === "published" && <Button variant="outline" nativeButton={false} render={<Link href={`/marketplace/${listing.id}`} />}>View in Marketplace</Button>}
-        </div> : <AdoptButton listingId={listing.id} paid={listing.adoptionType === "paid"} estimate={listing.estimate} />}</div>
+        </div> : <AdoptButton listingId={listing.id} paid={listing.adoptionType === "paid"} estimate={listing.estimate}
+          preview={<TemplateCover template={listing.template} fallbackColor={listing.fallbackColor} previewId={listing.id} previewUrl={listing.previewUrl} />} />}</div>
         <p className={"marketplace-detail-note [&&]:max-w-[48ch] [&&]:text-[color:var(--muted-foreground)] [&&]:text-[length:12px] [&&]:leading-[18px]"}>{owned ? "This is your reusable template. Your original project and private media remain separate." : "Adoption creates your own editable project; creator media stays private. AI generation is separate, with a quote shown before you generate."}</p>
         <details className={`
       marketplace-configuration [&&_summary:focus-visible]:[outline:2px_solid_var(--ring)]

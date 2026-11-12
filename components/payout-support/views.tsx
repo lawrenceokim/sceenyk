@@ -6,6 +6,8 @@ import { usd } from "@/lib/marketplace/payments/contract";
 import type { PayoutQueue, PayoutDetail } from "@/lib/payout-support/contract";
 import { missingPayoutReferenceMessage } from "@/lib/payout-support/outcomes";
 import { ReconcilePayoutButton } from "./reconcile-button";
+import { AppNotification } from "@/components/notifications/app-notification";
+
 
 const labels = { all: "All withdrawals", pending: "Pending", eligible: "Eligible", processing: "Processing", paid: "Paid", failed: "Failed", review: "Needs Review" };
 const words = (value: string) => value.replaceAll("_", " ");
@@ -28,7 +30,7 @@ export function SupportUnavailable() {
       [.workspace-settings-inner_label&&]:pt-[12px] [.workspace-settings-inner_label&&]:pr-[12px]
       [.workspace-settings-inner_label&&]:pb-[12px] [.workspace-settings-inner_label&&]:pl-[12px]
       [.workspace-settings-inner_label&&_svg]:w-[18px] [.workspace-settings-inner_label&&_svg]:h-[18px]
-    `}><h1 className="text-xl font-semibold">Payout support is unavailable</h1><p role="alert" className="text-muted-foreground">Internal data couldn’t be loaded. Refresh before continuing.</p><Link className={`
+    `}><h1 className="text-xl font-semibold">Payout support is unavailable</h1><AppNotification role="alert" className="text-muted-foreground">Internal data couldn’t be loaded. Refresh before continuing.</AppNotification><Link className={`
       [@layer_components]:inline-flex [@layer_components]:min-h-[var(--control-height)] [@layer_components]:items-center
       [@layer_components]:gap-[var(--space-1)] [@layer_components]:text-[color:var(--muted-foreground)]
       [@layer_components]:text-[length:var(--text-body-sm)] [@layer_components]:font-[500]
@@ -53,7 +55,7 @@ export function PayoutQueueView({ data, query, status }: { data: PayoutQueue; qu
       [@layer_components]:text-[color:var(--link)] [@layer_components]:text-[length:var(--text-caption)]
       [@layer_components]:font-[600] [@layer_components]:tracking-[0.12em] eyebrow
       [.workspace-page[data-workspace-page='content']_&&]:hidden
-    `}>INTERNAL · PAYPAL SANDBOX</p><h1 className="text-3xl font-bold tracking-tight">Payout support</h1><p className="max-w-2xl text-muted-foreground">Review creator withdrawals and check their existing PayPal status. Automatic payout processing remains primary.</p></header>
+    `}>INTERNAL · PAYPAL</p><h1 className="text-3xl font-bold tracking-tight">Payout support</h1><p className="max-w-2xl text-muted-foreground">Review creator withdrawals and check their existing PayPal status. Automatic payout processing remains primary.</p></header>
     <form className={`
       [@layer_components]:[border:1px_solid_var(--border)] [@layer_components]:rounded-[var(--radius-xl)]
       [@layer_components]:[background:var(--card)] [@layer_components]:text-[color:var(--card-foreground)]
@@ -145,8 +147,8 @@ export function PayoutDetailView({ data, historyPage, auditPage, allocationPage 
       [@layer_components]:text-[color:var(--link)] [@layer_components]:text-[length:var(--text-caption)]
       [@layer_components]:font-[600] [@layer_components]:tracking-[0.12em] eyebrow
       [.workspace-page[data-workspace-page='content']_&&]:hidden
-    `}>WITHDRAWAL · PAYPAL SANDBOX</p><h1 className="break-all text-2xl font-bold tracking-tight sm:text-3xl">{w.id}</h1><p className="break-words text-muted-foreground">{w.creatorName} · <span className="break-all font-mono text-caption">{w.creatorId}</span></p><Status status={w.status} review={w.reviewRequired} /></header>
-    {w.reviewRequired && <p role="status" className="rounded-xl border border-warning/30 bg-warning-surface p-4 text-warning-foreground">{missing ? missingPayoutReferenceMessage : w.status === "paid" && ["RETURNED", "REFUNDED"].includes(w.providerStatus ?? "") ? "PayPal reports a return/refund after payment. The original Paid record is preserved for investigation." : "Needs Review. Existing financial state is preserved for provider investigation."}</p>}
+    `}>WITHDRAWAL · PAYPAL</p><h1 className="break-all text-2xl font-bold tracking-tight sm:text-3xl">{w.id}</h1><p className="break-words text-muted-foreground">{w.creatorName} · <span className="break-all font-mono text-caption">{w.creatorId}</span></p><Status status={w.status} review={w.reviewRequired} /></header>
+    {w.reviewRequired && <AppNotification role="status" className="rounded-xl border border-warning/30 bg-warning-surface p-4 text-warning-foreground">{missing ? missingPayoutReferenceMessage : w.status === "paid" && ["RETURNED", "REFUNDED"].includes(w.providerStatus ?? "") ? "PayPal reports a return/refund after payment. The original Paid record is preserved for investigation." : "Needs Review. Existing financial state is preserved for provider investigation."}</AppNotification>}
     <section className={`
       [@layer_components]:[border:1px_solid_var(--border)] [@layer_components]:rounded-[var(--radius-xl)]
       [@layer_components]:[background:var(--card)] [@layer_components]:text-[color:var(--card-foreground)]

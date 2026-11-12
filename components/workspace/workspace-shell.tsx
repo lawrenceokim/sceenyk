@@ -3,6 +3,7 @@
 import { useEffect, useSyncExternalStore, type CSSProperties, type ReactNode } from "react";
 import { WorkspaceSidebar } from "./workspace-sidebar";
 import { WorkspaceMobileNav } from "./workspace-mobile-nav";
+import { StudioModeProvider } from "./studio-mode-provider";
 
 const preferenceKey = "sceenyk-workspace-collapsed";
 let temporaryPreference: boolean | null = null;
@@ -35,7 +36,7 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
     targets.forEach(target => target.classList.add("scrollbar-hidden"));
     return () => targets.forEach(target => target.classList.remove("scrollbar-hidden"));
   }, []);
-  return <div className={`
+  return <StudioModeProvider><div className={`
       workspace-shell min-h-dvh flex-1 bg-background
       [&&:has(>_div_>_.workspace-gutter_>_.workspace-content_>_[data-workspace-page='studio'])]:h-dvh
       [&&:has(>_div_>_.workspace-gutter_>_.workspace-content_>_[data-workspace-page='studio'])]:min-h-0
@@ -73,6 +74,7 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
     `}>
         <main id="workspace-content" tabIndex={-1} className={`
       workspace-content min-w-0 text-card-foreground outline-none
+      [&&:has(>_[data-workspace-gallery])]:[scrollbar-gutter:stable]
       [&&:has(>_[data-workspace-page='studio'])]:h-[calc(100dvh_-_var(--workspace-mobile-header-height)_-_var(--workspace-inset)_*_2)]
       min-[1024px]:[&&:has(>_[data-workspace-page='studio'])]:h-[calc(100dvh_-_var(--workspace-inset)_*_2)]
       [&&:has(>_[data-workspace-page='studio'])]:min-h-0 [&&:has(>_[data-workspace-page='studio'])]:overflow-hidden
@@ -99,5 +101,5 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
     `}>{children}</main>
       </div>
     </div>
-  </div>;
+  </div></StudioModeProvider>;
 }

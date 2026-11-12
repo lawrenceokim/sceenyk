@@ -12,10 +12,21 @@
 
 # testing
 /coverage
+/.tmp/
 
 # context
 !/context/
 /context/*
+!/context/project-video-previews.md
+!/context/vercel-deployment.md
+!/context/preview-e2e-setup.md
+!/context/docker-workers.md
+!/context/purchases.md
+!/context/stage-3-credit-protection.md
+!/context/m7-workflow-verification.md
+!/context/pro-clip-approval-lock.md
+!/context/higgsfield-reference-limits.md
+!/context/m6-final-operation-reliability.md
 !/context/ugc-v1-workflow.md
 !/context/reference-analysis.md
 !/context/character-sheet.md
@@ -29,6 +40,7 @@
 !/context/generation-architecture-v3.md
 !/context/generation-v3-phase2.md
 !/context/generation-v3-phase3.md
+!/context/phase-2-basic-pro-studio.md
 !/context/v3-flow-stabilization.md
 !/context/inngest-pause.md
 !/context/m10-first-provider-failure.md
@@ -57,6 +69,8 @@ yarn-error.log*
 .env*
 /.ugc-final-recovery/
 /.ugc-v3-recovery/
+/.worker-runtime/
+/workers/laptop/runtime/
 !.env.example
 
 # vercel

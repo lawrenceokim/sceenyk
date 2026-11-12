@@ -9,6 +9,8 @@ import type { CaptionTrack } from "@/lib/captions/contract";
 import { activeCaptionCue } from "@/lib/captions/preview-timing";
 import { previewCaptionPaint, resolveCaptionStyle, selectionForCaptionPreset, type CaptionStyleSelection } from "@/lib/captions/style";
 import { compositionPlanSchema, type CompositionPlan } from "@/lib/composition/contract";
+import { AppNotification } from "@/components/notifications/app-notification";
+
 
 type Scene = CompositionPlan["scenes"][number];
 type Media = { sceneId: string; mediaType: "image" | "video"; url: string; expiresAt: string };
@@ -135,9 +137,9 @@ export function SceneCaptionPreview({ projectId, jobId, track, enabled, style, s
     sync(scene, scene.visual.input_start_ms + bounded, true);
   }
 
-  if (error) return <p role="status" className="text-body-sm text-muted-foreground">{error}</p>;
+  if (error) return <AppNotification role="status" className="text-body-sm text-muted-foreground">{error}</AppNotification>;
   if (!plan) return <MediaPreviewSkeleton className="aspect-video max-h-full w-full rounded-lg" />;
-  if (!scene?.visual) return <p role="status" className="text-body-sm text-muted-foreground">Scene preview is unavailable.</p>;
+  if (!scene?.visual) return <AppNotification role="status" className="text-body-sm text-muted-foreground">Scene preview is unavailable.</AppNotification>;
   const resolvedStyle = resolveCaptionStyle(style, track.aspect_ratio);
   const safe = resolvedStyle.safe_area_percent;
   const cue = track.cues.find(item => item.id === activeCueId);
@@ -165,7 +167,7 @@ export function SceneCaptionPreview({ projectId, jobId, track, enabled, style, s
       </div>}
       {!media && (loadingMedia ? <MediaPreviewSkeleton overlay /> : <span className="absolute inset-0 grid place-items-center text-body-sm text-white">Scene unavailable</span>)}
     </div>
-    <StudioPropertyControls>{mediaError && <p role="status" className="text-caption text-destructive">{mediaError}</p>}
+    <StudioPropertyControls>{mediaError && <AppNotification role="status" className="text-caption text-destructive">{mediaError}</AppNotification>}
     <div className="flex flex-wrap items-center gap-2">
       <Button type="button" variant="outline" disabled={!media || loadingMedia} onClick={() => void togglePlayback()}>{playing ? "Pause" : displayMs >= scene.duration_ms ? "Replay" : "Play"}</Button>
       {scene.visual.media_type === "video" && <Button type="button" variant="outline" disabled={!media} onClick={() => { const next = !muted; setMuted(next); if (video.current) video.current.muted = next; }}>{muted ? "Unmute" : "Mute"}</Button>}

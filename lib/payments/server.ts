@@ -1,8 +1,11 @@
 import "server-only";
+import { requestCheckoutOrigin } from "./paypal/checkout-origin";
+import { readAppUser } from "@/lib/auth/read-app-user";
 import { z } from "zod";
 import { ensureAppUser } from "@/lib/auth/ensure-app-user";
 import { createDatabaseClient } from "@/lib/db/server";
-import { getSandboxPack } from "./packs";
+import { getCreditPurchasePricing } from "./credit-pricing-config";
+import { calculateCreditPurchase, CreditPricingError, parseCreditPaymentAmount } from "./credit-pricing";
 import { getPayPalConfig } from "./paypal/config";
 import {
   approvalUrl, capturePayPalOrder, createPayPalOrder, paypalOrderId,
@@ -11,7 +14,10 @@ import {
 import type { CreditWallet, PurchaseRow, PurchaseStatus } from "./types";
 import { lowCreditThreshold } from "@/lib/accounting/config";
 
-const packInput = z.object({ packId: z.string().max(80) }).strict();
+const purchaseInput = z.union([
+  z.object({ amountUsd: z.string().max(8), pricingVersion: z.string().max(80) }).strict(),
+  z.object({ purchaseId: z.uuid() }).strict(),
+]);
 const orderInput = z.object({ orderId: paypalOrderId }).strict();
 
 async function ownedPurchase(owner: string, orderId: string) {
@@ -78,19 +84,39 @@ async function reconcilePurchase(purchase: PurchaseRow, cancel = false): Promise
 export async function createCreditOrder(input: unknown) {
   const user = await ensureAppUser();
   getPayPalConfig();
-  const { packId } = packInput.parse(input);
-  const pack = getSandboxPack(packId);
-  const { data, error } = await createDatabaseClient().rpc("prepare_credit_purchase", {
-    p_owner_user_id: user.id, p_pack_id: pack.id, p_pack_name: pack.name,
-    p_amount_minor: Math.round(Number(pack.amount) * 100), p_currency: pack.currency, p_credits: pack.credits,
-  });
-  if (error || !data) throw new Error("PURCHASE_UNAVAILABLE");
-  let purchase = data;
+  const origin = await requestCheckoutOrigin();
+  const parsed = purchaseInput.safeParse(input);
+  if (!parsed.success) throw new CreditPricingError("Enter a valid amount and review the purchase before checkout.");
+  const terms = parsed.data;
+  let purchase: PurchaseRow;
+  if ("purchaseId" in terms) {
+    // Resume exact saved terms, including legacy packs and older fee schedules.
+    // Ownership is resolved before any PayPal HTTP or new capture.
+    const { data, error } = await createDatabaseClient().from("credit_purchases").select("*")
+      .eq("id", terms.purchaseId).eq("owner_user_id", user.id).maybeSingle();
+    if (error || !data) throw new Error("PURCHASE_NOT_FOUND");
+    if (!["pending", "approved", "completed"].includes(data.status)) throw new Error("PURCHASE_NOT_RESUMABLE");
+    purchase = data;
+  } else {
+    const pricing = getCreditPurchasePricing();
+    if (terms.pricingVersion !== pricing.version) throw new CreditPricingError("Purchase rates changed. Refresh billing and review the updated credits before checkout.");
+    const quote = calculateCreditPurchase(parseCreditPaymentAmount(terms.amountUsd), pricing);
+    const { data, error } = await createDatabaseClient().rpc("prepare_custom_credit_purchase", {
+      p_owner_user_id: user.id, p_amount_minor: quote.amountMinor,
+      p_paypal_basis_points: pricing.paypalBasisPoints, p_paypal_fixed_minor: pricing.paypalFixedMinor,
+      p_commission_basis_points: pricing.commissionBasisPoints, p_pricing_version: pricing.version,
+    });
+    if (error || !data) throw new Error("PURCHASE_UNAVAILABLE");
+    if (data.amount_minor !== quote.amountMinor || data.credits !== quote.credits ||
+      data.pricing_snapshot?.version !== quote.version) throw new Error("PURCHASE_TERMS_MISMATCH");
+    purchase = data;
+  }
+  if (purchase.status === "completed") return { orderId: purchase.paypal_order_id!, approvalUrl: null, status: "completed" as const };
   if (!purchase.paypal_order_id) {
     // Bound create retries well inside PayPal's request-ID retention. An older
     // unknown create outcome requires reconciliation, never a blind new POST.
     if (Date.now() - Date.parse(purchase.created_at) > 5 * 60_000) throw new Error("PURCHASE_CREATE_NEEDS_RECONCILIATION");
-    const order = await createPayPalOrder(purchase);
+    const order = await createPayPalOrder(purchase, origin);
     verifyOrder(purchase, order);
     purchase = await attach(purchase, order.id);
   }
@@ -103,14 +129,14 @@ export async function createCreditOrder(input: unknown) {
 }
 
 export async function completeCreditOrder(input: unknown, cancel = false) {
-  const user = await ensureAppUser();
+  const user = await readAppUser();
   const { orderId } = orderInput.parse(input);
   // User B is refused here, before any PayPal request or capture.
   return { status: await reconcilePurchase(await ownedPurchase(user.id, orderId), cancel) };
 }
 
 export async function getCreditWallet(): Promise<CreditWallet> {
-  const user = await ensureAppUser();
+  const user = await readAppUser();
   const db = createDatabaseClient();
   const [account, purchases, activity] = await Promise.all([
     db.from("generation_accounts").select("credit_available,credit_reserved").eq("owner_user_id", user.id).single(),
@@ -122,14 +148,14 @@ export async function getCreditWallet(): Promise<CreditWallet> {
     available: account.data.credit_available, reserved: account.data.credit_reserved,
     lowBalance: account.data.credit_available <= lowCreditThreshold(),
     activity: activity.data.map(entry => ({ type: entry.type, amount: entry.amount, availableDelta: entry.available_delta, createdAt: entry.created_at })),
-    purchases: purchases.data.map(purchase => ({ pack_id: purchase.pack_id, pack_name: purchase.pack_name, credits: purchase.credits,
+    purchases: purchases.data.map(purchase => ({ id: purchase.id, pack_id: purchase.pack_id, pack_name: purchase.pack_name, credits: purchase.credits, pricing: purchase.pricing_snapshot ?? null,
       status: purchase.status, created_at: purchase.created_at, orderId: purchase.paypal_order_id,
       amount: purchaseAmount(purchase), currency: purchase.currency })),
   };
 }
 
 export async function reconcileOwnedCreditOrders() {
-  const user = await ensureAppUser();
+  const user = await readAppUser();
   getPayPalConfig();
   const { data, error } = await createDatabaseClient().from("credit_purchases").select("*")
     .eq("owner_user_id", user.id).in("status", ["pending", "approved"])

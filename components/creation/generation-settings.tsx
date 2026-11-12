@@ -1,27 +1,29 @@
 import { useId } from "react";
 import { Select } from "@/components/ui/select";
-import { legacyDuration, ugcTypes, type UgcType } from "@/lib/projects/options";
+import { ugcTypes, type UgcType } from "@/lib/projects/options";
+import { DurationGallery } from "./duration-gallery";
+
 import {
-  durations,
   visualStyles,
   tones,
   type CreationSettings,
 } from "./creation-options";
 
 export function SettingSelect<T extends string>({
-  id, label, value, choices, onChange,
+  id, label, value, choices, onChange, disabled,
 }: {
   id: string;
   label: string;
   value: T;
-  choices: readonly { value: T; label: string }[];
+  choices: readonly { value: T; label: string; disabled?: boolean }[];
   onChange: (value: T) => void;
+  disabled?: boolean;
 }) {
   const instanceId = useId();
   const controlId = instanceId + "-" + id;
   return <div className="studio-setting-select min-w-0 [.studio-setting-list_&&]:grid [.studio-setting-list_&&]:grid-cols-[68px_minmax(0,1fr)] [.studio-setting-list_&&]:items-center [.studio-setting-list_&&]:gap-2">
     <label htmlFor={controlId} className="text-xs font-medium">{label}</label>
-    <Select id={controlId} name={id} value={value} options={choices} onValueChange={onChange} />
+    <Select id={controlId} name={id} value={value} options={choices} onValueChange={onChange} disabled={disabled} />
   </div>;
 }
 
@@ -30,11 +32,15 @@ export function GenerationSettings({
   onChange,
   ugcType,
   onUgcTypeChange,
+  readOnly = false,
+  durationReadOnly = readOnly,
 }: {
   settings: CreationSettings;
   onChange: (settings: CreationSettings) => void;
   ugcType?: UgcType;
   onUgcTypeChange?: (value: UgcType) => void;
+  readOnly?: boolean;
+  durationReadOnly?: boolean;
 }) {
   const headingId = useId();
   return (
@@ -63,15 +69,10 @@ export function GenerationSettings({
         Style & pacing
       </h2>
       <div className={"studio-setting-list mt-3 grid gap-4 [&&]:mt-[0] [&&]:gap-[var(--ui-space-3)] [&&_+_p]:mt-[var(--ui-space-3)]"}>
-        <SettingSelect
-          id="duration"
-          label="Duration"
-          value={settings.duration}
-          choices={settings.duration === legacyDuration.value ? [legacyDuration, ...durations] : durations}
-          onChange={(duration) => onChange({ ...settings, duration })}
-        />
+        <div><p className="text-xs font-medium">Duration</p><DurationGallery value={settings.duration} readOnly={durationReadOnly} onChange={duration => onChange({ ...settings, duration })} /></div>
         <SettingSelect
           id="visual-style"
+          disabled={readOnly}
           label="Visual style"
           value={settings.visualStyle}
           choices={visualStyles.map((value) => ({ value, label: value }))}
@@ -79,12 +80,13 @@ export function GenerationSettings({
         />
         <SettingSelect
           id="tone"
+          disabled={readOnly}
           label="Tone"
           value={settings.tone}
           choices={tones.map((value) => ({ value, label: value }))}
           onChange={(tone) => onChange({ ...settings, tone })}
         />
-        {ugcType && onUgcTypeChange && <SettingSelect id="ugc-type" label="Type"
+        {ugcType && onUgcTypeChange && <SettingSelect id="ugc-type" label="Type" disabled={readOnly}
           value={ugcType} choices={ugcTypes} onChange={onUgcTypeChange} />}
       </div>
     </section>

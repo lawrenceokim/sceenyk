@@ -7,8 +7,10 @@ import { planGenerationSegments } from "./planner";
 import { compileDirectorInstructions } from "./compiler";
 import { validateManualSnapshot } from "./pricing/higgsfield-pricing";
 import { estimateHiggsfieldCost } from "./adapters/higgsfield-pricing";
+import { videoResolutions } from "@/lib/projects/video-resolution";
+import { validateConnectedStory } from "./connected-story";
 
-export const localV3Profile = Object.freeze({ id: "v3-local-480p-preflight", resolution: "480p",
+export const localV3Profile = Object.freeze({ id: "v3-local-480p-preflight", defaultResolution: "480p", supportedResolutions: videoResolutions,
   workflowEnabled: true, planningOnly: true, paidTransportEnabled: false } as const);
 const storedSegmentSchema = z.strictObject({ id: z.string().min(1), version: z.literal(1), startMs: z.number().int().nonnegative(),
   endMs: z.number().int().positive(), durationMs: z.number().int().positive(), includedSceneNumbers: z.array(z.number().int().positive()).min(1),
@@ -57,16 +59,31 @@ export function buildFrozenPackage(input: unknown, provider: VideoGenerationProv
   return freezeDocument(frozenPackageSchema.parse({ ...body, hash: v3Digest("frozen-package", body) }));
 }
 
+// This brand is process-local and cannot be supplied through JSON/API input.
+// Only the trusted store pins an unchanged DB-certified immutable lock snapshot.
+const approvedPackages = new WeakSet<object>();
+export const isApprovedPackageSnapshot = (value: unknown) => !!value && typeof value === "object" && approvedPackages.has(value);
+export function pinApprovedPackage(value: unknown, expectedHash: string) {
+  if (!value || typeof value !== "object" || !("hash" in value) || value.hash !== expectedHash) throw new Error("V3_LOCK_PACKAGE_DAMAGED");
+  approvedPackages.add(value);
+}
 export function readFrozenPackage(value: unknown): FrozenPackage {
+  const pinned = isApprovedPackageSnapshot(value);
   const doc = frozenPackageSchema.parse(value), { hash, ...body } = doc;
   if (hash !== v3Digest("frozen-package", body) || doc.inputHash !== v3Digest("input", doc.source) ||
-    doc.capabilityHash !== v3Digest("capabilities", normalizeCapabilities(doc.capabilitySnapshot))) throw new Error("PACKAGE_INTEGRITY_INVALID");
+    !pinned && doc.capabilityHash !== v3Digest("capabilities", normalizeCapabilities(doc.capabilitySnapshot))) throw new Error("PACKAGE_INTEGRITY_INVALID");
   let end = 0, scene = 1;
+  const story = doc.source.storyboardContent;
+  if (story.version === "director-storyboard-connected-v1") {
+    if (!pinned) validateConnectedStory(story);
+    if (story.clips.length !== doc.segments.length || story.clips.some((c, i) => c.startMs !== doc.segments[i].startMs || c.endMs !== doc.segments[i].endMs))
+      throw new Error("V3_CLIP_PLAN_CHANGED");
+  }
   for (const [index, segment] of doc.segments.entries()) {
-    const command = restoreSegment(doc, segment.id).command;
+    const command = pinned ? null : restoreSegment(doc, segment.id).command;
     if (segment.id !== `segment-${index + 1}-${segment.fingerprint.slice(0, 16)}` ||
       segment.startMs !== end || segment.endMs - segment.startMs !== segment.durationMs || segment.capabilityHash !== doc.capabilityHash ||
-      segment.fingerprint !== commandFingerprint(command) || segment.compiledPrompt !== command.direction.prompt ||
+      !pinned && (segment.fingerprint !== commandFingerprint(command!) || segment.compiledPrompt !== command!.direction.prompt) ||
       segment.includedSceneNumbers.some(n => n !== scene++)) throw new Error("SEGMENT_INTEGRITY_INVALID");
     end = segment.endMs;
   }
@@ -75,14 +92,16 @@ export function readFrozenPackage(value: unknown): FrozenPackage {
   if (doc.pricing.source === "manual_provider_estimate") {
     let total = 0;
     for (const segment of doc.segments) {
-      const s = validateManualSnapshot(segment.estimate.pricing);
-      if (segment.estimate.source !== "manual_provider_estimate" || s.durationMs !== segment.durationMs || s.provider !== doc.capabilitySnapshot.providerId ||
+      const s = pinned ? segment.estimate.pricing! : validateManualSnapshot(segment.estimate.pricing);
+      if (!s) throw new Error("V3_PRICING_SNAPSHOT_INVALID");
+      if (s.resolution !== undefined && s.resolution !== doc.source.resolution || segment.estimate.source !== "manual_provider_estimate" || s.durationMs !== segment.durationMs || s.provider !== doc.capabilitySnapshot.providerId ||
         s.mode !== `${doc.source.mode}-to-video` || s.pricingVersion !== doc.pricing.pricingVersion || segment.estimate.pricingVersion !== s.pricingVersion || s.configurationDate !== doc.pricing.configurationDate ||
         s.estimatedCostMicrousd !== segment.estimate.estimatedCostMicrousd || segment.estimate.evidenceHash !== v3Digest("manual-pricing", s)) throw new Error("V3_PRICING_SNAPSHOT_INVALID");
       total += s.estimatedCostMicrousd;
     }
     if (doc.pricing.status !== "estimated" || doc.pricing.expiresAt !== null || total !== doc.pricing.totalMicrousd) throw new Error("V3_PRICING_SNAPSHOT_INVALID");
   } else if (doc.segments.some(s => s.estimate.source === "manual_provider_estimate")) throw new Error("V3_PRICING_SNAPSHOT_INVALID");
+  if (pinned) pinApprovedPackage(doc, hash);
   return freezeDocument(doc);
 }
 
@@ -102,8 +121,11 @@ export function packageCurrentness(doc: FrozenPackage, current: unknown, sourceR
 }
 
 export function packageCost(doc: FrozenPackage, provider: VideoGenerationProvider, now: string) {
+  if (isApprovedPackageSnapshot(doc)) { readFrozenPackage(doc); return { code: null, totalMicrousd: doc.pricing.totalMicrousd! } as const; }
   if (doc.pricing.source === "manual_provider_estimate") {
     readFrozenPackage(doc);
+    if (doc.segments.some(s => (s.estimate.pricing?.resolution ?? "480p") !== doc.source.resolution))
+      return { code: "V3_RESOLUTION_PRICING_NOT_CONFIGURED", totalMicrousd: null } as const;
     return { code: null, totalMicrousd: doc.pricing.totalMicrousd! } as const;
   }
   let total = 0;

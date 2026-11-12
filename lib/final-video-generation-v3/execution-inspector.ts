@@ -11,7 +11,7 @@ export function inspectExecutionEnvelope(value: unknown, now: string) {
     runtimeQuote: quoteSchema, runtimeAuthorization: z.unknown(), existingIntent: z.boolean().optional() }).parse(value);
   const doc = readFrozenPackage(envelope.package), quote = envelope.runtimeQuote;
   if (quote.segments.some(s => s.model !== higgsfieldModels.reference)) throw new Error("V3_INSPECTION_MODEL_UNVERIFIED");
-  const validityIssues = quote.segments.flatMap(s => higgsfieldRequestIssues(s.body, doc.source.references, quote.validityEvidence, now));
+  const validityIssues = quote.segments.flatMap(s => higgsfieldRequestIssues(s.body, doc.source.references, quote.validityEvidence, now, s.model));
   return runtimePreflight(doc, quote, envelope.runtimeAuthorization, { current: envelope.sourceCurrent && packageCurrentness(doc, envelope.currentInput, envelope.sourceRevision),
     transportEnabled: false, now, validityIssues, existingIntent: envelope.existingIntent });
 }

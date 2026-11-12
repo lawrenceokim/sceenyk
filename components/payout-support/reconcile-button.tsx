@@ -2,6 +2,8 @@
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { AppNotification } from "@/components/notifications/app-notification";
+
 
 export function ReconcilePayoutButton({ withdrawalId, disabled = false }: { withdrawalId: string; disabled?: boolean }) {
   const router = useRouter();
@@ -19,5 +21,5 @@ export function ReconcilePayoutButton({ withdrawalId, disabled = false }: { with
     } catch { setMessage("Payout status couldn’t be checked. Refresh before checking again."); }
     finally { inFlight.current = false; setBusy(false); }
   }
-  return <div className="space-y-3"><Button disabled={busy || disabled} onClick={() => void check()}>{busy ? "Checking…" : "Check PayPal Status"}</Button><p role="status" aria-live="polite" className="text-body-sm text-muted-foreground">{message}</p></div>;
+  return <div className="space-y-3"><Button disabled={busy || disabled} onClick={() => void check()}>{busy ? "Checking…" : "Check PayPal Status"}</Button><AppNotification role="status" aria-live="polite" className="text-body-sm text-muted-foreground">{message}</AppNotification></div>;
 }

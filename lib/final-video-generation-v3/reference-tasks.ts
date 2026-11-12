@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { generationContextSchema, referenceSubjectSchema, type GenerationContext, type ReferenceOriginals } from "./generation-context";
+import { generationContextSchema, referenceSubjectSchema, originalCharacters, type GenerationContext, type ReferenceOriginals } from "./generation-context";
 import { v3Digest } from "./identity";
 import type { Task } from "./runtime-contract";
 
@@ -9,11 +9,12 @@ export function creativeTaskCurrent(task: Pick<Task, "kind" | "input">, context:
   if (!input.success || input.data.briefHash !== briefHash || v3Digest("generation-context", input.data.generationContext) !== v3Digest("generation-context", context)) return false;
   if (["character", "product", "location"].includes(task.kind) && task.input.provider !== undefined && task.input.provider !== "openai") return false;
   if (task.kind === "character" || task.kind === "product") {
-    if (task.input.originalId !== originals[task.kind]) return false;
+    const character = task.kind === "character" ? originalCharacters(originals).find(c => c.id === task.input.originalId) : undefined;
+    if (task.kind === "character" ? !character : task.input.originalId !== originals.product) return false;
     if (task.input.referenceSubject !== undefined) {
       const subject = referenceSubjectSchema.safeParse(task.input.referenceSubject);
-      if (!subject.success || subject.data.role !== task.kind || subject.data.originalId !== originals[task.kind] ||
-        subject.data.name !== (originals.names?.[task.kind] ?? "")) return false;
+      if (!subject.success || subject.data.role !== task.kind || subject.data.originalId !== task.input.originalId ||
+        subject.data.name !== (character?.name ?? originals.names?.[task.kind] ?? "")) return false;
     }
   }
   return true;

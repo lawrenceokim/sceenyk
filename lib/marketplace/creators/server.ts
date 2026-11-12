@@ -1,4 +1,5 @@
 import "server-only";
+import { readAppUser } from "@/lib/auth/read-app-user";
 import { connection } from "next/server";
 import { z } from "zod";
 import { ensureAppUser } from "@/lib/auth/ensure-app-user";
@@ -15,7 +16,7 @@ function checked<T>(result: { data: T | null; error: unknown }): T | null {
   return result.data;
 }
 export async function getOwnedCreatorProfile() {
-  const user = await ensureAppUser();
+  const user = await readAppUser();
   const data = checked(await createDatabaseClient().rpc("creator_profile_owned", { p_owner: user.id }));
   return { clerkUserId: user.clerk_user_id, profile: data ? creatorProfile.parse(data) : null };
 }

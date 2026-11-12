@@ -2,16 +2,29 @@
 import { Button } from "@/components/ui/button";
 import { v3ActionErrorMessage } from "@/lib/final-video-generation-v3/reference-errors";
 import type { RuntimeDto } from "@/lib/final-video-generation-v3/runtime-server";
+import { AppNotification } from "@/components/notifications/app-notification";
 
-export function V3LocationStatus({task,busy,dirty,act}:{task:RuntimeDto["tasks"][number]|undefined;busy:boolean;dirty:boolean;
+
+export function V3LocationStatus({task,busy,dirty,act,policy,onPrerequisite}:{task:RuntimeDto["tasks"][number]|undefined;busy:boolean;dirty:boolean;
+  policy?: RuntimeDto["generationPolicy"];
+  onPrerequisite?: (message: string, button: HTMLElement) => void;
   act:(action:string,payload:Record<string,unknown>)=>Promise<boolean>}) {
   if(!task?.location||!["failed","reconciliation_required"].includes(task.status))return null;
   const location=task.location;
   return <section className="space-y-2 rounded-lg border border-border p-3" aria-label="Location generation status">
-    <p role="status" className="text-sm font-medium">{location.failureLabel}</p>
-    {location.recoveryAvailable?<p className="text-sm text-muted-foreground">Recover the saved output for your review without another OpenAI request or AI image check.</p>:location.errorCode&&<p className="text-sm text-muted-foreground">{v3ActionErrorMessage(location.errorCode)}</p>}
-    {location.recoveryAvailable&&<Button variant="outline" disabled={busy||dirty} onClick={()=>void act("recover_task",{id:task.id})}>Recover saved Location work</Button>}
-    {location.canContinue&&<Button variant="outline" disabled={busy||dirty} onClick={()=>void act("location_continue",{id:task.id})}>Continue Location generation</Button>}
+    <AppNotification role="status" className="text-sm font-medium">{location.failureLabel}</AppNotification>
+    {location.recoveryAvailable?<p className="text-sm text-muted-foreground">Your saved Location is ready to recover.</p>:location.errorCode&&<AppNotification className="text-sm text-muted-foreground">{v3ActionErrorMessage(location.errorCode)}</AppNotification>}
+    {location.recoveryAvailable&&<Button variant="outline" disabled={busy} onClick={event=>{
+      if(dirty){onPrerequisite?.("Save changes before recovering the Location.",event.currentTarget);return;}
+      void act("recover_task",{id:task.id});
+    }}>Recover saved Location work</Button>}
+    {location.canContinue&&<>
+      <Button variant="outline" disabled={busy} onClick={event=>{
+        const reason=dirty?"Save changes before continuing Location generation.":!policy?.ready?"Wait for generation access to load, then try again.":!policy.preparationAllowed?"Buy Credits before continuing Location generation.":null;
+        if(reason){onPrerequisite?.(reason,event.currentTarget);return;}
+        void act("location_continue",{id:task.id});
+      }}>Continue Location generation</Button>
+    </>}
     {location.canGenerate&&!location.recoveryAvailable&&!location.canContinue&&<p className="text-sm text-muted-foreground">Generate Location starts a new attempt using the saved requirements. It does not regenerate your Character or Product.</p>}
   </section>;
 }

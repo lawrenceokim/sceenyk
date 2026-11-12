@@ -2,6 +2,7 @@ import "server-only";
 import { createClient } from "@supabase/supabase-js";
 import { getDatabaseConfig } from "./config";
 import type { Database } from "./types";
+import { databaseRequestTimeout } from "./timeouts";
 
 export function createDatabaseClient() {
   const { url, secretKey } = getDatabaseConfig();
@@ -16,7 +17,7 @@ export function createDatabaseClient() {
         fetch(input, {
           ...init,
           cache: "no-store",
-          signal: init?.signal ?? AbortSignal.timeout(10_000),
+          signal: init?.signal ?? AbortSignal.timeout(databaseRequestTimeout(input)),
         }),
     },
   });

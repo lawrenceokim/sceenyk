@@ -93,7 +93,7 @@ fails(contentChanged, "STORYBOARD_HASH_MISMATCH", v3Context(contentChanged));
 const crossProject = v3Input(); crossProject.references[0].projectId = v3Id(999); sealV3(crossProject); fails(crossProject, "REFERENCE_PROJECT_MISMATCH", v3Context(crossProject));
 fails({ ...v3Input(), workflow: "ugc-final-v1" }, "PLANNING_INPUT_INVALID", v3Context(v3Input()));
 const oldAsset = v3Input(); fails({ ...oldAsset, references: [{ ...oldAsset.references[0], originWorkflow: "ugc-final-v2-foundation" }, ...oldAsset.references.slice(1)] }, "PLANNING_INPUT_INVALID", v3Context(oldAsset));
-const unsupportedRes = v3Input(); unsupportedRes.resolution = "4k"; fails(unsupportedRes, "RESOLUTION_UNSUPPORTED", v3Context(unsupportedRes));
+const unsupportedRes = { ...v3Input(), resolution: "4k" }; fails(unsupportedRes, "PLANNING_INPUT_INVALID", v3Context(v3Input()));
 const ratio = v3Input(); ratio.storyboardContent.aspectRatio = "5:4"; sealV3(ratio); fails(ratio, "ASPECT_RATIO_UNSUPPORTED", v3Context(ratio));
 const badTiming = v3Input(); badTiming.storyboardContent.scenes[1].startMs++; sealV3(badTiming); fails(badTiming, "SCENE_TIMING_INVALID", v3Context(badTiming));
 const incomplete = v3Input(); incomplete.storyboardContent.scenes[0].camera.movement = ""; sealV3(incomplete); fails(incomplete, "PLANNING_INPUT_INVALID", v3Context(incomplete));

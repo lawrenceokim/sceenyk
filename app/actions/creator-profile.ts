@@ -6,8 +6,8 @@ import { CreatorProfileError, saveCreatorProfile, removeCreatorAvatar } from "@/
 async function run(operation: () => ReturnType<typeof saveCreatorProfile>) {
   try {
     const profile = await operation();
-    revalidatePath("/marketplace", "layout");
-    revalidatePath("/settings/creator-profile");
+    revalidatePath(`/marketplace/creators/${profile.slug}`);
+    revalidatePath("/marketplace/[listingId]", "page");
     return { ok: true as const, profile };
   }
   catch (error) {

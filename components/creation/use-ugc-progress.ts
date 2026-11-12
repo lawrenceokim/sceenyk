@@ -38,6 +38,7 @@ export function useUgcProgress(projectId: string | null, authenticated: boolean)
     let timer: ReturnType<typeof setTimeout> | undefined;
     let controller: AbortController | undefined;
     const read = async () => {
+      if (document.visibilityState === "hidden" || !navigator.onLine) return;
       // Manual checks and an enqueue receipt share this loop. Queue one check
       // behind the pending fetch instead of starting another request/effect.
       if (inFlight) { requested = true; return; }
@@ -99,17 +100,20 @@ export function useUgcProgress(projectId: string | null, authenticated: boolean)
       const saved = latest.current?.scope === scope ? latest.current.job : null;
       // Paused jobs have no timer. Focus/visibility are one-off observations,
       // coalesced with any pending read, never a resume or a second loop.
-      if (document.visibilityState === "visible" && saved?.paused && (isUgcJobActive(saved.status) ||
-        saved.referenceReview?.groups.some(group => group.execution?.state === "waiting" || group.execution?.state === "stalled")) && !inFlight) refresh.current?.();
+      if (document.visibilityState === "visible" && navigator.onLine && !inFlight &&
+        (!saved || shouldPollUgcProgress(saved) || saved.paused && (isUgcJobActive(saved.status) ||
+        saved.referenceReview?.groups.some(group => group.execution?.state === "waiting" || group.execution?.state === "stalled")))) refresh.current?.();
     };
     window.addEventListener("focus", onActive);
     window.addEventListener("pageshow", onActive);
+    window.addEventListener("online", onActive);
     document.addEventListener("visibilitychange", onActive);
     void read();
     return () => {
       alive = false; refresh.current = null; clearTimeout(timer); controller?.abort();
       window.removeEventListener("focus", onActive);
       window.removeEventListener("pageshow", onActive);
+      window.removeEventListener("online", onActive);
       document.removeEventListener("visibilitychange", onActive);
     };
   }, [scope]);

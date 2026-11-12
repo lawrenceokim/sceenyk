@@ -6,15 +6,22 @@ import { Button } from "@/components/ui/button";
 import { MarketplacePagination } from "@/components/marketplace/pagination";
 import type { ListingPage, OwnedListing } from "@/lib/marketplace/contract";
 import { TemplateCard } from "./template-card";
+import { memo, type Ref } from "react";
+import type { PreviewMediaSource } from "@/components/marketplace/gallery-cache";
+import type { TemplateGalleryCard } from "@/lib/templates/gallery-contract";
 
-export function TemplateLibrary({ result }: { result: ListingPage<OwnedListing> }) {
+const CachedTemplateCard = memo(TemplateCard);
+export function TemplateLibrary({ result, previews, previewSource, onDeleted, galleryRef }: {
+  result: ListingPage<OwnedListing>; previews?: Record<string, TemplateGalleryCard>;
+  previewSource?: PreviewMediaSource; onDeleted?: (id: string) => void; galleryRef?: Ref<HTMLElement>;
+}) {
   return (
-    <section id="templates" aria-label="Your template gallery" className="scroll-mt-24 space-y-8 lg:scroll-mt-8">
+    <section ref={galleryRef} id="templates" aria-label="Your template gallery" className="scroll-mt-24 space-y-8 lg:scroll-mt-8">
       {result.items.length ? (
         <ul className={templateLibraryGridClassName}>
           {result.items.map(listing => (
             <li key={listing.id} className="min-w-0">
-              <TemplateCard listing={listing} />
+              <CachedTemplateCard listing={listing} preview={previews?.[listing.id]} previewSource={previewSource} onDeleted={onDeleted} />
             </li>
           ))}
         </ul>

@@ -4,6 +4,7 @@ import { PersistentMediaPreview } from "./persistent-media-preview";
 import type { ProjectAsset } from "@/lib/media/types";
 import type { CreationSettings, LocalMedia } from "./creation-options";
 import { ugcTypes, type CreationType, type UgcType } from "@/lib/projects/options";
+import { projectVideoResolution } from "@/lib/projects/video-resolution";
 
 export function CreationPreview({ settings, media, asset, creationType = "freestyle", ugcType = "advertisement" }: {
   settings: CreationSettings;
@@ -37,7 +38,7 @@ export function CreationPreview({ settings, media, asset, creationType = "freest
       </div>
       <p className="text-caption text-muted-foreground">{creationType === "ugc"
         ? `UGC · ${ugcTypes.find(type => type.value === ugcType)?.label}`
-        : "Freestyle"} · {settings.duration} sec</p>
+        : "Freestyle"} · {settings.duration} sec{creationType === "ugc" ? ` · ${projectVideoResolution(settings.resolution)}` : ""}</p>
     </div>}
   </div>;
 }

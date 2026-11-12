@@ -1,4 +1,5 @@
 import "server-only";
+import { assertLegacyGenerationUnavailable } from "@/lib/accounting/generation-policy-server";
 import { z } from "zod";
 import { setTimeout as delay } from "node:timers/promises";
 import { getAnalysisConfiguration } from "../config";
@@ -22,6 +23,7 @@ function safeGoogleUrl(value: string) {
   return url;
 }
 async function request(url: string | URL, init: RequestInit, signal: AbortSignal, paid = false) {
+  if (paid) assertLegacyGenerationUnavailable();
   try {
     const response = await fetch(url, { ...init, signal, redirect: "error", cache: "no-store" });
     if (!response.ok) {

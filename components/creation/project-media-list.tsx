@@ -3,6 +3,8 @@ import { Button } from "@/components/ui/button";
 import type { ProjectAsset } from "@/lib/media/types";
 import { formatFileSize } from "./creation-options";
 import { cn } from "@/lib/utils";
+import { AppNotification } from "@/components/notifications/app-notification";
+
 
 export function ProjectMediaList({
   assets,
@@ -27,12 +29,12 @@ export function ProjectMediaList({
         Saved project media
       </h3>
       {error && (
-        <p
+        <AppNotification
           role="status"
           className="mt-2 break-words text-body-sm text-destructive"
         >
           {error}
-        </p>
+        </AppNotification>
       )}
       <ul className="mt-3 space-y-2">
         {assets.map((asset) => (

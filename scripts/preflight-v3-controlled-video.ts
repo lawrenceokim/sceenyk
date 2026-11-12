@@ -16,13 +16,16 @@ async function main() {
   const { v3BodyHash, v3Digest } = await import("../lib/final-video-generation-v3/identity");
   const { createDatabaseClient } = await import("../lib/db/server");
   const { higgsfieldRequestIssues } = await import("../lib/final-video-generation-v3/adapters/higgsfield-validity");
-  const projectId = "3f6d210e-5e85-410b-8c37-3881507eec60", packageId = "f60285ef-066e-4bbc-b04d-8ae44b48de54";
+  const args = process.argv.slice(2);
+  if (args.length !== 2 || args[0] !== "--project") throw new Error("V3_PREFLIGHT_PROJECT_REQUIRED");
+  const { z } = await import("zod");
+  const projectId = z.uuid().parse(args[1]);
   stage = "operator";
   const owner = process.env.UGC_V3_OPERATOR_USER_ID ?? ""; assertV3Operator(owner);
   stage = "workspace";
   const store = new V3Store(), w = await store.read(owner, projectId), config = v3TransportConfig();
   stage = "package";
-  const doc = readFrozenPackage(w.packages.find(p => p.id === packageId)?.document);
+  const doc = readFrozenPackage(w.packages.at(-1)?.document), packageId = doc.id;
   const quote = w.quotes.find(q => q.document.packageId === packageId)!.document;
   const auth = w.runtimeAuthorizations.filter(a => a.document.packageId === packageId).at(-1)?.document;
   const bindings: Record<string, string> = {
@@ -50,7 +53,7 @@ async function main() {
   const issues = [...(report?.issues ?? ["V3_PREFLIGHT_REQUIRED"]), ...(!delivery.verified ? ["V3_REFERENCE_READBACK_FAILED"] : []),
     ...(schemaChecks.some(c => !c.verified) ? ["V3_SCHEMA_UNVERIFIED"] : []), ...(current !== true ? ["PACKAGE_STALE"] : [])];
   const segment = quote.segments[0];
-  const payloadIssues = quote.segments.flatMap(s => higgsfieldRequestIssues(s.body, doc.source.references, quote.validityEvidence, now));
+  const payloadIssues = quote.segments.flatMap(s => higgsfieldRequestIssues(s.body, doc.source.references, quote.validityEvidence, now, s.model));
   console.log(JSON.stringify({ inspectedAt: now, projectId, packageId, packageVersion: doc.version, packageHash: doc.hash,
     current: report?.currentness === "current" && current === true, segmentCount: doc.segments.length,
     packageApproved: !!auth && auth.packageId === doc.id && auth.packageHash === doc.hash,
@@ -72,7 +75,7 @@ async function main() {
     outputHostPolicy: "Submission allowed without a known CDN; untrusted returned host stops at OUTPUT_HOST_APPROVAL_REQUIRED; recover same request after approval",
     limitsFileRequired: false, delivery, schemaChecks,
     existingRuns: w.runs.filter(r => r.package_id === packageId).map(r => ({ id: r.id, state: r.state, requestId: r.observation?.requestId ?? null })),
-    activationScopeMatches: config.projectId === projectId && config.packageId === packageId, transportEnabled: config.enabled,
+    activation: "owned_current_package_authorization", transportEnabled: config.enabled,
     duplicateProtection: "one active package segment; one request per immutable authorization; provider_started blocks POST replay",
     eligibleForPaidSubmission: issues.length === 0, canSubmit: issues.length === 0 && config.enabled,
     issues: [...new Set(issues)], providerGenerationCalls: 0, estimateCalls: 0, mutations: 0 }, null, 2));

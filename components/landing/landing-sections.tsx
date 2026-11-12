@@ -530,7 +530,7 @@ export function PricingPreview() {
         </PricingCard>
       </div>
       <p className="mt-6 text-center text-caption text-muted-foreground">
-        PayPal Sandbox test payments only. Demo packs are temporary; production prices and generation rates are awaiting approval.
+        Review payment totals and generation costs before confirming.
       </p>
     </section>
   );

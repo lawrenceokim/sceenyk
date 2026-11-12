@@ -8,8 +8,9 @@ import { CreditsNavigation } from "./credits-navigation";
 export function CreditsWorkspace({ children }: { children: ReactNode }) {
   const earnings = usePathname() === "/credits/earnings";
   return <SettingsWorkspace
+    wideContent
     title={earnings ? "Earnings & Payouts" : "Credits & Billing"}
-    description={earnings ? "Your creator earnings and withdrawals, separate from AI credits." : "Buy credits. Create what you need. Top up when you need more."}
+    description={earnings ? "Your creator earnings and withdrawals, separate from AI credits." : "Buy credits. Create what you need."}
     navigation={<CreditsNavigation activeSection={earnings ? "earnings" : "billing"} />}
     regionLabel={earnings ? "Earnings and payouts content" : "Credits and billing content"}>
     {children}

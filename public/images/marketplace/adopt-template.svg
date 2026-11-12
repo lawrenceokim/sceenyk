@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="170" viewBox="0 0 400 170" fill="none">
+  <defs>
+    <radialGradient id="halo"><stop stop-color="#A855F7" stop-opacity=".55"/><stop offset="1" stop-color="#7C3AED" stop-opacity="0"/></radialGradient>
+    <linearGradient id="back" x1="110" y1="48" x2="268" y2="149" gradientUnits="userSpaceOnUse"><stop stop-color="#C4A0FF" stop-opacity=".65"/><stop offset="1" stop-color="#6926CC" stop-opacity=".24"/></linearGradient>
+    <linearGradient id="glass" x1="157" y1="22" x2="250" y2="128" gradientUnits="userSpaceOnUse"><stop stop-color="#E4CDFF"/><stop offset=".3" stop-color="#B58ADF"/><stop offset=".7" stop-color="#7950B3"/><stop offset="1" stop-color="#7544B2"/></linearGradient>
+    <linearGradient id="edge" x1="162" y1="22" x2="263" y2="129" gradientUnits="userSpaceOnUse"><stop stop-color="#FAF2FF"/><stop offset=".45" stop-color="#D7B5FA" stop-opacity=".7"/><stop offset="1" stop-color="#B285E4" stop-opacity=".4"/></linearGradient>
+    <filter id="glow" x="50" y="0" width="300" height="170" filterUnits="userSpaceOnUse"><feGaussianBlur stdDeviation="9"/></filter>
+    <filter id="shadow" x="110" y="0" width="210" height="166" filterUnits="userSpaceOnUse"><feDropShadow dy="9" stdDeviation="9" flood-color="#6026B2" flood-opacity=".4"/></filter>
+  </defs>
+  <ellipse cx="200" cy="143" rx="178" ry="31" fill="url(#halo)"/>
+  <ellipse cx="202" cy="132" rx="85" ry="15" fill="#AD69F4" opacity=".3" filter="url(#glow)"/>
+  <rect x="123" y="53" width="108" height="77" rx="16" transform="rotate(-9 123 53)" fill="url(#back)" stroke="#BD8BF4" stroke-opacity=".48" stroke-width="1.4"/>
+  <rect x="217" y="46" width="92" height="76" rx="15" transform="rotate(11 217 46)" fill="url(#back)" stroke="#BD8BF4" stroke-opacity=".5" stroke-width="1.4"/>
+  <g filter="url(#shadow)">
+    <rect x="164" y="17" width="116" height="98" rx="18" transform="rotate(10 164 17)" fill="url(#glass)" stroke="url(#edge)" stroke-width="2"/>
+    <path d="M208 57c-2-1.5-4.8-.5-5.3 2l-3.4 18.4c-.5 2.6 2 4.5 4.3 3.5l17-7.3c2.5-1.1 2.8-4.5.6-6.1L208 57Z" fill="#FAF5FF"/>
+    <path d="M175 26c15-1 65 10 84 15" stroke="white" stroke-opacity=".22" stroke-width="2" stroke-linecap="round"/>
+  </g>
+  <path d="m107 45 3 8 8 3-8 3-3 8-3-8-8-3 8-3 3-8Z" fill="#DAB8FF"/>
+  <path d="m309 29 2.8 7.2L319 39l-7.2 2.8L309 49l-2.8-7.2L299 39l7.2-2.8L309 29Z" fill="#C6A0F1"/>
+</svg>

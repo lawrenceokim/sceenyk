@@ -8,10 +8,12 @@ export function PromptComposer({
   prompt,
   category,
   onChange,
+  readOnly = false,
 }: {
   prompt: string;
   category: CreationCategory;
   onChange: (value: string) => void;
+  readOnly?: boolean;
 }) {
   const id = useId();
   return (
@@ -50,6 +52,7 @@ export function PromptComposer({
         Your creative direction
       </label>
       <textarea
+        readOnly={readOnly}
         id={`${id}-prompt`}
         name="prompt"
         value={prompt}
@@ -111,6 +114,7 @@ export function PromptComposer({
         <Button
           type="button"
           variant="ghost"
+          disabled={readOnly}
           onClick={() => onChange(category.example)}
           className="h-auto min-h-11 w-full justify-start gap-3 whitespace-normal px-3 py-3 text-left font-normal"
         >

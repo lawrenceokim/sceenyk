@@ -1,5 +1,4 @@
 import { ListingEditorSkeleton } from "@/components/marketplace/detail-skeletons";
-import { SettingsSection } from "@/components/settings/settings-section";
 import { Suspense } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -48,5 +47,5 @@ async function OwnedListing({ params }: { params: Promise<{ listingId: string }>
   return <ListingEditor clerkUserId={user.clerk_user_id} listing={listing} />;
 }
 export default function ManageListingPage({ params }: { params: Promise<{ listingId: string }> }) {
-  return <SettingsSection title="Manage Template" description="Review your template and control when it appears in Marketplace."><Suspense fallback={<ListingEditorSkeleton />}><OwnedListing params={params} /></Suspense></SettingsSection>;
+  return <section className="min-w-0"><Suspense fallback={<ListingEditorSkeleton />}><OwnedListing params={params} /></Suspense></section>;
 }

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/empty-state";
 import { ProjectCard } from "./project-card";
 import type { ProjectPage } from "@/lib/projects/types";
-import type { GenerationStatus } from "@/lib/generation/contract";
+import type { ProjectCardStatus } from "@/lib/projects/card-status";
 import type { ProjectAsset } from "@/lib/media/types";
 
 const projectGridClassName = "workspace-project-grid [&&]:grid [&&]:[grid-template-columns:repeat(auto-fill,_206px)] [&&]:gap-[16px] max-767:[&&]:[grid-template-columns:minmax(0,_1fr)]";
@@ -30,7 +30,7 @@ export function ProjectsSection({
   templateIds = {},
 }: {
   data: ProjectPage;
-  jobStatuses: Record<string, GenerationStatus | "unavailable" | null>;
+  jobStatuses: Record<string, ProjectCardStatus>;
   previews?: Record<string, ProjectAsset | null>;
   templateIds?: Record<string, string>;
 }) {

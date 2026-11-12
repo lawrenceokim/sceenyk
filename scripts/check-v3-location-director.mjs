@@ -1,31 +1,57 @@
 // Actual route/action/worker + disposable PostgreSQL/Sharp. Providers and private storage are fixtures.
 import assert from 'node:assert/strict';
+import os from 'node:os';
+import path from 'node:path';
+import {finalMergeScenarios} from './lib/v3-final-merge-scenarios.mjs';
 import fs from 'node:fs';
 import {randomUUID,createHash} from 'node:crypto';
 import {createRequire} from 'node:module';
 import {PGlite} from '@electric-sql/pglite';
 import sharp from 'sharp';
 import {typescriptLoader} from './lib/load-typescript.mjs';
+import {referenceLimitScenarios} from './lib/v3-reference-limit-scenarios.mjs';
+import {multipleCharacterScenarios} from './lib/v3-multiple-character-scenarios.mjs';
+import {projectSavingScenarios} from './lib/v3-project-saving-scenarios.mjs';
+import {individualClipScenarios} from './lib/v3-individual-clip-scenarios.mjs';
+import {connectedStoryScenarios, connectedFixtureStory} from './lib/v3-connected-story-scenarios.mjs';
 const require=createRequire(import.meta.url),builder=require('../lib/video-generation-package/builder.ts');
 const normal=v=>JSON.parse(JSON.stringify(v)),hash=b=>createHash('sha256').update(b).digest('hex');
+const mergeRoot=fs.mkdtempSync(path.join(os.tmpdir(),'sceenyk-v3-merge-runtime-'));
+let mergeCalls=0,mergeFailure=false,mergeSaveFailure=false;
 let checks=0,networkCalls=0,mode='pass',saveFailure=false,storageFailure=false,deleteFailure=false,deleteAttempts=0;
 let estimateCalls=0,estimateMode='pass',packageSaveFailure=false;
+let fixtureVideo=false,videoPosts=0,videoPolls=0,videoComplete=false,videoTerminal=null,videoSubmissionRejected=false;
+const fixtureVideoIds=new Set();
+let deliverySequence=0;
+const videoBodies=[];
+const workerLogs=[];
+const fixtureVideoId=randomUUID();
 let storyboardDurations=[5000,5000];
-let previousFunctionsPreserved=0;
+let previousFunctionsPreserved=0, m2FunctionsPreserved=0;
+const functionsSnapshot=async()=>(await pg.query("select oid::regprocedure::text signature,proname name,prosrc,proacl::text grants,proconfig from pg_proc where pronamespace='public'::regnamespace order by oid")).rows;
+const securitySnapshot=async()=>(await pg.query("select c.oid::regclass::text relation,c.relacl::text acl,c.relrowsecurity rls,c.relforcerowsecurity forced,(select jsonb_agg(jsonb_build_object('name',t.tgname,'definition',pg_get_triggerdef(t.oid)) order by t.tgname) from pg_trigger t where t.tgrelid=c.oid and not t.tgisinternal and t.tgname not in ('a_v3_character_receipt_subject','a_v3_cast_source','a_v3_cast_artifact','a_v3_cast_intent')) triggers from pg_class c where c.relnamespace='public'::regnamespace and c.relkind='r' order by c.oid")).rows;
 const equal=(a,b)=>{assert.deepEqual(normal(a),normal(b));checks++;},ok=v=>{assert.ok(v);checks++;};
 const pg=new PGlite(),owner=randomUUID(),oldEnv={...process.env},spool=new Map(),objects=new Map(),calls=[],deleted=[],sources=new Map();
+let actingOwner=owner;
 const master=await sharp({create:{width:1024,height:1024,channels:3,background:'#787878'}}).png().toBuffer();
 const oddImage=await sharp({create:{width:320,height:192,channels:3,background:'#cc2424'}}).png().toBuffer();
 const instruction={name:'Accessible vehicle studio',prompt:'A wide empty vehicle studio with a south entrance, north daylight and clear walkaround space for the saved BMW advertisement. Show the same architecture in all four views.'};
-const call=async(name,args)=>(await pg.query(`select public.${name}(${args.map((_,i)=>`$${i+1}`).join(',')}) value`,args)).rows[0].value;
+const call=async(name,args)=>{const parameters=args.map((_,i)=>`$${i+1}`).join(',');const result=await pg.query(name==='ugc_v3_worker_projects'?`select * from public.${name}(${parameters})`:`select public.${name}(${parameters}) value`,args);return name==='ugc_v3_worker_projects'?result.rows:result.rows[0].value;};
 const db={async rpc(name,args){try{return{data:await call(name,Object.values(args)),error:null};}catch(e){return{data:null,error:{code:e.code,message:e.message}};}},
- from(table){assert.ok(['projects','project_assets','ugc_v3_projects'].includes(table));let columns='*';const clauses=[],values=[];
- return{select(v){assert.match(v,/^[a-z_,]+$/);columns=v;return this;},eq(k,v){assert.match(k,/^[a-z_]+$/);values.push(v);clauses.push(`${k}=$${values.length}`);return this;},
+ from(table){assert.ok(['projects','project_assets','ugc_v3_projects'].includes(table));let columns='*',fields=null;const clauses=[],values=[];
+ return{select(v){assert.match(v,/^(\*|[a-z_,]+)$/);columns=v;return this;},update(v){fields=v;return this;},eq(k,v){assert.match(k,/^[a-z_]+$/);values.push(v);clauses.push(`${k}=$${values.length}`);return this;},
  is(k,v){assert.equal(v,null);clauses.push(`${k} is null`);return this;},in(k,v){values.push(v);clauses.push(`${k}=any($${values.length}::text[])`);return this;},
- async execute(single=false){const rows=(await pg.query(`select ${columns} from public.${table} where ${clauses.join(' and ')}`,values)).rows;return{data:single?rows[0]??null:rows,error:null};},
+ async execute(single=false){let sql=`select ${columns} from public.${table} where ${clauses.join(' and ')}`;
+  if(fields){const assignments=Object.entries(fields).map(([k,v])=>{assert.match(k,/^[a-z_]+$/);values.push(v);return `${k}=$${values.length}`;});sql=`update public.${table} set ${assignments.join(',')} where ${clauses.join(' and ')} returning ${columns}`;}
+  try{const rows=(await pg.query(sql,values)).rows;return{data:single?rows[0]??null:rows,error:null};}catch(error){return{data:null,error:{code:error.code,message:error.message}};}},
  maybeSingle(){return this.execute(true);},then(resolve,reject){return this.execute().then(resolve,reject);}};}};
-const media={bytesHash:hash,readSpool:async(id,name)=>spool.get(`${id}:${name}`)??null,
+const media={bytesHash:hash,
+ spoolFile:async(id,name)=>{const dir=path.join(mergeRoot,id);fs.mkdirSync(dir,{recursive:true});return path.join(dir,name);},
+ deletePrivate:async(user,project,asset)=>{if(deleteFailure)throw new Error("FIXTURE_DELETE_FAILED");equal(asset.storageKey,`users/${user}/projects/${project}/v3/${asset.id}.mp4`);objects.delete(asset.storageKey);deleted.push(asset.id);},
+ purgeVideoSpool:async id=>{for(const key of [...spool.keys()])if(key.startsWith(`${id}:`))spool.delete(key);},readSpool:async(id,name)=>spool.get(`${id}:${name}`)??null,
  saveSpool:async(id,name,bytes)=>{const key=`${id}:${name}`;if(spool.has(key)&&hash(spool.get(key))!==hash(bytes))throw new Error('V3_SPOOL_CONFLICT');spool.set(key,bytes);
+  if(mergeSaveFailure==='processing'&&name==='merge-processing.json'){mergeSaveFailure=false;throw new Error('FIXTURE_MERGE_PROCESSING_ACK_LOST');}
+  if(mergeSaveFailure===true&&name==='video.mp4'){mergeSaveFailure=false;throw new Error('FIXTURE_MERGE_SAVE_ACK_LOST');}
   if(packageSaveFailure&&name==='package-local-pricing.json'){packageSaveFailure=false;throw new Error('V3_LOCAL_SAVE_ACK_LOST');}
   if(saveFailure&&name==='openai-response.json'){saveFailure=false;throw new Error('FIXTURE_LOST_SAVE_ACK');}},
  writeReferenceDiagnostics:async(id,value)=>spool.set(`${id}:reference-diagnostics.json`,Buffer.from(JSON.stringify(value))),
@@ -33,8 +59,9 @@ const media={bytesHash:hash,readSpool:async(id,name)=>spool.get(`${id}:${name}`)
  deleteReferencePrivate:async(user,project,asset)=>{deleteAttempts++;equal(asset.storageKey,`users/${user}/projects/${project}/v3/${asset.id}.png`);if(deleteFailure)throw new Error('FIXTURE_DELETE_FAILED');if(objects.has(asset.storageKey))equal(objects.get(asset.storageKey).asset.etag,asset.etag);objects.delete(asset.storageKey);deleted.push(asset.id);},
  readPrivate:async key=>objects.get(key)?.bytes??master,
  inspectImage:async bytes=>{const b=await sharp(bytes).rotate().png().toBuffer(),m=await sharp(b).metadata();return{bytes:b,metadata:{mimeType:'image/png',width:m.width,height:m.height,durationMs:0,hasAudio:false}};},
- publishPrivate:async(user,project,id,bytes,meta)=>{if(storageFailure)throw new Error('FIXTURE_STORAGE');const asset={id,storageKey:`users/${user}/projects/${project}/v3/${id}.png`,etag:'fixture',sha256:hash(bytes),sizeBytes:bytes.length,...meta};objects.set(asset.storageKey,{asset,bytes});return asset;},
- signPrivate:async a=>({url:`https://private.example.test/${a.id}`,expiresAt:new Date(Date.now()+300000).toISOString()})};
+ publishPrivate:async(user,project,id,bytes,meta)=>{if(storageFailure)throw new Error('FIXTURE_STORAGE');const asset={id,storageKey:`users/${user}/projects/${project}/v3/${id}.${meta.mimeType==='video/mp4'?'mp4':'png'}`,etag:'fixture',sha256:hash(bytes),sizeBytes:bytes.length,...meta};objects.set(asset.storageKey,{asset,bytes});return asset;},
+ inspectVideo:async(_id,_bytes,expected)=>({mimeType:'video/mp4',width:480,height:854,durationMs:expected.durationMs,hasAudio:true}),
+ signPrivate:async a=>({url:`https://private.example.test/${a.id}?signature=${++deliverySequence}`,expiresAt:new Date(Date.now()+300000).toISOString()})};
 async function fixtureResponse(kind,body,options){
  const id=options.headers['X-Client-Request-Id'];
  ok((await pg.query("select id from public.ugc_v3_tasks where output->'requests' @> $1::jsonb",[JSON.stringify([{id,status:'intent'}])])).rows[0]);
@@ -43,7 +70,8 @@ async function fixtureResponse(kind,body,options){
  if(mode==='rejected'){const e=new Error('sk-proj-FAKE_SECRET');Object.assign(e,{status:429,requestID:'req_rejected',code:'insufficient_quota'});throw e;}
  if(kind==='plan'){
   equal(body.model,'fixture-director');equal(body.text.format.name,'location_prompt_v2');
-  equal(body.input[0].content.filter(c=>c.type==='input_image').length,mode==='optional'?1:2);
+  const expected=process.argv.includes('--reference-limits-only')?(await pg.query("select input from public.ugc_v3_tasks where output->'requests' @> $1::jsonb",[JSON.stringify([{id,status:'intent'}])])).rows[0].input.references.length:mode==='optional'?1:2;
+  equal(body.input[0].content.filter(c=>c.type==='input_image').length,expected);
   assert.match(body.input[0].content[0].text,/"visualStyle":"Realistic"/);assert.match(body.instructions,/user will judge the generated image/);checks+=2;
   return new Response(JSON.stringify({id:'resp_prompt',status:'completed',output:[{type:'message',content:[{type:'output_text',text:JSON.stringify(instruction)}]}],usage:{input_tokens:10,output_tokens:20,total_tokens:30}}),{status:200,headers:{'x-request-id':'req_prompt'}});
  }
@@ -54,63 +82,137 @@ async function fixtureResponse(kind,body,options){
 }
 class FixtureOpenAI{constructor(config){equal(config.maxRetries,0);}
  responses={create:(body,options)=>{
-  if(body.text.format.name==='director_storyboard_v3')return(async()=>{
+  if(['director_storyboard_v3','director_storyboard_cast_v1','director_storyboard_connected_v1','director_storyboard_connected_cast_v1'].includes(body.text.format.name))return(async()=>{
    calls.push({kind:'storyboard',body:normal(body)});const storyboard=normal(load('scripts/final-video-v3-fixture.ts').v3Input(storyboardDurations).storyboardContent);storyboard.tone='Professional';
+   if(body.text.format.name.includes('cast')){
+    storyboard.cast=(await pg.query('select input from public.ugc_v3_tasks where id=$1',[options.headers['X-Client-Request-Id']])).rows[0].input.cast;
+    for(const [i,scene] of storyboard.scenes.entries()){
+     scene.characterIds=storyboard.cast.map(c=>c.characterId);const speaker=storyboard.cast[i%storyboard.cast.length];
+     scene.speech=[{speaker:'character',characterId:speaker.characterId,text:'Hello there.',startMs:scene.startMs+1000,endMs:scene.startMs+3000,delivery:load('lib/execution-v1/contract.ts').defaultDelivery(),deliveryNote:''}];
+    }
+   }
+   if(body.text.format.name.includes('connected')){
+    const input=(await pg.query('select input from public.ugc_v3_tasks where id=$1',[options.headers['X-Client-Request-Id']])).rows[0].input;
+    Object.assign(storyboard,connectedFixtureStory(storyboard,input.clipBoundaries));
+   }
    assert.match(body.input[0].content[0].text,/Approved Location prompt and sheet binding/);assert.match(body.input[0].content[0].text,/Accessible vehicle studio/);checks+=2;
    return{_request_id:'req_storyboard',status:'completed',output:[{type:'message',content:[{type:'output_text',text:JSON.stringify(storyboard)}]}]};
   })();
   return{asResponse:()=>fixtureResponse('plan',body,options)};
  }};
- images={generate:(body,options)=>({asResponse:()=>fixtureResponse('sheet',body,options)}),edit:()=>{throw new Error('LOCATION_AUTOMATIC_REPAIR_FORBIDDEN');}};}
-const load=typescriptLoader({'@/lib/auth/ensure-app-user':{ensureAppUser:async()=>({id:owner})},'@/lib/auth/require-user':{requireClerkUser:async()=>({userId:'fixture'})},
- '@/lib/db/server':{createDatabaseClient:()=>db},'./runtime-media':media,
+ images={generate:(body,options)=>({asResponse:()=>fixtureResponse('sheet',body,options)}),edit:(body,options)=>({asResponse:async()=>{
+  if(mode!=='cast')throw new Error('LOCATION_AUTOMATIC_REPAIR_FORBIDDEN');
+  const task=(await pg.query('select * from public.ugc_v3_tasks where id=$1',[options.headers['X-Client-Request-Id']])).rows[0];
+  ok(task.provider_started);equal(body.n,1);equal(body.size,'1024x1024');ok(body.prompt.includes(task.input.referenceSubject.name));
+  ok(body.prompt.startsWith(load('lib/final-video-generation-v3/reference-sheet-templates.ts').CHARACTER_SHEET_TEMPLATE.replace('{{VISUAL_STYLE}}','Realistic')));
+  calls.push({kind:'character',subject:task.input.referenceSubject,inputHash:hash(Buffer.from(await body.image[0].arrayBuffer())),body:{prompt:body.prompt}});
+  return Response.json({data:[{b64_json:master.toString('base64')}]});
+ }})};}
+const load=typescriptLoader({'@/lib/auth/ensure-app-user':{ensureAppUser:async()=>({id:actingOwner})},'@/lib/auth/require-user':{requireClerkUser:async()=>({userId:'fixture'})},
+ './final-operation-server':{finalActionUser:async()=>({id:actingOwner})},
+ '@/lib/db/server':{createDatabaseClient:()=>db},'./runtime-media':media,'./inspect-video':{inspectVideo:media.inspectVideo},
  '@/lib/video-generation-package/builder':{...builder,packageDigest:(d,v)=>builder.packageDigest(d,normal(v)),canonicalJson:v=>builder.canonicalJson(normal(v))},
+ './merge-media':{
+ mergeLocalFiles:async(inputs,output,list,expected)=>{mergeCalls++;if(mergeFailure)throw new Error('V3_MERGE_SOURCE_INVALID');fs.writeFileSync(output,Buffer.from('local-merged-output'));return{metadata:{mimeType:'video/mp4',width:480,height:854,durationMs:expected.durationMs,hasAudio:true},mode:'copy-video',inputDurationMs:expected.durationMs};},
+ validateMergedFile:async(file,expected)=>({mimeType:'video/mp4',width:480,height:854,durationMs:expected.durationMs,hasAudio:true})},
  './join':{joinV3Segments:async()=>{throw new Error('JOIN_FORBIDDEN');}},'next/navigation':{unstable_rethrow:()=>{}},
  openai:{__esModule:true,default:FixtureOpenAI,toFile:async bytes=>new File([bytes],'source.png',{type:'image/png'})}},
- {Error,Response,Request,File,AbortController,structuredClone:normal,fetch:async(url)=>{if(String(url).startsWith('https://api.higgsfield.ai/estimate/')){estimateCalls++;return estimateMode==='pass'?Response.json({usd:'1.25'}):Response.json({}, {status:503});}networkCalls++;throw new Error('NETWORK_FORBIDDEN');},console:{...console,info(){}}});
+ {Error,Response,Request,File,AbortController,structuredClone:normal,fetch:async(url,options)=>{
+  if(fixtureVideo&&String(url)==='https://api.higgsfield.ai/bytedance/seedance-2.5/reference-to-video'){
+   videoBodies.push(JSON.parse(options.body));videoPosts++;if(videoSubmissionRejected)return Response.json({error:"fixture-rejection"},{status:429});const requestId=videoPosts===1?fixtureVideoId:randomUUID();fixtureVideoIds.add(requestId);return Response.json({request_id:requestId,status:'queued',status_url:`https://api.higgsfield.ai/requests/${requestId}/status`,cancel_url:`https://api.higgsfield.ai/requests/${requestId}/cancel`});
+  }
+  if(fixtureVideo&&String(url).startsWith('https://api.higgsfield.ai/requests/')){const requestId=String(url).split('/')[4];ok(fixtureVideoIds.has(requestId));videoPolls++;return Response.json({request_id:requestId,status:videoTerminal??(videoComplete?'completed':'in_progress'),...(videoComplete?{video:{url:'https://cdn.example.test/final.mp4'}}:{})});}
+  if(fixtureVideo&&String(url)==='https://cdn.example.test/final.mp4')return new Response(new Uint8Array([1,2,3]));
+  if(String(url).startsWith('https://api.higgsfield.ai/estimate/')){estimateCalls++;return estimateMode==='pass'?Response.json({usd:'1.25'}):Response.json({}, {status:503});}networkCalls++;throw new Error('NETWORK_FORBIDDEN');},console:{...console,info(value){if(typeof value==='string'&&value.startsWith('{'))workerLogs.push(JSON.parse(value));}}});
 const route=load('app/api/ugc/v3/route.ts'),{runV3Task}=load('lib/final-video-generation-v3/worker.ts'),{V3Store}=load('lib/final-video-generation-v3/runtime-store.ts');
 const contract=load('lib/final-video-generation-v3/location-contract.ts'),{runtimeDto}=load('lib/final-video-generation-v3/runtime-server.ts');
-const read=async p=>runtimeDto(await new V3Store(db).read(owner,p));
+const read=async p=>runtimeDto(await new V3Store(db).read(actingOwner,p));
 const post=async(project,payload)=>{const r=await route.POST(new Request('https://studio.example.test/api/ugc/v3',{method:'POST',headers:{origin:'https://studio.example.test','content-type':'application/json'},body:JSON.stringify({projectId:project,...payload})}));return{status:r.status,body:await r.json()};};
 const row=async p=>(await pg.query("select * from public.ugc_v3_tasks where project_id=$1 and kind='location' order by created_at desc,id desc limit 1",[p])).rows[0];
-const tick=p=>runV3Task(p,owner,new V3Store(db));
+const tick=p=>runV3Task(p,actingOwner,new V3Store(db));
 const cp=async p=>(await pg.query("select jsonb_build_object('tasks',(select jsonb_agg(to_jsonb(t) order by id) from public.ugc_v3_tasks t where project_id=$1 and kind in ('character','product')),'artifacts',(select jsonb_agg(to_jsonb(a) order by id) from public.ugc_v3_artifacts a where project_id=$1 and kind in ('character','product'))) data",[p])).rows[0].data;
 async function seedSheet(project,role,context,approved=true){
- await call('ugc_v3_runtime_action',[owner,project,'enqueue',{kind:role,requestKey:`${role}:${randomUUID()}`,input:{}}]);
+ await call('ugc_v3_runtime_action',[actingOwner,project,'enqueue',{kind:role,requestKey:`${role}:${randomUUID()}`,input:{}}]);
  const t=await call('ugc_v3_task_claim',[project]);equal(t.kind,role);
- const asset=await media.publishPrivate(owner,project,t.id,master,{mimeType:'image/png',width:1024,height:1024,durationMs:0,hasAudio:false});
+ const asset=await media.publishPrivate(actingOwner,project,t.id,master,{mimeType:'image/png',width:1024,height:1024,durationMs:0,hasAudio:false});
  await media.saveSpool(t.id,'image.png',master);await media.saveSpool(t.id,'openai-response.json',Buffer.from(JSON.stringify({image:master.toString('base64')})));
  await call('ugc_v3_task_checkpoint',[t.id,t.lease_token,'artifact',{id:t.id,document:{asset,original:{id:sources.get(`${project}:${role}`),sha256:hash(master)},input:{generationContext:context}}}]);
- if(approved)await call('ugc_v3_runtime_action',[owner,project,'review_artifact',{id:t.id,decision:'approve'}]);
+ if(approved)await call('ugc_v3_runtime_action',[actingOwner,project,'review_artifact',{id:t.id,decision:'approve'}]);
  return t;
 }
 async function fixture(optional=false,duration='10'){
  const project=randomUUID(),fields={title:'Simple Location fixture',category:'product-ad',prompt:'Present the BMW in an appropriate environment',ugcType:optional?'unboxing':'advertisement',settings:{duration,aspectRatio:'9:16',visualStyle:'Realistic',tone:'Professional'}};
- await call('ugc_v3_create_project',[owner,project,fields]);
+ await call('ugc_v3_create_project',[actingOwner,project,fields]);
  const context=load('lib/final-video-generation-v3/generation-context.ts').generationContext({prompt:fields.prompt,visual_style:'Realistic',creation_type:'ugc',ugc_type:fields.ugcType,tone:'Professional',category:fields.category});
  for(const role of optional?['character']:['character','product']){
   const source=randomUUID();sources.set(`${project}:${role}`,source);
-  await pg.query("insert into public.project_assets(id,owner_user_id,project_id,upload_request_id,storage_key,original_filename,mime_type,size_bytes,media_type,upload_status,verified_etag,studio_role,reference_id,reference_name) values($1,$2,$3,$4,$5,'fixture.png','image/png',$6,'image','uploaded','source-etag',$7,$1,$8)",[source,owner,project,randomUUID(),`users/${owner}/projects/${project}/${source}/fixture.png`,master.length,role,role==='product'?'bmw x6m competition':'Approved Character']);
+  await pg.query("insert into public.project_assets(id,owner_user_id,project_id,upload_request_id,storage_key,original_filename,mime_type,size_bytes,media_type,upload_status,verified_etag,studio_role,reference_id,reference_name) values($1,$2,$3,$4,$5,'fixture.png','image/png',$6,'image','uploaded','source-etag',$7,$1,$8)",[source,actingOwner,project,randomUUID(),`users/${actingOwner}/projects/${project}/${source}/fixture.png`,master.length,role,role==='product'?'bmw x6m competition':'Approved Character']);
   await seedSheet(project,role,context,true);if(role==='character')await seedSheet(project,role,context,true);
  }
  return{project,context};
 }
 async function generate(project){equal((await post(project,{action:'reference',kind:'location'})).status,200);await tick(project);await tick(project);const t=await row(project);assert.equal(t.status,'done',JSON.stringify({code:t.error_code,phase:t.output?.phase}));checks++;return t;}
 try{
- Object.assign(process.env,{NODE_ENV:'development',UGC_V3_ENABLED:'1',UGC_V3_OPENAI_ENABLED:'1',OPENAI_API_KEY:'fixture-only',OPENAI_V3_IMAGE_MODEL:'fixture-image',OPENAI_V3_DIRECTOR_MODEL:'fixture-director',UGC_V3_OPERATOR_USER_ID:owner,UGC_V3_HIGGSFIELD_ENABLED:'0',SCEENYK_LOCAL_JOBS_ONLY:'1',RENDER:'false',VERCEL:'0'});
+ Object.assign(process.env,{NODE_ENV:'development',UGC_V3_ENABLED:'1',UGC_V3_ACCESS_MODE:'operator',UGC_V3_OPENAI_ENABLED:'1',OPENAI_API_KEY:'fixture-only',OPENAI_V3_IMAGE_MODEL:'fixture-image',OPENAI_V3_DIRECTOR_MODEL:'fixture-director',UGC_V3_OPERATOR_USER_ID:owner,UGC_V3_HIGGSFIELD_ENABLED:'0',SCEENYK_LOCAL_JOBS_ONLY:'1',RENDER:'false',VERCEL:'0'});
  await pg.exec('create role anon;create role authenticated;create role service_role bypassrls;');
  const migrations=fs.readdirSync('supabase/migrations').filter(n=>n.endsWith('.sql')).sort();
  for(const file of migrations){
+  if(file==='20261108010000_ugc_v3_clip_approval_lock.sql')continue; // Install the new wrapper after legacy rerun checks below.
+  if(process.argv.includes('--project-saving-only')&&file.includes('09600'))continue; // Reproduce the installed 095 grants before repair.
+  if(process.argv.includes('--project-saving-only')&&file.includes('09500')){
+   await assert.rejects(()=>pg.exec(fs.readFileSync('supabase/migrations/20261105009600_project_save_resolution_permission.sql','utf8')),/Apply 095 after 094/);checks++;
+   await pg.exec('rollback');
+  }
   let previous;
-  if(file.includes('08500')||file.includes('08600'))previous=(await pg.query("select oid::regprocedure::text signature,prosrc,proacl::text grants,proconfig from pg_proc where pronamespace='public'::regnamespace order by oid")).rows;
+  const m5Previous=file.includes("09800")?await functionsSnapshot():null;
+  const m2Previous=file.includes('09500')?await functionsSnapshot():null, m2Security=m2Previous?await securitySnapshot():null;
+  if(file.includes('08500')||file.includes('08600')||file.includes('09000')||file.includes('09100'))previous=(await pg.query("select oid::regprocedure::text signature,prosrc,proacl::text grants,proconfig from pg_proc where pronamespace='public'::regnamespace order by oid")).rows;
+  const m6Previous=file.includes('09900')?await functionsSnapshot():null;
   await pg.exec(fs.readFileSync(`supabase/migrations/${file}`,'utf8'));
+  if(m6Previous){const current=await functionsSnapshot();for(const before of m6Previous){const after=current.find(f=>f.signature===before.signature);ok(after);equal(after.grants,before.grants);equal(after.proconfig,before.proconfig);if(!['ugc_v3_connected_story_guard','ugc_v3_approve_video'].includes(before.name))equal(after,before);}
+   await pg.exec(fs.readFileSync(`supabase/migrations/${file}`,'utf8'));equal(await functionsSnapshot(),current);}
+
+  if(m5Previous){const current=await functionsSnapshot();for(const before of m5Previous){const after=current.find(f=>f.signature===before.signature);ok(after);equal(after.grants,before.grants);equal(after.proconfig,before.proconfig);if(!["ugc_v3_connected_story_guard","ugc_v3_runtime_action"].includes(before.name))equal(after,before);}}
+  if(m2Previous){
+   const modified=new Set(['guard_ugc_v1_reference_limit','ugc_v3_artifact_current','ugc_v3_location_input_current','ugc_v3_runtime_action','ugc_v3_package_begin','ugc_v3_runtime_current','ugc_v3_regenerate_reference','ugc_v3_reference_delete_prepare','ugc_v3_preserve_approved_reference','ugc_v3_reference_cleanup_guard','ugc_v3_discard_reference_prepare','ugc_v3_queue_reference_cleanup','ugc_v3_replace_unusable_reference_task','ugc_v3_runtime_read']);
+   const current=await functionsSnapshot();
+   for(const before of m2Previous){const after=current.find(f=>f.signature===before.signature);ok(after);equal(after.grants,before.grants);equal(after.proconfig,before.proconfig);if(!modified.has(before.name)){equal(after,before);m2FunctionsPreserved++;}}
+   equal(await securitySnapshot(),m2Security);
+   await pg.exec(fs.readFileSync(`supabase/migrations/${file}`,'utf8'));equal(await functionsSnapshot(),current);equal(await securitySnapshot(),m2Security);
+  }
   if(previous){const current=(await pg.query("select oid::regprocedure::text signature,prosrc,proacl::text grants,proconfig from pg_proc where pronamespace='public'::regnamespace order by oid")).rows;equal(current.filter(f=>previous.some(p=>p.signature===f.signature)),previous);previousFunctionsPreserved=previous.length;}
  }
  await pg.exec(fs.readFileSync('supabase/migrations/20261031008400_ugc_v3_simple_location_retention.sql','utf8'));
  await pg.exec(fs.readFileSync('supabase/migrations/20261031008500_ugc_v3_package_flow.sql','utf8'));
  await pg.exec(fs.readFileSync('supabase/migrations/20261031008600_ugc_v3_local_pricing.sql','utf8'));
+ await pg.exec(fs.readFileSync('supabase/migrations/20261102008800_ugc_v3_sheet_dependencies.sql','utf8'));
+ // Replaying 086 above must not replace the installed precision guard from 089.
+ await pg.exec(fs.readFileSync('supabase/migrations/20261103008900_ugc_v3_local_pricing_precision.sql','utf8'));
+ await pg.exec(fs.readFileSync('supabase/migrations/20261104009000_ugc_v3_unsubmitted_video_delivery.sql','utf8'));
+ await pg.exec(fs.readFileSync('supabase/migrations/20261104009100_ugc_v3_background_processing.sql','utf8'));
+ await pg.exec(fs.readFileSync('supabase/migrations/20261105009500_ugc_v3_multiple_characters.sql','utf8'));
+ await pg.exec(fs.readFileSync('supabase/migrations/20261105009700_ugc_v3_connected_story_planning.sql','utf8'));
+ await pg.exec(fs.readFileSync('supabase/migrations/20261106009800_ugc_v3_individual_clips.sql','utf8'));
+ await pg.exec(fs.readFileSync('supabase/migrations/20261108009900_ugc_v3_final_merge.sql','utf8'));
+ await pg.exec(fs.readFileSync('supabase/migrations/20261108010000_ugc_v3_clip_approval_lock.sql','utf8'));
+ await pg.exec(fs.readFileSync('supabase/migrations/20261108010000_ugc_v3_clip_approval_lock.sql','utf8'));
  await pg.exec(fs.readFileSync('scripts/verify-v3-setup.sql','utf8'));checks++;
  await pg.query("insert into public.app_users(id,clerk_user_id) values($1,'fixture')",[owner]);
+ if(process.argv.includes('--reference-limits-only')) {
+  await referenceLimitScenarios({pg,db,owner,call,post,read,tick,fixture,generate,load,equal,ok,calls,cp,spool,objects,media,master,sources,seedSheet,V3Store,
+   setDurations:value=>{storyboardDurations=value;},getVideoPosts:()=>videoPosts,getEstimateCalls:()=>estimateCalls});
+ } else if(process.argv.includes('--individual-clips-only')) {
+  await individualClipScenarios({pg,db,owner,call,post,read,tick,fixture,generate,load,equal,ok,calls,cp,spool,objects,videoBodies,
+   onMergeReady:process.argv.includes('--final-merge-only')?async(project,dto,doc)=>finalMergeScenarios({pg,owner,call,post,read,tick,load,equal,ok,spool,objects,V3Store,media,
+     getVideoPosts:()=>videoPosts,getMergeCalls:()=>mergeCalls,setMergeFailure:value=>{mergeFailure=value;},setMergeSaveFailure:value=>{mergeSaveFailure=value;},setDeleteFailure:value=>{deleteFailure=value;},setOwner:value=>{actingOwner=value;}},project,dto,doc):null,
+   setDurations:value=>{storyboardDurations=value;},getVideoPosts:()=>videoPosts,setVideo:complete=>{fixtureVideo=true;videoComplete=complete;},setVideoFailure:value=>{videoTerminal=value?"failed":null;},setSubmissionRejected:value=>{videoSubmissionRejected=value;},setDeleteFailure:value=>{deleteFailure=value;}});
+ } else if(process.argv.includes('--connected-story-only')) {
+  await connectedStoryScenarios({pg,db,owner,call,post,read,tick,fixture,generate,load,equal,ok,calls,cp,spool,setDurations:value=>{storyboardDurations=value;},getVideoPosts:()=>videoPosts});
+ } else if(process.argv.includes('--project-saving-only')) {
+  await projectSavingScenarios({pg,db,owner,call,post,read,tick,media,master,oddImage,objects,calls,deleted,load,equal,ok,hash,V3Store,cp,setMode:value=>{mode=value;}});
+ } else if(process.argv.includes('--multiple-characters-only')) {
+  await multipleCharacterScenarios({pg,db,owner,call,post,read,tick,media,master,oddImage,objects,calls,deleted,load,equal,ok,hash,V3Store,cp,setMode:value=>{mode=value;}});
+ } else {
  const f=await fixture(),before=await cp(f.project),start=calls.length;
  equal((await post(f.project,{action:'reference',kind:'location'})).status,200);const task=await row(f.project);
  equal(task.input.locationDirector,{version:'location-prompt-v2',maxRequests:2,maxImageRequests:1});
@@ -182,6 +284,8 @@ try{
  equal((await pg.query("select has_function_privilege('authenticated','public.ugc_v3_discard_reference_prepare(uuid,uuid,uuid,integer,boolean)','EXECUTE') browser,has_function_privilege('service_role','public.ugc_v3_discard_reference_prepare(uuid,uuid,uuid,integer,boolean)','EXECUTE') server")).rows[0],{browser:false,server:true});
  mode='unknown';const unknown=await fixture();await post(unknown.project,{action:'reference',kind:'location'});await tick(unknown.project);const missing=await read(unknown.project);equal(missing.tasks.at(-1).recoveryAvailable,false);equal(missing.tasks.at(-1).canStartNew,false);ok(!JSON.stringify(missing).includes('FAKE_SECRET'));
  mode='optional';const optional=await fixture(true);const optionalCount=calls.length;await generate(optional.project);equal(calls.length-optionalCount,2);
+ // The focused scope keeps unrelated package/pricing acceptance independently runnable.
+ if(!process.argv.includes('--references-only')) {
  // Real route -> atomic admission -> worker -> package/estimate -> refresh, using HTTP fixtures only.
  Object.assign(process.env,{UGC_V3_HIGGSFIELD_CREDENTIALS:'',UGC_V3_HIGGSFIELD_ACCOUNT_SCOPE:''});estimateMode='failed';
  const packageRow=async p=>(await pg.query("select * from public.ugc_v3_tasks where project_id=$1 and kind='package' order by created_at desc,id desc limit 1",[p])).rows[0];
@@ -206,7 +310,7 @@ try{
  await pg.exec('drop trigger fixture_package_failure on public.ugc_v3_quotes;drop function public.fixture_package_failure();');
  equal((await post(f.project,{action:'build_package'})).status,200);
  await tick(f.project);let built=await read(f.project);assert.equal((await packageRow(f.project)).status,'done',JSON.stringify((await packageRow(f.project)).output));checks++;
- equal(await packageCount(f.project),1);equal(built.preflight.estimatedCostMicrousd,5641000);equal(built.preflight.segmentCount,1);equal(built.preflight.canSubmit,false);
+ equal(await packageCount(f.project),1);equal(built.preflight.estimatedCostMicrousd,2056670);equal(built.preflight.segmentCount,1);equal(built.preflight.canSubmit,false);
  equal(built.tasks.find(t=>t.kind==='package').packageBuild.estimateStatus,'available');
  equal((await read(f.project)).preflight.packageId,built.preflight.packageId);
  equal((await post(f.project,{action:'build_package',retryTaskId:taskBefore.id})).status,200);equal(await packageCount(f.project),1);
@@ -217,7 +321,7 @@ try{
  for(const stage of ['validation','planning','delivery','payload','estimate','persistence','ready'])ok(stages.includes(stage));
  // Delivery expiry does not expire local pricing or prevent explicit finite package approval.
  await pg.query("update public.ugc_v3_quotes set document=jsonb_set(document,'{deliveryExpiresAt}',to_jsonb('2020-01-01T00:00:00Z'::text)) where project_id=$1",[f.project]);
- built=await read(f.project);equal(built.preflight.estimatedCostMicrousd,5641000);equal(built.preflight.issues.includes('COST_ESTIMATE_UNAVAILABLE'),false);
+ built=await read(f.project);equal(built.preflight.estimatedCostMicrousd,2056670);equal(built.preflight.issues.includes('COST_ESTIMATE_UNAVAILABLE'),false);
  equal((await post(f.project,{action:'build_package',retryTaskId:taskBefore.id})).status,200);equal(await packageCount(f.project),1);
  const approval={action:'authorize',packageId:built.preflight.packageId,packageHash:built.preflight.packageHash,quoteId:built.preflight.quoteId,operatorApproved:true,maximumMicrousd:6770000};
  equal((await post(f.project,{...approval,maximumMicrousd:100})).status,409);
@@ -228,12 +332,25 @@ try{
  const videoRequest={action:'generate',packageId:built.preflight.packageId,packageHash:built.preflight.packageHash};
  equal((await post(f.project,videoRequest)).body.code,'PAID_V3_EXECUTION_DISABLED');
  Object.assign(process.env,{UGC_V3_HIGGSFIELD_ENABLED:'1',UGC_V3_HIGGSFIELD_CREDENTIALS:'fixture:key',UGC_V3_HIGGSFIELD_ACCOUNT_SCOPE:'fixture',
-  UGC_V3_HIGGSFIELD_OUTPUT_HOSTS:'cdn.example.test',UGC_V3_ACTIVATION_PROJECT_ID:f.project,UGC_V3_ACTIVATION_PACKAGE_ID:built.preflight.packageId});
+  UGC_V3_HIGGSFIELD_OUTPUT_HOSTS:'cdn.example.test'});
+ delete process.env.UGC_V3_ACTIVATION_PROJECT_ID;delete process.env.UGC_V3_ACTIVATION_PACKAGE_ID;
  equal((await read(f.project)).preflight.eligibleForPaidSubmission,true);
- process.env.UGC_V3_ACTIVATION_PACKAGE_ID=randomUUID();equal((await post(f.project,videoRequest)).body.code,'V3_ACTIVATION_SCOPE_MISMATCH');
- process.env.UGC_V3_ACTIVATION_PACKAGE_ID=built.preflight.packageId;
- const generated=await post(f.project,videoRequest);assert.equal(generated.status,200,JSON.stringify(generated.body));checks++;
+ equal((await read(f.project)).preflight.canSubmit,true);
+ equal((await post(f.project,{...videoRequest,packageId:randomUUID()})).body.code,'V3_REVIEW_SNAPSHOT_CHANGED');
+ equal((await post(f.project,{...videoRequest,packageHash:'f'.repeat(64)})).body.code,'V3_REVIEW_SNAPSHOT_CHANGED');
+ // A saved authorization cannot be expired or changed by a client, even with transport ON.
+ const savedAuthority=(await new V3Store(db).read(owner,f.project)).runtimeAuthorizations[0].document;
+ await pg.query("update public.ugc_v3_run_authorizations set document=jsonb_set(document,'{expiresAt}',to_jsonb('2020-01-01T00:00:00Z'::text)) where id=$1",[savedAuthority.id]);
+ equal((await read(f.project)).preflight.canSubmit,false);equal((await post(f.project,videoRequest)).status,409);
+ await pg.query('update public.ugc_v3_run_authorizations set document=$2 where id=$1',[savedAuthority.id,JSON.stringify(savedAuthority)]);
+ const originalPrompt=(await pg.query('select prompt from public.projects where id=$1',[f.project])).rows[0].prompt;
+ await pg.query("update public.projects set prompt='Changed direction' where id=$1",[f.project]);
+ equal(await call('ugc_v3_runtime_current',[built.preflight.packageId]),false);equal((await post(f.project,videoRequest)).status,409);
+ await pg.query('update public.projects set prompt=$2 where id=$1',[f.project,originalPrompt]);
+ const simultaneous=await Promise.all(Array.from({length:5},()=>post(f.project,videoRequest)));
+ for(const generated of simultaneous){assert.equal(generated.status,200,JSON.stringify(generated.body));checks++;}
  let videoWorkspace=await new V3Store(db).read(owner,f.project),videoRun=videoWorkspace.runs[0];equal(videoWorkspace.runs.length,1);
+ equal((await pg.query("select count(*)::int n from public.ugc_v3_tasks where project_id=$1 and kind='video'",[f.project])).rows[0].n,1);
  equal(videoRun.intent.body.prompt,videoWorkspace.quotes[0].document.segments[0].body.prompt);
  ok(Date.parse(videoRun.intent.deliveryExpiresAt)>Date.now());equal(videoRun.intent.authorization.maxRequests,1);
  process.env.UGC_V3_HIGGSFIELD_ENABLED='0';equal((await post(f.project,videoRequest)).status,200);
@@ -271,6 +388,156 @@ try{
  equal((await post(f.project,videoRequest)).status,200);equal((await post(f.project,videoRequest)).status,200);
  videoWorkspace=await new V3Store(db).read(owner,f.project);equal(videoWorkspace.runs.length,2);equal(videoWorkspace.runs.filter(r=>r.state==='queued').length,1);
  equal(videoWorkspace.packages,videoBefore);equal(await cp(f.project),videoCreative);equal(calls.length,providerCount);equal(networkCalls,0);
+ // Project B is independent of A's active paid intent, with no manual activation IDs.
+ mode='pass';const b=await fixture(),bLocation=await generate(b.project);
+ await post(b.project,{action:'review_artifact',id:bLocation.id,decision:'approve'});
+ await post(b.project,{action:'storyboard'});await tick(b.project);
+ const bStoryboard=(await read(b.project)).artifacts.find(a=>a.kind==='storyboard');
+ await post(b.project,{action:'review_artifact',id:bStoryboard.id,decision:'approve'});
+ await post(b.project,{action:'build_package'});await tick(b.project);
+ const bPackage=(await read(b.project)).preflight,bRequest={action:'generate',packageId:bPackage.packageId,packageHash:bPackage.packageHash};
+ equal((await post(b.project,bRequest)).status,409);equal((await new V3Store(db).read(owner,b.project)).runs.length,0);
+ equal((await post(b.project,{...approval,packageId:bPackage.packageId,packageHash:bPackage.packageHash,quoteId:bPackage.quoteId})).status,200);
+ equal((await read(b.project)).preflight.canSubmit,true);
+ equal((await post(b.project,videoRequest)).body.code,'V3_REVIEW_SNAPSHOT_CHANGED');
+ const otherOwner=randomUUID(),otherProject=randomUUID();
+ await pg.query("insert into public.app_users(id,clerk_user_id) values($1,'other-owner')",[otherOwner]);
+ await call('ugc_v3_create_project',[otherOwner,otherProject,{title:'Foreign',category:'product-ad',prompt:'',ugcType:'advertisement',settings:{duration:'10',aspectRatio:'9:16',visualStyle:'Realistic',tone:'Professional'}}]);
+ equal((await post(otherProject,bRequest)).body.code,'FRESH_V3_PROJECT_REQUIRED');
+ await assert.rejects(call('ugc_v3_runtime_action',[otherOwner,b.project,'generate',{intent:nextIntent}]),/FRESH_V3_PROJECT_REQUIRED/);checks++;
+ // Obsolete values cannot pin activation to another project, even if left in an old environment file.
+ process.env.UGC_V3_ACTIVATION_PROJECT_ID=randomUUID();process.env.UGC_V3_ACTIVATION_PACKAGE_ID=randomUUID();
+ equal((await read(b.project)).preflight.canSubmit,true);
+ equal((await post(b.project,bRequest)).status,200);
+ delete process.env.UGC_V3_ACTIVATION_PROJECT_ID;delete process.env.UGC_V3_ACTIVATION_PACKAGE_ID;
+ // The actual worker pauses unsubmitted B while OFF, submits once while ON, and polls while OFF.
+ fixtureVideo=true;process.env.UGC_V3_HIGGSFIELD_ENABLED='0';await tick(b.project);
+ let bWorkspace=await new V3Store(db).read(owner,b.project);
+ equal(bWorkspace.runs[0].state,'queued');equal(bWorkspace.tasks.find(t=>t.kind==='video').provider_started,false);equal(videoPosts,0);
+ equal((await read(b.project)).runs[0].submissionBlocker,'PAID_V3_EXECUTION_DISABLED');
+ equal(workerLogs.filter(l=>l.runId===bWorkspace.runs[0].id&&l.stage==='V3_FINAL_VIDEO_JOB_CLAIMED').length,0);
+ const releaseB=()=>pg.query("update public.ugc_v3_tasks set available_at=now() where project_id=$1 and kind='video'",[b.project]);
+ // Reproduce the actual incident: delivery expires while the worker's paid switch is OFF.
+ const bRun=bWorkspace.runs[0],expiredIntent=normal(bRun.intent);expiredIntent.deliveryExpiresAt='2020-01-01T00:00:00Z';
+ const {hash:expiredHash,...expiredBody}=expiredIntent;void expiredHash;expiredIntent.hash=load('lib/final-video-generation-v3/identity.ts').v3Digest('paid-intent',expiredBody);
+ await pg.query('update public.ugc_v3_runs set intent=$2 where id=$1',[bRun.id,JSON.stringify(expiredIntent)]);
+ process.env.UGC_V3_HIGGSFIELD_ENABLED='1';
+ const pausedDto=await read(b.project);equal(pausedDto.runs[0].submissionBlocker,'V3_REFERENCE_DELIVERY_EXPIRED');equal(pausedDto.runs[0].state,'queued');
+ const presentation=load('components/creation/v3-final-video-state.ts').finalVideoPresentation(pausedDto,{dirty:false,busy:false,requestPending:false});
+ equal(presentation.loading,false);ok(presentation.reason.includes('reference links expired'));
+ const refreshRequest={action:'refresh_video_delivery',id:bRun.id};
+ // Link renewal is safe with transport ON: SQL refuses claims/started requests, without toggling the global switch.
+
+ spool.set(`${bRun.id}:acceptance.json`,Buffer.from('{}'));
+ equal((await post(b.project,refreshRequest)).body.code,'V3_SAVED_PROVIDER_EVIDENCE_REQUIRES_RECOVERY');spool.delete(`${bRun.id}:acceptance.json`);
+ const activeB=await call('ugc_v3_task_claim',[b.project]);
+ if(!activeB){await releaseB();}
+ const heldB=activeB??await call('ugc_v3_task_claim',[b.project]);
+ equal((await post(b.project,refreshRequest)).body.code,'V3_UNSUBMITTED_REQUEST_REQUIRED');
+ await call('ugc_v3_task_checkpoint',[heldB.id,heldB.lease_token,'pending',{code:'V3_REFERENCE_DELIVERY_EXPIRED'}]);
+ const refreshResult=await post(b.project,refreshRequest);assert.equal(refreshResult.status,200,JSON.stringify(refreshResult.body));checks++;
+ bWorkspace=await new V3Store(db).read(owner,b.project);const refreshedIntent=bWorkspace.runs[0].intent;
+ equal(bWorkspace.runs.length,1);equal(bWorkspace.tasks.filter(t=>t.kind==='video').length,1);equal(videoPosts,0);
+ for(const field of ['id','executionId','packageId','packageHash','authorization','idempotencyKey','attempt','createdAt','estimatedCostMicrousd'])equal(refreshedIntent[field],expiredIntent[field]);
+ equal(refreshedIntent.body.prompt,expiredIntent.body.prompt);ok(refreshedIntent.bodyHash!==expiredIntent.bodyHash);ok(Date.parse(refreshedIntent.deliveryExpiresAt)>Date.now());
+ equal((await pg.query("select document->'previousIntent' value from public.ugc_v3_runtime_events where entity_id=$1 and kind='video_delivery_refreshed' order by id desc limit 1",[bRun.id])).rows[0].value,expiredIntent);
+ equal((await pg.query("select has_function_privilege('authenticated','public.ugc_v3_refresh_video_delivery(uuid,uuid,uuid,text,jsonb)','EXECUTE') browser,has_function_privilege('service_role','public.ugc_v3_refresh_video_delivery(uuid,uuid,uuid,text,jsonb)','EXECUTE') server")).rows[0],{browser:false,server:true});
+ await assert.rejects(call('ugc_v3_refresh_video_delivery',[otherOwner,b.project,bRun.id,refreshedIntent.hash,refreshedIntent]),/FRESH_V3_PROJECT_REQUIRED/);checks++;
+ for(const property of ['idempotencyKey','authorization','body','reference']){
+  const altered=normal(refreshedIntent);if(property==='idempotencyKey')altered.idempotencyKey=randomUUID();else if(property==='authorization')altered.authorization.maxEstimatedCostMicrousd++;else if(property==='reference')altered.body.image_urls[0]='https://private.example.test/different-object';else altered.body.prompt+=' altered';
+  altered.bodyHash=load('lib/final-video-generation-v3/identity.ts').v3BodyHash(altered.body);
+  const {hash,...content}=altered;void hash;altered.hash=load('lib/final-video-generation-v3/identity.ts').v3Digest('paid-intent',content);
+  await assert.rejects(call('ugc_v3_refresh_video_delivery',[owner,b.project,bRun.id,refreshedIntent.hash,altered]),/V3_DELIVERY_BINDING_INVALID/);checks++;
+ }
+ await assert.rejects(call('ugc_v3_refresh_video_delivery',[owner,b.project,bRun.id,expiredIntent.hash,refreshedIntent]),/V3_REVIEW_SNAPSHOT_CHANGED/);checks++;
+ const bAuthority=refreshedIntent.authorization;
+ await pg.query("update public.ugc_v3_run_authorizations set document=jsonb_set(document,'{expiresAt}',to_jsonb('2020-01-01T00:00:00Z'::text)) where id=$1",[bAuthority.id]);
+ await assert.rejects(call('ugc_v3_refresh_video_delivery',[owner,b.project,bRun.id,refreshedIntent.hash,refreshedIntent]),/V3_AUTHORIZATION_INVALID/);checks++;
+ await pg.query('update public.ugc_v3_run_authorizations set document=$2 where id=$1',[bAuthority.id,JSON.stringify(bAuthority)]);
+ // A delay can expire delivery again. The worker refreshes the SAME run automatically with ON unchanged.
+ const delayedIntent=normal(refreshedIntent);delayedIntent.deliveryExpiresAt='2020-01-01T00:00:00Z';
+ const {hash:delayedHash,...delayedBody}=delayedIntent;void delayedHash;delayedIntent.hash=load('lib/final-video-generation-v3/identity.ts').v3Digest('paid-intent',delayedBody);
+ await pg.query('update public.ugc_v3_runs set intent=$2 where id=$1',[bRun.id,JSON.stringify(delayedIntent)]);
+ process.env.UGC_V3_HIGGSFIELD_ENABLED='1';await releaseB();await tick(b.project);
+ bWorkspace=await new V3Store(db).read(owner,b.project);
+ equal(videoPosts,1);assert.equal(bWorkspace.runs[0].observation?.requestId,fixtureVideoId,JSON.stringify(bWorkspace.tasks.filter(t=>t.kind==='video')));checks++;equal(bWorkspace.runs[0].state,'provider_processing');
+ const pollsBeforeOff=videoPolls;process.env.UGC_V3_HIGGSFIELD_ENABLED='0';await releaseB();await tick(b.project);
+ equal(videoPosts,1);equal(videoPolls,pollsBeforeOff+1);
+ equal(bWorkspace.runs[0].intent.idempotencyKey,delayedIntent.idempotencyKey);
+ const progressLabel=load('lib/final-video-generation-v3/progress.ts').v3ProgressLabel;
+ equal(progressLabel(await read(b.project),false),'Processing');
+ for(let i=0;i<3;i++){await releaseB();await tick(b.project);}
+ equal(videoPosts,1);
+ equal(workerLogs.filter(l=>l.runId===bRun.id&&l.stage==='V3_FINAL_VIDEO_JOB_CLAIMED').length,1);
+ equal(workerLogs.filter(l=>l.runId===bRun.id&&l.stage==='HIGGSFIELD_PROCESSING').length,1);
+ // A process restart after a lease expires polls the persisted request; it never POSTs again.
+ await pg.query("update public.ugc_v3_tasks set status='running',lease_until=now()-interval '1 second' where id=(select id from public.ugc_v3_tasks where project_id=$1 and kind='video')",[b.project]);
+ await tick(b.project);equal(videoPosts,1);
+ await releaseB();const knownClaim=await call('ugc_v3_worker_claim',[b.project,false]);
+ await call('ugc_v3_task_checkpoint',[knownClaim.id,knownClaim.lease_token,'unknown',{code:'HIGGSFIELD_NETWORK_OUTCOME_UNKNOWN'}]);
+ await tick(b.project);bWorkspace=await new V3Store(db).read(owner,b.project);
+ equal(videoPosts,1);equal(bWorkspace.runs[0].observation.requestId,fixtureVideoId);equal(bWorkspace.runs[0].state,'provider_processing');
+ equal((await pg.query("select count(*)::int n from public.ugc_v3_runtime_events where entity_id=$1 and kind='known_request_resumed'",[bRun.id])).rows[0].n,1);
+ equal((await post(b.project,refreshRequest)).body.code,'V3_UNSUBMITTED_REQUEST_REQUIRED');
+ await assert.rejects(call('ugc_v3_refresh_video_delivery',[owner,b.project,bRun.id,refreshedIntent.hash,refreshedIntent]),/V3_UNSUBMITTED_REQUEST_REQUIRED/);checks++;
+ equal((await new V3Store(db).read(owner,f.project)).runs.filter(r=>r.state==='queued').length,1);
+ // Unknown A outcome with no receipt is NOT automatically requeued or submitted.
+ const unknownA=await call('ugc_v3_worker_claim',[f.project,true]);equal(unknownA.kind,'video');
+ await call('ugc_v3_task_checkpoint',[unknownA.id,unknownA.lease_token,'intent',{}]);
+ await call('ugc_v3_task_checkpoint',[unknownA.id,unknownA.lease_token,'unknown',{code:'V3_PROVIDER_OUTCOME_UNKNOWN'}]);
+ await tick(f.project);equal(videoPosts,1);
+ equal((await new V3Store(db).read(owner,f.project)).runs.at(-1).state,'reconciliation_required');
+ // Completion while OFF automatically supplies the owner DTO/review/Preview; no Generate/Recover click.
+ videoComplete=true;await releaseB();await tick(b.project);
+ const completedB=await read(b.project);equal(completedB.runs[0].state,'awaiting_review');ok(completedB.runs[0].preview);
+ equal(progressLabel(completedB,false),'Ready for Review');
+ equal(load('components/creation/v3-final-video-state.ts').finalVideoPresentation(completedB,{dirty:false,busy:false,requestPending:false}).loading,false);
+ equal(workerLogs.filter(l=>l.runId===bRun.id&&l.stage==='V3_FINAL_VIDEO_SAVING').length,1);equal(videoPosts,1);
+ // A different authenticated owner works in explicit owned/production mode without operator UUID changes.
+ actingOwner=otherOwner;equal((await post(f.project,videoRequest)).body.code,'V3_ACCESS_UNAVAILABLE');
+ Object.assign(process.env,{NODE_ENV:'production',UGC_V3_ACCESS_MODE:'owned',UGC_V3_HIGGSFIELD_ENABLED:'1'});videoComplete=false;
+ const c=await fixture(),cLocation=await generate(c.project);
+ await post(c.project,{action:'review_artifact',id:cLocation.id,decision:'approve'});
+ await post(c.project,{action:'storyboard'});await tick(c.project);
+ const cBoard=(await read(c.project)).artifacts.find(a=>a.kind==='storyboard');
+ await post(c.project,{action:'review_artifact',id:cBoard.id,decision:'approve'});await post(c.project,{action:'build_package'});await tick(c.project);
+ const cPackage=(await read(c.project)).preflight,cRequest={action:'generate',packageId:cPackage.packageId,packageHash:cPackage.packageHash};
+ equal((await post(c.project,cRequest)).status,409);
+ equal((await post(c.project,{...approval,packageId:cPackage.packageId,packageHash:cPackage.packageHash,quoteId:cPackage.quoteId,maximumMicrousd:1})).status,409);
+ equal((await post(c.project,{...approval,packageId:cPackage.packageId,packageHash:cPackage.packageHash,quoteId:cPackage.quoteId})).status,200);
+ for(const response of await Promise.all(Array.from({length:4},()=>post(c.project,cRequest))))equal(response.status,200);
+ equal((await new V3Store(db).read(otherOwner,c.project)).runs.length,1);
+ equal((await post(f.project,{...cRequest,ownerId:owner})).body.code,'FRESH_V3_PROJECT_REQUIRED');
+ actingOwner=owner;equal((await post(c.project,cRequest)).body.code,'FRESH_V3_PROJECT_REQUIRED');actingOwner=otherOwner;
+ await tick(c.project);equal(videoPosts,2);
+ const cWorkspace=await new V3Store(db).read(otherOwner,c.project);ok(cWorkspace.runs[0].observation.requestId!==fixtureVideoId);
+ // Service discovery gets owner IDs from SQL; a bounded page walks both owners independently.
+ const found=[];let after=null;
+ await pg.query("update public.ugc_v3_tasks set available_at=now() where project_id=$1 and kind='video'",[c.project]);
+ do{const result=await load('lib/final-video-generation-v3/background-worker.ts').processV3QueueBatch(new V3Store(db),{after,ownerId:null,concurrency:2,signal:AbortSignal.timeout(30000)},async project=>{found.push(project);});after=result.after;}while(after);
+ ok(found.some(p=>p.project_id===c.project&&p.owner_user_id===otherOwner));
+ // A worker restart with only its local acceptance receipt restores SQL before polling, never POST.
+ const cRequestId=cWorkspace.runs[0].observation.requestId;
+ await pg.query("update public.ugc_v3_runs set observation=null,state='reconciliation_required',error_code='V3_RECEIPT_ACK_LOST' where id=$1",[cWorkspace.runs[0].id]);
+ await pg.query("update public.ugc_v3_tasks set status='reconciliation_required',lease_until=null,lease_token=null,available_at=now() where project_id=$1 and kind='video'",[c.project]);
+ await tick(c.project);const restoredC=await new V3Store(db).read(otherOwner,c.project);
+ equal(videoPosts,2);equal(restoredC.runs[0].observation.requestId,cRequestId);equal(restoredC.runs[0].state,'provider_processing');
+ await pg.query("update public.ugc_v3_tasks set available_at=now() where project_id=$1 and kind='video'",[c.project]);
+ const leaseC=await call('ugc_v3_worker_claim',[c.project,true]);
+ for(const duplicate of await Promise.all(Array.from({length:3},()=>call('ugc_v3_worker_claim',[c.project,true]))))equal(duplicate,null);
+ equal(await call('ugc_v3_video_stage',[leaseC.id,leaseC.lease_token,'HIGGSFIELD_PROCESSING']),false);
+ equal(await call('ugc_v3_video_stage',[leaseC.id,leaseC.lease_token,'V3_FINAL_VIDEO_JOB_CLAIMED']),false);
+ await assert.rejects(call('ugc_v3_video_stage',[leaseC.id,randomUUID(),'HIGGSFIELD_PROCESSING']),/V3_LEASE_LOST/);checks++;
+ await assert.rejects(call('ugc_v3_video_stage',[leaseC.id,leaseC.lease_token,'NOT_A_VIDEO_STAGE']),/INVALID_VIDEO_STAGE/);checks++;
+ await call('ugc_v3_task_checkpoint',[leaseC.id,leaseC.lease_token,'unknown',{code:'HIGGSFIELD_NETWORK_OUTCOME_UNKNOWN'}]);
+ equal(await call('ugc_v3_worker_resume_known',[otherOwner,c.project,restoredC.runs[0].id,randomUUID()]),false);
+ await assert.rejects(call('ugc_v3_worker_resume_known',[owner,c.project,restoredC.runs[0].id,cRequestId]),/FRESH_V3_PROJECT_REQUIRED/);checks++;
+ equal(await call('ugc_v3_worker_resume_known',[otherOwner,c.project,restoredC.runs[0].id,cRequestId]),true);equal(videoPosts,2);
+ for(const signature of ['ugc_v3_background_setup()','ugc_v3_worker_projects(uuid,uuid,integer,boolean)','ugc_v3_worker_claim(uuid,boolean)','ugc_v3_video_stage(uuid,uuid,text)','ugc_v3_worker_resume_known(uuid,uuid,uuid,uuid)']){
+  equal((await pg.query("select has_function_privilege('authenticated',$1,'EXECUTE') browser,has_function_privilege('service_role',$1,'EXECUTE') server",[`public.${signature}`])).rows[0],{browser:false,server:true});
+ }
+ actingOwner=owner;Object.assign(process.env,{NODE_ENV:'development',UGC_V3_ACCESS_MODE:'operator'});
+ equal(networkCalls,0);fixtureVideo=false;
  process.env.UGC_V3_HIGGSFIELD_ENABLED='0';
  const videoMigration=fs.readFileSync('supabase/migrations/20261101008700_ugc_v3_controlled_video.sql','utf8');await pg.exec(videoMigration);
  equal((await pg.query("select has_function_privilege('authenticated','public.ugc_v3_video_setup()','EXECUTE') browser,has_function_privilege('service_role','public.ugc_v3_video_setup()','EXECUTE') server")).rows[0],{browser:false,server:true});
@@ -284,11 +551,11 @@ try{
  const historical=load('lib/final-video-generation-v3/package.ts').buildFrozenPackage(repairSource.input,historicalProvider,historicalContext,{id:legacyTask.input.packageId,version:1,sourceRevision:repairSource.revision});
  await call('ugc_v3_write',[owner,repairFixture.project,'package',{document:historical,state:load('lib/final-video-generation-v3/recovery.ts').initialExecution(historical),eventId:legacyTask.id}]);
  await call('ugc_v3_task_checkpoint',[legacyTask.id,legacyTask.lease_token,'done',{}]);equal(historical.pricing.status,'unavailable');const repairApprovals=await cp(repairFixture.project),repairCalls=calls.length;
- const repairedTask=await call('ugc_v3_local_price_repair',[owner,repairFixture.project,historical.id,'seedance-2026-10-31']);
+ const repairedTask=await call('ugc_v3_local_price_repair',[owner,repairFixture.project,historical.id,'seedance-observed-2026-11-01']);
  await load('lib/final-video-generation-v3/package-task.ts').packageTask(new V3Store(db),repairedTask,await new V3Store(db).read(owner,repairFixture.project),AbortSignal.timeout(10000));
- const repaired=await read(repairFixture.project);equal(repaired.preflight.estimatedCostMicrousd,16923000);equal(repaired.preflight.pricingVersion,'seedance-2026-10-31');equal(await packageCount(repairFixture.project),2);equal(await cp(repairFixture.project),repairApprovals);equal(calls.length,repairCalls);equal(estimateCalls,0);
+ const repaired=await read(repairFixture.project);equal(repaired.preflight.estimatedCostMicrousd,6170010);equal(repaired.preflight.pricingVersion,'seedance-observed-2026-11-01');equal(await packageCount(repairFixture.project),2);equal(await cp(repairFixture.project),repairApprovals);equal(calls.length,repairCalls);equal(estimateCalls,0);
  equal((await pg.query('select document from public.ugc_v3_packages where id=$1',[historical.id])).rows[0].document,historical);
- equal((await call('ugc_v3_local_price_repair',[owner,repairFixture.project,historical.id,'seedance-2026-10-31'])).id,repairedTask.id);equal(await packageCount(repairFixture.project),2);
+ equal((await call('ugc_v3_local_price_repair',[owner,repairFixture.project,historical.id,'seedance-observed-2026-11-01'])).id,repairedTask.id);equal(await packageCount(repairFixture.project),2);
  const repairedWorkspace=await new V3Store(db).read(owner,repairFixture.project),pricedDoc=load('lib/final-video-generation-v3/package.ts').readFrozenPackage(repairedWorkspace.packages.at(-1).document),localQuote=repairedWorkspace.quotes.at(-1).document;
  const oversized=load('lib/final-video-generation-v3/execution-package.ts').createRuntimeAuthorization(pricedDoc,localQuote,localQuote.segments[0].segmentUuid,{operatorId:owner,approved:true,maximumMicrousd:20310000,now:new Date().toISOString()});
  oversized.expiresAt=new Date(Date.parse(oversized.approvedAt)+48*60*60*1000).toISOString();const {hash:oldAuthorizationHash,...oversizedBody}=oversized;void oldAuthorizationHash;oversized.hash=load('lib/final-video-generation-v3/identity.ts').v3Digest('runtime-authorization',oversizedBody);
@@ -300,7 +567,7 @@ try{
  await call('ugc_v3_write',[owner,repairFixture.project,'package',{document:legacyAgain,state:load('lib/final-video-generation-v3/recovery.ts').initialExecution(legacyAgain),eventId:randomUUID()}]);
  const beginArgs=[owner,repairFixture.project,repairSource.input,repairSource.private_bindings,null];
  const normalUpgrade=await call('ugc_v3_local_package_begin',beginArgs);equal(await call('ugc_v3_local_package_begin',beginArgs),normalUpgrade);
- await tick(repairFixture.project);equal((await read(repairFixture.project)).preflight.estimatedCostMicrousd,16923000);equal(await packageCount(repairFixture.project),4);equal(estimateCalls,0);
+ await tick(repairFixture.project);equal((await read(repairFixture.project)).preflight.estimatedCostMicrousd,6170010);equal(await packageCount(repairFixture.project),4);equal(estimateCalls,0);
  await pg.query("update public.ugc_v3_artifacts set approved_at=null where project_id=$1 and kind='product'",[repairFixture.project]);
  equal((await post(repairFixture.project,{action:'build_package'})).body.code,'V3_PRODUCT_APPROVAL_REQUIRED');
  // A worker collision with a completed deletion is reconciled locally, without touching media/providers.
@@ -309,13 +576,14 @@ try{
  equal(await call('ugc_v3_reconcile_reference_cleanup',[owner,history.project]),1);
  equal((await pg.query("select status,error_code from public.ugc_v3_tasks where project_id=$1 and request_key like 'race:%'",[history.project])).rows[0],{status:'done',error_code:null});
  equal((await pg.query("select has_function_privilege('authenticated','public.ugc_v3_package_begin(uuid,uuid,jsonb,jsonb,uuid)','EXECUTE') browser,has_function_privilege('service_role','public.ugc_v3_package_begin(uuid,uuid,jsonb,jsonb,uuid)','EXECUTE') server")).rows[0],{browser:false,server:true});
- // Approved history cannot enter the permanent-delete coordinator, including through an old client.
+ }
+ // Current approved sheets reject casual deletion, but explicit confirmed replacement deletes its exact target.
  const preserve=await fixture(),preserved=(await read(preserve.project)).artifacts.filter(a=>a.kind==='character').at(-1),preserveBefore=await cp(preserve.project),deletesBefore=deleted.length;
  await assert.rejects(call('ugc_v3_reference_delete_prepare',[owner,preserve.project,'character',preserved.id,preserved.version,'reject',null]),/V3_APPROVED_REFERENCE_PRESERVED/);checks++;
  equal((await post(preserve.project,{action:'reference',kind:'character',assetId:sources.get(`${preserve.project}:character`),confirmedDeletion:true,expectedId:preserved.id,expectedVersion:preserved.version})).status,200);
- equal((await read(preserve.project)).artifacts.find(a=>a.id===preserved.id).approved,true);equal(deleted.length,deletesBefore);equal((await cp(preserve.project)).artifacts,preserveBefore.artifacts);
+ equal((await read(preserve.project)).artifacts.some(a=>a.id===preserved.id),false);equal(deleted.length,deletesBefore+1);equal((await cp(preserve.project)).artifacts,preserveBefore.artifacts.filter(a=>a.id!==preserved.id));
  equal((await post(preserve.project,{action:'reference',kind:'character',assetId:sources.get(`${preserve.project}:character`),confirmedDeletion:true,expectedId:preserved.id,expectedVersion:preserved.version})).status,200);
- equal((await pg.query("select count(*)::int n from public.ugc_v3_tasks where project_id=$1 and request_key=$2",[preserve.project,`approved-reference-replacement:${preserved.id}`])).rows[0].n,1);
+ equal((await pg.query("select count(*)::int n from public.ugc_v3_tasks where project_id=$1 and request_key=$2",[preserve.project,`reference-replacement:${preserved.id}`])).rows[0].n,1);
  // An active explicit deletion lease makes background cleanup wait, then receipt reconciliation completes it.
  const collision=await fixture(),unapproved=await seedSheet(collision.project,'character',collision.context,false);
  await seedSheet(collision.project,'character',collision.context,true);
@@ -328,5 +596,6 @@ try{
  equal(await call('ugc_v3_discard_reference_finish',[owner,collision.project,operation.id,operation.lease_token,null]),true);
  equal((await pg.query('select status,error_code from public.ugc_v3_tasks where id=$1',[waiting.id])).rows[0],{status:'done',error_code:null});
  equal((await pg.query('select id from public.ugc_v3_artifacts where id=$1',[unapproved.id])).rows.length,0);equal(objects.has(operation.asset.storageKey),false);equal(calls.length,beforeCollisionCalls);
- equal(networkCalls,0);console.info(JSON.stringify({simpleLocationAndRetentionChecks:checks,migrations:migrations.length,previousFunctionsPreserved,fixtureProviderCalls:calls.length,fixtureEstimateCalls:estimateCalls,realNetworkCalls:networkCalls,automaticImageChecks:0}));
-}finally{await pg.close();for(const k of Object.keys(process.env))if(!(k in oldEnv))delete process.env[k];Object.assign(process.env,oldEnv);}
+ }
+ equal(networkCalls,0);console.info(JSON.stringify({scope:process.argv.includes('--reference-limits-only')?'reference-limits':process.argv.includes('--individual-clips-only')?'individual-clips':process.argv.includes('--connected-story-only')?'connected-story':process.argv.includes('--project-saving-only')?'project-saving':process.argv.includes('--multiple-characters-only')?'multiple-characters':process.argv.includes('--references-only')?'references-and-location':'full',simpleLocationAndRetentionChecks:checks,migrations:migrations.length,previousFunctionsPreserved,m2FunctionsPreserved,fixtureProviderCalls:calls.length,fixtureEstimateCalls:estimateCalls,realNetworkCalls:networkCalls,automaticImageChecks:0}));
+}finally{fs.rmSync(mergeRoot,{recursive:true,force:true});await pg.close();for(const k of Object.keys(process.env))if(!(k in oldEnv))delete process.env[k];Object.assign(process.env,oldEnv);}

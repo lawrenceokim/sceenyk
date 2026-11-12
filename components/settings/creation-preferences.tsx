@@ -7,22 +7,29 @@ import { Button } from "@/components/ui/button";
 import { aspectRatios } from "@/lib/projects/options";
 import { creationCategories } from "@/components/creation/creation-options";
 import { creationPreferencesSchema, type CreationPreferences } from "@/lib/settings/contract";
-import { saveCreationPreferencesAction } from "@/app/actions/settings";
+import { saveCreationPreferencesAction } from "@/lib/cache/actions/settings";
 import { CreationPreferencesSkeleton } from "./settings-skeletons";
+import { AppNotification } from "@/components/notifications/app-notification";
+
 
 export function CreationPreferencesForm({ clerkUserId, preferences }: { clerkUserId: string; preferences: CreationPreferences }) {
   const { userId, isLoaded } = useAuth();
   if (!isLoaded) return <CreationPreferencesSkeleton />;
-  if (userId !== clerkUserId) return <p role="status">Reopen Settings for your current account.</p>;
+  if (userId !== clerkUserId) return <AppNotification role="status">Reopen Settings for your current account.</AppNotification>;
   return <PreferenceForm key={userId} clerkUserId={clerkUserId} preferences={preferences} />;
 }
 function PreferenceForm({ clerkUserId, preferences }: { clerkUserId: string; preferences: CreationPreferences }) {
   const [value, setValue] = useState(preferences);
+  const [baseline, setBaseline] = useState(preferences);
   const [message, setMessage] = useState("");
   const [error, setError] = useState(false);
   const [busy, setBusy] = useState(false);
   const running = useRef(false);
   const alive = useRef(true);
+  if (preferences !== baseline && !busy) {
+    setBaseline(preferences);
+    if (JSON.stringify(value) === JSON.stringify(baseline)) setValue(preferences);
+  }
   useEffect(() => { alive.current = true; return () => { alive.current = false; }; }, []);
   // A response for an unmounted account must never become the next account's state.
   async function save() {
@@ -51,5 +58,5 @@ function PreferenceForm({ clerkUserId, preferences }: { clerkUserId: string; pre
     `} onSubmit={event => { event.preventDefault(); void save(); }}><fieldset disabled={busy} className="grid gap-5 sm:grid-cols-2">
     <div className="space-y-2"><label className="text-body-sm font-medium" htmlFor="default-aspect">Default aspect ratio</label><Select id="default-aspect" name="aspectRatio" value={value.aspectRatio} disabled={busy} onValueChange={aspectRatio => setValue(creationPreferencesSchema.parse({ ...value, aspectRatio }))} options={aspectRatios} /></div>
     <div className="space-y-2"><label className="text-body-sm font-medium" htmlFor="default-category">Default creation category</label><Select id="default-category" name="category" value={value.category} disabled={busy} onValueChange={category => setValue(creationPreferencesSchema.parse({ ...value, category }))} options={creationCategories.map(option => ({ value: option.id, label: option.title }))} /></div>
-  </fieldset><div className="flex flex-wrap items-center gap-3"><Button type="submit" disabled={busy}>{busy ? "Saving…" : "Save defaults"}</Button><p role="status" className={error ? "text-body-sm text-destructive" : "text-body-sm text-muted-foreground"}>{message}</p></div></form>;
+  </fieldset><div className="flex flex-wrap items-center gap-3"><Button type="submit" disabled={busy}>{busy ? "Saving…" : "Save defaults"}</Button><AppNotification role="status" className={error ? "text-body-sm text-destructive" : "text-body-sm text-muted-foreground"}>{message}</AppNotification></div></form>;
 }

@@ -6,6 +6,8 @@ import { projectAvailabilityAction } from "@/app/actions/projects";
 import { isProjectDeleted, subscribeProjectDeletion } from "@/lib/projects/client-lifecycle";
 import { Button } from "@/components/ui/button";
 import { StudioSkeleton } from "./studio-skeleton";
+import { AppNotification } from "@/components/notifications/app-notification";
+
 
 type Status = { id: string | null; phase: "checking" | "ready" | "missing" | "error" };
 
@@ -60,27 +62,32 @@ export function StudioProjectGuard({ initialProjectId, children }: {
     const verify = async (hide: boolean) => {
       const version = ++request;
       if (hide) setStatus({ id: projectId, phase: "checking" });
+      const failed = () => setStatus(current => !hide && current.id === projectId && current.phase === "ready"
+        ? current : { id: projectId, phase: "error" });
       try {
         const result = await projectAvailabilityAction(projectId);
         if (!active || version !== request || isProjectDeleted(projectId)) return;
-        if (!result.ok) setStatus({ id: projectId, phase: "error" });
+        if (!result.ok) failed();
         else if (result.available) setStatus({ id: projectId, phase: "ready" });
         else {
           setStatus({ id: projectId, phase: "missing" });
           resetToNewProject();
         }
       } catch {
-        if (active && version === request) setStatus({ id: projectId, phase: "error" });
+        if (active && version === request) failed();
       }
     };
-    const onActive = () => { if (document.visibilityState !== "hidden") void verify(true); };
+    // A native file picker returns focus/visibility to this SAME editor. Check
+    // existence in the background without hiding Activity and aborting uploads.
+    const onActive = () => { if (document.visibilityState !== "hidden") void verify(false); };
+    const onPageShow = () => { if (document.visibilityState !== "hidden") void verify(true); };
     void verify(false);
-    window.addEventListener("pageshow", onActive);
+    window.addEventListener("pageshow", onPageShow);
     window.addEventListener("focus", onActive);
     document.addEventListener("visibilitychange", onActive);
     return () => {
       active = false;
-      window.removeEventListener("pageshow", onActive);
+      window.removeEventListener("pageshow", onPageShow);
       window.removeEventListener("focus", onActive);
       document.removeEventListener("visibilitychange", onActive);
     };
@@ -89,8 +96,8 @@ export function StudioProjectGuard({ initialProjectId, children }: {
   const blocked = deleted || !!projectId && (status.id !== projectId || status.phase !== "ready");
   return <>
     {blocked && (status.phase === "error" && !deleted ?
-      <div role="alert" className="p-6 text-sm">
-        <p>Your project couldn’t be checked. Try again to open it.</p>
+      <div  className="p-6 text-sm">
+        <AppNotification role="alert">Your project couldn’t be checked. Try again to open it.</AppNotification>
         <Button className="mt-4" onClick={() => setRetry(value => value + 1)}>Try again</Button>
       </div> : <StudioSkeleton />)}
     <Activity key={session.revision} mode={blocked ? "hidden" : "visible"}>

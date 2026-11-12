@@ -1,7 +1,9 @@
 import { z } from "zod";
+import { videoResolutionSchema } from "@/lib/projects/video-resolution";
 
 export const manualPricingSchema = z.strictObject({ provider: z.string().min(1), model: z.string().min(1), mode: z.string().min(1),
-  durationMs: z.number().int().positive().safe(), estimatedUsdPerSecond: z.string().regex(/^\d+\.\d{4}$/),
+  resolution: videoResolutionSchema.optional(), // Absence is the historical 480p-only rate evidence.
+  durationMs: z.number().int().positive().safe(), estimatedUsdPerSecond: z.string().regex(/^\d+\.\d{4,10}$/),
   rateMicrousdPerSecond: z.number().int().positive().safe(), estimatedUsd: z.string().regex(/^\d+\.\d{6}$/),
   estimatedCostMicrousd: z.number().int().nonnegative().safe(), pricingSource: z.literal("manual_provider_estimate"),
   pricingVersion: z.string().min(1), configurationDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/) });

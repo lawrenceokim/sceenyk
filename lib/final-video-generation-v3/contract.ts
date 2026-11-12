@@ -1,10 +1,11 @@
 import { z } from "zod";
+import { defaultVideoResolution, videoResolutionSchema } from "@/lib/projects/video-resolution";
 import { manualPricingSchema, type ManualPricing } from "./pricing/contract";
 import { packageSceneSchema } from "@/lib/video-generation-package/contract";
 import { transitionSchema, voiceDeliverySchema, audioCueSchema } from "@/lib/execution-v1/contract";
 
 export const V3_WORKFLOW = "final-video-v3" as const;
-export const V3_TEST_RESOLUTION = "480p" as const;
+export const V3_TEST_RESOLUTION = defaultVideoResolution; // Historical export; default, not an execution restriction.
 const positive = z.number().int().positive();
 const ms = z.number().int().nonnegative().max(600_000);
 const text = z.string().trim().min(1).max(2000);
@@ -15,7 +16,7 @@ export const referenceSchema = z.strictObject({ id: z.uuid(), projectId: z.uuid(
   role: z.enum(["character", "product", "location", "motion", "sound", "start_frame", "end_frame"]),
   kind: z.enum(["image", "audio", "video"]), name: text, version: positive,
   approvalId: z.uuid(), approvalVersion: positive, sha256: digestSchema, sizeBytes: positive,
-  mimeType: z.string().min(1), durationMs: ms.nullable() });
+  mimeType: z.string().min(1), durationMs: ms.nullable(), characterId: z.uuid().optional() });
 export const directorSceneSchema = packageSceneSchema.omit({ voice: true, bindings: true, generationPrompt: true, durationMs: true }).extend({
   id: z.string().min(1).max(120), number: positive.max(100), startMs: ms, endMs: ms,
   actions: z.array(packageSceneSchema.shape.actions.element.extend({ startMs: ms, endMs: ms })).min(1).max(8),
@@ -24,17 +25,41 @@ export const directorSceneSchema = packageSceneSchema.omit({ voice: true, bindin
   transition: transitionSchema, transitionNote: z.string().max(2000),
   audio: z.strictObject({ background: audioCueSchema, effects: audioCueSchema, music: audioCueSchema }),
 });
-export const directorStoryboardSchema = z.strictObject({ version: z.literal("director-storyboard-v3"), title: text, concept: text,
+export const singleDirectorStoryboardSchema = z.strictObject({ version: z.literal("director-storyboard-v3"), title: text, concept: text,
   durationMs: positive.max(600_000), aspectRatio: text, visualStyle: text, tone: text, voiceIntent: text,
   continuity: z.strictObject({ identity: text, appearance: text, outfit: text, product: text, location: text }),
   scenes: z.array(directorSceneSchema).min(1).max(100) });
+export const characterCastSchema = z.array(z.strictObject({ characterId: z.uuid(), referenceId: z.uuid(), name: z.string().trim().min(1).max(500) })).min(1);
+export const castDirectorStoryboardSchema = singleDirectorStoryboardSchema.extend({ cast: characterCastSchema,
+  scenes: z.array(directorSceneSchema.extend({ characterIds: z.array(z.uuid()),
+    speech: z.array(directorSceneSchema.shape.speech.element.extend({ characterId: z.uuid().nullable() })).max(8) })).min(1).max(100) });
+// M4 is an additive planning contract. Historical Storyboards keep their exact shape.
+export const plannedClipBoundarySchema = z.strictObject({
+  id: z.string().regex(/^clip-[1-4]$/), number: positive.max(4), startMs: ms, endMs: ms,
+  durationMs: positive.max(30_000),
+});
+export const connectedClipSchema = plannedClipBoundarySchema.extend({
+  purpose: text, continuityIn: text, continuityOut: text, audioContinuity: text,
+});
+const clipShotTiming = { clipId: plannedClipBoundarySchema.shape.id, localStartMs: ms, localEndMs: ms };
+export const connectedDirectorStoryboardSchema = singleDirectorStoryboardSchema.extend({
+  version: z.literal("director-storyboard-connected-v1"),
+  clips: z.array(connectedClipSchema).min(2).max(4),
+  scenes: z.array(directorSceneSchema.extend(clipShotTiming)).min(2).max(100),
+});
+export const connectedCastDirectorStoryboardSchema = connectedDirectorStoryboardSchema.extend({
+  cast: characterCastSchema,
+  scenes: z.array(castDirectorStoryboardSchema.shape.scenes.element.extend(clipShotTiming)).min(2).max(100),
+});
+export const directorStoryboardSchema = z.union([singleDirectorStoryboardSchema, castDirectorStoryboardSchema,
+  connectedDirectorStoryboardSchema, connectedCastDirectorStoryboardSchema]);
 export const planningInputSchema = z.strictObject({ workflow: z.literal(V3_WORKFLOW), profileId: text, scope: scopeSchema,
   // This evidence must later come from trusted owner/database reads, never a browser assertion.
   provenance: z.strictObject({ projectWorkflow: z.literal(V3_WORKFLOW), originalImageId: z.uuid(), originalImageHash: digestSchema }),
   package: approval, storyboard: approval,
   direction: z.string().trim().min(1).max(64_000), storyboardContent: directorStoryboardSchema,
   mode: z.enum(["text", "image", "reference"]).default("reference"),
-  resolution: z.string().min(1).default(V3_TEST_RESOLUTION), format: z.string().min(1).default("mp4"),
+  resolution: videoResolutionSchema.default(defaultVideoResolution), format: z.string().min(1).default("mp4"),
   generateAudio: z.boolean().default(true), references: z.array(referenceSchema).max(100),
   requiredCapabilities: z.array(z.string().min(1).max(120)).max(20).default([]) });
 export type PlanningInput = z.infer<typeof planningInputSchema>;

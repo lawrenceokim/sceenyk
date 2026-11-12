@@ -5,6 +5,7 @@ import { Check, CircleAlert, FolderOpen, LoaderCircle, Save } from "lucide-react
 import { AccountAction } from "@/components/account-action";
 import { Button } from "@/components/ui/button";
 import { projectTitleLimit } from "@/lib/projects/options";
+import { AppNotification } from "@/components/notifications/app-notification";
 
 export type SaveState =
   | { status: "idle" }
@@ -24,6 +25,7 @@ export function ProjectSaveControls({
   authReady,
   hasLocalMedia,
   children,
+  readOnly = false,
 }: {
   title: string;
   onTitleChange: (value: string) => void;
@@ -36,6 +38,7 @@ export function ProjectSaveControls({
   authReady: boolean;
   hasLocalMedia: boolean;
   children: (parts: { project: ReactNode; save: ReactNode }) => ReactNode;
+  readOnly?: boolean;
 }) {
   const saving = state.status === "saving" || mediaBusy;
   const error = state.status === "error" ? state.message : mediaError;
@@ -86,7 +89,7 @@ export function ProjectSaveControls({
       >
         Project title
       </label>
-      <input
+      <input readOnly={readOnly}
         id={`${id}-title`}
         name="title"
         className={`
@@ -138,12 +141,12 @@ export function ProjectSaveControls({
       />
     </section>
   );
-  const save = (<div className={"studio-save [.studio-toolbar_&&]:ml-[auto] [.studio-toolbar_&&]:shrink-0 container-max-359:[.studio-toolbar_&&_button:has(svg)]:w-[32px] container-max-359:[.studio-toolbar_&&_button:has(svg)]:pt-[0] container-max-359:[.studio-toolbar_&&_button:has(svg)]:pr-[0] container-max-359:[.studio-toolbar_&&_button:has(svg)]:pb-[0] container-max-359:[.studio-toolbar_&&_button:has(svg)]:pl-[0]"}>
+  const save = (<div className={"studio-save relative [.studio-toolbar_&&]:ml-[auto] [.studio-toolbar_&&]:shrink-0 container-max-359:[.studio-toolbar_&&_button:has(svg)]:w-[32px] container-max-359:[.studio-toolbar_&&_button:has(svg)]:pt-[0] container-max-359:[.studio-toolbar_&&_button:has(svg)]:pr-[0] container-max-359:[.studio-toolbar_&&_button:has(svg)]:pb-[0] container-max-359:[.studio-toolbar_&&_button:has(svg)]:pl-[0]"}>
         {signedIn ? (
           <Button
             type="button"
             variant="outline"
-            disabled={saving || !title.trim()}
+            disabled={readOnly || saving || !title.trim()}
             aria-busy={saving}
             aria-label={saving ? "Saving project" : clean ? "Project saved" : "Save project"}
             aria-describedby={description ? `${id}-save-description` : undefined}
@@ -175,7 +178,8 @@ export function ProjectSaveControls({
           </AccountAction>
         )}
         <span role="status" aria-live="polite" className="sr-only">{signedIn ? label : "Sign in to save."}</span>
-        {description && <span id={`${id}-save-description`} role={error ? "alert" : undefined} className="sr-only">{description}</span>}
+        {description && (error ? <AppNotification id={`${id}-save-description`} role="alert">{description}</AppNotification>
+          : <span id={`${id}-save-description`} className="sr-only">{description}</span>)}
 </div>);
   return children({ project, save });
 }

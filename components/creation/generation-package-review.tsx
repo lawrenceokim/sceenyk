@@ -3,6 +3,8 @@
 import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { packageErrorMessage, packageMessages, packageStatusLabel, type PackageReview, type PackageSummary } from "@/lib/video-generation-package/contract";
+import { AppNotification } from "@/components/notifications/app-notification";
+
 
 const stamp = (ms: number) => `${(ms / 1000).toFixed(3)}s`;
 const describe = (value: unknown): string => {
@@ -78,12 +80,12 @@ export function GenerationPackageReviewPanel({ projectId, jobId, review, eligibl
         <h2 className="text-sm font-medium">{title}</h2>
         {review?.state === "approved" && review.current ? <p className="text-xs text-muted-foreground">Milestone 9 complete. Generating final video: Not Started. Video generation is paused.</p> :
           <p className="text-xs text-muted-foreground">Review the approved references and exact scene instructions before approving this package.</p>}
-        {!available && <p className="text-xs text-warning-foreground">Package preparation needs manual migration 068.</p>}
-        {!enabled && <p className="text-xs text-warning-foreground">Package preparation is disabled. Enable it in the app and local UGC worker when ready.</p>}
-        {!eligible && <p className="text-xs text-warning-foreground">Approve the current Character, Product, Location and Storyboard before preparing a package.</p>}
-        {review && !review.current && review.state !== "deleted" && <p className="text-xs text-warning-foreground">{packageErrorMessage("PACKAGE_INPUT_CHANGED")}</p>}
-        {review?.error && <p className="text-xs text-destructive">{packageErrorMessage(review.error)}</p>}
-        {stalled && <p className="text-xs text-warning-foreground">Local worker stopped responding. Restart the package-only worker to recover this same build.</p>}
+        {!available && <AppNotification className="text-xs text-warning-foreground">Package preparation needs manual migration 068.</AppNotification>}
+        {!enabled && <AppNotification className="text-xs text-warning-foreground">Package preparation is disabled. Enable it in the app and local UGC worker when ready.</AppNotification>}
+        {!eligible && <AppNotification className="text-xs text-warning-foreground">Approve the current Character, Product, Location and Storyboard before preparing a package.</AppNotification>}
+        {review && !review.current && review.state !== "deleted" && <AppNotification className="text-xs text-warning-foreground">{packageErrorMessage("PACKAGE_INPUT_CHANGED")}</AppNotification>}
+        {review?.error && <AppNotification className="text-xs text-destructive">{packageErrorMessage(review.error)}</AppNotification>}
+        {stalled && <AppNotification className="text-xs text-warning-foreground">Local worker stopped responding. Restart the package-only worker to recover this same build.</AppNotification>}
         {review?.state === "queued" && <p className="text-xs text-muted-foreground">Waiting for the local worker. This same build will continue after restart.</p>}
       </div>
       {active && <ol className="space-y-1 text-xs" aria-label="Package preparation steps">
@@ -113,7 +115,7 @@ export function GenerationPackageReviewPanel({ projectId, jobId, review, eligibl
         <Button type="button" size="sm" variant="ghost" disabled={!!busy} onClick={checkStatus}>Check status</Button>
       </div>
       {review?.canDelete && <p className="text-xs text-muted-foreground">Reject and Delete removes the active package from review. Immutable version history is retained privately. No replacement is prepared automatically.</p>}
-      {error && <p role="alert" className="break-words text-xs text-destructive">{error}</p>}
+      {error && <AppNotification role="alert" className="break-words text-xs text-destructive">{error}</AppNotification>}
     </div>
   </section>;
 }

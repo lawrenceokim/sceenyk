@@ -6,7 +6,6 @@ import { S3Client, PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client
 import sharp from "sharp";
 import { getStorageConfig } from "@/lib/storage/config";
 import { headR2CharacterObject, readR2AnalysisMedia, signR2Read } from "@/lib/storage/r2";
-import { measure } from "@/lib/final-video-generation/media";
 import { privateAssetSchema, type PrivateAsset } from "./runtime-contract";
 
 export const bytesHash = (b: Uint8Array) => createHash("sha256").update(b).digest("hex");
@@ -16,7 +15,8 @@ export function v3Prefix(owner: string, project: string) {
 }
 function spoolPaths(id: string, name: string) {
   if (!/^[a-f0-9-]{36}$/.test(id) || !/^[a-z-]+\.(json|bytes|mp4|png)$/.test(name)) throw new Error("V3_SPOOL_SCOPE");
-  const root = path.resolve(process.env.UGC_V3_RECOVERY_DIR || ".ugc-v3-recovery"), dir = path.join(root, id);
+  const configured = process.env.UGC_V3_RECOVERY_DIR;
+  const root = configured ? path.resolve(configured) : path.join(process.cwd(), ".ugc-v3-recovery"), dir = path.join(root, id);
   return { root, dir, file: path.join(dir, name) };
 }
 export async function spoolFile(id: string, name: string) {
@@ -66,12 +66,13 @@ export async function publishPrivate(owner: string, project: string, id: string,
   const extension = metadata.mimeType === "image/png" ? "png" : "mp4", key = `${v3Prefix(owner, project)}${id}.${extension}`;
   const { bucket, sdk } = client();
   let head = await headR2CharacterObject(key, signal);
+  let publicationError: unknown;
   if (!head) {
     try { await sdk.send(new PutObjectCommand({ Bucket: bucket, Key: key, Body: bytes, ContentType: metadata.mimeType, ContentLength: bytes.length, IfNoneMatch: "*" }), { abortSignal: signal }); }
-    catch { /* Inspect this exact immutable key after a lost acknowledgement. */ }
+    catch (error) { publicationError = error; /* Inspect this exact immutable key after a lost acknowledgement. */ }
     head = await headR2CharacterObject(key, signal);
   }
-  if (!head || head.sizeBytes !== bytes.length || head.mimeType !== metadata.mimeType) throw new Error("V3_PRIVATE_SAVE_FAILED");
+  if (!head || head.sizeBytes !== bytes.length || head.mimeType !== metadata.mimeType) throw new Error("V3_PRIVATE_SAVE_FAILED", { cause: publicationError });
   const asset = privateAssetSchema.parse({ ...metadata, id, storageKey: key, etag: head.etag, sha256: bytesHash(bytes), sizeBytes: bytes.length });
   await readPrivate(key, asset.etag, asset.sizeBytes, signal, asset.sha256); return asset;
 }
@@ -80,14 +81,6 @@ export async function inspectImage(bytes: Buffer) {
   const png = await sharp(bytes, { limitInputPixels: 20_000_000 }).rotate().png().toBuffer(), meta = await sharp(png).metadata();
   if (!meta.width || !meta.height || (meta.pages ?? 1) !== 1) throw new Error("V3_IMAGE_INVALID");
   return { bytes: png, metadata: { mimeType: "image/png" as const, width: meta.width, height: meta.height, durationMs: 0, hasAudio: false } };
-}
-export async function inspectVideo(id: string, bytes: Buffer, expected: { durationMs: number; aspectRatio: string; generateAudio: boolean }) {
-  if (!bytes.length || bytes.length > 256 * 1024 * 1024) throw new Error("V3_VIDEO_SIZE_INVALID");
-  const file = await saveSpool(id, "video.mp4", bytes), meta = await measure(file, "video/mp4"), [w, h] = expected.aspectRatio.split(":").map(Number);
-  // Technical 250ms test tolerance is explicit local policy, not a provider guarantee.
-  if (Math.abs(meta.durationMs - expected.durationMs) > 250 || Math.abs(meta.width / meta.height - w / h) > 0.01 ||
-    Math.min(meta.width, meta.height) !== 480 || expected.generateAudio && !meta.hasAudio) throw new Error("V3_VIDEO_TECHNICAL_VALIDATION_FAILED");
-  return { mimeType: "video/mp4" as const, width: meta.width, height: meta.height, durationMs: meta.durationMs, hasAudio: meta.hasAudio };
 }
 export async function deletePrivate(owner: string, project: string, asset: PrivateAsset, signal: AbortSignal) {
   if (!asset.storageKey.startsWith(v3Prefix(owner, project)) || !asset.storageKey.endsWith(`${asset.id}.mp4`)) throw new Error("V3_DELETE_SCOPE");

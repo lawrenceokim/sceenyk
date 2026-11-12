@@ -14,7 +14,9 @@ import { assetReferenceSchema, authorizeUploadSchema } from "./validation";
 import type { MediaResult, ProjectAsset, UploadAuthorization } from "./types";
 import { z } from "zod";
 import { ugcV1LimitMessages } from "@/lib/projects/ugc-v1";
+import { allowsProCharacters } from "@/lib/projects/pro-characters";
 import { readOwnedUgcV1References } from "@/lib/projects/ugc-v1-server";
+import { ServiceOperationError } from "@/lib/diagnostics/service-failure";
 
 export class MediaAccessError extends Error {
   constructor(
@@ -25,8 +27,9 @@ export class MediaAccessError extends Error {
     this.name = "MediaAccessError";
   }
 }
-const unavailable = () =>
-  new MediaAccessError(
+const unavailable = (error?: unknown) => error && typeof error === "object" && "code" in error && error.code === "P0001" &&
+  "message" in error && error.message === "V3_CREATIVE_INPUTS_LOCKED" ? new MediaAccessError("CONFLICT",
+    "Creative inputs are locked after the first source clip approval. Existing references remain available to view.") : error ? new ServiceOperationError(error, "database", "project_media") : new MediaAccessError(
     "UNAVAILABLE",
     "Your project media couldn’t be loaded. Please try again.",
   );
@@ -61,7 +64,7 @@ async function ownedContext(projectId: string) {
     .eq("owner_user_id", user.id)
     .eq("status", "draft")
     .maybeSingle();
-  if (error) throw unavailable();
+  if (error) throw unavailable(error);
   if (!data) throw notFound();
   return { user, database };
 }
@@ -74,7 +77,7 @@ async function ownedAsset(projectId: string, assetId: string) {
     .eq("project_id", projectId)
     .eq("owner_user_id", context.user.id)
     .maybeSingle();
-  if (error) throw unavailable();
+  if (error) throw unavailable(error);
   if (!data) throw notFound();
   return { ...context, asset: data };
 }
@@ -98,7 +101,8 @@ export async function listOwnedAssets(input: unknown): Promise<ProjectAsset[]> {
     .eq("owner_user_id", user.id)
     .order("created_at")
     .order("id");
-  if (error || !data) throw unavailable();
+  if (error) throw unavailable(error);
+  if (!data) throw unavailable();
   return data.map(toAsset);
 }
 export async function authorizeOwnedUpload(
@@ -128,12 +132,12 @@ export async function authorizeOwnedUpload(
       .eq("upload_request_id", requestId)
       .maybeSingle();
   let { data: asset, error } = await findRequest();
-  if (error) throw unavailable();
+  if (error) throw unavailable(error);
   if (studioRole !== "freestyle") {
     const references = await readOwnedUgcV1References(database, user.id, projectId);
     if (!references) throw unavailable();
     const count = (studioRole === "character" ? references.characters : references.products).length;
-    if (count > (asset && !asset.removed_from_draft ? 1 : 0))
+    if (count > (asset && !asset.removed_from_draft ? 1 : 0) && !(studioRole === "character" && await allowsProCharacters(database, user.id, projectId)))
       throw new MediaAccessError("INVALID_INPUT", ugcV1LimitMessages[studioRole]);
   }
   if (!asset) {
@@ -165,7 +169,8 @@ export async function authorizeOwnedUpload(
       asset = inserted.data;
       error = inserted.error;
     }
-    if (error || !asset) throw unavailable();
+    if (error) throw unavailable(error);
+    if (!asset) throw unavailable();
   }
   if (
     asset.original_filename !== filename ||
@@ -202,7 +207,8 @@ export async function finalizeOwnedUpload(
     if (asset.removed_from_draft) throw notFound();
     const references = await readOwnedUgcV1References(database, user.id, projectId);
     if (!references) throw unavailable();
-    if ((asset.studio_role === "character" ? references.characters : references.products).length > 1)
+    if ((asset.studio_role === "character" ? references.characters : references.products).length > 1 &&
+      !(asset.studio_role === "character" && await allowsProCharacters(database, user.id, projectId)))
       throw new MediaAccessError("INVALID_INPUT", ugcV1LimitMessages[asset.studio_role]);
   }
   if (asset.upload_status === "rejected")
@@ -237,7 +243,7 @@ export async function finalizeOwnedUpload(
   if (error) {
     if (asset.studio_role !== "freestyle" && error.code === "23514" && error.message === ugcV1LimitMessages[asset.studio_role])
       throw new MediaAccessError("INVALID_INPUT", ugcV1LimitMessages[asset.studio_role]);
-    throw unavailable();
+    throw unavailable(error);
   }
   // Concurrent finalizers may already have committed the same verified result.
   const result = data ?? (await ownedAsset(projectId, assetId)).asset;
@@ -268,7 +274,7 @@ export async function removeOwnedStudioReference(input: unknown): Promise<Projec
     .eq("id", assetId).eq("project_id", projectId).eq("owner_user_id", user.id)
     .in("studio_role", ["character", "product"])
     .select("*").maybeSingle();
-  if (error) throw unavailable();
+  if (error) throw unavailable(error);
   if (!data) throw notFound();
   return toAsset(data);
 }

@@ -19,6 +19,7 @@ import type { ProjectOrigin } from "@/lib/marketplace/contract";
 import { isOwnedV3Project, readOwnedV3 } from "@/lib/final-video-generation-v3/runtime-server";
 import type { RuntimeDto } from "@/lib/final-video-generation-v3/runtime-server";
 import { redirect, unstable_rethrow } from "next/navigation";
+import { resolveDetailVideo } from "@/lib/media/detail-video-server";
 
 export const metadata: Metadata = {
   title: "Project draft — Sceenyk",
@@ -48,6 +49,9 @@ async function OwnedWorkspace({ params }: { params: Promise<{ id: string }> }) {
     try { initialV3 = await readOwnedV3(project.id); }
     catch (error) { unstable_rethrow(error); return <ProjectLoadFailure />; }
   }
+  let initialApprovedVideo: string | undefined;
+  try { initialApprovedVideo = (await resolveDetailVideo("project", project.id))?.video.version; }
+  catch (error) { unstable_rethrow(error); /* Preserve the existing preview when final media is unavailable. */ }
   let origin: ProjectOrigin | null = null;
   try { origin = await getOwnedProjectOrigin(project.id); }
   catch (error) {
@@ -82,6 +86,7 @@ async function OwnedWorkspace({ params }: { params: Promise<{ id: string }> }) {
       key={project.id}
       initialProject={{ ...project, ...(v3 ? { workflow: "final-video-v3" as const } : {}) }}
       initialV3={initialV3}
+      initialApprovedVideo={initialApprovedVideo}
       viewerUserId={userId}
       initialAssets={assets}
       initialMediaError={mediaError}

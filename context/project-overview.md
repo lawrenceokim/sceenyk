@@ -1,5 +1,11 @@
 # Sceenyk project overview
 
+## Next planned milestone — product Phase 2 (2026-11-05)
+
+**Basic & Pro Studio Modes: In Progress. M1/M2 complete in source/offline verification; M3–M7 Planned / Not Started.** The [Phase 2 specification](phase-2-basic-pro-studio.md) owns setup/evidence and the remaining roadmap. M1 adds mode metadata/selection; M2 adds independently reviewed named Pro characters and exact downstream cast/reference bindings. Basic keeps one character. Manual 094/095, actual model-limit evidence and hosted/provider/visual acceptance remain pending. Future Pro milestones add the style gallery, 10–120s planning, selective clip review/regeneration and explicit local FFmpeg merging/final approval. Free mode access retains existing spending/security controls; Advanced is deferred.
+
+This product roadmap is distinct from earlier V3 infrastructure phases. [Current V3 runtime status](generation-v3-phase3.md) and [progress](progress-tracker.md) supersede the original V3 Not Started snapshot below. Historical V1/V2/V3 creative records and evidence remain unchanged; M1 changes metadata only and applies no live migration.
+
 ## Canonical V3 project direction (2026-10-29)
 
 [OpenAI + Higgsfield V3](generation-architecture-v3.md), **Planned / canonical architecture / Not Started**, replaces V1/V2 as the normal future generation design. OpenAI owns reference image creation/regeneration and cinematic Storyboard/direction; Higgsfield owns continuous audiovisual Generation Segments, preferably Seedance 2.5 where its verified capabilities support the approved plan. Target 480p for new development/testing. One segment goes directly to final review; multiple segments require segment review/approval before local FFmpeg joining and final review.
@@ -178,7 +184,7 @@ Public display name, stable unique URL-safe `creator_slug`, optional public avat
 
 **Creator storefront + minimum public-profile management: Complete within deployed two-user acceptance,2026-10-16.** Storefront, links, owner-only management and safe avatars use applied027. Revision `c2987f1` resolves account-widget hydration while retaining private no-store and public/static caching. All14 profile loads,24 cache/isolation controls and71 full Production checks pass with zero browser/cache failures. Public/client scans are clean and protected financial/generation state is unchanged. Exact evidence/limits are in the tracker and [architecture](architecture.md#creator-storefront-implementation-2026-10-15). Slugs remain fixed; social, search, moderation, financial and rendering changes stay deferred. No other feature starts automatically.
 
-The approved commercial contract is [pay-as-you-go credits](overview.md#approved-commercial-model--pay-as-you-go-2026-10-13): **"Buy credits. Create what you need. Top up when you need more."** Monthly subscriptions are outside current scope; membership and auto-recharge are unapproved future options.
+The canonical commercial contract is the [current hackathon policy](overview.md#paypal-ai-hackathon-commercial-policy-2026-11-09). Keep all free-generation, credit-pack, finite Pro access and demo-limit requirements there; do not maintain a second product specification. Implementation remains pending in the tracker.
 
 The approved [Marketplace product model](overview.md#creator-templates-and-marketplace) lets creators explicitly publish reusable listings and lets adopters create their own projects from them. Publishing, free adoption, paid Sandbox purchases, durable entitlements, creator settlement/proportional reversals and withdrawal reservations have scoped deployed acceptance in [progress-tracker.md](progress-tracker.md). One real $5 Sandbox payout succeeded using isolated sale/expired-time fixtures; naturally aged hosted Paid-webhook completion remains unobserved. Preserve that evidence distinction.
 

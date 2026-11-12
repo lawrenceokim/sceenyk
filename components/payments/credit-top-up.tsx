@@ -8,19 +8,22 @@ import { CreditPurchases } from "./credit-purchases";
 import { FreeAllowanceSummary } from "@/components/free-allowance";
 import { notifyCreditsChanged } from "@/lib/accounting/client-events";
 import { CreditAccountSkeleton } from "./financial-skeletons";
+import { AppNotification } from "@/components/notifications/app-notification";
+
 
 type CheckoutData = Extract<Awaited<ReturnType<typeof creditCheckoutAction>>, { ok: true }>["data"];
 
-export function CreditTopUp() {
+export function CreditTopUp({ label = "Top up credits", onOpenChange }: { label?: string; onOpenChange?: (open: boolean) => void }) {
   const [open, setOpen] = useState(false);
   return <Dialog open={open} onOpenChange={next => {
     setOpen(next);
+    onOpenChange?.(next);
     if (!next) notifyCreditsChanged();
   }}>
-    <DialogTrigger render={<Button type="button" variant="outline" />}>Top up credits</DialogTrigger>
+    <DialogTrigger render={<Button type="button" variant="outline" />}>{label}</DialogTrigger>
     <DialogContent className="scrollbar-hidden sm:max-w-3xl">
       <DialogTitle className="pr-8 text-xl font-semibold">Buy credits</DialogTitle>
-      <DialogDescription>One-time PayPal Sandbox purchases with test funds. Temporary demo prices are not production pricing. Checkout opens in a separate tab so your current draft stays here.</DialogDescription>
+      <DialogDescription>Choose a custom USD amount and review the credits after estimated fees. Checkout opens in a separate tab so your current draft stays here.</DialogDescription>
       {open && <CheckoutOptions />}
     </DialogContent>
   </Dialog>;
@@ -42,8 +45,8 @@ function CheckoutOptions() {
   return options ? <>
     <CreditPurchases {...options} checkoutInNewTab />
     <FreeAllowanceSummary />
-  </> : error ? <div role="alert" className="space-y-3">
-    <p>Credit packs couldn’t be loaded.</p>
-    <Button variant="outline" onClick={() => setRevision(value => value + 1)}>Check credit packs</Button>
-  </div> : <CreditAccountSkeleton />;
+  </> : error ? <AppNotification role="alert" className="space-y-3">
+    <p>Credit pricing couldn’t be loaded.</p>
+    <Button type="button" variant="outline" onClick={() => setRevision(value => value + 1)}>Reload credit pricing</Button>
+  </AppNotification> : <CreditAccountSkeleton />;
 }

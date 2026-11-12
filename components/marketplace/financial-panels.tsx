@@ -1,22 +1,23 @@
 "use client";
-import { useEffect, useEffectEvent, useRef, useState } from "react";
-import Link from "next/link";
+import { useEffect, useEffectEvent, useRef, useState, type ReactNode } from "react";
 import { useAuth } from "@clerk/nextjs";
 import { useAuthAvailable } from "@/components/auth/auth-availability";
 import { AccountAction } from "@/components/account-action";
-import { Button } from "@/components/ui/button";
-import { creatorEarningsAction, marketplacePurchasesAction, recoverMarketplacePurchaseAction, createMarketplaceOrderAction } from "@/app/actions/marketplace-payments";
-import { usd, type CreatorEarnings, type MarketplacePurchaseSummary } from "@/lib/marketplace/payments/contract";
-import { MarketplacePagination } from "./pagination";
-import { EarningsHistory } from "./earnings-history";
-import { WithdrawalPanel } from "./withdrawal-panel";
-import { withdrawalAccountAction } from "@/app/actions/creator-withdrawals";
+import { creatorEarningsAction, marketplacePurchasesAction, recoverMarketplacePurchaseAction, createMarketplaceOrderAction } from "@/lib/cache/actions/marketplace-payments";
+import { type CreatorEarnings, type MarketplacePurchaseSummary } from "@/lib/marketplace/payments/contract";
+import { PurchasesDashboard } from "./purchases-dashboard";
+import { EarningsDashboard } from "./earnings-dashboard";
+import { withdrawalAccountAction } from "@/lib/cache/actions/creator-withdrawals";
 import type { WithdrawalAccount } from "@/lib/marketplace/withdrawals/contract";
 import { EarningsSkeleton, PurchasesSkeleton } from "@/components/payments/financial-skeletons";
+import { AppNotification } from "@/components/notifications/app-notification";
+import { useAccountQuery } from "@/components/cache/use-account-query";
+import { accountSessionCache } from "@/lib/cache/account-cache";
 
-type Props = { clerkUserId: string; page: number; earnings?: CreatorEarnings; withdrawals?: WithdrawalAccount; purchases?: { items: MarketplacePurchaseSummary[]; total: number } };
+
+type Props = { cacheMode?: boolean; cachedOnly?: boolean; purchasePreviews?: Record<string, ReactNode>; clerkUserId: string; page: number; earnings?: CreatorEarnings; withdrawals?: WithdrawalAccount; purchases?: { items: MarketplacePurchaseSummary[]; total: number } };
 export function FinancialPanel(props: Props) {
-  return useAuthAvailable() ? <AccountPanel {...props} /> : <p>Sign in is temporarily unavailable.</p>;
+  return useAuthAvailable() ? <AccountPanel {...props} /> : <AppNotification>Sign in is temporarily unavailable.</AppNotification>;
 }
 function AccountPanel(props: Props) {
   const { isLoaded, userId } = useAuth();
@@ -25,14 +26,25 @@ function AccountPanel(props: Props) {
   return <Panel key={`${userId}:${props.page}`} {...props} />;
 }
 function Panel(props: Props) {
-  const [earnings, setEarnings] = useState(props.earnings);
-  const [purchases, setPurchases] = useState(props.purchases);
-  const [withdrawals, setWithdrawals] = useState(props.withdrawals);
+  const [savedEarnings, setEarnings] = useState(props.earnings);
+  const [savedPurchases, setPurchases] = useState(props.purchases);
+  const [savedWithdrawals, setWithdrawals] = useState(props.withdrawals);
+  const earnings = props.cacheMode ? props.earnings : savedEarnings, purchases = props.cacheMode ? props.purchases : savedPurchases, withdrawals = props.cacheMode ? props.withdrawals : savedWithdrawals;
+  const query = useAccountQuery(props.earnings ? "earnings" : "history", props.page, { cachedOnly: true });
   const [busy, setBusy] = useState(false); const inFlight = useRef(false); const alive = useRef(true);
   const [message, setMessage] = useState(""); const [error, setError] = useState("");
   async function refresh(recover = false) {
     if (inFlight.current) return; inFlight.current = true; if (alive.current) { setBusy(true); setError(""); }
     try {
+      if (props.cacheMode) {
+        if (recover && !props.earnings) for (const purchase of (purchases?.items ?? []).filter(p => !p.projectId && p.status !== "failed").slice(0, 5)) {
+          const result = await recoverMarketplacePurchaseAction({ purchaseId: purchase.id });
+          if (!alive.current) return;
+          if (!result.ok) setError(result.message);
+        }
+        await query.refresh();
+        return;
+      }
       if (props.earnings) {
         const r = await creatorEarningsAction(props.page);
         if (!alive.current) return; if (!r.ok) { setError(r.message); return; }
@@ -57,7 +69,11 @@ function Panel(props: Props) {
     } catch { if (alive.current) setError("Marketplace couldn’t be refreshed. Check your connection and try again."); }
     finally { inFlight.current = false; if (alive.current) setBusy(false); }
   }
-  const activateRecovery = useEffectEvent(() => { void refresh(true); });
+  const activateRecovery = useEffectEvent(() => {
+    if (props.cachedOnly) return;
+    if (props.cacheMode && (props.earnings || !(purchases?.items ?? []).some(p => !p.projectId && p.status !== "failed") || !accountSessionCache.permit(query.scope, `history-recovery:${props.page}`))) return;
+    void refresh(true);
+  });
   useEffect(() => {
     alive.current = true;
     const initial = window.setTimeout(activateRecovery, 0);
@@ -77,30 +93,6 @@ function Panel(props: Props) {
     finally { inFlight.current = false; if (alive.current) setBusy(false); }
     await refresh(true);
   }
-  const total = earnings?.total ?? purchases?.total ?? 0;
-  return <div className="space-y-6"><div className="flex flex-wrap items-center gap-4"><Button variant="outline" disabled={busy} onClick={() => void refresh(true)}>{busy ? "Checking…" : earnings ? "Refresh earnings" : "Check purchases"}</Button><p role="status" className={`text-body-sm ${error ? "text-destructive" : "text-muted-foreground"}`}>{error || message}</p></div>{earnings ? <>{withdrawals && <WithdrawalPanel account={withdrawals} page={props.page} clerkUserId={props.clerkUserId} onChanged={() => refresh()} />}<EarningsHistory earnings={{ ...earnings, available: withdrawals?.available ?? earnings.available }} /></> : <><p className="text-body-sm text-muted-foreground">PayPal Sandbox template purchases include no AI credits or generation usage. Check saved purchases to recover payment and your project without paying again.</p>{purchases?.items.map(p => <article key={p.id} className={`
-      [@layer_components]:[border:1px_solid_var(--border)] [@layer_components]:rounded-[var(--radius-xl)]
-      [@layer_components]:[background:var(--card)] [@layer_components]:text-[color:var(--card-foreground)]
-      [@layer_components]:[box-shadow:var(--elevation-card)] sceenyk-card space-y-3 p-5
-      [.marketplace-configuration_>_&&]:[border:0] [.marketplace-configuration_>_&&]:rounded-[0]
-      [.marketplace-configuration_>_&&]:[background:transparent] [.marketplace-configuration_>_&&]:pt-[16px]
-      [.marketplace-configuration_>_&&]:pr-[0] [.marketplace-configuration_>_&&]:pb-[0]
-      [.marketplace-configuration_>_&&]:pl-[0] [[data-workspace-shell]_&&]:[box-shadow:none]
-      [.workspace-settings-inner_label&&]:min-h-[0] [.workspace-settings-inner_label&&]:gap-[8px]
-      [.workspace-settings-inner_label&&]:pt-[12px] [.workspace-settings-inner_label&&]:pr-[12px]
-      [.workspace-settings-inner_label&&]:pb-[12px] [.workspace-settings-inner_label&&]:pl-[12px]
-      [.workspace-settings-inner_label&&_svg]:w-[18px] [.workspace-settings-inner_label&&_svg]:h-[18px]
-    `}><h2 className="break-words font-semibold">{p.title}</h2><p>{usd(p.amountMinor)} USD · {p.financialStatus.replaceAll("_", " ")}</p><p className="text-caption text-muted-foreground">{new Date(p.createdAt).toLocaleDateString()}</p>{p.refundedMinor > 0 && <p className="text-body-sm text-muted-foreground">Refunded: {usd(p.refundedMinor)}. Your adopted project remains available.</p>}{p.projectId ? <Button nativeButton={false} render={<Link href={`/projects/${p.projectId}`} />}>Open adopted project</Button> : p.status !== "failed" ? <Button variant="outline" disabled={busy} onClick={() => void continueCheckout(p)}>{p.status === "completed" ? "Recover adopted project" : "Continue saved Sandbox checkout"}</Button> : <p className="text-body-sm text-muted-foreground">Payment failed. Reconciliation is required before another charge.</p>}</article>)}</>}{!total && <p className={`
-      [@layer_components]:[border:1px_solid_var(--border)] [@layer_components]:rounded-[var(--radius-xl)]
-      [@layer_components]:[background:var(--card)] [@layer_components]:text-[color:var(--card-foreground)]
-      [@layer_components]:[box-shadow:var(--elevation-card)] sceenyk-card p-6 text-muted-foreground
-      [.marketplace-configuration_>_&&]:[border:0] [.marketplace-configuration_>_&&]:rounded-[0]
-      [.marketplace-configuration_>_&&]:[background:transparent] [.marketplace-configuration_>_&&]:pt-[16px]
-      [.marketplace-configuration_>_&&]:pr-[0] [.marketplace-configuration_>_&&]:pb-[0]
-      [.marketplace-configuration_>_&&]:pl-[0] [[data-workspace-shell]_&&]:[box-shadow:none]
-      [.workspace-settings-inner_label&&]:min-h-[0] [.workspace-settings-inner_label&&]:gap-[8px]
-      [.workspace-settings-inner_label&&]:pt-[12px] [.workspace-settings-inner_label&&]:pr-[12px]
-      [.workspace-settings-inner_label&&]:pb-[12px] [.workspace-settings-inner_label&&]:pl-[12px]
-      [.workspace-settings-inner_label&&_svg]:w-[18px] [.workspace-settings-inner_label&&_svg]:h-[18px]
-    `}>{earnings ? "No Marketplace sales yet." : "No paid Marketplace purchases yet."}</p>}<MarketplacePagination total={total} page={props.page} pageSize={12} href={page => `${earnings ? "/credits/earnings" : "/marketplace/purchases"}?page=${page}`} /></div>;
+  if (earnings) return <EarningsDashboard earnings={earnings} account={withdrawals} page={props.page} clerkUserId={props.clerkUserId} busy={busy} error={error} message={message} onRefresh={() => refresh()} />;
+  return <PurchasesDashboard purchases={purchases} previews={props.purchasePreviews} page={props.page} busy={busy} error={error} message={message} onRefresh={() => refresh(true)} onContinueCheckout={continueCheckout} />;
 }

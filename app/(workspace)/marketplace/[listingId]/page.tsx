@@ -10,6 +10,8 @@ import { browseMarketplace, getMarketplaceListing } from "@/lib/marketplace/serv
 import type { Listing } from "@/lib/marketplace/contract";
 import { ListingCard, MarketplaceFailure } from "@/components/marketplace/listing-card";
 import { TemplateDetail } from "@/components/marketplace/template-detail";
+import { AppNotification } from "@/components/notifications/app-notification";
+
 
 export const metadata: Metadata = { title: "Creator template — Sceenyk Marketplace" };
 
@@ -38,7 +40,7 @@ async function MoreLooks({ listing }: { listing: Listing }) {
     items.sort((a, b) => relevance(b) - relevance(a));
   } catch (error) {
     unstable_rethrow(error);
-    return <section className={"marketplace-more [&&]:mt-[80px] [&&_>_h2]:mb-[26px] [&&_>_h2]:text-[length:20px] [&&_>_h2]:font-[700] [&&_>_h2]:leading-[26px] [&&_>_h2]:tracking-[-0.035em] max-599:[&&]:mt-[80px]"} aria-labelledby="more-looks"><h2 id="more-looks">More looks</h2><p className="text-body-sm text-muted-foreground">More templates are temporarily unavailable. <Link href="/marketplace" className="text-link underline underline-offset-4">Browse Marketplace</Link></p></section>;
+    return <section className={"marketplace-more [&&]:mt-[80px] [&&_>_h2]:mb-[26px] [&&_>_h2]:text-[length:20px] [&&_>_h2]:font-[700] [&&_>_h2]:leading-[26px] [&&_>_h2]:tracking-[-0.035em] max-599:[&&]:mt-[80px]"} aria-labelledby="more-looks"><h2 id="more-looks">More looks</h2><AppNotification className="text-body-sm text-muted-foreground">More templates are temporarily unavailable. <Link href="/marketplace" className="text-link underline underline-offset-4">Browse Marketplace</Link></AppNotification></section>;
   }
   return <section className={"marketplace-more [&&]:mt-[80px] [&&_>_h2]:mb-[26px] [&&_>_h2]:text-[length:20px] [&&_>_h2]:font-[700] [&&_>_h2]:leading-[26px] [&&_>_h2]:tracking-[-0.035em] max-599:[&&]:mt-[80px]"} aria-labelledby="more-looks">
     <h2 id="more-looks">More looks</h2>

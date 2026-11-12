@@ -1,4 +1,5 @@
 import "server-only";
+import { assertLegacyGenerationUnavailable } from "@/lib/accounting/generation-policy-server";
 import OpenAI, { toFile } from "openai";
 import { getProductSheetConfig } from "./config";
 import { ProductSheetError, type ProductSheetProvider } from "./provider";
@@ -17,6 +18,7 @@ export class OpenAIProductSheetProvider implements ProductSheetProvider {
   async editView(input: { view: ProductView; original: Buffer; prompt: string; key: string }, signal: AbortSignal) {
     // Multipart bytes from the owned original, on EVERY edit. No public upload,
     // URL download, Files API retention, text-only generation or provider fallback.
+    assertLegacyGenerationUnavailable();
     const image = await toFile(input.original, "product-reference.png", { type: "image/png" });
     signal.throwIfAborted();
     const started = Date.now();

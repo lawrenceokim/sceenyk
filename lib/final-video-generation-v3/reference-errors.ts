@@ -1,4 +1,51 @@
+import { generationPolicyMessages } from "@/lib/accounting/generation-policy";
+import { packageBuildError } from "./package-status";
 const messages: Record<string, string> = {
+  V3_CREATIVE_LOCK_SETUP_REQUIRED: "Clip approval locking needs database migration 100. Your generated clip is preserved; ask your administrator to complete setup.",
+  V3_LOCKED_INPUTS_DAMAGED: "A saved creative input is missing or damaged. Your videos are preserved; ask your administrator to check its original stored asset.",
+  V3_LOCK_PACKAGE_DAMAGED: "The saved creative package failed its integrity check. Your videos are preserved; ask your administrator to check the original package evidence.",
+  V3_CREATIVE_INPUTS_LOCKED: "Creative inputs are locked after the first source clip approval. You can continue reviewing and generating the remaining clips with these saved inputs.",
+  V3_LOCKED_INPUTS_NEED_REVIEW: "The saved creative lock needs review. Your original inputs and videos are preserved; ask your administrator to check the saved evidence.",
+  V3_CREATIVE_CHANGES_PENDING: "Finish or remove pending reference uploads before approving the first clip and locking its inputs.",
+  V3_CREATIVE_LOCK_EVIDENCE_REQUIRED: "The original approval evidence could not be verified. Your clip remains available for review; check the project details before locking.",
+  V3_MERGE_SETUP_REQUIRED: "Video merging needs database setup. Ask your administrator to review migration 099 in Progress; your approved clips stay saved.",
+  V3_MERGE_INPUTS_CHANGED: "The approved clips changed. Refresh and merge the current approved clips again.",
+  V3_MERGE_REQUIRES_APPROVED_CLIPS: "Approve every required clip before merging. Your saved approvals are preserved.",
+  V3_MERGE_SOURCE_INVALID: "A saved clip could not be validated for merging. Your approved clips are preserved; see Progress for details.",
+  V3_MERGE_DELETE_PENDING: "The rejected merged video is still being deleted. Finish or retry deletion before merging again.",
+  V3_MERGE_AUDIO_INCOMPATIBLE: "The saved audio formats could not be safely joined. Your approved clips stay saved; see Progress for details.",
+  V3_CLIP_SETUP_REQUIRED: "Individual clip generation needs database migration 098. Ask your administrator to apply it after 097; your saved work is preserved.",
+  V3_CLIP_ATTEMPT_CHANGED: "This clip attempt changed. Refresh and review the current clip before approving a new attempt.",
+  V3_CLIP_DELETE_OR_RECOVER_FIRST: "Delete the unapproved clip with confirmation, or recover its existing request before approving another attempt.",
+  V3_CLIP_ATTEMPT_APPROVAL_REQUIRED: "Approve the additional cost for the selected clip in Final Video. Existing approved clips remain saved.",
+  V3_CLIP_SELECTION_REQUIRED: "Choose an individual clip in Final Video to generate this connected story.",
+  V3_CLIP_MERGE_NOT_IMPLEMENTED: "All approved clips are preserved. Video merging will be available in Milestone 6.",
+  V3_MULTI_CLIP_PLANNING_ONLY: "Connected Storyboards over 30 seconds can be planned and approved. Clip generation will be available in Milestone 5; no video request was sent.",
+  V3_PRO_DURATION_REQUIRED: "Your saved Pro duration is preserved. Switch to Pro or choose a Basic duration to continue.",
+  V3_CLIP_PLAN_INVALID: "The Storyboard clip boundaries do not cover the selected duration. Reject this Storyboard and generate a new connected story.",
+  V3_CLIP_CONTINUITY_INVALID: "The Storyboard has mismatched continuity between clips. Reject it and generate a new connected story.",
+  V3_CONNECTED_STORY_REQUIRED: "This duration needs a connected Storyboard. Generate and review the complete story before continuing.",
+  V3_CLIP_PLAN_CHANGED: "The saved clip boundaries do not match this duration. Generate a new connected Storyboard; your approved sheets are preserved.",
+  V3_CLIP_SHOT_TIMING_INVALID: "A Storyboard shot crosses a clip boundary or has incorrect timing. Reject it and generate a new connected story.",
+  V3_CHARACTER_NAME_REQUIRED: "Enter and save a name for this character before generating its sheet.",
+  V3_PRO_CHARACTERS_RETAINED: "Basic Studio supports one character. All your Pro characters and saved sheets are preserved. Switch to Pro to continue this project.",
+  V3_PRO_REFERENCE_COUNT_EXCEEDED: "This cast exceeds the existing Generation Package reference capacity. No characters were omitted or generated again.",
+  V3_CHARACTER_BINDINGS_REQUIRED: "The Storyboard needs explicit character bindings. Review and regenerate its direction when ready; your approved sheets are preserved.",
+  V3_CHARACTER_BINDINGS_CHANGED: "The saved cast or approved Character Sheets changed. Review the affected Location, Storyboard and package before continuing.",
+  V3_CHARACTER_BINDINGS_INVALID: "A shot contains an unknown or duplicated character identity. No video request was sent.",
+  V3_CHARACTER_SPEAKER_INVALID: "A dialogue line is not bound to the character visible in its shot. Correct the Storyboard before continuing.",
+  V3_RESOLUTION_PRICING_NOT_CONFIGURED: "Pricing is not configured for this video resolution. Choose 480p or ask the administrator to configure a verified rate before paid generation.",
+  V3_DIRECT_APPROVAL_SETUP_REQUIRED: "Video approval needs database migration 092 after 091. Ask the administrator to complete setup; your saved video is preserved.",
+  CURRENT_REVIEW_REQUIRED: "This video's package is no longer current. Review the current Generation Package before approving.",
+  JOINED_APPROVAL_INVALID: "The final video's package or approved segments changed. See Progress before approving.",
+  VIDEO_REVIEW_UNAVAILABLE: "This video is no longer ready for review. Check its saved state in Progress.",
+  JOINED_REVIEW_UNAVAILABLE: "This final video is no longer ready for review. Check its saved state in Progress.",
+  V3_ACCESS_UNAVAILABLE: "V3 generation is not available for this account in the current server access mode.",
+  V3_BACKGROUND_SETUP_REQUIRED: "Automatic video processing needs database migration 091 after 090. Ask the administrator to complete worker setup.",
+  V3_VIDEO_DELIVERY_REFRESH_SETUP_REQUIRED: "Refreshing this unsubmitted request needs database migration 090 after 089. Ask the administrator to complete setup.",
+  V3_REFRESH_REQUIRES_VIDEO_DISABLED: "Stop the worker, set the server paid-generation switch to 0, and restart the app before refreshing this saved request's links. Refreshing does not submit video generation.",
+  V3_UNSUBMITTED_REQUEST_REQUIRED: "The processing service has already claimed or submitted this request. Check its saved status; accepted work is recovered without another paid submission.",
+  V3_SAVED_PROVIDER_EVIDENCE_REQUIRES_RECOVERY: "A provider receipt or saved result already exists. Preserve this request and use recovery; its delivery must not be replaced.",
   V3_VIDEO_SETUP_REQUIRED: "Video generation needs database migration 087 after 086. Apply it and restart the app and local worker; keep paid video generation disabled until review.",
   V3_SEGMENT_AUTHORIZATION_REQUIRED: "Review and approve this Generation Package again before explicitly generating another video. Each authorization permits one request.",
   V3_AUTHORIZATION_EXPIRED: "This approval expired. Review and approve the saved Generation Package again; rebuilding it is not required.",
@@ -72,10 +119,18 @@ const messages: Record<string, string> = {
   V3_REFERENCE_PROMPT_OUTDATED_REGENERATE: "This request uses an older reference prompt. Select Check status, then generate a new sheet.",
   REVIEW_EXISTING_REFERENCE_FIRST: "Review or reject the current Location reference before generating another Location.",
   ARTIFACT_REVIEW_UNAVAILABLE: "This reference has already been reviewed or replaced. Select Check status to review the latest version.",
-  REFERENCE_STALE_REGENERATE: "Your references need regeneration and approval for the saved style and direction.",
+  REFERENCE_STALE_REGENERATE: "This reference is stale. Regenerate and approve it before continuing.",
   APPROVE_CURRENT_REFERENCES_FIRST: "Regenerate and approve references for the current saved inputs before continuing.",
 };
 export function v3ActionErrorMessage(code: string) {
-  if (code.startsWith("V3_STORAGE_DELETE_")) return `The unwanted image could not be deleted (${code}). Its saved metadata is preserved for retry.`;
-  return messages[code] ?? "This request couldn’t finish. Check your saved inputs and local generation setup, then check status.";
+  if (generationPolicyMessages[code]) return generationPolicyMessages[code];
+  const service = /^(?:V3_)?(DATABASE|CLERK|STORAGE)_(CONNECTION_UNAVAILABLE|TIMEOUT|CAPACITY_UNAVAILABLE|RATE_LIMITED|UNAVAILABLE|AUTHENTICATION_FAILED|PERMISSION_DENIED|SCHEMA_MISMATCH|CONFIGURATION_INVALID|NETWORK_BLOCKED|TLS_INVALID|OPERATION_FAILED|NOT_FOUND|CONSTRAINT_REJECTED)$/.exec(code);
+  if (service) {
+    const name = service[1] === "CLERK" ? "Your account profile" : service[1] === "DATABASE" ? "The application database" : "Media storage";
+    if (["CONNECTION_UNAVAILABLE", "TIMEOUT", "CAPACITY_UNAVAILABLE", "RATE_LIMITED", "UNAVAILABLE"].includes(service[2])) return `${name} is temporarily unavailable. Your approved clips and saved work are preserved. Wait briefly, then check status before retrying.`;
+    return `${name} needs attention. Your approved clips and saved work are preserved. Please try again later.`;
+  }
+  if (/REFERENCE_LIMITS_(UNVERIFIED|EXPIRED|INVALID|UNAVAILABLE)$/.test(code) || ["REFERENCE_COUNT_EXCEEDED", "REFERENCE_FORMAT_OR_SIZE_INVALID", "REQUEST_SIZE_EXCEEDED"].includes(code)) return packageBuildError(code);
+  if (code.startsWith("V3_STORAGE_DELETE_")) return "The image could not be deleted. Try deletion again.";
+  return messages[code] ?? "This request couldn’t finish. Check your saved inputs, then check status.";
 }

@@ -5,6 +5,7 @@ import { HiggsfieldVideoGenerationProvider } from "./adapters/higgsfield";
 import { privateAssetSchema, privateBindingSchema, quoteSchema, type Task } from "./runtime-contract";
 import { buildFrozenPackage, restoreSegment, readFrozenPackage } from "./package";
 import { initialExecution } from "./recovery";
+import { higgsfieldRequestIssues } from "./adapters/higgsfield-validity";
 import { v3Digest, normalizeCapabilities, v3BodyHash as exactBodyHash } from "./identity";
 import type { PlanningContext } from "./contract";
 import { approvedArtifacts, projectBrief, referenceOriginals, validityEvidence } from "./creative-inputs";
@@ -44,6 +45,7 @@ export async function packageTask(store: V3Store, task: Task, w: RuntimeWorkspac
           maxRequests: 0, maxCostMicrousd: 0, consumedRequests: 0, committedCostMicrousd: 0 } };
       const identity = { id: details.packageId, version: Number(task.input.packageVersion), sourceRevision: source.revision };
       const provisional = buildFrozenPackage(input, provider, context, identity), media = new Map<string, string>();
+      if (provisional.pricing.status !== "estimated") throw new Error(provisional.segments.find(s => s.estimate.reason)?.estimate.reason ?? "V3_APPROXIMATE_PRICING_NOT_CONFIGURED");
       await stage("delivery");
       let expiry = Date.now() + 5 * 60_000;
       for (const ref of input.references) {
@@ -55,9 +57,12 @@ export async function packageTask(store: V3Store, task: Task, w: RuntimeWorkspac
         const signed = await signPrivate(binding); media.set(ref.id, signed.url); expiry = Math.min(expiry, Date.parse(signed.expiresAt) - 30_000);
       }
       const segments = [];
+      const limits = await validityEvidence();
       for (const segment of provisional.segments) {
         details.segmentId = segment.id; await stage("payload");
         const restored = restoreSegment(provisional, segment.id), request = provider.prepareRequest(restored, media);
+        const issues = higgsfieldRequestIssues(request.input, input.references, limits, context.now, request.model);
+        if (issues.length) throw new Error(issues[0]);
         await stage("estimate");
         const cost = segment.estimate;
         if (cost.estimatedCostMicrousd === null || !cost.pricing) throw new Error("V3_APPROXIMATE_PRICING_NOT_CONFIGURED");
@@ -68,7 +73,7 @@ export async function packageTask(store: V3Store, task: Task, w: RuntimeWorkspac
       details.estimateStatus = "available";
       const document = provisional;
       const quote = quoteSchema.parse({ id: randomUUID(), projectId: task.project_id, packageId: document.id,
-        packageHash: document.hash, currency: "USD", validityEvidence: await validityEvidence(), observedAt: context.now,
+        packageHash: document.hash, currency: "USD", validityEvidence: limits, observedAt: context.now,
         pricingSource: "manual_provider_estimate", expiresAt: null, deliveryExpiresAt: new Date(expiry).toISOString(),
         segments, totalMicrousd: document.pricing.totalMicrousd });
       envelope = { document, quote };

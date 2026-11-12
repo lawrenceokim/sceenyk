@@ -1,17 +1,22 @@
 import "server-only";
 import { z } from "zod";
 import { ensureAppUser } from "@/lib/auth/ensure-app-user";
+import { readAppUser } from "@/lib/auth/read-app-user";
+import { ServiceOperationError } from "@/lib/diagnostics/service-failure";
 import { createDatabaseClient } from "@/lib/db/server";
 import type { ProjectFields, ProjectRow } from "@/lib/db/types";
 import { legacyDuration, projectPageSize } from "./options";
+import { requiresProDuration } from "./pro-duration";
+import { projectVideoResolution } from "./video-resolution";
 import { ugcV1ReferenceLimitsSchema } from "./ugc-v1";
 import { readOwnedUgcV1References } from "./ugc-v1-server";
+import { projectSaveFailure } from "./save-errors";
 import { eligibleForV3, enrolledV3 } from "@/lib/final-video-generation-v3/enrollment";
 import { V3Store } from "@/lib/final-video-generation-v3/runtime-store";
 import {
   projectIdSchema,
   projectPageSchema,
-  saveProjectSchema,
+  saveStudioProjectSchema as saveProjectSchema,
   renameProjectSchema,
   deleteProjectSchema,
 } from "./validation";
@@ -25,9 +30,9 @@ import type {
 } from "./types";
 
 const briefColumns =
-  "id,title,category,prompt,creation_type,ugc_type,aspect_ratio,duration,visual_style,tone,status,created_at,updated_at";
+  "id,title,category,prompt,creation_type,ugc_type,aspect_ratio,duration,visual_style,tone,video_resolution,status,created_at,updated_at";
 const summaryColumns =
-  "id,title,category,creation_type,ugc_type,aspect_ratio,duration,visual_style,tone,status,created_at,updated_at";
+  "id,title,category,creation_type,ugc_type,aspect_ratio,duration,visual_style,tone,video_resolution,status,created_at,updated_at";
 
 export class ProjectAccessError extends Error {
   constructor() {
@@ -59,6 +64,8 @@ function toSummary(
     creationType: row.creation_type ?? "freestyle",
     ugcType: row.ugc_type ?? "advertisement",
     settings: {
+      // Preserve the shape of historical 480p/legacy generation snapshots.
+      ...(row.video_resolution && row.video_resolution !== "480p" ? { resolution: projectVideoResolution(row.video_resolution) } : {}),
       aspectRatio: row.aspect_ratio,
       duration: row.duration,
       visualStyle: row.visual_style,
@@ -96,7 +103,12 @@ export async function saveOwnedProject(
     return { ok: false, code: "INVALID_INPUT", message };
   }
   const { id, mode, title, category, prompt, settings, creationType, ugcType, referenceNames } = parsed.data;
+  if (projectVideoResolution(settings.resolution) !== "480p" &&
+    !(mode === "create" ? eligibleForV3(user.id, creationType) : await enrolledV3(user.id, id))) {
+    return { ok: false, code: "INVALID_INPUT", message: "This resolution requires a V3 video project." };
+  }
   const fields: ProjectFields = {
+    video_resolution: projectVideoResolution(settings.resolution),
     title,
     category,
     prompt,
@@ -108,16 +120,32 @@ export async function saveOwnedProject(
     tone: settings.tone,
   };
   const database = createDatabaseClient();
+  if (requiresProDuration(settings.duration)) {
+    // Read persisted metadata, never trust a browser's mode. SQL rechecks under
+    // the project row lock and permits an unchanged retained Pro value in Basic.
+    const existing = await database.from("projects").select("duration,studio_mode").eq("id", id).eq("owner_user_id", user.id).eq("status", "draft").maybeSingle();
+    const state = await database.rpc("studio_mode_read", { p_owner: user.id, p_project: existing.data ? id : null });
+    const pro = !state.error && (state.data?.projectMode ?? state.data?.preferredMode) === "pro";
+    const v3 = existing.data ? await enrolledV3(user.id, id) : mode === "create" && eligibleForV3(user.id, creationType);
+    if (existing.error || state.error || !state.data || !v3 || !pro && existing.data?.duration !== settings.duration) {
+      return { ok: false, code: "INVALID_INPUT", message: "Choose this duration in an owned Pro V3 project." };
+    }
+  }
   const finishSave = async (project: SavedProject): Promise<SaveProjectResult> => {
     if (referenceNames?.length) {
       const names = await database.rpc("ugc_save_reference_names", { p_owner_user_id: user.id, p_project_id: project.id, p_names: referenceNames });
-      if (names.error || !names.data) return { ok: false, code: "UNAVAILABLE", message: "Your reference names couldn’t be saved. Check the references and save again." };
+      if (names.error) {
+        logDatabaseError("save_reference_names", names.error);
+        return projectSaveFailure(names.error, "Your reference names couldn’t be saved. Check the references and save again.");
+      }
+      if (!names.data) return { ok: false, code: "UNAVAILABLE", message: "A reference name could not be saved. Its image may have changed or been removed. Check the current references and save again." };
     }
     try {
       const v3 = await enrolledV3(user.id, project.id);
       return { ok: true, project: { ...project, ...(v3 ? { workflow: "final-video-v3" as const } : {}) } };
-    } catch {
-      return { ok: false, code: "UNAVAILABLE", message: "Your draft was saved, but its generation status couldn’t be checked. Save again to continue." };
+    } catch (error) {
+      logDatabaseError("saved_generation_status", error);
+      return projectSaveFailure(error, "Your draft was saved, but its generation status couldn’t be checked. Save again to continue.");
     }
   };
   if (settings.duration === legacyDuration.value) {
@@ -129,7 +157,10 @@ export async function saveOwnedProject(
   if (creationType === "ugc") {
     const references = await readOwnedUgcV1References(database, user.id, id);
     if (!references) return { ok: false, code: "UNAVAILABLE", message: "Your UGC references couldn’t be checked. Please try again." };
-    const limits = ugcV1ReferenceLimitsSchema.safeParse(references);
+    // Retained Pro characters remain saveable after a confirmed Basic switch;
+    // upload admission still rejects NEW extras outside an owned Pro V3 project.
+    const retainedV3Characters = references.characters.length > 1 && await enrolledV3(user.id, id);
+    const limits = ugcV1ReferenceLimitsSchema.safeParse(retainedV3Characters ? { ...references, characters: references.characters.slice(0, 1) } : references);
     if (!limits.success) return { ok: false, code: "INVALID_INPUT", message: limits.error.issues[0].message };
   }
   if (mode === "create" && eligibleForV3(user.id, creationType)) {
@@ -137,8 +168,9 @@ export async function saveOwnedProject(
       // Existing registry RPC creates project + workflow atomically and retries
       // the same UUID. It never enrolls an existing historical project.
       await new V3Store().rpc("ugc_v3_create_project", { p_owner: user.id, p_project: id, p_fields: parsed.data });
-    } catch {
-      return { ok: false, code: "UNAVAILABLE", message: "Your draft couldn’t be prepared. Check the local generation setup and save again." };
+    } catch (error) {
+      logDatabaseError("create_v3", error);
+      return projectSaveFailure(error, "Your draft couldn’t be prepared. Check the generation setup and save again.");
     }
   } else if (mode === "create") {
     const { data, error } = await database
@@ -149,11 +181,7 @@ export async function saveOwnedProject(
     if (!error && data) return finishSave(toBrief(data));
     if (error?.code !== "23505") {
       logDatabaseError("create", error);
-      return {
-        ok: false,
-        code: "UNAVAILABLE",
-        message: "Your draft couldn’t be saved. Please try again.",
-      };
+      return projectSaveFailure(error);
     }
     // A first-save retry keeps its UUID. A collision can only update a record
     // belonging to this verified owner; never use unrestricted project upsert.
@@ -168,11 +196,7 @@ export async function saveOwnedProject(
     .maybeSingle();
   if (error) {
     logDatabaseError("update", error);
-    return {
-      ok: false,
-      code: "UNAVAILABLE",
-      message: "Your draft couldn’t be saved. Please try again.",
-    };
+    return projectSaveFailure(error);
   }
   return data ? finishSave(toBrief(data)) : notFoundResult;
 }
@@ -232,11 +256,16 @@ export async function deleteOwnedProject(input: unknown): Promise<DeleteProjectR
 export async function listOwnedProjects(
   input: unknown = 1,
 ): Promise<ProjectPage> {
-  const user = await ensureAppUser();
+  return (await readOwnedProjectsIndex(input, false)).data;
+}
+
+// Projects-only background index; identity remains request-derived.
+export async function readOwnedProjectsIndex(input: unknown = 1, liveOnly = true) {
+  const user = await readAppUser();
   const parsed = projectPageSchema.safeParse(input);
   const page = parsed.success ? parsed.data : 1;
   const offset = (page - 1) * projectPageSize;
-  const { data, error, count } = await createDatabaseClient()
+  const query = createDatabaseClient()
     .from("projects")
     .select(summaryColumns, { count: "exact" })
     .eq("owner_user_id", user.id)
@@ -244,14 +273,15 @@ export async function listOwnedProjects(
     .order("updated_at", { ascending: false })
     .order("id", { ascending: false })
     .range(offset, offset + projectPageSize - 1);
+  const { data, error, count, status } = await (liveOnly ? query.is("deleted_at", null) : query);
   if (error || !data || count === null) {
     logDatabaseError("list", error);
-    throw new ProjectAccessError();
+    throw new ServiceOperationError(error, "database", "projects_index", undefined, undefined, status);
   }
-  return {
+  return { user, data: {
     projects: data.map(toSummary),
     total: count,
     page,
     pageSize: projectPageSize,
-  };
+  } };
 }

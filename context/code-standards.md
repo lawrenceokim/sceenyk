@@ -1,5 +1,59 @@
 # Code Standards
 
+## Shared application feedback (2026-11-11)
+
+Render application errors, warnings, validation and action results with `components/notifications/app-notification.tsx`; event handlers can call `notify(message, tone)` from `lib/notifications/store.ts`. Do not introduce inline alert panels, native alert popups or a second toast dependency. Keep business state and action callbacks in their existing source components; the shared portal owns presentation only. Use explicit tones in new code, stable notice keys for repeated workflow receipts, and persistent duration for actionable notices. Source error IDs remain available for field descriptions, while screen-reader announcements come from the visible notification. Preserve confirmation dialogs, recovery controls, financial records, progress and loading/empty states. Feedback must not trigger navigation or parent card actions, mutate workflow state, or retain private content across authenticated-account changes. Use Tailwind and shared semantic tokens with reduced-motion support.
+
+Studio exposes all current duration/resolution options in both Basic and Pro. Only 5 seconds and 480p can be newly selected during testing; unavailable choices remain explainable through keyboard/pointer notifications. Editable draft settings normalize in the existing editor and persist through ordinary Save. Genuine saved approval/creative-lock evidence preserves approved settings; unresolved legacy approval reads preserve saved values until checked. Do not infer approval from a completed planning job or relax server/worker admission.
+
+## Independent sheet and Storyboard funding — 109 (2026-11-10)
+
+Sheet/Storyboard generation checks OpenAI funding independently of video/project review. Valid assigned free projects and eligible unused allowances retain included OpenAI access. Otherwise sufficient purchased credits authorize a new OpenAI request, even on a historical project whose video/free usage is unresolved. A review hold must never veto a separately credit-funded Character, Product, Location or Storyboard request. Each actual request costs 1 credit; fresh Location remains 2 (plan + sheet), continuation 1.
+
+The access DTO requires version 109 and exposes preparationFunding separately from video funding. SQL binds funding to each immutable task/phase, reserves credits before dispatch, and reuses 108 settlement/recovery. OpenAI preparation/reservation project FKs reference the existing V3 project directly; no paid-video enrollment is required for a held project's paid preparation. Video holds, free counters, review flags, existing records, approved content and creative locks remain unchanged. This supersedes earlier statements that all generation on an unresolved historical project must be blocked.
+
+Apply [migration 109](../supabase/migrations/20261110010900_independent_openai_funding.sql) after 108 with old writers/workers stopped, then deploy matching app/worker code. No remote writes or provider requests were performed. Focused accounting/security checks and TypeScript pass; normal UI/provider testing remains manual.
+
+## Generation credit boundary — 108 (2026-11-10)
+
+SQL reserves credits under the shared wallet lock before dispatch, binds each task/phase and lease once, and appends immutable ledger movements. Successful OpenAI responses consume once independently of parsing/storage/approval. Confirmed provider rejection or proven absence of dispatch releases once; timeouts and uncertain requests retain their hold and recover saved output without recharging or issuing another POST. No historical request is charged retroactively. The existing video price verification, finite real-funded user/global caps, 103-credit settlement, PayPal Sandbox purchases, Basic/Pro permissions, 5-second/480p enforcement, approval locks and recovery remain.
+
+Migration 108 supersedes the old two-starts-per-kind restrictions. It preserves preparation tombstones as audit history. Evidence-based review resolutions allow known consumed projects to continue when existing operations/tasks/free-run records prove their assignment and the mapped consumed-project count fits retained counters. Original flags, counters, ledger and media remain untouched. Account-only uncertainty does not block an already assigned project. Ambiguous deleted/unmapped/conflicting history retains free/video review and grants no new allowance; 109 permits separately credit-funded OpenAI requests. No historical video cost or approval is invented. Reconciled assignment permits included OpenAI continuation; unresolved historical video spending still blocks a replacement video.
+
+Charge actual provider requests, never task retries, polling, parsing, local assembly or cached publication. OpenAI is unlimited at zero credits within assigned free projects, with normal request-safety protections. Keep technical diagnostics in server logs and show concise user messages. Preserve private helpers, service-only leased receipts, RLS, immutable ledger validation, genuine history and approval locks.
+
+## Phase 2 M7 — approval evidence versus submission authority (2026-11-09)
+
+Display saved package approval from current non-deleted execution evidence independently of unused finite authority. Never turn an approval label or mode change into a grant, retry or workflow mutation. Mode metadata changes must reconcile status without resetting saved work; frozen package inputs stay read-only. Preserve existing server/database guards. M7 verification remains focused; do not infer hosted/backend/payment/provider acceptance from UI fixtures. [Source review and manual checks](m7-workflow-verification.md).
+
+## Pro first-source approval invariant (2026-11-09)
+
+Package/estimate approval is spending authority, not a permanent creative lock. Capture immutable evidence atomically with the first Pro source approval through migration 100; enforce creative write protection in SQL and authenticated service actions. Preserve Basic, finite per-clip spending, unknown-outcome recovery and M6 output handling. Version accepted snapshot readers/currentness/metadata rules; never recompile, reprice or revalidate accepted creative semantics through unrelated new policy. Hashes, exact bindings, owned private byte checks and genuine corruption errors remain mandatory. Historical recovery must use authentic package-bound evidence and append explicit unresolved states instead of inventing approvals. No automatic production repair or unlock. [Lifecycle and setup](pro-clip-approval-lock.md).
+
+## Connection diagnostics and retries (2026-11-08)
+
+Keep upstream error text/URLs/secrets out of logs and client responses. Use the shared service diagnostic at the V3, account and media boundaries; preserve fixed SQL business exceptions, ownership checks, setup errors and integrity guards. Only known temporary infrastructure failures admit supervisor backoff. Do not retry a mutating RPC/provider call in isolation, convert a database outage into stale creative inputs, or turn identity failures into storage errors. Preserve leases, immutable receipts and unknown-outcome reconciliation. Permanent global errors stop; permanent project errors remain explicitly paused until operator repair/restart. Read-only probes must never claim queued work, submit paid work or apply migrations. [Verified investigation](m6-connection-recovery.md).
+
+## Phase 2 M6 — local merge lineage (2026-11-08)
+
+Reuse V3 join task/artifact/review/deletion owners. Every connected merge binds a content-addressed ordered approved-input manifest under the project lock; admission/publication/final approval revalidate it. Failed/expired-lease recovery reuses the task, local immutable bytes and conditional private publication. New attempt IDs follow completed rejection cleanup. No paid authority/provider call, source clip mutation, historical backfill or M5 execution refactor. Probe/decode/check private files before processing; preserve compatible video, concatenate audio samples continuously, normalize video only for compatibility, and keep actual lengths without inserted padding/footage. Temporary copies belong to the merge task; deletion cannot traverse source spools or symlinks. [M6 contract](phase-2-basic-pro-studio.md#m6-implementation-and-setup-2026-11-08).
+
+## Phase 2 M5 — immutable clip attempt standards (2026-11-06)
+
+Compile connected plans only at their exact approved boundaries using the versioned connected compiler; preserve historical recipes. Bind attempts to frozen package/Storyboard/clip identity and exact predecessor, retaining active-segment and consumed-authorization uniqueness. Reserve finite cumulative spend atomically; deleted media never restores authority. Require explicit new attempt approval and confirmed deletion; accepted/unknown work recovers receipts without paid replay. Save ordered merge inputs atomically with the last approval; connected-package joining stays blocked for M6. No parallel worker/storage/pricing architecture or new stylesheet.
+
+## Phase 2 M4 — connected planning standards (2026-11-05)
+
+Use additive versioned task/Storyboard JSON contracts under the existing V3 artifact owner. Freeze deterministic <=30s ordered clip boundaries and complete story/cast/continuity before one whole-story approval. Validate exact global/local timing and current saved ownership/mode/reference inputs; do not split or rewrite approved shots later. Keep historical schemas/compiler hashes and Basic/short generation intact. Long paid execution must fail server/worker/SQL admission until M5, independently of UI controls. Manual 097 after 096 preserves table security, pricing, authorization uniqueness and saved data. Approved reference reuse after duration edits must retain original provenance and check every other dependency. [Current M4 contract/setup](phase-2-basic-pro-studio.md#m4-implementation-and-setup-2026-11-05).
+
+## Planned Basic/Pro extension standards (2026-11-05)
+
+**Product Phase 2 — M1 source implemented; M2–M7 Planned / Not Started.** [Canonical requirements, M1 setup and safeguards](phase-2-basic-pro-studio.md). M1 uses separate metadata services/columns while creative/save contracts remain unchanged. Keep product mode distinct from save-operation `mode`, Creation Type and provider input mode. Resolve persisted preferred/project modes server-side; preserve all existing inputs/approvals on switches. Free mode access cannot bypass spending authorization or provider/ownership guards.
+
+Future Pro contracts need stable character IDs and explicit cast/speaker bindings, versioned immutable clip attempts and fresh scoped replacement authority, preserved accepted clip hashes, and explicit deduplicated merge intents over approved ordered attempt hashes. No paid replay for recovery, hidden adjacent regeneration, historical hash rewrite or weakened uniqueness. Validate actual schema/RLS/grants before additive transactional/rerunnable migrations; exact fields/relations remain undecided. Preserve existing pricing/resolution/currentness/storage/worker protections and historical workflows. OpenAI/Higgsfield remain the only AI providers; local FFmpeg joins multiple approved clips only.
+
+Reuse Tailwind/shared components and the single existing `app/globals.css` under the Styling Policy. The seven milestones include backend/financial acceptance; UI-only slices continue to follow Fast UI Development Mode. M1 is complete within its source/offline boundary; its metadata migration remains manual and further Pro features are not started.
+
 ## Canonical Studio V3 correction (2026-10-30)
 
 Read saved Studio inputs server-side into versioned generationContext; never trust a browser style assertion or infer style from prompt text. Freeze this context with generated references and validate current active Sources, context, approvals and dependency versions before package/submission. Manual 078 verifies columns and adds only V3 guards; preserve 076/077 and historical hashes/data. [Current contract](generation-v3-phase3.md).
@@ -416,7 +470,7 @@ The Gemini understanding/planning unit introduces `lib/ai/` with a server-only s
 
 ## Payments and Credits
 
-**PayPal Sandbox one-time purchases are Complete within Merchant Sandbox acceptance;** see [payments.md](payments.md). The approved primary model is pay-as-you-go credits and manual top-ups, not monthly plans; purchased credits do not expire unless a future explicit product decision changes this. The accounting contract retains two lifetime free generations of at most ten seconds with atomic reservation and exactly-once failure restoration. The commercial quote boundary is implemented in `lib/pricing/`; see [pricing.md](pricing.md). Never scatter tariffs or accept browser cost/tier/free/version claims. Show a server-issued quote before explicit confirmation and reserve its validated server cost before dispatch. Production retail prices remain unresolved; optional rates are visibly development/test-only.
+**Existing PayPal Sandbox purchase acceptance is preserved; new hackathon enforcement is pending.** Follow the [current hackathon policy](overview.md#paypal-ai-hackathon-commercial-policy-2026-11-09) and accounting/payment plans: two separate lifetime 5-second/480p free generations, non-expiring purchased credits and separate verified one-month Pro access. Reuse server quotes and atomic reservation/restoration; never accept client cost/tier/free/version claims. Stage 1 approves the 100-credits/$1 conversion and configurable estimated payment fees in pricing.md; provider USD authority alone is not a retail-credit debit, and V3 wallet enforcement remains pending.
 
 Development and testing must use **PayPal Sandbox only**. Do not use Live credentials or real-money transactions. Keep eventual environment/credential selection behind the payment service; production switching is a later explicitly scoped task.
 
@@ -425,7 +479,7 @@ Development and testing must use **PayPal Sandbox only**. Do not use Live creden
 - Payment finalization must be idempotent: repeating a payment/webhook request must not credit the user twice. Enforce this persistently, including concurrent callbacks/events; an in-memory flag is insufficient.
 - Prevent double-spending/free-allowance reuse when concurrent generations start. Use an atomic reservation/debit strategy consistent with the approved settlement policy, with safe reconciliation after failures.
 - Failed generations follow the documented refund/credit-restoration rule. Never invent pricing, credit costs, subscription limits, creator shares, marketplace fees, or refund behavior; PNG pricing is illustrative.
-- Keep one-time credit purchases separate from marketplace purchases and creator payouts. Monthly subscriptions are outside current scope; membership and auto-recharge are unapproved future options requiring separate product decisions and authorization, not the next required commercial feature.
+- Keep credit purchases, finite Pro access, Marketplace purchases and creator payouts distinct. Grant credits/access only after verified payment with persistent exactly-once fulfilment. Enforce demo limits, Pro feature entitlement, user quotas and the global provider cap server-side; UI gates alone are insufficient. Recurring billing/auto-recharge remain unapproved.
 
 ## Error Handling and Logging
 

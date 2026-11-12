@@ -1,4 +1,5 @@
 import "server-only";
+import { assertFreeV3Transport } from "@/lib/accounting/generation-policy-server";
 import { canonicalJson } from "@/lib/video-generation-package/builder";
 import { z } from "zod";
 import { paidIntentSchema, type PaidIntent, type ProviderObservation } from "../runtime-contract";
@@ -54,9 +55,16 @@ export class HiggsfieldV3Transport {
     const intent = paidIntentSchema.parse(value); assertV3Transport(this.config, intent);
     const { hash, ...content } = intent;
     if (hash !== v3Digest("paid-intent", content) || intent.authorization.projectId !== intent.projectId || intent.authorization.packageId !== intent.packageId ||
-      intent.authorization.packageHash !== intent.packageHash || intent.authorization.segmentUuid !== intent.segmentUuid || intent.authorization.model !== intent.model)
+      intent.authorization.packageHash !== intent.packageHash || intent.authorization.segmentUuid !== intent.segmentUuid || intent.authorization.model !== intent.model || intent.authorization.resolution !== intent.body.resolution)
       throw new Error("V3_PAID_INTENT_BINDING_INVALID");
     if (!models.has(intent.model) || exactBodyHash(intent.body) !== intent.bodyHash || Date.parse(intent.deliveryExpiresAt) <= Date.now()) throw new Error("V3_INTENT_INVALID_OR_EXPIRED");
+    try { await assertFreeV3Transport(intent.projectId, intent.executionId, intent.hash, intent.body.duration, intent.body.resolution); }
+    catch (error) {
+      // This boundary has not sent any provider HTTP. Preserve that definite
+      // rejection so the leased worker can release its free hold safely.
+      const code = error instanceof Error && /^[A-Z0-9_]{1,100}$/.test(error.message) ? error.message : "GENERATION_POLICY_SETUP_REQUIRED";
+      throw new HiggsfieldTransportError(code, "rejected");
+    }
     const response = await this.json(`https://api.higgsfield.ai/${intent.model}`, "POST", intent.body, signal, intent.idempotencyKey);
     let acceptance;
     try { acceptance = parseHiggsfieldAcceptance(response.value); }

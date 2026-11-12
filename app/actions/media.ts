@@ -11,6 +11,7 @@ import {
 } from "@/lib/media/server";
 import { StorageConfigurationError } from "@/lib/storage/config";
 import type { MediaResult } from "@/lib/media/types";
+import { ServiceOperationError, serviceDiagnostic, serviceFailureMessage } from "@/lib/diagnostics/service-failure";
 
 async function run<T>(operation: () => Promise<T>): Promise<MediaResult<T>> {
   try {
@@ -21,12 +22,12 @@ async function run<T>(operation: () => Promise<T>): Promise<MediaResult<T>> {
       return { ok: false, code: error.code, message: error.message };
     if (error instanceof StorageConfigurationError)
       return { ok: false, code: "UNAVAILABLE", message: error.message };
-    console.error("Project media operation failed.", { code: "UNAVAILABLE" });
+    const diagnostic = error instanceof ServiceOperationError ? error.diagnostic : serviceDiagnostic(error, "storage", "project_media");
+    console.error("Project media operation failed.", JSON.stringify(diagnostic));
     return {
       ok: false,
       code: "UNAVAILABLE",
-      message:
-        "Media storage couldn’t be reached. Check your connection and try again.",
+      message: serviceFailureMessage(diagnostic),
     };
   }
 }

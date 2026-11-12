@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { saveProjectSchema } from "@/lib/projects/validation";
+import { saveStudioProjectSchema as saveProjectSchema } from "@/lib/projects/validation";
 import { projectTitleLimit } from "@/lib/projects/options";
 import type { ProjectDraft } from "@/lib/projects/types";
 import type { LocalMedia } from "./creation-options";

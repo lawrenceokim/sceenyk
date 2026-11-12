@@ -4,6 +4,8 @@ import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { CircleAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { AppNotification } from "@/components/notifications/app-notification";
+
 
 export function WorkspaceUnavailable() {
   const router = useRouter();
@@ -38,10 +40,10 @@ export function WorkspaceUnavailable() {
       >
         Your workspace couldn’t be opened
       </h1>
-      <p className="mt-3 max-w-md text-body-sm leading-relaxed text-muted-foreground">
+      <AppNotification className="mt-3 max-w-md text-body-sm leading-relaxed text-muted-foreground">
         Your account is signed in. We couldn’t prepare your workspace right now.
         Please try again in a moment.
-      </p>
+      </AppNotification>
       <Button
         className="mt-6"
         disabled={pending}

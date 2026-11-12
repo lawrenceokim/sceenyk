@@ -16,6 +16,8 @@ import { CreditTopUp } from "@/components/payments/credit-top-up";
 import { CreditBalance } from "@/components/payments/credit-balance";
 import { CaptionTrackPreview } from "./caption-track";
 import type { CreationType } from "@/lib/projects/options";
+import { AppNotification } from "@/components/notifications/app-notification";
+
 
 function generationLabel(job: GenerationJob | null, planReady: boolean) {
   if (!job) return "Preview";
@@ -112,14 +114,14 @@ export function ProjectGeneration({
               </p>
             )}
             {state.job.status === "failed" && (
-              <p className="text-body-sm text-destructive">
+              <AppNotification className="text-body-sm text-destructive">
                 {state.job.errorMessage}
-              </p>
+              </AppNotification>
             )}
           </>
         )}
         {state.statusError && (
-          <p className="text-body-sm text-destructive">{state.statusError}</p>
+          <AppNotification className="text-body-sm text-destructive">{state.statusError}</AppNotification>
         )}
       </div>
 );
@@ -205,19 +207,19 @@ export function ProjectGeneration({
             <div><dt className="text-muted-foreground">After reservation</dt><dd className="font-semibold">{state.quote.expectedRemainingCredits === null ? "—" : `${state.quote.expectedRemainingCredits.toLocaleString()} credits`}</dd></div>
           </dl>
           {state.quote.eligibleFreeGeneration && <p className="text-caption text-muted-foreground">Free allowance · no paid credits used.</p>}
-          {state.quoteExpired && <p className="text-body-sm text-warning-foreground">This quote has expired. Update the quote before confirming.</p>}
+          {state.quoteExpired && <AppNotification className="text-body-sm text-warning-foreground">This quote has expired. Update the quote before confirming.</AppNotification>}
           <p className="text-caption text-muted-foreground">
             {state.quote.breakdown.durationSeconds} seconds · {state.quote.breakdown.operation === "transformation" ? "Video transformation" : "New generation"}.
             {state.quote.pricingMode === "test" && " Test pricing."}
             {" "}Valid for five minutes; edits require a new quote.
           </p>
           {state.quote.status === "insufficient_credits" && (
-            <p className="text-body-sm text-destructive">
+            <AppNotification className="text-body-sm text-destructive">
               You need {state.quote.requiredCredits} credits but currently have {state.quote.availableCredits}. You need more credits to create this video.
-            </p>
+            </AppNotification>
           )}
           {state.quote.status === "pricing_unavailable" && (
-            <p className="text-body-sm text-muted-foreground">Paid pricing unavailable. Free generation: up to 10 seconds.</p>
+            <AppNotification className="text-body-sm text-muted-foreground">Paid pricing unavailable. Free generation: up to 10 seconds.</AppNotification>
           )}
           <div className="flex flex-wrap gap-2">
             <Button type="button" variant="outline" disabled={disabled} onClick={() => void state.reviewCost()}>Update quote</Button>
@@ -231,9 +233,9 @@ export function ProjectGeneration({
         </p>
       )}
       {state.error && (
-        <p role="alert" className="text-body-sm text-destructive">
+        <AppNotification role="alert" className="text-body-sm text-destructive">
           {state.error}
-        </p>
+        </AppNotification>
       )}
 
       {projectId && signedIn && (

@@ -1,5 +1,42 @@
 # Payments and PayPal Sandbox payouts
 
+## Stage 3 generation consumption (2026-11-10)
+
+Existing Stage 1 PayPal Sandbox custom checkout, frozen terms, verified capture/webhooks and once-only fulfilment remain the purchase owner. Stage 3 reuses the resulting generation_accounts balance and credit_ledger for video holds/debits/releases; no purchase fee, Marketplace commission, creator payout or Pro change is included. Sandbox credits never expand real provider exposure caps. [Credit protection/setup](stage-3-credit-protection.md).
+
+## Stage 1 custom USD credit checkout (2026-11-09)
+
+**Source implemented; apply manual migration 101 before using new purchases.** Credits & Billing and the existing editor top-up now accept a custom USD total in place of new fixed-pack selection. The preview shows estimated PayPal fee, separate Sceenyk payment commission, net generation funds, whole credits and exact total. [Pricing](pricing.md#stage-1-custom-credit-pricing-2026-11-09) owns arithmetic, defaults and examples; public rate/preview data never authorizes a credit grant.
+
+The authenticated server accepts only `{amountUsd, pricingVersion}` for a new purchase or `{purchaseId}` to resume owned saved terms. It derives rates from server configuration, rejects stale fee versions and extra/client-supplied amount/credit/owner fields, and calls `prepare_custom_credit_purchase`. SQL independently calculates and freezes the complete pricing snapshot, serializes by the existing account lock, reuses outstanding identical terms and retains the existing 20-new-purchases/account/hour limit. This creates no balance or ledger grant.
+
+Existing PayPal Sandbox order/capture/signature verification, owned reconciliation, persistent request IDs and `fulfil_paypal_purchase` remain the only payment completion path. Only a verified final completed capture grants the stored credits once, even with concurrent callbacks/webhooks. Marketplace purchases, 10% commission, earnings, withdrawals and payout/refund protections are untouched. The configurable 1% payment commission is not a Marketplace fee.
+
+Migration `20261109010100_custom_credit_purchases.sql` adds nullable immutable `credit_purchases.pricing_snapshot` and one service-only preparation RPC plus its snapshot guard. Apply after existing migrations (100 is the preceding repository migration). It checks referenced catalog prerequisites, is transactional/rerunnable and does not rewrite historical rows, credit balances, ledger/transaction records, free counters, RLS, grants or capture uniqueness. Null snapshots identify legacy fixed packs; those complete/reconcile/resume with their original USD/credits, regardless of current fees. No automatic migration or remote database write was performed.
+
+Keep existing Sandbox credentials/webhook setup; optional server-only fee settings are documented in `.env.example`. Rate changes require refreshed billing review for new purchases; already persisted purchases retain their terms. Browser closure and editor separate-tab continuation retain existing recovery. No Pro, generation-worker, free-allowance or demo-policy changes are included. Manual checkout/workflow/theme/scroll acceptance remains owner-run; no real payment or funded generation is claimed by source checks.
+
+## Hackathon Pro pass and production transition (2026-11-09)
+
+**Requirements approved; integration pending.** [The canonical policy](overview.md#paypal-ai-hackathon-commercial-policy-2026-11-09) adds a one-month Pro pass alongside existing one-time Sandbox credit packs. Older exclusions of all subscriptions/membership are superseded for this finite pass only; recurring billing and auto-recharge remain unapproved. Existing credit-pack/Marketplace/payout acceptance does not verify Pro checkout, demo enforcement or Live readiness.
+
+### Verified purchases and Pro access
+
+Reuse trusted Sandbox checkout, server-owned products/prices, persisted create/capture identities, signature verification and owned reconciliation. Keep credit packs, Pro access, Marketplace adoption and payouts distinct. Pro price/product ID, exact one-month calculation and early repurchase/extension rules are **Needs confirmation**; do not invent prices or recurring subscription APIs.
+
+Persist the intended owned purchase before provider creation and freeze purpose, price/currency and product/access terms server-side. Browser requests carry an allowed product reference or owned purchase ID, never authoritative amount, credit quantity, user, tier or expiry. Verify completed final capture, exact order/capture identity, merchant/payee, amount/currency, environment and purpose-bound purchase references through trusted PayPal state before fulfilment. Preserve official webhook signature verification and browser-independent recovery. Approval, redirects, pending states, elapsed time and client storage grant nothing.
+
+Fulfil once in a guarded database transaction: credit purchases grant their frozen quantity; Pro purchases record only a finite server-authoritative access interval tied to payment. Unique purchase/payment/capture and fulfilment references prevent callbacks/webhooks/reconciliation from granting twice, extending access twice or fulfilling one capture as both products. Preserve immutable payment/access history and owner-only activity. Missing/expired Pro denies new advanced mutations server-side regardless of UI/mode metadata, while retaining saved work, approved clips and safe read/recovery/local merge/final approval. Specify exact expiry/repurchase/refund transitions before rollout.
+
+UI and checkout must disclose **PayPal Sandbox uses test money; Higgsfield consumes real funded API balance**. Pro supplies advanced features only, with no included credits/unlimited generation/demo exemption. Deductions and failed-generation restoration follow [accounting](accounting.md#hackathon-accounting-and-spending-protection-2026-11-09). Generation failure restores usage credits/holds where appropriate, not an automatic PayPal cash refund. Pass/credit-pack cash refund, dispute and revocation rules remain pending; preserve existing Marketplace refund/payout protections.
+
+### Intentional future production rollout
+
+1. Plan server-only `HACKATHON_DEMO_MODE=true` with `PAYPAL_ENVIRONMENT=sandbox`. These are independent controls; this task adds no environment variable/file or runtime support.
+2. Before disabling demo mode, approve normal paid limits, verified rates/retail-credit tariffs and funded caps. Verify UI/quote/admission/worker agreement and locked/legacy recovery. Free eligibility stays 5 seconds/480p; unsupported/unpriced paid options stay blocked. Invalidate incompatible unsubmitted quotes/authority without rewriting approved inputs or replaying accepted work.
+3. Separately implement/review Live support: existing documented configuration rejects `live` and fixes Sandbox origins. Provision environment-specific Live merchant credentials, webhook registration/signature verification, checkout/return origins, product prices and reconciliation. Keep secrets server-side; do not reuse Sandbox webhook IDs, orders/captures or test grants as real purchases. Define isolation/migration of demo-granted credits and Pro intervals before activation; preserve immutable Sandbox history.
+4. Switch through an intentional reviewed deployment/configuration change with payment/concurrency/recovery/refund acceptance and rollback/kill switches. Safely reconcile existing Sandbox purchases in their original environment. Never fall back automatically to Live or select payment endpoints from browser input. No Live rollout or payment operation is authorized by this documentation task.
+
 ## Earnings & Payouts under Credits (2026-10-20)
 
 The existing earnings/withdrawals screen is now /credits/earnings, the second tab of the Credits workspace. It reuses getCreatorEarnings, getWithdrawalAccount, FinancialPanel and WithdrawalPanel without changing financial logic, ownership or provider behavior. Old /settings/earnings, /dashboard/settings/earnings and /dashboard/marketplace/earnings redirect with page parameters. Navigation/pagination links and withdrawal/destination cache invalidation target /credits/earnings; legacy invalidation remains. The existing authenticated/private /credits prefix covers this route and its generated responses. No financial or hosted provider execution was performed.
@@ -143,7 +180,7 @@ Purchased credits are usage units, not monthly allowances. A pack does not promi
 
 Production pack prices and generation tariffs are still unresolved. Larger packs may eventually provide better value per credit, but this approves no production discount schedule or conversion rate. The existing centrally configured Sandbox/demo packs below remain temporary test values. One-time Merchant Sandbox purchase acceptance is Complete; the commercial documentation update implements no new behavior and enables no Live payments.
 
-Monthly subscriptions, monthly generation plans, monthly credit allocations and recurring billing are **not current scope or the next required commercial feature**. Possible future membership benefits—discounted credits, priority generation, premium models, larger uploads and higher-quality exports—are unapproved examples requiring a separate product decision. Historical references to subscriptions as the expected commercial progression are superseded by this contract.
+The [current hackathon policy](overview.md#paypal-ai-hackathon-commercial-policy-2026-11-09) now approves a finite one-month Pro access pass, separately from generation credits. Recurring billing, monthly credit allocations, additional membership benefits and auto-recharge remain unapproved. This replaces the earlier exclusion of all subscriptions without changing dated Sandbox purchase evidence.
 
 **Optional future auto-recharge is separate from monthly subscriptions:** user-selected balance threshold → balance falls below the threshold → purchase a predefined pack using a payment method explicitly authorized for automatic purchases. Consent/payment-method authorization, charge limits, failure recovery and implementation need a future specification. Current checkout has no auto-recharge or saved-method mandate; this task adds neither.
 
@@ -161,7 +198,7 @@ Missing configuration fails closed. `live` is rejected even in production Next.j
 
 ## Temporary demo packs
 
-Central server-only `lib/payments/packs.ts` defines arbitrary **Sandbox/hackathon values**, never approved production economics:
+**Historical fixed-pack configuration, retained for saved purchase compatibility and fixtures. New checkout uses custom USD pricing above.** Central server-only `lib/payments/packs.ts` defines arbitrary **Sandbox/hackathon values**, never approved production economics:
 
 | Pack ID | Label | Test amount | Test credits |
 | --- | --- | --- | --- |
@@ -203,6 +240,6 @@ Actual browser tampering and B completion are denied; public/authenticated13/17-
 
 The staged harness `scripts/acceptance-payments.mjs` retains safe evidence in `%TEMP%/sceenyk-paypal-sandbox-acceptance.json`. Set `PAYPAL_ACCEPTANCE_ORIGIN=https://sceenyk.vercel.app` when running deployed acceptance; local `PAYPAL_RETURN_ORIGIN` may remain localhost. Available modes include preflight, ui, begin (one Sandbox order), observe (read only), webhook-readiness, webhook-proof (before A completion), webhook-replay, webhook-replay-proof, browser-security, database-security and verify. The `confirm-webhook-delivery` mode records an explicit user dashboard confirmation only; never use it to infer or fabricate delivery. No buyer password is required: approval was manual, and credentials stay out of chat/artifacts.
 
-Production pack prices, generation tariffs, provider-to-credit conversion, markup, possible larger-pack discounts and refund policy remain unresolved. Monthly subscriptions and recurring plans are outside current scope; membership and auto-recharge are optional future ideas requiring explicit approval. Live, payouts and marketplace are excluded. Sandbox one-time purchases are Complete. A renderer hosting upgrade and real final-video acceptance require separate authorization; final rendering stays In Progress/deferred because Render Free 512 MB RAM is insufficient. No next feature starts from this documentation task.
+Stage 1 custom amounts, the 100-credits/$1 conversion and configurable estimated fees are now implemented in source as recorded above. Pro price/terms, cash refund/dispute policy and later enforcement remain pending. Legacy Sandbox pack acceptance retains its historical evidence; recurring billing and auto-recharge remain unapproved.
 
 Official references reviewed: [Orders v2 create](https://developer.paypal.com/api/orders/v2/orders-create), [capture](https://developer.paypal.com/api/orders/v2/orders-capture), [REST idempotency](https://developer.paypal.com/api/rest/reference/idempotency/), [webhook integration/postback verification](https://developer.paypal.com/api/rest/webhooks/rest/).

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="380" viewBox="0 0 1000 380" fill="none">
+  <defs>
+    <radialGradient id="glow" cx="1" cy="0" r="1" gradientTransform="translate(950 28) rotate(148) scale(620 290)" gradientUnits="userSpaceOnUse"><stop stop-color="#A855F7" stop-opacity=".42"/><stop offset=".5" stop-color="#7C3AED" stop-opacity=".12"/><stop offset="1" stop-color="#7C3AED" stop-opacity="0"/></radialGradient>
+    <linearGradient id="edge" x1="610" y1="310" x2="1000" y2="45" gradientUnits="userSpaceOnUse"><stop stop-color="#A855F7" stop-opacity="0"/><stop offset=".7" stop-color="#C084FC" stop-opacity=".65"/><stop offset="1" stop-color="#E9D5FF" stop-opacity=".9"/></linearGradient>
+    <filter id="blur"><feGaussianBlur stdDeviation="9"/></filter>
+  </defs>
+  <path d="M0 0h1000v380H0z" fill="url(#glow)"/>
+  <path d="M550 355C670 216 818 110 1000 64" stroke="#A855F7" stroke-width="12" opacity=".23" filter="url(#blur)"/>
+  <path d="M550 355C670 216 818 110 1000 64" stroke="url(#edge)" stroke-width="1.5"/>
+</svg>

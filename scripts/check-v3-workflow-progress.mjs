@@ -1,0 +1,299 @@
+// Offline saved-state fixtures and real presentation/refresh handlers. No project records or providers.
+import assert from "node:assert/strict";
+import React from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { build } from "esbuild";
+import { createRequire } from "node:module";
+import { resolve } from "node:path";
+const require = createRequire(import.meta.url);
+let slots = [], cursor = 0, effects = [];
+const sameDependencies = (a,b) => a?.length === b?.length && a.every((value,i) => Object.is(value,b[i]));
+globalThis.__progressReact = { ...React,
+  useState(initial) { const i = cursor++; if (!(i in slots)) slots[i] = initial; return [slots[i], value => { slots[i] = typeof value === "function" ? value(slots[i]) : value; }]; },
+  useRef(initial) { const i = cursor++; if (!(i in slots)) slots[i] = { current: initial }; return slots[i]; },
+  useEffect(effect, deps) { effects.push({ effect, deps }); },
+  useCallback(value, deps) { const i = cursor++; if (!slots[i] || !sameDependencies(slots[i].deps, deps)) slots[i] = { value, deps }; return slots[i].value; }, useMemo: value => value(),
+};
+const bundle = await build({ absWorkingDir: process.cwd(), stdin: { contents: 'export { workflowProgress } from "./components/creation/v3-progress-state"; export { V3WorkflowProgress } from "./components/creation/v3-workflow-progress"; export { V3WorkflowPreview } from "./components/creation/v3-workflow-preview";', resolveDir: process.cwd(), loader: "tsx" },
+  tsconfig: resolve("tsconfig.json"), bundle: true, write: false, platform: "node", format: "cjs", packages: "external", plugins: [{ name: "offline-ui", setup(builder) {
+    builder.onResolve({ filter: /^\.\/components\// }, args => ({ path: resolve(args.path + (args.path.endsWith("-state") ? ".ts" : ".tsx")) }));
+    builder.onResolve({ filter: /^(react|next\/image|@\/components\/workspace\/studio-mode-provider|@\/components\/ui\/(button|dialog)|\.\/studio-workspace-panels)$/ }, args => ({ path: args.path, namespace: "fixture" }));
+    builder.onLoad({ filter: /.*/, namespace: "fixture" }, args => {
+      if (args.path === "react") return { contents: "const r=globalThis.__progressReact; export const useState=r.useState,useRef=r.useRef,useEffect=r.useEffect,useCallback=r.useCallback,useMemo=r.useMemo;" };
+      if (args.path === "@/components/workspace/studio-mode-provider") return { contents: "export const useStudioMode=()=>({mode:globalThis.__progressMode??'basic'});" };
+      if (args.path === "./studio-workspace-panels") return { contents: "export const useStudioPanels=()=>globalThis.__progressPanels??null; export const StudioPanelPortal=props=>props.children; export const StudioWorkflowMedia=()=>null;" };
+      if (args.path === "next/image") return { contents: "export default function Image(){return null;}" };
+      const names = args.path.endsWith("/button") ? ["Button"] : ["Dialog", "DialogClose", "DialogTrigger", "DialogContent", "DialogDescription", "DialogFooter", "DialogHeader", "DialogTitle"];
+      return { contents: names.map(name => `export function ${name}(props){return props.children;}`).join("\n") };
+    });
+  } }] });
+const bundled = { exports: {} };
+new Function("require", "module", "exports", bundle.outputFiles[0].text)(require, bundled, bundled.exports);
+const { workflowProgress, V3WorkflowProgress, V3WorkflowPreview } = bundled.exports;
+let checks = 0, realNetworkCalls = 0;
+const equal = (a, b) => { assert.deepEqual(a, b); checks++; };
+const ok = value => { assert.ok(value); checks++; };
+const originalFetch = globalThis.fetch;
+globalThis.fetch = async () => { realNetworkCalls++; throw Error("NETWORK_FORBIDDEN"); };
+const artifact = (kind, extra = {}) => ({ id: kind, kind, version: 1, activeSlot: true, approved: true, current: true, rejected: false, storyboard: null, location: null, preview: null, ...extra });
+const task = (kind, status, extra = {}) => ({ id: kind + "-task", kind, status, current: true, providerStarted: false, createdAt: "2026-11-04T00:00:00Z", leaseUntil: null, errorCode: null, packageBuild: null, diagnostics: null, location: null, recoveryAvailable: false, canStartNew: false, ...extra });
+const run = (state, extra = {}) => ({ id: "run", packageId: "package", segmentId: "segment-1", state, current: true, completedAt: null, hasKnownRequest: false, errorCode: null, submissionBlocker: null, preview: state === "awaiting_review" ? "saved-preview" : null,
+  stage: null, actualDurationMs: null, hasAudio: null, estimatedCostMicrousd: 2056670, displayEstimatedCostMicrousd: 2056670, actualCostMicrousd: null,
+  provider: "higgsfield", model: "bytedance/seedance-2.5/reference-to-video", aspectRatio: "9:16", resolution: "480p", expectedDialogue: [], shotTimings: [], outputHostname: null, ...extra });
+const preflight = { packageId: "package", packageHash: "saved-package-hash", currentness: "current", authorizationState: "bound", canSubmit: true, transportEnabled: true, estimatedCostMicrousd: 2056670, quoteId: "quote", segmentCount: 1, issues: [] };
+const empty = { projectId: "private-project-id", artifacts: [], tasks: [], runs: [], preflight: null, complete: false, packageStale: false, processing: false, referenceCleanup: { enabled: true, pendingCount: 0 }, localEnabled: true };
+const refs = { ...empty, artifacts: [artifact("character"), artifact("location")] };
+const story = { ...refs, artifacts: [...refs.artifacts, artifact("storyboard")] };
+const packaged = { ...story, preflight };
+const state = (w, product = false) => workflowProgress(w, product);
+const statuses = w => state(w).stages.map(s => s.status);
+const render = (w, extras = {}) => renderToStaticMarkup(React.createElement(V3WorkflowProgress, { workspace: w, productRequired: false, busy: false, locked: false, buildFailure: null, act: async () => true, ...extras }));
+const elements = node => node == null ? [] : Array.isArray(node) ? node.flatMap(elements) : typeof node === "object" && node.props ? [node, ...elements(node.props.children)] : [];
+const text = node => node == null || typeof node === "boolean" ? "" : Array.isArray(node) ? node.map(text).join("") : typeof node === "object" ? text(node.props?.children) : String(node);
+const find = (node, predicate) => { const found = elements(node).find(predicate); assert.ok(found); return found; };
+try {
+  equal(statuses(empty), ["not_started", "not_started", "not_started", "not_started"]);
+  equal(state({ ...empty, artifacts: [artifact("character")] }).current.status, "in_progress");
+  equal(state(refs).current.id, "storyboard");
+  equal(state(refs, true).stages[0].status, "in_progress");
+  equal(state({ ...refs, artifacts: [...refs.artifacts, artifact("product", { approved: false })] }, true).current.status, "waiting_approval");
+  equal(state({ ...refs, artifacts: [...refs.artifacts, artifact("product")] }, true).stages[0].status, "completed");
+  for (const kind of ["character", "product", "location"]) {
+    const w = { ...empty, tasks: [task(kind, "running")] };
+    equal(state(w, kind === "product").current.status, "in_progress");
+    equal(state({ ...w, tasks: [task(kind, "failed", { diagnostics: { category: "storage" }, recoveryAvailable: true })] }, kind === "product").current.status, "failed");
+  }
+  equal(state({ ...refs, artifacts: refs.artifacts.map(a => a.kind === "location" ? { ...a, approved: false } : a) }).current.status, "waiting_approval");
+  equal(state({ ...refs, tasks: [task("storyboard", "queued")] }).current.status, "in_progress");
+  const storyReview = { ...story, artifacts: story.artifacts.map(a => a.kind === "storyboard" ? { ...a, approved: false } : a) };
+  equal(state(storyReview).current.id, "storyboard"); equal(state(storyReview).current.status, "waiting_approval");
+  ok(state(storyReview).current.guidance.includes("Review and approve your Storyboard"));
+  equal(state(story).current.id, "package");
+  equal(state({ ...story, tasks: [task("package", "running")] }).current.status, "in_progress");
+  equal(state({ ...story, tasks: [task("package", "failed", { packageBuild: { code: "COST_ESTIMATE_UNAVAILABLE", recoverable: false } })] }).current.status, "failed");
+  const packageReview = { ...packaged, preflight: { ...preflight, authorizationState: "missing" } };
+  equal(state(packageReview).current.status, "waiting_approval");
+  ok(state(packageReview).current.guidance.includes("estimated video cost"));
+  equal(state({ ...packaged, preflight: { ...preflight, issues: ["V3_AUTHORIZATION_EXPIRED"] } }).current.description, "Your package approval has expired.");
+  equal(state(packaged).current.id, "final"); equal(state(packaged).current.status, "not_started");
+  for (const execution of ["queued", "submitting", "provider_processing", "result_saved"]) {
+    const w = { ...packaged, runs: [run(execution)] };
+    equal(state(w).current.status, "in_progress"); ok(state(w).current.description.includes(execution === "provider_processing" ? "processing" : execution === "result_saved" ? "saving" : execution));
+    equal(state(w).complete, false);
+  }
+  equal(state({ ...packaged, runs: [run("provider_processing", { stage: { stage: "HIGGSFIELD_RESULT_RECEIVED" } })] }).current.description, "Your video: downloading.");
+  const videoReady = { ...packaged, preflight: { ...preflight, canSubmit: false, issues: ["V3_SEGMENT_AUTHORIZATION_REQUIRED", "EXISTING_INTENT_RECONCILE_OR_REUSE"] }, runs: [run("awaiting_review")] };
+  equal(state(videoReady).current.status, "waiting_approval"); equal(state(videoReady).complete, false);
+  equal(state(videoReady).current.description, "Your video is ready for review.");
+  equal(state({ ...videoReady, runs: [run("awaiting_review", { preview: null })] }).current.status, "needs_attention");
+  equal(state({ ...videoReady, tasks: [task("package", "done", { packageBuild: { code: "COST_ESTIMATE_UNAVAILABLE", estimateStatus: "unavailable" } })] }).stages[2].status, "completed");
+  const complete = { ...videoReady, complete: true, runs: [run("approved", { completedAt: "2026-11-04T12:00:00Z" })] };
+  equal(statuses(complete), ["completed", "completed", "completed", "completed"]); equal(state(complete).complete, true);
+  equal(state({ ...complete, complete: false }).complete, false);
+  equal(state({ ...complete, runs: [run("approved")] }).complete, false);
+  const stale = { ...complete, artifacts: complete.artifacts.map(a => a.kind === "character" ? { ...a, current: false } : a) };
+  equal(statuses(stale), ["needs_attention", "needs_attention", "needs_attention", "needs_attention"]); equal(state(stale).complete, false);
+  equal(state({ ...complete, preflight: { ...preflight, currentness: "stale" } }).complete, false);
+  equal(state({ ...complete, preflight: null, packageStale: true }).stages[2].status, "needs_attention");
+  equal(state({ ...packaged, runs: [run("failed")] }).current.status, "failed");
+  equal(state({ ...packaged, runs: [run("reconciliation_required", { hasKnownRequest: true })] }).current.status, "in_progress");
+  equal(state({ ...packaged, runs: [run("reconciliation_required", { hasKnownRequest: false })] }).current.status, "needs_attention");
+  equal(state({ ...packaged, runs: [run("reconciliation_required", { hasKnownRequest: true, errorCode: "OUTPUT_HOST_APPROVAL_REQUIRED" })] }).current.status, "needs_attention");
+  equal(state({ ...packaged, runs: [run("queued", { submissionBlocker: "PAID_V3_EXECUTION_DISABLED" })] }).current.status, "needs_attention");
+  equal(state({ ...packaged, runs: [run("failed"), run("provider_processing", { id: "new-attempt" })] }).current.status, "in_progress");
+  const multi = { ...packaged, preflight: { ...preflight, segmentCount: 2 }, runs: [run("approved", { completedAt: "now" }), run("approved", { id: "second", segmentId: "segment-2", completedAt: "now" })] };
+  equal(state(multi).complete, false); equal(state(multi).current.status, "in_progress");
+  equal(state({ ...multi, runs: [run("awaiting_review"), multi.runs[1]] }).current.status, "waiting_approval");
+  equal(state({ ...multi, tasks: [task("join", "failed")] }).current.status, "failed");
+  equal(state({ ...multi, runs: [...multi.runs, run("awaiting_review", { id: "joined", segmentId: "joined" })] }).current.description, "Your video is ready for review.");
+  equal(state({ ...multi, complete: true, runs: [...multi.runs, run("approved", { id: "joined", segmentId: "joined", completedAt: "now" })] }).complete, true);
+
+  for (const w of [empty, refs, storyReview, packageReview, packaged, videoReady, complete, stale, multi]) {
+    const markup = render(w);
+    for (const label of ["Generation stages", "References", "Storyboard", "Package", "Final Video", "Current state", "What this means", "Package technical details", "Final Video prerequisites", "Final Video details"]) ok(markup.includes(label));
+    equal((markup.match(/<details/g) ?? []).length, 3); ok(!/<details[^>]*\sopen[\s=>]/.test(markup));
+    ok(!markup.includes("Check status")); ok(!markup.includes("private-project-id"));
+    ok(markup.includes("aria-current=\"step\"")); ok(markup.includes("@min-[30rem]/progress:grid-cols-"));
+  }
+  const readyMarkup = render(videoReady); ok(readyMarkup.includes("already generated")); ok(readyMarkup.includes("New-request prerequisite codes"));
+  const emptyMarkup = render(empty); ok(!emptyMarkup.includes("Actual provider cost")); ok(!emptyMarkup.includes("Unavailable")); ok(!emptyMarkup.includes("Not measured"));
+  const costs = render({ ...packaged, runs: [run("awaiting_review", { actualDurationMs: 10080, hasAudio: true, actualCostMicrousd: 0 })] });
+  ok(costs.includes("10.08s")); ok(costs.includes("~$2.06")); ok(costs.includes("$0.00"));
+  const actions = [];
+  const recovery = V3WorkflowProgress({ workspace: { ...refs, tasks: [task("storyboard", "reconciliation_required", { recoveryAvailable: true })] }, productRequired: false, busy: false, locked: false, buildFailure: null, act: async (...args) => { actions.push(args); return true; } });
+  find(recovery, n => n.type?.name === "Button" && text(n) === "Recover saved response").props.onClick();
+  equal(actions, [["recover_task", { id: "storyboard-task" }]]);
+
+  // Exercise the existing owner: polling results, saved-action results, lifecycle refresh and stale-read fencing.
+  let initial = { ...packaged, processing: true, runs: [run("provider_processing")] };
+  const receivedLocks = [];
+  const owner = () => { cursor = 0; effects = []; return V3WorkflowPreview({ initial, projectId: initial.projectId, assets: [], dirty: false, revision: "saved", onCreativeLock: value => receivedLocks.push(value) }); };
+  const progressProps = tree => find(tree, n => n.type === V3WorkflowProgress).props;
+  slots = []; let tree = owner(); equal(state(progressProps(tree).workspace).current.status, "in_progress");
+  const listeners = new Map(), timers = new Map(); let timerId = 0;
+  const originals = { window: globalThis.window, document: globalThis.document, setTimeout: globalThis.setTimeout, clearTimeout: globalThis.clearTimeout };
+  const handlers = new Map();
+  const addEventListener = (name, handler) => { const group = handlers.get(name) ?? new Set(); group.add(handler); handlers.set(name, group); listeners.set(name, () => [...group].forEach(fn => fn())); };
+  const removeEventListener = (name, handler) => { const group = handlers.get(name); group?.delete(handler); if (!group?.size) { handlers.delete(name); listeners.delete(name); } };
+  globalThis.window = { addEventListener, removeEventListener };
+  globalThis.document = { visibilityState: "visible", addEventListener, removeEventListener };
+  globalThis.setTimeout = (callback, delay) => { const id = ++timerId; timers.set(id, { callback, delay }); return id; };
+  globalThis.clearTimeout = id => timers.delete(id);
+  const requests = [];
+  globalThis.fetch = async (url, options = {}) => { requests.push({ url, options }); return Response.json({ ok: true, workspace: videoReady }); };
+  const flush = async () => { for (let i = 0; i < 12; i++) await Promise.resolve(); };
+  try {
+    const setups = effects.map(({ effect }) => effect());
+    const poll = [...timers.values()].find(t => t.delay === 3000); ok(poll);
+    await poll.callback(); tree = owner(); equal(state(progressProps(tree).workspace).current.status, "waiting_approval");
+    for (const name of ["focus", "pageshow", "visibilitychange"]) ok(listeners.has(name));
+    globalThis.fetch = async () => Response.json({ ok: true, workspace: complete });
+    listeners.get("focus")(); await flush(); tree = owner(); equal(state(progressProps(tree).workspace).complete, true);
+    globalThis.fetch = async () => Response.json({ ok: true, workspace: videoReady });
+    listeners.get("visibilitychange")(); await flush(); tree = owner(); equal(state(progressProps(tree).workspace).complete, false);
+    globalThis.fetch = async () => Response.json({ ok: false, code: "V3_STATUS_UNAVAILABLE" });
+    listeners.get("focus")(); await flush(); tree = owner(); equal(progressProps(tree).error, "V3_STATUS_UNAVAILABLE");
+    globalThis.fetch = async () => Response.json({ ok: true, workspace: videoReady });
+    listeners.get("focus")(); await flush(); tree = owner(); equal(progressProps(tree).error, "");
+    // A pending old status response arrives after an approval action: keep the action's newer DTO.
+    let finishOldRead;
+    globalThis.fetch = (_url, options = {}) => options.method === "POST" ? Promise.resolve(Response.json({ ok: true, workspace: complete }))
+      : new Promise(resolveRead => { finishOldRead = resolveRead; });
+    listeners.get("pageshow")();
+    await progressProps(tree).act("approve", { id: "run", reviewMode: "direct" });
+    finishOldRead(Response.json({ ok: true, workspace: videoReady })); await flush();
+    tree = owner(); equal(state(progressProps(tree).workspace).complete, true);
+    setups.forEach(cleanup => cleanup?.()); equal(listeners.size, 0);
+    ok(requests.every(r => r.options.method !== "POST"));
+    // M6 retries a temporary initial status read even before a saved task is known.
+    initial = { ...packaged, multiClip: { packageId: 'package', packageHash: 'a'.repeat(64), clips: [], merge: { manifestHash: 'b'.repeat(64), taskId: null, status: null, deleting: false } } };
+    slots = []; timers.clear(); tree = owner();
+    const m6Setups = effects.map(({ effect }) => effect());
+    globalThis.fetch = async () => Response.json({ ok: false, code: "V3_DATABASE_TIMEOUT", retryable: true }, { status: 503 });
+    const initialRefresh = [...timers.values()].filter(t => t.delay === 0).at(-1); ok(initialRefresh);
+    await initialRefresh.callback(); await flush(); tree = owner();
+    equal(progressProps(tree).error, "");
+    const retryEffect = effects.find(e => e.deps?.[0] === initial.projectId && e.deps?.[1] === true && e.deps?.[2] === 10000); ok(retryEffect);
+    const stopRetry = retryEffect.effect();
+    globalThis.fetch = async () => Response.json({ ok: true, workspace: { ...complete, multiClip: initial.multiClip } });
+    await [...timers.values()].find(t => t.delay === 10000).callback(); tree = owner();
+    equal(progressProps(tree).workspace.complete, true); equal(progressProps(tree).error, "");
+    // A permanent infrastructure failure stays visible even with saved merge work.
+    initial = { ...initial, multiClip: { ...initial.multiClip, merge: { ...initial.multiClip.merge, status: "running", taskId: "merge-task" } } };
+    stopRetry?.(); m6Setups.forEach(cleanup => cleanup?.()); slots = []; timers.clear(); tree = owner();
+    const permanentSetups = effects.map(({ effect }) => effect());
+    globalThis.fetch = async () => Response.json({ ok: false, code: "V3_DATABASE_PERMISSION_DENIED", retryable: false }, { status: 503 });
+    await [...timers.values()].filter(t => t.delay === 0).at(-1).callback(); await flush(); tree = owner();
+    equal(progressProps(tree).error, "V3_DATABASE_PERMISSION_DENIED");
+    permanentSetups.forEach(cleanup => cleanup?.());
+    // Reconcile actual dependency identities across retained renders instead of
+    // reinstalling every effect. Idle state must stay idle after hydration.
+    let installed = [], lifecycleCalls = [];
+    const syncEffects = () => {
+      tree = owner();
+      effects.forEach((next, i) => {
+        if (!installed[i] || !sameDependencies(installed[i].deps, next.deps)) {
+          installed[i]?.cleanup?.(); installed[i] = { deps: next.deps, cleanup: next.effect() };
+        }
+      });
+      return tree;
+    };
+    const leave = () => { installed.forEach(item => item?.cleanup?.()); installed = []; timers.clear(); };
+    const fire = async delay => {
+      for (const [id, timer] of [...timers]) if (timer.delay === delay && timers.has(id)) { timers.delete(id); await timer.callback(); await flush(); }
+    };
+    initial = videoReady; slots = []; timers.clear();
+    globalThis.fetch = async (url, options) => { lifecycleCalls.push({ url, options }); return Response.json({ ok: true, workspace: initial }); };
+    syncEffects(); await fire(0); syncEffects();
+    equal(lifecycleCalls.length, 1);
+    for (let i=0;i<25;i++) { syncEffects(); await fire(0); }
+    equal(lifecycleCalls.length, 1); equal(timers.size, 0);
+    // Many focus events during one read coalesce; they cannot drain a queue
+    // through an immediate do/while loop after the response.
+    let finishFocus;
+    globalThis.fetch = (url, options) => { lifecycleCalls.push({ url, options }); return new Promise(resolveRead => { finishFocus = resolveRead; }); };
+    const beforeFocus = lifecycleCalls.length;
+    for (let i=0;i<15;i++) listeners.get("focus")();
+    equal(lifecycleCalls.length, beforeFocus + 1);
+    finishFocus(Response.json({ ok: true, workspace: initial })); await flush(); syncEffects();
+    equal(lifecycleCalls.length, beforeFocus + 1); equal(timers.size, 0); leave();
+    // An old processing snapshot must not keep polling after a permanent error.
+    initial = { ...packaged, processing: true, runs: [run("provider_processing")] }; slots = []; lifecycleCalls = [];
+    globalThis.fetch = async (url, options) => { lifecycleCalls.push({ url, options }); return Response.json({ ok: false, code: "V3_DATABASE_PERMISSION_DENIED", retryable: false }, { status: 503 }); };
+    syncEffects(); await fire(0); syncEffects();
+    equal(progressProps(tree).error, "V3_DATABASE_PERMISSION_DENIED"); equal(lifecycleCalls.length, 1); equal(timers.size, 0); leave();
+    // The owner stays mounted with its saved data when Workflow closes, but
+    // status timers/reads stop. Reopening and visibility return do one read.
+    slots = []; lifecycleCalls = []; globalThis.__progressPanels = { workflowOpen: false };
+    globalThis.fetch = async (url, options) => { lifecycleCalls.push({ url, options }); return Response.json({ ok: true, workspace: initial }); };
+    syncEffects(); await fire(0); syncEffects(); equal(lifecycleCalls.length, 1); equal(timers.size, 0);
+    for(let i=0;i<10;i++){syncEffects();await fire(0);}equal(lifecycleCalls.length,1);
+    globalThis.__progressPanels = { workflowOpen: true }; syncEffects(); await fire(0); syncEffects(); equal(lifecycleCalls.length, 2); ok([...timers.values()].some(timer => timer.delay === 3000));
+    globalThis.__progressPanels = { workflowOpen: false }; syncEffects(); equal(timers.size, 0); equal(progressProps(tree).workspace.processing, true);
+    globalThis.__progressPanels = { workflowOpen: true }; syncEffects(); await fire(0); syncEffects();
+    globalThis.document.visibilityState = "hidden"; listeners.get("visibilitychange")(); syncEffects(); equal(timers.size, 0);
+    const hiddenCalls = lifecycleCalls.length; globalThis.document.visibilityState = "visible"; listeners.get("visibilitychange")(); syncEffects(); await fire(0); syncEffects(); equal(lifecycleCalls.length, hiddenCalls + 1);
+    ok(lifecycleCalls.every(call => call.url.startsWith('/api/ugc/v3?') && call.options.redirect === 'error' && call.options.method !== 'POST'));
+    leave();
+    // Reference generation is displayed in separate Source cards, so its
+    // necessary status updates survive closing the Final Video drawer.
+    initial = { ...refs, processing: true, tasks: [task('character','running')] }; slots=[]; lifecycleCalls=[];
+    globalThis.__progressPanels = { workflowOpen: false };syncEffects();await fire(0);syncEffects();equal(lifecycleCalls.length,1);ok([...timers.values()].some(timer=>timer.delay===3000));
+    initial = { ...refs, processing: false };await fire(3000);syncEffects();equal(timers.size,0);leave();delete globalThis.__progressPanels;
+    // A newly approved source clip updates the surrounding Studio exactly once.
+    // Equivalent DTOs and parent callback identity changes cannot cause a loop.
+    const creativeLock = { state: 'locked', packageId: 'package', capturedAt: '2026-11-09T00:00:00Z', firstApprovedAt: '2026-11-09T00:00:00Z', originalIds: [], referenceIds: [] };
+    initial = { ...videoReady, creativeLock };slots=[];lifecycleCalls=[];
+    globalThis.fetch=async(url,options)=>{lifecycleCalls.push({url,options});return Response.json({ok:true,workspace:initial});};
+    const beforeLock = receivedLocks.length;syncEffects();await fire(0);syncEffects();equal(receivedLocks.length,beforeLock+1);equal(receivedLocks.at(-1),creativeLock);
+    for(let i=0;i<25;i++){syncEffects();await fire(0);}equal(receivedLocks.length,beforeLock+1);equal(lifecycleCalls.length,1);equal(timers.size,0);
+    equal(await progressProps(tree).act('storyboard'),false);equal(lifecycleCalls.length,1);
+    ok(render(initial).includes('Locked after first clip approval'));
+    ok(render({...initial,creativeLock:{...creativeLock,state:'needs_review'}}).includes('administrator review required'));
+    leave();
+    // Mode commits are independent of the brief revision. A closed drawer still
+    // reconciles once, preserving approved outputs and the mounted editor.
+    globalThis.__progressMode = 'pro'; globalThis.__progressPanels = { workflowOpen: false };
+    initial = { ...complete, creativeLock }; slots=[]; lifecycleCalls=[];
+    globalThis.fetch = async (url, options) => {
+      lifecycleCalls.push({url,options});
+      return Response.json({ok:true,workspace:{...initial,...(globalThis.__progressMode==='basic'?{proDurationRetained:true}:{})}});
+    };
+    syncEffects(); await fire(0); syncEffects(); equal(lifecycleCalls.length,1);
+    globalThis.__progressMode = 'basic'; syncEffects(); await fire(0); syncEffects();
+    equal(lifecycleCalls.length,2); equal(progressProps(tree).workspace.proDurationRetained,true);
+    equal(progressProps(tree).workspace.runs,initial.runs); equal(progressProps(tree).workspace.creativeLock,creativeLock);
+    globalThis.__progressMode = 'pro'; syncEffects(); await fire(0); syncEffects();
+    equal(lifecycleCalls.length,3); equal(progressProps(tree).workspace.proDurationRetained,undefined);
+    equal(progressProps(tree).workspace.complete,true);
+    syncEffects(); await fire(0); equal(lifecycleCalls.length,3); equal(timers.size,0);
+    ok(lifecycleCalls.every(call=>call.options.method!=='POST')); leave();
+    delete globalThis.__progressMode; delete globalThis.__progressPanels;
+
+    // Package approval evidence and unused paid authority have separate lives.
+    const packageTree = workspace => {
+      initial=workspace;slots=[];let result=owner();
+      find(result,n=>n.type==='button'&&text(n)==='Package').props.onClick();
+      return owner();
+    };
+    const approvalButton = result => find(result,n=>n.type?.name==='Button'&&text(n)==='Approve Generation Package');
+    for(const savedState of ['awaiting_review','approved']) {
+      const result=packageTree({...packaged,runs:[run(savedState)],preflight:{...preflight,issues:['V3_AUTHORIZATION_EXPIRED','V3_SEGMENT_AUTHORIZATION_REQUIRED']}});
+      equal(text(find(result,n=>n.props?.['aria-label']==='Package overview')).includes('Approved'),true);
+      equal(approvalButton(result).props.disabled,true);
+    }
+    const frozen=packageTree({...complete,creativeLock,preflight:{...preflight,authorizedMaximumMicrousd:3000000}});
+    equal(find(frozen,n=>n.type==='input'&&n.props.type==='number').props.disabled,true);
+    equal(find(frozen,n=>n.type==='input'&&n.props.type==='number').props.value,'3.00');
+    equal(find(frozen,n=>n.type==='input'&&n.props.type==='checkbox').props.disabled,true);
+    equal(find(frozen,n=>n.type==='input'&&n.props.type==='checkbox').props.checked,true);
+    equal(approvalButton(frozen).props.disabled,true);
+    const rejected=packageTree({...packaged,runs:[run('deleted')],preflight:{...preflight,authorizationState:'missing',issues:['V3_AUTHORIZATION_REQUIRED']}});
+    equal(text(find(rejected,n=>n.props?.['aria-label']==='Package overview')).includes('Ready for review'),true);
+    equal(find(rejected,n=>n.type==='input'&&n.props.type==='number').props.disabled,false);
+  } finally { Object.assign(globalThis, originals); }
+  // Reload/reopen takes the persisted approval rather than a local visited-tab flag.
+  initial = complete; slots = []; equal(state(progressProps(owner()).workspace).complete, true);
+  equal(realNetworkCalls, 0);
+  console.log(JSON.stringify({ checks, realNetworkCalls, scope: "V3 Progress saved states, disclosures, recovery and automatic synchronization" }));
+} finally { globalThis.fetch = originalFetch; delete globalThis.__progressReact; delete globalThis.__progressPanels; delete globalThis.__progressMode; }

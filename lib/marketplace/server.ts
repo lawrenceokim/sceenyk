@@ -1,4 +1,5 @@
 import "server-only";
+import { readAppUser } from "@/lib/auth/read-app-user";
 import { z } from "zod";
 import { connection } from "next/server";
 import { ensureAppUser } from "@/lib/auth/ensure-app-user";
@@ -54,14 +55,14 @@ export async function getMarketplaceListing(input: unknown): Promise<Listing | n
   return data ? withEstimate((await withCreatorIdentities([listingSchema.parse(data)]))[0]) : null;
 }
 export async function listOwnedMarketplaceListings(input: unknown = 1): Promise<ListingPage<OwnedListing>> {
-  const user = await ensureAppUser();
+  const user = await readAppUser();
   const pageNumber = browseSchema.shape.page.parse(input);
   const { data, error } = await createDatabaseClient().rpc("marketplace_owned", { p_owner_user_id: user.id, p_page: pageNumber });
   const page = z.object({ ...pageFields, items: z.array(ownedListingSchema) }).parse(checked(data, error));
   return { ...page, items: (await withCreatorIdentities(page.items)).map(withEstimate) };
 }
 export async function getOwnedMarketplaceListing(input: unknown, byProject = false): Promise<OwnedListing | null> {
-  const user = await ensureAppUser();
+  const user = await readAppUser();
   const id = z.uuid().safeParse(input);
   if (!id.success) return null;
   const { data, error } = await createDatabaseClient().rpc("marketplace_owned_listing", {
@@ -95,7 +96,7 @@ export async function createMarketplaceListing(input: unknown): Promise<Marketpl
   const parsed = createListingSchema.safeParse(input);
   if (!parsed.success) return { ok: false, code: "INVALID_INPUT", message: parsed.error.issues[0].message };
   const v = parsed.data;
-  try { validateMarketplacePrice(v.adoptionType, v.priceMinor); } catch { return { ok: false, code: "INVALID_INPUT", message: "Choose Free or a Sandbox price from $1.00 to $25.00." }; }
+  try { validateMarketplacePrice(v.adoptionType, v.priceMinor); } catch { return { ok: false, code: "INVALID_INPUT", message: "Choose Free or a price from $1.00 to $25.00." }; }
   const { data, error } = await createDatabaseClient().rpc("marketplace_create_priced", {
     p_owner_user_id: user.id, p_listing_id: v.id, p_project_id: v.sourceProjectId, p_title: v.title,
     p_description: v.description, p_category: v.category, p_tags: v.tags, p_instructions: v.instructions,
@@ -109,7 +110,7 @@ export async function updateMarketplaceListing(input: unknown, preview?: FormDat
   const parsed = updateListingSchema.safeParse(input);
   if (!parsed.success) return { ok: false, code: "INVALID_INPUT", message: parsed.error.issues[0].message };
   const v = parsed.data;
-  try { validateMarketplacePrice(v.adoptionType, v.priceMinor); } catch { return { ok: false, code: "INVALID_INPUT", message: "Choose Free or a Sandbox price from $1.00 to $25.00." }; }
+  try { validateMarketplacePrice(v.adoptionType, v.priceMinor); } catch { return { ok: false, code: "INVALID_INPUT", message: "Choose Free or a price from $1.00 to $25.00." }; }
   if (preview && !v.rightsConfirmed) return { ok: false, code: "INVALID_INPUT", message: "Confirm your rights to the preview before publishing." };
   const derivative = preview ? await prepareTemplatePreview(user.id, v.id, preview) : null;
   const args = {

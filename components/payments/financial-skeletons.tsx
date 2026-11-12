@@ -1,4 +1,4 @@
-import { Skeleton, SkeletonButton, SkeletonField, SkeletonRegion } from "@/components/ui/skeleton";
+import { Skeleton, SkeletonButton, SkeletonRegion } from "@/components/ui/skeleton";
 
 const cardClassName = "sceenyk-card min-w-0 space-y-3 rounded-[var(--radius-xl)] border border-border bg-card p-5 sm:p-6";
 
@@ -10,7 +10,13 @@ export function FinancialRowsSkeleton({ count = 3 }: { count?: number }) {
   return <SkeletonRegion label="Loading history…" className="divide-y divide-border">{Array.from({ length: count }, (_, i) => <div key={i} className="space-y-2 py-4"><div className="flex justify-between gap-4"><Skeleton className="h-5 w-2/5" /><Skeleton className="h-5 w-1/4" /></div><Skeleton className="h-4 w-3/4" /><Skeleton className="h-4 w-32" /></div>)}</SkeletonRegion>;
 }
 
-export function CreditAccountSkeleton() {
+export function CreditAccountSkeleton({ dashboard = false }: { dashboard?: boolean }) {
+  if (dashboard) return <SkeletonRegion label="Loading your credit account…" className="@container/billing grid min-w-0 gap-4">
+    <div className="grid gap-4 rounded-[14px] border border-primary/25 bg-primary/[0.035] p-5 @min-[400px]/billing:grid-cols-2 @min-[640px]/billing:grid-cols-3 @min-[880px]/billing:pr-48">{[0, 1, 2].map(i => <div key={i} className="grid gap-2"><Skeleton className="h-4 w-32 max-w-full" /><Skeleton className="h-7 w-20 max-w-full" /></div>)}</div>
+    <div className="grid gap-4 rounded-[14px] border border-border bg-card px-5 py-4"><Skeleton className="h-6 w-32" /><div className="grid gap-4 @min-[640px]/billing:grid-cols-2"><div className="grid gap-2"><Skeleton className="h-4 w-36" /><Skeleton className="h-10 w-full" /></div><div className="grid gap-2"><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-full" /></div></div><div className="grid gap-3 @min-[640px]/billing:grid-cols-[1fr_200px]"><Skeleton className="h-10 w-full" /><SkeletonButton className="w-full" /></div></div>
+    <div className="grid gap-4 @min-[760px]/billing:grid-cols-2">{[0, 1].map(i => <div key={i} className="rounded-[14px] border border-border bg-card px-5 py-4"><Skeleton className="h-6 w-40" /><FinancialRowsSkeleton count={2} /></div>)}</div>
+    <div className="flex gap-4 rounded-[14px] border border-border bg-card px-5 py-4"><Skeleton className="size-12 shrink-0 rounded-[18px]" /><div className="grid w-full gap-2"><Skeleton className="h-5 w-32 max-w-full" /><Skeleton className="h-5 w-72 max-w-full" /><Skeleton className="h-4 w-full" /></div></div>
+  </SkeletonRegion>;
   return <SkeletonRegion label="Loading your credit account…" className="space-y-6">
     <div className={`${cardClassName} flex flex-wrap items-center justify-between gap-4`}><div className="space-y-2"><Skeleton className="h-4 w-36" /><Skeleton className="h-9 w-24" /><Skeleton className="h-4 w-48" /><Skeleton className="h-4 w-48" /></div><SkeletonButton className="w-36" /></div>
     <div className="grid gap-4 md:grid-cols-3">{[0, 1, 2].map(i => <div key={i} className={cardClassName}><Skeleton className="h-6 w-28 rounded-full" /><Skeleton className="size-6" /><Skeleton className="h-7 w-24" /><Skeleton className="h-9 w-32 max-w-full" /><Skeleton className="h-6 w-28" /><Skeleton className="h-12 w-full" /><SkeletonButton className="w-full" /></div>)}</div>
@@ -20,16 +26,20 @@ export function CreditAccountSkeleton() {
 }
 
 export function PurchasesSkeleton() {
-  return <SkeletonRegion label="Loading Marketplace purchases…" className="space-y-6"><SkeletonButton className="w-36" /><Skeleton className="h-10 w-full" />{[0, 1, 2].map(i => <div key={i} className={cardClassName}><Skeleton className="h-6 w-2/3" /><Skeleton className="h-5 w-1/2" /><Skeleton className="h-4 w-28" /><SkeletonButton className="w-36" /></div>)}</SkeletonRegion>;
+  return <SkeletonRegion label="Loading Marketplace purchases…" className="@container/purchases min-w-0 space-y-6 sm:space-y-7">
+    <div className="flex flex-wrap items-center gap-4"><SkeletonButton className="h-10 w-40" /><Skeleton className="h-4 w-80 max-w-full" /></div>
+    <div className="space-y-4">{[0, 1].map(i => <div key={i} className="grid min-w-0 gap-5 rounded-[18px] border border-primary/30 bg-card p-4 @min-[700px]/purchases:grid-cols-[minmax(0,0.9fr)_minmax(0,1.15fr)] @min-[700px]/purchases:gap-7 @min-[900px]/purchases:p-5">
+      <Skeleton className="aspect-video w-full rounded-[13px]" />
+      <div className="grid content-center gap-5 py-1"><div className="flex flex-wrap items-center gap-4"><Skeleton className="h-7 w-36" /><Skeleton className="h-6 w-24" /></div><Skeleton className="h-5 w-56 max-w-full" /><div className="flex gap-3"><SkeletonButton className="h-10 flex-1" /><Skeleton className="size-10 shrink-0 rounded-lg" /></div></div>
+    </div>)}</div><Skeleton className="mx-auto h-4 w-32" />
+  </SkeletonRegion>;
 }
 
 export function EarningsSkeleton() {
-  return <SkeletonRegion label="Loading earnings and payouts…" className="space-y-6">
-    <SkeletonButton className="w-36" />
-    <div className="grid gap-4 sm:grid-cols-3">{[0, 1, 2].map(i => <div key={i} className={cardClassName}><Skeleton className="h-5 w-3/4" /><Skeleton className="h-8 w-24" /></div>)}</div>
-    <section className={cardClassName}><h2 className="text-xl font-semibold">Withdraw creator earnings</h2><Skeleton className="h-16 w-full" /><SkeletonField /><SkeletonButton className="w-36" /><Skeleton className="h-4 w-3/4" /><SkeletonField /><SkeletonButton className="w-28" /><div className="h-5" /></section>
-    <section className="space-y-4"><h2 className="text-xl font-semibold">Withdrawal history</h2><div className={cardClassName}><FinancialRowsSkeleton count={2} /></div></section>
-    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">{Array.from({ length: 6 }, (_, i) => <div key={i} className={cardClassName}><Skeleton className="h-5 w-3/4" /><Skeleton className="h-8 w-24" /></div>)}</div>
-    <div className={cardClassName}><FinancialRowsSkeleton /></div>
+  return <SkeletonRegion label="Loading earnings and payouts…" className="@container/earnings grid min-w-0 gap-4">
+    <div className="grid grid-cols-2 gap-5 rounded-[14px] border border-primary/25 bg-primary/[0.03] p-5 @min-[720px]/earnings:grid-cols-4">{[0, 1, 2, 3].map(i => <div key={i} className="grid gap-2"><Skeleton className="h-4 w-28 max-w-full" /><Skeleton className="h-6 w-20" /></div>)}</div>
+    <div className="grid gap-3 @min-[360px]/earnings:grid-cols-2 @min-[760px]/earnings:grid-cols-4">{[0, 1, 2, 3].map(i => <div key={i} className="flex gap-3 rounded-[14px] border border-border bg-card p-4"><Skeleton className="size-11 shrink-0 rounded-xl" /><div className="grid min-w-0 gap-2"><Skeleton className="h-3 w-28 max-w-full" /><Skeleton className="h-5 w-16" /></div></div>)}</div>
+    <div className="grid gap-4 @min-[680px]/earnings:grid-cols-2">{[0, 1].map(i => <div key={i} className="grid gap-3 rounded-[14px] border border-border bg-card p-4"><div className="flex gap-3"><Skeleton className="size-11 shrink-0 rounded-xl" /><div className="grid min-w-0 gap-2"><Skeleton className="h-4 w-40 max-w-full" /><Skeleton className="h-3 w-48 max-w-full" /></div></div><Skeleton className="h-9 w-full" /><Skeleton className="h-8 w-full" /><Skeleton className="h-7 w-36" /></div>)}</div>
+    <div className="grid gap-4 @min-[680px]/earnings:grid-cols-2">{[0, 1].map(i => <div key={i} className="grid justify-items-center gap-3 rounded-[14px] border border-border bg-card p-4"><Skeleton className="h-5 w-36 justify-self-start" /><Skeleton className="h-16 w-24 rounded-xl" /><Skeleton className="h-4 w-36" /><Skeleton className="h-3 w-4/5" /></div>)}</div>
   </SkeletonRegion>;
 }

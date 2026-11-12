@@ -2,7 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { unstable_rethrow } from "next/navigation";
-import { adoptMarketplaceListing, createMarketplaceListing, deleteOwnedTemplate, updateMarketplaceListing } from "@/lib/marketplace/server";
+import { adoptMarketplaceListing, createMarketplaceListing, deleteOwnedTemplate, getOwnedMarketplaceListing, updateMarketplaceListing } from "@/lib/marketplace/server";
+import { ensureAppUser } from "@/lib/auth/ensure-app-user";
 import type { MarketplaceResult } from "@/lib/marketplace/contract";
 import { getOwnedTemplateSource, initializeProjectTemplate } from "@/lib/marketplace/project-template";
 
@@ -10,15 +11,11 @@ async function run(work: () => Promise<MarketplaceResult>): Promise<MarketplaceR
   try {
     const result = await work();
     if (result.ok) {
-      revalidatePath("/marketplace", "layout");
-      revalidatePath("/settings/templates");
-      revalidatePath("/templates");
       if ("listingId" in result) {
-        revalidatePath("/projects");
+        revalidatePath(`/marketplace/${result.listingId}`);
         revalidatePath(`/templates/${result.listingId}`);
         revalidatePath(`/settings/templates/${result.listingId}`);
       }
-      if ("projectId" in result) revalidatePath("/projects");
     }
     return result;
   } catch (error: unknown) {
@@ -35,3 +32,15 @@ export async function readTemplateSourceAction(listingId: unknown) {
 }
 export async function adoptMarketplaceAction(input: unknown) { return run(() => adoptMarketplaceListing(input)); }
 export async function deleteTemplateAction(input: unknown) { return run(() => deleteOwnedTemplate(input)); }
+
+// Return only the viewer's ownership result, never the private listing snapshot.
+// This read must not invalidate the public route or start a checkout.
+export async function marketplaceListingAccessAction(listingId: unknown): Promise<
+  { ok: true; clerkUserId: string; owned: boolean } | { ok: false }
+> {
+  try {
+    const user = await ensureAppUser();
+    const listing = await getOwnedMarketplaceListing(listingId);
+    return { ok: true, clerkUserId: user.clerk_user_id, owned: !!listing };
+  } catch (error) { unstable_rethrow(error); return { ok: false }; }
+}

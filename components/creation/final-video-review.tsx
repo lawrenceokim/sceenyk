@@ -3,12 +3,16 @@
 import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import type { FinalAvailability } from "@/lib/final-video-generation/contract";
+import { useStudioPanels } from "./studio-workspace-panels";
+import { AppNotification } from "@/components/notifications/app-notification";
+
 
 export function FinalVideoReview({ projectId, jobId, packageId, value, checkStatus, onSaved }: {
   projectId: string; jobId: string; packageId?: string; value?: FinalAvailability;
   checkStatus: () => void; onSaved: (value: FinalAvailability) => void;
 }) {
   const [busy, setBusy] = useState(false); const [message, setMessage] = useState<string | null>(null);
+  const panels = useStudioPanels();
   const requestId = useRef<string | null>(null); const review = value?.review;
   const retryId = useRef<{ quote: string; id: string } | null>(null);
   const [confirmedRetry, setConfirmedRetry] = useState<string | null>(null);
@@ -41,12 +45,13 @@ export function FinalVideoReview({ projectId, jobId, packageId, value, checkStat
   return <section className="flex min-h-0 min-w-0 flex-1 flex-col gap-3 overflow-y-auto rounded-lg border border-border bg-card p-4">
     <div><h3 className="text-sm font-semibold text-foreground">Final Video</h3>
       <p className="mt-1 text-sm text-muted-foreground" role="status" aria-live="polite">{review?.label ?? "Generate your final video from the approved package."}</p></div>
-    {review && !review.current && review.state !== "deleted" && <p className="text-sm text-destructive">The approved package changed. This result cannot be approved as current.</p>}
+    {review && !review.current && review.state !== "deleted" && <AppNotification className="text-sm text-destructive">The approved package changed. This result cannot be approved as current.</AppNotification>}
     {review && ["review", "approved"].includes(review.state) && <>
-      <video key={`${review.id}:${review.revision}`} className="max-h-[60dvh] w-full rounded-md bg-black object-contain" controls playsInline preload="metadata" src={preview} aria-label="Private final video preview" />
+      {panels ? <Button variant="outline" onClick={() => panels.selectMedia(`legacy-video:${review.id}`)}>View in Preview</Button>
+        : <video key={`${review.id}:${review.revision}`} className="max-h-[60dvh] w-full rounded-md bg-black object-contain" controls playsInline preload="metadata" src={preview} aria-label="Private final video preview" />}
       <p className="text-xs text-muted-foreground">{((review.durationMs ?? 0) / 1000).toFixed(2)}s · {review.aspectRatio} · {review.width} × {review.height}</p>
     </>}
-    {review?.error && <div className="space-y-1 break-words text-sm text-destructive" role="alert">
+    {review?.error && <AppNotification className="space-y-1 break-words text-sm text-destructive" role="alert">
       <p>Generation stopped safely. Existing saved outputs are preserved.</p>
       {review.localError && <p>{review.localError}</p>}
       {review.failure && <>
@@ -56,7 +61,7 @@ export function FinalVideoReview({ projectId, jobId, packageId, value, checkStat
         <p>Reason: {review.failure.message}</p>
       </>}
       {(review.error === "FINAL_PROVIDER_REJECTED" || review.error === "FINAL_PROVIDER_RATE_LIMIT") && <p>Saved-work recovery cannot retry this rejected request. Inspect provider diagnostics before authorizing a replacement.</p>}
-    </div>}
+    </AppNotification>}
     {review?.effectiveAuthorization && <p className="text-xs text-muted-foreground">
       Request authorization: {review.effectiveAuthorization.originalRequests} original + {review.effectiveAuthorization.amendedRequests} amendment = {review.effectiveAuthorization.effectiveRequests}.
       {" "}{review.effectiveAuthorization.consumedRequests} consumed · {review.effectiveAuthorization.remainingRequests} remaining.
@@ -92,7 +97,7 @@ export function FinalVideoReview({ projectId, jobId, packageId, value, checkStat
       <p>Sunk/known estimate: ${(retry.sunkKnownCostMicrousd / 1000000).toFixed(6)} · Remaining pipeline: ${(retry.remainingPipelineCostMicrousd / 1000000).toFixed(6)}.</p>
       <p>Projected total: {retry.projectedTotalCostMicrousd === null ? "Unavailable" : `$${(retry.projectedTotalCostMicrousd / 1000000).toFixed(6)}`} · Additional USD authority: ${(retry.additionalCostMicrousd / 1000000).toFixed(6)} · Effective USD ceiling: ${(retry.effectiveCostAfterMicrousd / 1000000).toFixed(2)}.</p>
       {retry.configuredIncludedCredits !== null && <p>Included credits: {retry.projectedIncludedCredits} conservatively reserved/projected of {retry.configuredIncludedCredits} configured.</p>}
-      {!retry.available && <p className="text-xs text-destructive">Retry blocked: {retry.blockers.join(", ")}. Check setup and status.</p>}
+      {!retry.available && <AppNotification className="text-xs text-destructive">Retry blocked: {retry.blockers.join(", ")}. Check setup and status.</AppNotification>}
       <label className="flex items-start gap-2 text-xs"><input type="checkbox" className="mt-0.5" disabled={!retry.available || busy}
         checked={confirmedRetry === retry.quoteVersion} onChange={event => setConfirmedRetry(event.target.checked ? retry.quoteVersion : null)} />
         {retry.stage === "voice_binding" ? "I reviewed the HTTP 400 invalid_labels rejection and the corrected binding adapter" : "I reviewed the rejected HTTP 403 permission failure and corrected the key permissions"}, and approve this amendment and one replacement request. Successful outputs will be reused; processing continues within the displayed budgets.
@@ -102,7 +107,7 @@ export function FinalVideoReview({ projectId, jobId, packageId, value, checkStat
     {canGenerate && value?.authorization && <p className="text-xs text-muted-foreground">Operator-funded development generation. Authorized estimated budget: ${(value.authorization.maxEstimatedCostMicrousd / 1_000_000).toFixed(2)} · Voice language: {value.authorization.language}. Generate Final Video confirms this funding authorization.</p>}
     {!value?.available && <p className="text-sm text-muted-foreground">Final video generation requires local setup.</p>}
     {value?.available && !value.enabled && <p className="text-sm text-muted-foreground">Final video generation is not enabled for this local session.</p>}
-    {message && <p role="alert" className="text-sm text-destructive">{message}</p>}
+    {message && <AppNotification role="alert" className="text-sm text-destructive">{message}</AppNotification>}
     <div className="flex flex-wrap gap-2">
       {canGenerate && <Button size="sm" disabled={busy} onClick={() => void act("generate")}>{busy ? "Starting…" : "Generate Final Video"}</Button>}
       {review?.canApprove && <Button size="sm" disabled={busy} onClick={() => void act("approve")}>Approve Final Video</Button>}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useId, useRef } from "react";
-import { ImageIcon, Plus, X } from "lucide-react";
+import { ImageIcon, LoaderCircle, Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AccountAction } from "@/components/account-action";
 import { LocalMediaThumbnail } from "./local-media-preview";
@@ -12,12 +12,17 @@ import type { UploadState } from "@/lib/media/upload-client";
 import { studioReferenceImages, type StudioReference } from "./studio-inputs";
 import { ugcV1LimitMessages } from "@/lib/projects/ugc-v1";
 import { referenceNameLimit } from "@/lib/projects/reference-names";
+import { StudioPanelTarget, useStudioPanels } from "./studio-workspace-panels";
+import { ProCharacterSources } from "./pro-character-sources";
+import { AppNotification } from "@/components/notifications/app-notification";
 
-export function StudioReferenceSources({ label, addLabel, role, references, onAdd, onRemoveLocal, onRemoveAsset,
-  onUpload, onRecover, onNameChange, uploadStates, busy, signedIn, authReady }: {
+
+export type StudioReferenceSourcesProps = {
   label: string;
   addLabel: string;
   role: "character" | "product";
+  multiple?: boolean;
+  perCharacterSheets?: boolean;
   references: StudioReference[];
   onAdd: (files: File[]) => void;
   onRemoveLocal: (id: string) => void;
@@ -29,12 +34,23 @@ export function StudioReferenceSources({ label, addLabel, role, references, onAd
   busy: boolean;
   signedIn: boolean;
   authReady: boolean;
-}) {
+  readOnly?: boolean;
+};
+
+export function StudioReferenceSources(props: StudioReferenceSourcesProps) {
+  return props.role === "character" && props.multiple
+    ? <ProCharacterSources {...props} />
+    : <StandardReferenceSources {...props} />;
+}
+
+function StandardReferenceSources({ label, addLabel, role, references, onAdd, onRemoveLocal, onRemoveAsset, multiple = false, perCharacterSheets = false,
+  onUpload, onRecover, onNameChange, uploadStates, busy, signedIn, authReady, readOnly = false }: StudioReferenceSourcesProps) {
   const id = useId();
+  const panels = useStudioPanels();
   const input = useRef<HTMLInputElement>(null);
   const add = useRef<HTMLButtonElement>(null);
   const images = studioReferenceImages(references);
-  const atLimit = images.length >= 1;
+  const atLimit = readOnly || !multiple && images.length >= 1;
   const buttonClass = "h-8 min-h-8 cursor-pointer gap-1.5 rounded-lg px-2 text-xs [&&:disabled]:pointer-events-auto disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground disabled:opacity-50 disabled:hover:bg-muted [@media(pointer:coarse)]:min-h-11";
   return <section className="min-w-0" aria-labelledby={`${id}-heading`}>
     <h3 id={`${id}-heading`} className="mb-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{label}</h3>
@@ -51,48 +67,55 @@ export function StudioReferenceSources({ label, addLabel, role, references, onAd
     {references.length > 0 && <ul className="mt-3 flex min-w-0 flex-wrap gap-2" aria-label={label}>
       {images.map(({ local, asset }) => {
         const filename = local?.file.name ?? asset?.filename ?? label;
+        const uploading = !!local && signedIn && uploadStates[local.id]?.status !== "failed";
         return <li key={local?.id ?? asset?.id} className="min-w-0 max-w-full basis-full">
-          <div className="relative size-16 shrink-0 rounded-lg border border-border bg-field" title={filename}>
+          <div className="relative size-16 shrink-0 rounded-lg border border-border bg-field" title={filename} aria-busy={uploading}>
           <div className="relative size-full overflow-hidden rounded-lg">
-            {local ? <LocalMediaThumbnail media={local} className="size-full" alt={filename} />
-              : asset?.status === "uploaded" ? <PersistentMediaPreview asset={asset} thumbnail />
+            {local ? <button type="button" aria-label={`Preview ${filename}`} className="block size-full cursor-zoom-in outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring" onClick={() => panels?.selectMedia(local.id)}><LocalMediaThumbnail media={local} className="size-full" alt={filename} /></button>
+              : asset?.status === "uploaded" ? <PersistentMediaPreview asset={asset} thumbnail onSelect={() => panels?.selectMedia(asset.id)} />
                 : <span className="flex size-full items-center justify-center"><ImageIcon className="size-5 text-muted-foreground" aria-hidden="true" /></span>}
           </div>
-          <button type="button" disabled={busy} aria-label={`Remove ${filename}`}
+          {uploading && <span aria-hidden="true" className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-lg bg-background/40">
+            <LoaderCircle className="size-5 text-foreground motion-safe:animate-spin" />
+          </span>}
+          <button type="button" disabled={readOnly || busy} aria-label={`Remove ${filename}`}
             className="absolute -top-1 -right-1 flex size-5 cursor-pointer items-center justify-center rounded-full border border-border bg-card text-foreground shadow-sm outline-none transition-colors duration-[var(--motion-micro)] ease-[var(--motion-ease)] hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none [@media(pointer:coarse)]:size-7"
             onClick={() => { if (local) onRemoveLocal(local.id); else if (asset) onRemoveAsset(asset); add.current?.focus(); }}>
             <X className="size-3" aria-hidden="true" />
           </button>
           </div>
           {!local && asset?.status === "uploaded" && <div className="mt-2 min-w-0 space-y-1">
+            <p role="status" className="text-[11px] text-muted-foreground">Image saved</p>
             <label htmlFor={`${id}-${asset.id}-name`} className="block text-[11px] font-medium text-foreground">
               {role === "character" ? "Character name" : "Product / Prop name"}
             </label>
-            <input id={`${id}-${asset.id}-name`} name={`${role}-name`} type="text" autoComplete="off" aria-required="true"
+            <input id={`${id}-${asset.id}-name`} name={`${role}-name`} type="text" autoComplete="off" aria-required="true" readOnly={readOnly}
               value={asset.referenceName ?? ""} maxLength={referenceNameLimit}
               placeholder={role === "character" ? "e.g. Maya" : "e.g. Nova Watch"}
               onChange={event => onNameChange(asset, event.target.value)}
               onBlur={event => onNameChange(asset, event.target.value.trim())}
               className="sceenyk-field h-8 min-h-8 w-full min-w-0 max-w-full rounded-lg border border-input bg-field px-2 py-1 text-xs text-foreground outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring [@media(pointer:coarse)]:min-h-11" />
           </div>}
+          {perCharacterSheets && !local && asset && <div className="mt-2"><StudioPanelTarget panel={`character:${asset.id}`} /></div>}
         </li>;
       })}
     </ul>}
-    {images.length > 1 && <p role="alert" className="mt-2 text-xs text-destructive">{ugcV1LimitMessages[role]}</p>}
+    {!perCharacterSheets && <div className="mt-2"><StudioPanelTarget panel={role} /></div>}
+    {!multiple && images.length > 1 && <AppNotification role="alert" className="mt-2 text-xs text-muted-foreground">{role === "character" ? "Basic Studio supports one character. Your Pro characters and sheets are saved. Switch to Pro to continue." : ugcV1LimitMessages[role]}</AppNotification>}
     <div className="mt-2 space-y-2">
       {references.flatMap(reference => reference.images).map(({ local, asset }) => {
         const state = local ? uploadStates[local.id] : undefined;
         if (local) return <div key={local.id} className="min-w-0 text-[11px] text-muted-foreground">
           <p className="truncate">{local.file.name}</p>
-          {state?.status === "failed" ? <><p role="status" className="break-words text-destructive">{state.message}</p>
-            <Button type="button" variant="ghost" disabled={busy} className={buttonClass} onClick={() => onUpload(local)}>Retry upload</Button></>
+          {state?.status === "failed" ? <><AppNotification role="status" className="break-words text-destructive">{state.message}</AppNotification>
+            <Button type="button" variant="ghost" disabled={readOnly || busy} className={buttonClass} onClick={() => onUpload(local)}>Retry upload</Button></>
             : <p role="status">{state?.status === "uploading" ? `Uploading${state.progress === undefined ? "…" : ` · ${state.progress}%`}`
               : state?.status === "verifying" ? "Verifying…" : signedIn ? "Preparing upload…" : "Local preview"}</p>}
         </div>;
         if (asset && asset.status !== "uploaded") return <div key={asset.id} className="min-w-0 text-[11px] text-muted-foreground">
           <p className="truncate">{asset.filename}</p>
-          {asset.status === "pending" ? <Button type="button" variant="ghost" disabled={busy} className={buttonClass} onClick={() => onRecover(asset)}>Check upload</Button>
-            : <p role="status" className="text-destructive">Upload rejected. Remove and select again.</p>}
+          {asset.status === "pending" ? <Button type="button" variant="ghost" disabled={readOnly || busy} className={buttonClass} onClick={() => onRecover(asset)}>Check upload</Button>
+            : <AppNotification role="status" className="text-destructive">Upload rejected. Remove and select again.</AppNotification>}
         </div>;
         return null;
       })}

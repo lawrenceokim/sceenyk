@@ -1,5 +1,27 @@
 # Development application identity
 
+## Independent sheet and Storyboard funding — 109 (2026-11-10)
+
+Sheet/Storyboard generation checks OpenAI funding independently of video/project review. Valid assigned free projects and eligible unused allowances retain included OpenAI access. Otherwise sufficient purchased credits authorize a new OpenAI request, even on a historical project whose video/free usage is unresolved. A review hold must never veto a separately credit-funded Character, Product, Location or Storyboard request. Each actual request costs 1 credit; fresh Location remains 2 (plan + sheet), continuation 1.
+
+The access DTO requires version 109 and exposes preparationFunding separately from video funding. SQL binds funding to each immutable task/phase, reserves credits before dispatch, and reuses 108 settlement/recovery. OpenAI preparation/reservation project FKs reference the existing V3 project directly; no paid-video enrollment is required for a held project's paid preparation. Video holds, free counters, review flags, existing records, approved content and creative locks remain unchanged. This supersedes earlier statements that all generation on an unresolved historical project must be blocked.
+
+Apply [migration 109](../supabase/migrations/20261110010900_independent_openai_funding.sql) after 108 with old writers/workers stopped, then deploy matching app/worker code. No remote writes or provider requests were performed. Focused accounting/security checks and TypeScript pass; normal UI/provider testing remains manual.
+
+## Stage 2/3 migration 108 (2026-11-10)
+
+Apply [108](../supabase/migrations/20261110010800_project_generation_credits.sql) after installed 101–107, with old writers/workers stopped; deploy matching app and worker together. It is transactional and rerunnable and checks catalog prerequisites before changes. New OpenAI reservations retain task UUID/phase without a disposable-task FK; the shared credit ledger gains constrained task/phase references and immutable movement uniqueness. Existing purchase/job/video checks are carried forward verbatim. Both new tables use RLS, service-only reads and private mutation helpers. Only the lease-fenced receipt RPC is exposed to service_role.
+
+Review resolutions are append-only evidence. Only known consumed free projects fitting existing consumed counters with authentic started-operation/task/free-run evidence are reconciled automatically. Original review flags, account counters, spending and approved media are unchanged. Remaining ambiguous projects require genuine task/provider/ledger investigation; never clear flags wholesale or invent historical usage. Account-only review cannot revoke an already assigned project's access.
+
+102–107 remain prerequisite migrations and retain their original historical bootstrap evidence. Their old two-attempt preparation rules are superseded by 108. Stop using 104's combined $3 pricing instructions; OpenAI needs no Higgsfield price row. 105's canonical video price remains 1,030,000 micro-USD. Preserve existing finite paid caps; zero caps intentionally pause paid Higgsfield but do not block a sufficiently funded paid OpenAI request. Full setup and read-only audit queries: [Stage 2/3 contract](stage-3-credit-protection.md#spending-caps-and-setup). No remote migration or configuration was applied.
+
+## Stage 1 custom-credit purchase migration 101 (2026-11-09)
+
+**Source migration authored and disposable payment SQL checked; hosted application remains manual.** Apply [101](../supabase/migrations/20261109010100_custom_credit_purchases.sql) after existing migrations, before deploying custom purchase creation. It verifies its actual table/column/function prerequisites, adds nullable immutable credit_purchases.pricing_snapshot and the service-only prepare_custom_credit_purchase RPC, and reuses existing account locking and purchase/hour limits. Snapshot updates are denied by a separate guard; the existing purchase identity/completion guard remains unchanged. The migration is transactional and rerunnable, including trigger recreation and explicit function grants.
+
+Historical purchases retain null snapshots and their original amounts/credits; no balance, ledger, free counter, transaction, Marketplace or payout row is backfilled or repriced. Existing RLS/direct-write restrictions, unique order/capture/ledger references and fulfil_paypal_purchase remain intact. SQL computes fees/credits from trusted server rates before inserting; creation never grants credits. [Pricing](pricing.md#stage-1-custom-credit-pricing-2026-11-09) owns the formula and [payments](payments.md#stage-1-custom-usd-credit-checkout-2026-11-09) owns verification/recovery. No new table, extension, remote database write or live catalog acceptance is claimed.
+
 ## V3 Phase 3 manual runtime extension 077 (2026-10-29)
 
 Apply unchanged 076, then new 077, only after inspecting prerequisites. [Setup and verification](generation-v3-phase3.md#manual-database-setup) includes a read-only SQL script. New V3 task/artifact/quote/authorization/run/event tables have no browser/direct-service-write grants. Owner-scoped RPCs, immutable inputs/bodies/quotes, segment/authorization uniqueness, budget checks, leases, private-result/review gates and project-wide reconciliation fences govern runtime. Two new insert guards prevent only enrolled V3 projects entering legacy queues; no historical row or prior function body/grant is rewritten. Nothing is applied remotely here.

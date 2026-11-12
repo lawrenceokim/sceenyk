@@ -3,7 +3,7 @@ import { useEffect, useEffectEvent, useRef, useState } from "react";
 import {
   createGenerationAction,
   latestGenerationAction,
-} from "@/app/actions/generation";
+} from "@/lib/cache/actions/generation";
 import type { GenerationInputs, GenerationJob } from "@/lib/generation/types";
 import { quoteGenerationAction } from "@/app/actions/pricing";
 import type { GenerationQuote } from "@/lib/pricing/types";

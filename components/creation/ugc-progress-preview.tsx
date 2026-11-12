@@ -9,6 +9,8 @@ import type { useUgcProgress } from "./use-ugc-progress";
 import { v5ManualReviewProgress } from "@/lib/character-v5/progress";
 import { storyboardStatusLabel } from "@/lib/storyboard/contract";
 import { packageStatusLabel } from "@/lib/video-generation-package/contract";
+import { AppNotification } from "@/components/notifications/app-notification";
+
 
 export type UgcProgressState = ReturnType<typeof useUgcProgress>;
 
@@ -83,12 +85,12 @@ export function UgcProgressPreview({ progress }: { progress: UgcProgressState })
             {(generationPackage ? generationPackage.state === "failed" : job?.status === "failed") && <XCircle className="size-4 shrink-0 text-destructive" aria-hidden="true" />}
             {title}
           </h2>
-          {job?.referenceReview?.characterV5?.errorPhase && <p className="break-words text-destructive">Character technical phase: {job.referenceReview.characterV5.errorPhase} · {job.referenceReview.characterV5.errorCode}</p>}
-          {(characterCompletePause || productCompletePause) && <p className="text-warning-foreground">Generation paused</p>}
+          {job?.referenceReview?.characterV5?.errorPhase && <AppNotification className="break-words text-destructive">Character technical phase: {job.referenceReview.characterV5.errorPhase} · {job.referenceReview.characterV5.errorCode}</AppNotification>}
+          {(characterCompletePause || productCompletePause) && <AppNotification className="text-warning-foreground">Generation paused</AppNotification>}
           <p key={`${job?.status}:${job?.message}:${stalled}`} className="break-words text-muted-foreground motion-safe:animate-in motion-safe:fade-in motion-safe:duration-200">
             {loading ? "Reading your saved workflow." : manualReview ? manualReview.message : stalled ? "The generation worker may no longer be running. Start the local UGC worker to resume saved work." : job?.message ?? "Check status to reconnect to your saved workflow."}
           </p>
-          {(generationPackage ? generationPackage.state === "failed" : job?.status === "failed") && <p className="text-destructive">Failed at: {job?.stageLabel}</p>}
+          {(generationPackage ? generationPackage.state === "failed" : job?.status === "failed") && <AppNotification className="text-destructive">Failed at: {job?.stageLabel}</AppNotification>}
         </div>
         {job && <ol className="space-y-1" aria-label="Video workflow">
           {job.steps.map(step => {
@@ -137,7 +139,7 @@ export function UgcProgressPreview({ progress }: { progress: UgcProgressState })
           {job && !job.startedAt && <p>Waiting to start</p>}
           {(job && (active || !!regeneration) || error) && <Button type="button" size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={checkStatus}>Check status</Button>}
         </div>
-        {error && job && <p role="status" className="break-words text-warning-foreground">Unable to refresh generation status. Showing the last saved progress.</p>}
+        {error && job && <AppNotification role="status" className="break-words text-warning-foreground">Unable to refresh generation status. Showing the last saved progress.</AppNotification>}
       </section>
     </div>
   </div>;

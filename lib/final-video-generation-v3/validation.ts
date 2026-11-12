@@ -1,4 +1,5 @@
 import "server-only";
+import { validateCharacterCast } from "./character-cast";
 import { featureNames, planningContextSchema, type Issue, type PlanningInput, type PlanningContext, type SegmentPlan, type VideoCapabilities, type VideoGenerationProvider } from "./contract";
 import { commandFingerprint, normalizeCapabilities, packageContentHash, planFingerprint, storyboardContentHash, v3Digest } from "./identity";
 
@@ -7,6 +8,8 @@ export const problem = (code: string, path: string, message: string, sceneNumber
 export function validateApprovedInput(input: PlanningInput, cap: VideoCapabilities, context: PlanningContext): Issue[] {
   const issues: Issue[] = [], scenes = input.storyboardContent.scenes;
   const add = (code: string, path: string, message: string, number?: number) => issues.push(problem(code, path, message, number));
+  try { validateCharacterCast(input.storyboardContent, input.references); }
+  catch (error) { add(error instanceof Error ? error.message : "V3_CHARACTER_BINDINGS_INVALID", "storyboardContent.cast", "Approved character and speaker bindings must match the exact saved sheets"); }
   if (input.profileId !== cap.profileId) add("PROVIDER_PROFILE_MISMATCH", "profileId", "Replan explicitly for the selected provider/profile; no fallback");
   if (!cap.modes.includes(input.mode)) add("VIDEO_MODE_UNSUPPORTED", "mode", "Selected input mode is unsupported");
   if (!cap.supportedResolutions.includes(input.resolution)) add("RESOLUTION_UNSUPPORTED", "resolution", "Selected resolution is unsupported");

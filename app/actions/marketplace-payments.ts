@@ -1,6 +1,5 @@
 "use server";
 import { unstable_rethrow } from "next/navigation";
-import { revalidatePath } from "next/cache";
 import { createMarketplaceOrder, getCreatorEarnings, getMarketplacePurchases, prepareMarketplaceCheckout, recoverMarketplacePurchase } from "@/lib/marketplace/payments/server";
 import type { PaymentResult } from "@/lib/payments/types";
 
@@ -13,7 +12,6 @@ export async function createMarketplaceOrderAction(input: unknown) { return run(
 export async function recoverMarketplacePurchaseAction(input: unknown) {
   return run(async () => {
     const result = await recoverMarketplacePurchase(input);
-    revalidatePath("/projects"); revalidatePath("/settings/templates", "layout");
     return result;
   });
 }

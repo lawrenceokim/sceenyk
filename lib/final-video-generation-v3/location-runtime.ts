@@ -2,7 +2,7 @@ import "server-only";
 import { z } from "zod";
 import type { Artifact, Task } from "./runtime-contract";
 import { privateAssetSchema } from "./runtime-contract";
-import { artifactCurrent, generationContext, latestArtifact, referenceDeletedVersion } from "./generation-context";
+import { artifactCurrent, generationContext, latestArtifact, referenceDeletedVersion, requiredReferenceArtifacts, characterCast } from "./generation-context";
 import { projectBrief, referenceOriginals, creativeBriefHash } from "./creative-inputs";
 import { V3Store, type RuntimeWorkspace } from "./runtime-store";
 import { v3OpenAIConfig } from "./runtime-config";
@@ -33,7 +33,7 @@ export async function locationInputs(w: RuntimeWorkspace,input?:Task["input"]) {
   const brief=await projectBrief(w.project.owner_user_id,w.project.project_id),originals=await referenceOriginals(w.project.owner_user_id,w.project.project_id);
   const context=generationContext(brief),hash=creativeBriefHash(brief);
   if(w.tasks.some(t=>["character","product"].includes(t.kind)&&["queued","running","reconciliation_required"].includes(t.status)))throw new Error("APPROVE_CURRENT_REFERENCES_FIRST");
-  const refs=[latestArtifact(w,"character"),...(originals.product?[latestArtifact(w,"product")]:[])];
+  const refs=requiredReferenceArtifacts(w,originals);
   if(refs.some(a=>!a?.approved_at||!artifactCurrent(a,w.artifacts,context,originals,hash,w.referenceDeletions)))throw new Error("APPROVE_CURRENT_REFERENCES_FIRST");
   const artifacts=refs as Artifact[];
   if(input&&(input.briefHash!==hash||v3Digest("generation-context",input.generationContext)!==v3Digest("generation-context",context)||
@@ -57,6 +57,7 @@ export async function enqueueLocation(store:V3Store,w:RuntimeWorkspace) {
   const input={provider:"openai",locationDirector:{version:LOCATION_VERSION,maxRequests:2,maxImageRequests:1},
     model:config.imageModel,directorModel:config.directorModel,brief,briefHash:creativeBriefHash(brief),generationContext:context,
     references:refs.map(a=>a.id),referenceBindings:refs.map(a=>({id:a.id,version:a.version,sha256:privateAssetSchema.parse(a.document.asset).sha256,role:a.kind})),
+    ...(originals.characters?{cast:characterCast(w,originals)}:{}),
     names:originals.names,originalId:null,previous:current?.id??null,previousTask:prior?.id??null,referenceEpoch:referenceDeletedVersion(w.referenceDeletions,"location")};
   await store.rpc("ugc_v3_location_action",{p_owner:w.project.owner_user_id,p_project:w.project.project_id,p_action:"enqueue",p_payload:{input,requestKey:`location:${v3Digest("task-input",input)}`}});
 }

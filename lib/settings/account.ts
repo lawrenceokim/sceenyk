@@ -1,11 +1,11 @@
 import "server-only";
 import { clerkClient } from "@clerk/nextjs/server";
-import { ensureAppUser } from "@/lib/auth/ensure-app-user";
+import { readAppUser } from "@/lib/auth/read-app-user";
 
 // Clerk enforces this flag in its API as well as its account UI. A CSS-hidden
 // delete button would still allow deletion without Sceenyk's retention policy.
 export async function prepareSettingsAccount() {
-  const user = await ensureAppUser();
+  const user = await readAppUser();
   const client = await clerkClient();
   const account = await client.users.getUser(user.clerk_user_id);
   if (account.id !== user.clerk_user_id) throw new Error("ACCOUNT_UNAVAILABLE");

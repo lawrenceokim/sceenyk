@@ -9,14 +9,15 @@ let slots=[],cursor=0,calls=[],resolveRequest;
 const hooks={...React,
   useState(initial){const i=cursor++;if(!(i in slots))slots[i]=initial;return[slots[i],value=>{slots[i]=typeof value==='function'?value(slots[i]):value;}];},
   useRef(initial){const i=cursor++;if(!(i in slots))slots[i]={current:initial};return slots[i];},
-  useEffect(){},useCallback:value=>value,
+  useEffect(){},useCallback:value=>value,useMemo:value=>value(),
 };
 globalThis.__referenceReact=hooks;
 const bundled=await build({absWorkingDir:process.cwd(),entryPoints:[resolve('components/creation/v3-workflow-preview.tsx')],tsconfig:resolve('tsconfig.json'),bundle:true,write:false,platform:'node',format:'cjs',packages:'external',plugins:[{
   name:'reference-ui-fixtures',setup(builder){
-    builder.onResolve({filter:/^(react|next\/image|@\/components\/ui\/(button|dialog))$/},args=>({path:args.path,namespace:'fixture'}));
+    builder.onResolve({filter:/^(react|next\/image|@\/components\/ui\/(button|dialog)|\.\/studio-workspace-panels)$/},args=>({path:args.path,namespace:'fixture'}));
     builder.onLoad({filter:/.*/,namespace:'fixture'},args=>{
-      if(args.path==='react')return{contents:'const r=globalThis.__referenceReact;export const useState=r.useState,useRef=r.useRef,useEffect=r.useEffect,useCallback=r.useCallback;'};
+      if(args.path==='react')return{contents:'const r=globalThis.__referenceReact;export const useState=r.useState,useRef=r.useRef,useEffect=r.useEffect,useCallback=r.useCallback,useMemo=r.useMemo;'};
+      if(args.path==='./studio-workspace-panels')return{contents:'export const useStudioPanels=()=>globalThis.__studioPanels??null;export function StudioPanelPortal(props){return props.children;}export function StudioWorkflowMedia(){return null;}'};
       if(args.path==='next/image')return{contents:'export default function Image(props){return null;}'};
       const names=args.path.endsWith('/button')?['Button']:['Dialog','DialogContent','DialogDescription','DialogFooter','DialogHeader','DialogTitle'];
       return{contents:names.map(name=>`export function ${name}(props){return props.children;}`).join('\n')};
@@ -39,8 +40,17 @@ try {
     const subject=kind==='character'?'Character':'Product',id=`saved-${kind}`;
     const initial={projectId:'fixture-project',artifacts:[{id,kind,version:1,activeSlot:true,current:true,approved:false,rejected:false,preview:'private-old-image'}],tasks:[],runs:[],processing:false,preflight:null,complete:false};
     const saved=JSON.stringify(initial);
+    const selections=[];globalThis.__studioPanels={selectMedia:id=>selections.push(id)};
     const props={initial,projectId:initial.projectId,assets:[{id:'source',studioRole:kind,status:'uploaded',removedFromDraft:false}],dirty:false,revision:'saved'};
     const render=()=>{cursor=0;return V3WorkflowPreview(props);};
+    const routed=render();
+    equal(elements(routed).filter(node=>node.type?.name==='StudioPanelPortal').map(node=>node.props.panel),['character','product','location','workflow']);
+    const workflow=find(routed,node=>node.type?.name==='StudioPanelPortal'&&node.props.panel==='workflow');
+    equal(elements(workflow).filter(node=>node.type==='button').map(text),['Progress','Storyboard','Package','Final Video']);
+    equal(elements(workflow).some(node=>node.props?.['aria-label']===subject+' Sheet'),false);
+    const source=find(routed,node=>node.type?.name==='StudioPanelPortal'&&node.props.panel===kind);
+    find(source,node=>node.type==='button'&&node.props['aria-label']==='Preview '+subject+' Sheet version 1').props.onClick();
+    equal(selections,['v3-reference:'+id]);equal(calls.length,0);
     const modal=tree=>find(tree,node=>node.type?.name==='ReferenceRegenerationDialog');
     const button=tree=>find(tree,node=>node.type?.name==='Button'&&text(node)===`Regenerate ${subject} Sheet`);
     button(render()).props.onClick();
@@ -106,6 +116,55 @@ try {
     equal(calls.length,1);equal(calls[0].action,'recover_task');equal(calls[0].id,'failed-task');equal(calls[0].confirmNewRequest,undefined);
     resolveRequest(Response.json({ok:true,workspace:{...initial,artifacts:[],tasks:[]}}));await new Promise(resolve=>setTimeout(resolve,0));
   }
+  // Stale approved sheets retain Delete/Regenerate, never stale Approve, and
+  // use the exact permanent-deletion confirmation instead of history wording.
+  for(const kind of ['character','product']) {
+    slots=[];calls=[];
+    const subject=kind==='character'?'Character':'Product';
+    const props={projectId:'fixture-project',initial:{artifacts:[{id:'stale',kind,version:2,activeSlot:true,current:false,approved:true,rejected:false}],tasks:[],runs:[],processing:false},assets:[{id:'source',studioRole:kind,status:'uploaded'}],dirty:false,revision:'saved'};
+    const render=()=>{cursor=0;return V3WorkflowPreview(props);};
+    const source=()=>find(render(),node=>node.type?.name==='StudioPanelPortal'&&node.props.panel===kind);
+    equal(elements(source()).some(node=>node.type?.name==='Button'&&text(node)==='Approve'),false);
+    equal(find(source(),node=>node.type?.name==='Button'&&text(node)==='Reject and Delete').props.disabled,false);
+    find(source(),node=>node.type?.name==='Button'&&text(node)===`Regenerate ${subject} Sheet`).props.onClick();
+    const modal=find(render(),node=>node.type?.name==='ReferenceRegenerationDialog');
+    equal(text(find(modal.type(modal.props),node=>node.type?.name==='DialogDescription')),`Regenerating will permanently delete the current ${subject} Sheet and generate a new one. This action cannot be undone.`);
+    modal.props.onCancel();equal(calls.length,0);
+  }
+  // Missing/stale references explain the inactive Location control without POST.
+  // Returned approval state enables it immediately, with no Check status.
+  slots=[];calls=[];
+  const sheet=kind=>({id:kind,kind,version:1,activeSlot:true,current:true,approved:false,rejected:false});
+  const baseWorkspace={artifacts:[],tasks:[],runs:[],processing:false,preflight:null};
+  const locationProps={projectId:'fixture-project',initial:baseWorkspace,assets:['character','product'].map(kind=>({id:'source-'+kind,studioRole:kind,status:'uploaded'})),dirty:false,revision:'saved'};
+  const renderLocation=()=>{cursor=0;return V3WorkflowPreview(locationProps);};
+  const locationButton=()=>find(renderLocation(),node=>node.type?.name==='Button'&&text(node)==='Generate Location');
+  for(const [artifacts,message] of [
+    [[], 'Create or generate a Character Sheet and Product Sheet first.'],
+    [[sheet('character'),sheet('product')], 'Approve the Character Sheet and Product Sheet to generate a Location.'],
+    [[sheet('character')], 'Generate the Product Sheet first, then approve both references to generate a Location.'],
+    [[sheet('product')], 'Generate the Character Sheet first, then approve both references to generate a Location.'],
+    [[{...sheet('character'),approved:true,current:false},{...sheet('product'),approved:true}], 'Approve the Character Sheet and Product Sheet to generate a Location.'],
+  ]) {
+    slots=[];locationProps.initial={...baseWorkspace,artifacts};
+    equal(locationButton().props.disabled,false);equal(locationButton().props['aria-disabled'],true);
+    locationButton().props.onClick();equal(text(renderLocation()).includes(message),true);equal(calls.length,0);
+  }
+  slots=[];locationProps.initial={...baseWorkspace,artifacts:[sheet('character'),sheet('product')]};
+  let approvedWorkspace=locationProps.initial;
+  for(const kind of ['character','product']) {
+    const source=find(renderLocation(),node=>node.type?.name==='StudioPanelPortal'&&node.props.panel===kind);
+    find(source,node=>node.type?.name==='Button'&&text(node)==='Approve').props.onClick();
+    approvedWorkspace={...approvedWorkspace,artifacts:approvedWorkspace.artifacts.map(a=>a.kind===kind?{...a,approved:true}:a)};
+    resolveRequest(Response.json({ok:true,workspace:approvedWorkspace}));await new Promise(resolve=>setTimeout(resolve,0));
+    equal(locationButton().props['aria-disabled'],kind!=='product');
+  }
+  equal(calls.map(c=>c.action),['review_artifact','review_artifact']);
+  locationButton().props.onClick();equal(calls.at(-1).action,'reference');equal(calls.at(-1).kind,'location');
+  resolveRequest(Response.json({ok:true,workspace:approvedWorkspace}));await new Promise(resolve=>setTimeout(resolve,0));
+  // Product remains optional for Character-only projects.
+  slots=[];calls=[];locationProps.assets=locationProps.assets.filter(a=>a.studioRole==='character');locationProps.initial={...baseWorkspace,artifacts:[{...sheet('character'),approved:true}]};
+  equal(locationButton().props['aria-disabled'],false);
   // Package view retains asynchronous failure reasons, exposes stages/details and suppresses duplicate clicks.
   slots=[];calls=[];
   const packageId='10000000-0000-4000-8000-000000000001';
@@ -182,4 +241,4 @@ try {
   equal(reviewCalls.at(-1).action,'recover');equal(reviewCalls.at(-1).id,video.id);equal(reviewCalls.some(c=>c.action==='generate'),false);
   reviewProps.run={...video,state:'deleted',preview:null};equal(text(renderReview()).includes('Review and approve the Generation Package again'),true);
   console.info(`${checks} actual V3 reference/package/video confirmation, host-approval and double-click UI checks passed; zero network calls.`);
-} finally {globalThis.fetch=originalFetch;delete globalThis.__referenceReact;}
+} finally {globalThis.fetch=originalFetch;delete globalThis.__referenceReact;delete globalThis.__studioPanels;}

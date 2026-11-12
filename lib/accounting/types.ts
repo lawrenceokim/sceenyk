@@ -3,4 +3,5 @@ export type FreeAllowance = {
   available: number;
   reserved: number;
   consumed: number;
+  reviewRequired?: boolean;
 };

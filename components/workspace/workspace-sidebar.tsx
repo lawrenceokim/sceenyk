@@ -4,6 +4,7 @@ import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { Brand } from "@/components/brand";
 import { WorkspaceNavigation, WorkspaceTooltip } from "./workspace-navigation";
 import { WorkspaceUserMenu } from "./workspace-user-menu";
+import { StudioModeSelector } from "./studio-mode-selector";
 
 export function WorkspaceSidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => void }) {
   const label = collapsed ? "Expand sidebar" : "Collapse sidebar";
@@ -16,6 +17,7 @@ export function WorkspaceSidebar({ collapsed, onToggle }: { collapsed: boolean; 
       max-1023:[.workspace-drawer_&&]:h-[88px]
     `}><Brand variant={collapsed ? "compact" : "full"} /></div>
     <div className={"workspace-nav-scroll min-h-0 flex-1 overflow-y-auto [&&]:pt-[8px] [&&]:pr-[8px] [&&]:pb-[8px] [&&]:pl-[8px]"}><WorkspaceNavigation collapsed={collapsed} /></div>
+    <StudioModeSelector collapsed={collapsed} />
     <div className={`
       workspace-collapse [&&]:shrink-0 [&&]:pt-[8px] [&&]:pr-[8px] [&&]:pb-[8px] [&&]:pl-[8px] [&&_button]:h-[32px]
       [&&_button]:pt-[0] [&&_button]:pr-[8px] [&&_button]:pb-[0] [&&_button]:pl-[8px]

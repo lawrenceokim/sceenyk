@@ -30,6 +30,7 @@ export function getDatabaseConfig() {
   }
   const local = ["localhost", "127.0.0.1", "[::1]"].includes(endpoint.hostname);
   if (
+    process.env.VERCEL === "1" && local ||
     (endpoint.protocol !== "https:" &&
       !(local && endpoint.protocol === "http:")) ||
     endpoint.username ||

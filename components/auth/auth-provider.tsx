@@ -4,13 +4,16 @@ import { shadcn } from "@clerk/ui/themes";
 import { getClerkDevelopmentConfig } from "@/lib/auth/config";
 import { AuthAvailabilityProvider } from "./auth-availability";
 import { AuthModalReturn } from "./auth-modal-return";
+import { NotificationHost } from "@/components/notifications/notification-host";
+import { SmartCacheProvider } from "@/components/cache/cache-provider";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const { enabled, publishableKey } = getClerkDevelopmentConfig();
   const content = (
     <AuthAvailabilityProvider enabled={enabled}>
+      <SmartCacheProvider><NotificationHost />
       <AuthModalReturn />
-      {children}
+      {children}</SmartCacheProvider>
     </AuthAvailabilityProvider>
   );
   if (!enabled) return content;

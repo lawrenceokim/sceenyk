@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { saveProjectSchema } from "@/lib/projects/validation";
+import { saveProjectSchema, legacyProjectSettingsSchema } from "@/lib/projects/validation";
 import { projectPromptLimit, projectPageSize } from "@/lib/projects/options";
 import { generationStages, generationStatuses } from "./contract";
 
@@ -10,7 +10,7 @@ export const generationInputsSchema = z.strictObject({
     .min(1, "Describe what you want to create.")
     .max(projectPromptLimit),
   category: saveProjectSchema.shape.category,
-  settings: saveProjectSchema.shape.settings,
+  settings: legacyProjectSettingsSchema,
   // A technical payload bound, not a product quota. Stable order aids retries.
   assetIds: z
     .array(z.uuid())

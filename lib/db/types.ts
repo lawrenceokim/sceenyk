@@ -27,6 +27,7 @@ export type AppUserProfile = Pick<
 >;
 
 export type ProjectFields = {
+  video_resolution?: import("@/lib/projects/video-resolution").VideoResolution;
   creation_type: CreationType;
   ugc_type: UgcType;
   title: string;
@@ -38,6 +39,7 @@ export type ProjectFields = {
   tone: CreationSettings["tone"];
 };
 export type ProjectRow = ProjectFields & {
+  studio_mode?: import("@/lib/studio-mode/contract").StudioMode;
   id: string;
   owner_user_id: string;
   status: "draft" | "deleted";
@@ -204,6 +206,7 @@ export type Database = {
           id: string;
           owner_user_id: string;
           job_id: string | null;
+          v3_run_id: string | null;
           purchase_id: string | null;
           paypal_order_id: string | null;
           paypal_capture_id: string | null;
@@ -279,6 +282,11 @@ export type Database = {
     };
     Views: Record<string, never>;
     Functions: {
+      project_video_preview_request: { Args: { p_owner: string; p_project: string; p_version: string }; Returns: unknown };
+      project_video_preview_claim: { Args: Record<string, never>; Returns: unknown };
+      project_video_preview_finish: { Args: { p_id: string; p_token: string; p_etag: string | null; p_size: number | null; p_obsolete: boolean }; Returns: boolean };
+      studio_mode_read: { Args: { p_owner: string; p_project: string | null }; Returns: import("@/lib/studio-mode/contract").StudioModeState | null };
+      studio_mode_save: { Args: { p_owner: string; p_project: string | null; p_mode: import("@/lib/studio-mode/contract").StudioMode }; Returns: import("@/lib/studio-mode/contract").StudioModeState | null };
       ugc_final_current: { Args: { p_execution: string }; Returns: boolean };
       ugc_final_record_approval_failure: { Args: { p_owner: string; p_execution: string; p_version: number; p_code: string }; Returns: undefined };
       ugc_final_retry_stage: { Args: { p_owner: string; p_execution: string; p_payload: Record<string, unknown> }; Returns: import("@/lib/final-video-generation/contract").FinalExecution | null };
@@ -369,6 +377,10 @@ export type Database = {
       creator_payout_observe: { Args: { p_id: string; p_batch: string | null; p_item: string | null; p_status: string; p_failure_code?: string }; Returns: boolean };
       marketplace_browse: { Args: { p_query: string; p_category: string | null; p_page: number }; Returns: unknown };
       marketplace_detail: { Args: { p_listing_id: string }; Returns: unknown };
+      marketplace_acquisition_library: { Args: { p_owner: string; p_page: number }; Returns: unknown };
+      marketplace_acquisition_detail: { Args: { p_owner: string; p_id: string }; Returns: unknown };
+      marketplace_acquisition_preview: { Args: { p_owner: string; p_id: string }; Returns: unknown };
+      marketplace_open_acquisition: { Args: { p_owner: string; p_id: string }; Returns: unknown };
       marketplace_owned: { Args: { p_owner_user_id: string; p_page: number }; Returns: unknown };
       delete_owned_template: { Args: { p_owner_user_id: string; p_listing_id: string }; Returns: unknown };
       marketplace_owned_listing: { Args: { p_owner_user_id: string; p_listing_id: string | null; p_project_id: string | null }; Returns: unknown };
@@ -403,6 +415,15 @@ export type Database = {
       set_caption_style: { Args: { p_owner_user_id: string; p_job_id: string; p_project_id: string; p_style: import("@/lib/captions/style").CaptionStyleSelection }; Returns: boolean };
       caption_dispatch_candidates: { Args: Record<string, never>; Returns: { job_id: string }[] };
       prepare_credit_purchase: { Args: { p_owner_user_id: string; p_pack_id: string; p_pack_name: string; p_amount_minor: number; p_currency: string; p_credits: number }; Returns: import("@/lib/payments/types").PurchaseRow };
+      prepare_custom_credit_purchase: { Args: { p_owner_user_id: string; p_amount_minor: number; p_paypal_basis_points: number; p_paypal_fixed_minor: number; p_commission_basis_points: number; p_pricing_version: string }; Returns: import("@/lib/payments/types").PurchaseRow };
+      generation_free_access: { Args: { p_owner: string }; Returns: import("@/lib/accounting/generation-policy").FreeGenerationAccess };
+      generation_project_access: { Args: { p_owner: string; p_project: string | null }; Returns: import("@/lib/accounting/generation-policy").FreeGenerationAccess };
+      generation_paid_quote: { Args: { p_owner: string; p_project: string; p_run: string; p_model: string; p_body_hash: string; p_response_hash: string; p_cost: number }; Returns: boolean };
+      free_ai_dispatch: { Args: { p_task: string; p_token: string; p_phase: string }; Returns: boolean };
+      free_ai_dispatch_status: { Args: { p_task: string; p_token: string; p_phase: string }; Returns: boolean | null };
+      generation_openai_receipt: { Args: { p_task: string; p_token: string; p_phase: string; p_outcome: "completed" | "rejected" }; Returns: boolean };
+      generation_free_submit: { Args: { p_owner: string; p_project: string; p_run: string }; Returns: boolean };
+      generation_free_transport: { Args: { p_project: string; p_run: string; p_hash: string }; Returns: boolean };
       attach_paypal_order: { Args: { p_purchase_id: string; p_owner_user_id: string; p_order_id: string }; Returns: boolean };
       set_credit_purchase_state: { Args: { p_owner_user_id: string; p_order_id: string; p_status: string }; Returns: boolean };
       fulfil_paypal_purchase: { Args: { p_owner_user_id: string; p_order_id: string; p_capture_id: string; p_amount_minor: number; p_currency: string }; Returns: boolean };

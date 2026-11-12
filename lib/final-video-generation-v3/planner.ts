@@ -4,6 +4,7 @@ import { capabilitiesSchema, costEstimateSchema, planningContextSchema, planning
 import { compileDirectorInstructions } from "./compiler";
 import { commandFingerprint, freezeDocument, normalizeCapabilities, planFingerprint, v3Digest } from "./identity";
 import { capabilityIssues, fundingIssues, problem, validateApprovedInput } from "./validation";
+import { validateConnectedStory } from "./connected-story";
 
 export function planGenerationSegments(value: unknown, provider: VideoGenerationProvider, context: PlanningContext): PlanningResult {
   const parsed = planningInputSchema.safeParse(value);
@@ -19,12 +20,18 @@ export function planGenerationSegments(value: unknown, provider: VideoGeneration
   const issues = validateApprovedInput(input, cap, context);
   if (issues.length) return { ok: false, issues };
   const scenes = input.storyboardContent.scenes, count = scenes.length;
+  const connected = input.storyboardContent.version === "director-storyboard-connected-v1" ? input.storyboardContent : null;
+  if (connected) {
+    try { validateConnectedStory(connected); }
+    catch { return { ok: false, issues: [problem("V3_CLIP_PLAN_INVALID", "clips", "Use the exact approved connected clip plan")] }; }
+  }
   const promptFailures = new Map<string, ReturnType<typeof problem>>();
   const best: (number[] | null)[] = Array.from({ length: count + 1 }, () => null); best[count] = [];
   // Minimum-count search over approved boundaries. Ties prefer longer first
   // intervals; an illegal 1–3s tail is never padded, discarded or invented.
   for (let from = count - 1; from >= 0; from--) for (let to = from + 1; to <= count; to++) {
     const duration = scenes[to - 1].endMs - scenes[from].startMs;
+    if (connected && !connected.clips.some(c => c.startMs === scenes[from].startMs && c.endMs === scenes[to - 1].endMs)) continue;
     if (duration > cap.maxContinuousDurationMs) break;
     if (!cap.supportedDurationsMs.includes(duration) || best[to] === null) continue;
     const direction = compileDirectorInstructions(input, from, to);
