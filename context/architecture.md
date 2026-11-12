@@ -1,5 +1,9 @@
 # Architecture Context
 
+## Package estimation versus funded admission (2026-11-12)
+
+Local V3 package construction/estimation is independent of free/video usage review. Client policy and `ownedV3Action` allow `build_package` without funding admission while retaining supported settings, ownership, creative locks, Basic/Pro restrictions, approved/current inputs and private asset validation. Existing package workers use local manual pricing; package construction neither reserves generation credits nor submits video. Authorization/video admission and SQL/worker financial protections remain authoritative. Later credit-funded OpenAI preparation does not resolve an older free/video hold. [Live findings, deployment and historical correction boundary](vercel-deployment.md#package-usage-review-failure--confirmed-2026-11-12).
+
 ## Environment-aware Preview callbacks (2026-11-12)
 
 `lib/application-origin.ts` reuses the existing `PAYPAL_RETURN_ORIGIN` plus exact Vercel-assigned domains. Metadata selects the current Preview deployment or Production canonical origin; payment creation reads request-bound headers and permits only those explicit app origins. Return/cancel origin is passed through the existing credit/Marketplace order creation owners; client payloads and arbitrary Host values are not redirect authorities. The stable configured PayPal webhook/payout origin, signature verification, payment identities/amounts, idempotency and all ledgers remain unchanged. Local loopback remains supported; Vercel rejects loopback app/database/legacy worker configuration. Current laptop Docker workers keep outgoing Supabase queue processing with no network/volume/topology change. [Exact manual Vercel/PayPal/Clerk/Supabase/R2 setup and evidence](preview-e2e-setup.md).
