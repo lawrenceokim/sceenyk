@@ -2,6 +2,10 @@
 
 Prepared 2026-11-12. Activation, remote migrations and connected/manual acceptance are left to the owner. Nothing in this setup changes the Vercel deployment or starts Inngest. Do not run paid generations merely to validate configuration.
 
+## Vercel Preview integration (2026-11-12)
+
+Preview can submit owned V3 jobs to the same intended Supabase project; these existing outgoing-only workers process them without a laptop tunnel or incoming HTTP port. Read-only local inspection confirmed the current worker/common database URL/key, storage bucket and UGC image/director models match the app; actual values/files were not changed. Set Preview's V3 enable/owned flags and matching DB/R2/provider settings manually, keeping this stack, control file, lease lanes and persistent volumes intact. The laptop supervisor uses `SCEENYK_DOCKER_WORKERS_ENABLED` and the control mode; `UGC_V3_WORKER_ENABLED` belongs to the alternative standalone service. Payout's configured public webhook origin remains separate from a browser's checkout return origin. [Exact dashboard checklist and hosted acceptance](preview-e2e-setup.md).
+
 ## Existing architecture and reuse
 
 | Service | Docker execution | Preserved authority |

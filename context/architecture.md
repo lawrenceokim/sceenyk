@@ -1,5 +1,9 @@
 # Architecture Context
 
+## Environment-aware Preview callbacks (2026-11-12)
+
+`lib/application-origin.ts` reuses the existing `PAYPAL_RETURN_ORIGIN` plus exact Vercel-assigned domains. Metadata selects the current Preview deployment or Production canonical origin; payment creation reads request-bound headers and permits only those explicit app origins. Return/cancel origin is passed through the existing credit/Marketplace order creation owners; client payloads and arbitrary Host values are not redirect authorities. The stable configured PayPal webhook/payout origin, signature verification, payment identities/amounts, idempotency and all ledgers remain unchanged. Local loopback remains supported; Vercel rejects loopback app/database/legacy worker configuration. Current laptop Docker workers keep outgoing Supabase queue processing with no network/volume/topology change. [Exact manual Vercel/PayPal/Clerk/Supabase/R2 setup and evidence](preview-e2e-setup.md).
+
 ## Vercel web/worker deployment boundary (2026-11-12)
 
 V3 web media readers and review/storage actions no longer import worker-only video inspection/FFmpeg/legacy recovery processing. Next output traces explicitly exclude local secrets, Git, recovery media, Docker/runtime artifacts, public CDN assets and processor/test packages. External worker installs, durable queues/volumes, byte validation, accounting and payment owners remain. Vercel selects Next.js/Fluid and retains private response transforms and paused Inngest. Shared preview cooldowns survive viewport remounts and back off to five-minute discovery after fast initial checks; five-minute access deadlines and immutable byte reuse are unchanged. Active V3 status polling is unchanged; idle paid workspace discovery is 60 seconds and legacy hidden/offline progress pauses. [Deployment audit, manual settings and verification](vercel-deployment.md).

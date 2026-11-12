@@ -1,5 +1,9 @@
 # M10 V3 Phase 3 — local runtime and first-test preparation
 
+## Vercel Preview access configuration (2026-11-12)
+
+The reported Storyboard `V3_ACCESS_UNAVAILABLE` failure was traced to missing required Preview-scoped V3 enable/owned-mode configuration, confirmed by the owner. Local configuration already has both. Preview uses a production runtime: default/operator mode remains development-only. An approved hosted rollout requires server-only `UGC_V3_ENABLED=1` and `UGC_V3_ACCESS_MODE=owned`, effective for the target branch, followed by redeployment. Operator IDs, OpenAI credentials, credits and paid-video switches cannot bypass this initial gate. No permission, funding or generation rule changed. [Exact trace, separate provider/worker requirements and 37-check verification](vercel-deployment.md#preview-storyboard-access-failure--confirmed-2026-11-12).
+
 ## Stage 3 paid-credit admission (2026-11-10)
 
 The existing V3 Generate action verifies the exact provider estimate before creating paid intent; the existing worker rechecks it before first dispatch. Migration 106 adds wallet/cap reservations and outcome-driven ledger settlement while preserving package/approval/currentness/lease/unknown-recovery guards and M5/M6/M7 owners. HACKATHON_DEMO_MODE=true remains five seconds/480p for all users; known-request recovery and local finalization remain available. Free projects retain Stage 2 funding. [Contract/manual setup](stage-3-credit-protection.md).

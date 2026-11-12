@@ -6,6 +6,7 @@ import { themeInitScript } from "@/lib/theme";
 import { Suspense } from "react";
 import { AuthProvider } from "@/components/auth/auth-provider";
 import { brandFaviconId, darkBrandIcon, lightBrandIcon } from "@/lib/brand-assets";
+import { applicationOrigin } from "@/lib/application-origin";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -18,7 +19,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://sceenyk.vercel.app"),
+  metadataBase: new URL(applicationOrigin()),
   title: "Sceenyk — Create the scene you imagine",
   description:
     "Turn ideas, videos, and product images into finished content. One connected creative flow for scenes, stories, and everything you imagine.",

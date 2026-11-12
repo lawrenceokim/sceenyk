@@ -19,6 +19,7 @@
 /context/*
 !/context/project-video-previews.md
 !/context/vercel-deployment.md
+!/context/preview-e2e-setup.md
 !/context/docker-workers.md
 !/context/purchases.md
 !/context/stage-3-credit-protection.md

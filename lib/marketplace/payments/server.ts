@@ -1,4 +1,5 @@
 import "server-only";
+import { requestCheckoutOrigin } from "@/lib/payments/paypal/checkout-origin";
 import { readAppUser } from "@/lib/auth/read-app-user";
 import { z } from "zod";
 import { ensureAppUser } from "@/lib/auth/ensure-app-user";
@@ -70,6 +71,7 @@ export async function prepareMarketplaceCheckout(input: unknown) {
 }
 export async function createMarketplaceOrder(input: unknown) {
   const user = await ensureAppUser(); getPayPalConfig();
+    const origin = await requestCheckoutOrigin();
   const { purchaseId } = purchaseInput.parse(input);
   let p = await ownedPurchase(user.id, purchaseId);
   if (p.status === "completed") { await redeem(p); return { purchase: await summary(p), approvalUrl: null }; }
@@ -79,7 +81,7 @@ export async function createMarketplaceOrder(input: unknown) {
     const attempt = z.object({ paypal_create_started_at: z.string() }).parse(checked(await createDatabaseClient().rpc("marketplace_begin_order", { p_purchase_id: p.id, p_buyer_user_id: user.id })));
     if (Date.now() - Date.parse(attempt.paypal_create_started_at) > 5 * 60_000) throw new Error("PURCHASE_CREATE_NEEDS_RECONCILIATION");
     validateMarketplacePrice("paid", p.amount_minor);
-    const order = await createMarketplacePayPalOrder(p); verifyOrder(p, order); p = await attach(p, order.id);
+    const order = await createMarketplacePayPalOrder(p, origin); verifyOrder(p, order); p = await attach(p, order.id);
   }
   const order = await readPayPalOrder(p.paypal_order_id!); verifyOrder(p, order);
   if (["APPROVED", "COMPLETED", "VOIDED"].includes(order.status)) {

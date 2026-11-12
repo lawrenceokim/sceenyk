@@ -17,6 +17,8 @@ export function workerConnection() {
   if (!parsed.success) throw new PreparationError("PREPARATION_UNAVAILABLE", true);
   const url = new URL(parsed.data);
   const loopback = ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname);
+  // Loopback on Vercel is the function itself, never the owner's laptop worker.
+  if (process.env.VERCEL === "1" && loopback) throw new PreparationError("PREPARATION_UNAVAILABLE", true);
   const localOnly = localJobsOnly();
   if (localOnly && !loopback) throw new PreparationError("PREPARATION_UNAVAILABLE", true);
   if (url.username || url.password || url.search || url.hash || url.pathname !== "/" || !(url.protocol === "https:" || (localOnly || process.env.NODE_ENV !== "production") && url.protocol === "http:" && loopback)) throw new PreparationError("PREPARATION_UNAVAILABLE", true);

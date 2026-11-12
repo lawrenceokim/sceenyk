@@ -2,6 +2,29 @@
 
 Status: source changes implemented and one production build passed. The official local Linux packager produced **5 unique Node functions**, with all **35 API handlers** present. Hosted release acceptance remains pending. No deployment, remote schema change, real provider request or payment was performed.
 
+## Preview Storyboard access failure — confirmed 2026-11-12
+
+The owner confirmed the failing Preview branch lacks the required `UGC_V3_ENABLED=1` / `UGC_V3_ACCESS_MODE=owned` configuration. A read-only local check found both configured locally, with the OpenAI enable flag/key/image/director settings present. No credential or account identifier was printed. Hosted settings were confirmed by the owner, not retrieved through a Vercel API; individual missing/incorrect hosted values were not inspected.
+
+The exact text comes from `V3_ACCESS_UNAVAILABLE` in `lib/final-video-generation-v3/reference-errors.ts`. Storyboard sends `action: storyboard` to `POST /api/ugc/v3`. After same-origin/body validation, `ownedV3Action` calls `ensureAppUser`: Clerk verifies the session/profile and synchronizes its `app_users` mapping. It then calls `assertV3Access(user.id)` with the **internal application UUID**, before the V3 project read, credit/free-project checks, current-reference validation, task enqueue or provider call. The API returns the existing private error response; the client maps its code to the reported message. Saved-state reads can work while mutations are blocked.
+
+| Runtime/configuration | Feature-access rule |
+| --- | --- |
+| Local development, V3 enabled, mode unset or `operator` | Exact `UGC_V3_OPERATOR_USER_ID` only; this is `app_users.id`, not a Clerk `user_...` ID. |
+| V3 enabled and mode `owned`, in development or production | Authenticated valid application UUID passes this gate; owner-scoped database operations and all funding/currentness/approval checks still apply. No operator UUID is needed. |
+| Production runtime, mode unset or `operator` | Denied even for a matching operator. Preview runs a production Next runtime. |
+| V3 disabled/missing, unknown mode or invalid owned-mode UUID | Denied. Flags/mode require exact configured literals. |
+
+**Manual fix:** Vercel Project → Settings → Environment Variables: set server-only `UGC_V3_ENABLED=1` and `UGC_V3_ACCESS_MODE=owned` for **Preview**, including the failing branch's effective overrides. Redeploy/create a new Preview afterward. Development/Production scope alone does not configure Preview; existing deployments do not acquire changed variables. Do not force `NODE_ENV=development`, add `NEXT_PUBLIC_` prefixes or change operator IDs to bypass hosted mode. No live setting was changed here.
+
+Next-stage requirements, checked separately from this error: `UGC_V3_OPENAI_ENABLED=1`, `OPENAI_API_KEY`, `OPENAI_V3_IMAGE_MODEL` and `OPENAI_V3_DIRECTOR_MODEL` on the server and approved external UGC worker. The current Storyboard config requires the existing image configuration plus its Director model; a missing setting gives a different OpenAI provider error after access succeeds. Existing Clerk and Supabase configuration remains required (`NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`, `SUPABASE_URL`, and `SUPABASE_SECRET_KEY` or `SUPABASE_SERVICE_ROLE_KEY`). The reported access error occurs after the account synchronization, so those failures are not its source.
+
+The external worker must consume the admitted `ugc_v3_tasks` Storyboard task against the intended database/storage with matching models. Keep the current worker topology. The alternative standalone service requires `UGC_V3_WORKER_ENABLED=1`, enabled V3 and owned mode on that external worker and refuses Vercel execution. The existing laptop Docker supervisor instead uses its Docker activation/control settings and does not require that standalone flag. Do not start a worker in a Preview request or unpause Inngest. If the corrected request stays queued, investigate worker configuration separately. `UGC_V3_HIGGSFIELD_ENABLED`, Higgsfield credentials, PayPal settings, credits, Pro and demo settings are not inputs to this access gate; changing them is unnecessary. [Complete environment/callback checklist](preview-e2e-setup.md).
+
+The application gate and all actual environment values remain unchanged. `.env.example` now explains Preview scope, hosted mode and operator identity. `node scripts/check-v3-preview-access.mjs` passes **37 offline assertions** covering mode/flag combinations, invalid identity, separate OpenAI configuration, paid-video remaining disabled, exact message mapping and the real action's identity/access-before-project-read order. Authentication/project rejection and ignoring a forged browser owner ID remain enforced. Zero real network calls, paid requests or database writes. No build, browser automation or deployment for this investigation. Hosted acceptance requires the manual settings correction and redeploy.
+
+References: installed Next environment-variable guide (`next dev` uses development; other commands default to production), [Vercel scopes/branch overrides](https://vercel.com/docs/environment-variables) and [managing variables across environments](https://vercel.com/docs/environment-variables/manage-across-environments).
+
 ## Confirmed findings
 
 - The supplied Vercel log warns that `lib/final-video-generation/storage.ts` dynamically traces the whole project through `media.ts` → V3 `runtime-media.ts` → `runtime-server.ts` → the project page. The final excerpt reaches `/vercel/output` and `Deploying outputs`; it does not include a hosted function inventory or the actual 12-function rejection. Do not infer a hosted count from the Next route table.

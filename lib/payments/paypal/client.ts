@@ -1,6 +1,7 @@
 import "server-only";
 import { z } from "zod";
 import { getPayPalConfig } from "./config";
+import { checkoutOrigin } from "@/lib/application-origin";
 import type { PurchaseRow } from "../types";
 import type { MarketplacePurchaseRow } from "@/lib/marketplace/payments/types";
 
@@ -51,16 +52,17 @@ export function purchaseAmount(purchase: Pick<PayPalPurchase, "amount_minor">) {
   return (purchase.amount_minor / 100).toFixed(2);
 }
 
-export async function createPayPalOrder(purchase: PurchaseRow): Promise<PayPalOrder> {
-  return createOrder(purchase, purchase.pack_name, "/dashboard/settings/credits");
+export async function createPayPalOrder(purchase: PurchaseRow, origin?: string): Promise<PayPalOrder> {
+  return createOrder(purchase, purchase.pack_name, "/dashboard/settings/credits", origin);
 }
 
-export async function createMarketplacePayPalOrder(purchase: MarketplacePurchaseRow): Promise<PayPalOrder> {
-  return createOrder(purchase, `Marketplace template — ${purchase.listing_title}`, "/dashboard/marketplace/purchases");
+export async function createMarketplacePayPalOrder(purchase: MarketplacePurchaseRow, origin?: string): Promise<PayPalOrder> {
+  return createOrder(purchase, `Marketplace template — ${purchase.listing_title}`, "/dashboard/marketplace/purchases", origin);
 }
 
-async function createOrder(purchase: PayPalPurchase, description: string, returnPath: string): Promise<PayPalOrder> {
-  const { origin } = getPayPalConfig();
+async function createOrder(purchase: PayPalPurchase, description: string, returnPath: string, requestOrigin?: string): Promise<PayPalOrder> {
+  const config = getPayPalConfig();
+  const origin = requestOrigin ? checkoutOrigin(requestOrigin) : config.origin;
   const body = {
     intent: "CAPTURE",
     purchase_units: [{ reference_id: purchase.listing_id ?? purchase.id, custom_id: purchase.id, invoice_id: purchase.listing_id ? `marketplace:${purchase.id}` : purchase.id,

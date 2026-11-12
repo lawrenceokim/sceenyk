@@ -1,4 +1,5 @@
 import "server-only";
+import { requestCheckoutOrigin } from "./paypal/checkout-origin";
 import { readAppUser } from "@/lib/auth/read-app-user";
 import { z } from "zod";
 import { ensureAppUser } from "@/lib/auth/ensure-app-user";
@@ -83,6 +84,7 @@ async function reconcilePurchase(purchase: PurchaseRow, cancel = false): Promise
 export async function createCreditOrder(input: unknown) {
   const user = await ensureAppUser();
   getPayPalConfig();
+  const origin = await requestCheckoutOrigin();
   const parsed = purchaseInput.safeParse(input);
   if (!parsed.success) throw new CreditPricingError("Enter a valid amount and review the purchase before checkout.");
   const terms = parsed.data;
@@ -114,7 +116,7 @@ export async function createCreditOrder(input: unknown) {
     // Bound create retries well inside PayPal's request-ID retention. An older
     // unknown create outcome requires reconciliation, never a blind new POST.
     if (Date.now() - Date.parse(purchase.created_at) > 5 * 60_000) throw new Error("PURCHASE_CREATE_NEEDS_RECONCILIATION");
-    const order = await createPayPalOrder(purchase);
+    const order = await createPayPalOrder(purchase, origin);
     verifyOrder(purchase, order);
     purchase = await attach(purchase, order.id);
   }
