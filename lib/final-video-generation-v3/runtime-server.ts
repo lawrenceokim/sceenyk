@@ -241,11 +241,15 @@ export async function ownedV3Action(raw: unknown, acknowledge = false): Promise<
     const existing = ["generate", "generate_clip"].includes(a.action) && w.runs.some(r => r.package_id === a.packageId && (!a.segmentId || r.intent.segmentId === a.segmentId) && !["deleted", "failed"].includes(r.state));
     if (existing) return runtimeDto(w);
     assertFreeVideoSettings(brief.duration, projectVideoResolution(brief.video_resolution));
-    const access = await generationAccess(user.id, a.projectId);
-    const preparation = a.action === "reference" ? a.kind : a.action === "storyboard" ? "storyboard" : null;
-    if (!preparation && !access.projectAllowed) throw new Error(access.projectBlocker ?? "FREE_PROJECT_HISTORY_REVIEW_REQUIRED");
-    if (["generate", "generate_clip"].includes(a.action) && !access.videoAllowed) throw new Error(access.paidBlocker ?? "FREE_PROJECT_VIDEO_USED");
-    if (preparation && access.preparationFunding === "credits" && access.availableCredits < (preparation === "location" ? 2 : 1)) throw new Error("INSUFFICIENT_CREDITS");
+    // Package construction is local validation/estimation, not funded admission.
+    // Keep usage review authoritative for authorization and video submission.
+    if (a.action !== "build_package") {
+      const access = await generationAccess(user.id, a.projectId);
+      const preparation = a.action === "reference" ? a.kind : a.action === "storyboard" ? "storyboard" : null;
+      if (!preparation && !access.projectAllowed) throw new Error(access.projectBlocker ?? "FREE_PROJECT_HISTORY_REVIEW_REQUIRED");
+      if (["generate", "generate_clip"].includes(a.action) && !access.videoAllowed) throw new Error(access.paidBlocker ?? "FREE_PROJECT_VIDEO_USED");
+      if (preparation && access.preparationFunding === "credits" && access.availableCredits < (preparation === "location" ? 2 : 1)) throw new Error("INSUFFICIENT_CREDITS");
+    }
   }
   if (creativeLock && (creativeMutationActions.has(a.action) || a.action === "recover_task" && w.tasks.some(t => t.id === a.id && ["character", "product", "location", "storyboard", "package"].includes(t.kind))))
     throw new Error("V3_CREATIVE_INPUTS_LOCKED");
