@@ -6,6 +6,7 @@ RUN npm ci --omit=dev --no-audit --no-fund && npm cache clean --force
 COPY tsconfig.json ./
 COPY lib ./lib
 COPY scripts/docker-worker-cycle.ts ./scripts/
+COPY scripts/diagnose-generation-worker.ts ./scripts/
 COPY workers/laptop/build.mjs ./workers/laptop/
 RUN node workers/laptop/build.mjs
 

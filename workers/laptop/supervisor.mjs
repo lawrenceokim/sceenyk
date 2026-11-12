@@ -5,6 +5,7 @@ const lane = process.argv[2];
 const healthFile = '/tmp/worker-health.json';
 const payoutSchedule = '/data/payout-next-check';
 let child, stopped = false, cycleStarted = 0;
+let connectionAvailable = true, connectionFailures = 0;
 const pause = milliseconds => new Promise(resolve => {
   const done = () => { clearTimeout(timer); process.removeListener('SIGTERM', done); process.removeListener('SIGINT', done); resolve(); };
   const timer = setTimeout(done, milliseconds);
@@ -23,7 +24,7 @@ for (const signal of ['SIGTERM', 'SIGINT']) process.on(signal, () => { stopped =
 function heartbeat() {
   assertActivation();
   if (cycleStarted && Date.now() - cycleStarted > 40 * 60_000) throw new Error('DOCKER_WORKER_CYCLE_STALLED');
-  fs.writeFileSync(healthFile, JSON.stringify({ at: Date.now(), lane }), { mode: 0o600 });
+  fs.writeFileSync(healthFile, JSON.stringify({ at: Date.now(), lane, connectionAvailable }), { mode: 0o600 });
 }
 async function cycle() {
   cycleStarted = Date.now();
@@ -35,7 +36,11 @@ async function cycle() {
   await new Promise((resolve, reject) => {
     child = spawn(command, args, { stdio: 'inherit', detached: true });
     child.once('error', reject);
-    child.once('exit', (code, signal) => { child = undefined; if (stopped || code === 0) resolve(); else reject(new Error(`WORKER_CYCLE_EXIT_${signal ?? code}`)); });
+    child.once('exit', (code, signal) => {
+      child = undefined;
+      if (stopped || code === 0) resolve();
+      else reject(Object.assign(new Error(`WORKER_CYCLE_EXIT_${signal ?? code}`), { exitCode: code }));
+    });
   });
   cycleStarted = 0;
 }
@@ -68,7 +73,20 @@ try {
       const directory = fs.openSync('/data', 'r');
       try { fs.fsyncSync(directory); } finally { fs.closeSync(directory); }
     }
-    await cycle();
+    try {
+      await cycle();
+      if (connectionFailures) console.info(JSON.stringify({ stage: 'DOCKER_WORKER_CONNECTION_RECOVERED', lane, failures: connectionFailures }));
+      connectionAvailable = true; connectionFailures = 0; heartbeat();
+    } catch (error) {
+      if (lane === 'payout' || error.exitCode !== 75) throw error;
+      // A fresh iteration rediscovers authoritative SQL state and lets existing
+      // leases/receipts reconcile any uncertain work. No provider POST replay.
+      cycleStarted = 0; connectionAvailable = false; connectionFailures++; heartbeat();
+      const delayMs = Math.min(60000, Math.round(3000 * 2 ** Math.min(connectionFailures - 1, 5) * (1 + Math.random() * .2)));
+      console.error(JSON.stringify({ stage: 'DOCKER_WORKER_DATABASE_RETRY', lane, failures: connectionFailures, delayMs }));
+      if (!stopped) await pause(delayMs);
+      continue;
+    }
     if (!stopped && lane !== 'payout') await pause(5000);
   }
 } catch {

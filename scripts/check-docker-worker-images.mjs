@@ -22,7 +22,10 @@ assert.match(result.stderr, /MISSING_CONFIGURATION/, 'Worker imports must reach 
 const health = () => spawnSync(process.execPath, ['/app/workers/laptop/healthcheck.mjs']).status;
 assert.equal(health(), 1);
 fs.writeFileSync('/tmp/worker-health.json', JSON.stringify({at:Date.now(),lane})); assert.equal(health(), 0);
+fs.writeFileSync('/tmp/worker-health.json', JSON.stringify({at:Date.now(),lane,connectionAvailable:false})); assert.equal(health(), 1);
 fs.writeFileSync('/tmp/worker-health.json', JSON.stringify({at:Date.now()-60000,lane})); assert.equal(health(), 1);
+assert.equal(JSON.parse(fs.readFileSync('/app/runtime/build-info.json','utf8')).policyVersion,114);
+assert.equal(fs.existsSync('/app/runtime/diagnose.cjs'),true);
 if (lane !== 'payout') {
  for (const binary of ['/usr/bin/ffmpeg','/usr/bin/ffprobe']) assert.equal(spawnSync(binary,['-version'],{stdio:'ignore'}).status,0);
  const holder = spawn('/usr/bin/flock',['-x','/tmp/heavy.lock',process.execPath,'-e',

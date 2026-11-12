@@ -1,5 +1,9 @@
 # Architecture Context
 
+## Docker incident recovery and stable saves (2026-11-13)
+
+UGC/Media Docker cycles preserve safe diagnostics and signal transient database failure with exit 75; the supervisor backs off before rediscovering SQL state and marks health degraded until success. Claims, financial mutations and provider POSTs are never retried individually. Discovery/workspace reads use 30-second deadlines, mutations retain 10 seconds and explicit cancellation remains authoritative. Permanent failures/payouts keep their existing owners. Worker builds carry a policy/bundle manifest and read-only inherited-env diagnostics. Studio save transport uses `/api/projects/save` with exact-origin/JSON/body bounds and the existing owned save action/service. No identity, ownership, lock, credit, media or payment authority changes. [Incident evidence and pending rollout](video-generation-reliability.md#production-connection-incident--2026-11-13).
+
 ## Marketplace publishing media access (2026-11-12)
 
 Publishing media is read through a private same-origin route bound to the authenticated account and owned listing/project/version. Reuse a ready approved-final 3-second derivative or the current approved final; the existing deduplicated Media-worker queue owns missing clips. One exact selected-upload fallback is allowed. Browser canvas capture never reads a signed cross-origin R2 URL. Before returning bytes, enforce conditional immutable metadata/ranges and recheck ownership/currentness; before storing the public bounded WebP, recheck capture provenance and retain the existing SQL/rights/source gates. Content-addressed poster writes deduplicate retries; public poster/full-playback boundaries and financial owners are unchanged. [Confirmed CORS failure, source/storage evidence and release](project-video-previews.md#marketplace-publishing-without-browser-r2-cors--2026-11-12).
