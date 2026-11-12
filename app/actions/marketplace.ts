@@ -6,6 +6,8 @@ import { adoptMarketplaceListing, createMarketplaceListing, deleteOwnedTemplate,
 import { ensureAppUser } from "@/lib/auth/ensure-app-user";
 import type { MarketplaceResult } from "@/lib/marketplace/contract";
 import { getOwnedTemplateSource, initializeProjectTemplate } from "@/lib/marketplace/project-template";
+import { readAppUser } from "@/lib/auth/read-app-user";
+import { templatePublishSource } from "@/lib/marketplace/publish-media";
 
 async function run(work: () => Promise<MarketplaceResult>): Promise<MarketplaceResult> {
   try {
@@ -28,6 +30,10 @@ export async function updateMarketplaceAction(input: unknown, preview?: FormData
 export async function initializeTemplateAction(projectId: unknown) { return run(() => initializeProjectTemplate(projectId)); }
 export async function readTemplateSourceAction(listingId: unknown) {
   try { return await getOwnedTemplateSource(listingId); }
+  catch (error) { unstable_rethrow(error); throw new Error("The template preview couldn’t be loaded."); }
+}
+export async function readTemplatePublishSourceAction(listingId: string, fallback = false) {
+  try { return await templatePublishSource((await readAppUser()).id, listingId, fallback); }
   catch (error) { unstable_rethrow(error); throw new Error("The template preview couldn’t be loaded."); }
 }
 export async function adoptMarketplaceAction(input: unknown) { return run(() => adoptMarketplaceListing(input)); }

@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useState, type ReactNode } from "react";
-import { readTemplateSourceAction } from "@/app/actions/marketplace";
+import { readTemplateSourceAction, readTemplatePublishSourceAction } from "@/app/actions/marketplace";
 import { MediaPreviewSkeleton } from "@/components/ui/skeleton";
 
 export function TemplateMediaPreview({ listingId, previewUrl, owned, large, children }: {
@@ -36,16 +36,28 @@ export function TemplateMediaPreview({ listingId, previewUrl, owned, large, chil
 // A browser-decoded still is a public preview representation, never the private
 // original video/audio or its storage URL. The server re-encodes it again.
 export async function templatePreviewPoster(listingId: string): Promise<FormData | undefined> {
-  const source = await readTemplateSourceAction(listingId);
+  const source = await readTemplatePublishSourceAction(listingId);
   if (!source) return;
+  try { return await captureTemplatePoster(source); }
+  catch (error) {
+    // One authorized image/source fallback, never another generation request.
+    if (source.variant === "source") throw error;
+    const fallback = await readTemplatePublishSourceAction(listingId, true);
+    if (!fallback) throw error;
+    return captureTemplatePoster(fallback);
+  }
+}
+
+async function captureTemplatePoster(source: NonNullable<Awaited<ReturnType<typeof readTemplatePublishSourceAction>>>): Promise<FormData> {
   const canvas = document.createElement("canvas");
   const context = canvas.getContext("2d");
   if (!context) throw new Error("Preview unavailable");
   let width: number, height: number;
   const element = source.kind === "image" ? new window.Image() : document.createElement("video");
-  element.crossOrigin = "anonymous";
+  // The owner-checked same-origin route streams immutable bytes server-side.
+  // Browser canvas access no longer depends on the R2 bucket's CORS origins.
   const ready = new Promise<void>((resolve, reject) => {
-    const timeout = window.setTimeout(() => reject(new Error("Preview timed out")), 15000);
+    const timeout = window.setTimeout(() => reject(new Error("Preview timed out")), 30000);
     const cleanup = () => window.clearTimeout(timeout);
     element.onerror = () => { cleanup(); reject(new Error("Preview unavailable")); };
     if (element instanceof HTMLVideoElement) {
@@ -64,8 +76,13 @@ export async function templatePreviewPoster(listingId: string): Promise<FormData
     context.drawImage(element, 0, 0, canvas.width, canvas.height);
     const blob = await new Promise<Blob>((resolve, reject) => canvas.toBlob(value => value ? resolve(value) : reject(new Error("Preview unavailable")), "image/webp", 0.78));
     if (blob.type !== "image/webp" || blob.size > 524288) throw new Error("Preview too large");
-    const form = new FormData(); form.set("preview", blob, "preview.webp"); return form;
+    const form = new FormData(); form.set("preview", blob, "preview.webp");
+    form.set("sourceVersion", source.version); form.set("sourceVariant", source.variant);
+    return form;
   } finally {
+    element.onerror = null;
+    if (element instanceof HTMLVideoElement) element.onloadeddata = null;
+    else element.onload = null;
     element.src = "";
     if (element instanceof HTMLVideoElement) element.load();
   }
