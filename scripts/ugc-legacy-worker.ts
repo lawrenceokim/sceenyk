@@ -1,4 +1,5 @@
 import { loadEnvConfig } from "@next/env";
+import { registerLocalWorker } from "../lib/worker-runtime/local-guard.mjs";
 import { randomUUID } from "node:crypto";
 import { finalConfigurationDiagnostic } from "../lib/final-video-generation/configuration-diagnostics";
 
@@ -38,6 +39,7 @@ function startupDiagnostic(error: unknown) {
 
 async function main() {
   loadEnvConfig(process.cwd(), true, { info() {}, error() {} });
+  registerLocalWorker("ugc");
   startupPhase = "execution_policy";
   const { localJobsOnly } = await import("../lib/workflows/execution-policy");
   if (!localJobsOnly() || process.env.RENDER === "true" || process.env.VERCEL === "1") {

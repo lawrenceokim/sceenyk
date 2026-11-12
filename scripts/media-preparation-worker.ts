@@ -1,5 +1,7 @@
 // Isolated Node worker. Next.js/Inngest calls only its signed HTTP boundary.
 import { loadEnvConfig } from "@next/env";
+import { existsSync } from "node:fs";
+import { registerLocalWorker } from "../lib/worker-runtime/local-guard.mjs";
 import { executePreparation } from "../lib/media-preparation/processor";
 import { resolveWorkerPreparation } from "../lib/media-preparation/context";
 import { workerSharedSecret } from "../lib/media-preparation/auth";
@@ -15,6 +17,8 @@ import { startProjectVideoPreviews } from "../lib/projects/video-preview-worker"
 
 async function main() {
   loadEnvConfig(process.cwd(), false, { info() {}, error() {} });
+  // Existing hosted HTTP workers have no workstation checkout to coordinate.
+  if (process.env.NODE_ENV !== "production" || existsSync(".worker-runtime/mode")) registerLocalWorker("media");
   const secret = workerSharedSecret();
   getDatabaseConfig();
   getStorageConfig();

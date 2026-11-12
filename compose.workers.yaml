@@ -1,0 +1,116 @@
+name: sceenyk-workers
+
+x-worker: &worker
+  restart: unless-stopped
+  read_only: true
+  cap_drop: [ALL]
+  security_opt: [no-new-privileges:true]
+  pids_limit: 96
+  stop_grace_period: 5m
+  tmpfs:
+    - /tmp:rw,noexec,nosuid,size=384m,uid=1000,gid=1000,mode=0700
+  healthcheck:
+    test: [CMD, node, /app/workers/laptop/healthcheck.mjs]
+    interval: 30s
+    timeout: 5s
+    retries: 3
+    start_period: 30s
+  logging:
+    driver: local
+    options:
+      max-size: 10m
+      max-file: '3'
+  volumes:
+    - type: bind
+      source: ./.worker-runtime
+      target: /control
+      read_only: true
+      bind:
+        create_host_path: false
+
+services:
+  ugc:
+    <<: *worker
+    container_name: sceenyk-worker-ugc
+    profiles: [workers]
+    image: sceenyk-worker-ugc:laptop-v1
+    build:
+      context: .
+      dockerfile: workers/laptop/ugc.Dockerfile
+    env_file:
+      - {path: .env.workers.common, format: raw}
+      - {path: .env.workers.storage, format: raw}
+      - {path: .env.workers.ugc, format: raw}
+    environment:
+      PAYPAL_ENVIRONMENT: sandbox
+      UGC_V3_ENABLED: '1'
+      UGC_V3_ACCESS_MODE: owned
+      UGC_V3_WORKER_CONCURRENCY: '1'
+      HACKATHON_DEMO_MODE: 'true'
+      NODE_OPTIONS: --max-old-space-size=768
+      UV_THREADPOOL_SIZE: '2'
+      VIPS_CONCURRENCY: '1'
+      OMP_NUM_THREADS: '1'
+    cpus: 1.0
+    mem_limit: 1408m
+    memswap_limit: 1408m
+    volumes:
+      - {type: bind, source: ./.worker-runtime, target: /control, read_only: true, bind: {create_host_path: false}}
+      - worker-data:/data
+
+  media:
+    <<: *worker
+    container_name: sceenyk-worker-media
+    profiles: [workers]
+    image: sceenyk-worker-media:laptop-v1
+    build:
+      context: .
+      dockerfile: workers/laptop/media.Dockerfile
+    env_file:
+      - {path: .env.workers.common, format: raw}
+      - {path: .env.workers.storage, format: raw}
+    environment:
+      PAYPAL_ENVIRONMENT: sandbox
+      UGC_V3_ENABLED: '1'
+      UGC_V3_ACCESS_MODE: owned
+      UGC_V3_OPENAI_ENABLED: '0'
+      UGC_V3_HIGGSFIELD_ENABLED: '0'
+      HACKATHON_DEMO_MODE: 'true'
+      NODE_OPTIONS: --max-old-space-size=768
+      UV_THREADPOOL_SIZE: '2'
+      VIPS_CONCURRENCY: '1'
+      OMP_NUM_THREADS: '1'
+    cpus: 1.0
+    mem_limit: 1408m
+    memswap_limit: 1408m
+    volumes:
+      - {type: bind, source: ./.worker-runtime, target: /control, read_only: true, bind: {create_host_path: false}}
+      - worker-data:/data
+
+  payout:
+    <<: *worker
+    container_name: sceenyk-worker-payout
+    profiles: [payouts]
+    image: sceenyk-worker-payout:laptop-v1
+    build:
+      context: .
+      dockerfile: workers/laptop/payout.Dockerfile
+    env_file:
+      - {path: .env.workers.common, format: raw}
+      - {path: .env.workers.payout, format: raw}
+    environment:
+      PAYPAL_ENVIRONMENT: sandbox
+      NODE_OPTIONS: --max-old-space-size=128
+      UV_THREADPOOL_SIZE: '2'
+    cpus: 0.25
+    mem_limit: 256m
+    memswap_limit: 256m
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=32m,uid=1000,gid=1000,mode=0700
+    volumes:
+      - {type: bind, source: ./.worker-runtime, target: /control, read_only: true, bind: {create_host_path: false}}
+      - payout-state:/data
+
+volumes:
+  worker-data:
+  payout-state:

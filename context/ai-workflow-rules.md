@@ -1,5 +1,9 @@
 # AI Workflow Rules
 
+## Current authorization — laptop Docker workers (2026-11-12)
+
+Prepare fixed Docker images and an outgoing-only Compose stack for existing UGC/FFmpeg/preview and Sandbox payout processing. Reuse all ownership, accounting, eligibility, verification and recovery owners. Perform essential offline configuration/security checks and worker-only compilation/image checks; no Next.js full build, broad suites, browser automation, paid generation, live queue processing, payout, remote migration, deployment or automatic activation. Leave operator activation and connected manual testing to the owner. [Setup and acceptance limits](docker-workers.md).
+
 ## Independent sheet and Storyboard funding — 109 (2026-11-10)
 
 Sheet/Storyboard generation checks OpenAI funding independently of video/project review. Valid assigned free projects and eligible unused allowances retain included OpenAI access. Otherwise sufficient purchased credits authorize a new OpenAI request, even on a historical project whose video/free usage is unresolved. A review hold must never veto a separately credit-funded Character, Product, Location or Storyboard request. Each actual request costs 1 credit; fresh Location remains 2 (plan + sheet), continuation 1.

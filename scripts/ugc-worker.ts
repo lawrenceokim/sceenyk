@@ -1,9 +1,11 @@
 import { loadEnvConfig } from "@next/env";
+import { registerLocalWorker } from "../lib/worker-runtime/local-guard.mjs";
 import { workerLane } from "../lib/final-video-generation-v3/worker-command";
 import { v3WorkerFailure } from "../lib/final-video-generation-v3/connection-recovery";
 
 async function main() {
   loadEnvConfig(process.cwd(), true, { info() {}, error() {} });
+  registerLocalWorker("ugc");
   const args = process.argv.slice(2);
   if (workerLane(args, process.env.UGC_V3_ENABLED === "1") === "legacy") {
     console.info("V3_REFERENCE_CONTRACT", { active: false, provider: "openai", reason: "historical_worker_selected" });

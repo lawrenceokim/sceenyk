@@ -220,19 +220,22 @@ async function deleteTask(store: V3Store, task: Task, w: RuntimeWorkspace, signa
   if (joined?.document.manifestHash) await purgeMergeSpool(asset.id);
   await store.checkpoint(task, "deleted");
 }
-export async function runV3Task(projectId: string, ownerId: string, store = new V3Store(), signal = AbortSignal.timeout(14 * 60_000)) {
+export async function runV3Task(projectId: string, ownerId: string, store = new V3Store(), signal = AbortSignal.timeout(14 * 60_000), lane?: "ugc" | "media") {
   assertV3Access(ownerId);
   let w = await store.read(ownerId, projectId);
-  if (w.tasks.some(t => t.input.referenceCleanup && t.status !== "done" && w.referenceDeletions.some(d => d.id === (t.input.referenceCleanup as { id: string }).id && d.state === "completed"))) {
+  if (lane !== "media" && w.tasks.some(t => t.input.referenceCleanup && t.status !== "done" && w.referenceDeletions.some(d => d.id === (t.input.referenceCleanup as { id: string }).id && d.state === "completed"))) {
     await store.rpc("ugc_v3_reconcile_reference_cleanup", { p_owner: ownerId, p_project: projectId });
     w = await store.read(ownerId, projectId);
   }
-  if(w.referenceCleanupPolicy&&discardableReferences(w).length){
+  if(lane !== "media" && w.referenceCleanupPolicy&&discardableReferences(w).length){
     const queued=await store.rpc("ugc_v3_queue_reference_cleanup",{p_owner:ownerId,p_project:projectId,p_retry:false});
     if(queued)w=await store.read(ownerId,projectId);
   }
-  w = await prepareV3VideoRecovery(store, w, signal);
-  const claim = await store.rpc("ugc_v3_worker_claim", { p_project: projectId, p_submit: v3TransportConfig().enabled }); if (!claim) return false;
+  if (lane !== "media") w = await prepareV3VideoRecovery(store, w, signal);
+  const claim = await store.rpc(lane ? "laptop_v3_worker_claim" : "ugc_v3_worker_claim", {
+    p_project: projectId, p_submit: lane === "media" ? false : v3TransportConfig().enabled,
+    ...(lane ? { p_lane: lane, p_openai: lane === "ugc" && process.env.UGC_V3_OPENAI_ENABLED === "1" } : {}),
+  }); if (!claim) return false;
   const task = taskSchema.parse(claim);
   try {
     if (isLocationDirectorTask(task)) await runLocationTask(store, task, w, signal);

@@ -1,5 +1,13 @@
 # Architecture Context
 
+## Optional Windows Docker workers (2026-11-12)
+
+The existing trusted payout functions are moved unchanged into the worker-safe `lib/marketplace/withdrawals/processor.ts`; `server.ts` keeps authenticated account actions and re-exports the same processing/webhook functions. This removes request-bound Clerk/Next imports from standalone payout startup without changing financial decisions.
+
+[Docker worker setup and activation](docker-workers.md) defines a separate, outgoing-only `compose.workers.yaml` stack. It compiles existing V3 processing into fixed images, routes `join` tasks to Media via the optional service-only migration 113, and reuses the preview processor and trusted Sandbox withdrawal processor. Existing web routes, Vercel deployment, signed HTTP Media worker and npm workflows remain their current owners. Inngest stays paused.
+
+The laptop stack serializes entire UGC/Media task cycles through a Linux kernel lock on their shared recovery volume. Resource limits total 3072 MiB; this is a configured ceiling, not measured workload acceptance. A checkout-local atomic mode switch prevents newly launched local CLI workers from overlapping Docker workers and refuses Docker selection while registered local workers are alive. This is workstation coordination, not cross-machine or old-checkout isolation; existing database leases and provider/ledger fences still protect durable work. Stop older worker processes before the first switch. Persistent private recovery files are never discarded to force a retry. Hourly Sandbox payout checks preserve ambiguous outcomes and never resend an already processing withdrawal.
+
 ## Shared slide-in feedback (2026-11-11)
 
 Application feedback uses one shared slide-in notification viewport and renderer. Source components retain their state, callbacks and React context; feedback portals into a bounded stack that follows the active dialog/native top layer. Errors, validation, warnings and action results use this renderer; loading/progress, ordinary content and confirmations retain their existing owners. Identical notices are deduplicated, interactive notices remain actionable, and auth changes clear private feedback. The Studio testing option catalog is presentation-only: disabled duration/resolution choices explain their restriction through the same notification system, with existing server/worker admission unchanged.

@@ -17,6 +17,7 @@
 !/context/
 /context/*
 !/context/project-video-previews.md
+!/context/docker-workers.md
 !/context/purchases.md
 !/context/stage-3-credit-protection.md
 !/context/m7-workflow-verification.md
@@ -65,6 +66,8 @@ yarn-error.log*
 .env*
 /.ugc-final-recovery/
 /.ugc-v3-recovery/
+/.worker-runtime/
+/workers/laptop/runtime/
 !.env.example
 
 # vercel

@@ -17,5 +17,13 @@
 !workers/media-preparation/Dockerfile
 !workers/final-render/
 !workers/final-render/**
+!workers/laptop/
+!workers/laptop/**
+workers/laptop/*.example
+workers/laptop/runtime/
+!scripts/docker-worker-cycle.ts
 workers/final-render/bundle/
 workers/final-render/runtime/
+**/.env*
+**/*.pem
+**/*.key

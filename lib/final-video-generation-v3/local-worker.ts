@@ -1,4 +1,5 @@
 import "server-only";
+import { registerLocalWorker } from "../worker-runtime/local-guard.mjs";
 import { z } from "zod";
 import { createDatabaseClient } from "@/lib/db/server";
 import { localJobsOnly } from "@/lib/workflows/execution-policy";
@@ -14,6 +15,7 @@ export function referenceContractDiagnostic() {
     enabled: process.env.UGC_V3_OPENAI_ENABLED === "1", roles: ["character", "product", "location"], fallback: false };
 }
 export async function runLocalV3Worker(args: string[]) {
+  registerLocalWorker("ugc");
   if (!process.env.NODE_ENV) Object.assign(process.env, { NODE_ENV: "development" });
   if (!localJobsOnly() || process.env.RENDER === "true" || process.env.VERCEL === "1") throw new Error("V3_LOCAL_WORKER_SETUP_REQUIRED");
   const projectIndex = args.indexOf("--project"), projectId = projectIndex < 0 ? undefined : args[projectIndex + 1];
