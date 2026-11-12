@@ -8,6 +8,7 @@ import { templateAppearance } from "./template-appearance";
 import { AbstractPreview } from "./abstract-preview";
 import { TemplateMediaPreview } from "./template-media-preview";
 import { AppNotification } from "@/components/notifications/app-notification";
+import { ListingVideoPreview } from "./listing-video-preview";
 
 
 export function ListingCreator({ listing }: { listing: Listing }) {
@@ -39,8 +40,11 @@ export function GenerationEstimate({ listing }: { listing: Pick<Listing, "estima
     ? `Estimated generation: ~${listing.estimate.credits} credits${listing.estimate.test ? " (test pricing)" : ""}`
     : "Generation cost: review in your project"}</p>;
 }
-export function ListingCard({ listing }: { listing: Listing }) {
+export function ListingCard({ listing, videoVersion }: { listing: Listing; videoVersion?: string | null }) {
   const category = creationCategories.find(item => item.id === listing.category)!;
+  const cover = videoVersion !== undefined
+    ? <ListingVideoPreview listingId={listing.id} version={videoVersion} posterUrl={listing.previewUrl}><AbstractPreview previewId={listing.id} fallbackColor={listing.fallbackColor} metadata={`${listing.template.settings.visualStyle} · ${listing.template.settings.aspectRatio} · ${listing.template.settings.duration}s`} /></ListingVideoPreview>
+    : <TemplateCover template={listing.template} fallbackColor={listing.fallbackColor} previewId={listing.id} previewUrl={listing.previewUrl} />;
   return <article className={`
       workspace-gallery-card marketplace-listing-card [&&]:min-w-[0] [&&]:flex [&&]:flex-col
       [&&]:[border:1px_solid_var(--border)] [&&]:rounded-[18px] [&&]:pt-[8px] [&&]:pr-[8px] [&&]:pb-[8px] [&&]:pl-[8px]
@@ -63,7 +67,7 @@ export function ListingCard({ listing }: { listing: Listing }) {
       [.workspace-gallery-card_>_&&:first-child]:overflow-visible [.workspace-gallery-card_>_&&:first-child]:rounded-[10px]
       [&&:focus-visible]:[outline:2px_solid_var(--ring)] [&&:focus-visible]:[outline-offset:3px]
     `} aria-label={`Explore ${listing.title}`}>
-      <div className={"marketplace-card-preview [&&]:relative [&&]:shrink-0 [&&]:overflow-hidden [&&]:rounded-[12px] [.manage-template-card_&&]:rounded-[10px]"}><TemplateCover template={listing.template} fallbackColor={listing.fallbackColor} previewId={listing.id} previewUrl={listing.previewUrl} /><span className={`
+      <div className={"marketplace-card-preview [&&]:relative [&&]:shrink-0 [&&]:overflow-hidden [&&]:rounded-[12px] [.manage-template-card_&&]:rounded-[10px]"}>{cover}<span className={`
       marketplace-card-arrow [&&]:absolute [&&]:top-[8px] [&&]:right-[8px] [&&]:flex [&&]:w-[24px] [&&]:h-[24px]
       [&&]:items-center [&&]:justify-center [&&]:rounded-[999px] [&&]:[background:#0007] [&&]:text-[color:#fff]
       [&&]:opacity-[0] [&&]:[transition:opacity_var(--motion-micro)_var(--motion-ease)] [&&_svg]:w-[13px] [&&_svg]:h-[13px]

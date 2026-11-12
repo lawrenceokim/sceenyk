@@ -1,5 +1,9 @@
 # Architecture Context
 
+## Marketplace previews and session cache (2026-11-12)
+
+Marketplace discovery reuses the Projects browser-memory cache class in an isolated instance, preserving loaded cards, media and practical scroll across navigation. A same-origin gallery endpoint returns public ordering and changed cards after compact saved-revision checks; return/visible checks refresh quietly without replacing unchanged cards. Clerk identity changes purge media and pending reads. A separate published-only media boundary resolves current approved finals and serves the existing saved 3-second FFmpeg derivative, never private originals or storage URLs. Static posters reuse their existing public reviewed-derivative RPC. The Projects implementation, Docker workers, generation and payments are unchanged. No new migration or global caching policy. [Contract, timing, setup and manual acceptance](project-video-previews.md#marketplace-looping-previews-and-return-cache-2026-11-12).
+
 ## Projects identity reads and refresh recovery (2026-11-12)
 
 The account layout and Projects index/status/thumbnail/video-preview reads authenticate each request through Clerk's existing session protection and look up the matching `app_users` mapping. Existing mappings require no Clerk profile request or account upsert. Only a confirmed missing mapping invokes unchanged verified `ensureAppUser` provisioning; database errors never trigger that fallback. React `cache` deduplicates only within a render pass, with no shared user cache; actions/handlers still authenticate each invocation. Explicit profile synchronization and financial/mutation services retain their existing owners.
@@ -24,7 +28,7 @@ Projects reuses Next.js Activity and adds a bounded browser-memory gallery/media
 
 ## Projects-page private video derivatives (2026-11-11)
 
-Projects cards lazily request a saved 3-second silent final-video preview through an owner-authenticated private route. Explicit new migration 112 adds only a service-only derivative queue/cache with owner/project/version uniqueness and fenced worker leases. The existing FFmpeg media worker reads approved current final outputs, verifies private bytes and publishes immutable private R2 previews; it never calls AI providers or changes generation, approval, credit or payment state. The client unloads offscreen/hidden/reduced-motion playback and retains existing thumbnails. Other pages do not consume these derivatives. [Source contract, setup and manual acceptance](project-video-previews.md).
+Projects cards lazily request a saved 3-second silent final-video preview through an owner-authenticated private route. Explicit new migration 112 adds only a service-only derivative queue/cache with owner/project/version uniqueness and fenced worker leases. The existing FFmpeg media worker reads approved current final outputs, verifies private bytes and publishes immutable private R2 previews; it never calls AI providers or changes generation, approval, credit or payment state. The client unloads offscreen/hidden/reduced-motion playback and retains existing thumbnails. Marketplace discovery now reuses these derivatives through the separate published-only boundary above. [Source contract, setup and manual acceptance](project-video-previews.md).
 
 ## Private Purchases library (2026-11-10)
 
