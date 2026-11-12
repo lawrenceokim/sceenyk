@@ -1,5 +1,9 @@
 # Sceenyk
 
+## Templates preview and return cache (2026-11-12)
+
+The private `/templates` gallery now retains loaded cards, previews and practical scroll across navigation, with quiet changed-card refreshes. Completed non-draft templates reuse current approved source-final 3-second silent previews; drafts/incomplete templates keep static covers. Existing owner-only media checks, identity cleanup and template creation/edit/publish/delete decisions remain. No worker, payment or generation change. [Contract, setup and manual acceptance](project-video-previews.md#templates-owned-looping-previews-and-return-cache-2026-11-12).
+
 ## Purchases library (2026-11-10)
 
 Source implementation adds `/purchases` for free and verified paid Marketplace acquisitions, purchase details and Create your version. Acquired templates retain their saved instructions/settings and paid purchase-time price; opening a version reuses an owned adopted project or creates a clean replacement after deletion without repurchasing or generating. Private creator media/prompts/Storyboards remain private. Manual migration 110 and normal workflow/UI acceptance remain pending. [Contract and setup](purchases.md).

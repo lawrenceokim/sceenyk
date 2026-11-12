@@ -5,6 +5,7 @@ import { createContext, useContext, useEffect, useLayoutEffect, useRef, useState
 import { useAuthAvailable } from "@/components/auth/auth-availability";
 import { marketplaceSessionCache, type MarketplaceFilter } from "@/lib/marketplace/session-cache";
 import { listingScrollRoot } from "./infinite-listings";
+import type { ProjectsSessionCache } from "@/lib/projects/session-cache";
 
 export const MarketplaceCacheScope = createContext<string | null>(null);
 const noSnapshot = () => undefined;
@@ -73,22 +74,26 @@ export function useMarketplaceGallery(filter: MarketplaceFilter) {
   } };
 }
 
-export function useMarketplacePreview(listingId: string, kind: "video" | "poster" = "video", enabled = true) {
-  const scope = useContext(MarketplaceCacheScope), key = `${kind === "video" ? "video" : "thumbnail"}:marketplace:${listingId}`;
-  const media = useSyncExternalStore(marketplaceSessionCache.subscribe, () => marketplaceSessionCache.readMedia(scope, key), noSnapshot);
-  const invalidation = useSyncExternalStore(marketplaceSessionCache.subscribe, () => marketplaceSessionCache.mediaInvalidation(scope, key), () => 0);
+export type PreviewMediaSource = { cache: ProjectsSessionCache; scope: string | null; namespace: string; endpoint: string };
+export function useMarketplacePreview(listingId: string, kind: "video" | "poster" = "video", enabled = true, source?: PreviewMediaSource) {
+  const contextScope = useContext(MarketplaceCacheScope);
+  const scope = source ? source.scope : contextScope, cache = source?.cache ?? marketplaceSessionCache;
+  const endpoint = source?.endpoint ?? "/api/marketplace/video-preview";
+  const key = `${kind === "video" ? "video" : "thumbnail"}:${source?.namespace ?? "marketplace"}:${listingId}`;
+  const media = useSyncExternalStore(cache.subscribe, () => cache.readMedia(scope, key), noSnapshot);
+  const invalidation = useSyncExternalStore(cache.subscribe, () => cache.mediaInvalidation(scope, key), () => 0);
   useEffect(() => {
     if (!scope || !enabled) return;
     let active = true, attempt = 0, timer: ReturnType<typeof setTimeout>;
     const load = async (renew = false) => {
       try {
-        const result = await marketplaceSessionCache.loadMedia(scope, key, "/api/marketplace/video-preview", { listingId, kind }, renew);
+        const result = await cache.loadMedia(scope, key, endpoint, { listingId, kind }, renew);
         if (active && result?.pending) timer = setTimeout(() => { void load(); }, Math.min(30_000, 2500 * 2 ** Math.min(++attempt, 4)));
       } catch { /* Static poster remains available; retry on activation. */ }
     };
     if (media) timer = setTimeout(() => { void load(true); }, Math.max(1000, media.expiresAt - Date.now() - 30_000));
     else void load();
     return () => { active = false; clearTimeout(timer); };
-  }, [scope, key, listingId, kind, enabled, media, invalidation]);
+  }, [scope, key, listingId, kind, enabled, media, invalidation, cache, endpoint]);
   return media;
 }

@@ -8,7 +8,7 @@ import { Dialog, DialogTrigger, DialogContent, DialogTitle, DialogDescription, D
 import { AppNotification } from "@/components/notifications/app-notification";
 
 
-export function TemplateDelete({ listingId, title }: { listingId: string; title: string }) {
+export function TemplateDelete({ listingId, title, onDeleted }: { listingId: string; title: string; onDeleted?: (id: string) => void }) {
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -18,7 +18,7 @@ export function TemplateDelete({ listingId, title }: { listingId: string; title:
     running.current = true; setBusy(true); setError("");
     try {
       const result = await deleteTemplateAction({ id: listingId });
-      if (result.ok) setOpen(false);
+      if (result.ok) { setOpen(false); onDeleted?.(listingId); }
       else setError(result.message);
     } catch { setError("Your template couldn’t be deleted. Please try again."); }
     finally { running.current = false; setBusy(false); }
