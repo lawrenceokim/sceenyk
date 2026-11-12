@@ -76,6 +76,37 @@ try {
   mediaFinish(new Response(new Uint8Array([1]), { headers: { "Content-Type": "video/mp4", "X-Project-Media-Version": "old", "X-Project-Media-Expires": new Date(now.value + 300_000).toISOString() } }));
   await mediaFlight; equal(cache.readMedia(scope, key), undefined);
 
+  // Missing derivatives back off across card unmounts, without authorizing
+  // expired bytes. Explicit invalidation and account changes clear cooldowns.
+  cache.setScope(scope);
+  deliver = async () => Response.json({ state: "pending" });
+  let pendingReply = await cache.loadMedia(scope, key, "/fixture", {});
+  equal(pendingReply.retryAfter, 5000);
+  const pendingDownloads = downloads;
+  await cache.loadMedia(scope, key, "/fixture", {});
+  equal(downloads, pendingDownloads);
+  for (let attempt = 2; attempt <= 6; attempt++) {
+    now.value += pendingReply.retryAfter;
+    pendingReply = await cache.loadMedia(scope, key, "/fixture", {});
+  }
+  equal(pendingReply.retryAfter, 300_000);
+  equal(cache.readMedia(scope, key), undefined);
+  cache.expireMedia(key);
+  equal((await cache.loadMedia(scope, key, "/fixture", {})).retryAfter, 5000);
+  cache.expireMedia(key);
+  deliver = async () => Response.json({ state: "unavailable" });
+  await cache.loadMedia(scope, key, "/fixture", {});
+  const unavailableDownloads = downloads;
+  await cache.loadMedia(scope, key, "/fixture", {});
+  equal(downloads, unavailableDownloads);
+  now.value += 60_001;
+  await cache.loadMedia(scope, key, "/fixture", {});
+  equal(downloads, unavailableDownloads + 1);
+  cache.setScope(null); cache.setScope(scope);
+  await cache.loadMedia(scope, key, "/fixture", {});
+  equal(downloads, unavailableDownloads + 2);
+  cache.setScope(null);
+
   // Actual server gallery projection: all privileged V3 filters use owned IDs,
   // and unchanged cards skip full asset/status enrichment.
   const tables = {

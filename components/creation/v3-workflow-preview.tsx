@@ -357,13 +357,15 @@ export function V3WorkflowPreview({
     window.addEventListener("storage", storage);
     // Worker/account changes in another project need no browser event. Read
     // only while the paid panel is visible; this never starts generation.
-    const timer = policy?.funding === "credits" || policy?.preparationFunding === "credits" ? setInterval(reload, 15_000) : null;
+    // Active work already has a 3s/10s status loop. Idle paid panels need only
+    // slow cross-project discovery; confirmed credit events still refresh now.
+    const timer = !processing && !statusPaused && (policy?.funding === "credits" || policy?.preparationFunding === "credits") ? setInterval(reload, 60_000) : null;
     return () => {
       window.removeEventListener("sceenyk:credits", reload);
       window.removeEventListener("storage", storage);
       if (timer) clearInterval(timer);
     };
-  }, [policy?.funding, policy?.preparationFunding, refresh, statusEnabled]);
+  }, [policy?.funding, policy?.preparationFunding, refresh, statusEnabled, processing, statusPaused]);
   const p = workspace?.preflight;
   const transientFinalRead = !!workspace?.multiClip && (retryFinalRead || finalOperation.presentation.active) && statusRetryable;
   const workflowError = error || (transientFinalRead ? "" : statusError);

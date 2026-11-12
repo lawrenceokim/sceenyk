@@ -110,7 +110,7 @@ class FixtureOpenAI{constructor(config){equal(config.maxRetries,0);}
  }})};}
 const load=typescriptLoader({'@/lib/auth/ensure-app-user':{ensureAppUser:async()=>({id:actingOwner})},'@/lib/auth/require-user':{requireClerkUser:async()=>({userId:'fixture'})},
  './final-operation-server':{finalActionUser:async()=>({id:actingOwner})},
- '@/lib/db/server':{createDatabaseClient:()=>db},'./runtime-media':media,
+ '@/lib/db/server':{createDatabaseClient:()=>db},'./runtime-media':media,'./inspect-video':{inspectVideo:media.inspectVideo},
  '@/lib/video-generation-package/builder':{...builder,packageDigest:(d,v)=>builder.packageDigest(d,normal(v)),canonicalJson:v=>builder.canonicalJson(normal(v))},
  './merge-media':{
  mergeLocalFiles:async(inputs,output,list,expected)=>{mergeCalls++;if(mergeFailure)throw new Error('V3_MERGE_SOURCE_INVALID');fs.writeFileSync(output,Buffer.from('local-merged-output'));return{metadata:{mimeType:'video/mp4',width:480,height:854,durationMs:expected.durationMs,hasAudio:true},mode:'copy-video',inputDurationMs:expected.durationMs};},

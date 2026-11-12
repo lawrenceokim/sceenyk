@@ -8,6 +8,8 @@ import { milliseconds, validateSourceDuration } from "./timing";
 
 const requireBinary = createRequire(import.meta.url);
 function binary(kind: "ffmpeg" | "ffprobe") {
+  // Vercel functions never own media processing; processors live in workers.
+  if (process.env.VERCEL === "1") throw new PreparationError("PROCESSOR_UNAVAILABLE", true);
   const configured = process.env[kind === "ffmpeg" ? "FFMPEG_PATH" : "FFPROBE_PATH"];
   if (configured) return configured;
   try { return kind === "ffmpeg" ? requireBinary("ffmpeg-static") as string : (requireBinary("ffprobe-static") as { path: string }).path; }

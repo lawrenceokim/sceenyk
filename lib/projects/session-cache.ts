@@ -1,10 +1,12 @@
 import type { GalleryReply, GallerySnapshot } from "./gallery-contract";
 import type { ProjectMediaReply } from "./cached-media-contract";
 import type { SavedProject } from "./types";
+import { previewPendingDelay } from "./preview-polling";
 
 export type CachedProjectMedia = { url: string; version: string; expiresAt: number; bytes: number; objectUrl: boolean; loaded: boolean; retryAt?: number };
 type PageEntry = { snapshot: GallerySnapshot; checkedAt: number; scrollTop?: number };
 type MediaEntry = { value: CachedProjectMedia; timer?: ReturnType<typeof setTimeout> };
+type PendingMedia = { pending: true; retryAfter: number };
 export class ProjectsRefreshError extends Error {
   constructor(readonly retryable: boolean, readonly attempts = 1) { super("PROJECTS_UNAVAILABLE"); }
 }
@@ -20,6 +22,7 @@ export class ProjectsSessionCache {
   private loaders = new Map<number, { owner: string; load: (known: Record<string, string>) => Promise<GalleryReply> }>();
   private refreshFailures = new Map<number, { error: ProjectsRefreshError; retryAt: number }>();
   private media = new Map<string, MediaEntry>();
+  private mediaChecks = new Map<string, { retryAt: number; attempts: number; pending: boolean }>();
   private pending = new Map<string, Promise<unknown>>();
   private requests = new Set<AbortController>();
   private listeners = new Set<() => void>();
@@ -34,6 +37,7 @@ export class ProjectsSessionCache {
     this.refreshFailures.clear(); this.loaders.clear();
     for (const key of this.media.keys()) this.dropMedia(key);
     this.mediaVersions.clear();
+    this.mediaChecks.clear();
     this.invalidations.clear();
     this.emit();
   }
@@ -168,6 +172,7 @@ export class ProjectsSessionCache {
     if (entry && !entry.value.loaded) { entry.value = { ...entry.value, loaded: true }; this.emit(); }
   }
   expireMedia(key: string) {
+    this.mediaChecks.delete(key);
     this.invalidations.set(key, (this.invalidations.get(key) ?? 0) + 1);
     this.mediaVersions.set(key, (this.mediaVersions.get(key) ?? 0) + 1);
     this.pending.delete(`media:${key}`);
@@ -182,10 +187,14 @@ export class ProjectsSessionCache {
     if (entry?.value.objectUrl) URL.revokeObjectURL(entry.value.url);
     clearTimeout(entry?.timer); this.media.delete(key);
   }
-  async loadMedia(scope: string, key: string, endpoint: string, input: Record<string, string>, reauthorize = false): Promise<{ pending: true } | undefined> {
+  async loadMedia(scope: string, key: string, endpoint: string, input: Record<string, string>, reauthorize = false): Promise<PendingMedia | undefined> {
     if (scope !== this.scope || !reauthorize && this.readMedia(scope, key)) return;
     const pendingKey = `media:${key}`;
-    if (this.pending.has(pendingKey)) return this.pending.get(pendingKey) as Promise<{ pending: true } | undefined>;
+    if (this.pending.has(pendingKey)) return this.pending.get(pendingKey) as Promise<PendingMedia | undefined>;
+    const checked = this.mediaChecks.get(key);
+    if (!reauthorize && checked && checked.retryAt > Date.now()) {
+      return checked.pending ? { pending: true, retryAfter: checked.retryAt - Date.now() } : undefined;
+    }
     const epoch = this.epoch, version = this.mediaVersions.get(key) ?? 0;
     const current = () => epoch === this.epoch && version === (this.mediaVersions.get(key) ?? 0);
     const controller = new AbortController(), previous = this.media.get(key)?.value;
@@ -206,9 +215,15 @@ export class ProjectsSessionCache {
           if (result.state === "pending") {
             const entry = this.media.get(key);
             if (entry) { clearTimeout(entry.timer); entry.value = { ...entry.value, expiresAt: 0 }; this.emit(); }
-            return { pending: true as const };
+            const attempts = (checked?.attempts ?? 0) + 1, retryAfter = previewPendingDelay(attempts);
+            this.rememberMediaCheck(key, { retryAt: Date.now() + retryAfter, attempts, pending: true });
+            return { pending: true as const, retryAfter };
           }
-          if (result.state !== "ready") { this.dropMedia(key); this.emit(); return; }
+          if (result.state !== "ready") {
+            this.dropMedia(key);
+            this.rememberMediaCheck(key, { retryAt: Date.now() + 60_000, attempts: 0, pending: false });
+            this.emit(); return;
+          }
           const url = result.url ?? (previous?.version === result.version ? previous.url : undefined);
           if (!url) throw new Error("PROJECT_MEDIA_UNAVAILABLE");
           value = { url, version: result.version, expiresAt: Date.parse(result.expiresAt), bytes: previous?.bytes ?? 0,
@@ -221,6 +236,7 @@ export class ProjectsSessionCache {
           value = { url: URL.createObjectURL(blob), version, expiresAt, bytes: blob.size, objectUrl: true, loaded: false };
         }
         if (!current()) { if (value.objectUrl && value.url !== previous?.url) URL.revokeObjectURL(value.url); return; }
+        this.mediaChecks.delete(key);
         if (previous?.url !== value.url) this.dropMedia(key);
         else clearTimeout(this.media.get(key)?.timer);
         // A short authorization deadline also gates locally retained Blob bytes.
@@ -237,6 +253,10 @@ export class ProjectsSessionCache {
     });
     this.pending.set(pendingKey, request);
     try { return await request; } finally { if (this.pending.get(pendingKey) === request) this.pending.delete(pendingKey); }
+  }
+  private rememberMediaCheck(key: string, value: { retryAt: number; attempts: number; pending: boolean }) {
+    this.mediaChecks.delete(key); this.mediaChecks.set(key, value);
+    while (this.mediaChecks.size > 128) this.mediaChecks.delete(this.mediaChecks.keys().next().value!);
   }
 }
 

@@ -12,11 +12,13 @@
 
 # testing
 /coverage
+/.tmp/
 
 # context
 !/context/
 /context/*
 !/context/project-video-previews.md
+!/context/vercel-deployment.md
 !/context/docker-workers.md
 !/context/purchases.md
 !/context/stage-3-credit-protection.md

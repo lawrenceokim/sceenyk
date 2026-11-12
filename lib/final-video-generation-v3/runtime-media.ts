@@ -1,5 +1,4 @@
 import "server-only";
-import { assertV3VideoMetadata, type VideoExpectation } from "./video-metadata";
 import { createHash, randomUUID } from "node:crypto";
 import { promises as fs } from "node:fs";
 import path from "node:path";
@@ -7,7 +6,6 @@ import { S3Client, PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client
 import sharp from "sharp";
 import { getStorageConfig } from "@/lib/storage/config";
 import { headR2CharacterObject, readR2AnalysisMedia, signR2Read } from "@/lib/storage/r2";
-import { measure } from "@/lib/final-video-generation/media";
 import { privateAssetSchema, type PrivateAsset } from "./runtime-contract";
 
 export const bytesHash = (b: Uint8Array) => createHash("sha256").update(b).digest("hex");
@@ -17,7 +15,8 @@ export function v3Prefix(owner: string, project: string) {
 }
 function spoolPaths(id: string, name: string) {
   if (!/^[a-f0-9-]{36}$/.test(id) || !/^[a-z-]+\.(json|bytes|mp4|png)$/.test(name)) throw new Error("V3_SPOOL_SCOPE");
-  const root = path.resolve(process.env.UGC_V3_RECOVERY_DIR || ".ugc-v3-recovery"), dir = path.join(root, id);
+  const configured = process.env.UGC_V3_RECOVERY_DIR;
+  const root = configured ? path.resolve(configured) : path.join(process.cwd(), ".ugc-v3-recovery"), dir = path.join(root, id);
   return { root, dir, file: path.join(dir, name) };
 }
 export async function spoolFile(id: string, name: string) {
@@ -82,12 +81,6 @@ export async function inspectImage(bytes: Buffer) {
   const png = await sharp(bytes, { limitInputPixels: 20_000_000 }).rotate().png().toBuffer(), meta = await sharp(png).metadata();
   if (!meta.width || !meta.height || (meta.pages ?? 1) !== 1) throw new Error("V3_IMAGE_INVALID");
   return { bytes: png, metadata: { mimeType: "image/png" as const, width: meta.width, height: meta.height, durationMs: 0, hasAudio: false } };
-}
-export async function inspectVideo(id: string, bytes: Buffer, expected: VideoExpectation) {
-  if (!bytes.length || bytes.length > 256 * 1024 * 1024) throw new Error("V3_VIDEO_SIZE_INVALID");
-  const file = await saveSpool(id, "video.mp4", bytes), meta = await measure(file, "video/mp4");
-  assertV3VideoMetadata(meta, expected);
-  return { mimeType: "video/mp4" as const, width: meta.width, height: meta.height, durationMs: meta.durationMs, hasAudio: meta.hasAudio };
 }
 export async function deletePrivate(owner: string, project: string, asset: PrivateAsset, signal: AbortSignal) {
   if (!asset.storageKey.startsWith(v3Prefix(owner, project)) || !asset.storageKey.endsWith(`${asset.id}.mp4`)) throw new Error("V3_DELETE_SCOPE");

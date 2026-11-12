@@ -1,5 +1,9 @@
 # Architecture Context
 
+## Vercel web/worker deployment boundary (2026-11-12)
+
+V3 web media readers and review/storage actions no longer import worker-only video inspection/FFmpeg/legacy recovery processing. Next output traces explicitly exclude local secrets, Git, recovery media, Docker/runtime artifacts, public CDN assets and processor/test packages. External worker installs, durable queues/volumes, byte validation, accounting and payment owners remain. Vercel selects Next.js/Fluid and retains private response transforms and paused Inngest. Shared preview cooldowns survive viewport remounts and back off to five-minute discovery after fast initial checks; five-minute access deadlines and immutable byte reuse are unchanged. Active V3 status polling is unchanged; idle paid workspace discovery is 60 seconds and legacy hidden/offline progress pauses. [Deployment audit, manual settings and verification](vercel-deployment.md).
+
 ## Detail-page approved video playback (2026-11-12)
 
 Only the large previews on `/projects/[id]`, `/templates/[listingId]` and `/marketplace/[listingId]` offer user-initiated full approved-final playback. Native controls provide seek, volume/mute and fullscreen without autoplay or a new player dependency. Static covers remain before playback and on failure; dimensions and existing gallery/media caches remain. The Projects route uses a route-scoped preferred final in the existing Studio preview, preserving explicit source/workflow selections and all review/generation owners.

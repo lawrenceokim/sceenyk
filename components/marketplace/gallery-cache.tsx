@@ -84,16 +84,21 @@ export function useMarketplacePreview(listingId: string, kind: "video" | "poster
   const invalidation = useSyncExternalStore(cache.subscribe, () => cache.mediaInvalidation(scope, key), () => 0);
   useEffect(() => {
     if (!scope || !enabled) return;
-    let active = true, attempt = 0, timer: ReturnType<typeof setTimeout>;
+    let active = true, timer: ReturnType<typeof setTimeout>;
     const load = async (renew = false) => {
       try {
         const result = await cache.loadMedia(scope, key, endpoint, { listingId, kind }, renew);
-        if (active && result?.pending) timer = setTimeout(() => { void load(); }, Math.min(30_000, 2500 * 2 ** Math.min(++attempt, 4)));
+        if (active && result?.pending) { clearTimeout(timer); timer = setTimeout(() => { void load(); }, result.retryAfter); }
       } catch { /* Static poster remains available; retry on activation. */ }
     };
     if (media) timer = setTimeout(() => { void load(true); }, Math.max(1000, media.expiresAt - Date.now() - 30_000));
     else void load();
-    return () => { active = false; clearTimeout(timer); };
+    const activate = () => {
+      if (!media && document.visibilityState === "visible" && navigator.onLine) { clearTimeout(timer); void load(); }
+    };
+    window.addEventListener("focus", activate);
+    document.addEventListener("visibilitychange", activate);
+    return () => { active = false; clearTimeout(timer); window.removeEventListener("focus", activate); document.removeEventListener("visibilitychange", activate); };
   }, [scope, key, listingId, kind, enabled, media, invalidation, cache, endpoint]);
   return media;
 }

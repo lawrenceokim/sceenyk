@@ -161,7 +161,9 @@ const hookCode = ts.transpileModule(hookFile.slice(hookFile.indexOf("export func
 const hookExports = {};
 vm.runInNewContext(hookCode, { exports: hookExports, MarketplaceCacheScope: {}, marketplaceSessionCache: fakeCache,
   noSnapshot: () => undefined, useContext: () => "market/session", useSyncExternalStore: (_subscribe, read) => read(),
-  useEffect: effect => { effects.push(effect()); }, setTimeout, clearTimeout });
+  useEffect: effect => { effects.push(effect()); }, setTimeout, clearTimeout,
+  window: { addEventListener() {}, removeEventListener() {} },
+  document: { addEventListener() {}, removeEventListener() {} } });
 const { useMarketplacePreview: inspectPreviewHook } = hookExports;
 inspectPreviewHook(id); await Promise.resolve();
 equal(mediaCalls[0].slice(0, 4), ["market/session", `video:marketplace:${id}`, "/api/marketplace/video-preview", { listingId: id, kind: "video" }]);

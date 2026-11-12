@@ -7,7 +7,11 @@ import { FinalVideoError, assetSchema, type FinalAsset, type FinalExecution, typ
 
 export const sha256 = (bytes: Buffer) => createHash("sha256").update(bytes).digest("hex");
 export const finalPrefix = (run: FinalExecution) => `ugc/${run.owner_user_id}/${run.project_id}/${run.job_id}/final-video-v1/${run.id}/`;
-export function recoveryRoot() { return path.resolve(process.env.UGC_FINAL_RECOVERY_DIR || path.join(process.cwd(), ".ugc-final-recovery")); }
+export function recoveryRoot() {
+  const configured = process.env.UGC_FINAL_RECOVERY_DIR;
+  if (configured) return path.resolve(configured);
+  return path.join(process.cwd(), ".ugc-final-recovery");
+}
 export async function recoveryFile(run: FinalExecution, id: string, extension: string) {
   if (!/^[a-f0-9-]{36}$/.test(run.id) || !/^[a-f0-9-]{36}$/.test(id) || !/^(?:source\.bytes|[a-z]+(?:\.(?:mp3|mp4|wav|txt|json))?)$/.test(extension)) throw new FinalVideoError("FINAL_STORAGE_SCOPE");
   const directory = path.join(recoveryRoot(), run.id); await fs.mkdir(directory, { recursive: true, mode: 0o700 });

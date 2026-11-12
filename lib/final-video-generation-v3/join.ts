@@ -3,7 +3,8 @@ import { promises as fs } from "node:fs";
 import { runMediaCommand } from "@/lib/media-preparation/ffmpeg";
 import type { FrozenPackage } from "./package";
 import type { Run } from "./runtime-contract";
-import { readPrivate, spoolFile, inspectVideo, publishPrivate, readSpool } from "./runtime-media";
+import { readPrivate, spoolFile, publishPrivate, readSpool } from "./runtime-media";
+import { inspectVideo } from "./inspect-video";
 
 export function approvedJoinInputs(doc: FrozenPackage, runs: Run[]) {
   if (doc.segments.length < 2) throw new Error("V3_JOIN_NOT_REQUIRED");
