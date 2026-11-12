@@ -1,11 +1,12 @@
 import "server-only";
 import { z } from "zod";
 import { ensureAppUser } from "@/lib/auth/ensure-app-user";
+import { readAppUser } from "@/lib/auth/read-app-user";
 import { createDatabaseClient } from "@/lib/db/server";
 import { studioModeInputSchema, studioModeStateSchema } from "./contract";
 
 export async function readStudioMode(input: unknown) {
-  const user = await ensureAppUser();
+  const user = await readAppUser();
   const projectId = z.uuid().nullable().parse(input);
   const { data, error } = await createDatabaseClient().rpc("studio_mode_read", {
     p_owner: user.id, p_project: projectId,

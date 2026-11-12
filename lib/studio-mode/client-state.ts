@@ -19,6 +19,7 @@ export class StudioModeStore {
   private revision = 0;
   private write: Promise<void> = Promise.resolve();
   private guestMode: StudioMode = defaultStudioMode;
+  private opening?: { key: string; promise: Promise<void> };
 
   constructor(private persistence: ModePersistence) {}
   getSnapshot = () => this.snapshot;
@@ -30,7 +31,17 @@ export class StudioModeStore {
     this.snapshot = value;
     this.listeners.forEach(listener => listener());
   }
-  async open(scope: ModeScope) {
+  open(scope: ModeScope) {
+    const key = modeScopeKey(scope);
+    if (this.opening?.key === key && this.snapshot.key === key && !this.snapshot.pending) return this.opening.promise;
+    const promise = this.readScope(scope);
+    const opening = { key, promise };
+    this.opening = opening;
+    const clear = () => { if (this.opening === opening) this.opening = undefined; };
+    void promise.then(clear, clear);
+    return promise;
+  }
+  private async readScope(scope: ModeScope) {
     this.scope = scope;
     const key = modeScopeKey(scope), revision = ++this.revision;
     this.publish({ key, mode: key === this.snapshot.key ? this.snapshot.mode : defaultStudioMode, ready: false, pending: false, error: "" });

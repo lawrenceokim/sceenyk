@@ -1,5 +1,11 @@
 # Architecture Context
 
+## Purchases initial reads and Studio mode identity (2026-11-12)
+
+Purchases library/detail/reviewed-preview reads and the shell's Studio mode read now reuse `readAppUser`: protect the current Clerk session, resolve its database mapping, and provision through unchanged verified synchronization only when the mapping is genuinely absent. Purchase RPC ownership/entitlement/financial projections are unchanged. Opening an acquired project and saving a mode retain their existing mutation/authentication paths.
+
+The mode provider loads on account/project-scope changes rather than each pathname change. Concurrent opens for the same scope share one pending read; genuine scope changes and explicit retries still read server truth, with existing write ordering and stale-response fences. No shared server cache, successful-route refresh, automatic retry, UI redesign, worker/payment/configuration or schema changes. [Evidence and acceptance](purchases.md#first-load-authentication-correction-2026-11-12).
+
 ## Templates owned previews and return cache (2026-11-12)
 
 `/templates` now uses an isolated instance of the Projects bounded media-cache class and the Marketplace preview component with an optional owner-only media source. The Marketplace component's existing defaults remain; Projects and Marketplace data/cache instances are unchanged. The authenticated gallery endpoint derives source projects from the existing owner-only listing RPC, compares compact revisions and returns only changed private cards. Same-origin media reads independently verify the active owner and nondeleted template before reusing current approved final derivatives or existing thumbnail owners. Draft templates remain static. The account-loading fallback can render the same retained, identity-scoped gallery while the existing server layout guard completes. No generation, publishing, edit, deletion decision, worker, payment, schema or shared-server-cache change is introduced. [Access, timing and manual acceptance](project-video-previews.md#templates-owned-looping-previews-and-return-cache-2026-11-12).

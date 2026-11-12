@@ -15,6 +15,7 @@ const call=async(name,args)=>(await pg.query(`select public.${name}(${args.map((
 const catalog=async()=>(await pg.query("select oid,prosrc,proacl,proconfig from pg_proc where pronamespace='public'::regnamespace order by oid")).rows;
 const db={rpc:async(name,args)=>{try{return{data:await call(name,Object.values(args)),error:null};}catch{return{data:null,error:{code:'FIXTURE_REJECTED'}};}}};
 const load=typescriptLoader({
+  '@/lib/auth/read-app-user':{readAppUser:async()=>{if(!identity)throw Error('AUTH_REQUIRED');return{id:identity,clerk_user_id:'clerk-'+identity};}},
   '@/lib/db/server':{createDatabaseClient:()=>db},
   '@/lib/auth/ensure-app-user':{ensureAppUser:async()=>{if(!identity)throw Error('AUTH_REQUIRED');return{id:identity,clerk_user_id:'clerk-'+identity};}},
   'next/navigation':{unstable_rethrow:()=>{}},

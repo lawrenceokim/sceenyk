@@ -1,6 +1,7 @@
 import "server-only";
 import { z } from "zod";
 import { ensureAppUser } from "@/lib/auth/ensure-app-user";
+import { readAppUser } from "@/lib/auth/read-app-user";
 import { createDatabaseClient } from "@/lib/db/server";
 import { projectPageSchema } from "@/lib/projects/validation";
 import { listingSchema, type MarketplaceResult } from "../contract";
@@ -25,14 +26,14 @@ async function identities(items: Acquisition[]) {
 
 // Every exported operation resolves the account itself; browser IDs never supply ownership.
 export async function getAcquiredTemplates(page: unknown = 1) {
-  const user = await ensureAppUser();
+  const user = await readAppUser();
   const result = acquisitionPageSchema.parse(checked(await createDatabaseClient().rpc("marketplace_acquisition_library", {
     p_owner: user.id, p_page: projectPageSchema.parse(page),
   })));
   return { ...result, items: await identities(result.items), clerkUserId: user.clerk_user_id };
 }
 export async function getAcquiredTemplate(input: unknown) {
-  const user = await ensureAppUser();
+  const user = await readAppUser();
   const id = z.uuid().safeParse(input);
   if (!id.success) return null;
   const raw = checked(await createDatabaseClient().rpc("marketplace_acquisition_detail", { p_owner: user.id, p_id: id.data }));
@@ -41,7 +42,7 @@ export async function getAcquiredTemplate(input: unknown) {
   return { purchase, clerkUserId: user.clerk_user_id };
 }
 export async function getAcquiredTemplatePreview(input: unknown) {
-  const user = await ensureAppUser();
+  const user = await readAppUser();
   const id = z.uuid().safeParse(input);
   if (!id.success) return null;
   const raw = checked(await createDatabaseClient().rpc("marketplace_acquisition_preview", { p_owner: user.id, p_id: id.data }));

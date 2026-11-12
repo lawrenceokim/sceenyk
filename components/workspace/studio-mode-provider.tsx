@@ -58,9 +58,9 @@ function ModeSession({ children, userId, incompatibleFeatures }: { children: Rea
 
   useEffect(() => {
     void store.open(scope);
-    // The persistent layout re-reads metadata on route reveal/native URL binding.
-    // This does not refresh, hide, reset or key the Studio editor.
-  }, [store, scope, pathname]);
+    // Account/project scope changes require a read. Unrelated path changes do
+    // not invalidate a ready preference or restart its pending request.
+  }, [store, scope]);
 
   return <StudioModeContext value={{
     mode, ready: current && snapshot.ready, pending: current && snapshot.pending,

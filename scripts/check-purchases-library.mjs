@@ -8,6 +8,7 @@ import { typescriptLoader } from './lib/load-typescript.mjs';
 const { pg, db, one, scalar } = await compositionFixtureDatabase();
 let owner;
 const service = typescriptLoader({
+  '@/lib/auth/read-app-user': { readAppUser: async () => { if (!owner) throw new Error('AUTH_REQUIRED'); return { id: owner, clerk_user_id: `clerk-${owner}` }; } },
   '@/lib/auth/ensure-app-user': { ensureAppUser: async () => { if (!owner) throw new Error('AUTH_REQUIRED'); return { id: owner, clerk_user_id: `clerk-${owner}` }; } },
   '@/lib/db/server': { createDatabaseClient: () => db },
   '@/lib/marketplace/server': { MarketplaceAccessError: class extends Error {} },
