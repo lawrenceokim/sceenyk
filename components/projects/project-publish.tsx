@@ -3,7 +3,7 @@
 import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { LoaderCircle } from "lucide-react";
-import { initializeTemplateAction } from "@/app/actions/marketplace";
+import { initializeTemplateAction } from "@/lib/cache/actions/marketplace";
 import { AppNotification } from "@/components/notifications/app-notification";
 
 

@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { aspectRatios } from "@/lib/projects/options";
 import { creationCategories } from "@/components/creation/creation-options";
 import { creationPreferencesSchema, type CreationPreferences } from "@/lib/settings/contract";
-import { saveCreationPreferencesAction } from "@/app/actions/settings";
+import { saveCreationPreferencesAction } from "@/lib/cache/actions/settings";
 import { CreationPreferencesSkeleton } from "./settings-skeletons";
 import { AppNotification } from "@/components/notifications/app-notification";
 
@@ -20,11 +20,16 @@ export function CreationPreferencesForm({ clerkUserId, preferences }: { clerkUse
 }
 function PreferenceForm({ clerkUserId, preferences }: { clerkUserId: string; preferences: CreationPreferences }) {
   const [value, setValue] = useState(preferences);
+  const [baseline, setBaseline] = useState(preferences);
   const [message, setMessage] = useState("");
   const [error, setError] = useState(false);
   const [busy, setBusy] = useState(false);
   const running = useRef(false);
   const alive = useRef(true);
+  if (preferences !== baseline && !busy) {
+    setBaseline(preferences);
+    if (JSON.stringify(value) === JSON.stringify(baseline)) setValue(preferences);
+  }
   useEffect(() => { alive.current = true; return () => { alive.current = false; }; }, []);
   // A response for an unmounted account must never become the next account's state.
   async function save() {

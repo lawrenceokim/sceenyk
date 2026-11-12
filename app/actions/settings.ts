@@ -1,7 +1,6 @@
 "use server";
 
 import { unstable_rethrow } from "next/navigation";
-import { revalidatePath } from "next/cache";
 import { getCreationPreferences, saveCreationPreferences } from "@/lib/settings/server";
 
 async function run(operation: typeof getCreationPreferences) {
@@ -15,7 +14,6 @@ export async function creationPreferencesAction() { return run(getCreationPrefer
 export async function saveCreationPreferencesAction(input: unknown) {
   return run(async () => {
     const result = await saveCreationPreferences(input);
-    revalidatePath("/settings/creation");
     return result;
   });
 }

@@ -1,4 +1,5 @@
 import "server-only";
+import { readAppUser } from "@/lib/auth/read-app-user";
 import { z } from "zod";
 import { connection } from "next/server";
 import { ensureAppUser } from "@/lib/auth/ensure-app-user";
@@ -54,14 +55,14 @@ export async function getMarketplaceListing(input: unknown): Promise<Listing | n
   return data ? withEstimate((await withCreatorIdentities([listingSchema.parse(data)]))[0]) : null;
 }
 export async function listOwnedMarketplaceListings(input: unknown = 1): Promise<ListingPage<OwnedListing>> {
-  const user = await ensureAppUser();
+  const user = await readAppUser();
   const pageNumber = browseSchema.shape.page.parse(input);
   const { data, error } = await createDatabaseClient().rpc("marketplace_owned", { p_owner_user_id: user.id, p_page: pageNumber });
   const page = z.object({ ...pageFields, items: z.array(ownedListingSchema) }).parse(checked(data, error));
   return { ...page, items: (await withCreatorIdentities(page.items)).map(withEstimate) };
 }
 export async function getOwnedMarketplaceListing(input: unknown, byProject = false): Promise<OwnedListing | null> {
-  const user = await ensureAppUser();
+  const user = await readAppUser();
   const id = z.uuid().safeParse(input);
   if (!id.success) return null;
   const { data, error } = await createDatabaseClient().rpc("marketplace_owned_listing", {

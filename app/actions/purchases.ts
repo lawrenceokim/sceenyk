@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { unstable_rethrow } from "next/navigation";
 import { openAcquiredTemplate } from "@/lib/marketplace/purchases/server";
 import type { MarketplaceResult } from "@/lib/marketplace/contract";
@@ -8,7 +7,6 @@ import type { MarketplaceResult } from "@/lib/marketplace/contract";
 export async function openPurchaseProjectAction(input: unknown): Promise<MarketplaceResult> {
   try {
     const result = await openAcquiredTemplate(input);
-    if (result.ok) revalidatePath("/projects");
     return result;
   } catch (error) {
     unstable_rethrow(error);

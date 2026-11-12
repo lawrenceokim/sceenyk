@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { AccountAction } from "@/components/account-action";
 import { useAuthAvailable } from "@/components/auth/auth-availability";
 import { creationCategories } from "@/components/creation/creation-options";
-import { createMarketplaceAction, updateMarketplaceAction } from "@/app/actions/marketplace";
+import { createMarketplaceAction, updateMarketplaceAction } from "@/lib/cache/actions/marketplace";
 import { usd, sandboxMarketplacePricing } from "@/lib/marketplace/payments/contract";
 import type { OwnedListing, TemplateSnapshot } from "@/lib/marketplace/contract";
 import type { SavedProject } from "@/lib/projects/types";

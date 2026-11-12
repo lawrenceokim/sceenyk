@@ -1,13 +1,10 @@
 "use server";
-import { revalidatePath } from "next/cache";
 import { unstable_rethrow } from "next/navigation";
 import { getWithdrawalAccount, requestWithdrawal, savePayoutDestination } from "@/lib/marketplace/withdrawals/server";
 
 async function mutation(work: () => Promise<unknown>) {
   try {
     await work();
-    revalidatePath("/credits/earnings");
-    revalidatePath("/settings/earnings");
     return { ok: true as const };
   } catch (error) {
     unstable_rethrow(error);

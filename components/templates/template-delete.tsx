@@ -2,7 +2,7 @@
 
 import { startTransition, useRef, useState } from "react";
 import { Trash2 } from "lucide-react";
-import { deleteTemplateAction } from "@/app/actions/marketplace";
+import { deleteTemplateAction } from "@/lib/cache/actions/marketplace";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogTrigger, DialogContent, DialogTitle, DialogDescription, DialogClose } from "@/components/ui/dialog";
 import { AppNotification } from "@/components/notifications/app-notification";

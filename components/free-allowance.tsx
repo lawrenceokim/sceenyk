@@ -1,10 +1,8 @@
 "use client";
-import { creditRefreshKey } from "@/lib/accounting/client-events";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
+import { useAccountQuery } from "@/components/cache/use-account-query";
 import { useAuth } from "@clerk/nextjs";
-import { freeAllowanceAction } from "@/app/actions/accounting";
-import type { FreeAllowance } from "@/lib/accounting/types";
 import { Button } from "@/components/ui/button";
 import { useAuthAvailable } from "@/components/auth/auth-availability";
 import { AppNotification } from "@/components/notifications/app-notification";
@@ -40,50 +38,10 @@ function AccountAllowance({ signedIn = true, refreshKey, compact, presentation }
 }
 
 function AllowanceRead({ signedIn = false, refreshKey = "", compact = false, presentation }: AllowanceProps) {
-  const [allowance, setAllowance] = useState<FreeAllowance | null>(null);
-  const [error, setError] = useState("");
-  const [revision, setRevision] = useState(0);
-  useEffect(() => {
-    if (!signedIn) return;
-    let active = true;
-    let sequence = 0;
-    const reload = () => {
-      if (document.visibilityState === "hidden") return;
-      const request = ++sequence;
-      freeAllowanceAction()
-        .then((result) => {
-          if (!active || request !== sequence) return;
-          if (result.ok) {
-            setAllowance(result.value);
-            setError("");
-          } else {
-            setAllowance(null);
-            setError(result.message);
-          }
-        })
-        .catch(() => {
-          if (active && request === sequence) {
-            setAllowance(null);
-            setError("Free allowance couldn’t be loaded. Please try again.");
-          }
-        });
-    };
-    const storage = (event: StorageEvent) => { if (event.key === creditRefreshKey) reload(); };
-    reload();
-    window.addEventListener("storage", storage);
-    window.addEventListener("sceenyk:credits", reload);
-    window.addEventListener("pageshow", reload);
-    window.addEventListener("sceenyk:allowance", reload);
-    document.addEventListener("visibilitychange", reload);
-    return () => {
-      active = false;
-      window.removeEventListener("storage", storage);
-      window.removeEventListener("sceenyk:credits", reload);
-      window.removeEventListener("pageshow", reload);
-      window.removeEventListener("sceenyk:allowance", reload);
-      document.removeEventListener("visibilitychange", reload);
-    };
-  }, [signedIn, refreshKey, revision]);
+  const query = useAccountQuery("allowance", 1, { enabled: signedIn });
+  const { refresh } = query;
+  const allowance = query.data ?? null, error = query.error ? "Free allowance couldn’t be refreshed." : "";
+  useEffect(() => { if (signedIn && refreshKey) void refresh(true).catch(() => {}); }, [signedIn, refreshKey, refresh]);
   const remaining = allowance?.available;
   const label = !signedIn
     ? "Sign in for your free allowance"
@@ -104,7 +62,7 @@ function AllowanceRead({ signedIn = false, refreshKey = "", compact = false, pre
     </div>
     {allowance && allowance.reserved > 0 && <span className="text-xs text-muted-foreground">{allowance.reserved} reserved in progress</span>}
     {allowance?.reviewRequired && <span className="text-xs text-muted-foreground">Use credits for AI generation.</span>}
-    {error && <><AppNotification tone="error">{error}</AppNotification><Button type="button" variant="outline" size="sm" onClick={() => setRevision(current => current + 1)}>Check allowance</Button></>}
+    {error && <><AppNotification tone="error">{error}</AppNotification><Button type="button" variant="outline" size="sm" onClick={() => void query.retry().catch(() => {})}>Check allowance</Button></>}
   </div>;
   return (
     <div className="space-y-2 text-caption leading-relaxed text-muted-foreground">
@@ -126,7 +84,7 @@ function AllowanceRead({ signedIn = false, refreshKey = "", compact = false, pre
             type="button"
             variant="outline"
             size="sm"
-            onClick={() => setRevision((current) => current + 1)}
+            onClick={() => void query.retry().catch(() => {})}
           >
             Check allowance
           </Button>

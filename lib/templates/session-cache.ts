@@ -28,10 +28,23 @@ export class TemplatesSessionCache extends ProjectsSessionCache {
     return entry?.scrollTop;
   }
   retryGallery(scope: string, page: number) { if (scope === this.accountScope) this.failures.delete(page); }
-  removeTemplate(scope: string, id: string) {
+  override invalidateAll(scope: string) {
     if (scope !== this.accountScope) return;
     this.mutationVersion++;
+    for (const entry of this.galleries.values()) entry.checkedAt = 0;
+  }
+  override async refreshCached(scope: string, viewer: string) {
+    if (scope !== this.accountScope) return;
+    await Promise.allSettled([...this.galleries.keys()].map(async page => {
+      await this.galleryRequests.get(page)?.promise.catch(() => {});
+      if (scope === this.accountScope) await this.refreshGallery(scope, viewer, page);
+    }));
+  }
+  removeTemplate(scope: string, id: string) {
+    if (scope !== this.accountScope) return;
     const present = [...this.galleries.values()].some(entry => entry.snapshot.items.some(item => item.id === id));
+    if (!present) return;
+    this.mutationVersion++;
     for (const entry of this.galleries.values()) {
       entry.checkedAt = 0;
       entry.snapshot = { ...entry.snapshot, total: Math.max(0, entry.snapshot.total - (present ? 1 : 0)), items: entry.snapshot.items.filter(item => item.id !== id) };
@@ -75,7 +88,7 @@ export class TemplatesSessionCache extends ProjectsSessionCache {
       if (!unchanged) this.notifyGallery();
     }).catch(error => {
       if (error instanceof Error && error.message === "TEMPLATES_ACCOUNT_CHANGED") throw error;
-      if (generation !== this.generation) return;
+      if (generation !== this.generation || mutation !== this.mutationVersion) return;
       const attempts = (failure?.attempts ?? 0) + 1;
       this.failures.set(page, { attempts, retryAt: Date.now() + Math.min(120_000, 15_000 * 2 ** Math.min(attempts - 1, 3)) });
       while (this.failures.size > 8) this.failures.delete(this.failures.keys().next().value!);

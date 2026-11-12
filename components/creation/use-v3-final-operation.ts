@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { RuntimeDto } from "@/lib/final-video-generation-v3/runtime-server";
 import { V3StatusReadError, finalOperationFinished, restoredFinalIntent, type FinalOperationAction, type FinalOperationIntent, type FinalOperationPresentation, type FinalOperationStatus } from "@/lib/final-video-generation-v3/final-operation";
 import { v3ActionErrorMessage } from "@/lib/final-video-generation-v3/reference-errors";
+import { accountSessionCache, confirmedAction } from "@/lib/cache/account-cache";
 
 async function responseBody(response: Response) {
   let body;
@@ -58,7 +59,7 @@ export function useV3FinalOperation(projectId: string | null, workspace: Runtime
     if (!enabled || !projectId || paused || !matching || (!intent && !serverActive)) return;
     const packageId = intent?.packageId ?? group?.packageId, manifest = intent?.manifestHash ?? merge?.manifestHash;
     if (!packageId || !manifest) return;
-    const controller = new AbortController(); let timer: ReturnType<typeof setTimeout>, failures = 0, refreshFailures = 0;
+    const controller = new AbortController(), cacheTicket = accountSessionCache.ticket(); let timer: ReturnType<typeof setTimeout>, failures = 0, refreshFailures = 0;
     const tick = async () => {
       let delay = 3000;
       try {
@@ -88,6 +89,8 @@ export function useV3FinalOperation(projectId: string | null, workspace: Runtime
             intent?.action === "reject_delete" || intent?.action === "recover" ? saved.runs.some(r => r.id === intent.id && (r.state === "deleted" || r.state === "deleting" && !!r.errorCode)) :
             saved.multiClip?.merge?.taskId === status.taskId && !["queued", "running"].includes(saved.multiClip.merge.status ?? "") &&
               (!saved.multiClip.merge.deleting || saved.runs.some(r => r.id === status.resultId && !!r.errorCode)))) {
+            void accountSessionCache.confirmed(["projects", "templates", "marketplace", "purchases", "wallet", "allowance"], cacheTicket).catch(() => {});
+            if (controller.signal.aborted) return;
             remember(null); setError(""); return;
           }
           if (!saved && ++refreshFailures >= 6) {
@@ -127,8 +130,8 @@ export function useV3FinalOperation(projectId: string | null, workspace: Runtime
       baselineTaskId: merge.taskId, baselineStatus: merge.status };
     remember(pending);
     try {
-      await responseBody(await fetch("/api/ugc/v3", { method: "POST", redirect: "error", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...payload, action, projectId, response: "acknowledge" }) }));
+      await confirmedAction(["projects", "templates", "marketplace", "purchases", "wallet", "allowance"], async () => responseBody(await fetch("/api/ugc/v3", { method: "POST", redirect: "error", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...payload, action, projectId, response: "acknowledge" }) })), undefined, 0);
       if (currentProject.current !== projectId) return true;
       remember({ ...pending, accepted: true }); setPhase("checking"); return true;
     } catch (failure) {

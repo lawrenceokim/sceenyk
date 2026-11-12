@@ -39,6 +39,7 @@ import {
   packageBuildError,
 } from "@/lib/final-video-generation-v3/package-status";
 import { AppNotification } from "@/components/notifications/app-notification";
+import { confirmedAction } from "@/lib/cache/account-cache";
 
 
 const money = (amount: number | null) => {
@@ -305,17 +306,21 @@ export function V3WorkflowPreview({
     if (action === "build_package") setBuildActionFailure(null);
     try {
       const id = projectId;
+      let responseStatus = 0;
+      const body = await confirmedAction(["projects", "templates", "marketplace", "purchases", "wallet", "allowance"], async () => {
       const response = await fetch("/api/ugc/v3", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action, projectId: id, ...payload }),
       });
-      const body = await response.json();
+      responseStatus = response.status;
+      return response.json();
+      }, undefined, 0);
       if (!body.ok) {
         if (action === "build_package")
           setBuildActionFailure({
             code: body.code,
-            httpStatus: response.status,
+            httpStatus: responseStatus,
           });
         throw new Error(body.code);
       }

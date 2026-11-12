@@ -6,7 +6,7 @@ import {
   finalizeMediaAction,
   listMediaAction,
   removeStudioReferenceAction,
-} from "@/app/actions/media";
+} from "@/lib/cache/actions/media";
 import {
   uploadFileDirectly,
   type UploadState,

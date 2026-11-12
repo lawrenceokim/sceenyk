@@ -4,7 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useId, useMemo, useS
 import { usePathname } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
 import { useAuthAvailable } from "@/components/auth/auth-availability";
-import { readStudioModeAction, saveStudioModeAction } from "@/app/actions/studio-mode";
+import { readStudioModeAction, saveStudioModeAction } from "@/lib/cache/actions/studio-mode";
 import { StudioModeStore, modeScopeKey, type ModeSnapshot } from "@/lib/studio-mode/client-state";
 import { defaultStudioMode, needsBasicConfirmation, type StudioMode } from "@/lib/studio-mode/contract";
 import { Button } from "@/components/ui/button";

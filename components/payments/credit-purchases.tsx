@@ -5,13 +5,15 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useAuth } from "@clerk/nextjs";
 import { ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { cancelCreditOrderAction, completeCreditOrderAction, createCreditOrderAction, creditWalletAction, reconcileCreditOrdersAction } from "@/app/actions/payments";
+import { cancelCreditOrderAction, completeCreditOrderAction, createCreditOrderAction, reconcileCreditOrdersAction } from "@/lib/cache/actions/payments";
 import type { CreditWallet, PurchaseStatus } from "@/lib/payments/types";
 import { creditRefreshKey, notifyCreditsChanged } from "@/lib/accounting/client-events";
 import { CreditBillingDashboard } from "./credit-billing-dashboard";
 import { CustomCreditPurchase } from "./custom-credit-purchase";
 import type { CreditPurchasePricing } from "@/lib/payments/credit-pricing";
 import { AppNotification } from "@/components/notifications/app-notification";
+import { useAccountQuery } from "@/components/cache/use-account-query";
+import { accountSessionCache } from "@/lib/cache/account-cache";
 
 
 const statusCopy: Record<PurchaseStatus, string> = {
@@ -22,18 +24,20 @@ const statusCopy: Record<PurchaseStatus, string> = {
   failed: "Payment failed. No credits were added.",
 };
 
-type Props = { clerkUserId: string; pricing: CreditPurchasePricing; configured: boolean; checkoutInNewTab?: boolean; dashboard?: boolean };
+type Props = { clerkUserId: string; pricing: CreditPurchasePricing; configured: boolean; checkoutInNewTab?: boolean; dashboard?: boolean; cachedOnly?: boolean };
 
 export function CreditPurchases(props: Props) {
-  const { userId, isLoaded, isSignedIn } = useAuth();
+  const { userId, sessionId, isLoaded, isSignedIn } = useAuth();
   if (!isLoaded) return <CreditAccountSkeleton dashboard={props.dashboard} />;
   if (!isSignedIn || userId !== props.clerkUserId) return <p role="status">Opening your credit account…</p>;
-  return <PurchaseAccount key={userId} {...props} />;
+  return <PurchaseAccount key={`${userId}/${sessionId}`} {...props} />;
 }
 
-function PurchaseAccount({ pricing, configured, checkoutInNewTab = false, dashboard = false }: Props) {
-  const [wallet, setWallet] = useState<CreditWallet | null>(null);
-  const [walletLoaded, setWalletLoaded] = useState(false);
+function PurchaseAccount({ pricing, configured, checkoutInNewTab = false, dashboard = false, cachedOnly = false }: Props) {
+  const query = useAccountQuery("wallet", 1, { automatic: false, cachedOnly });
+  const { refresh: refreshWallet, scope } = query;
+  const wallet = query.data ?? null;
+  const [walletLoaded, setWalletLoaded] = useState(!!query.data);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -41,22 +45,20 @@ function PurchaseAccount({ pricing, configured, checkoutInNewTab = false, dashbo
   const [completedOrder, setCompletedOrder] = useState<string | null>(null);
   const active = useRef(true);
   const running = useRef(false);
-  const previousWallet = useRef<CreditWallet | null>(null);
+  const previousWallet = useRef<CreditWallet | null>(wallet);
 
-  const reload = useCallback(async () => {
-    const result = await creditWalletAction();
+  const reload = useCallback(async (force = false) => {
+    const data = await refreshWallet(force);
     if (!active.current) return;
     setWalletLoaded(true);
-    if (result.ok) {
+    if (data) {
       const previous = previousWallet.current;
-      const completed = result.data.purchases.find(purchase => purchase.status === "completed" && previous?.purchases.some(old => old.orderId === purchase.orderId && old.status !== "completed"));
+      const completed = data.purchases.find(purchase => purchase.status === "completed" && previous?.purchases.some(old => old.orderId === purchase.orderId && old.status !== "completed"));
       if (completed?.orderId) { setCompletedOrder(completed.orderId); setMessage(statusCopy.completed); setApprovalLink(null); }
-      setWallet(result.data);
-      previousWallet.current = result.data;
-      if (!previous || previous.available !== result.data.available || previous.reserved !== result.data.reserved) notifyCreditsChanged();
+      previousWallet.current = data;
+      if (!previous || previous.available !== data.available || previous.reserved !== data.reserved) notifyCreditsChanged(true);
     }
-    else { setWallet(null); setError("Credit balance couldn’t be loaded. Check purchases again."); }
-  }, []);
+  }, [refreshWallet]);
 
   const run = useCallback(async (work: () => Promise<void>) => {
     if (running.current) return;
@@ -78,12 +80,15 @@ function PurchaseAccount({ pricing, configured, checkoutInNewTab = false, dashbo
         setCompletedOrder(result.data.recoveredOrders[0] ?? null);
       }
     }
-    await reload();
+    await reload(true);
   }), [configured, reload, run]);
 
   useEffect(() => {
     active.current = true;
-    void run(async () => {
+    if (cachedOnly) return () => { active.current = false; };
+    const incoming = new URL(window.location.href);
+    const hasReturn = incoming.searchParams.has("token") && ["return", "cancel"].includes(incoming.searchParams.get("checkout") ?? "");
+    if (hasReturn || !accountSessionCache.fresh(scope, "wallet:1")) void run(async () => {
       const url = new URL(window.location.href);
       const orderId = url.searchParams.get("token");
       const checkout = url.searchParams.get("checkout");
@@ -96,7 +101,7 @@ function PurchaseAccount({ pricing, configured, checkoutInNewTab = false, dashbo
           url.searchParams.delete("token"); url.searchParams.delete("PayerID"); url.searchParams.delete("checkout");
           window.history.replaceState(null, "", url.pathname + url.search);
         } else setError(result.message);
-      } else if (configured) {
+      } else if (configured && !accountSessionCache.fresh(scope, "wallet:1") && accountSessionCache.permit(scope, "credit-recovery")) {
         const result = await reconcileCreditOrdersAction();
         if (active.current) {
           if (!result.ok) setError(result.message);
@@ -108,7 +113,7 @@ function PurchaseAccount({ pricing, configured, checkoutInNewTab = false, dashbo
       }
       await reload();
     });
-    const reactivate = () => { if (document.visibilityState === "visible") void checkPurchases(); };
+    const reactivate = () => { if (document.visibilityState === "visible" && !accountSessionCache.fresh(scope, "wallet:1") && accountSessionCache.permit(scope, "credit-recovery")) void checkPurchases(); };
     const storage = (event: StorageEvent) => { if (event.key === creditRefreshKey) reactivate(); };
     window.addEventListener("pageshow", reactivate);
     window.addEventListener("focus", reactivate);
@@ -121,7 +126,7 @@ function PurchaseAccount({ pricing, configured, checkoutInNewTab = false, dashbo
       window.removeEventListener("storage", storage);
       document.removeEventListener("visibilitychange", reactivate);
     };
-  }, [configured, reload, run, checkPurchases]);
+  }, [configured, reload, run, checkPurchases, scope, cachedOnly]);
 
   function checkout(input: { amountUsd: string; pricingVersion: string } | { purchaseId: string }) {
     if (running.current) return;

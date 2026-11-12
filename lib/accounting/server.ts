@@ -1,5 +1,5 @@
 import "server-only";
-import { ensureAppUser } from "@/lib/auth/ensure-app-user";
+import { readAppUser } from "@/lib/auth/read-app-user";
 import { createDatabaseClient } from "@/lib/db/server";
 import type { FreeAllowance } from "./types";
 import { lowCreditThreshold } from "./config";
@@ -11,7 +11,7 @@ export async function getCreditSummary() {
 }
 
 export async function getPaidCreditBalance() {
-  const user = await ensureAppUser();
+  const user = await readAppUser();
   const { data, error } = await createDatabaseClient().from("generation_accounts")
     .select("credit_available").eq("owner_user_id", user.id).single();
   if (error || !data) throw new Error("CREDIT_BALANCE_UNAVAILABLE");
@@ -19,7 +19,7 @@ export async function getPaidCreditBalance() {
 }
 
 export async function getFreeAllowance(): Promise<FreeAllowance> {
-  const user = await ensureAppUser();
+  const user = await readAppUser();
   const data = await generationAccess(user.id);
   return {
     total: data.total,

@@ -16,7 +16,7 @@ import {
   marketplaceCheckoutAction,
   createMarketplaceOrderAction,
   recoverMarketplacePurchaseAction,
-} from "@/app/actions/marketplace-payments";
+} from "@/lib/cache/actions/marketplace-payments";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,

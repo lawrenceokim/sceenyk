@@ -6,10 +6,11 @@ import { useAuth } from "@clerk/nextjs";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { AccountAction } from "@/components/account-action";
-import { saveCreatorProfileAction, removeCreatorAvatarAction } from "@/app/actions/creator-profile";
+import { saveCreatorProfileAction, removeCreatorAvatarAction } from "@/lib/cache/actions/creator-profile";
 import { avatarMaximumBytes, avatarMimeTypes, type CreatorProfile } from "@/lib/marketplace/creators/contract";
 import { CreatorAvatar } from "./creator-avatar";
 import { AppNotification } from "@/components/notifications/app-notification";
+import { confirmedAction } from "@/lib/cache/account-cache";
 
 
 export function CreatorProfileEditor(props: { clerkUserId: string; profile: CreatorProfile | null }) {
@@ -22,6 +23,14 @@ function Editor({ initial }: { initial: CreatorProfile | null }) {
   const id = useId(), busy = useRef(false);
   const [profile, setProfile] = useState(initial), [displayName, setName] = useState(initial?.displayName ?? ""), [bio, setBio] = useState(initial?.bio ?? ""), [slug, setSlug] = useState(initial?.slug ?? "");
   const [pending, setPending] = useState(false), [message, setMessage] = useState(""), [failed, setFailed] = useState(false), [file, setFile] = useState<File | null>(null), [revision, setRevision] = useState(0);
+  const [baseline, setBaseline] = useState(initial);
+  if (initial !== baseline && !pending) {
+    setBaseline(initial); setProfile(initial);
+    if (initial) setSlug(initial.slug);
+    if (!file && displayName === (baseline?.displayName ?? "") && bio === (baseline?.bio ?? "") && slug === (baseline?.slug ?? "")) {
+      setName(initial?.displayName ?? ""); setBio(initial?.bio ?? ""); setSlug(initial?.slug ?? "");
+    }
+  }
   async function perform(operation: () => Promise<{ ok: boolean; profile?: CreatorProfile; message?: string }>, success: string) {
     if (busy.current) return;
     busy.current = true; setPending(true); setFailed(false); setMessage("");
@@ -39,10 +48,10 @@ function Editor({ initial }: { initial: CreatorProfile | null }) {
   async function upload() {
     if (!file) return;
     if (file.size > avatarMaximumBytes || !(avatarMimeTypes as readonly string[]).includes(file.type)) { setFailed(true); setMessage("Choose a JPEG, PNG or WebP image up to 2 MiB."); return; }
-    await perform(async () => {
+    await perform(() => confirmedAction(["profile", "marketplace", "templates", "purchases", "listings"], async () => {
       const response = await fetch("/api/marketplace/creator-avatar", { method: "POST", headers: { "Content-Type": file.type }, body: file });
       return response.json();
-    }, "Public avatar saved.");
+    }), "Public avatar saved.");
   }
   return <div className="max-w-3xl space-y-6">
     <form onSubmit={save} className={`

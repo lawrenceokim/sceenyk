@@ -12,6 +12,7 @@ export const marketplaceFilterKey = (filter: MarketplaceFilter) => JSON.stringif
 export class MarketplaceSessionCache extends ProjectsSessionCache {
   private galleryScope: string | null = null;
   private generation = 0;
+  private mutationVersion = 0;
   private feeds = new Map<string, Entry>();
   private galleryPending = new Map<string, Promise<void>>();
   private galleryRequests = new Set<AbortController>();
@@ -36,6 +37,28 @@ export class MarketplaceSessionCache extends ProjectsSessionCache {
     return entry?.scrollTop;
   }
   retryFeed(scope: string, filter: MarketplaceFilter) { if (scope === this.galleryScope) this.failures.delete(marketplaceFilterKey(filter)); }
+  removeListing(scope: string, id: string) {
+    if (scope !== this.galleryScope) return;
+    this.mutationVersion++;
+    for (const entry of this.feeds.values()) {
+      const present = entry.snapshot.items.some(item => item.id === id);
+      if (present) entry.snapshot = { ...entry.snapshot, items: entry.snapshot.items.filter(item => item.id !== id), total: Math.max(0, entry.snapshot.total - 1) };
+      entry.checkedAt = 0;
+    }
+    this.expireMedia(`video:marketplace:${id}`); this.expireMedia(`thumbnail:marketplace:${id}`); this.notifyGallery();
+  }
+  override invalidateAll(scope: string) {
+    if (scope !== this.galleryScope) return;
+    this.mutationVersion++;
+    for (const entry of this.feeds.values()) entry.checkedAt = 0;
+  }
+  override async refreshCached(scope: string) {
+    if (scope !== this.galleryScope) return;
+    await Promise.allSettled([...this.feeds.keys()].map(async key => {
+      await this.galleryPending.get(key)?.catch(() => {});
+      if (scope === this.galleryScope) await this.refreshFeed(scope, JSON.parse(key) as MarketplaceFilter);
+    }));
+  }
   async refreshFeed(scope: string, filter: MarketplaceFilter, more = false) {
     if (scope !== this.galleryScope) return;
     const key = marketplaceFilterKey(filter);
@@ -44,7 +67,7 @@ export class MarketplaceSessionCache extends ProjectsSessionCache {
     if (failure && Date.now() < failure.retryAt) throw new Error("MARKETPLACE_RETRY_LATER");
     if (more && !previous?.snapshot.hasMore) return;
     if (!more && previous && Date.now() - previous.checkedAt < 15_000) return;
-    const generation = this.generation, controller = new AbortController();
+    const generation = this.generation, mutation = this.mutationVersion, controller = new AbortController();
     this.galleryRequests.add(controller);
     const request = Promise.resolve().then(async () => {
       const oldCards = new Map(previous?.snapshot.items.map(item => [item.id, item]) ?? []);
@@ -65,7 +88,7 @@ export class MarketplaceSessionCache extends ProjectsSessionCache {
         });
         if (!response.ok) throw new Error("MARKETPLACE_UNAVAILABLE");
         const reply = galleryReplySchema.parse(await response.json());
-        if (generation !== this.generation) return;
+        if (generation !== this.generation || mutation !== this.mutationVersion) return;
         if (reply.page !== start + offset || reply.pages !== pages) throw new Error("MARKETPLACE_INVALID_PAGE");
         total = reply.total;
         for (const id of reply.ids) {
@@ -76,7 +99,7 @@ export class MarketplaceSessionCache extends ProjectsSessionCache {
           items.push(old?.revision === next.revision ? old : next);
         }
       }
-      if (generation !== this.generation) return;
+      if (generation !== this.generation || mutation !== this.mutationVersion) return;
       const unique = [...new Map(items.map(item => [item.id, item])).values()];
       if (!more) for (const old of oldCards.values()) if (!unique.some(item => item.id === old.id)) {
         this.expireMedia(`video:marketplace:${old.id}`); this.expireMedia(`thumbnail:marketplace:${old.id}`);
@@ -91,7 +114,7 @@ export class MarketplaceSessionCache extends ProjectsSessionCache {
       this.failures.delete(key);
       if (!unchanged) this.notifyGallery();
     }).catch(error => {
-      if (generation !== this.generation) return;
+      if (generation !== this.generation || mutation !== this.mutationVersion) return;
       const attempts = (failure?.attempts ?? 0) + 1;
       this.failures.set(key, { attempts, retryAt: Date.now() + Math.min(120_000, 15_000 * 2 ** Math.min(attempts - 1, 3)) });
       while (this.failures.size > 8) this.failures.delete(this.failures.keys().next().value!);

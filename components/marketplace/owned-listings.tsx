@@ -14,17 +14,17 @@ import { GallerySkeleton } from "./gallery-skeletons";
 import { AppNotification } from "@/components/notifications/app-notification";
 
 
-type Props = { clerkUserId: string; result: ListingPage<OwnedListing>; presentation?: "management" | "library" };
+type Props = { clerkUserId: string; result: ListingPage<OwnedListing>; presentation?: "management" | "library"; cachedOnly?: boolean };
 export function OwnedListings(props: Props) {
   return useAuthAvailable() ? <AccountListings {...props} /> : <AppNotification>Sign in is temporarily unavailable.</AppNotification>;
 }
-function AccountListings({ clerkUserId, result, presentation = "management" }: Props) {
+function AccountListings({ clerkUserId, result, presentation = "management", cachedOnly = false }: Props) {
   const { isLoaded, userId } = useAuth();
   if (!isLoaded) return <GallerySkeleton variant={presentation === "library" ? "library" : "management"} />;
   if (userId !== clerkUserId) return <AccountAction intent="sign-in">Sign in to manage listings</AccountAction>;
   if (presentation === "library") return <TemplateLibrary result={result} />;
   return result.items.length
-    ? <OwnedInfiniteGallery key={`${clerkUserId}:${JSON.stringify(result)}`} initial={result} clerkUserId={clerkUserId} />
+    ? <OwnedInfiniteGallery key={`${clerkUserId}:${result.page}`} initial={result} clerkUserId={clerkUserId} cachedOnly={cachedOnly} />
     : <div className={`
       [@layer_components]:[border:1px_solid_var(--border)] [@layer_components]:rounded-[var(--radius-xl)]
       [@layer_components]:[background:var(--card)] [@layer_components]:text-[color:var(--card-foreground)]

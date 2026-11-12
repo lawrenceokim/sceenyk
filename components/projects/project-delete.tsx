@@ -4,7 +4,7 @@ import { startTransition, useContext, useRef, useState } from "react";
 import { ProjectsCacheScope } from "./projects-cache-context";
 import { projectsSessionCache } from "@/lib/projects/session-cache";
 import { Trash2 } from "lucide-react";
-import { deleteProjectAction } from "@/app/actions/projects";
+import { deleteProjectAction } from "@/lib/cache/actions/projects";
 import { markProjectDeleted } from "@/lib/projects/client-lifecycle";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogTrigger, DialogContent, DialogTitle, DialogDescription, DialogClose } from "@/components/ui/dialog";

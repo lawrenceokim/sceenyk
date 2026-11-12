@@ -16,7 +16,7 @@ import { defaultCreationPreferences, type CreationPreferences } from "@/lib/sett
 import { useAuth } from "@clerk/nextjs";
 import { useAuthAvailable } from "@/components/auth/auth-availability";
 import { AccountAction } from "@/components/account-action";
-import { saveProjectAction } from "@/app/actions/projects";
+import { saveProjectAction } from "@/lib/cache/actions/projects";
 import type { ProjectDraft, SavedProject } from "@/lib/projects/types";
 import type { GenerationJob } from "@/lib/generation/types";
 import { ProjectGeneration } from "./project-generation";

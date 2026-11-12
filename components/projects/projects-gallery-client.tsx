@@ -54,7 +54,7 @@ export function ProjectsGalleryClient({ cachedOnly = false }: { cachedOnly?: boo
     // One compact revision check on return; current cards stay mounted.
     void reload().then(() => { if (active) timer = setTimeout(() => { void poll(); }, interval()); });
     const activate = () => { void reload(); };
-    const changed = () => { void reload(true); };
+    const changed = () => { void reload(); };
     window.addEventListener("focus", activate);
     window.addEventListener("pageshow", activate);
     window.addEventListener("online", activate);

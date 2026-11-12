@@ -8,8 +8,8 @@ export async function POST(request: Request) {
   if (request.headers.get("origin") !== new URL(request.url).origin) return Response.json({ ok: false, message: "This request is unavailable." }, { status: 403, headers });
   try {
     const profile = await uploadCreatorAvatar(request);
-    revalidatePath("/marketplace", "layout");
-    revalidatePath("/settings/creator-profile");
+    revalidatePath(`/marketplace/creators/${profile.slug}`);
+    revalidatePath("/marketplace/[listingId]", "page");
     return Response.json({ ok: true, profile }, { headers });
   }
   catch (error) {

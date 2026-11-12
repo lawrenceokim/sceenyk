@@ -1,4 +1,5 @@
 import "server-only";
+import { readAppUser } from "@/lib/auth/read-app-user";
 import { z } from "zod";
 import { ensureAppUser } from "@/lib/auth/ensure-app-user";
 import { createDatabaseClient } from "@/lib/db/server";
@@ -87,14 +88,14 @@ export async function createMarketplaceOrder(input: unknown) {
   return { purchase: await summary(p), approvalUrl: approvalUrl(order) };
 }
 export async function recoverMarketplacePurchase(input: unknown) {
-  const user = await ensureAppUser();
+  const user = await readAppUser();
   const { purchaseId } = purchaseInput.parse(input);
   const p = await ownedPurchase(user.id, purchaseId);
   await reconcile(p);
   return summary(await ownedPurchase(user.id, p.id));
 }
 export async function getMarketplacePurchases(page = 1) {
-  const user = await ensureAppUser();
+  const user = await readAppUser();
   z.number().int().min(1).max(100000).parse(page);
   const db = createDatabaseClient();
   const r = await db.from("marketplace_purchases").select("*", { count: "exact" }).eq("buyer_user_id", user.id).order("created_at", { ascending: false }).range((page - 1) * 12, page * 12 - 1);
@@ -102,7 +103,7 @@ export async function getMarketplacePurchases(page = 1) {
   return { clerkUserId: user.clerk_user_id, items: await Promise.all(rows.map(summary)), total: r.count ?? 0, page, pageSize: 12 };
 }
 export async function getCreatorEarnings(page = 1) {
-  const user = await ensureAppUser();
+  const user = await readAppUser();
   z.number().int().min(1).max(100000).parse(page);
   return { clerkUserId: user.clerk_user_id, earnings: earningsSchema.parse(checked(await createDatabaseClient().rpc("marketplace_creator_earnings", { p_creator_user_id: user.id, p_page: page }))) };
 }

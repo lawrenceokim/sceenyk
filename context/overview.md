@@ -1,5 +1,9 @@
 # Sceenyk
 
+## Smart account caching (2026-11-12)
+
+Previously visited galleries and dynamic account screens retain confirmed content and practical scroll while refreshing quietly. Successful saves, publishing, adoption, purchases, profile/media changes and withdrawals reconcile affected cached views; failed or uncertain actions never become successful transactions in the cache. Credits & Billing, Earnings & Payouts, checkout history and dynamic Settings sections reuse their existing services through a bounded user/session browser-memory cache. Existing 3-second previews, designs, workflows, server authorization and Docker workers remain. No new dependency, schema or realtime service. [Access, timing and verification boundaries](architecture.md#smart-account-caching-and-confirmed-mutation-refresh-2026-11-12).
+
 ## Purchases previews and return cache (2026-11-12)
 
 The acquired-template gallery retains buyer-scoped cards, preview bytes and practical scroll across navigation. It quietly refreshes changed cards and uses the shared silent 3-second player only for buyer-authorized, currently published approved videos. Historical unavailable listings retain authorized static posters; creator originals stay private. Existing paid/free acquisitions, historical amounts, refund labels, Adopt template, history and mapping-only identity reads remain unchanged. [Access, setup and manual acceptance](purchases.md#looping-previews-and-instant-return-cache-2026-11-12).

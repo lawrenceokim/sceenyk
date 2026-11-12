@@ -1,8 +1,7 @@
 "use client";
 import { useRef, useState, type ReactNode } from "react";
-import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { payoutDestinationAction, withdrawalRequestAction } from "@/app/actions/creator-withdrawals";
+import { payoutDestinationAction, withdrawalRequestAction } from "@/lib/cache/actions/creator-withdrawals";
 import { usd } from "@/lib/marketplace/payments/contract";
 import type { WithdrawalAccount } from "@/lib/marketplace/withdrawals/contract";
 import { MarketplacePagination } from "./pagination";
@@ -12,7 +11,6 @@ import { AppNotification } from "@/components/notifications/app-notification";
 
 
 export function WithdrawalPanel({ account, page, clerkUserId, onChanged, marketplaceSales }: { account: WithdrawalAccount; page: number; clerkUserId: string; onChanged: () => Promise<void>; marketplaceSales: ReactNode }) {
-  const router = useRouter();
   const [email, setEmail] = useState(account.email ?? "");
   const [amount, setAmount] = useState("");
   const [busy, setBusy] = useState(false);
@@ -29,7 +27,7 @@ export function WithdrawalPanel({ account, page, clerkUserId, onChanged, marketp
       if (destination) {
         const result = await payoutDestinationAction({ email: email.trim() });
         setMessage(result.ok ? "Private payout email saved. Existing withdrawals keep their original destination." : result.message);
-        if (result.ok) { await onChanged(); router.refresh(); }
+        if (result.ok) { await onChanged(); }
       } else {
         if (!/^\d+(\.\d{1,2})?$/.test(amount)) { setMessage("Enter a USD amount with up to two decimal places."); return; }
         const [whole, fraction = ""] = amount.split(".");
@@ -51,7 +49,7 @@ export function WithdrawalPanel({ account, page, clerkUserId, onChanged, marketp
           setConfirmed(true);
           // Keep the successful key while the current form remains mounted to
           // make a repeated click return the same withdrawal, not a second one.
-          await onChanged(); router.refresh();
+          await onChanged();
         }
       }
     } catch { setMessage("The result is uncertain. Refresh your history, then retry the same amount to recover the saved request."); }

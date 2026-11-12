@@ -1,4 +1,5 @@
 import "server-only";
+import { readAppUser } from "@/lib/auth/read-app-user";
 import { z } from "zod";
 import { ensureAppUser } from "@/lib/auth/ensure-app-user";
 import { createDatabaseClient } from "@/lib/db/server";
@@ -126,14 +127,14 @@ export async function createCreditOrder(input: unknown) {
 }
 
 export async function completeCreditOrder(input: unknown, cancel = false) {
-  const user = await ensureAppUser();
+  const user = await readAppUser();
   const { orderId } = orderInput.parse(input);
   // User B is refused here, before any PayPal request or capture.
   return { status: await reconcilePurchase(await ownedPurchase(user.id, orderId), cancel) };
 }
 
 export async function getCreditWallet(): Promise<CreditWallet> {
-  const user = await ensureAppUser();
+  const user = await readAppUser();
   const db = createDatabaseClient();
   const [account, purchases, activity] = await Promise.all([
     db.from("generation_accounts").select("credit_available,credit_reserved").eq("owner_user_id", user.id).single(),
@@ -152,7 +153,7 @@ export async function getCreditWallet(): Promise<CreditWallet> {
 }
 
 export async function reconcileOwnedCreditOrders() {
-  const user = await ensureAppUser();
+  const user = await readAppUser();
   getPayPalConfig();
   const { data, error } = await createDatabaseClient().from("credit_purchases").select("*")
     .eq("owner_user_id", user.id).in("status", ["pending", "approved"])

@@ -35,7 +35,6 @@ export async function saveProjectAction(
       : projectSaveFailure(error);
   }
   if (result.ok) {
-    revalidatePath("/projects");
     revalidatePath(`/projects/${result.project.id}`);
   }
   return result;
@@ -45,7 +44,6 @@ export async function renameProjectAction(input: unknown): Promise<RenameProject
   try {
     const result = await renameOwnedProject(input);
     if (result.ok) {
-      revalidatePath("/projects");
       revalidatePath(`/projects/${result.project.id}`);
     }
     return result;
@@ -59,7 +57,6 @@ export async function deleteProjectAction(input: unknown): Promise<DeleteProject
   try {
     const result = await deleteOwnedProject(input);
     if (result.ok) {
-      revalidatePath("/projects");
       revalidatePath(`/projects/${result.projectId}`);
       revalidatePath("/studio");
     }

@@ -3,9 +3,11 @@
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { SettingsNavigation } from "./settings-navigation";
+import { useAccountScroll } from "@/components/cache/use-account-query";
 
 export function SettingsWorkspace({ children, title = "Settings", description = "Make Sceenyk feel like a creative home.", navigation, regionLabel = "Selected settings section", wideContent = false }: { children: ReactNode; title?: string; description?: string; navigation?: ReactNode; regionLabel?: string; wideContent?: boolean }) {
   const pathname = usePathname();
+  useAccountScroll(`route:${pathname}`, ["/settings/appearance", "/settings/notifications", "/settings/data"].includes(pathname));
   return <div className={`
       workspace-documentation workspace-settings [&&]:grid [&&]:[grid-template-rows:auto_minmax(0,_1fr)] [&&]:gap-[16px]
       [&&]:h-[100%] [&&]:min-w-[0] [&&]:min-h-[0] [&&]:pt-[20px] [&&]:pr-[16px] [&&]:pb-[0] [&&]:pl-[16px]

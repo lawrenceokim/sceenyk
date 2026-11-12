@@ -1,11 +1,9 @@
 "use client";
+import { useAccountQuery } from "@/components/cache/use-account-query";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@clerk/nextjs";
 import { useAuthAvailable } from "@/components/auth/auth-availability";
-import { creditSummaryAction } from "@/app/actions/payments";
-import { creditRefreshKey } from "@/lib/accounting/client-events";
 import { generationCreditsFromMicrousd } from "@/lib/payments/credit-pricing";
 import { CreditTopUp } from "./credit-top-up";
 import { AppNotification } from "@/components/notifications/app-notification";
@@ -32,33 +30,8 @@ function AccountBalance({ compact, requiredCredits }: { compact: boolean; requir
 }
 
 function BalanceRead({ compact, requiredCredits }: { compact: boolean; requiredCredits?: number }) {
-  const [summary, setSummary] = useState<{ available: number; lowBalance: boolean } | null>(null);
-  const [loaded, setLoaded] = useState(false);
-  useEffect(() => {
-    let active = true, sequence = 0;
-    const reload = () => {
-      if (document.visibilityState === "hidden") return;
-      const request = ++sequence;
-      creditSummaryAction().then(result => {
-        if (active && request === sequence) { setSummary(result.ok ? result.data : null); setLoaded(true); }
-      }).catch(() => { if (active && request === sequence) { setSummary(null); setLoaded(true); } });
-    };
-    const storage = (event: StorageEvent) => { if (event.key === creditRefreshKey) reload(); };
-    reload();
-    window.addEventListener("sceenyk:credits", reload);
-    window.addEventListener("pageshow", reload);
-    window.addEventListener("focus", reload);
-    window.addEventListener("storage", storage);
-    document.addEventListener("visibilitychange", reload);
-    return () => {
-      active = false;
-      window.removeEventListener("sceenyk:credits", reload);
-      window.removeEventListener("pageshow", reload);
-      window.removeEventListener("focus", reload);
-      window.removeEventListener("storage", storage);
-      document.removeEventListener("visibilitychange", reload);
-    };
-  }, []);
+  const query = useAccountQuery("credit-summary");
+  const summary = query.data ?? null, loaded = !!query.data || !!query.error;
   const balance = summary?.available.toLocaleString() ?? (compact ? loaded ? "Unavailable" : "Loading…" : "—");
   return compact ? <><Link href="/credits" className={`
       [@layer_components]:inline-flex [@layer_components]:min-h-[var(--control-height)] [@layer_components]:items-center

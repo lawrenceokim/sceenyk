@@ -4,7 +4,7 @@ import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { LoaderCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { openPurchaseProjectAction } from "@/app/actions/purchases";
+import { openPurchaseProjectAction } from "@/lib/cache/actions/purchases";
 import { AppNotification } from "@/components/notifications/app-notification";
 
 

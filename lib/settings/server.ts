@@ -1,10 +1,11 @@
 import "server-only";
+import { readAppUser } from "@/lib/auth/read-app-user";
 import { ensureAppUser } from "@/lib/auth/ensure-app-user";
 import { createDatabaseClient } from "@/lib/db/server";
 import { creationPreferencesSchema, defaultCreationPreferences } from "./contract";
 
 export async function getCreationPreferences() {
-  const user = await ensureAppUser();
+  const user = await readAppUser();
   const { data, error } = await createDatabaseClient().rpc("creation_preferences_read", { p_owner: user.id });
   if (error) throw new Error("PREFERENCES_UNAVAILABLE");
   return { clerkUserId: user.clerk_user_id, preferences: data === null ? defaultCreationPreferences : creationPreferencesSchema.parse(data) };

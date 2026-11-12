@@ -11,15 +11,11 @@ async function run(work: () => Promise<MarketplaceResult>): Promise<MarketplaceR
   try {
     const result = await work();
     if (result.ok) {
-      revalidatePath("/marketplace", "layout");
-      revalidatePath("/settings/templates");
-      revalidatePath("/templates");
       if ("listingId" in result) {
-        revalidatePath("/projects");
+        revalidatePath(`/marketplace/${result.listingId}`);
         revalidatePath(`/templates/${result.listingId}`);
         revalidatePath(`/settings/templates/${result.listingId}`);
       }
-      if ("projectId" in result) revalidatePath("/projects");
     }
     return result;
   } catch (error: unknown) {

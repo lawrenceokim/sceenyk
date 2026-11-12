@@ -1,6 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
+import { CreditsPageClient, EarningsPageClient, HistoryPageClient } from "@/components/cache/account-pages";
 import { Suspense } from "react";
 import { ProjectsGallerySkeleton } from "@/components/projects/projects-section";
 import { SettingsWorkspace } from "@/components/settings/settings-workspace";
@@ -23,10 +24,10 @@ export function AccountLoading() {
   if (pathname.startsWith("/purchases/")) return <PurchaseDetailSkeleton />;
   if (pathname === "/purchases") return <div className="min-w-0 space-y-8"><PurchasesHeading /><Suspense fallback={<PurchasesGridSkeleton />}><PurchasesGalleryClient cachedOnly /></Suspense></div>;
   if (pathname.startsWith("/settings")) return <SettingsWorkspace><SettingsLoading /></SettingsWorkspace>;
-  if (pathname.startsWith("/credits")) return <CreditsWorkspace>{pathname === "/credits/earnings" ? <EarningsSkeleton /> : <CreditAccountSkeleton />}</CreditsWorkspace>;
+  if (pathname.startsWith("/credits")) return <CreditsWorkspace><Suspense fallback={pathname === "/credits/earnings" ? <EarningsSkeleton /> : <CreditAccountSkeleton />}>{pathname === "/credits/earnings" ? <EarningsPageClient cachedOnly /> : <CreditsPageClient cachedOnly />}</Suspense></CreditsWorkspace>;
   if (pathname.startsWith("/templates/")) return <TemplateDetailSkeleton owned />;
   if (pathname === "/templates") return <WorkspaceGalleryPage view="templates"><div className="workspace-templates [&&_>_#templates]:mt-[40px] max-599:[&&_>_#templates]:mt-[24px]"><TemplatesHeading /><Suspense fallback={<GallerySkeleton variant="library" />}><TemplatesGalleryClient cachedOnly /></Suspense></div></WorkspaceGalleryPage>;
   if (pathname === "/projects") return <WorkspaceGalleryPage view="projects"><div className="workspace-projects"><ProjectsHeading /><Suspense fallback={<ProjectsGallerySkeleton />}><ProjectsGalleryClient cachedOnly /></Suspense></div></WorkspaceGalleryPage>;
-  if (pathname === "/marketplace/purchases") return <PurchasesWorkspace><PurchasesSkeleton /></PurchasesWorkspace>;
+  if (pathname === "/marketplace/purchases") return <PurchasesWorkspace><Suspense fallback={<PurchasesSkeleton />}><HistoryPageClient cachedOnly /></Suspense></PurchasesWorkspace>;
   return <PurchasesSkeleton />;
 }

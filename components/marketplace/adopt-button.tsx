@@ -9,7 +9,7 @@ import { ArrowUpRight, LoaderCircle, Plus } from "lucide-react";
 import { AccountAction } from "@/components/account-action";
 import { useAuthAvailable } from "@/components/auth/auth-availability";
 import { Button } from "@/components/ui/button";
-import { adoptMarketplaceAction, marketplaceListingAccessAction } from "@/app/actions/marketplace";
+import { adoptMarketplaceAction, marketplaceListingAccessAction } from "@/lib/cache/actions/marketplace";
 import { PaidAdoption } from "./paid-adoption";
 import { AppNotification } from "@/components/notifications/app-notification";
 

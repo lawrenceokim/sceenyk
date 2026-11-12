@@ -3,7 +3,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { AccountAction } from "@/components/account-action";
-import { enqueueUgcGenerationAction, ugcReadinessAction } from "@/app/actions/ugc-generation";
+import { enqueueUgcGenerationAction, ugcReadinessAction } from "@/lib/cache/actions/ugc-generation";
 import { ugcInputIssue, uniqueUgcIssues, type UgcInputIssue, type UgcReadiness } from "@/lib/ugc-jobs/input-contract";
 import { isUgcJobActive } from "@/lib/ugc-jobs/contract";
 import type { UgcProgressState } from "./ugc-progress-preview";

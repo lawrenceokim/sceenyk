@@ -1,4 +1,5 @@
 import "server-only";
+import { readAppUser } from "@/lib/auth/read-app-user";
 import { z } from "zod";
 import { ensureAppUser } from "@/lib/auth/ensure-app-user";
 import { createDatabaseClient } from "@/lib/db/server";
@@ -10,7 +11,7 @@ function checked<T>(r: { data: T | null; error: unknown }): T {
   return r.data;
 }
 export async function getWithdrawalAccount(page = 1) {
-  const user = await ensureAppUser();
+  const user = await readAppUser();
   z.number().int().min(1).max(100000).parse(page);
   const data = checked(await createDatabaseClient().rpc("creator_payout_account", { p_creator: user.id, p_page: page }));
   return { clerkUserId: user.clerk_user_id, account: creatorWithdrawalAccount(data) };

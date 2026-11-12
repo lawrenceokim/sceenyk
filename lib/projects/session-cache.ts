@@ -1,5 +1,6 @@
 import type { GalleryReply, GallerySnapshot } from "./gallery-contract";
 import type { ProjectMediaReply } from "./cached-media-contract";
+import type { SavedProject } from "./types";
 
 export type CachedProjectMedia = { url: string; version: string; expiresAt: number; bytes: number; objectUrl: boolean; loaded: boolean; retryAt?: number };
 type PageEntry = { snapshot: GallerySnapshot; checkedAt: number; scrollTop?: number };
@@ -16,6 +17,7 @@ export class ProjectsSessionCache {
   private mediaVersions = new Map<string, number>();
   private invalidations = new Map<string, number>();
   private pages = new Map<number, PageEntry>();
+  private loaders = new Map<number, { owner: string; load: (known: Record<string, string>) => Promise<GalleryReply> }>();
   private refreshFailures = new Map<number, { error: ProjectsRefreshError; retryAt: number }>();
   private media = new Map<string, MediaEntry>();
   private pending = new Map<string, Promise<unknown>>();
@@ -29,7 +31,7 @@ export class ProjectsSessionCache {
     if (scope === this.scope) return;
     this.scope = scope; this.epoch++;
     this.requests.forEach(c => c.abort()); this.requests.clear(); this.pending.clear(); this.pages.clear();
-    this.refreshFailures.clear();
+    this.refreshFailures.clear(); this.loaders.clear();
     for (const key of this.media.keys()) this.dropMedia(key);
     this.mediaVersions.clear();
     this.invalidations.clear();
@@ -50,6 +52,8 @@ export class ProjectsSessionCache {
   }
   async refresh(scope: string, owner: string, page: number, load: (known: Record<string, string>) => Promise<GalleryReply>, force = false) {
     if (scope !== this.scope) return;
+    this.loaders.set(page, { owner, load });
+    while (this.loaders.size > 8) this.loaders.delete(this.loaders.keys().next().value!);
     const key = `page:${page}`, previous = this.pages.get(page);
     if (this.pending.has(key)) return this.pending.get(key);
     const failure = this.refreshFailures.get(page);
@@ -88,6 +92,7 @@ export class ProjectsSessionCache {
         return;
       }
       const network = error instanceof TypeError && /fetch failed|failed to fetch|load failed|networkerror/i.test(error.message);
+      if (mutation !== this.mutation) return;
       const attempts = (failure?.error.attempts ?? 0) + 1;
       const safe = new ProjectsRefreshError(error instanceof ProjectsRefreshError ? error.retryable : network, attempts);
       this.refreshFailures.set(page, { error: safe, retryAt: Date.now() + Math.min(120_000, 15_000 * 2 ** Math.min(attempts - 1, 3)) });
@@ -98,8 +103,22 @@ export class ProjectsSessionCache {
     try { await request; } finally { if (this.pending.get(key) === request) this.pending.delete(key); }
   }
   retryPage(scope: string, page: number) { if (scope === this.scope) this.refreshFailures.delete(page); }
+  invalidateAll(scope: string) {
+    if (scope !== this.scope) return;
+    this.mutation++;
+    for (const entry of this.pages.values()) entry.checkedAt = 0;
+  }
+  async refreshCached(scope: string, owner: string) {
+    if (scope !== this.scope) return;
+    await Promise.allSettled([...this.pages.keys()].map(async page => {
+      await this.pending.get(`page:${page}`)?.catch(() => {});
+      const loader = this.loaders.get(page);
+      if (loader && loader.owner === owner && scope === this.scope) await this.refresh(scope, owner, page, loader.load, true);
+    }));
+  }
   rename(scope: string, project: { id: string; title: string; updatedAt: string }) {
     if (scope !== this.scope) return;
+    if (![...this.pages.values()].some(entry => entry.snapshot.data.projects.some(p => p.id === project.id && (p.title !== project.title || p.updatedAt !== project.updatedAt)))) return;
     this.mutation++;
     for (const entry of this.pages.values()) {
       entry.checkedAt = 0;
@@ -110,8 +129,12 @@ export class ProjectsSessionCache {
   }
   remove(scope: string, id: string) {
     if (scope !== this.scope) return;
-    this.mutation++;
     const present = [...this.pages.values()].some(entry => entry.snapshot.data.projects.some(p => p.id === id));
+    if (!present) {
+      for (const key of this.media.keys()) if (key === `video:${id}` || key.startsWith(`thumbnail:${id}:`)) this.dropMedia(key);
+      this.emit(); return;
+    }
+    this.mutation++;
     for (const entry of this.pages.values()) {
       const cards = { ...entry.snapshot.cards }; delete cards[id];
       entry.snapshot = { data: { ...entry.snapshot.data, total: Math.max(0, entry.snapshot.data.total - (present ? 1 : 0)),
@@ -119,6 +142,18 @@ export class ProjectsSessionCache {
       entry.checkedAt = 0;
     }
     for (const key of this.media.keys()) if (key === `video:${id}` || key.startsWith(`thumbnail:${id}:`)) this.dropMedia(key);
+    this.emit();
+  }
+  saveSummary(scope: string, project: SavedProject) {
+    if (scope !== this.scope) return;
+    const { id, title, category, settings, creationType, ugcType, status, createdAt, updatedAt, workflow } = project;
+    const summary = { id, title, category, settings, creationType, ugcType, status, createdAt, updatedAt, ...(workflow ? { workflow } : {}) };
+    if (![...this.pages.values()].some(entry => entry.snapshot.data.projects.some(item => item.id === id))) return;
+    this.mutation++;
+    for (const entry of this.pages.values()) {
+      entry.checkedAt = 0;
+      entry.snapshot = { ...entry.snapshot, data: { ...entry.snapshot.data, projects: entry.snapshot.data.projects.map(item => item.id === id ? summary : item) } };
+    }
     this.emit();
   }
   readMedia(scope: string | null, key: string) {

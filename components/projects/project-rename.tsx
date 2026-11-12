@@ -4,7 +4,7 @@ import { useContext, useRef, useState } from "react";
 import { ProjectsCacheScope } from "./projects-cache-context";
 import { projectsSessionCache } from "@/lib/projects/session-cache";
 import { Pencil } from "lucide-react";
-import { renameProjectAction } from "@/app/actions/projects";
+import { renameProjectAction } from "@/lib/cache/actions/projects";
 import { projectTitleLimit } from "@/lib/projects/options";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogTrigger, DialogContent, DialogTitle, DialogDescription, DialogClose } from "@/components/ui/dialog";
