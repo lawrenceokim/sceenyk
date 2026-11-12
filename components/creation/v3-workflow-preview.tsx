@@ -106,11 +106,6 @@ export function V3WorkflowPreview({
     code: string;
     httpStatus: number | null;
   } | null>(null);
-  const [maximum, setMaximum] = useState<{
-      packageHash: string;
-      value: string;
-    } | null>(null),
-    [approvedHash, setApprovedHash] = useState<string | null>(null);
   const refreshLock = useRef(false);
   const initialRead = useRef<string | null>(null);
   const actionLock = useRef(false);
@@ -327,7 +322,6 @@ export function V3WorkflowPreview({
       workspaceVersion.current++;
       setWorkspace(body.workspace);
       setStatusError("");
-      if (action === "build_package") setApprovedHash(null);
       return true;
     } catch (e) {
       setError(e instanceof Error ? e.message : "V3_ACTION_UNAVAILABLE");
@@ -372,8 +366,6 @@ export function V3WorkflowPreview({
   const maximumValue =
     workspace?.creativeLock && p?.authorizedMaximumMicrousd != null
       ? (p.authorizedMaximumMicrousd / 1_000_000).toFixed(2)
-      : p && maximum?.packageHash === p.packageHash
-      ? maximum.value
       : p?.suggestedMaximumMicrousd
         ? (p.suggestedMaximumMicrousd / 1_000_000).toFixed(2)
         : "";
@@ -1032,67 +1024,37 @@ export function V3WorkflowPreview({
                           </ul>
                         )}
                         <div className="space-y-2 border-t border-primary/15 pt-3">
-                        <label className="block w-full space-y-1 text-sm font-medium sm:w-1/2">
+                        <div className="block w-full space-y-1 text-sm font-medium sm:w-1/2">
                           <span className="block">Maximum authorized USD</span>
-                          <input
-                            type="number"
-                            disabled={creativeLocked}
-                            min="0"
-                            step="0.01"
-                            className="h-11 w-full min-w-0 rounded-lg border border-primary/25 bg-background px-3 text-sm font-normal text-foreground outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30"
-                            value={maximumValue}
-                            onChange={(e) =>
-                              setMaximum({
-                                packageHash: p.packageHash,
-                                value: e.target.value,
-                              })
-                            }
-                          />
-                        </label>
+                          <span className="block py-2 font-normal">${maximumValue}</span>
+                        </div>
                         <p className="text-xs leading-relaxed text-muted-foreground">
-                          Review this spending limit before approving.
+                          The spending limit is calculated automatically from the approved generation pricing.
                         </p>
                         </div>
                         <div className="space-y-3 border-t border-primary/15 pt-3">
-                        <label className="flex min-h-11 cursor-pointer items-start gap-2 text-sm leading-relaxed">
-                          <input
-                            type="checkbox"
-                            disabled={creativeLocked}
-                            className="mt-0.5 size-4 shrink-0 accent-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-                            checked={creativeLocked ? savedPackageApproval : approvedHash === p.packageHash}
-                            onChange={(e) =>
-                              setApprovedHash(
-                                e.target.checked ? p.packageHash : null,
-                              )
-                            }
-                          />
-                          I reviewed this exact package and approve the
-                          displayed request and cost limit.
-                        </label>
+                        <p className="text-sm leading-relaxed">
+                          Approving confirms this package and its displayed spending limit. Credits are reserved when you generate.
+                        </p>
                         <Button
                           variant="default"
                           className="w-full whitespace-normal"
                           disabled={
-                            (videoBlocked && policy?.paidBlocker !== "INSUFFICIENT_CREDITS") || !packageReady ||
+                            !packageReady ||
                             workspace.resolutionPricingAvailable === false ||
                             p.issues.includes("V3_RESOLUTION_PRICING_NOT_CONFIGURED") ||
                             packageApproved ||
                             creativeLocked || locked || proCharactersBlocked ||
                             p.estimatedCostMicrousd === null ||
                             !p.quoteId ||
-                            approvedHash !== p.packageHash ||
                             !maximumValue
                           }
-                          onClick={event => {
-                            if (showCreditShortage("video", event.currentTarget)) return;
+                          onClick={() => {
                             void act("authorize", {
                               operatorApproved: true,
                               packageId: p.packageId,
                               packageHash: p.packageHash,
                               quoteId: p.quoteId,
-                              maximumMicrousd: Math.round(
-                                Number(maximumValue) * 1_000_000,
-                              ),
                             });
                           }}
                         >

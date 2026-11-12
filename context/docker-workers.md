@@ -1,5 +1,9 @@
 # Windows laptop Docker workers
 
+## Generation funding update — 114 (2026-11-12)
+
+Package/credit continuation changes require database migration 114 after 113 and matching app/worker source. Rebuild/recreate **UGC and Media** through the existing Compose stack; both contain the compiled generation runtime, while payout is unchanged. Preserve named recovery volumes, control/env files and one-stack operation. Do not start a second worker stack or remove volumes. UGC/Media were healthy in read-only inspection, but running images do not acquire source edits automatically. Exact price validation now covers both new free and paid submissions; new paid attempts bind to a run without changing free-project/OpenAI history. [Release sequence, finite real-provider budgets and focused evidence](video-generation-reliability.md).
+
 Prepared 2026-11-12. Activation, remote migrations and connected/manual acceptance are left to the owner. Nothing in this setup changes the Vercel deployment or starts Inngest. Do not run paid generations merely to validate configuration.
 
 ## Vercel Preview integration (2026-11-12)

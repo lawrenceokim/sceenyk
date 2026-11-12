@@ -1,5 +1,9 @@
 # Architecture Context
 
+## Per-attempt video funding — 114 (2026-11-12)
+
+Package build and finite package approval are independent of financial availability; Generate owns funded admission. The server derives the supported video ceiling from approved pricing, with one explicit consent and immutable package/hash/quote binding. SQL 114 routes each new video to its valid included allowance or a 103-credit reservation referencing the existing V3 project directly. Historical flags/counters and project-level OpenAI funding are preserved. Existing paid/free runs keep their funding, leases, once-only dispatch and settlement; unknown outcomes require reconciliation. Exact authenticated provider prices may decrease but cannot exceed the $1.03 ceiling. All real-funded user/global caps remain. This supersedes the authorization/video blanket history restrictions in the earlier package-estimation note below. [Contract and release](video-generation-reliability.md).
+
 ## Package estimation versus funded admission (2026-11-12)
 
 Local V3 package construction/estimation is independent of free/video usage review. Client policy and `ownedV3Action` allow `build_package` without funding admission while retaining supported settings, ownership, creative locks, Basic/Pro restrictions, approved/current inputs and private asset validation. Existing package workers use local manual pricing; package construction neither reserves generation credits nor submits video. Authorization/video admission and SQL/worker financial protections remain authoritative. Later credit-funded OpenAI preparation does not resolve an older free/video hold. [Live findings, deployment and historical correction boundary](vercel-deployment.md#package-usage-review-failure--confirmed-2026-11-12).

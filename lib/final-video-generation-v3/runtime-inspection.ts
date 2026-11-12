@@ -9,7 +9,7 @@ import { HiggsfieldVideoGenerationProvider } from "./adapters/higgsfield";
 import { projectBrief, referenceOriginals, approvedArtifacts } from "./creative-inputs";
 import { v3TransportConfig, exactOutputHosts } from "./runtime-config";
 import { videoDeliveryBindings } from "./video-delivery";
-import { runtimePreflight } from "./execution-package";
+import { runtimePreflight, packageAuthorizationMaximum } from "./execution-package";
 import { locationDocument } from "./location-runtime";
 import { latestArtifact } from "./generation-context";
 import { packageClips, clipAuthority } from "./clip-runtime";
@@ -54,6 +54,7 @@ export async function inspectRuntime(w: RuntimeWorkspace, segmentId?: string, sh
   if (w.runs.some(r => r.package_id !== doc.id && !["approved", "failed", "deleted"].includes(r.state))) issues.push("V3_PRIOR_OUTCOME_REQUIRES_RECONCILIATION");
   if (!locked && doc.capabilityHash !== v3Digest("capabilities", normalizeCapabilities(new HiggsfieldVideoGenerationProvider().capabilities()))) issues.push("PROVIDER_CAPABILITIES_CHANGED");
   if (!clips && quote && quote.segments.some(s => !w.runtimeAuthorizations.some(a => a.document.packageId === doc.id && a.document.segmentUuid === s.segmentUuid &&
+    a.document.maxEstimatedCostMicrousd >= (doc.segments.length === 1 ? packageAuthorizationMaximum(doc, quote) : s.estimatedCostMicrousd) &&
     !w.runs.some(r => r.intent.authorization.id === a.document.id) && Date.parse(a.document.expiresAt) > Date.now()))) issues.push("V3_SEGMENT_AUTHORIZATION_REQUIRED");
   const approvedLocation = w.artifacts.find(a => a.kind === "location" && currentIds.includes(a.id));
   const locationCurrent = locked || !locationDocument(approvedLocation) || await reads.rpc("ugc_v3_location_input_current", { p_project: w.project.project_id, d: approvedLocation!.document.input }) === true;

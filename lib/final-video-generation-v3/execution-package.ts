@@ -6,6 +6,16 @@ import { readFrozenPackage, packageCost, type FrozenPackage } from "./package";
 import { HiggsfieldVideoGenerationProvider } from "./adapters/higgsfield";
 import { pricingConfiguration, suggestedAuthorizationMicrousd } from "./pricing/higgsfield-pricing";
 import { videoResolutionSchema } from "@/lib/projects/video-resolution";
+import { videoGenerationMaximumMicrousd } from "@/lib/accounting/generation-policy";
+
+// Use the approved retail/exposure ceiling for the supported hackathon video.
+// Keep frozen quotes and historical authorizations unchanged.
+export function packageAuthorizationMaximum(doc: FrozenPackage, quote: RuntimeQuote) {
+  if (doc.source.storyboardContent.durationMs === 5000 && doc.source.resolution === "480p" && doc.segments.length === 1) {
+    return videoGenerationMaximumMicrousd;
+  }
+  return suggestedAuthorizationMicrousd(quote.totalMicrousd);
+}
 
 export function createRuntimeAuthorization(doc: FrozenPackage, quote: RuntimeQuote, segmentUuid: string, approval: {
   operatorId: string; approved: boolean; maximumMicrousd: number; packageMaximumMicrousd?: number; now: string;
@@ -76,6 +86,8 @@ export function runtimePreflight(value: unknown, quoteValue: unknown, authorizat
       a.data.maxEstimatedCostMicrousd < segment.estimatedCostMicrousd) issues.push("V3_AUTHORIZATION_BINDING_INVALID");
     if (Date.parse(a.data.approvedAt) > Date.parse(options.now) || Date.parse(a.data.expiresAt) <= Date.parse(options.now) ||
       quote.success && quote.data.expiresAt !== null && Date.parse(a.data.expiresAt) > Date.parse(quote.data.expiresAt)) issues.push("V3_AUTHORIZATION_EXPIRED");
+    if (quote.success && doc.segments.length === 1 && doc.source.storyboardContent.durationMs === 5000 && doc.source.resolution === "480p" &&
+      a.data.maxEstimatedCostMicrousd < packageAuthorizationMaximum(doc, quote.data)) issues.push("V3_AUTHORIZATION_INSUFFICIENT");
   }
   if (options.existingIntent) issues.push("EXISTING_INTENT_RECONCILE_OR_REUSE");
   if (cost.code === "V3_RESOLUTION_PRICING_NOT_CONFIGURED") issues.push(cost.code);
@@ -91,7 +103,7 @@ export function runtimePreflight(value: unknown, quoteValue: unknown, authorizat
       promptCharacters: s.compiledPrompt.length, promptHash: v3Digest("director-prompt", s.compiledPrompt) })), references: doc.source.references.map(r => ({ id: r.id, role: r.role, version: r.version, sha256: r.sha256 })),
     estimatedCostMicrousd: quote.success ? quote.data.totalMicrousd : null, authorizedMaximumMicrousd: a.success ? a.data.maxEstimatedCostMicrousd : null,
     pricingSource: doc.pricing.source ?? "historical_account_estimate", pricingVersion: doc.pricing.pricingVersion ?? null,
-    suggestedMaximumMicrousd: manual && doc.pricing.totalMicrousd !== null ? suggestedAuthorizationMicrousd(doc.pricing.totalMicrousd) : null,
+    suggestedMaximumMicrousd: quote.success ? packageAuthorizationMaximum(doc, quote.data) : null,
     suggestedAuthorizationBufferPercent: pricingConfiguration.authorizationBufferBasisPoints / 100,
     transportEnabled: options.transportEnabled, currentness: options.current ? "current" : "stale", duplicateProtection: "unique_package_segment_and_authorization",
     quoteId: quote.success ? quote.data.id : null, estimateExpiresAt: quote.success ? quote.data.expiresAt : null, authorizationState: a.success ? "bound" : "missing",

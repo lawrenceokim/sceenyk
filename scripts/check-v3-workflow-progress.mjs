@@ -16,6 +16,8 @@ globalThis.__progressReact = { ...React,
 };
 const bundle = await build({ absWorkingDir: process.cwd(), stdin: { contents: 'export { workflowProgress } from "./components/creation/v3-progress-state"; export { V3WorkflowProgress } from "./components/creation/v3-workflow-progress"; export { V3WorkflowPreview } from "./components/creation/v3-workflow-preview";', resolveDir: process.cwd(), loader: "tsx" },
   tsconfig: resolve("tsconfig.json"), bundle: true, write: false, platform: "node", format: "cjs", packages: "external", plugins: [{ name: "offline-ui", setup(builder) {
+    builder.onResolve({filter:/^(\.\/studio-action-notice|@\/components\/notifications\/app-notification)$/},args=>({path:args.path,namespace:'boundary'}));
+    builder.onLoad({filter:/.*/,namespace:'boundary'},args=>({contents:args.path.endsWith('studio-action-notice')?'export function StudioActionNotice(){return null;}':'export function AppNotification(props){return props.children;}'}));
     builder.onResolve({ filter: /^\.\/components\// }, args => ({ path: resolve(args.path + (args.path.endsWith("-state") ? ".ts" : ".tsx")) }));
     builder.onResolve({ filter: /^(react|next\/image|@\/components\/workspace\/studio-mode-provider|@\/components\/ui\/(button|dialog)|\.\/studio-workspace-panels)$/ }, args => ({ path: args.path, namespace: "fixture" }));
     builder.onLoad({ filter: /.*/, namespace: "fixture" }, args => {
@@ -52,6 +54,21 @@ const elements = node => node == null ? [] : Array.isArray(node) ? node.flatMap(
 const text = node => node == null || typeof node === "boolean" ? "" : Array.isArray(node) ? node.map(text).join("") : typeof node === "object" ? text(node.props?.children) : String(node);
 const find = (node, predicate) => { const found = elements(node).find(predicate); assert.ok(found); return found; };
 try {
+  if(process.argv.includes('--package-approval-only')) {
+    const packageTree=workspace=>{
+      slots=[];const owner=()=>{cursor=0;effects=[];return V3WorkflowPreview({initial:workspace,projectId:workspace.projectId,assets:[],dirty:false,revision:'saved'});};
+      let result=owner();find(result,n=>n.type==='button'&&text(n)==='Package').props.onClick();result=owner();return result;
+    };
+    const ready={...packaged,preflight:{...preflight,authorizationState:'missing',suggestedMaximumMicrousd:1030000,issues:['V3_AUTHORIZATION_REQUIRED']}};
+    for(const blocker of ['FREE_PROJECT_HISTORY_REVIEW_REQUIRED','INSUFFICIENT_CREDITS','HIGGSFIELD_USER_SPENDING_LIMIT']){
+      const result=packageTree({...ready,generationPolicy:{ready:true,settingsSupported:true,projectAllowed:false,videoAllowed:false,paidBlocker:blocker}});
+      equal(find(result,n=>n.type?.name==='Button'&&text(n)==='Approve Generation Package').props.disabled,false);
+      equal(elements(result).some(n=>n.type==='input'&&['checkbox','number'].includes(n.props.type)),false);
+      ok(text(result).includes('$1.03'));
+    }
+    const stale=packageTree({...ready,packageStale:true});equal(find(stale,n=>n.type?.name==='Button'&&text(n)==='Approve Generation Package').props.disabled,true);
+    equal(realNetworkCalls,0);console.log(JSON.stringify({checks,realNetworkCalls,scope:'package approval UI only'}));
+  } else {
   equal(statuses(empty), ["not_started", "not_started", "not_started", "not_started"]);
   equal(state({ ...empty, artifacts: [artifact("character")] }).current.status, "in_progress");
   equal(state(refs).current.id, "storyboard");
@@ -283,17 +300,21 @@ try {
       equal(approvalButton(result).props.disabled,true);
     }
     const frozen=packageTree({...complete,creativeLock,preflight:{...preflight,authorizedMaximumMicrousd:3000000}});
-    equal(find(frozen,n=>n.type==='input'&&n.props.type==='number').props.disabled,true);
-    equal(find(frozen,n=>n.type==='input'&&n.props.type==='number').props.value,'3.00');
-    equal(find(frozen,n=>n.type==='input'&&n.props.type==='checkbox').props.disabled,true);
-    equal(find(frozen,n=>n.type==='input'&&n.props.type==='checkbox').props.checked,true);
+    ok(text(frozen).includes('$3.00'));
+    equal(elements(frozen).some(n=>n.type==='input'&&['number','checkbox'].includes(n.props.type)),false);
     equal(approvalButton(frozen).props.disabled,true);
-    const rejected=packageTree({...packaged,runs:[run('deleted')],preflight:{...preflight,authorizationState:'missing',issues:['V3_AUTHORIZATION_REQUIRED']}});
+    const rejected=packageTree({...packaged,runs:[run('deleted')],preflight:{...preflight,suggestedMaximumMicrousd:1030000,authorizationState:'missing',issues:['V3_AUTHORIZATION_REQUIRED']}});
     equal(text(find(rejected,n=>n.props?.['aria-label']==='Package overview')).includes('Ready for review'),true);
-    equal(find(rejected,n=>n.type==='input'&&n.props.type==='number').props.disabled,false);
+    equal(approvalButton(rejected).props.disabled,false);
+    for(const blocker of ['FREE_PROJECT_HISTORY_REVIEW_REQUIRED','INSUFFICIENT_CREDITS','HIGGSFIELD_USER_SPENDING_LIMIT']){
+      const result=packageTree({...packaged,generationPolicy:{ready:true,settingsSupported:true,projectAllowed:false,videoAllowed:false,paidBlocker:blocker},preflight:{...preflight,suggestedMaximumMicrousd:1030000,authorizationState:'missing',issues:['V3_AUTHORIZATION_REQUIRED']}});
+      equal(approvalButton(result).props.disabled,false);
+      equal(elements(result).some(n=>n.type==='input'&&n.props.type==='checkbox'),false);
+    }
   } finally { Object.assign(globalThis, originals); }
   // Reload/reopen takes the persisted approval rather than a local visited-tab flag.
   initial = complete; slots = []; equal(state(progressProps(owner()).workspace).complete, true);
   equal(realNetworkCalls, 0);
   console.log(JSON.stringify({ checks, realNetworkCalls, scope: "V3 Progress saved states, disclosures, recovery and automatic synchronization" }));
+  }
 } finally { globalThis.fetch = originalFetch; delete globalThis.__progressReact; delete globalThis.__progressPanels; delete globalThis.__progressMode; }

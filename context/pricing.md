@@ -1,5 +1,9 @@
 # Commercial cost contract
 
+## Automatic video consent ceiling — 114 (2026-11-12)
+
+Supported new 5-second/480p reference video keeps the approved 103-credit retail charge and $1.03 exposure ceiling. The server calculates package consent automatically; the UI displays its limit and one approval action, with no editable USD maximum/extra checkbox. Frozen historical estimates/authorizations are not rewritten. Exact authenticated provider prices are verified before admission and dispatch for free and paid paths; positive reductions are safe, while prices above the approved/saved ceiling remain blocked. Provider real-funded user/global budgets remain independent of Sandbox credit purchases. [Funding, release and verification](video-generation-reliability.md).
+
 ## Current Stage 2/3 tariffs — 108 (2026-11-10)
 
 | Operation | Assigned free project | Purchased-credit project |

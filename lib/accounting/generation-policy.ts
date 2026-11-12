@@ -1,6 +1,7 @@
 // Public capabilities only. Identity, allowance and admission remain server/SQL owned.
 export const freeVideoDurationSeconds = 5;
 export const freeVideoResolution = "480p" as const;
+export const videoGenerationMaximumMicrousd = 1_030_000;
 export const freePreparationKinds = ["character", "product", "location", "storyboard"] as const;
 export type FreeGenerationAccess = { total: number; remaining: number; reserved: number; consumed: number;
   projectAllowed: boolean; videoAllowed: boolean; historyReview: boolean; budgetMicrousd: number; budgetUsedMicrousd: number; accountBudgetRemainingMicrousd: number;

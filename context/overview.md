@@ -1,5 +1,9 @@
 # Sceenyk
 
+## Repeatable video funding and package consent — 114 (2026-11-12)
+
+Package approval is one explicit action with an automatic server-calculated $1.03 ceiling for the approved 5-second/480p video. Financial eligibility is checked at Generate. Each new video attempt uses a valid unused included video or 103 purchased credits; unresolved historical free usage blocks additional free funding but does not veto an independently paid request. Two lifetime free project allowances, included OpenAI policy, finite real-provider budgets, immutable media/history and duplicate/recovery safeguards remain. Migration 114, matching web deployment and rebuilt UGC/Media images are required; no hosted writes/deployment ran. [Behavior, essential verification and release steps](video-generation-reliability.md).
+
 ## Smart account caching (2026-11-12)
 
 Previously visited galleries and dynamic account screens retain confirmed content and practical scroll while refreshing quietly. Successful saves, publishing, adoption, purchases, profile/media changes and withdrawals reconcile affected cached views; failed or uncertain actions never become successful transactions in the cache. Credits & Billing, Earnings & Payouts, checkout history and dynamic Settings sections reuse their existing services through a bounded user/session browser-memory cache. Existing 3-second previews, designs, workflows, server authorization and Docker workers remain. No new dependency, schema or realtime service. [Access, timing and verification boundaries](architecture.md#smart-account-caching-and-confirmed-mutation-refresh-2026-11-12).
