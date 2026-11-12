@@ -1,5 +1,9 @@
 # Sceenyk
 
+## Purchases previews and return cache (2026-11-12)
+
+The acquired-template gallery retains buyer-scoped cards, preview bytes and practical scroll across navigation. It quietly refreshes changed cards and uses the shared silent 3-second player only for buyer-authorized, currently published approved videos. Historical unavailable listings retain authorized static posters; creator originals stay private. Existing paid/free acquisitions, historical amounts, refund labels, Adopt template, history and mapping-only identity reads remain unchanged. [Access, setup and manual acceptance](purchases.md#looping-previews-and-instant-return-cache-2026-11-12).
+
 ## Templates preview and return cache (2026-11-12)
 
 The private `/templates` gallery now retains loaded cards, previews and practical scroll across navigation, with quiet changed-card refreshes. Completed non-draft templates reuse current approved source-final 3-second silent previews; drafts/incomplete templates keep static covers. Existing owner-only media checks, identity cleanup and template creation/edit/publish/delete decisions remain. No worker, payment or generation change. [Contract, setup and manual acceptance](project-video-previews.md#templates-owned-looping-previews-and-return-cache-2026-11-12).

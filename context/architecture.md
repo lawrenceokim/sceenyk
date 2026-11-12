@@ -1,5 +1,9 @@
 # Architecture Context
 
+## Purchases previews and return cache (2026-11-12)
+
+`/purchases` reuses the shared preview component and Projects bounded media-cache class in an isolated buyer/session instance. Existing acquisition services remain the paid/free/refund and identity owners; all reads keep the mapping-only `readAppUser` path. A private gallery endpoint compares compact revisions and returns only changed acquired cards. The media endpoint authorizes the buyer's acquisition, then delegates video access to the existing published/rights-confirmed approved-final boundary; historical unpublished/deleted listings retain only their existing authorized reviewed poster. No creator private source video is shared. The Purchases branch of the account-loading fallback renders retained cards without removing the server account guard. Other pages, adoption/history, worker/payment/generation and schema behavior remain unchanged. [Contract and manual acceptance](purchases.md#looping-previews-and-instant-return-cache-2026-11-12).
+
 ## Purchases initial reads and Studio mode identity (2026-11-12)
 
 Purchases library/detail/reviewed-preview reads and the shell's Studio mode read now reuse `readAppUser`: protect the current Clerk session, resolve its database mapping, and provision through unchanged verified synchronization only when the mapping is genuinely absent. Purchase RPC ownership/entitlement/financial projections are unchanged. Opening an acquired project and saving a mode retain their existing mutation/authentication paths.

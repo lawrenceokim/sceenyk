@@ -14,7 +14,7 @@ No Docker/worker, payment, schema, media format or five-minute authorization-dea
 
 Implemented in source on 2026-11-11. Deployment, remote migration and visual acceptance remain manual.
 
-The original preview component remains exclusive to `/projects` cards. Card geometry, typography, links and actions are unchanged. As of 2026-11-12, [Marketplace discovery](project-video-previews.md#marketplace-looping-previews-and-return-cache-2026-11-12) and [owned Templates](#templates-owned-looping-previews-and-return-cache-2026-11-12) reuse the derivative queue/worker and memory-cache class through separate public/owner delivery boundaries; the Projects implementation is unchanged. Purchases and Studio do not opt into the looping card behavior.
+The original preview component remains exclusive to `/projects` cards. Card geometry, typography, links and actions are unchanged. As of 2026-11-12, [Marketplace discovery](project-video-previews.md#marketplace-looping-previews-and-return-cache-2026-11-12), [owned Templates](#templates-owned-looping-previews-and-return-cache-2026-11-12) and [Purchases](purchases.md#looping-previews-and-instant-return-cache-2026-11-12) reuse the derivative queue/worker and memory-cache class through separate public/owner/buyer delivery boundaries; the Projects implementation is unchanged. Studio does not opt into the looping card behavior.
 
 ## Instant return navigation and private session memory (2026-11-11)
 

@@ -26,10 +26,10 @@ export function PurchaseDetailSkeleton() {
     <Skeleton className="aspect-[7/5] w-full rounded-xl" /><div className="space-y-4"><Skeleton className="h-8 w-3/4" /><Skeleton className="h-5 w-full" /><Skeleton className="h-7 w-1/2" /><Skeleton className="h-10 w-full" /><Skeleton className="h-10 w-full" /><Skeleton className="h-24 w-full" /><Skeleton className="h-24 w-full" /><Skeleton className="h-24 w-full" /></div>
   </SkeletonRegion></div>;
 }
-export function PurchasesFailure({ detail = false }: { detail?: boolean }) {
+export function PurchasesFailure({ detail = false, onRetry }: { detail?: boolean; onRetry?: () => void }) {
   return <div  className="flex flex-col items-start gap-3 rounded-xl border border-border bg-card p-6"><ShoppingBag aria-hidden="true" className="size-6 text-primary" />
     <h2 className="text-base font-semibold">{detail ? "This purchase couldn’t be loaded" : "Your purchases couldn’t be loaded"}</h2>
     <AppNotification role="alert" className="text-sm text-muted-foreground">Refresh to try again. Your saved purchases are unchanged.</AppNotification>
-    <div className="flex flex-wrap items-center gap-3"><PurchasesRetryButton /><Link href="/purchases" className="text-xs font-medium text-link underline-offset-4 hover:underline">Return to purchases</Link></div>
+    <div className="flex flex-wrap items-center gap-3"><PurchasesRetryButton onRetry={onRetry} /><Link href="/purchases" className="text-xs font-medium text-link underline-offset-4 hover:underline">Return to purchases</Link></div>
   </div>;
 }

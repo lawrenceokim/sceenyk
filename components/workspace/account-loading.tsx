@@ -14,13 +14,14 @@ import { ProjectsHeading } from "@/components/projects/projects-heading";
 import { ProjectsGalleryClient } from "@/components/projects/projects-gallery-client";
 import { TemplatesHeading } from "@/components/templates/templates-heading";
 import { TemplatesGalleryClient } from "@/components/templates/templates-gallery-client";
+import { PurchasesGalleryClient } from "@/components/purchases/purchases-gallery-client";
 import { WorkspaceGalleryPage } from "./workspace-gallery-page";
 import { PurchaseDetailSkeleton, PurchasesGridSkeleton, PurchasesHeading } from "@/components/purchases/purchases-states";
 
 export function AccountLoading() {
   const pathname = usePathname();
   if (pathname.startsWith("/purchases/")) return <PurchaseDetailSkeleton />;
-  if (pathname === "/purchases") return <div className="min-w-0 space-y-8"><PurchasesHeading /><PurchasesGridSkeleton /></div>;
+  if (pathname === "/purchases") return <div className="min-w-0 space-y-8"><PurchasesHeading /><Suspense fallback={<PurchasesGridSkeleton />}><PurchasesGalleryClient cachedOnly /></Suspense></div>;
   if (pathname.startsWith("/settings")) return <SettingsWorkspace><SettingsLoading /></SettingsWorkspace>;
   if (pathname.startsWith("/credits")) return <CreditsWorkspace>{pathname === "/credits/earnings" ? <EarningsSkeleton /> : <CreditAccountSkeleton />}</CreditsWorkspace>;
   if (pathname.startsWith("/templates/")) return <TemplateDetailSkeleton owned />;

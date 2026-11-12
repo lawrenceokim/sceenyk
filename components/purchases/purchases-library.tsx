@@ -19,6 +19,10 @@ import {
 } from "@/lib/marketplace/purchases/contract";
 import { CreateVersionButton } from "./create-version-button";
 import { PurchasePreview } from "./purchase-preview";
+import { memo, type Ref } from "react";
+import { ListingVideoPreview } from "@/components/marketplace/listing-video-preview";
+import type { PreviewMediaSource } from "@/components/marketplace/gallery-cache";
+import type { PurchaseGalleryCard } from "@/lib/purchases/gallery-contract";
 
 export function PurchaseStatus({ purchase }: { purchase: Acquisition }) {
   const free = purchase.kind === "free";
@@ -40,9 +44,13 @@ export function PurchaseStatus({ purchase }: { purchase: Acquisition }) {
     </span>
   );
 }
-export function PurchasesLibrary({ result }: { result: AcquisitionPage }) {
+const CachedPurchaseCard = memo(PurchaseCard);
+export function PurchasesLibrary({ result, previews, previewSource, galleryRef }: {
+  result: AcquisitionPage; previews?: Record<string, PurchaseGalleryCard>; previewSource?: PreviewMediaSource; galleryRef?: Ref<HTMLElement>;
+}) {
   return (
     <section
+      ref={galleryRef}
       className="@container/purchase-library min-w-0 space-y-7"
       aria-label="Your acquired templates"
     >
@@ -50,7 +58,7 @@ export function PurchasesLibrary({ result }: { result: AcquisitionPage }) {
         <ul className="grid max-w-[1060px] grid-cols-1 items-start gap-5 @min-[560px]/purchase-library:grid-cols-2 @min-[920px]/purchase-library:grid-cols-3">
           {result.items.map((purchase) => (
             <li key={purchase.id} className="min-w-0">
-              <PurchaseCard purchase={purchase} />
+              <CachedPurchaseCard purchase={purchase} preview={previews?.[purchase.id]} previewSource={previewSource} />
             </li>
           ))}
         </ul>
@@ -90,7 +98,7 @@ export function PurchasesLibrary({ result }: { result: AcquisitionPage }) {
     </section>
   );
 }
-function PurchaseCard({ purchase }: { purchase: Acquisition }) {
+function PurchaseCard({ purchase, preview, previewSource }: { purchase: Acquisition; preview?: PurchaseGalleryCard; previewSource?: PreviewMediaSource }) {
   const settings = purchase.template.settings;
   const href = `/purchases/${purchase.id}`;
   return (
@@ -101,11 +109,15 @@ function PurchaseCard({ purchase }: { purchase: Acquisition }) {
         aria-label={`Open purchase ${purchase.title}`}
       >
         <div className="relative">
-          <PurchasePreview
+          {preview && previewSource ? <div className="overflow-hidden rounded-lg"><ListingVideoPreview listingId={purchase.id} version={preview.videoVersion}
+            source={previewSource} posterUrl={purchase.previewUrl}
+            staticFallback={<PurchasePreview url={purchase.previewUrl} title={purchase.title} />}>
+            <PurchasePreview url={null} title={purchase.title} />
+          </ListingVideoPreview></div> : <PurchasePreview
             key={purchase.previewUrl}
             url={purchase.previewUrl}
             title={purchase.title}
-          />
+          />}
           <div className="absolute top-2 left-2">
             <PurchaseStatus purchase={purchase} />
           </div>
