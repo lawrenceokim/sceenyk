@@ -37,7 +37,7 @@ export function Hero() {
       [&&]:pb-[3px] [&&]:pl-[11px] [&&]:[background:var(--background)] [&&]:rounded-[999px] [&&]:text-[length:11px]
       [&&]:leading-[18px] [&&]:mb-[13px] [&&_svg]:text-[color:var(--link)] max-699:[&&]:text-[length:10px]
       max-699:[&&]:mb-[12px]
-    `}><Sparkles size={13} aria-hidden="true" /> AI video + visual creation</p>
+    `}><Sparkles size={13} aria-hidden="true" /> AI video + creator templates</p>
           <h1 id="landing-title">Create the scene<br />you imagine.</h1>
         </div>
         <div className={`
@@ -46,7 +46,7 @@ export function Hero() {
       max-699:[&&]:max-w-[480px] max-699:[&&_>_p]:text-[length:14px] max-699:[&&_>_p]:leading-[1.6]
       max-699:[&&_>_p]:max-w-[390px]
     `}>
-          <p>Generate cinematic videos and visuals from prompts, clips, and creative direction — all inside one studio.</p>
+          <p>Create short AI videos from scene ideas and image references. Reuse creator templates or publish your own on Marketplace.</p>
           <div className={`
       sceenyk-landing-actions [&&]:flex [&&]:flex-wrap [&&]:items-center [&&]:gap-[12px] [&&]:mt-[18px]
       [&&_a]:text-[length:13px] [.sceenyk-landing-finalCta_&&]:justify-center [.sceenyk-landing-finalCta_&&]:mt-[15px]

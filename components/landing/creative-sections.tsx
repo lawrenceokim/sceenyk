@@ -25,7 +25,7 @@ export function StudioShowcase() {
       sceenyk-landing-studioBrand [&&]:flex [&&]:items-center [&&]:justify-between [&&]:pt-[0] [&&]:pr-[0] [&&]:pb-[8px]
       [&&]:pl-[0] [&&_img]:w-[120px] [&&_>_span]:text-[length:10px] [&&_>_span]:text-[color:var(--muted-foreground)]
       max-699:[&&_img]:w-[105px]
-    `}><Brand variant="full" /><span>Studio concept</span></div>
+    `}><Brand variant="full" /><span>Studio illustration</span></div>
         <div className={`
       sceenyk-landing-studioGrid [&&]:grid [&&]:[grid-template-columns:minmax(0,_.75fr)_minmax(0,_2fr)_minmax(0,_.85fr)]
       [&&]:gap-[9px] max-999:[&&]:[grid-template-columns:minmax(0,_.65fr)_minmax(0,_2fr)] max-699:[&&]:block
@@ -55,7 +55,7 @@ export function StudioShowcase() {
       [&&_span]:pb-[6px] [&&_span]:pl-[8px] [&&_span:first-child]:[background:var(--primary)]
       [&&_span:first-child]:text-[color:var(--primary-foreground)] [&&_span:first-child]:[border-color:transparent]
       max-999:[&&]:gap-[3px] max-999:[&&_span]:pl-[5px] max-999:[&&_span]:pr-[5px] max-999:[&&_span]:text-[length:9px]
-    `}><span>Upload</span><span>Image</span><span>Video</span></div>
+    `}><span>Upload</span><span>Image</span><span>Props</span></div>
             <div className={"sceenyk-landing-sourceImage [&&]:relative [&&]:h-[100px] [&&]:rounded-[6px] [&&]:overflow-hidden [&&_img]:[object-position:50%_30%] max-1100:[&&]:h-[85px]"}><Image src={landingArtwork.portrait} alt="" fill sizes="230px" className={"sceenyk-landing-artwork [&&]:object-cover"} /></div>
             <div className={`
       sceenyk-landing-dropzone [&&]:min-h-[82px] [&&]:mt-[10px] [&&]:mb-[10px] [&&]:flex [&&]:flex-col [&&]:items-center
@@ -66,12 +66,12 @@ export function StudioShowcase() {
       sceenyk-landing-sourceRow [&&]:flex [&&]:items-center [&&]:gap-[7px] [&&]:pt-[7px] [&&]:pr-[3px] [&&]:pb-[7px]
       [&&]:pl-[3px] [&&]:[border-bottom:1px_solid_var(--border)] [&&]:text-[length:10px] [&&_span]:ml-[auto]
       max-1100:[&&]:text-[length:9px]
-    `}><ImageIcon size={15} /> Image to video <span>›</span></div>
+    `}><ImageIcon size={15} /> Character Sheet <span>›</span></div>
             <div className={`
       sceenyk-landing-sourceRow [&&]:flex [&&]:items-center [&&]:gap-[7px] [&&]:pt-[7px] [&&]:pr-[3px] [&&]:pb-[7px]
       [&&]:pl-[3px] [&&]:[border-bottom:1px_solid_var(--border)] [&&]:text-[length:10px] [&&_span]:ml-[auto]
       max-1100:[&&]:text-[length:9px]
-    `}><Clapperboard size={15} /> Text to video <span>›</span></div>
+    `}><Clapperboard size={15} /> Storyboard <span>›</span></div>
             <div className={`
       sceenyk-landing-sourceRow [&&]:flex [&&]:items-center [&&]:gap-[7px] [&&]:pt-[7px] [&&]:pr-[3px] [&&]:pb-[7px]
       [&&]:pl-[3px] [&&]:[border-bottom:1px_solid_var(--border)] [&&]:text-[length:10px] [&&_span]:ml-[auto]
@@ -170,7 +170,7 @@ export function StudioShowcase() {
       max-699:[.sceenyk-landing-previewToolbar_&&]:text-[length:9px] max-699:[.sceenyk-landing-previewToolbar_&&]:pt-[4px]
       max-699:[.sceenyk-landing-previewToolbar_&&]:pr-[6px] max-699:[.sceenyk-landing-previewToolbar_&&]:pb-[4px]
       max-699:[.sceenyk-landing-previewToolbar_&&]:pl-[6px]
-    `}><Moon size={15} /> Moody <ChevronDown size={12} /></div>
+    `}><Moon size={15} /> Dramatic <ChevronDown size={12} /></div>
             <span className={`
       sceenyk-landing-fieldLabel [&&]:block [&&]:text-[color:var(--muted-foreground)] [&&]:text-[length:10px] [&&]:mb-[5px]
       [.sceenyk-landing-properties_&&]:mt-[11px] [.sceenyk-landing-properties_&&]:text-[color:var(--foreground)]
@@ -183,7 +183,7 @@ export function StudioShowcase() {
       max-699:[.sceenyk-landing-previewToolbar_&&]:text-[length:9px] max-699:[.sceenyk-landing-previewToolbar_&&]:pt-[4px]
       max-699:[.sceenyk-landing-previewToolbar_&&]:pr-[6px] max-699:[.sceenyk-landing-previewToolbar_&&]:pb-[4px]
       max-699:[.sceenyk-landing-previewToolbar_&&]:pl-[6px]
-    `}>10 seconds <ChevronDown size={12} /></div>
+    `}>5 seconds <ChevronDown size={12} /></div>
             <span className={`
       sceenyk-landing-fieldLabel [&&]:block [&&]:text-[color:var(--muted-foreground)] [&&]:text-[length:10px] [&&]:mb-[5px]
       [.sceenyk-landing-properties_&&]:mt-[11px] [.sceenyk-landing-properties_&&]:text-[color:var(--foreground)]
@@ -205,7 +205,7 @@ export function StudioShowcase() {
       [&&_p]:text-[length:10px] [&&_p]:text-[color:var(--muted-foreground)] [&&_p]:text-center [&&_a]:rounded-[999px]
       [&&_a]:text-[length:12px] [&&_a]:pl-[24px] [&&_a]:pr-[24px] max-699:[&&_p]:text-[length:10px]
       max-699:[&&_p]:leading-[1.5] max-699:[&&_p]:max-w-[300px]
-    `}><p>A glimpse of the creative direction. Illustrative preview, not a live generation.</p><Link className={buttonVariants()} href="/studio">Try the Studio <ArrowRight aria-hidden="true" /></Link></div>
+    `}><p>Save your brief, approve references and Storyboard, then review the package and generate. Studio illustration, not a live result.</p><Link className={buttonVariants()} href="/studio">Try the Studio <ArrowRight aria-hidden="true" /></Link></div>
     </section>
   );
 }
@@ -237,7 +237,7 @@ export function MarketplaceStory() {
       [@layer_components]:text-[color:var(--link)] [@layer_components]:text-[length:var(--text-caption)]
       [@layer_components]:font-[600] [@layer_components]:tracking-[0.12em] eyebrow
       [.workspace-page[data-workspace-page='content']_&&]:hidden
-    `}>MARKETPLACE</p><h2 id="marketplace-heading">Start from great work, then make it yours.</h2><p>Adopt reusable creator projects, remix them with your own idea, and publish your own standout work.</p></div>
+    `}>MARKETPLACE</p><h2 id="marketplace-heading">Start from great work, then make it yours.</h2><p>Adopt free or paid creator templates into your own project. Add your ideas and references, or publish a template for others to use.</p></div>
         <Link href="/marketplace" className={buttonVariants({ variant: "outline" })}>Browse marketplace <ArrowRight aria-hidden="true" /></Link>
       </div>
       <div className={`
@@ -282,9 +282,9 @@ export function MarketplaceStory() {
 }
 
 const offers = [
-  { title: "Free", subtitle: "2 lifetime free generations", description: "Explore Studio and see what you can create.", icon: Gift, features: ["Up to 10 seconds per free generation", "Start with a prompt or your own media", "Explore templates and Marketplace"], action: "Explore Studio", href: "/studio" },
-  { title: "Credit Top-up", subtitle: "Create at your own pace", description: "Flexible pay-as-you-go usage. No subscription.", icon: Coins, features: ["Review cost before generating", "Purchased credits do not expire", "Manually top up when you need more", "Free allowance stays separate"], action: "Explore credit packs", href: "/credits", featured: true },
-  { title: "Creator Earnings", subtitle: "Publish to Marketplace", description: "Share a creative starting point. Earn from your work.", icon: Star, features: ["Publish your own reusable projects", "Earn a 90% creator share", "10% platform fee", "Adoption money is separate from AI credits"], action: "Explore Marketplace", href: "/marketplace" },
+  { title: "Free", subtitle: "2 lifetime free AI projects", description: "Build a scene and try the video workflow.", icon: Gift, features: ["One 5-second/480p video per eligible project", "Prepare and approve your image references", "Explore templates and Marketplace"], action: "Explore Studio", href: "/studio" },
+  { title: "Credit Top-up", subtitle: "Create at your own pace", description: "Custom USD top-ups for paid generation.", icon: Coins, features: ["103 credits per paid 5-second/480p video", "Purchased credits do not expire", "Manually top up when you need more", "Free allowance stays separate"], action: "Top up credits", href: "/credits", featured: true },
+  { title: "Creator Earnings", subtitle: "Publish to Marketplace", description: "Try template sales and the payout workflow.", icon: Star, features: ["Publish reusable creator templates", "90% creator share on paid adoptions", "10% platform fee", "Earnings stay separate from AI credits"], action: "Explore Marketplace", href: "/marketplace" },
 ];
 
 export function LandingPricing() {
@@ -305,7 +305,7 @@ export function LandingPricing() {
       [@layer_components]:text-[color:var(--link)] [@layer_components]:text-[length:var(--text-caption)]
       [@layer_components]:font-[600] [@layer_components]:tracking-[0.12em] eyebrow
       [.workspace-page[data-workspace-page='content']_&&]:hidden
-    `}>PRICING</p><h2 id="pricing-heading">Pay only for what you create.</h2><p>Start free, then top up credits as you need them. Buy credits. Create what you need. Top up when you need more.</p></div></div>
+    `}>PRICING</p><h2 id="pricing-heading">Start free. Create with credits.</h2><p>Try two eligible free AI projects, then review costs and top up credits for further generation.</p></div></div>
     <div className={`
       sceenyk-landing-pricingGrid [&&]:grid [&&]:[grid-template-columns:repeat(3,_minmax(0,_1fr))] [&&]:gap-[18px]
       max-999:[&&]:gap-[12px] max-699:[&&]:[grid-template-columns:1fr] max-699:[&&]:gap-[20px]
@@ -344,7 +344,7 @@ export function LandingPricing() {
       <ul>{offer.features.map(feature => <li key={feature}><Check size={16} aria-hidden="true" />{feature}</li>)}</ul>
       <Link href={offer.href} className={buttonVariants({ variant: offer.featured ? "default" : "outline" })}>{offer.action} <ArrowRight aria-hidden="true" /></Link>
     </article>)}</div>
-    <p className={"sceenyk-landing-sectionNote [&&]:text-[length:11px] [&&]:leading-[1.5] [&&]:text-[color:var(--muted-foreground)] [&&]:mt-[12px]"}>Review payment totals and generation costs before confirming.</p>
+    <p className={"sceenyk-landing-sectionNote [&&]:text-[length:11px] [&&]:leading-[1.5] [&&]:text-[color:var(--muted-foreground)] [&&]:mt-[12px]"}>Current MVP videos: 5 seconds at 480p. PayPal checkout and payouts use Sandbox test money. Review fees and generation costs before confirming.</p>
   </section>;
 }
 
@@ -375,7 +375,7 @@ export function CreativeInvitation() {
       [&&_h2]:font-[750] [&&_h2]:tracking-[-0.04em] [&&_h2]:mt-[8px] [&&]:relative [&&]:text-center [&&]:pt-[34px]
       [&&]:pb-[34px] [&&_p]:text-[length:13px] [&&_p]:text-[color:var(--muted-foreground)] [&&_p]:mt-[9px]
       max-699:[&&]:pt-[35px] max-699:[&&]:pb-[35px]
-    `} aria-labelledby="final-heading"><h2 id="final-heading">Your next visual story starts here.</h2><p>Open the studio, shape your idea, and take the first step toward your next scene.</p><div className={`
+    `} aria-labelledby="final-heading"><h2 id="final-heading">Your next visual story starts here.</h2><p>Build a short AI video in Studio or find a reusable starting point in Marketplace.</p><div className={`
       sceenyk-landing-actions [&&]:flex [&&]:flex-wrap [&&]:items-center [&&]:gap-[12px] [&&]:mt-[18px]
       [&&_a]:text-[length:13px] [.sceenyk-landing-finalCta_&&]:justify-center [.sceenyk-landing-finalCta_&&]:mt-[15px]
       max-1100:[&&]:gap-[8px] max-1100:[&&_a]:pl-[14px] max-1100:[&&_a]:pr-[14px] max-1100:[&&_a]:text-[length:12px]

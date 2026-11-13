@@ -1,5 +1,11 @@
 # Sceenyk
 
+## Public product guidance audit (2026-11-13)
+
+Documentation and the rendered Landing page now describe the implemented UGC image-reference → sheets/Location → Storyboard → Package & Estimates → explicit Generate → Preview/final approval workflow. New generation is limited to 5 seconds/480p; two lifetime eligible AI projects and 103-credit paid videos replace the obsolete 10-second/free-generation copy. Explain the existing Purchases library, adopter-owned projects, reviewed public previews, creator listings, custom USD top-ups and separate creator earnings/withdrawals. Payment/payout code is Sandbox-only, so public guidance explicitly distinguishes test transactions from live cash income. Basic/Pro are implemented Studio modes; no separate subscription checkout is advertised based on the planned commercial policy below. Unsupported raw-video/Freestyle generation, configurable delivery notifications, full account export and account deletion are not presented as available.
+
+This is a source-backed content update, not a feature, policy, pricing, deployment or hosted-acceptance change. Existing public page layouts, navigation, artwork, theme and motion remain; no worker, generation, authentication, payment or storage owner changed. Current source evidence and focused verification are recorded in [the tracker](progress-tracker.md#documentation-and-landing-content-audit-2026-11-13).
+
 ## Repeatable video funding and package consent — 114 (2026-11-12)
 
 Package approval is one explicit action with an automatic server-calculated $1.03 ceiling for the approved 5-second/480p video. Financial eligibility is checked at Generate. Each new video attempt uses a valid unused included video or 103 purchased credits; unresolved historical free usage blocks additional free funding but does not veto an independently paid request. Two lifetime free project allowances, included OpenAI policy, finite real-provider budgets, immutable media/history and duplicate/recovery safeguards remain. Migration 114, matching web deployment and rebuilt UGC/Media images are required; no hosted writes/deployment ran. [Behavior, essential verification and release steps](video-generation-reliability.md).
