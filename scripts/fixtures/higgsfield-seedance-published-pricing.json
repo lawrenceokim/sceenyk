@@ -1,0 +1,5 @@
+{
+  "source": "https://open.higgsfield.ai/models/bytedance/seedance-2.5/reference-to-video/playground",
+  "verifiedOn": "2026-11-13",
+  "description": "Standard self-serve rates in USD per second of generated video.\n\n- Without video input: 480p: $0.1177; 720p: $0.2647; 1080p: $0.6518.\n- With video input: 480p: $0.1387; 720p: $0.3264; 1080p: $0.7858.\n\nTotal price = selected rate × output duration in seconds. Input video duration is not added to the billed duration. Image or audio references alone use the rate without video input."
+}

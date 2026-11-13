@@ -6,6 +6,7 @@ import { paidIntentSchema, type PaidIntent, type ProviderObservation } from "../
 import { assertV3Transport, exactOutputHosts, type v3TransportConfig } from "../runtime-config";
 import { higgsfieldModels, parseHiggsfieldAcceptance, prepareStatusObservation } from "./higgsfield";
 import { v3Digest, v3BodyHash } from "../identity";
+import { normalizeHiggsfieldEstimate } from "./higgsfield-estimate";
 
 const models = new Set<string>(Object.values(higgsfieldModels));
 export const exactBodyHash = v3BodyHash;
@@ -48,8 +49,14 @@ export class HiggsfieldV3Transport {
   async estimate(model: string, body: Record<string, unknown>, signal: AbortSignal) {
     if (!models.has(model) || !this.config.credentials || !this.config.accountScope) throw new Error("V3_ESTIMATE_CONFIG_REQUIRED");
     const response = await this.json(`https://api.higgsfield.ai/estimate/${model}`, "POST", body, signal);
-    return { ...z.object({ usd: z.string().regex(/^\d+(?:\.\d+)?$/) }).parse(response.value), responseHash: exactBodyHash(response.value),
-      correlationId: response.correlationId };
+    try { return { ...normalizeHiggsfieldEstimate(model, body, response.value), correlationId: response.correlationId }; }
+    catch (error) {
+      const code = error instanceof Error && error.message === "HIGGSFIELD_ESTIMATE_PRICING_UNVERIFIED"
+        ? error.message : "HIGGSFIELD_ESTIMATE_RESPONSE_INVALID";
+      // An estimate is an observation, never a generation submission. Preserve a
+      // fixed diagnostic rather than throwing raw Zod issues/private input.
+      throw new HiggsfieldTransportError(code, "observation_failed", 200, response.correlationId);
+    }
   }
   async submit(value: PaidIntent, signal: AbortSignal): Promise<ProviderObservation> {
     const intent = paidIntentSchema.parse(value); assertV3Transport(this.config, intent);
