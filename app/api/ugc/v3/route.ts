@@ -3,6 +3,7 @@ import { ownedV3Action, readOwnedV3 } from "@/lib/final-video-generation-v3/runt
 import { ServiceOperationError } from "@/lib/diagnostics/service-failure";
 import { DatabaseConfigurationError } from "@/lib/db/config";
 import { readOwnedV3FinalStatus } from "@/lib/final-video-generation-v3/final-operation-server";
+import { HiggsfieldTransportError } from "@/lib/final-video-generation-v3/adapters/higgsfield-transport";
 
 const headers = { "Cache-Control": "private, no-store", "CDN-Cache-Control": "no-store", Vary: "Cookie",
   "X-Content-Type-Options": "nosniff", "Referrer-Policy": "no-referrer" };
@@ -17,6 +18,12 @@ function failure(error: unknown) {
     } });
   }
   const code = error instanceof Error && /^[A-Z0-9_]{1,100}$/.test(error.message) ? error.message : "V3_ACTION_UNAVAILABLE";
+  // Coded rejections and unexpected validation/runtime errors used to disappear
+  // from Production logs. Never log message/stack/input or provider body here.
+  console.error("V3_ACTION_FAILURE", JSON.stringify({ code,
+    ...(error instanceof HiggsfieldTransportError ? { providerStatus: error.httpStatus, outcome: error.outcome, correlationId: error.correlationId } : {}),
+    ...(code === "V3_ACTION_UNAVAILABLE" ? { errorType: error instanceof TypeError ? "TypeError" : error instanceof SyntaxError ? "SyntaxError" : "UnclassifiedError" } : {}),
+  }));
   return Response.json({ ok: false, code }, { status: 409, headers });
 }
 export async function GET(request: Request) {

@@ -1,6 +1,8 @@
 import { generationPolicyMessages } from "@/lib/accounting/generation-policy";
 import { packageBuildError } from "./package-status";
 const messages: Record<string, string> = {
+  HIGGSFIELD_ESTIMATE_RESPONSE_INVALID: "Video pricing could not be verified. Your saved package is preserved. Please try again later.",
+  HIGGSFIELD_ESTIMATE_PRICING_UNVERIFIED: "Video pricing needs verification before generation can start. Your saved package is preserved.",
   V3_CREATIVE_LOCK_SETUP_REQUIRED: "Clip approval locking needs database migration 100. Your generated clip is preserved; ask your administrator to complete setup.",
   V3_LOCKED_INPUTS_DAMAGED: "A saved creative input is missing or damaged. Your videos are preserved; ask your administrator to check its original stored asset.",
   V3_LOCK_PACKAGE_DAMAGED: "The saved creative package failed its integrity check. Your videos are preserved; ask your administrator to check the original package evidence.",

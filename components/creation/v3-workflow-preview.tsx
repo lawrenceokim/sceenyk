@@ -181,7 +181,7 @@ export function V3WorkflowPreview({
     [workspace],
   );
   const refresh = useCallback(
-    async (signal?: AbortSignal, rethrowFailure = false) => {
+    async (signal?: AbortSignal, rethrowFailure = false, reconcileSubmittedAction = false) => {
       if (!projectId) return null;
       if (refreshLock.current) {
         return null;
@@ -198,7 +198,7 @@ export function V3WorkflowPreview({
         const body = await response.json();
         if (!response.ok || !body.ok) throw new V3StatusReadError(body.code ?? "V3_STATUS_UNAVAILABLE", body.retryable === true);
         // An older status read must not overwrite a just-saved approval/action.
-        if (!signal?.aborted && !actionLock.current && version === workspaceVersion.current) {
+        if (!signal?.aborted && (!actionLock.current || reconcileSubmittedAction) && version === workspaceVersion.current) {
           setWorkspace(body.workspace);
           setStatusError("");
           saved = body.workspace;
@@ -324,6 +324,15 @@ export function V3WorkflowPreview({
       setStatusError("");
       return true;
     } catch (e) {
+      if (action === "generate" || action === "generate_clip") {
+        // A response/DTO refresh can fail after SQL accepted the job. Reconcile
+        // once by GET before exposing Generate again; never replay the POST.
+        const saved = await refresh(undefined, false, true);
+        if (saved?.runs.some(run => run.packageId === payload.packageId &&
+          (!payload.segmentId || run.segmentId === payload.segmentId) && !["failed", "deleted"].includes(run.state))) {
+          setError(""); return true;
+        }
+      }
       setError(e instanceof Error ? e.message : "V3_ACTION_UNAVAILABLE");
       return false;
     } finally {

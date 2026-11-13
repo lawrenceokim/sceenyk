@@ -14,6 +14,8 @@ const hooks={...React,
 globalThis.__referenceReact=hooks;
 const bundled=await build({absWorkingDir:process.cwd(),stdin:{contents:'export {V3WorkflowPreview} from "./components/creation/v3-workflow-preview"; export {FinalVideoGenerate, FinalVideoReview} from "./components/creation/v3-final-video-controls";',resolveDir:process.cwd(),loader:'tsx'},tsconfig:resolve('tsconfig.json'),bundle:true,write:false,platform:'node',format:'cjs',packages:'external',plugins:[{
   name:'reference-ui-fixtures',setup(builder){
+    builder.onResolve({filter:/^(\.\/studio-action-notice|@\/components\/notifications\/app-notification|@\/lib\/cache\/account-cache)$/},args=>({path:args.path,namespace:'boundary'}));
+    builder.onLoad({filter:/.*/,namespace:'boundary'},args=>({contents:args.path.endsWith('studio-action-notice')?'export function StudioActionNotice(){return null;}':args.path.endsWith('account-cache')?'export const accountSessionCache={subscribe:()=>()=>{},snapshot:()=>0};export async function confirmedAction(_domains,operation){return operation();}':'export function AppNotification(props){return props.children;}'}));
     builder.onResolve({filter:/^\.\/components\//},args=>({path:resolve(args.path+'.tsx')}));
     builder.onResolve({filter:/^(react|next\/image|@\/components\/workspace\/studio-mode-provider|@\/components\/ui\/(button|dialog)|\.\/studio-workspace-panels)$/},args=>({path:args.path,namespace:'fixture'}));
     builder.onLoad({filter:/.*/,namespace:'fixture'},args=>{
@@ -39,7 +41,7 @@ let networkCalls=0; const originalFetch=globalThis.fetch;
 globalThis.fetch=async()=>{networkCalls++;throw Error('NETWORK_FORBIDDEN');};
 try {
   const baseRun={id:'saved-run',packageId:'package',state:'queued',preview:null,current:true,errorCode:null,submissionBlocker:null,segmentId:'segment-1',expectedDialogue:[],shotTimings:[],estimatedCostMicrousd:null,hasAudio:null,actualDurationMs:null,actualCostMicrousd:null};
-  const initial={projectId:'project',artifacts:[],tasks:[],runs:[],processing:false,preflight:{packageId:'package',packageHash:'hash',canSubmit:true,segmentCount:1,issues:[],authorizationState:'bound',currentness:'current',transportEnabled:true},complete:false};
+  const initial={projectId:'project',artifacts:[],tasks:[],runs:[],processing:false,generationPolicy:{ready:true,settingsSupported:true,projectAllowed:true,videoAllowed:true,availableCredits:142,requiredCredits:103},preflight:{packageId:'package',packageHash:'hash',canSubmit:true,eligibleForPaidSubmission:true,segmentCount:1,issues:[],authorizationState:'bound',currentness:'current',transportEnabled:true},complete:false};
   const props={initial,projectId:'project',assets:[],dirty:false,revision:'saved'};
   const render=()=>{cursor=0;return V3WorkflowPreview(props);};
   const finalTree=()=>{slots=[];let tree=render();find(tree,n=>n.type==='button'&&text(n)==='Final Video').props.onClick();return render();};
@@ -66,13 +68,21 @@ try {
   equal(elements(hiddenReview).some(n=>n.type?.name==='Button'),false);
   props.initial=initial;let tree=finalTree(),generate=find(tree,n=>n.type===FinalVideoGenerate);equal(generate.props.generating,false);equal(generate.props.disabled,false);
   // Actual Generate handler, pending UI, failed response. No live requests.
-  const requests=[];let resolveRequest;
-  globalThis.fetch=async(_url,options)=>{requests.push(JSON.parse(options.body));return new Promise(resolve=>resolveRequest=resolve);};
+  const requests=[];let resolveRequest,statusReads=0;
+  globalThis.fetch=async(_url,options)=>{if(!options?.body){statusReads++;return Response.json({ok:true,workspace:props.initial});}requests.push(JSON.parse(options.body));return new Promise(resolve=>resolveRequest=resolve);};
   generate.props.onGenerate();tree=render();equal(requests.length,1);equal(requests[0].action,'generate');equal(requests[0].packageId,'package');
   generate=find(tree,n=>n.type===FinalVideoGenerate);equal(generate.props.generating,true);equal(generate.props.disabled,true);
   equal(text(tree).includes('Preparing your request'),false);
   resolveRequest(Response.json({ok:false,code:'V3_PROVIDER_OUTCOME_UNKNOWN'},{status:409}));await new Promise(resolve=>setTimeout(resolve,0));
   equal(find(render(),n=>n.type===FinalVideoGenerate).props.generating,false);
+  equal(statusReads,1);equal(requests.length,1);
+  // A lost acknowledgement after admission recovers the saved job with one GET.
+  props.initial=initial;tree=finalTree();let posts=0,reads=0;
+  globalThis.fetch=async(_url,options)=>{if(options?.body){posts++;throw new TypeError('Lost acknowledgement');}reads++;return Response.json({ok:true,workspace:{...initial,runs:[baseRun],processing:true}});};
+  find(tree,n=>n.type===FinalVideoGenerate).props.onGenerate();await new Promise(resolve=>setTimeout(resolve,0));
+  equal(posts,1);equal(reads,1);equal(find(render(),n=>n.type===FinalVideoGenerate).props.generating,true);
+  equal(find(render(),n=>n.type===FinalVideoGenerate).props.disabled,true);
+  globalThis.fetch=async(_url,options)=>{if(!options?.body)return Response.json({ok:true,workspace:props.initial});return new Promise(resolve=>resolveRequest=resolve);};
   props.initial={...initial,runs:[{...baseRun,state:'awaiting_review',preview:'saved-video'}]};
   tree=finalTree();
   const approval=find(tree,n=>n.type===FinalVideoReview).props.act('approve',{id:'saved-run',reviewMode:'direct'});

@@ -1,5 +1,9 @@
 # Architecture Context
 
+## Authenticated formula-price admission (2026-11-13)
+
+Higgsfield estimates may return a price description instead of fixed `usd`. Normalize only an explicit USD amount or the exact verified 2026-11-13 standard per-second description for existing image-referenced 5-second/480p Reference-to-Video requests. Hash authenticated response, rule/source, model/body and derived bound; never substitute a UI ceiling, historical display estimate, geometry guess or discount. Unknown descriptions, video input/new parameters/higher tiers fail closed. SQL quote freshness, 103-credit reservation/retail, $1.03 exposure/consent and finite budgets remain. API logs safe constant failures; Generate failures reconcile once through saved-state GET without POST replay. Frozen history/display pricing and payment owners are unchanged. [Evidence and pending rollout](video-generation-reliability.md#final-video-estimate-response-failure--2026-11-13).
+
 ## Docker incident recovery and stable saves (2026-11-13)
 
 UGC/Media Docker cycles preserve safe diagnostics and signal transient database failure with exit 75; the supervisor backs off before rediscovering SQL state and marks health degraded until success. Claims, financial mutations and provider POSTs are never retried individually. Discovery/workspace reads use 30-second deadlines, mutations retain 10 seconds and explicit cancellation remains authoritative. Permanent failures/payouts keep their existing owners. Worker builds carry a policy/bundle manifest and read-only inherited-env diagnostics. Studio save transport uses `/api/projects/save` with exact-origin/JSON/body bounds and the existing owned save action/service. No identity, ownership, lock, credit, media or payment authority changes. [Incident evidence and pending rollout](video-generation-reliability.md#production-connection-incident--2026-11-13).
