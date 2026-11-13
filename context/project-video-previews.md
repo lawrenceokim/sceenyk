@@ -1,5 +1,33 @@
 # Projects-page looping previews
 
+## Native metadata preview recovery and Studio notices (2026-11-13)
+
+**Confirmed incident, now recovered:** original recovered run `d3b5b245-9dd8-4e7d-85f2-dfab85267ff9` is current/approved, with matching owned private storage lineage and `technicalValidationVersion: seedance-25-native-v2`. The old Media container had bundle SHA-256 `589062bae57a040c36b7a33bf0309530ffc1fbd6a3c2dd2c88787b63899f4eff`, which lacked that schema marker. Its strict old `privateAssetSchema` rejected the added metadata while resolving the approved source. Preview `e50bfd70-d966-49b3-a29d-013f000b565a` for version `60c543e3fee289121a66556a00aa47915fef8ac0d1dfe7b76d13b71f73ca8ea1` exhausted three attempts. The worker previously swallowed the underlying preview error; safe fixed-code/job diagnostics now expose future failures without response bodies, URLs or credentials. Projects, Templates and Marketplace share this approved-source/derivative path.
+
+The current source already understands native metadata. Rebuild/recreate Media from this checkout; a worker restart alone retains its old bundle. Migration [116](../supabase/migrations/20261113011600_project_preview_compatibility_recovery.sql) adds `processor_revision` to the existing verified preview queue. Existing rows retain 1; new requests use 2. Only an owned, nondeleted, old-revision failed row can be requeued once with zero attempts; revision-2 failures remain terminal under the existing maximum of three attempts. Requests cannot reset active leases or backoff, replace ready output, or select another owner. Repeated migration/request calls do not grant repeated retries. Source currentness/approval/hash validation remains in the worker and delivery owners. No original media, approved generation, payment, credit, provider cap or paid request is changed. Preview processing is local FFmpeg only.
+
+Focused verification: **64** offline assertions cover native metadata, all original approval/privacy conditions, wrong owner/roles/deleted project, deduplication/lease fencing, bounded compatibility retry, migration reruns, ready-output preservation and synthetic landscape/portrait/native-square three-second encoding. No provider/network call is made by the fixture. TypeScript, targeted lint, whitespace and worker-only compilation pass. New bundle SHA-256 is `b358b3dae813258984389c944d7cd7eef8a1a661312978454c61e54ece1f5b96`.
+
+**Live recovery complete:** owner stopped Media/applied 116; the existing owned request RPC confirmed revision 2 and reopened the same failed row at zero attempts. Built and recreated Media only, preserving volumes/env/control files; verified its running bundle hash and both AI flags OFF. The preview became **ready on attempt 1**, with **104,875 bytes**. Conditional R2 readback verified MIME/ETag/size; FFprobe plus complete strict FFmpeg decode confirmed **3 seconds, 480x480, H.264, 15fps, no audio**. Preview SHA-256 is `f9a2ee0f7181022745fe7eb5337e683dd2fa649f8b9467e66546ee49d0cc4847`. The approved original and pre/post financial snapshots are unchanged: 39 available/0 reserved, original consumed 103-credit reservation and original two ledger entries. No paid generation, provider request or credit mutation occurred. UGC/payout were untouched. Vercel notification deployment and browser playback/visual acceptance remain manual.
+
+Studio entry no longer turns ordinary Save/scene/Product prerequisites into slide-in notifications; they remain quiet help text beside the existing disabled action. The normal creative-lock popup is removed, with all controls/server locks retained and unresolved-review warnings preserved. The package setup notification is suppressed once `workspace.complete` records final approval. Genuine action errors still use shared notifications. Browser visual acceptance remains manual.
+
+Rollout for another installation (SQL/Media steps are complete for this incident):
+
+1. Stop the old Media worker before applying 116 so it cannot exhaust the renewed attempts. Keep all recovery volumes and configuration.
+2. Apply migration 116 through the trusted Supabase SQL Editor after 115. No table-grant expansion or financial repair is required.
+3. Rebuild/recreate Media from this checkout. UGC should also receive the earlier native-video correction if still on the old bundle.
+4. Deploy the checkout to Vercel Production for the notification fixes. Reload Studio/gallery tabs after preserving unsaved edits. Visible eligible cards reuse/requeue their same preview version through normal requests.
+
+```powershell
+docker compose -f compose.workers.yaml --profile workers stop media
+# Apply migration 116 in Supabase SQL Editor.
+docker compose -f compose.workers.yaml --profile workers build ugc media
+docker compose -f compose.workers.yaml --profile workers up -d --no-deps --force-recreate ugc media
+```
+
+Existing ready previews retain their identity and storage objects. Failed rows get a single compatibility retry, not an unbounded loop. User/browser reduced-motion and autoplay restrictions still retain the static cover by design. No new generation is needed to create these derivatives.
+
 ## Marketplace publishing without browser R2 CORS — 2026-11-12
 
 Confirmed against template `263d1599-04d8-4146-96ab-3f526db54023`: its source is current, final run is approved/completed, and R2 contains the matching original JPEG (66,130 bytes), approved MP4 (4,091,131 bytes, matching ETag/size), and versioned 3-second MP4 (42,882 bytes). The listing is a private draft without a saved public poster. A fresh signed JPEG range read returned 206 for both origins, but `Access-Control-Allow-Origin` was absent for `https://sceenyk.vercel.app` and explicitly allowed `http://localhost:3000`. The editor's exact error originates in the catch around `templatePreviewPoster`, before `updateMarketplaceAction` or a listing SQL mutation. `crossOrigin="anonymous"` plus canvas capture therefore made publication depend on R2's browser CORS configuration. No missing approved work, expired signature, corrupted source or insufficient credits was observed.

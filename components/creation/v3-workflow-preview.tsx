@@ -1075,7 +1075,7 @@ export function V3WorkflowPreview({
                         </p>
                         </div>
                       </div>
-                        {p.transportEnabled && p.issues.some(issue => !["V3_AUTHORIZATION_REQUIRED", "V3_SEGMENT_AUTHORIZATION_REQUIRED"].includes(issue)) && (
+                        {!workspace.complete && p.transportEnabled && p.issues.some(issue => !["V3_AUTHORIZATION_REQUIRED", "V3_SEGMENT_AUTHORIZATION_REQUIRED"].includes(issue)) && (
                           <AppNotification
                             role="status"
                             className="text-sm text-muted-foreground"

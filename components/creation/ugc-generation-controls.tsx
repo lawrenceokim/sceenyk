@@ -75,7 +75,7 @@ export function UgcGenerationControls({ projectId, revision, localIssues, dirty,
     </Button>
     {!signedIn && <AccountAction intent="sign-in" disabled={!authReady}>Sign in to generate</AccountAction>}
     <div id={helpId} className="space-y-1 text-caption text-muted-foreground" role="status" aria-live="polite">
-      {issues.map(issue => <AppNotification key={`${issue.code}:${issue.field}`} tone="warning">{issue.message}</AppNotification>)}
+      {issues.map(issue => <p key={`${issue.code}:${issue.field}`}>{issue.message}</p>)}
       {job && <p>{job.message}</p>}
       {!job && <p>Video generation is not available yet.</p>}
       {progress.error && <AppNotification role="alert">Generation status unavailable. Check status before preparing another request.</AppNotification>}

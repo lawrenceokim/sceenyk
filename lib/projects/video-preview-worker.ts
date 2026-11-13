@@ -46,7 +46,9 @@ export async function processProjectVideoPreview() {
     const current = await resolveApprovedProjectVideo(job.owner_user_id, job.project_id);
     if (!current || current.version !== job.version) { await finish(null, null, true); return; }
     await finish(saved.etag, saved.sizeBytes);
-  } catch {
+  } catch (error) {
+    console.error("PROJECT_PREVIEW_PROCESSING_FAILED", JSON.stringify({ jobId: job.id,
+      code: error instanceof Error && /^[A-Z0-9_]{1,100}$/.test(error.message) ? error.message : "PROJECT_PREVIEW_METADATA_OR_PROCESSING_INVALID" }));
     await finish(null, null);
   } finally {
     // This exact mkdtemp directory contains only disposable derivative inputs.

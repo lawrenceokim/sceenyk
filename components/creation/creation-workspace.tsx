@@ -8,7 +8,6 @@ import { StudioProjectGuard } from "./studio-project-guard";
 import { BeforeAccountAuth } from "@/components/auth/before-account-auth";
 import { clearGuestDraft, readGuestDraft, rememberGuestDraft } from "./guest-draft";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { LockKeyhole } from "lucide-react";
 import type { CreativeLockSummary } from "@/lib/final-video-generation-v3/creative-lock-contract";
 import { lockedProjectDraft } from "@/lib/final-video-generation-v3/creative-lock-view";
 import { creationPreferencesAction } from "@/app/actions/settings";
@@ -539,7 +538,7 @@ function WorkspaceEditor({
                       </section>
                     )}
                     {project}
-                    {creativeLocked && <AppNotification role="status" data-creative-lock={creativeLock.state} className="flex items-start gap-2 rounded-lg border border-primary/20 bg-primary/5 p-2 text-xs text-muted-foreground"><LockKeyhole aria-hidden="true" className="mt-0.5 size-3.5 shrink-0 text-primary" /><span>{creativeLock.state === "locked" ? "Creative inputs locked after the first clip approval. Continue with the remaining clips in Workflow." : "Saved creative inputs are read-only and need review. Your clips and videos are preserved; see Workflow for details."}</span></AppNotification>}
+                    {creativeLock && creativeLock.state !== "locked" && <AppNotification role="status" data-creative-lock={creativeLock.state}>Saved creative inputs are read-only and need review. Your clips and videos are preserved; see Workflow for details.</AppNotification>}
                     <fieldset disabled={creativeLocked} className="min-w-0"><CategorySelector selected={creationType} onChange={value => { if (!creativeLocked) setCreationType(value); }} /></fieldset>
                     {studioInputs.creationType === "ugc" ? <>
                       <StudioReferenceSources label="Characters" addLabel="Add Character" role="character" references={studioInputs.characters}

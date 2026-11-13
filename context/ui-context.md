@@ -10,6 +10,8 @@ Customer-facing checkout, Marketplace adoption, payouts, purchase history, landi
 
 ## Shared slide-in notification policy (2026-11-11)
 
+**Studio refinement (2026-11-13):** missing-input guidance (Save, describe the scene, add a Product/Prop) stays as ordinary control help rather than automatic notifications. Opening a normally creative-locked project produces no lock popup. Suppress obsolete Package & Estimates setup notifications when its final video is complete. Action failures, unresolved review and recovery retain their shared notifications; existing locks and disabled controls remain.
+
 Use the shared notification renderer for application errors, warnings, validation and action-result feedback instead of inline alert panels. Reuse the existing top-right slide-in appearance, semantic light/dark tokens, restrained reduced-motion behavior and dismiss control. Keep confirmations, editor/recovery controls, field labels, ongoing progress and structural empty/loading states in their appropriate UI. Feedback must remain visible and keyboard-accessible above native and shared dialogs; do not steal focus or re-run actions when displaying a notice. Studio shows its complete current duration/resolution catalog with unavailable options disabled but explainable by pointer/keyboard. Editable drafts reset to the allowed 5-second/480p testing choices; approved projects and approval locks preserve saved settings.
 
 ## Purchases library reference (2026-11-10)
