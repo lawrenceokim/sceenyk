@@ -1,5 +1,9 @@
 # UI Context
 
+## Documentation and Landing content accuracy (2026-11-13)
+
+Retain all seven Documentation topic routes/groups and existing anchors, reader/navigation/contents components and independent native scrolling. Added Studio final-review/recovery and Purchases guidance uses only the existing section renderer. Landing keeps its actual Hero → Studio illustration → Marketplace → Pricing → CTA composition, artwork, classes, responsive rules, themes and animation hooks. Correct copy and metadata only: AI video plus reusable creator templates, current 5-second/480p limits, two eligible lifetime projects, custom credit top-ups, 103-credit paid videos, separate creator shares and Sandbox payment limits. Illustrations are labelled and do not imply real generated output or available sale listings. Unused legacy landing compositions are outside this content update. Visual acceptance stays manual.
+
 ## Package approval — 114 (2026-11-12)
 
 Keep the existing Studio Package layout/tokens and display the automatic server-provided spending ceiling as read-only text. One Approve Generation Package button provides explicit consent to the exact saved package/quote; no additional checkbox or editable USD input. Credit shortages, historical free review and provider-budget availability belong to Generate, while stale/unready packages, dirty work, active operations, creative locks and retained Basic/Pro restrictions still prevent invalid approval. Existing approved media and exact historical authority remain visible. [Funding/release contract](video-generation-reliability.md).

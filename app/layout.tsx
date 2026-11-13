@@ -22,19 +22,19 @@ export const metadata: Metadata = {
   metadataBase: new URL(applicationOrigin()),
   title: "Sceenyk — Create the scene you imagine",
   description:
-    "Turn ideas, videos, and product images into finished content. One connected creative flow for scenes, stories, and everything you imagine.",
+    "Create short AI videos from scene ideas and image references. Discover reusable creator templates or publish your own on Sceenyk Marketplace.",
   applicationName: "Sceenyk",
   icons: { apple: { url: lightBrandIcon, type: "image/png" } },
   openGraph: {
     type: "website",
     siteName: "Sceenyk",
     title: "Sceenyk — Create the scene you imagine",
-    description: "Turn ideas and media into video content in one creative flow.",
+    description: "Create short AI videos, reuse creator templates, and explore Sceenyk Marketplace.",
   },
   twitter: {
     card: "summary_large_image",
     title: "Sceenyk — Create the scene you imagine",
-    description: "Turn ideas and media into video content in one creative flow.",
+    description: "Create short AI videos, reuse creator templates, and explore Sceenyk Marketplace.",
     images: ["/opengraph-image"],
   },
 };
