@@ -23,6 +23,8 @@ async function main() {
     runs: [{ id: run, package_id: pkg, state: "approved", current: true, completed_at: new Date().toISOString(), result: asset }], artifacts: [] as unknown[] };
   const approved = approvedV3Video(snapshot, owner, project)!;
   assert.ok(approved); checks++;
+  const native = { ...asset, width: 640, height: 640, durationMs: 5056, technicalValidationVersion: "seedance-25-native-v2" };
+  equal(approvedV3Video({ ...snapshot, runs: [{ ...snapshot.runs[0], result: native }] }, owner, project), approved);
   equal(approvedV3Video(snapshot, randomUUID(), project), null);
   equal(approvedV3Video({ ...snapshot, source: { current: false, revision: 2 } }, owner, project), null);
   for (const state of ["awaiting_review", "failed", "deleted"]) equal(approvedV3Video({ ...snapshot, runs: [{ ...snapshot.runs[0], state }] }, owner, project), null);
@@ -47,12 +49,32 @@ async function main() {
       insert into public.projects values('${project}','${owner}',null);`);
     const migration = await fs.readFile("supabase/migrations/20261111011200_project_video_previews.sql", "utf8");
     await db.exec(migration); await db.exec(migration); checks++;
-    const request = async (user = owner) => (await db.query<{ item: { id: string; lease_token: string; state: string } | null }>(
-      "select public.project_video_preview_request($1,$2,$3) item", [user, project, approved.version])).rows[0].item;
+    const request = async (user = owner, version = approved.version) => (await db.query<{ item: { id: string; lease_token: string; state: string; attempts: number; processor_revision: number } | null }>(
+      "select public.project_video_preview_request($1,$2,$3) item", [user, project, version])).rows[0].item;
     equal(await request(randomUUID()), null);
     const first = (await request())!;
     equal((await request())!.id, first.id);
     equal((await db.query("select * from public.project_video_previews")).rows.length, 1);
+    const savedVersion = "c".repeat(64), saved = (await request(owner, savedVersion))!;
+    await db.query("update public.project_video_previews set state='ready',etag='saved',size_bytes=1000 where id=$1", [saved.id]);
+    await db.query("update public.project_video_previews set state='failed',attempts=3 where id=$1", [first.id]);
+    const recovery = await fs.readFile("supabase/migrations/20261113011600_project_preview_compatibility_recovery.sql", "utf8");
+    await db.exec(recovery); await db.exec(recovery);
+    equal(await request(randomUUID()), null);
+    equal((await db.query<{ state: string }>("select state from public.project_video_previews where id=$1", [first.id])).rows[0].state, "failed");
+    const reopened = (await request())!;
+    equal(reopened.id, first.id); equal(reopened.state, "queued"); equal(reopened.attempts, 0); equal(reopened.processor_revision, 2);
+    equal((await request())!.attempts, 0);
+    equal((await request(owner, savedVersion))!.state, "ready");
+    equal((await request(owner, savedVersion))!.processor_revision, 1);
+    // A new processor failure stays terminal, even across migration reruns.
+    await db.query("update public.project_video_previews set state='failed',attempts=3 where id=$1", [first.id]);
+    await db.exec(recovery);
+    equal((await request())!.state, "failed"); equal((await request())!.attempts, 3);
+    const fresh = (await request(owner, "d".repeat(64)))!;
+    equal(fresh.processor_revision, 2);
+    await db.query("delete from public.project_video_previews where id=$1", [fresh.id]);
+    await db.query("update public.project_video_previews set state='queued',attempts=0 where id=$1", [first.id]);
     for (const role of ["anon", "authenticated"]) {
       await db.exec(`set role ${role}`);
       await assert.rejects(() => request()); checks++;
@@ -77,7 +99,7 @@ async function main() {
     equal((await request())!.state, "ready"); equal(await claim(), null);
     await db.exec(`reset role; update public.projects set deleted_at=now() where id='${project}'; set role service_role`);
     equal(await request(), null);
-    for (const size of ["640x360", "360x640"]) {
+    for (const size of ["640x360", "360x640", "640x640"]) {
       const input = path.join(temporary, `${size}.mp4`), output = path.join(temporary, `${size}-preview.mp4`);
       await runMediaCommand("ffmpeg", ["-v", "error", "-nostdin", "-y", "-f", "lavfi", "-i", `testsrc2=size=${size}:rate=24:duration=4`,
         "-f", "lavfi", "-i", "sine=frequency=440:duration=4", "-c:v", "libx264", "-preset", "ultrafast", "-c:a", "aac", "-threads", "1", input]);
