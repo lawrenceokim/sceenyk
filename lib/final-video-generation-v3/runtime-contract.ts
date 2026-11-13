@@ -4,7 +4,8 @@ import { digestSchema } from "./contract";
 
 export const privateAssetSchema = z.strictObject({ id: z.uuid(), storageKey: z.string().min(1), etag: z.string().min(1), sha256: digestSchema,
   sizeBytes: z.number().int().positive().safe(), mimeType: z.enum(["image/png", "video/mp4"]),
-  width: z.number().int().positive(), height: z.number().int().positive(), durationMs: z.number().int().nonnegative(), hasAudio: z.boolean() });
+  width: z.number().int().positive(), height: z.number().int().positive(), durationMs: z.number().int().nonnegative(), hasAudio: z.boolean(),
+  technicalValidationVersion: z.literal("seedance-25-native-v2").optional() });
 export type PrivateAsset = z.infer<typeof privateAssetSchema>;
 export const privateBindingSchema = privateAssetSchema.extend({ verifiedReadback: z.literal(true) })
   .transform(({ verifiedReadback: _proof, ...asset }) => { void _proof; return asset; });

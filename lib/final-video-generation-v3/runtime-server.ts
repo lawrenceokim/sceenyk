@@ -94,6 +94,7 @@ export async function runtimeDto(w: RuntimeWorkspace) {
     displayEstimatedCostMicrousd: displayPricing(r.package_id)?.segments.find(s => s.id === r.intent.segmentId)?.estimatedCostMicrousd ?? r.intent.estimatedCostMicrousd,
     stage: videoStage(w.tasks.find(t => t.kind === "video" && t.input.runId === r.id)?.output),
     hasKnownRequest: !!r.observation,
+    completedResultRecoverable: r.state === "failed" && r.error_code === "V3_VIDEO_TECHNICAL_VALIDATION_FAILED" && r.observation?.status === "completed",
     submissionBlocker: r.state === "queued" ? (Date.parse(r.intent.deliveryExpiresAt) <= Date.now() ? "V3_REFERENCE_DELIVERY_EXPIRED" :
       w.tasks.find(t => t.kind === "video" && t.input.runId === r.id)?.error_code ?? (!v3TransportConfig().enabled ? "PAID_V3_EXECUTION_DISABLED" : null)) : null,
     outputHostname: r.error_code === "OUTPUT_HOST_APPROVAL_REQUIRED" ? outputHostname(r.observation?.resultUrl ?? null) : null,
@@ -109,7 +110,7 @@ export async function runtimeDto(w: RuntimeWorkspace) {
     return { id: a.id, packageId: doc.id, segmentId: "joined", state, completedAt: a.approved_at,
       provider: "higgsfield", model: "multiple segments", resolution: doc.source.resolution, aspectRatio: doc.source.storyboardContent.aspectRatio,
       ...(asset ? { actualDimensions: { width: asset.width, height: asset.height } } : {}),
-      estimatedCostMicrousd: doc.pricing.totalMicrousd, actualCostMicrousd: null, stage: null, outputHostname: null, submissionBlocker: null, hasKnownRequest: false,
+      estimatedCostMicrousd: doc.pricing.totalMicrousd, actualCostMicrousd: null, stage: null, outputHostname: null, submissionBlocker: null, hasKnownRequest: false, completedResultRecoverable: false,
       displayEstimatedCostMicrousd: creativeLock?.packageId === doc.id ? doc.pricing.totalMicrousd : currentDisplayPricing(doc).totalMicrousd,
       current: packageClips(doc) ? mergedArtifactCurrent(w, doc, a) : !!w.source?.current && w.source.revision === doc.sourceRevision && w.runs.filter(r => r.package_id === doc.id).every(r => r.current),
       errorCode: deletion?.error_code ?? null, quality: null, actualDurationMs: asset.durationMs, hasAudio: asset.hasAudio,
@@ -469,7 +470,11 @@ export async function ownedV3Action(raw: unknown, acknowledge = false): Promise<
     await refreshQueuedVideoDelivery(store, w, z.uuid().parse(a.id), signal);
   } else if (a.action === "recover") {
     const joined = w.artifacts.some(j => j.id === a.id && j.kind === "joined");
-    await store.action(user.id, a.projectId, joined ? "recover_delete" : "recover", { id: z.uuid().parse(a.id) });
+    const completed = w.runs.find(r => r.id === a.id && r.state === "failed" && r.error_code === "V3_VIDEO_TECHNICAL_VALIDATION_FAILED" && r.observation?.status === "completed");
+    if (completed) {
+      if (await store.rpc("ugc_v3_worker_resume_known", { p_owner: user.id, p_project: a.projectId, p_run: completed.id, p_request: completed.observation!.requestId }) !== true)
+        throw new Error("V3_COMPLETED_RECOVERY_SETUP_REQUIRED");
+    } else await store.action(user.id, a.projectId, joined ? "recover_delete" : "recover", { id: z.uuid().parse(a.id) });
     if (acknowledge && w.artifacts.some(j => j.id === a.id && j.kind === "joined" && j.document.manifestHash))
       return { accepted: true as const, action: a.action, id: z.uuid().parse(a.id) };
   } else if (a.action === "recover_task") {

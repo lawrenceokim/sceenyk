@@ -60,7 +60,7 @@ const media={bytesHash:hash,
  readPrivate:async key=>objects.get(key)?.bytes??master,
  inspectImage:async bytes=>{const b=await sharp(bytes).rotate().png().toBuffer(),m=await sharp(b).metadata();return{bytes:b,metadata:{mimeType:'image/png',width:m.width,height:m.height,durationMs:0,hasAudio:false}};},
  publishPrivate:async(user,project,id,bytes,meta)=>{if(storageFailure)throw new Error('FIXTURE_STORAGE');const asset={id,storageKey:`users/${user}/projects/${project}/v3/${id}.${meta.mimeType==='video/mp4'?'mp4':'png'}`,etag:'fixture',sha256:hash(bytes),sizeBytes:bytes.length,...meta};objects.set(asset.storageKey,{asset,bytes});return asset;},
- inspectVideo:async(_id,_bytes,expected)=>({mimeType:'video/mp4',width:480,height:854,durationMs:expected.durationMs,hasAudio:true}),
+ inspectVideo:async(_id,_bytes,expected)=>{if(globalThis.__completedVideoValidationFailure)throw Error('V3_VIDEO_TECHNICAL_VALIDATION_FAILED');return{mimeType:'video/mp4',width:480,height:854,durationMs:expected.durationMs,hasAudio:true};},
  signPrivate:async a=>({url:`https://private.example.test/${a.id}?signature=${++deliverySequence}`,expiresAt:new Date(Date.now()+300000).toISOString()})};
 async function fixtureResponse(kind,body,options){
  const id=options.headers['X-Client-Request-Id'];
@@ -225,6 +225,7 @@ try{
   const renewed=await new V3Store(db).read(owner,f.project);equal(renewed.runtimeAuthorizations.length,2);equal(renewed.runtimeAuthorizations[0].document,legacy);
   const request={action:'generate',packageId:dto.preflight.packageId,packageHash:dto.preflight.packageHash};
   await check(await post(f.project,request));await check(await post(f.project,request));
+  globalThis.__completedVideoValidationFailure=false;
   for(let i=0;i<4;i++){
    await pg.query("update ugc_v3_tasks set available_at=now() where project_id=$1 and status='queued'",[f.project]);await tick(f.project);dto=await read(f.project);
    if(dto.runs.some(r=>r.state==='awaiting_review'))break;
@@ -241,12 +242,35 @@ try{
   await pg.query('update free_ai_accounts set review_required=true where owner_user_id=$1',[owner]);
   await pg.exec('update generation_paid_policy set user_cap_microusd=3090000,global_cap_microusd=30900000');
   await check(await post(f.project,consent));dto=await read(f.project);equal(dto.generationPolicy.funding,'credits');equal(dto.generationPolicy.requiredCredits,103);
+  globalThis.__completedVideoValidationFailure=process.argv.includes('--completed-video-recovery');
   await check(await post(f.project,request));await check(await post(f.project,request));
   for(let i=0;i<4;i++){
    await pg.query("update ugc_v3_tasks set available_at=now() where project_id=$1 and status='queued'",[f.project]);await tick(f.project);dto=await read(f.project);
    if(dto.runs.some(r=>r.state==='awaiting_review'))break;
   }
-  equal(videoPosts,2);const video=dto.runs.find(r=>r.state==='awaiting_review');ok(video?.preview);
+  equal(videoPosts,2);
+  if(process.argv.includes('--completed-video-recovery')){
+    const failed=dto.runs.find(r=>r.state==='failed');ok(failed);equal(failed.completedResultRecoverable,true);
+    const before=(await pg.query('select * from credit_ledger order by id')).rows,estimates=estimateCalls;
+    const raw=(await new V3Store(db).read(owner,f.project)).runs.find(r=>r.id===failed.id),requestId=raw.observation.requestId;
+    equal((await pg.query('select state from generation_paid_reservations where run_id=$1',[failed.id])).rows[0].state,'consumed');
+    equal(await call('ugc_v3_worker_resume_known',[owner,f.project,failed.id,randomUUID()]),false);
+    await assert.rejects(()=>call('ugc_v3_completed_video_claim',[randomUUID(),f.project,failed.id,requestId]),/FRESH_V3_PROJECT_REQUIRED/);checks++;
+    for(const role of ['anon','authenticated']){
+      await pg.exec('set role '+role);try{await assert.rejects(()=>call('ugc_v3_completed_video_claim',[owner,f.project,failed.id,requestId]),/permission denied/);checks++;}finally{await pg.exec('reset role');}
+    }
+    await check(await post(f.project,{action:'recover',id:failed.id}));
+    const claim=await call('ugc_v3_completed_video_claim',[owner,f.project,failed.id,requestId]);ok(claim);equal(claim.provider_started,true);
+    equal(await call('ugc_v3_completed_video_claim',[owner,f.project,failed.id,requestId]),null);
+    globalThis.__completedVideoValidationFailure=false;
+    await load('lib/final-video-generation-v3/worker.ts').recoverCompletedV3VideoTask(new V3Store(db),claim,await new V3Store(db).read(owner,f.project),new AbortController().signal);
+    dto=await read(f.project);equal(dto.runs.find(r=>r.id===failed.id).state,'awaiting_review');equal(videoPosts,2);equal(estimateCalls,estimates);
+    equal((await pg.query('select * from credit_ledger order by id')).rows,before);
+    await pg.exec(fs.readFileSync('supabase/migrations/20261113011500_completed_video_recovery.sql','utf8'));
+    equal((await pg.query('select * from credit_ledger order by id')).rows,before);
+    equal(await call('ugc_v3_completed_video_claim',[owner,f.project,failed.id,requestId]),null);
+  }
+  const video=dto.runs.find(r=>r.state==='awaiting_review');ok(video?.preview);
   await check(await post(f.project,{action:'approve',id:video.id,reviewMode:'direct'}));dto=await read(f.project);
   equal(dto.complete,true);equal(dto.runs.find(r=>r.id===video.id).state,'approved');
   // One 5s clip is the final video: no unnecessary merge/provider request.

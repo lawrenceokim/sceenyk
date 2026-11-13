@@ -31,7 +31,7 @@ export function FinalVideoReview({ run, act, busy, segmentCount, generating = fa
   const panels = useStudioPanels();
   const [confirmDelete, setConfirmDelete] = useState(false);
   const ready = !generating && run.state === "awaiting_review" && !!run.preview;
-  const needsRecovery = run.state === "reconciliation_required" || run.state === "deleting" ||
+  const needsRecovery = run.completedResultRecoverable || run.state === "reconciliation_required" || run.state === "deleting" ||
     run.state === "provider_processing" && !!run.errorCode;
   return <div className={compact ? "min-w-0 space-y-3" : "min-w-0 space-y-4"}>
     {ready && <>

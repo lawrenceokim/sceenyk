@@ -56,6 +56,11 @@ try {
     if(state==='approved')equal(text(tree).includes('Complete'),true);
   }
   props.initial={...initial,runs:[{...baseRun,state:'provider_processing',errorCode:'DOWNLOAD_FAILED'}]};
+  props.initial={...initial,runs:[{...baseRun,state:'failed',completedResultRecoverable:true,errorCode:'V3_VIDEO_TECHNICAL_VALIDATION_FAILED'}]};
+  let recoveryTree=finalTree(),recovery=find(recoveryTree,n=>n.type===FinalVideoReview);
+  cursor=0;const recoveryControls=FinalVideoReview(recovery.props);
+  equal(elements(recoveryControls).some(n=>n.type?.name==='Button'&&text(n)==='Recover saved work'),true);
+  props.initial={...initial,runs:[{...baseRun,state:'provider_processing',errorCode:'DOWNLOAD_FAILED'}]};
   equal(find(finalTree(),n=>n.type===FinalVideoGenerate).props.generating,false);
   props.initial={...initial,tasks:[{id:'join',kind:'join',status:'running'}]};
   equal(find(finalTree(),n=>n.type===FinalVideoGenerate).props.generating,true);
