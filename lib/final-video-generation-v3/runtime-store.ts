@@ -9,7 +9,7 @@ import { lockDocument } from "./creative-lock";
 import { pinApprovedPackage } from "./package";
 
 export type V3RpcName = "ugc_v3_clip_lock_setup" | "ugc_v3_recover_clip_lock" | "ugc_v3_merge_begin" | "ugc_v3_merge_stage" | "ugc_v3_merge_setup" | "ugc_v3_clip_retryable" | "ugc_v3_clip_authorize" | "ugc_v3_clip_manifest" | "ugc_v3_clip_setup" | "ugc_v3_approve_video" | "ugc_v3_background_setup" | "ugc_v3_worker_projects" | "ugc_v3_worker_claim" | "ugc_v3_video_stage" | "ugc_v3_worker_resume_known" | "ugc_v3_refresh_video_delivery" | "ugc_v3_runtime_current" | "ugc_v3_video_setup" | "ugc_v3_local_package_begin" | "ugc_v3_local_price_repair" | "ugc_v3_regenerate_approved_reference" | "ugc_v3_package_begin" | "ugc_v3_package_checkpoint" | "ugc_v3_package_commit" | "ugc_v3_reconcile_reference_cleanup" | "ugc_v3_discard_reference_prepare" | "ugc_v3_discard_reference_finish" | "ugc_v3_queue_reference_cleanup" | "ugc_v3_location_action" | "ugc_v3_location_checkpoint" | "ugc_v3_location_input_current" | "ugc_v3_create_project" | "ugc_v3_write" | "ugc_v3_runtime_read" | "ugc_v3_runtime_action" | "ugc_v3_task_claim" | "ugc_v3_task_checkpoint" | "ugc_v3_retire_reference_task" | "ugc_v3_regenerate_reference" | "ugc_v3_reference_delete_prepare" | "ugc_v3_reference_delete_finish" | "ugc_v3_recover_reference_task" | "ugc_v3_replace_unusable_reference_task" | "ugc_v3_record_reference_diagnostic";
-export type V3RpcPort = { rpc(name: V3RpcName | "laptop_v3_worker_claim", args: Record<string, unknown>): PromiseLike<{ data: unknown; error: unknown; status?: number }> };
+export type V3RpcPort = { rpc(name: V3RpcName | "laptop_v3_worker_claim" | "ugc_v3_completed_video_claim", args: Record<string, unknown>): PromiseLike<{ data: unknown; error: unknown; status?: number }> };
 export const runtimeWorkspaceSchema = z.object({ project: z.object({ project_id: z.uuid(), owner_user_id: z.uuid(), logical_job_id: z.uuid(), studio_mode: z.enum(["basic", "pro"]).optional() }),
   source: z.object({ revision: z.number().int(), input: planningInputSchema, private_bindings: z.record(z.string(), z.unknown()), current: z.boolean(), created_at: z.string() }).nullable(),
   packages: z.array(z.object({ id: z.uuid(), document: z.unknown() })), tasks: z.array(taskSchema), artifacts: z.array(artifactSchema),
@@ -23,7 +23,7 @@ export const runtimeWorkspaceSchema = z.object({ project: z.object({ project_id:
 export type RuntimeWorkspace = z.infer<typeof runtimeWorkspaceSchema>;
 export class V3Store {
   constructor(private readonly database: V3RpcPort = createDatabaseClient() as unknown as V3RpcPort) {}
-  async rpc(name: V3RpcName | "laptop_v3_worker_claim", args: Record<string, unknown>) {
+  async rpc(name: V3RpcName | "laptop_v3_worker_claim" | "ugc_v3_completed_video_claim", args: Record<string, unknown>) {
     let result;
     try { result = await this.database.rpc(name, args); } catch (error) { throw new V3DatabaseError(error, name); }
     const { data, error } = result;

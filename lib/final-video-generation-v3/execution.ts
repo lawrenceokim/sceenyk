@@ -22,6 +22,8 @@ export async function executeV3Segment(run: Run, providerStarted: boolean, deps:
   const completed = await deps.readSaved("completed.json"), accepted = await deps.readSaved("acceptance.json");
   if (completed) observation = observationSchema.parse(JSON.parse(completed.toString("utf8")));
   else if (accepted && !observation) observation = observationSchema.parse(JSON.parse(accepted.toString("utf8")));
+  if (run.observation && observation && run.observation.requestId !== observation.requestId) throw new Error("PROVIDER_RECEIPT_MISMATCH");
+  if (completed && observation?.status !== "completed") throw new Error("V3_COMPLETED_RECEIPT_INVALID");
   if (!observation) {
     if (providerStarted || run.state !== "queued") throw new Error("V3_PROVIDER_OUTCOME_UNKNOWN");
     await deps.beforeSubmit(run.intent);
@@ -41,7 +43,9 @@ export async function executeV3Segment(run: Run, providerStarted: boolean, deps:
   if (!run.observation && providerStarted) await deps.checkpoint("observation", observation);
   await deps.stage?.("HIGGSFIELD_PROCESSING", observation.requestId);
   if (observation.status !== "completed") observation = await deps.provider.reconcile(observation, signal);
-  if (observation.status === "completed") await deps.save("completed.json", Buffer.from(JSON.stringify(observation)));
+  // The saved receipt is immutable. Schema parsing can reorder object keys;
+  // reserializing an existing receipt would falsely report V3_SPOOL_CONFLICT.
+  if (observation.status === "completed" && !completed) await deps.save("completed.json", Buffer.from(JSON.stringify(observation)));
   await deps.checkpoint("observation", observation);
   if (["failed", "nsfw", "canceled"].includes(observation.status)) { await deps.checkpoint("failed", { code: "V3_PROVIDER_REJECTED_REVIEW_RETRY" }); return; }
   if (observation.status !== "completed") { await deps.checkpoint("pending"); return; }

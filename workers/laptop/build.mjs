@@ -11,6 +11,7 @@ const options = {
 };
 await build({ ...options, entryPoints: [path.resolve('scripts/docker-worker-cycle.ts')], outfile: 'workers/laptop/runtime/cycle.cjs' });
 await build({ ...options, entryPoints: [path.resolve('scripts/diagnose-generation-worker.ts')], outfile: 'workers/laptop/runtime/diagnose.cjs' });
+await build({ ...options, entryPoints: [path.resolve('scripts/recover-completed-v3-video.ts')], outfile: 'workers/laptop/runtime/recover.cjs' });
 const policy = await fs.readFile('lib/accounting/generation-policy-server.ts', 'utf8');
 const policyVersion = Number(/policyVersion: z\.literal\((\d+)\)/.exec(policy)?.[1]);
 if (!Number.isInteger(policyVersion) || policyVersion < 114) throw new Error('DOCKER_POLICY_VERSION_REQUIRED');

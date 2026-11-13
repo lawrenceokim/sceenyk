@@ -7,6 +7,7 @@ COPY tsconfig.json ./
 COPY lib ./lib
 COPY scripts/docker-worker-cycle.ts ./scripts/
 COPY scripts/diagnose-generation-worker.ts ./scripts/
+COPY scripts/recover-completed-v3-video.ts ./scripts/
 COPY workers/laptop/build.mjs ./workers/laptop/
 RUN node workers/laptop/build.mjs
 

@@ -25,6 +25,7 @@ import { v3Digest } from "./identity";
 import { packageTask } from "./package-task";
 import { bytesHash, readPrivate, inspectImage, publishPrivate, saveSpool, readSpool, deletePrivate, purgeVideoSpool } from "./runtime-media";
 import { inspectVideo } from "./inspect-video";
+import { V3VideoValidationError } from "./video-metadata";
 import { generationContext, generationContextSchema, referenceSubjectSchema, originalCharacters, latestArtifact, characterSubject } from "./generation-context";
 import { validateCharacterCast } from "./character-cast";
 import { projectBrief, creativeBriefHash, referenceOriginals, approvedArtifacts } from "./creative-inputs";
@@ -180,6 +181,16 @@ async function storyboardTask(store: V3Store, task: Task, w: RuntimeWorkspace, s
     durationMs: Number(brief.duration) * 1000, aspectRatio: brief.aspect_ratio, visualStyle: brief.visual_style, tone: brief.tone });
   await store.checkpoint(task, "artifact", { id: task.id, document: { storyboard, input: task.input, provider: "openai", model, responseHash: bytesHash(raw), requestId: captured.requestId } });
 }
+export async function recoverCompletedV3VideoTask(store: V3Store, task: Task, w: RuntimeWorkspace, signal: AbortSignal) {
+  const run = w.runs.find(r => r.id === task.input.runId);
+  if (task.kind !== "video" || !task.provider_started || task.status !== "running" || !task.lease_token ||
+    !run || run.observation?.status !== "completed" || run.result) throw new Error("V3_COMPLETED_RESULT_REQUIRED");
+  for (const name of ["acceptance.json", "completed.json"]) {
+    const saved = await readSpool(run.id, name);
+    if (saved && JSON.parse(saved.toString("utf8")).requestId !== run.observation.requestId) throw new Error("PROVIDER_RECEIPT_MISMATCH");
+  }
+  return videoTask(store, task, w, signal);
+}
 async function videoTask(store: V3Store, task: Task, w: RuntimeWorkspace, signal: AbortSignal) {
   const run = w.runs.find(r => r.id === task.input.runId); if (!run) throw new Error("V3_RUN_NOT_FOUND");
   if (run.result) { await store.checkpoint(task, "done"); return; }
@@ -257,6 +268,9 @@ export async function runV3Task(projectId: string, ownerId: string, store = new 
     }
   } catch (error) {
     if (error instanceof ServiceOperationError) throw error;
+    if (error instanceof V3VideoValidationError) console.error("V3_VIDEO_VALIDATION_DIAGNOSTIC", JSON.stringify({
+      taskId: task.id, reasons: error.reasons, actual: error.actual, expected: error.expected,
+    }));
     const refreshed = await store.read(ownerId, projectId), run = refreshed.runs.find(r => r.id === task.input.runId);
     if(task.input.referenceCleanup&&refreshed.referenceDeletions.some(d=>d.id===(task.input.referenceCleanup as {id:string}).id&&d.state==="completed")){
       await store.checkpoint(task,"done");return true;
